@@ -1,0 +1,11 @@
+.tiptap pre {
+  @apply bg-card-background p-6 rounded-lg font-mono my-4;
+}
+
+.tiptap pre code {
+  @apply bg-transparent text-sm leading-snug;
+}
+
+.tiptap .node-codeBlock {
+  @apply rounded-lg;
+}

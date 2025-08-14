@@ -1,0 +1,90 @@
+import Preset from "@g4rcez/components/preset.tailwind";
+import typography from "@tailwindcss/typography";
+import forms from "@tailwindcss/forms";
+
+export default {
+  plugins: [typography, forms],
+  darkMode: "class",
+  presets: [Preset],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      fontSize: {
+        xs: [
+          "calc(var(--default-size) * 0.75)",
+          { lineHeight: "calc(var(--default-size) * 1)" },
+        ],
+        sm: [
+          "calc(var(--default-size) * 0.875)",
+          { lineHeight: "calc(var(--default-size) * 1.25)" },
+        ],
+        base: [
+          "calc(var(--default-size) * 1)",
+          { lineHeight: "calc(var(--default-size) * 1.5)" },
+        ],
+        lg: [
+          "calc(var(--default-size) * 1.125)",
+          { lineHeight: "calc(var(--default-size) * 1.75)" },
+        ],
+        xl: [
+          "calc(var(--default-size) * 1.25)",
+          { lineHeight: "calc(var(--default-size) * 1.75)" },
+        ],
+        "2xl": [
+          "calc(var(--default-size) * 1.5)",
+          { lineHeight: "calc(var(--default-size) * 2)" },
+        ],
+        "3xl": [
+          "calc(var(--default-size) * 1.875)",
+          { lineHeight: "calc(var(--default-size) * 2.25)" },
+        ],
+        "4xl": [
+          "calc(var(--default-size) * 2.25)",
+          { lineHeight: "calc(var(--default-size) * 2.5)" },
+        ],
+        "5xl": ["calc(var(--default-size) * 3)", { lineHeight: "1" }],
+        "6xl": ["calc(var(--default-size) * 3.75)", { lineHeight: "1" }],
+        "7xl": ["calc(var(--default-size) * 4.5)", { lineHeight: "1" }],
+        "8xl": ["calc(var(--default-size) * 6)", { lineHeight: "1" }],
+        "9xl": ["calc(var(--default-size) * 8)", { lineHeight: "1" }],
+      },
+      spacing: {
+        px: "1px",
+        0: "0px",
+        0.5: "calc(var(--default-size) * 0.125)",
+        1: "calc(var(--default-size) * 0.25)",
+        1.5: "calc(var(--default-size) * 0.375)",
+        2: "calc(var(--default-size) * 0.5)",
+        2.5: "calc(var(--default-size) * 0.625)",
+        3: "calc(var(--default-size) * 0.75)",
+        3.5: "calc(var(--default-size) * 0.875)",
+        4: "calc(var(--default-size) * 1)",
+        5: "calc(var(--default-size) * 1.25)",
+        6: "calc(var(--default-size) * 1.5)",
+        7: "calc(var(--default-size) * 1.75)",
+        8: "calc(var(--default-size) * 2)",
+        9: "calc(var(--default-size) * 2.25)",
+        10: "calc(var(--default-size) * 2.5)",
+        11: "calc(var(--default-size) * 2.75)",
+        12: "calc(var(--default-size) * 3)",
+        14: "calc(var(--default-size) * 3.5)",
+        16: "calc(var(--default-size) * 4)",
+        20: "calc(var(--default-size) * 5)",
+        24: "calc(var(--default-size) * 6)",
+        28: "calc(var(--default-size) * 7)",
+        32: "calc(var(--default-size) * 8)",
+        36: "calc(var(--default-size) * 9)",
+        40: "calc(var(--default-size) * 10)",
+        44: "calc(var(--default-size) * 11)",
+        48: "calc(var(--default-size) * 12)",
+        52: "calc(var(--default-size) * 13)",
+        56: "calc(var(--default-size) * 14)",
+        60: "calc(var(--default-size) * 15)",
+        64: "calc(var(--default-size) * 16)",
+        72: "calc(var(--default-size) * 18)",
+        80: "calc(var(--default-size) * 20)",
+        96: "calc(var(--default-size) * 24)",
+      },
+    },
+  },
+};

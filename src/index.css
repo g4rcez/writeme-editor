@@ -1,0 +1,28 @@
+@import "@g4rcez/components/dist/index.css";
+@import "./app/styles/code.css";
+@import "./app/styles/typography.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --spacing-base: 0.25rem;
+  --typography-base: 1rem;
+  --default-size: 1rem;
+}
+
+.tiptap {
+  @apply outline-none;
+}
+
+.tiptap :first-child {
+  margin-top: 0;
+}
+
+.tiptap {
+  height: 100%;
+}
+
+[cmdk-group-heading] {
+  @apply px-2 mb-2 text-sm text-primary;
+}
