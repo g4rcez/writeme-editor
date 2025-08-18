@@ -71,14 +71,11 @@ const InnerEditor = (props: { content: string; note: Note }) => {
     if (editor === null) return;
     let saveTimeout: NodeJS.Timeout;
     editor.on("update", (args) => {
-      // const markdown = tiptapToMarkdown({
-      //   content,
-      //   extensions: createExtensions(getCurrentTheme),
-      // });
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {
-          props.note.setContent(args.editor.getHTML());
+          const html = args.editor.getHTML();
+          props.note.setContent(html);
           await repositories.notes.update(props.note.id, props.note);
         } catch (error) {
           console.error("Failed to save document:", error);
@@ -104,8 +101,6 @@ const InnerEditor = (props: { content: string; note: Note }) => {
           editor={editor}
           className="items-stretch w-full text-lg"
         />
-        {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
-        {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}
       </EditorContext.Provider>
     </div>
   );
