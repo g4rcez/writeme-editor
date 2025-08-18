@@ -106,7 +106,10 @@ export const TaskListItem = Node.create<TaskItemOptions>({
     };
     return {
       ...shortcuts,
-      Tab: () => this.editor.commands.sinkListItem(this.name),
+      Tab: () => {
+        console.log(this.name);
+        return this.editor.commands.sinkListItem(this.name);
+      },
     };
   },
 

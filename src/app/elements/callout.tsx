@@ -1,0 +1,76 @@
+import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
+
+export interface CalloutOptions {
+  HTMLAttributes: Record<string, unknown>;
+}
+
+export const inputRegex = /^\|>\s?(.*)$/;
+
+export const Callout = Node.create<CalloutOptions>({
+  name: "callout",
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+    };
+  },
+  content: "paragraph+",
+  group: "block",
+  defining: true,
+  addAttributes() {
+    return {
+      type: {
+        default: "info",
+        parseHTML: (element) =>
+          element.getAttribute("data-callout-type") || "info",
+        renderHTML: (attributes) => ({
+          "data-callout-type": attributes.type,
+        }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: `div[data-type="callout"]`,
+        priority: 51,
+      },
+    ];
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      "div",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        "data-type": "callout",
+        "data-callout-type": node.attrs.type,
+        class: `callout callout-${node.attrs.type}`,
+      }),
+      0,
+    ];
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-c": () => this.editor.commands.toggleWrap(this.name),
+    };
+  },
+
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: inputRegex,
+        type: this.type,
+        getAttributes: (match) => {
+          const content = match[1];
+          let type = "info";
+          if (content.toLowerCase().startsWith("warn")) type = "warning";
+          else if (content.toLowerCase().startsWith("note")) type = "note";
+          else if (content.toLowerCase().startsWith("tip")) type = "tip";
+          else if (content.toLowerCase().startsWith("error")) type = "error";
+          return { type };
+        },
+      }),
+    ];
+  },
+});

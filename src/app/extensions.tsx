@@ -10,6 +10,7 @@ import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
 import { ReplacerCommands } from "./commands/commands";
+import { Callout } from "./elements/callout";
 import { ShikiBlock } from "./elements/code-block";
 import { MathSolver } from "./elements/math-solver";
 import { TaskListItem } from "./elements/task-list-item";
@@ -29,6 +30,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme) => [
   }),
   TaskList,
   TaskListItem,
+  Callout,
   TextAlign.configure({
     types: ["heading", "paragraph"],
   }),

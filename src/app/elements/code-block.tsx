@@ -20,6 +20,7 @@ import {
   createHighlighter,
   type Highlighter,
 } from "shiki";
+import { getCurrentElementName } from "../../lib/editor-utils";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -170,7 +171,7 @@ function getDecorations({
   codeBlocks.forEach((block) => {
     let from = block.pos + 1;
     let language = block.node.attrs.language || defaultLanguage;
-    let theme = block.node.attrs.theme || defaultTheme;
+    const theme = block.node.attrs.theme || defaultTheme;
 
     const highlighter = getShiki();
 
@@ -312,30 +313,17 @@ export function ShikiPlugin({
           newState.doc,
           (node) => node.type.name === name,
         );
-
         const didChangeSomeCodeBlock =
           transaction.docChanged &&
-          // Apply decorations if:
-          // selection includes named node,
           ([oldNodeName, newNodeName].includes(name) ||
-            // OR transaction adds/removes named node,
             newNodes.length !== oldNodes.length ||
-            // OR transaction has changes that completely encapsulte a node
-            // (for example, a transaction that affects the entire document).
-            // Such transactions can happen during collab syncing via y-prosemirror, for example.
-            transaction.steps.some((step) => {
-              // @ts-ignore
+            transaction.steps.some((step: any) => {
               return (
-                // @ts-ignore
                 step.from !== undefined &&
-                // @ts-ignore
                 step.to !== undefined &&
                 oldNodes.some((node) => {
-                  // @ts-ignore
                   return (
-                    // @ts-ignore
                     node.pos >= step.from &&
-                    // @ts-ignore
                     node.pos + node.node.nodeSize <= step.to
                   );
                 })
@@ -400,17 +388,67 @@ const MermaidChart = ({ chart }: { chart: string }) => {
   return <div ref={chartRef} />;
 };
 
+const getAllLanguages = (): BundledLanguage[] => {
+  const allLanguages = Object.keys(bundledLanguages) as BundledLanguage[];
+  const otherLanguages = allLanguages.sort();
+  return [...otherLanguages];
+};
+
 const LanguageSelector = (props: ReactNodeViewProps) => {
-  const language = props.node.attrs.language;
+  const language = props.node.attrs.language || "plaintext";
   const code = useDeferredValue(props.node.textContent, "");
+
+  const handleLanguageChange = (newLanguage: string) => {
+    const { view, getPos } = props;
+    const pos = getPos();
+
+    if (typeof pos !== "number") return;
+
+    view.dispatch(
+      view.state.tr.setNodeMarkup(pos, undefined, {
+        ...props.node.attrs,
+        language: newLanguage,
+      }),
+    );
+  };
 
   return (
     <NodeViewWrapper
       as="div"
-      className="p-4 my-4 font-mono text-sm leading-snug rounded"
+      className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-gray-200 dark:border-gray-700"
     >
-      <NodeViewContent className="content is-editable" />
-      {language === "mermaid" ? <MermaidChart chart={code} /> : null}
+      <div className="flex justify-between items-center py-2 px-3 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div className="flex gap-2 items-center">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            Language:
+          </span>
+          <select
+            value={language}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className="py-1 px-2 text-xs text-gray-700 bg-white rounded border border-gray-300 dark:text-gray-300 dark:bg-gray-900 dark:border-gray-600 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="plaintext">Plain Text</option>
+            {getAllLanguages().map((lang) => (
+              <option key={lang} value={lang}>
+                {lang.charAt(0).toUpperCase() + lang.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          {code.split("\n").length} lines
+        </div>
+      </div>
+      <div className="p-4">
+        <NodeViewContent className="outline-none content is-editable" />
+      </div>
+      {language === "mermaid" && code.trim() && (
+        <div className="px-4 pb-4">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <MermaidChart chart={code} />
+          </div>
+        </div>
+      )}
     </NodeViewWrapper>
   );
 };
@@ -427,6 +465,16 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
       themeAware: true,
       getCurrentTheme: undefined,
     } as CodeBlockShikiOptions;
+  },
+  addKeyboardShortcuts() {
+    return {
+      ...this.parent?.(),
+      Tab: () => {
+        const name = getCurrentElementName(this.editor);
+        if (name === "codeBlock")
+          return this.editor.commands.insertContent("    ");
+      },
+    };
   },
   addProseMirrorPlugins() {
     return [
