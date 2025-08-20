@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useGlobalStore } from "../store/global.store";
+
 export enum Key {
   Shift = "shift",
   Control = "control",
@@ -29,11 +32,9 @@ export type ShortcutValue = {
   nativeOptions: BrowserOptions;
 };
 
-const DEFAULT_MOD = "cmd";
-
 export const shortcutKeys = (
   element: HTMLElement | Window,
-  mod = DEFAULT_MOD,
+  mod = "Meta",
 ) => {
   const shortcutMap = new Map<string, ShortcutValue>();
   const incrementUserAction = (
@@ -54,6 +55,7 @@ export const shortcutKeys = (
     if (key) keys.push(key);
     keys = keys.map((key) => key.trim()).filter(Boolean);
     const concatKeys = keys.join("+");
+    console.log(concatKeys, shortcutMap);
     const eventFound = shortcutMap.get(concatKeys);
     if (eventFound && options.prevent) e.preventDefault();
     return concatKeys;
@@ -82,7 +84,7 @@ export const shortcutKeys = (
     const concatNativeOptions = { ...defaultOptions, ...nativeOptions };
     const shortcuts = Array.isArray(shortcut) ? shortcut : [shortcut];
     shortcuts.forEach((shortcutItem) => {
-      const key = shortcutItem.toLowerCase().trim();
+      const key = shortcutItem.toLowerCase().trim().replace("mod", mod);
       const target = (e: KeyboardEvent) => {
         const x = incrementUserAction(e as KeyboardEvent, options);
         return x === key ? handler(e as KeyboardEvent) : undefined;
@@ -119,4 +121,4 @@ export const shortcutKeys = (
   return { add, remove, removeAll, list };
 };
 
-export const shortcuts = shortcutKeys(window);
+export const shortcuts = shortcutKeys(window, "control");

@@ -4,7 +4,7 @@ import {
   useEditor,
   type Editor as TipTapEditor,
 } from "@tiptap/react";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_FINISHED,
@@ -15,6 +15,8 @@ import { repositories, useGlobalStore } from "../store/global.store";
 import { Note } from "../store/note";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
+import { Modal } from "@g4rcez/components";
+import { ShortcutItem, useWritemeShortcuts, writemeShortcuts } from "./elements/shortcut-items";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -106,43 +108,31 @@ const InnerEditor = (props: { content: string; note: Note }) => {
   );
 };
 
-const zoom = (op: (a: number, b: number) => number) => {
-  const value =
-    window
-      .getComputedStyle(window.document.querySelector(":root")!)
-      .getPropertyValue("--default-size") || "1rem";
-  const int = value.replace(/rem$/g, "");
-  window.document.documentElement.style.setProperty(
-    "--default-size",
-    `${op(+int, 0.25)}rem`,
-  );
-};
-
 export const Editor = () => {
-  const [state] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
   const [content, setContent] = useState<null | string>(state.note.content);
+  const writemeShortcuts = useWritemeShortcuts();
 
   useEffect(() => {
     if (state.note === null) return;
-    shortcuts.add("control+r", () => void window.location.reload());
-    shortcuts.add("control+-", () => zoom((a, b) => a - b));
-    shortcuts.add("control+=", () => zoom((a, b) => a + b));
-    shortcuts.add("control+0", () => zoom(() => 1));
-    const initializeEditor = async () => {
-      setContent(state.note.content);
-    };
+    const initializeEditor = async () => setContent(state.note.content);
     initializeEditor();
-    return () => {
-      shortcuts.removeAll();
-    };
   }, [state.note]);
 
-  if (state.note === null || content === null) {
-    return (
-      <div className="flex justify-center items-center p-8">Loading...</div>
-    );
-  }
   return (
-    <InnerEditor key={state.note.id} note={state.note} content={content} />
+    <Fragment>
+      {state.note === null || content === null ? (
+        <div className="flex justify-center items-center p-8">Loading...</div>
+      ) : (
+        <InnerEditor key={state.note.id} note={state.note} content={content} />
+      )}
+      <Modal title="Shortcuts" open={state.help} onChange={dispatch.help}>
+        <ul className="flex flex-col gap-4">
+          {writemeShortcuts.map((x) => (
+            <ShortcutItem key={x.bind} shortcut={x} />
+          ))}
+        </ul>
+      </Modal>
+    </Fragment>
   );
 };

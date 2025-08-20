@@ -23,6 +23,8 @@ export class NotesRepository implements Repository<Note> {
 
   async getAll(): Promise<Note[]> {
     const notes = await db.notes.toArray();
-    return notes.map(Note.parse);
+    return notes
+      .map(Note.parse)
+      .toSorted((a, b) => +a.createdAt - +b.createdAt);
   }
 }

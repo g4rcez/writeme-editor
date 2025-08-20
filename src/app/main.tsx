@@ -6,11 +6,12 @@ import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 import { StrictMode } from "react";
 import { Note } from "../store/note";
+import { Commander } from "./commander";
 
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
 
-async function main() {
+export async function main() {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
     throw new Error("Root element not found");
@@ -31,10 +32,9 @@ async function main() {
     const root = createRoot(rootElement);
     root.render(
       <StrictMode>
+        <Commander />
         <Editor />
       </StrictMode>,
     );
   }
 }
-
-main();

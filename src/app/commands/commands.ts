@@ -58,7 +58,6 @@ export const UuidCommand: ReplacerCommand = {
 export const ReplacerCommands = Extension.create({
   name: "commands-replacer",
   addInputRules() {
-    console.log(this);
     return [
       replacerRules(this.editor, UuidCommand),
       replacerRules(this.editor, EvalCommand),

@@ -18,6 +18,7 @@ async function main() {
       accentColor: "#000000",
       webPreferences: {
         nodeIntegration: true,
+        accessibleTitle: "writeme",
         preload: path.join(__dirname, "preload.js"),
       },
     });

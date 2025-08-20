@@ -1,2 +1,4 @@
 import "./index.css";
-import "./app/main";
+import { main } from "./app/main";
+
+main();

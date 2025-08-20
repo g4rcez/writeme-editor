@@ -14,11 +14,11 @@ import mermaid from "mermaid";
 import { useDeferredValue, useEffect, useRef } from "react";
 import {
   type BundledLanguage,
-  bundledLanguages,
   type BundledTheme,
+  type Highlighter,
+  bundledLanguages,
   bundledThemes,
   createHighlighter,
-  type Highlighter,
 } from "shiki";
 import { getCurrentElementName } from "../../lib/editor-utils";
 
@@ -58,13 +58,13 @@ export function getShiki() {
 
 export function loadHighlighter(opts: HighlighterOptions) {
   if (!highlighter && !highlighterPromise) {
-    const themes = opts.themes.filter(
-      (theme): theme is BundledTheme => !!theme && theme in bundledThemes,
-    );
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
     );
-    highlighterPromise = createHighlighter({ themes, langs }).then((h) => {
+    highlighterPromise = createHighlighter({
+      langs,
+      themes: ["catppuccin-mocha", "catppuccin-latte"],
+    }).then((h) => {
       highlighter = h;
     });
     return highlighterPromise;
@@ -231,7 +231,6 @@ export function ShikiPlugin({
 }) {
   const shikiPlugin: Plugin<any> = new Plugin({
     key: new PluginKey("shiki"),
-
     view(view) {
       class ShikiPluginView implements PluginView {
         constructor() {
@@ -241,7 +240,7 @@ export function ShikiPlugin({
         update() {
           this.checkUndecoratedBlocks();
         }
-        destroy() { }
+        destroy() {}
         async initDecorations() {
           const doc = view.state.doc;
           const currentTheme = getCurrentTheme
@@ -473,6 +472,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
         const name = getCurrentElementName(this.editor);
         if (name === "codeBlock")
           return this.editor.commands.insertContent("    ");
+        return true;
       },
     };
   },

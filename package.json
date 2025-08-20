@@ -5,9 +5,10 @@
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
-    "start": "electron-forge start",
-    "dev": "electron-forge start",
-    "package": "electron-forge package",
+    "browser:dev": "vite",
+    "browser:build": "vite",
+    "native:dev": "electron-forge start",
+    "build:package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."

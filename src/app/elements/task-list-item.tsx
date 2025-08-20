@@ -48,7 +48,6 @@ export const TaskListItem = Node.create<TaskItemOptions>({
         keepOnSplit: false,
         parseHTML: (element) => {
           const dataChecked = element.getAttribute("data-checked");
-
           return dataChecked === "" || dataChecked === "true";
         },
         renderHTML: (attributes) => ({
@@ -103,11 +102,11 @@ export const TaskListItem = Node.create<TaskItemOptions>({
         return true;
       },
       "Shift-Tab": () => this.editor.commands.liftListItem(this.name),
+      Tab: () => this.editor.commands.sinkListItem(this.name),
     };
     return {
       ...shortcuts,
       Tab: () => {
-        console.log(this.name);
         return this.editor.commands.sinkListItem(this.name);
       },
     };

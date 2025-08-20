@@ -4,7 +4,9 @@ import { ProjectsRepository } from "./repositories/dexie/projects.repository";
 import { Note } from "./note";
 
 const initialState = {
+  help: false,
   theme: "dark",
+  commander: false,
   note: null as Note | null,
 };
 
@@ -12,6 +14,8 @@ type Toggle<T> = T | ((prev: T) => T);
 
 export const useGlobalStore = createGlobalReducer(initialState, (get) => ({
   note: (note: Note) => ({ note }),
+  help: (help: boolean) => ({ help }),
+  commander: (commander: boolean) => ({ commander }),
   theme: (theme: Toggle<string>) => {
     const result =
       typeof theme === "function" ? theme(get.state().theme) : theme;
