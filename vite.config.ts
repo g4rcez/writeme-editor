@@ -27,7 +27,7 @@ export default defineConfig({
         background_color: "#000000",
         id: "https://www.writeme.dev/",
         scope: "https://www.writeme.dev/",
-        start_url: "https://www.writeme.dev/",
+        start_url: "/",
         description: "The home of your ideas",
         icons: [
           {
