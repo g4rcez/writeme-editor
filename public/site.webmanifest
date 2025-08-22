@@ -6,9 +6,9 @@
   "short_name": "Writeme",
   "theme_color": "#0284C5",
   "background_color": "#000000",
-  "id": "https://writeme.dev/",
-  "scope": "https://writeme.dev/",
-  "start_url": "https://writeme.dev/",
+  "id": "https://www.writeme.dev/",
+  "scope": "https://www.writeme.dev/",
+  "start_url": "https://www.writeme.dev/",
   "description": "The home of your ideas",
   "icons": [
     {
