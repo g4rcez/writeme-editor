@@ -6,6 +6,23 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+  font-variant-ligatures: common-ligatures;
+}
+
+pre,
+code {
+  font-family: "Fira Code", monospace;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+  font-variant-ligatures: common-ligatures;
+}
+
 :root {
   --spacing-base: 0.25rem;
   --typography-base: 1rem;
