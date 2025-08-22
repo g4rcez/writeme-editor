@@ -9,11 +9,23 @@ import { lightTheme } from "./styles/light";
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
 
+function initializePWA() {
+  if ("serviceWorker" in navigator) {
+    console.log("PWA service worker support detected");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      console.log("PWA install prompt available");
+      // Store the event for later use
+      (window as any).deferredPrompt = e;
+    });
+  }
+}
+
 export async function main() {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
     throw new Error("Root element not found");
   }
+  initializePWA();
   const notes = await repositories.notes.getAll();
   if (notes.length === 0) {
     const note = Note.new("Untitled", "");

@@ -5,13 +5,17 @@
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
+    "dev": "npm run native:dev",
     "browser:dev": "vite",
     "browser:build": "vite build",
     "native:dev": "electron-forge start",
     "build:package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "pwa:assets": "node scripts/generate-pwa-assets.js",
+    "pwa:dev": "npm run pwa:assets && npm run browser:dev",
+    "pwa:build": "npm run pwa:assets && npm run browser:build"
   },
   "keywords": [],
   "author": {
