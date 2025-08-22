@@ -1,28 +1,28 @@
-import { renderToMarkdown } from "@tiptap/static-renderer";
+import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
   EditorContent,
   EditorContext,
   useEditor,
   type Editor as TipTapEditor,
 } from "@tiptap/react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { renderToMarkdown } from "@tiptap/static-renderer";
+import "katex/dist/katex.min.css";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
+import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
 import {
   globalState,
   repositories,
   useGlobalStore,
 } from "../store/global.store";
 import { Note } from "../store/note";
+import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
-import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
-import "katex/dist/katex.min.css";
-import { migrateMathStrings } from "@tiptap/extension-mathematics";
-import { editorGlobalRef } from "./editor-global-ref";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);

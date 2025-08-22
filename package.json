@@ -74,6 +74,7 @@
     "@tiptap/extension-mathematics": "^3.2.1",
     "@tiptap/extension-subscript": "3.0.9",
     "@tiptap/extension-superscript": "3.0.9",
+    "@tiptap/extension-table": "3.2.2",
     "@tiptap/extension-text-align": "3.0.9",
     "@tiptap/extension-typography": "3.0.9",
     "@tiptap/extensions": "3.0.9",

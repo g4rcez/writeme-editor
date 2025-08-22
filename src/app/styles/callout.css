@@ -11,7 +11,7 @@
 }
 
 .callout-danger {
-  @apply bg-danger-subtle text-danger-foreground;
+  @apply bg-alert-danger-bg text-alert-danger-text;
 }
 
 .callout p:first-child {

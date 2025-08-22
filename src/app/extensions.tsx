@@ -5,6 +5,7 @@ import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskList } from "@tiptap/extension-list";
 import Math from "@tiptap/extension-mathematics";
+import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
@@ -28,6 +29,9 @@ export const createExtensions = (
       codeBlock: false,
       blockquote: false,
       code: { HTMLAttributes: { class: "inline-code" } },
+    }),
+    TableKit.configure({
+      table: { resizable: true, allowTableNodeSelection: true },
     }),
     Highlight,
     Blockquote,
