@@ -64,8 +64,11 @@ const useCopyEvents = (editor: TipTapEditor) => {
 
 const InnerEditor = (props: { content: string; note?: Note }) => {
   const [state] = useGlobalStore();
+  const extensions = createExtensions(() =>
+    getThemeForMode(globalState().theme),
+  );
   const editor = useEditor({
-    extensions: createExtensions(() => getThemeForMode(globalState().theme)),
+    extensions,
     autofocus: true,
     content: props.content,
     enableContentCheck: true,

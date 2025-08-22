@@ -40,18 +40,16 @@
   @apply my-8 ml-0 pl-4 py-4 border-l-4 border-l-primary rounded-r-lg;
 }
 
-.tiptap blockquote[data-callout=false] {
-  @apply italic !border-l-4 !border-l-primary border border-card-border;
+.tiptap blockquote[data-callout="false"] {
+  @apply !border-l-4 !border-l-primary border border-card-border italic;
 }
 
-
-.tiptap blockquote[data-callout=true][data-theme="danger"] {
+.tiptap blockquote[data-callout="true"][data-theme="danger"] {
   @apply text-danger border-l-danger bg-danger-hover/10;
 }
 
-
-.tiptap blockquote[data-callout=true][data-theme="info"] {
-  @apply text-info border-l-info bg-info-hover/10;
+.tiptap blockquote[data-callout="true"][data-theme="info"] {
+  @apply text-info-foreground border-l-info bg-info-hover/10;
 }
 
 .tiptap hr {
@@ -69,6 +67,11 @@
 
 .tiptap ol {
   @apply list-decimal;
+}
+
+.tiptap ul[data-tight="true"],
+.tiptap ol[data-tight="true"] {
+  @apply !-my-1;
 }
 
 .tiptap img {
@@ -97,12 +100,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li>label {
+.tiptap ul[data-type="taskList"] li > label {
   @apply select-none mr-4;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li>div {
+.tiptap ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
 }
 

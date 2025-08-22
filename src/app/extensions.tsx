@@ -45,7 +45,7 @@ export const createExtensions = (
       linkify: true,
       breaks: true,
       transformPastedText: false,
-      transformCopiedText: false,
+      transformCopiedText: true,
     }),
     ShikiBlock.configure({
       getCurrentTheme,

@@ -46,7 +46,10 @@ export const darkTheme: typeof defaultDarkTheme = {
     },
     info: {
       ...defaultDarkTheme.colors.info,
-      DEFAULT: "hsla(199, 100%, 40%)",
+      hover: "hsla(267deg, 50%, 40%)",
+      subtle: "hsla(267deg, 86.3%, 85%)",
+      foreground: "hsla(267, 90%, 75%)",
+      DEFAULT: "hsla(267deg, 86.3%, 65%)",
     },
     tag: {
       ...defaultDarkTheme.colors.tag,
@@ -75,8 +78,8 @@ export const darkTheme: typeof defaultDarkTheme = {
       ...defaultDarkTheme.colors.primary,
       subtle: "hsla(202,35%,37%)",
       hover: "hsla(202,35%,37%)",
-      DEFAULT: "hsla(39,70%,51%)",
-      foreground: "hsla(202,35%,37%)",
+      DEFAULT: "hsla(203, 100%, 29.2%)",
+      foreground: "hsla(255,100%,100%)",
     },
     table: {
       background: "hsla(225,9%,11%)",
