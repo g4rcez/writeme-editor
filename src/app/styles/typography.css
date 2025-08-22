@@ -37,11 +37,11 @@
 }
 
 .tiptap blockquote {
-  @apply my-8 ml-0 pl-4 py-2 border-l-4 border-l-primary rounded-r-lg;
+  @apply my-8 ml-0 pl-4 py-4 border-l-4 border-l-primary rounded-r-lg;
 }
 
 .tiptap blockquote[data-callout=false] {
-  @apply italic;
+  @apply italic !border-l-4 !border-l-primary border border-card-border;
 }
 
 

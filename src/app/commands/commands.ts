@@ -58,9 +58,8 @@ export const UuidCommand: ReplacerCommand = {
 export const LatexInlineCommand: ReplacerCommand = {
   find: />>expr $/,
   replace: (_, __, editor) => {
-    const newCalculation = prompt("Enter new calculation:");
-    if (newCalculation) {
-      const latex = prompt("Enter block math expression:");
+    const latex = prompt("Enter new calculation:");
+    if (latex) {
       editor.chain().insertInlineMath({ latex }).focus().run();
     }
     return "";
@@ -70,11 +69,17 @@ export const LatexInlineCommand: ReplacerCommand = {
 export const LatexCommand: ReplacerCommand = {
   find: />>latex $/,
   replace: (_, __, editor) => {
-    const newCalculation = prompt("Enter new calculation:");
-    if (newCalculation) {
-      const latex = prompt("Enter block math expression:");
-      editor.chain().insertBlockMath({ latex }).focus().run();
-    }
+    const latex = prompt("Enter new calculation:");
+    setTimeout(() => {
+      if (latex) {
+        editor
+          .chain()
+          .joinDown()
+          .insertBlockMath({ latex })
+          .focus()
+          .run();
+      }
+    }, 100);
     return "";
   },
 };

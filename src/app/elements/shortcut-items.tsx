@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
-import { useGlobalStore } from "../../store/global.store";
+import { globalDispatch, useGlobalStore } from "../../store/global.store";
 
-const noop = () => { };
+const noop = () => {};
 
 export enum Type {
   Shortcut = "shortcut",
@@ -34,6 +34,17 @@ export const useWritemeShortcuts = () => {
   return useMemo(
     (): Shortcut[] =>
       [
+        {
+          bind: "mod+shift+m",
+          type: Type.Shortcut,
+          description: "Toggle Mode",
+          action: () => {
+            document.documentElement.classList.toggle("dark");
+            globalDispatch.theme((prev) =>
+              prev === "dark" ? "light" : "dark",
+            );
+          },
+        },
         {
           hidden: true,
           bind: "mod+k",
@@ -78,11 +89,12 @@ export const useWritemeShortcuts = () => {
           action: noop,
         },
         {
-          description: "Parse and solve the math expression until your next `=`",
+          description:
+            "Parse and solve the math expression until your next `=`",
           bind: ">>math",
           type: Type.Command,
           action: noop,
-        }
+        },
       ].toSorted((a, b) =>
         a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
       ),

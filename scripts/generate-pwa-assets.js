@@ -9,20 +9,22 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 // Create a simple SVG icon template
-const createIcon = (size, color = '#2563eb') => `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+const createIcon = (size, color = '#2563eb') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" rx="${size * 0.2}" fill="${color}"/>
   <text x="${size/2}" y="${size * 0.65}" font-family="Arial, sans-serif" font-size="${size * 0.48}" font-weight="bold" fill="white" text-anchor="middle">W</text>
   <circle cx="${size * 0.75}" cy="${size * 0.25}" r="${size * 0.08}" fill="#60a5fa"/>
 </svg>`;
 
-// Generate assets
+
+
+// Generate assets - create proper SVG files
 const assets = {
   'pwa-192x192.png': createIcon(192),
   'pwa-512x512.png': createIcon(512),
   'apple-touch-icon.png': createIcon(180),
   'mask-icon.svg': createIcon(100, '#000000'),
-  'favicon.ico': createIcon(32), // Will be SVG for simplicity
+  'favicon.ico': createIcon(32),
+  'logo.svg': createIcon(100),
 };
 
 // Write assets to public directory

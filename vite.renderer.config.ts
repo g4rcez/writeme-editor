@@ -9,7 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/sw\.js$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -35,7 +37,7 @@ export default defineConfig({
           },
         ],
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
         name: 'Writeme - Rich Text Editor',
         short_name: 'Writeme',
@@ -45,22 +47,25 @@ export default defineConfig({
         display: 'standalone',
         scope: '/',
         start_url: '/',
+        orientation: 'any',
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
           },
         ],
         categories: ['productivity', 'utilities', 'education'],
@@ -100,6 +105,7 @@ export default defineConfig({
       devOptions: {
         enabled: true,
         type: 'module',
+        navigateFallback: 'index.html',
       },
     }),
   ],

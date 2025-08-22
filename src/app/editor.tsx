@@ -5,13 +5,17 @@ import {
   useEditor,
   type Editor as TipTapEditor,
 } from "@tiptap/react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
-import { repositories, useGlobalStore } from "../store/global.store";
+import {
+  globalState,
+  repositories,
+  useGlobalStore,
+} from "../store/global.store";
 import { Note } from "../store/note";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
@@ -60,12 +64,11 @@ const useCopyEvents = (editor: TipTapEditor) => {
 
 const InnerEditor = (props: { content: string; note?: Note }) => {
   const [state] = useGlobalStore();
-  const getCurrentTheme = () => getThemeForMode(state.theme);
-  const extensions = createExtensions(getCurrentTheme);
   const editor = useEditor({
-    extensions,
-    editable: true,
+    extensions: createExtensions(() => getThemeForMode(globalState().theme)),
     autofocus: true,
+    content: props.content,
+    enableContentCheck: true,
     shouldRerenderOnTransaction: true,
     onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
     editorProps: {
@@ -91,10 +94,6 @@ const InnerEditor = (props: { content: string; note?: Note }) => {
         return false;
       },
     },
-    enableContentCheck: true,
-    content: props.content,
-    immediatelyRender: false,
-    parseOptions: { preserveWhitespace: true },
   });
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
@@ -113,7 +112,7 @@ const InnerEditor = (props: { content: string; note?: Note }) => {
         } catch (error) {
           console.error("Failed to save document:", error);
         }
-      }, 1000);
+      }, 500);
     });
     return () => {
       clearTimeout(saveTimeout);

@@ -15,7 +15,6 @@ function findColors(doc: Node): DecorationSet {
       const index = match.index || 0;
       const from = position + index;
       const to = from + color.length;
-      console.log({ color });
       const decoration = Decoration.inline(from, to, {
         innerText: "XABLAU",
         innerHTML: "XABLAU",
@@ -23,7 +22,6 @@ function findColors(doc: Node): DecorationSet {
         class: "text-[var(--color)]",
         style: `--color: ${color}`,
       });
-
       decorations.push(decoration);
     });
   });
@@ -31,8 +29,8 @@ function findColors(doc: Node): DecorationSet {
   return DecorationSet.create(doc, decorations);
 }
 
-export const MathSolver = Extension.create({
-  name: "math-solver",
+export const ColorReplacer = Extension.create({
+  name: "color-replacer",
   addProseMirrorPlugins() {
     return [
       new Plugin({

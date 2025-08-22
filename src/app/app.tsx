@@ -1,6 +1,7 @@
 import { Brouther, Outlet } from "brouther";
 import { StrictMode } from "react";
 import { Commander } from "./commander";
+import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { router } from "./router";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
@@ -16,6 +17,7 @@ export const App = () => {
           <div className="container flex px-8 mx-auto w-full max-w-5xl h-full lg:px-0">
             <Outlet />
           </div>
+          <PWAInstallButton />
         </div>
       </Brouther>
     </StrictMode>

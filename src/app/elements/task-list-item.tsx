@@ -26,6 +26,7 @@ const parseChecked = (a: any): boolean => {
 
 export const TaskListItem = Node.create<TaskItemOptions>({
   name: "taskItem",
+  defining: true,
   addOptions() {
     return {
       nested: true,
@@ -34,13 +35,9 @@ export const TaskListItem = Node.create<TaskItemOptions>({
       taskListTypeName: "taskList",
     };
   },
-
   content() {
     return this.options.nested ? "paragraph block*" : "paragraph+";
   },
-
-  defining: true,
-
   addAttributes() {
     return {
       checked: {
@@ -93,23 +90,19 @@ export const TaskListItem = Node.create<TaskItemOptions>({
     } = {
       Enter: () => this.editor.commands.splitListItem(this.name),
       "Mod-Enter": () => {
-        const prop = this.editor.getAttributes("taskItem");
         this.editor
           .chain()
           .focus()
-          .updateAttributes("taskItem", { checked: parseChecked(prop) })
+          .updateAttributes("taskItem", {
+            checked: parseChecked(this.editor.getAttributes("taskItem")),
+          })
           .run();
         return true;
       },
       "Shift-Tab": () => this.editor.commands.liftListItem(this.name),
       Tab: () => this.editor.commands.sinkListItem(this.name),
     };
-    return {
-      ...shortcuts,
-      Tab: () => {
-        return this.editor.commands.sinkListItem(this.name);
-      },
-    };
+    return shortcuts;
   },
 
   addNodeView() {

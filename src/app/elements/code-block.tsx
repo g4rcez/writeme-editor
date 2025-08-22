@@ -21,6 +21,7 @@ import {
   createHighlighter,
 } from "shiki";
 import { getCurrentElementName } from "../../lib/editor-utils";
+import { globalState } from "../../store/global.store";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -221,12 +222,10 @@ function getDecorations({
 export function ShikiPlugin({
   name,
   defaultLanguage,
-  defaultTheme,
   getCurrentTheme,
 }: {
   name: string;
   defaultLanguage: BundledLanguage | null | undefined;
-  defaultTheme: BundledTheme;
   getCurrentTheme?: () => BundledTheme;
 }) {
   const shikiPlugin: Plugin<any> = new Plugin({
@@ -236,23 +235,18 @@ export function ShikiPlugin({
         constructor() {
           this.initDecorations();
         }
-
         update() {
           this.checkUndecoratedBlocks();
         }
-        destroy() {}
         async initDecorations() {
           const doc = view.state.doc;
-          const currentTheme = getCurrentTheme
-            ? getCurrentTheme()
-            : defaultTheme;
+          const currentTheme = getCurrentTheme();
           await initHighlighter({
             doc,
             name,
             defaultLanguage,
             defaultTheme: currentTheme,
           });
-          // Ensure both light and dark themes are loaded for theme switching
           if (getCurrentTheme) {
             await Promise.all([
               loadTheme(THEME_MAP.light),
@@ -274,10 +268,6 @@ export function ShikiPlugin({
             ]),
           );
           const didLoadSomething = loadStates.includes(true);
-
-          // The asynchronous nature of this is potentially prone to
-          // race conditions. Imma just hope it's fine lol
-
           if (didLoadSomething) {
             const tr = view.state.tr.setMeta(
               "shikiPluginForceDecoration",
@@ -293,7 +283,7 @@ export function ShikiPlugin({
 
     state: {
       init: (_, { doc }) => {
-        const currentTheme = getCurrentTheme ? getCurrentTheme() : defaultTheme;
+        const currentTheme = getCurrentTheme();
         return getDecorations({
           doc,
           name,
@@ -328,15 +318,11 @@ export function ShikiPlugin({
                 })
               );
             }));
-
-        // only create code decoration when it's necessary to do so
         if (
           transaction.getMeta("shikiPluginForceDecoration") ||
           didChangeSomeCodeBlock
         ) {
-          const currentTheme = getCurrentTheme
-            ? getCurrentTheme()
-            : defaultTheme;
+          const currentTheme = getCurrentTheme();
           return getDecorations({
             doc: transaction.doc,
             name,
@@ -344,7 +330,6 @@ export function ShikiPlugin({
             defaultTheme: currentTheme,
           });
         }
-
         return decorationSet.map(transaction.mapping, transaction.doc);
       },
     },
@@ -389,8 +374,7 @@ const MermaidChart = ({ chart }: { chart: string }) => {
 
 const getAllLanguages = (): BundledLanguage[] => {
   const allLanguages = Object.keys(bundledLanguages) as BundledLanguage[];
-  const otherLanguages = allLanguages.sort();
-  return [...otherLanguages];
+  return allLanguages.sort();
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
@@ -414,17 +398,15 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   return (
     <NodeViewWrapper
       as="div"
-      className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-gray-200 dark:border-gray-700"
+      className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
     >
-      <div className="flex justify-between items-center py-2 px-3 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+      <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
         <div className="flex gap-2 items-center">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-            Language:
-          </span>
           <select
             value={language}
+            aria-description="Language"
             onChange={(e) => handleLanguageChange(e.target.value)}
-            className="py-1 px-2 text-xs text-gray-700 bg-white rounded border border-gray-300 dark:text-gray-300 dark:bg-gray-900 dark:border-gray-600 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
           >
             <option value="plaintext">Plain Text</option>
             {getAllLanguages().map((lang) => (
@@ -434,7 +416,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
             ))}
           </select>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="text-xs text-foreground">
           {code.split("\n").length} lines
         </div>
       </div>
@@ -460,9 +442,11 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
     return {
       ...this.parent?.(),
       defaultLanguage: null,
-      defaultTheme: getThemeForMode("dark"),
       themeAware: true,
-      getCurrentTheme: undefined,
+      getCurrentTheme: () => {
+        return getThemeForMode(globalState().theme);
+      },
+      defaultTheme: getThemeForMode(globalState().theme),
     } as CodeBlockShikiOptions;
   },
   addKeyboardShortcuts() {
@@ -472,7 +456,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
         const name = getCurrentElementName(this.editor);
         if (name === "codeBlock")
           return this.editor.commands.insertContent("    ");
-        return true;
+        return false;
       },
     };
   },
@@ -482,7 +466,6 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
       ShikiPlugin({
         name: this.name,
         defaultLanguage: this.options.defaultLanguage,
-        defaultTheme: this.options.defaultTheme,
         getCurrentTheme: this.options.getCurrentTheme,
       }),
     ];
