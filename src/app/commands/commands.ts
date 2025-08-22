@@ -55,6 +55,30 @@ export const UuidCommand: ReplacerCommand = {
   },
 };
 
+export const LatexInlineCommand: ReplacerCommand = {
+  find: />>expr $/,
+  replace: (_, __, editor) => {
+    const newCalculation = prompt("Enter new calculation:");
+    if (newCalculation) {
+      const latex = prompt("Enter block math expression:");
+      editor.chain().insertInlineMath({ latex }).focus().run();
+    }
+    return "";
+  },
+};
+
+export const LatexCommand: ReplacerCommand = {
+  find: />>latex $/,
+  replace: (_, __, editor) => {
+    const newCalculation = prompt("Enter new calculation:");
+    if (newCalculation) {
+      const latex = prompt("Enter block math expression:");
+      editor.chain().insertBlockMath({ latex }).focus().run();
+    }
+    return "";
+  },
+};
+
 export const ReplacerCommands = Extension.create({
   name: "commands-replacer",
   addInputRules() {
@@ -62,6 +86,8 @@ export const ReplacerCommands = Extension.create({
       replacerRules(this.editor, UuidCommand),
       replacerRules(this.editor, EvalCommand),
       replacerRules(this.editor, MathCommand),
+      replacerRules(this.editor, LatexCommand),
+      replacerRules(this.editor, LatexInlineCommand),
       replacerRules(this.editor, ClipboardListenerCommand),
       replacerRules(this.editor, ClipboardCloseListenerCommand),
     ];

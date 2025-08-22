@@ -2,11 +2,19 @@ import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
 import { useGlobalStore } from "../../store/global.store";
 
-type Shortcut = {
-  hidden?: boolean;
-  description: string;
+const noop = () => { };
+
+export enum Type {
+  Shortcut = "shortcut",
+  Command = "command",
+}
+
+export type Shortcut = {
   bind: string;
+  hidden?: boolean;
   action: () => any;
+  description: string;
+  type: Type;
 };
 
 const zoom = (op: (a: number, b: number) => number) => {
@@ -28,35 +36,53 @@ export const useWritemeShortcuts = () => {
       [
         {
           hidden: true,
+          bind: "mod+k",
+          type: Type.Shortcut,
           description: "Commander",
-          bind: "mod+/",
           action: () => dispatch.commander(true),
         },
         {
           description: "Reload",
           bind: "mod+r",
+          type: Type.Shortcut,
           action: () => window.location.reload(),
         },
         {
           description: "Zoom out",
           bind: "mod+-",
+          type: Type.Shortcut,
           action: () => zoom((a, b) => a - b),
         },
         {
           description: "Zoom in",
           bind: "mod+=",
+          type: Type.Shortcut,
           action: () => zoom((a, b) => a + b),
         },
         {
           description: "Zoom normal",
           bind: "mod+0",
+          type: Type.Shortcut,
           action: () => zoom(() => 1),
         },
         {
           description: "Shortcut/Help menu",
           bind: "mod+/",
+          type: Type.Shortcut,
           action: () => dispatch.help(true),
         },
+        {
+          description: "Start copy watcher mode",
+          bind: ">>copy",
+          type: Type.Command,
+          action: noop,
+        },
+        {
+          description: "Parse and solve the math expression until your next `=`",
+          bind: ">>math",
+          type: Type.Command,
+          action: noop,
+        }
       ].toSorted((a, b) =>
         a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
       ),

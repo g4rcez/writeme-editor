@@ -1,6 +1,3 @@
-import { useEffect } from "react";
-import { useGlobalStore } from "../store/global.store";
-
 export enum Key {
   Shift = "shift",
   Control = "control",
@@ -55,7 +52,6 @@ export const shortcutKeys = (
     if (key) keys.push(key);
     keys = keys.map((key) => key.trim()).filter(Boolean);
     const concatKeys = keys.join("+");
-    console.log(concatKeys, shortcutMap);
     const eventFound = shortcutMap.get(concatKeys);
     if (eventFound && options.prevent) e.preventDefault();
     return concatKeys;

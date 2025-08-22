@@ -9,3 +9,33 @@
 .tiptap .node-codeBlock {
   @apply rounded-lg;
 }
+
+.tiptap .tiptap-mathematics-render {
+  @apply p-2 border rounded-xl border-card-border;
+}
+
+.tiptap .tiptap-mathematics-render--editable {
+  @apply cursor-pointer transition-colors duration-300 ease-linear;
+}
+
+.tiptap .tiptap-mathematics-render--editable:hover {
+  @apply bg-card-background;
+}
+
+.tiptap .tiptap-mathematics-render {
+  @apply rounded-xl;
+}
+
+.tiptap .tiptap-mathematics-render[data-type="inline-math"] {
+  @apply inline-block;
+}
+
+.tiptap .tiptap-mathematics-render[data-type="block-math"] {
+  @apply block my-4 p-4 text-center;
+}
+
+.tiptap .tiptap-mathematics-render.inline-math-error,
+.tiptap .tiptap-mathematics-render.block-math-error {
+  @apply bg-danger-subtle text-danger border border-danger rounded-xl p-4;
+}
+

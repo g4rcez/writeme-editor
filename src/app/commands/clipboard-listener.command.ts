@@ -2,6 +2,7 @@ import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_STARTED,
 } from "../../ipc/copy-event";
+import { controller } from "../controller";
 import { ReplacerCommand } from "./commands";
 
 let interval: null | NodeJS.Timeout = null;
@@ -13,7 +14,7 @@ export const ClipboardListenerCommand: ReplacerCommand = {
   replace: () => {
     window.dispatchEvent(new CustomEvent(COPY_EVENT_STARTED));
     interval = setInterval(async () => {
-      const content = await window.electronAPI.notes.clipboard();
+      const content = await controller.clipboard();
       if (clipboardState === content) return;
       clipboardState = content;
       const event = new CustomEvent(COPY_EVENT_DISPATCHED, { detail: content });

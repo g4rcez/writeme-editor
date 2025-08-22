@@ -1,6 +1,7 @@
 import { useGlobalStore } from "../store/global.store";
 import {
   mapShortcutOS,
+  Type,
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
@@ -20,6 +21,7 @@ export const Commander = () => {
           title: "Actions",
           items: commands
             .filter((x) => !x.hidden)
+            .filter((x) => x.type === Type.Shortcut)
             .map((x) => ({
               title: x.description,
               shortcut: mapShortcutOS(x.bind),

@@ -1,5 +1,9 @@
+.tiptap {
+  @apply whitespace-pre-wrap leading-loose;
+}
+
 .tiptap p {
-  @apply text-pretty leading-relaxed proportional-nums;
+  @apply text-pretty leading-loose proportional-nums;
 }
 
 .tiptap p.is-empty::before {
@@ -33,7 +37,21 @@
 }
 
 .tiptap blockquote {
-  @apply my-8 ml-0 pl-4 py-2 border-l-4 border-l-primary italic;
+  @apply my-8 ml-0 pl-4 py-2 border-l-4 border-l-primary rounded-r-lg;
+}
+
+.tiptap blockquote[data-callout=false] {
+  @apply italic;
+}
+
+
+.tiptap blockquote[data-callout=true][data-theme="danger"] {
+  @apply text-danger border-l-danger bg-danger-hover/10;
+}
+
+
+.tiptap blockquote[data-callout=true][data-theme="info"] {
+  @apply text-info border-l-info bg-info-hover/10;
 }
 
 .tiptap hr {

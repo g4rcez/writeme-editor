@@ -9,7 +9,7 @@
 :root {
   --spacing-base: 0.25rem;
   --typography-base: 1rem;
-  --default-size: 1rem;
+  --default-size: 1.15rem;
 }
 
 .tiptap {

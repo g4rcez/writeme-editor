@@ -1,12 +1,10 @@
 import { createTheme } from "@g4rcez/components";
 import { createRoot } from "react-dom/client";
 import { globalDispatch, repositories } from "../store/global.store";
-import { Editor } from "./editor";
+import { Note } from "../store/note";
+import { App } from "./app";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
-import { StrictMode } from "react";
-import { Note } from "../store/note";
-import { Commander } from "./commander";
 
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
@@ -30,11 +28,6 @@ export async function main() {
     head.append(createStyle("default-theme", createTheme(lightTheme)));
     head.append(createStyle("dark-theme", createTheme(darkTheme, "dark")));
     const root = createRoot(rootElement);
-    root.render(
-      <StrictMode>
-        <Commander />
-        <Editor />
-      </StrictMode>,
-    );
+    root.render(<App />);
   }
 }

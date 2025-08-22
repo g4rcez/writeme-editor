@@ -1,3 +1,4 @@
+import { renderToMarkdown } from "@tiptap/static-renderer";
 import {
   EditorContent,
   EditorContext,
@@ -10,13 +11,14 @@ import {
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
-import { shortcuts } from "../lib/shortcuts";
 import { repositories, useGlobalStore } from "../store/global.store";
 import { Note } from "../store/note";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
-import { Modal } from "@g4rcez/components";
-import { ShortcutItem, useWritemeShortcuts, writemeShortcuts } from "./elements/shortcut-items";
+import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
+import "katex/dist/katex.min.css";
+import { migrateMathStrings } from "@tiptap/extension-mathematics";
+import { editorGlobalRef } from "./editor-global-ref";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -56,21 +58,50 @@ const useCopyEvents = (editor: TipTapEditor) => {
   }, [editor]);
 };
 
-const InnerEditor = (props: { content: string; note: Note }) => {
+const InnerEditor = (props: { content: string; note?: Note }) => {
   const [state] = useGlobalStore();
   const getCurrentTheme = () => getThemeForMode(state.theme);
+  const extensions = createExtensions(getCurrentTheme);
   const editor = useEditor({
+    extensions,
+    editable: true,
     autofocus: true,
+    shouldRerenderOnTransaction: true,
+    onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
+    editorProps: {
+      handleKeyDown: (view, event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+          const { from, to } = view.state.selection;
+          const selectedContent = view.state.doc.slice(from, to);
+          const content = {
+            type: "doc",
+            content: selectedContent.content.toJSON(),
+          };
+          const html = tiptapToMarkdown({ content, extensions });
+          const text = renderToMarkdown({ content, extensions });
+          navigator.clipboard.write([
+            new ClipboardItem({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([text], { type: "text/plain" }),
+            }),
+          ]);
+          event.preventDefault();
+          return true;
+        }
+        return false;
+      },
+    },
     enableContentCheck: true,
     content: props.content,
     immediatelyRender: false,
     parseOptions: { preserveWhitespace: true },
-    extensions: createExtensions(getCurrentTheme),
   });
+  editorGlobalRef.current = editor;
   useCopyEvents(editor);
 
   useEffect(() => {
     if (editor === null) return;
+    if (!props.note) return;
     let saveTimeout: NodeJS.Timeout;
     editor.on("update", (args) => {
       clearTimeout(saveTimeout);
@@ -97,7 +128,7 @@ const InnerEditor = (props: { content: string; note: Note }) => {
   }, [state.theme, editor]);
 
   return (
-    <div className="container flex p-8 mx-auto w-full max-w-5xl h-full">
+    <div className="container flex mx-auto w-full max-w-5xl h-full">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           editor={editor}
@@ -108,31 +139,22 @@ const InnerEditor = (props: { content: string; note: Note }) => {
   );
 };
 
-export const Editor = () => {
-  const [state, dispatch] = useGlobalStore();
-  const [content, setContent] = useState<null | string>(state.note.content);
-  const writemeShortcuts = useWritemeShortcuts();
+export const Editor = (props: { content: string; note?: Note }) => {
+  const [content, setContent] = useState<null | string>(props.content);
 
   useEffect(() => {
-    if (state.note === null) return;
-    const initializeEditor = async () => setContent(state.note.content);
+    if (props.content === null) return;
+    const initializeEditor = async () => setContent(props.content);
     initializeEditor();
-  }, [state.note]);
+  }, [props.content]);
 
   return (
     <Fragment>
-      {state.note === null || content === null ? (
+      {content === null ? (
         <div className="flex justify-center items-center p-8">Loading...</div>
       ) : (
-        <InnerEditor key={state.note.id} note={state.note} content={content} />
+        <InnerEditor key={props.note?.id} note={props.note} content={content} />
       )}
-      <Modal title="Shortcuts" open={state.help} onChange={dispatch.help}>
-        <ul className="flex flex-col gap-4">
-          {writemeShortcuts.map((x) => (
-            <ShortcutItem key={x.bind} shortcut={x} />
-          ))}
-        </ul>
-      </Modal>
     </Fragment>
   );
 };
