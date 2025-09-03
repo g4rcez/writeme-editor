@@ -3,5 +3,11 @@ import { Editor } from "../editor";
 
 export default function EditorPage() {
   const [state] = useGlobalStore();
-  return <Editor content={state?.note.content} note={state.note} />;
+  return (
+    <Editor
+      key={state.note.id}
+      content={state?.note.content}
+      note={state.note}
+    />
+  );
 }

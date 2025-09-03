@@ -1,11 +1,12 @@
-import { useGlobalStore } from "../store/global.store";
+import { Note } from "../store/note";
+import { repositories, useGlobalStore } from "../store/global.store";
 import {
   mapShortcutOS,
   Type,
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
-import { CommandPalette } from "@g4rcez/components";
+import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
 
 export const Commander = () => {
   const [state, dispatch] = useGlobalStore();
@@ -17,6 +18,32 @@ export const Commander = () => {
       open={state.commander}
       onChangeVisibility={dispatch.commander}
       commands={[
+        {
+          title: "Notas",
+          type: "group",
+          items: [
+            {
+              title: "New note",
+              type: "shortcut",
+              action: (args) => {
+                const newNote = Note.new("Untitled", "");
+                repositories.notes.save(newNote);
+                dispatch.note(newNote);
+                args.setOpen(false);
+              },
+            },
+            ...state.notes.map((note): CommandItemTypes => {
+              return {
+                type: "shortcut",
+                title: `Note: ${note.title}`,
+                action: (args) => {
+                  args.setOpen(false);
+                  dispatch.note(note);
+                },
+              };
+            }),
+          ],
+        },
         {
           title: "Actions",
           items: commands

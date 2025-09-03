@@ -10,6 +10,7 @@ const state = JSON.parse(
 const initialState = {
   help: false,
   commander: false,
+  notes: [] as Note[],
   theme: state.theme || "dark",
   note: state.note ? Note.parse(state.note) || null : null,
 };
@@ -19,7 +20,11 @@ type Toggle<T> = T | ((prev: T) => T);
 export const useGlobalStore = createGlobalReducer(
   initialState,
   (get) => ({
-    note: (note: Note) => ({ note }),
+    note: async (note: Note) => {
+      await repositories.notes.update(note.id, note);
+      return { note: note };
+    },
+    notes: (notes: Note[]) => ({ notes }),
     help: (help: boolean) => ({ help }),
     commander: (commander: boolean) => ({ commander }),
     theme: (theme: Toggle<string>) => {

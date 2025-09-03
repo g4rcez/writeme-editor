@@ -2,6 +2,7 @@ import { uuid } from "@g4rcez/components";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import { Node as ProsemirrorNode } from "@tiptap/pm/model";
+import { parser as mathParser } from "mathjs";
 import { Plugin, PluginKey, type PluginView } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
@@ -11,7 +12,14 @@ import {
   ReactNodeViewRenderer,
 } from "@tiptap/react";
 import mermaid from "mermaid";
-import { useDeferredValue, useEffect, useRef } from "react";
+import {
+  Fragment,
+  useDeferredValue,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+} from "react";
 import {
   type BundledLanguage,
   type BundledTheme,
@@ -22,6 +30,7 @@ import {
 } from "shiki";
 import { getCurrentElementName } from "../../lib/editor-utils";
 import { globalState } from "../../store/global.store";
+import { shikiMathGrammer } from "./shiki-math-grammar";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -63,7 +72,7 @@ export function loadHighlighter(opts: HighlighterOptions) {
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
     );
     highlighterPromise = createHighlighter({
-      langs,
+      langs: [...langs, shikiMathGrammer],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
     }).then((h) => {
       highlighter = h;
@@ -372,9 +381,38 @@ const MermaidChart = ({ chart }: { chart: string }) => {
   return <div ref={chartRef} />;
 };
 
-const getAllLanguages = (): BundledLanguage[] => {
-  const allLanguages = Object.keys(bundledLanguages) as BundledLanguage[];
+const getAllLanguages = (): string[] => {
+  const allLanguages = Object.keys(bundledLanguages);
+  allLanguages.push("math");
   return allLanguages.sort();
+};
+
+const MathEvaluate = (props: { code: string }) => {
+  const id = useId();
+  const expressions = useMemo(() => {
+    try {
+      const lines = props.code.split("\n");
+      const parser = mathParser();
+      return lines.map((x) => {
+        const result = parser.evaluate(x);
+        return [x, result];
+      });
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }, [props.code]);
+
+  return (
+    <ul className="list-none !list-outside !mx-0 flex flex-col gap-1">
+      {expressions.map(([expr, value], index) => (
+        <li key={`${id}-${expr}-${index}`} className="flex gap-4 list-none">
+          {expr}
+          <span className="text-primary">//? {value}</span>
+        </li>
+      ))}
+    </ul>
+  );
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
@@ -384,9 +422,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   const handleLanguageChange = (newLanguage: string) => {
     const { view, getPos } = props;
     const pos = getPos();
-
     if (typeof pos !== "number") return;
-
     view.dispatch(
       view.state.tr.setNodeMarkup(pos, undefined, {
         ...props.node.attrs,
@@ -394,6 +430,8 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
       }),
     );
   };
+
+  const trimmed = code.trim();
 
   return (
     <NodeViewWrapper
@@ -417,13 +455,20 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           </select>
         </div>
         <div className="text-xs text-foreground">
-          {code.split("\n").length} lines
+          {code.split("\n").length} lines - {code.length} characters
         </div>
       </div>
       <div className="p-4">
         <NodeViewContent className="outline-none content is-editable" />
       </div>
-      {language === "mermaid" && code.trim() && (
+      {language === "math" && trimmed && (
+        <div className="px-4 pb-4">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <MathEvaluate code={trimmed} />
+          </div>
+        </div>
+      )}
+      {language === "mermaid" && trimmed && (
         <div className="px-4 pb-4">
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
             <MermaidChart chart={code} />
@@ -455,7 +500,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
       Tab: () => {
         const name = getCurrentElementName(this.editor);
         if (name === "codeBlock")
-          return this.editor.commands.insertContent("    ");
+          return this.editor.chain().focus().insertContent("    ").run();
         return false;
       },
     };

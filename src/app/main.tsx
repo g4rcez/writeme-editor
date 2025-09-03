@@ -38,6 +38,7 @@ export async function main() {
   }
   initializePWA();
   const notes = await repositories.notes.getAll();
+  globalDispatch.notes(notes);
   if (notes.length === 0) {
     const note = Note.new("Untitled", "");
     await repositories.notes.save(note);

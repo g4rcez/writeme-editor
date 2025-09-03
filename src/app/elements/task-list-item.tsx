@@ -100,7 +100,11 @@ export const TaskListItem = Node.create<TaskItemOptions>({
         return true;
       },
       "Shift-Tab": () => this.editor.commands.liftListItem(this.name),
-      Tab: () => this.editor.commands.sinkListItem(this.name),
+      Tab: () => {
+        if (this.name === "taskItem")
+          return this.editor.chain().sinkListItem(this.name).run();
+        return false;
+      },
     };
     return shortcuts;
   },

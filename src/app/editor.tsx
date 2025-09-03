@@ -133,6 +133,7 @@ const InnerEditor = (props: { content: string; note?: Note }) => {
     <div className="container flex mx-auto w-full max-w-5xl h-full">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
+          key={props.note.id}
           editor={editor}
           className="items-stretch w-full text-lg"
         />
@@ -151,7 +152,7 @@ export const Editor = (props: { content: string; note?: Note }) => {
   }, [props.content]);
 
   return (
-    <Fragment>
+    <Fragment key={props.note?.id}>
       {content === null ? (
         <div className="flex justify-center items-center p-8">Loading...</div>
       ) : (
