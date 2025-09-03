@@ -171,3 +171,7 @@
   cursor: ew-resize;
   cursor: col-resize;
 }
+
+.tiptap a {
+  @apply cursor-pointer text-primary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
+}
