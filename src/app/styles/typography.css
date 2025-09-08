@@ -83,7 +83,7 @@
 }
 
 .tiptap mark {
-  @apply bg-primary rounded px-1;
+  @apply bg-primary text-primary-foreground px-1 rounded underline;
   box-decoration-break: clone;
 }
 

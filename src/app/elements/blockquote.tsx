@@ -1,5 +1,4 @@
 /** @jsxImportSource @tiptap/core */
-import { css } from "@g4rcez/components";
 import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
 
 export interface BlockquoteOptions {
@@ -9,17 +8,8 @@ export interface BlockquoteOptions {
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     blockQuote: {
-      /**
-       * Set a blockquote node
-       */
       setBlockquote: () => ReturnType;
-      /**
-       * Toggle a blockquote node
-       */
       toggleBlockquote: () => ReturnType;
-      /**
-       * Unset a blockquote node
-       */
       unsetBlockquote: () => ReturnType;
     };
   }
@@ -75,13 +65,11 @@ export const Blockquote = Node.create<BlockquoteOptions>({
           },
     };
   },
-
   addKeyboardShortcuts() {
     return {
       "Mod-Shift-b": () => this.editor.commands.toggleBlockquote(),
     };
   },
-
   addInputRules() {
     return [
       wrappingInputRule({
