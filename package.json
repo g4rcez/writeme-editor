@@ -116,6 +116,7 @@
     "sonner": "2.0.5",
     "tailwind-merge": "3.3.1",
     "tiptap-extension-code-block-shiki": "0.6.0",
+    "tiptap-extension-global-drag-handle": "^0.1.18",
     "tiptap-markdown": "0.8.10",
     "tw-animate-css": "1.2.5",
     "unified": "11.0.5",

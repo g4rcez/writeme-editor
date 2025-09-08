@@ -12,6 +12,7 @@ import Typography from "@tiptap/extension-typography";
 import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
+import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { Markdown } from "tiptap-markdown";
 import { ReplacerCommands } from "./commands/commands";
 import { editorGlobalRef } from "./editor-global-ref";
@@ -130,5 +131,10 @@ export const createExtensions = (
     TaskListItem,
     Callout,
     ReplacerCommands,
+    GlobalDragHandle.configure({
+      dragHandleWidth: 24,
+      scrollTreshold: 100,
+      clickBehavior: "select",
+    }),
   ];
 };
