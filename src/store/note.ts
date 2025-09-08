@@ -11,7 +11,7 @@ export class Note implements EntityBase {
     public readonly id: string,
     public readonly project: string,
     public readonly createdAt: Date,
-    public readonly updatedAt: Date,
+    public updatedAt: Date,
   ) { }
 
   public static new(title: string, content: string, project?: string) {
@@ -21,6 +21,12 @@ export class Note implements EntityBase {
 
   public setContent(content: string) {
     this.content = content;
+    this.updatedAt = new Date();
+  }
+
+  public setTitle(title: string) {
+    this.title = title;
+    this.updatedAt = new Date();
   }
 
   public static parse(a: any): Note {

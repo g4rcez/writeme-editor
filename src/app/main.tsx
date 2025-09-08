@@ -44,7 +44,7 @@ export async function main() {
     await repositories.notes.save(note);
     globalDispatch.note(note);
   } else {
-    globalDispatch.note(notes.at(-1));
+    globalDispatch.note(notes[0]);
   }
   if (globalState().theme === "dark") {
     document.documentElement.classList.add("dark");

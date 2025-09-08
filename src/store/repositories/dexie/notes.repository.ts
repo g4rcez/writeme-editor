@@ -25,6 +25,6 @@ export class NotesRepository implements Repository<Note> {
     const notes = await db.notes.toArray();
     return notes
       .map(Note.parse)
-      .toSorted((a, b) => +a.createdAt - +b.createdAt);
+      .toSorted((a, b) => +b.updatedAt - +a.updatedAt);
   }
 }
