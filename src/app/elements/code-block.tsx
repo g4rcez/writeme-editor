@@ -406,7 +406,7 @@ const MathEvaluate = (props: { code: string }) => {
   return (
     <ul className="list-none !list-outside !mx-0 flex flex-col gap-1">
       {expressions.map(([expr, value], index) => (
-        <li key={`${id}-${expr}-${index}`} className="flex gap-4 list-none">
+        <li key={`${id}-${expr}-${index}`} className="flex gap-4 list-none font-mono">
           {expr}
           <span className="text-primary">//? {value}</span>
         </li>
@@ -458,12 +458,12 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           {code.split("\n").length} lines - {code.length} characters
         </div>
       </div>
-      <div className="p-4">
-        <NodeViewContent className="outline-none content is-editable" />
+      <div className="p-4 font-mono">
+        <NodeViewContent className="outline-none content is-editable code-content-renderer font-mono" />
       </div>
       {language === "math" && trimmed && (
         <div className="px-4 pb-4">
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 font-mono">
             <MathEvaluate code={trimmed} />
           </div>
         </div>

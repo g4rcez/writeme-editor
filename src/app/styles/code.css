@@ -39,3 +39,6 @@
   @apply bg-danger-subtle text-danger border border-danger rounded-xl p-4;
 }
 
+.code-content-renderer > div > * {
+  @apply font-mono;
+}

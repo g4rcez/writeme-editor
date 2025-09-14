@@ -7,7 +7,7 @@ import {
 } from "@tiptap/react";
 import { renderToMarkdown } from "@tiptap/static-renderer";
 import "katex/dist/katex.min.css";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_FINISHED,
@@ -23,6 +23,7 @@ import { Note } from "../store/note";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
+import { uuid } from "@g4rcez/components";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -62,8 +63,8 @@ const useCopyEvents = (editor: TipTapEditor) => {
   }, [editor]);
 };
 
-const InnerEditor = (props: { content: string; note?: Note }) => {
-  const [state] = useGlobalStore();
+const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
+  const [state, dispatch] = useGlobalStore();
   const extensions = createExtensions(() =>
     getThemeForMode(globalState().theme),
   );
@@ -105,11 +106,11 @@ const InnerEditor = (props: { content: string; note?: Note }) => {
     if (editor === null) return;
     if (!props.note) return;
     let saveTimeout: NodeJS.Timeout;
-    editor.on("update", (args) => {
+    editor.on("update", () => {
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {
-          const html = args.editor.getHTML();
+          const html = (editor.storage as any).markdown.getMarkdown();
           props.note.setContent(html);
           await repositories.notes.update(props.note.id, props.note);
         } catch (error) {
@@ -130,10 +131,21 @@ const InnerEditor = (props: { content: string; note?: Note }) => {
   }, [state.theme, editor]);
 
   return (
-    <div className="container flex mx-auto w-full max-w-5xl h-full">
+    <div className="container flex flex-col gap-8 mx-auto w-full max-w-5xl h-full">
+      <input
+        value={state.note.title}
+        placeholder="Note title..."
+        type={props.note ? "text" : "hidden"}
+        className="p-2 w-full text-lg bg-transparent rounded border-b border-transparent border-b-card-border"
+        onChange={(e) => {
+          const note = Note.parse(state.note);
+          note.title = e.target.value;
+          dispatch.note(note);
+        }}
+      />
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
-          key={props.note.id}
+          key={props.id}
           editor={editor}
           className="items-stretch w-full text-lg"
         />
@@ -151,12 +163,19 @@ export const Editor = (props: { content: string; note?: Note }) => {
     initializeEditor();
   }, [props.content]);
 
+  const id = useMemo(() => props.note?.id || uuid(), [props.note]);
+
   return (
     <Fragment key={props.note?.id}>
       {content === null ? (
         <div className="flex justify-center items-center p-8">Loading...</div>
       ) : (
-        <InnerEditor key={props.note?.id} note={props.note} content={content} />
+        <InnerEditor
+          id={id}
+          content={content}
+          note={props.note}
+          key={props.note?.id}
+        />
       )}
     </Fragment>
   );

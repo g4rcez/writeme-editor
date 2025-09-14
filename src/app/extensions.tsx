@@ -4,7 +4,7 @@ import FileHandler from "@tiptap/extension-file-handler";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskList } from "@tiptap/extension-list";
-import Math from "@tiptap/extension-mathematics";
+import MathExtension from "@tiptap/extension-mathematics";
 import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -32,25 +32,29 @@ export const createExtensions = (
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
     TableKit.configure({
-      table: { resizable: true, allowTableNodeSelection: true },
+      table: {
+        resizable: true,
+        allowTableNodeSelection: true,
+        lastColumnResizable: false,
+      },
     }),
     Highlight,
     Blockquote,
     ColorReplacer,
     Color.configure({ types: [TextStyle.name] }),
     Image.configure({ inline: true, allowBase64: true }),
-    Placeholder.configure({ placeholder: "Untitled..." }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
+    Placeholder.configure({ placeholder: "Your text here..." }),
     Typography.configure({ raquo: false, multiplication: false }),
     Markdown.configure({
       html: true,
-      tightLists: true,
-      tightListClass: "tight",
-      bulletListMarker: "-",
-      linkify: true,
       breaks: true,
-      transformPastedText: false,
+      linkify: true,
+      tightLists: true,
+      bulletListMarker: "-",
+      tightListClass: "tight",
       transformCopiedText: true,
+      transformPastedText: false,
     }),
     ShikiBlock.configure({
       getCurrentTheme,
@@ -99,7 +103,7 @@ export const createExtensions = (
         });
       },
     }),
-    Math.configure({
+    MathExtension.configure({
       blockOptions: {
         onClick: (node, pos) => {
           const latex = prompt("Math expression:", node.attrs.latex);
@@ -131,10 +135,6 @@ export const createExtensions = (
     TaskListItem,
     Callout,
     ReplacerCommands,
-    GlobalDragHandle.configure({
-      dragHandleWidth: 24,
-      scrollTreshold: 100,
-      clickBehavior: "select",
-    }),
+    GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
   ];
 };
