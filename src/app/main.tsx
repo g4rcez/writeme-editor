@@ -10,6 +10,14 @@ import { App } from "./app";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 
+declare global {
+  interface Window {
+    EXCALIDRAW_ASSET_PATH: string;
+  }
+}
+
+window.EXCALIDRAW_ASSET_PATH = "/";
+
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
 
@@ -56,3 +64,4 @@ export async function main() {
     createRoot(rootElement).render(<App />);
   }
 }
+

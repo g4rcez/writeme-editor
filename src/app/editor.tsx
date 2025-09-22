@@ -24,6 +24,7 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
 import { uuid } from "@g4rcez/components";
+import { ExcalidrawCode } from "./elements/excalidraw";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -65,15 +66,20 @@ const useCopyEvents = (editor: TipTapEditor) => {
 
 const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   const [state, dispatch] = useGlobalStore();
-  const extensions = createExtensions(() =>
-    getThemeForMode(globalState().theme),
+
+  const extensions = useMemo(
+    () => createExtensions(() => getThemeForMode(globalState().theme)),
+    [state.theme],
   );
+
   const editor = useEditor({
     extensions,
-    autofocus: true,
+    editable: true,
+    autofocus: false,
     content: props.content,
     enableContentCheck: true,
-    shouldRerenderOnTransaction: true,
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: false,
     onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
     editorProps: {
       handleKeyDown: (view, event) => {

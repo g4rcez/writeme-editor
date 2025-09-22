@@ -6,7 +6,7 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "dev": "npm run native:dev",
-    "browser:dev": "vite",
+    "browser:dev": "vite --host",
     "browser:build": "vite build",
     "native:dev": "electron-forge start",
     "build:package": "electron-forge package",
@@ -54,6 +54,7 @@
     "vite": "7.1.2"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "0.18.0",
     "@floating-ui/react": "0.27.15",
     "@g4rcez/components": "2.0.4",
     "@harshtalks/slash-tiptap": "1.3.0",
@@ -87,6 +88,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "brouther": "5.4.11",
+    "chrono-node": "2.8.4",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "dexie": "4.0.11",

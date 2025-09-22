@@ -55,6 +55,22 @@ export const UuidCommand: ReplacerCommand = {
   },
 };
 
+export const ExcalidrawCommand: ReplacerCommand = {
+  find: />>draw $/,
+  replace: (_, __, editor) => {
+    setTimeout(() => {
+      editor
+        .chain()
+        .joinDown()
+        .insertContent("```excalidraw")
+        .insertContent("\n")
+        .insertContent("```")
+        .run();
+    }, 100);
+    return "";
+  },
+};
+
 export const LatexInlineCommand: ReplacerCommand = {
   find: />>expr $/,
   replace: (_, __, editor) => {
@@ -132,6 +148,7 @@ export const ReplacerCommands = Extension.create({
       replacerRules(this.editor, ClipboardListenerCommand),
       replacerRules(this.editor, LatexInlineTransformerCommand),
       replacerRules(this.editor, ClipboardCloseListenerCommand),
+      replacerRules(this.editor, ExcalidrawCommand),
     ];
   },
 });

@@ -19,10 +19,10 @@ export type CurrentElementInfo = {
 /**
  * Gets the name and information about the current element where the cursor is positioned
  * in a TipTap editor.
- * 
+ *
  * @param editor - The TipTap editor instance
  * @returns Information about the current element
- * 
+ *
  * @example
  * ```typescript
  * const elementInfo = getCurrentElementInfo(editor);
@@ -30,7 +30,9 @@ export type CurrentElementInfo = {
  * console.log(elementInfo.isSelection); // true if text is selected
  * ```
  */
-export function getCurrentElementInfo(editor: Editor | null): CurrentElementInfo | null {
+export function getCurrentElementInfo(
+  editor: Editor | null,
+): CurrentElementInfo | null {
   if (!editor) {
     return null;
   }
@@ -65,10 +67,10 @@ export function getCurrentElementInfo(editor: Editor | null): CurrentElementInfo
 /**
  * Gets just the name of the current element where the cursor is positioned.
  * This is a simplified version of getCurrentElementInfo for when you only need the node name.
- * 
+ *
  * @param editor - The TipTap editor instance
  * @returns The name of the current node type, or null if editor is not available
- * 
+ *
  * @example
  * ```typescript
  * const nodeName = getCurrentElementName(editor);
@@ -84,23 +86,26 @@ export function getCurrentElementName(editor: Editor | null): string | null {
 
 /**
  * Checks if the cursor is currently positioned in a specific node type.
- * 
+ *
  * @param editor - The TipTap editor instance
  * @param nodeTypeName - The name of the node type to check for
  * @returns True if the cursor is in the specified node type
- * 
+ *
  * @example
  * ```typescript
  * if (isInNodeType(editor, 'codeBlock')) {
  *   // Apply code block specific behavior
  * }
- * 
+ *
  * if (isInNodeType(editor, 'heading')) {
  *   // Apply heading specific behavior
  * }
  * ```
  */
-export function isInNodeType(editor: Editor | null, nodeTypeName: string): boolean {
+export function isInNodeType(
+  editor: Editor | null,
+  nodeTypeName: string,
+): boolean {
   const currentName = getCurrentElementName(editor);
   return currentName === nodeTypeName;
 }
@@ -108,10 +113,10 @@ export function isInNodeType(editor: Editor | null, nodeTypeName: string): boole
 /**
  * Gets the hierarchy path of the current cursor position.
  * Returns an array of node names from root to current position.
- * 
+ *
  * @param editor - The TipTap editor instance
  * @returns Array of node names representing the path from root to current position
- * 
+ *
  * @example
  * ```typescript
  * const path = getCurrentElementPath(editor);
@@ -128,7 +133,7 @@ export function getCurrentElementPath(editor: Editor | null): string[] {
   const { $from } = selection;
 
   const path: string[] = [];
-  
+
   for (let i = 0; i <= $from.depth; i++) {
     const node = $from.node(i);
     if (node) {
@@ -141,10 +146,10 @@ export function getCurrentElementPath(editor: Editor | null): string[] {
 
 /**
  * Gets detailed information about all ancestor nodes of the current cursor position.
- * 
+ *
  * @param editor - The TipTap editor instance
  * @returns Array of node information from root to current position
- * 
+ *
  * @example
  * ```typescript
  * const ancestors = getCurrentElementAncestors(editor);
@@ -171,7 +176,7 @@ export function getCurrentElementAncestors(editor: Editor | null): Array<{
     depth: number;
     attrs: Record<string, unknown>;
   }> = [];
-  
+
   for (let i = 0; i <= $from.depth; i++) {
     const node = $from.node(i);
     if (node) {
@@ -184,4 +189,39 @@ export function getCurrentElementAncestors(editor: Editor | null): Array<{
   }
 
   return ancestors;
+}
+
+export function updateNodeContent(
+  editor: Editor,
+  targetNode: any,
+  newContent: string,
+) {
+  const { state } = editor;
+  const { tr } = state;
+  let updated = false;
+
+  state.doc.descendants((node, pos) => {
+    if (node === targetNode) {
+      // Clear existing content and insert new content
+      const from = pos + 1;
+      const to = pos + node.nodeSize - 1;
+
+      tr.delete(from, to);
+
+      if (typeof newContent === "string") {
+        tr.insert(from, state.schema.text(newContent));
+      } else {
+        tr.insert(from, newContent); // For rich content/fragments
+      }
+
+      updated = true;
+      return false; // Stop traversal
+    }
+  });
+
+  if (updated) {
+    editor.view.dispatch(tr);
+    return true;
+  }
+  return false;
 }

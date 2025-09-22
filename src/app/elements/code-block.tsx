@@ -2,34 +2,36 @@ import { uuid } from "@g4rcez/components";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import { Node as ProsemirrorNode } from "@tiptap/pm/model";
-import { parser as mathParser } from "mathjs";
 import { Plugin, PluginKey, type PluginView } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
-  NodeViewContent,
-  NodeViewWrapper,
-  type ReactNodeViewProps,
-  ReactNodeViewRenderer,
+    NodeViewContent,
+    NodeViewWrapper,
+    type ReactNodeViewProps,
+    ReactNodeViewRenderer,
 } from "@tiptap/react";
 import mermaid from "mermaid";
 import {
-  Fragment,
-  useDeferredValue,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
+    Fragment,
+    useCallback,
+    useEffect,
+    useRef
 } from "react";
 import {
-  type BundledLanguage,
-  type BundledTheme,
-  type Highlighter,
-  bundledLanguages,
-  bundledThemes,
-  createHighlighter,
+    type BundledLanguage,
+    type BundledTheme,
+    type Highlighter,
+    bundledLanguages,
+    bundledThemes,
+    createHighlighter,
 } from "shiki";
-import { getCurrentElementName } from "../../lib/editor-utils";
+import {
+    getCurrentElementName,
+    updateNodeContent,
+} from "../../lib/editor-utils";
 import { globalState } from "../../store/global.store";
+import { ExcalidrawCode } from "./excalidraw";
+import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 
 let highlighter: Highlighter | undefined;
@@ -384,40 +386,13 @@ const MermaidChart = ({ chart }: { chart: string }) => {
 const getAllLanguages = (): string[] => {
   const allLanguages = Object.keys(bundledLanguages);
   allLanguages.push("math");
+  allLanguages.push("excalidraw");
   return allLanguages.sort();
-};
-
-const MathEvaluate = (props: { code: string }) => {
-  const id = useId();
-  const expressions = useMemo(() => {
-    try {
-      const lines = props.code.split("\n");
-      const parser = mathParser();
-      return lines.map((x) => {
-        const result = parser.evaluate(x);
-        return [x, result];
-      });
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
-  }, [props.code]);
-
-  return (
-    <ul className="list-none !list-outside !mx-0 flex flex-col gap-1">
-      {expressions.map(([expr, value], index) => (
-        <li key={`${id}-${expr}-${index}`} className="flex gap-4 list-none font-mono">
-          {expr}
-          <span className="text-primary">//? {value}</span>
-        </li>
-      ))}
-    </ul>
-  );
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
   const language = props.node.attrs.language || "plaintext";
-  const code = useDeferredValue(props.node.textContent, "");
+  const code = props.node.textContent.trim();
 
   const handleLanguageChange = (newLanguage: string) => {
     const { view, getPos } = props;
@@ -431,49 +406,53 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     );
   };
 
-  const trimmed = code.trim();
+  const onChangeDraw = useCallback((nextState: any) => {
+    const pos = props.getPos();
+    const targetNode = props.editor.state.doc.nodeAt(pos);
+    updateNodeContent(props.editor, targetNode, nextState);
+  }, []);
 
   return (
     <NodeViewWrapper
       as="div"
       className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
     >
-      <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
-        <div className="flex gap-2 items-center">
-          <select
-            value={language}
-            aria-description="Language"
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
-          >
-            <option value="plaintext">Plain Text</option>
-            {getAllLanguages().map((lang) => (
-              <option key={lang} value={lang}>
-                {lang.charAt(0).toUpperCase() + lang.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="text-xs text-foreground">
-          {code.split("\n").length} lines - {code.length} characters
-        </div>
-      </div>
-      <div className="p-4 font-mono">
-        <NodeViewContent className="outline-none content is-editable code-content-renderer font-mono" />
-      </div>
-      {language === "math" && trimmed && (
-        <div className="px-4 pb-4">
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 font-mono">
-            <MathEvaluate code={trimmed} />
+      {language === "excalidraw" ? (
+        <ExcalidrawCode code={code} onChange={onChangeDraw} />
+      ) : (
+        <Fragment>
+          <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
+            <div className="flex gap-2 items-center">
+              <select
+                value={language}
+                aria-description="Language"
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
+              >
+                <option value="plaintext">Plain Text</option>
+                {getAllLanguages().map((lang) => (
+                  <option key={lang} value={lang}>
+                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-xs text-foreground">
+              {code.split("\n").length} lines - {code.length} characters
+            </div>
           </div>
-        </div>
-      )}
-      {language === "mermaid" && trimmed && (
-        <div className="px-4 pb-4">
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <MermaidChart chart={code} />
+          <div className="p-4 font-mono">
+            <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
           </div>
-        </div>
+          {language === "math" && code && <MathBlock code={code} />}
+          {language === "mermaid" && code && (
+            <div className="px-4 pb-4">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <MermaidChart chart={code} />
+              </div>
+            </div>
+          )}
+        </Fragment>
       )}
     </NodeViewWrapper>
   );
