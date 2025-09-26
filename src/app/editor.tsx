@@ -1,3 +1,4 @@
+import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
   EditorContent,
@@ -23,8 +24,6 @@ import { Note } from "../store/note";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
-import { uuid } from "@g4rcez/components";
-import { ExcalidrawCode } from "./elements/excalidraw";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -137,7 +136,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   }, [state.theme, editor]);
 
   return (
-    <div className="container flex flex-col gap-8 mx-auto w-full max-w-5xl h-full">
+    <div className="container flex flex-col gap-8 justify-start items-start mx-auto w-full max-w-5xl h-full">
       <input
         value={state.note.title}
         placeholder="Note title..."
