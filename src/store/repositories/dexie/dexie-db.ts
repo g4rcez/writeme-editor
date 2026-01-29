@@ -2,9 +2,18 @@ import Dexie, { EntityTable } from "dexie";
 import { Note } from "../../note";
 import { Project } from "../../project";
 
+export interface Tab {
+  id: string;
+  noteId: string;
+  order: number;
+  project: string;
+  createdAt: Date;
+}
+
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
   projects: EntityTable<Project, "id">;
+  tabs: EntityTable<Tab, "id">;
 };
 
 // Version 1 (original schema)
@@ -77,3 +86,11 @@ db.version(4)
   .upgrade(async () => {
     console.log("Schema migration to v4 complete (IndexedDB content support)");
   });
+
+// Version 5 (Tabs support)
+db.version(5).stores({
+  notes:
+    "&id, title, project, filePath, *tags, createdAt, updatedAt, createdBy, updatedBy",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, project, createdAt",
+});

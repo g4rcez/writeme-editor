@@ -24,6 +24,19 @@ vi.mock("./repositories/dexie/projects.repository", () => {
   };
 });
 
+vi.mock("./repositories/dexie/tabs.repository", () => {
+  return {
+    TabsRepository: vi.fn().mockImplementation(function() {
+      return {
+        getAll: vi.fn(),
+        save: vi.fn(),
+        delete: vi.fn(),
+        updateOrder: vi.fn(),
+      };
+    }),
+  };
+});
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -52,5 +65,9 @@ describe("Global Store", () => {
   
   it("should have loadRecentNotes action", () => {
       expect(useGlobalStore.dispatchers.loadRecentNotes).toBeDefined();
+  });
+
+  it("should have addTab action", () => {
+    expect(useGlobalStore.dispatchers.addTab).toBeDefined();
   });
 });
