@@ -41,3 +41,39 @@ db.version(2)
 
     console.log("Schema migration to v2 complete");
   });
+
+// Version 3 (add folderPath to projects for Open Project feature)
+db.version(3)
+  .stores({
+    notes:
+      "&id, title, project, filePath, *tags, createdAt, updatedAt, createdBy, updatedBy",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  })
+  .upgrade(async (tx) => {
+    // Migrate existing projects to have folderPath
+    const projects = await tx.table("projects").toArray();
+
+    console.log(`Migrating ${projects.length} projects to schema v3...`);
+
+    for (const project of projects) {
+      await tx.table("projects").update(project.id, {
+        folderPath: project.folderPath || "",
+      });
+    }
+
+    console.log("Schema migration to v3 complete");
+  });
+
+// Version 4 (IndexedDB content support for web mode)
+// No structural change to indexes - content field already exists on Note objects
+// This version enables storing full note content in IndexedDB when running
+// without filesystem access (web mode or Electron without storageDirectory)
+db.version(4)
+  .stores({
+    notes:
+      "&id, title, project, filePath, *tags, createdAt, updatedAt, createdBy, updatedBy",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  })
+  .upgrade(async () => {
+    console.log("Schema migration to v4 complete (IndexedDB content support)");
+  });

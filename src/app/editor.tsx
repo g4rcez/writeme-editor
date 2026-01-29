@@ -21,7 +21,6 @@ import {
     useGlobalStore,
 } from "../store/global.store";
 import { Note } from "../store/note";
-import { SettingsRepository } from "../store/settings";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
@@ -65,7 +64,7 @@ const useCopyEvents = (editor: TipTapEditor) => {
 };
 
 const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
-  const [state, dispatch] = useGlobalStore();
+  const [state] = useGlobalStore();
 
   const extensions = useMemo(
     () => createExtensions(() => getThemeForMode(globalState().theme)),
@@ -105,6 +104,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
       },
     },
   });
+
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
 
@@ -136,57 +136,8 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     }
   }, [state.theme, editor]);
 
-  // Get paths for display
-  const settings = SettingsRepository.load();
-  const storageDir = settings.storageDirectory;
-  const noteFilePath = props.note?.filePath;
-
-  // Extract project folder from file path
-  const getProjectFolder = () => {
-    if (!noteFilePath || !storageDir) return null;
-    const relativePath = noteFilePath.replace(storageDir, "");
-    const parts = relativePath.split("/").filter(Boolean);
-    return parts.length > 0 ? parts[0] : null;
-  };
-
-  const projectFolder = getProjectFolder();
-  const projectPath = projectFolder && storageDir
-    ? `${storageDir}/${projectFolder}`
-    : null;
-
   return (
-    <div className="container flex flex-col gap-8 justify-start items-start mx-auto w-full max-w-5xl h-full">
-      {/* Path Display */}
-      {props.note && (projectPath || noteFilePath) && (
-        <div className="w-full pt-2 pb-4 text-xs text-muted-foreground border-b border-card-border">
-          <div className="flex flex-col gap-1">
-            {projectPath && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium opacity-70">Project:</span>
-                <span className="font-mono opacity-90">{projectPath}</span>
-              </div>
-            )}
-            {noteFilePath && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium opacity-70">Note:</span>
-                <span className="font-mono opacity-90">{noteFilePath}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <input
-        value={state.note.title}
-        placeholder="Note title..."
-        type={props.note ? "text" : "hidden"}
-        className="p-2 w-full text-lg bg-transparent rounded border-b border-transparent border-b-card-border"
-        onChange={(e) => {
-          const note = Note.parse(state.note);
-          note.title = e.target.value;
-          dispatch.note(note);
-        }}
-      />
+    <div className="flex flex-col justify-start items-start w-full h-full">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}

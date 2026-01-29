@@ -148,3 +148,66 @@ export function parseNotePath(
 
   return { projectFolder, filename, isDefaultProject };
 }
+
+/**
+ * Create a standalone note from an external file path
+ * Standalone notes are saved directly to their file path, bypassing project structure
+ * @param filePath - Absolute path to the .md file
+ * @param content - File content
+ * @returns Note with project="__standalone__" and filePath set
+ */
+export function createStandaloneNote(filePath: string, content: string) {
+  const filename = filePath.split(/[/\\]/).pop() || "Untitled";
+  const title = filename.replace(/\.md$/i, "");
+  const now = new Date();
+  return {
+    id: crypto.randomUUID(),
+    title,
+    content,
+    project: "__standalone__",
+    filePath,
+    createdAt: now,
+    updatedAt: now,
+    fileSize: content.length,
+    lastSynced: now,
+    tags: [] as string[],
+    createdBy: "user",
+    updatedBy: "user",
+  };
+}
+
+/**
+ * Format a relative path for display:
+ * - Replaces separators with " / "
+ * - Truncates middle segments with "..." if path is too long
+ * - Example: "A/B/C/D" -> "A / ... / C / D"
+ */
+export function formatSimplifiedPath(path: string): string {
+  if (!path) return "";
+  
+  const segments = path.split("/").filter(Boolean);
+  
+  if (segments.length <= 3) {
+    return segments.join(" / ");
+  }
+  
+  // Keep first, ellipsis, second to last, last
+  // Spec: "The immediate parent folder should be clearly visible."
+  // So: Root / ... / Parent / [Note]
+  // But this function receives the path relative to root? 
+  // If input is "Folder/Sub/File.md", we probably usually strip the filename before calling this?
+  // Let's assume input is the folder path.
+  
+  // A / B / C / D -> A / ... / C / D
+  
+  const first = segments[0];
+  const last = segments[segments.length - 1];
+  const secondLast = segments[segments.length - 2];
+  
+  // If 4 segments: A, B, C, D -> A / ... / C / D ? 
+  // Or A / B / C / D ? 
+  // Let's stick to max 3 items displayed.
+  
+  return `${first} / ... / ${secondLast} / ${last}`;
+}
+

@@ -1,50 +1,24 @@
-/**
- * Application settings stored in localStorage
- */
 export interface AppSettings {
-  /** User-chosen root directory for storing markdown files */
   storageDirectory: string | null;
-
-  /** Default author name for createdBy/updatedBy fields */
   defaultAuthor: string;
-
-  /** Interval in milliseconds for checking file sync (future feature) */
   autoSyncInterval: number;
-
-  /** How to handle conflicts when file changed externally */
   conflictResolution: "ask" | "file-wins" | "editor-wins";
-
-  /** Theme preference (light/dark) */
   theme: "light" | "dark";
-
-  /** Currency conversion settings */
   currency: {
-    /** Cache duration in milliseconds (default: 3600000 = 1 hour) */
     cacheDuration: number;
-    /** Preferred API ('exchangerate-api' | 'frankfurter') */
     preferredAPI: "exchangerate-api" | "frankfurter";
-    /** Optional API key for premium tier */
     apiKey?: string;
   };
 }
 
-/**
- * Repository for managing application settings
- * Stores settings in localStorage for persistence across sessions
- */
 export class SettingsRepository {
   private static STORAGE_KEY = "WRITEME_SETTINGS";
 
-  /**
-   * Load settings from localStorage
-   * Returns defaults if no settings exist
-   */
   static load(): AppSettings {
     const stored = localStorage.getItem(this.STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Merge with defaults to handle new settings added in updates
         return { ...this.defaults(), ...parsed };
       } catch (error) {
         console.error("Failed to parse settings:", error);

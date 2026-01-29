@@ -96,23 +96,36 @@ export async function main() {
       const notes = await repositories.notes.getAll();
       globalDispatch.notes(notes);
 
-      if (notes.length === 0) {
+      // Get the ID of the previously focused note from localStorage
+      const currentNoteId = globalState().note?.id;
+      let noteToOpen: Note | null = null;
+
+      if (currentNoteId) {
+        // Restore previously focused note with full content
+        noteToOpen = await repositories.notes.getOne(currentNoteId);
+      }
+
+      if (!noteToOpen && notes.length > 0) {
+        // Fall back to first note with full content
+        noteToOpen = await repositories.notes.getOne(notes[0].id);
+      }
+
+      if (noteToOpen) {
+        globalDispatch.note(noteToOpen);
+      } else if (notes.length === 0) {
+        // Create new note only if no notes exist
         const note = Note.new("Untitled", "");
         await repositories.notes.save(note);
         globalDispatch.note(note);
-      } else {
-        globalDispatch.note(notes[0]);
       }
     } catch (error) {
       console.error("Failed to load notes:", error);
       // Continue anyway - workspace setup might fix this
     }
   }
-
   if (globalState().theme === "dark") {
     document.documentElement.classList.add("dark");
   }
-
   if (!rootElement.innerHTML) {
     const head = document.getElementsByTagName("head")[0]!;
     head.append(createStyle("default-theme", createTheme(lightTheme)));

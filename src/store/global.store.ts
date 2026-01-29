@@ -2,6 +2,7 @@ import { createGlobalReducer } from "use-typed-reducer";
 import { NotesRepository } from "./repositories/dexie/notes.repository";
 import { ProjectsRepository } from "./repositories/dexie/projects.repository";
 import { Note } from "./note";
+import { Project } from "./project";
 
 const state = JSON.parse(
   window.localStorage.getItem("EDITOR_PREFERENCES") || "{}",
@@ -10,8 +11,12 @@ const state = JSON.parse(
 const initialState = {
   help: false,
   commander: false,
+  recentNotesDialog: false,
+  directoryBrowserDialog: false,
+  openProjectDialog: false,
   notes: [] as Note[],
   recentNotes: [] as Note[],
+  projects: [] as Project[],
   theme: state.theme || "dark",
   note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
 };
@@ -25,6 +30,7 @@ export const useGlobalStore = createGlobalReducer(
       await repositories.notes.update(note.id, note);
       return { note: note };
     },
+    setNote: (note: Note | null) => ({ note }),
     notes: (notes: Note[]) => ({ notes }),
     recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
     loadRecentNotes: async (limit: number = 20) => {
@@ -33,6 +39,16 @@ export const useGlobalStore = createGlobalReducer(
     },
     help: (help: boolean) => ({ help }),
     commander: (commander: boolean) => ({ commander }),
+    recentNotesDialog: (recentNotesDialog: boolean) => ({ recentNotesDialog }),
+    directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
+      directoryBrowserDialog,
+    }),
+    openProjectDialog: (openProjectDialog: boolean) => ({ openProjectDialog }),
+    projects: (projects: Project[]) => ({ projects }),
+    loadProjects: async () => {
+      const projects = await repositories.projects.getAll();
+      return { projects };
+    },
     theme: (theme: Toggle<string>) => {
       const result =
         typeof theme === "function" ? theme(get.state().theme) : theme;

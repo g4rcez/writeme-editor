@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { Note } from "./store/note";
+import type { ReadDirResult } from "./types/tree";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   notes: {
@@ -124,6 +125,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
     moveFile: async (oldPath: string, newPath: string) => {
       return ipcRenderer.invoke("fs:moveFile", oldPath, newPath);
     },
+
+    readDir: async (dirPath: string): Promise<ReadDirResult> => {
+      return ipcRenderer.invoke("fs:readDir", dirPath);
+    },
+
+    openFileOrDirectory: async (): Promise<{
+      path: string;
+      isDirectory: boolean;
+    } | null> => {
+      return ipcRenderer.invoke("fs:openFileOrDirectory");
+    },
   },
 });
 
@@ -148,6 +160,11 @@ declare global {
         mkdir(dirPath: string): Promise<any>;
         deleteFile(filePath: string): Promise<any>;
         moveFile(oldPath: string, newPath: string): Promise<any>;
+        readDir(dirPath: string): Promise<ReadDirResult>;
+        openFileOrDirectory(): Promise<{
+          path: string;
+          isDirectory: boolean;
+        } | null>;
       };
     };
   }

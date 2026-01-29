@@ -10,16 +10,16 @@
 - [x] Task: Conductor - User Manual Verification 'Data Access Layer' (Protocol in workflow.md)
 
 ## Phase 2: UI Components
-- [ ] Task: Create `RecentNotesDialog` component.
-    - [ ] Sub-task: Create component shell with open/close state.
-    - [ ] Sub-task: Implement the list view with Title, Path, and Timestamp.
-    - [ ] Sub-task: Implement the "Simplified Path" formatting utility with tests.
-- [ ] Task: Implement Search & Filter Logic.
-    - [ ] Sub-task: Write tests for filtering logic (by title and path).
-    - [ ] Sub-task: Add search input and connect to list filtering.
-- [ ] Task: Implement Navigation & Selection.
-    - [ ] Sub-task: Add keyboard navigation (ArrowUp/ArrowDown).
-    - [ ] Sub-task: Handle 'Enter' and Click events to open the note.
+- [x] Task: Create `RecentNotesDialog` component.
+    - [x] Sub-task: Create component shell with open/close state.
+    - [x] Sub-task: Implement the list view with Title, Path, and Timestamp.
+    - [x] Sub-task: Implement the "Simplified Path" formatting utility with tests.
+- [x] Task: Implement Search & Filter Logic.
+    - [x] Sub-task: Write tests for filtering logic (by title and path).
+    - [x] Sub-task: Add search input and connect to list filtering.
+- [x] Task: Implement Navigation & Selection.
+    - [x] Sub-task: Add keyboard navigation (ArrowUp/ArrowDown).
+    - [x] Sub-task: Handle 'Enter' and Click events to open the note.
 - [ ] Task: Conductor - User Manual Verification 'UI Components' (Protocol in workflow.md)
 
 ## Phase 3: Integration

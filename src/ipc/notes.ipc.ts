@@ -1,6 +1,7 @@
 import { clipboard, dialog, ipcMain } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
+import type { TreeNode } from "../types/tree";
 
 export const notesIpcHandler = async () => {
   // Existing clipboard handler
@@ -37,6 +38,20 @@ export const notesIpcHandler = async () => {
     });
 
     return result.canceled ? null : result.filePaths[0];
+  });
+
+  // Open file or directory dialog (for "Open..." action)
+  ipcMain.handle("fs:openFileOrDirectory", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile", "openDirectory"],
+      filters: [{ name: "Markdown", extensions: ["md"] }],
+      title: "Open",
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+
+    const selectedPath = result.filePaths[0];
+    const stats = await fs.stat(selectedPath);
+    return { path: selectedPath, isDirectory: stats.isDirectory() };
   });
 
   // Write file with automatic directory creation
@@ -144,4 +159,38 @@ export const notesIpcHandler = async () => {
       }
     },
   );
+
+  // Read directory (single level for lazy loading)
+  ipcMain.handle("fs:readDir", async (event, dirPath: string) => {
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+      const nodes: TreeNode[] = entries
+        .filter((entry) => !entry.name.startsWith(".")) // Skip hidden files
+        .map((entry): TreeNode => {
+          const fullPath = path.join(dirPath, entry.name);
+          const isDirectory = entry.isDirectory();
+          const ext = isDirectory ? undefined : path.extname(entry.name).toLowerCase();
+
+          return {
+            name: entry.name,
+            path: fullPath,
+            type: isDirectory ? "directory" : "file",
+            extension: ext,
+            children: isDirectory ? undefined : undefined, // Directories: undefined means not loaded
+          };
+        })
+        .sort((a, b) => {
+          // Folders first, then alphabetical
+          if (a.type !== b.type) {
+            return a.type === "directory" ? -1 : 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
+
+      return { entries: nodes };
+    } catch (error: any) {
+      return { entries: [], error: error.message };
+    }
+  });
 };

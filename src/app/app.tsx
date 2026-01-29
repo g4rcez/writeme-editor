@@ -1,6 +1,9 @@
 import { Brouther, Outlet } from "brouther";
 import { StrictMode } from "react";
 import { Commander } from "./commander";
+import { Layout } from "./components/layout";
+import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
+import { OpenProjectDialog } from "./components/open-project-dialog";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { router } from "./router";
@@ -10,13 +13,15 @@ export const App = () => {
   return (
     <StrictMode>
       <Brouther config={router.config}>
-        <div className="flex flex-col flex-1 gap-8 h-full">
+        <div className="flex flex-col flex-1 gap-4 h-full">
           <Commander />
           <Navbar />
           <ShortcutsCommands />
-          <div className="container flex px-8 mx-auto w-full max-w-5xl h-full lg:px-0">
+          <DirectoryBrowserDialog />
+          <OpenProjectDialog />
+          <Layout className="flex flex-col gap-4 h-full">
             <Outlet />
-          </div>
+          </Layout>
           <PWAInstallButton />
         </div>
       </Brouther>
