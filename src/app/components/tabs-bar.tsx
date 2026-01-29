@@ -23,18 +23,28 @@ export const TabsBar: React.FC = () => {
   const handleCloseTab = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
-      dispatch.removeTab(tabId);
+      dispatch.removeTab(tabId).then((result) => {
+        if (result && result.tabs && result.tabs.length === 0) {
+          dispatch.setNote(null);
+        } else if (result && result.activeTabId) {
+            const activeTab = (result.tabs || state.tabs).find(t => t.id === result.activeTabId);
+            if (activeTab) {
+                const note = state.notes.find(n => n.id === activeTab.noteId);
+                if (note) dispatch.setNote(note);
+            }
+        }
+      });
     },
-    [dispatch]
+    [dispatch, state.notes, state.tabs]
   );
 
   const handleMiddleClick = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       if (e.button === 1) {
-        dispatch.removeTab(tabId);
+        handleCloseTab(e as any, tabId);
       }
     },
-    [dispatch]
+    [handleCloseTab]
   );
 
   // Scroll active tab into view

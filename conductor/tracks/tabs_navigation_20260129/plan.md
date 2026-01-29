@@ -23,12 +23,13 @@
     - [ ] Sub-task: Persist the new order to the database.
 - [x] Task: Conductor - User Manual Verification 'UI Implementation' (Protocol in workflow.md)
 
-## Phase 3: Integration & UX
-- [ ] Task: Integrate `TabsBar` into the Main Layout.
-    - [ ] Sub-task: Position the `TabsBar` correctly in `src/app/app.tsx` or the relevant layout component.
-- [ ] Task: Wire up application events to tab state.
-    - [ ] Sub-task: Update file opening logic (from sidebar/explorer) to automatically add and focus tabs.
-    - [ ] Sub-task: Ensure closing the last tab shows the empty state/welcome screen.
-- [ ] Task: Session Restoration.
-    - [ ] Sub-task: Implement logic to load tabs from IndexedDB on application initialization.
-- [ ] Task: Conductor - User Manual Verification 'Integration & UX' (Protocol in workflow.md)
+## Phase 3: Integration & UX [checkpoint: a577a36]
+- [x] Task: Integrate `TabsBar` into the Main Layout.
+    - [x] Sub-task: Position the `TabsBar` correctly in `src/app/app.tsx` or the relevant layout component.
+- [x] Task: Wire up application events to tab state.
+    - [x] Sub-task: Update file opening logic (from sidebar/explorer) to automatically add and focus tabs.
+    - [x] Sub-task: Ensure closing the last tab shows the empty state/welcome screen.
+- [x] Task: Session Restoration.
+    - [x] Sub-task: Implement logic to load tabs from IndexedDB on application initialization.
+- [x] Task: Conductor - User Manual Verification 'Integration & UX' (Protocol in workflow.md)
+
