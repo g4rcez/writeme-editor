@@ -22,10 +22,10 @@
     - [x] Sub-task: Handle 'Enter' and Click events to open the note.
 - [x] Task: Conductor - User Manual Verification 'UI Components' (Protocol in workflow.md)
 
-## Phase 3: Integration
-- [ ] Task: Register "Open Recent" command.
-    - [ ] Sub-task: Add `OPEN_RECENT` command to `src/app/commands/commands.ts`.
-    - [ ] Sub-task: Bind the command to the `RecentNotesDialog` visibility.
-- [ ] Task: Register Keyboard Shortcuts.
-    - [ ] Sub-task: Bind `Cmd+E` (and `Ctrl+E`) to trigger the `OPEN_RECENT` command.
-- [ ] Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)
+## Phase 3: Integration [checkpoint: 6423e85]
+- [x] Task: Register "Open Recent" command. [6423e85]
+    - [x] Sub-task: Add `OPEN_RECENT` command to `src/app/commands/commands.ts` (implemented in `shortcut-items.tsx`).
+    - [x] Sub-task: Bind the command to the `RecentNotesDialog` visibility.
+- [x] Task: Register Keyboard Shortcuts. [6423e85]
+    - [x] Sub-task: Bind `Cmd+E` (and `Ctrl+E`) to trigger the `OPEN_RECENT` command.
+- [x] Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)
