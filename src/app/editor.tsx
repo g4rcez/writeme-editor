@@ -1,26 +1,27 @@
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
-  EditorContent,
-  EditorContext,
-  useEditor,
-  type Editor as TipTapEditor,
+    EditorContent,
+    EditorContext,
+    useEditor,
+    type Editor as TipTapEditor,
 } from "@tiptap/react";
 import { renderToMarkdown } from "@tiptap/static-renderer";
 import "katex/dist/katex.min.css";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  COPY_EVENT_DISPATCHED,
-  COPY_EVENT_FINISHED,
-  COPY_EVENT_STARTED,
+    COPY_EVENT_DISPATCHED,
+    COPY_EVENT_FINISHED,
+    COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
 import {
-  globalState,
-  repositories,
-  useGlobalStore,
+    globalState,
+    repositories,
+    useGlobalStore,
 } from "../store/global.store";
 import { Note } from "../store/note";
+import { SettingsRepository } from "../store/settings";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
@@ -135,8 +136,46 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     }
   }, [state.theme, editor]);
 
+  // Get paths for display
+  const settings = SettingsRepository.load();
+  const storageDir = settings.storageDirectory;
+  const noteFilePath = props.note?.filePath;
+
+  // Extract project folder from file path
+  const getProjectFolder = () => {
+    if (!noteFilePath || !storageDir) return null;
+    const relativePath = noteFilePath.replace(storageDir, "");
+    const parts = relativePath.split("/").filter(Boolean);
+    return parts.length > 0 ? parts[0] : null;
+  };
+
+  const projectFolder = getProjectFolder();
+  const projectPath = projectFolder && storageDir
+    ? `${storageDir}/${projectFolder}`
+    : null;
+
   return (
     <div className="container flex flex-col gap-8 justify-start items-start mx-auto w-full max-w-5xl h-full">
+      {/* Path Display */}
+      {props.note && (projectPath || noteFilePath) && (
+        <div className="w-full pt-2 pb-4 text-xs text-muted-foreground border-b border-card-border">
+          <div className="flex flex-col gap-1">
+            {projectPath && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium opacity-70">Project:</span>
+                <span className="font-mono opacity-90">{projectPath}</span>
+              </div>
+            )}
+            {noteFilePath && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium opacity-70">Note:</span>
+                <span className="font-mono opacity-90">{noteFilePath}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <input
         value={state.note.title}
         placeholder="Note title..."

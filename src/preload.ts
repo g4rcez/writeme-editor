@@ -94,6 +94,37 @@ contextBridge.exposeInMainWorld("electronAPI", {
       }
     },
   },
+
+  // File system APIs for hybrid storage
+  fs: {
+    chooseDirectory: async (): Promise<string | null> => {
+      return ipcRenderer.invoke("fs:chooseDirectory");
+    },
+
+    writeFile: async (filePath: string, content: string) => {
+      return ipcRenderer.invoke("fs:writeFile", filePath, content);
+    },
+
+    readFile: async (filePath: string) => {
+      return ipcRenderer.invoke("fs:readFile", filePath);
+    },
+
+    statFile: async (filePath: string) => {
+      return ipcRenderer.invoke("fs:statFile", filePath);
+    },
+
+    mkdir: async (dirPath: string) => {
+      return ipcRenderer.invoke("fs:mkdir", dirPath);
+    },
+
+    deleteFile: async (filePath: string) => {
+      return ipcRenderer.invoke("fs:deleteFile", filePath);
+    },
+
+    moveFile: async (oldPath: string, newPath: string) => {
+      return ipcRenderer.invoke("fs:moveFile", oldPath, newPath);
+    },
+  },
 });
 
 declare global {
@@ -108,6 +139,15 @@ declare global {
         update(note: Note): Promise<Note>;
         delete(id: string): Promise<boolean>;
         search(query: string): Promise<Note[]>;
+      };
+      fs: {
+        chooseDirectory(): Promise<string | null>;
+        writeFile(filePath: string, content: string): Promise<any>;
+        readFile(filePath: string): Promise<any>;
+        statFile(filePath: string): Promise<any>;
+        mkdir(dirPath: string): Promise<any>;
+        deleteFile(filePath: string): Promise<any>;
+        moveFile(oldPath: string, newPath: string): Promise<any>;
       };
     };
   }

@@ -8,6 +8,12 @@ import {
   ClipboardCloseListenerCommand,
   ClipboardListenerCommand,
 } from "./clipboard-listener.command";
+import {
+  parseCurrencyExpression,
+  convertCurrency,
+  formatConversionResult,
+  formatErrorMessage,
+} from "../../lib/currency";
 
 export type ReplacerCommand = {
   find: RegExp;
@@ -24,6 +30,35 @@ const sanitizeExpr = (expr = "") =>
     .trim()
     .replace(/\*\*/g, "^")
     .replace(/=$/g, "");
+
+export const CurrencyCommand: ReplacerCommand = {
+  find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/,
+  replace: (capture, _, editor) => {
+    let from = capture?.groups.from?.trim();
+    let to = capture?.groups.to?.trim();
+    if (!from || !to) {
+      return "";
+    }
+    const amount = from.replace(/[A-Z]{3}$/g, "");
+    from = from.match(/[A-Z]{3}$/g)[0];
+    setTimeout(() => {
+      convertCurrency(Number(amount), from, to)
+        .then((result) => {
+          editor
+            .chain()
+            .focus()
+            .selectTextblockEnd()
+            .insertContent(formatConversionResult(result))
+            .run();
+        })
+        .catch((error) => {
+          const errorMsg = formatErrorMessage(error, from, to);
+          editor.chain().focus().insertContent("").run();
+        });
+    }, 50);
+    return "";
+  },
+};
 
 const MathCommand: ReplacerCommand = {
   find: />>math [^=]+ ?=$/,
@@ -141,6 +176,7 @@ export const ReplacerCommands = Extension.create({
     return [
       replacerRules(this.editor, UuidCommand),
       replacerRules(this.editor, EvalCommand),
+      replacerRules(this.editor, CurrencyCommand), // MUST come before MathCommand!
       replacerRules(this.editor, MathCommand),
       replacerRules(this.editor, LatexCommand),
       replacerRules(this.editor, TableCommand),

@@ -11,8 +11,9 @@ const initialState = {
   help: false,
   commander: false,
   notes: [] as Note[],
+  recentNotes: [] as Note[],
   theme: state.theme || "dark",
-  note: state.note ? Note.parse(state.note) || null : null,
+  note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
 };
 
 type Toggle<T> = T | ((prev: T) => T);
@@ -25,6 +26,11 @@ export const useGlobalStore = createGlobalReducer(
       return { note: note };
     },
     notes: (notes: Note[]) => ({ notes }),
+    recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
+    loadRecentNotes: async (limit: number = 20) => {
+      const recent = await repositories.notes.getRecentNotes(limit);
+      return { recentNotes: recent };
+    },
     help: (help: boolean) => ({ help }),
     commander: (commander: boolean) => ({ commander }),
     theme: (theme: Toggle<string>) => {

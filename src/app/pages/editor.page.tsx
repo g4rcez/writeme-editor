@@ -6,9 +6,9 @@ export default function EditorPage() {
   return (
     <div className="flex flex-col gap-8 w-full">
       <Editor
-        key={state.note.id}
-        content={state?.note.content}
         note={state.note}
+        key={state.note.id}
+        content={state?.note?.content || ""}
       />
     </div>
   );

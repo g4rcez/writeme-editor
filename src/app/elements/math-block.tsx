@@ -34,7 +34,6 @@ const MathEvaluate = (props: { code: string }) => {
         ];
       });
     } catch (e) {
-      console.error(e);
       return [];
     }
   }, [props.code]);
