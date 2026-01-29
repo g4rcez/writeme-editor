@@ -15,3 +15,4 @@ A privacy-focused, offline-first rich-text editor for technical content creators
 - **Block-Based Editing:** A modern, Notion-like editing experience utilizing slash commands for quick formatting and element insertion.
 - **Integrated Diagramming:** Native support for Mermaid.js and Excalidraw directly within the editor blocks.
 - **Markdown Synergy:** High-fidelity Markdown support for both import and export, ensuring no vendor lock-in.
+- **Quick Navigation:** A specialized dialog for lightning-fast switching between recently edited notes, accessible via command palette or keyboard shortcut.
