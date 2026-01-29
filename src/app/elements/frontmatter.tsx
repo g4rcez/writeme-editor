@@ -24,18 +24,12 @@ export const Frontmatter = Node.create({
             markdownit.use(markdownItFrontMatter, (fm: string) => {
               // content is available in token.meta
             });
-            // Copy meta to content so Tiptap picks it up
-            markdownit.core.ruler.push("front_matter_copy", (state: any) => {
-              if (
-                state.tokens.length > 0 &&
-                state.tokens[0].type === "front_matter"
-              ) {
-                state.tokens[0].content = state.tokens[0].meta;
-              }
-            });
-          },
-          front_matter: {
-            block: true,
+            
+            markdownit.renderer.rules.front_matter = (tokens: any, idx: any) => {
+                const token = tokens[idx];
+                const content = token.meta || token.content;
+                return `<pre data-type="frontmatter"><code class="language-yaml">${content}</code></pre>`;
+            };
           },
         },
       },
