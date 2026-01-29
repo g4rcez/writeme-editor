@@ -10,18 +10,18 @@
     - [x] Sub-task: Write unit tests for tab state transitions.
 - [x] Task: Conductor - User Manual Verification 'Data Model & Persistence' (Protocol in workflow.md)
 
-## Phase 2: UI Implementation
-- [ ] Task: Create the `TabsBar` component.
-    - [ ] Sub-task: Implement the container with horizontal scrolling and Tailwind styling.
-    - [ ] Sub-task: Create the `TabItem` component with "Close" button and "Dirty" indicator logic.
-- [ ] Task: Implement Tab Interactions.
-    - [ ] Sub-task: Add click handler to switch active tab.
-    - [ ] Sub-task: Add middle-click handler to close tab.
-    - [ ] Sub-task: Implement tooltips for full file paths.
+## Phase 2: UI Implementation [checkpoint: a61b5cd]
+- [x] Task: Create the `TabsBar` component.
+    - [x] Sub-task: Implement the container with horizontal scrolling and Tailwind styling.
+    - [x] Sub-task: Create the `TabItem` component with "Close" button and "Dirty" indicator logic.
+- [x] Task: Implement Tab Interactions.
+    - [x] Sub-task: Add click handler to switch active tab.
+    - [x] Sub-task: Add middle-click handler to close tab.
+    - [x] Sub-task: Implement tooltips for full file paths.
 - [ ] Task: Implement Drag-and-Drop Reordering.
     - [ ] Sub-task: Integrate a library (or custom logic) for tab reordering.
     - [ ] Sub-task: Persist the new order to the database.
-- [ ] Task: Conductor - User Manual Verification 'UI Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'UI Implementation' (Protocol in workflow.md)
 
 ## Phase 3: Integration & UX
 - [ ] Task: Integrate `TabsBar` into the Main Layout.
