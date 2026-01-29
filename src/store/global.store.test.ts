@@ -3,16 +3,26 @@ import { useGlobalStore, repositories } from "./global.store";
 import { Note } from "./note";
 
 // Mock repositories
-vi.mock("./repositories/dexie/notes.repository", () => ({
-  NotesRepository: vi.fn().mockImplementation(() => ({
-    update: vi.fn(),
-    getRecentNotes: vi.fn(),
-  })),
-}));
+vi.mock("./repositories/dexie/notes.repository", () => {
+  return {
+    NotesRepository: vi.fn().mockImplementation(function() {
+      return {
+        update: vi.fn(),
+        getRecentNotes: vi.fn(),
+      };
+    }),
+  };
+});
 
-vi.mock("./repositories/dexie/projects.repository", () => ({
-  ProjectsRepository: vi.fn(),
-}));
+vi.mock("./repositories/dexie/projects.repository", () => {
+  return {
+    ProjectsRepository: vi.fn().mockImplementation(function() {
+      return {
+        getAll: vi.fn(),
+      };
+    }),
+  };
+});
 
 // Mock localStorage
 const localStorageMock = (() => {

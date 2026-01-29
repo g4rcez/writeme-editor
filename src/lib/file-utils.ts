@@ -40,7 +40,7 @@ function getExtension(filePath: string): string {
  * @param to Target path
  * @returns Relative path
  */
-function getRelativePath(from: string, to: string): string {
+export function getRelativePath(from: string, to: string): string {
   // Normalize separators
   const normalizedFrom = from.replace(/\\/g, "/");
   const normalizedTo = to.replace(/\\/g, "/");

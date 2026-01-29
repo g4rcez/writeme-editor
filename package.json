@@ -13,6 +13,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
+    "test": "vitest run",
     "pwa:assets": "node scripts/generate-pwa-assets.js",
     "pwa:dev": "npm run pwa:assets && npm run browser:dev",
     "pwa:build": "npm run pwa:assets && npm run browser:build"
