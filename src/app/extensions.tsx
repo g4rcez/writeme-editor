@@ -21,11 +21,13 @@ import { Callout } from "./elements/callout";
 import { ShikiBlock } from "./elements/code-block";
 import { ColorReplacer } from "./elements/color-replacer";
 import { TaskListItem } from "./elements/task-list-item";
+import { Frontmatter } from "./elements/frontmatter";
 
 export const createExtensions = (
   getCurrentTheme: () => BundledTheme,
 ): AnyExtension[] => {
   return [
+    Frontmatter,
     StarterKit.configure({
       codeBlock: false,
       blockquote: false,

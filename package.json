@@ -98,6 +98,7 @@
     "eslint-plugin-import": "^2.32.0",
     "katex": "^0.16.22",
     "lucide-react": "0.473.0",
+    "markdown-it-front-matter": "^0.2.4",
     "mathjs": "14.6.0",
     "mermaid": "11.9.0",
     "radix-ui": "1.4.2",
