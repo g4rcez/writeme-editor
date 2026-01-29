@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Implement a Recent Notes dialog for quick navigation.**
+- [x] **Track: Implement a Recent Notes dialog for quick navigation.**
   *Link: [./tracks/recent_notes_20260129/](./tracks/recent_notes_20260129/)*
