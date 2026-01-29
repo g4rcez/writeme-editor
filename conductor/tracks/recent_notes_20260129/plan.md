@@ -9,7 +9,7 @@
     - [x] Sub-task: Implement `useRecentNotes` selector/hook.
 - [x] Task: Conductor - User Manual Verification 'Data Access Layer' (Protocol in workflow.md)
 
-## Phase 2: UI Components
+## Phase 2: UI Components [checkpoint: 481f195]
 - [x] Task: Create `RecentNotesDialog` component.
     - [x] Sub-task: Create component shell with open/close state.
     - [x] Sub-task: Implement the list view with Title, Path, and Timestamp.
@@ -20,7 +20,7 @@
 - [x] Task: Implement Navigation & Selection.
     - [x] Sub-task: Add keyboard navigation (ArrowUp/ArrowDown).
     - [x] Sub-task: Handle 'Enter' and Click events to open the note.
-- [ ] Task: Conductor - User Manual Verification 'UI Components' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'UI Components' (Protocol in workflow.md)
 
 ## Phase 3: Integration
 - [ ] Task: Register "Open Recent" command.
