@@ -166,6 +166,12 @@ export const useWritemeShortcuts = () => {
           action: () => dispatch.openProjectDialog(true),
         },
         {
+          description: "Open Recent",
+          bind: "mod+e",
+          type: Type.Shortcut,
+          action: () => dispatch.recentNotesDialog(true),
+        },
+        {
           description: "Start copy watcher mode",
           bind: ">>copy",
           type: Type.Command,
