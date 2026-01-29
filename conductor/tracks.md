@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Bellow of the navbar, implement a tab of all files opened, like in Vscode tabs for files**
+- [x] **Track: Bellow of the navbar, implement a tab of all files opened, like in Vscode tabs for files**
   *Link: [./tracks/tabs_navigation_20260129/](./tracks/tabs_navigation_20260129/)*
