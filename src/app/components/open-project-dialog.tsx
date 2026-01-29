@@ -3,6 +3,7 @@ import { useGlobalStore } from "../../store/global.store";
 import { Project } from "../../store/project";
 import { SettingsRepository } from "../../store/settings";
 import { FolderOpen } from "lucide-react";
+import { Modal } from "@g4rcez/components";
 
 export const OpenProjectDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -48,9 +49,6 @@ export const OpenProjectDialog = () => {
         if (filteredProjects[selectedIndex]) {
           openProject(filteredProjects[selectedIndex]);
         }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        closeDialog();
       }
     };
 
@@ -73,21 +71,13 @@ export const OpenProjectDialog = () => {
     window.location.reload();
   };
 
-  const closeDialog = () => {
-    dispatch.openProjectDialog(false);
-  };
-
-  if (!state.openProjectDialog) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-black/50 backdrop-blur-sm"
-      onClick={closeDialog}
+    <Modal
+      open={state.openProjectDialog}
+      onChange={(val) => dispatch.openProjectDialog(val)}
+      title="Open Project"
     >
-      <div
-        className="w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex flex-col h-[60vh]">
         <div className="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <FolderOpen className="w-5 h-5 text-gray-400 mr-3" />
           <input
@@ -146,6 +136,6 @@ export const OpenProjectDialog = () => {
           )}
         </ul>
       </div>
-    </div>
+    </Modal>
   );
 };

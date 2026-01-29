@@ -1,11 +1,12 @@
 import { useEffect, useCallback, useState } from "react";
-import { FolderTree, X } from "lucide-react";
+import { FolderTree } from "lucide-react";
 import { useGlobalStore, repositories } from "../../store/global.store";
 import { SettingsRepository } from "../../store/settings";
 import { TreeView } from "./tree-view";
 import { Note } from "../../store/note";
 import { db } from "../../store/repositories/dexie/dexie-db";
 import type { TreeNode } from "../../types/tree";
+import { Modal } from "@g4rcez/components";
 
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -22,21 +23,6 @@ export const DirectoryBrowserDialog = () => {
   const closeDialog = useCallback(() => {
     dispatch.directoryBrowserDialog(false);
   }, [dispatch]);
-
-  // Handle keyboard events
-  useEffect(() => {
-    if (!state.directoryBrowserDialog) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeDialog();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.directoryBrowserDialog, closeDialog]);
 
   const handleFileSelect = useCallback(
     async (node: TreeNode) => {
@@ -88,40 +74,23 @@ export const DirectoryBrowserDialog = () => {
     [dispatch, closeDialog]
   );
 
-  if (!state.directoryBrowserDialog) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/50 backdrop-blur-sm"
-      onClick={closeDialog}
+    <Modal
+      open={state.directoryBrowserDialog}
+      onChange={(val) => dispatch.directoryBrowserDialog(val)}
+      title="Browse Files"
     >
-      <div
-        className="w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <FolderTree className="w-5 h-5 text-yellow-500" />
-            <span className="font-medium text-gray-900 dark:text-gray-100">
-              Browse Files
-            </span>
+      <div className="flex flex-col h-[60vh]">
+        <div className="flex items-center justify-between px-4 pb-2 border-b border-gray-200 dark:border-gray-800 mb-2">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <FolderTree className="w-4 h-4" />
+            <span>Select a file to open</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">
-              ↑↓ navigate • Enter select • Esc close
-            </div>
-            <button
-              onClick={closeDialog}
-              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4 text-gray-500" />
-            </button>
+          <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">
+            ↑↓ navigate • Enter select • Esc close
           </div>
         </div>
 
-        {/* Content */}
         <div className="overflow-y-auto flex-1 scrollbar-thin">
           {storageDir ? (
             <>
@@ -140,6 +109,6 @@ export const DirectoryBrowserDialog = () => {
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

@@ -4,6 +4,7 @@ import { Note } from "../../store/note";
 import { SettingsRepository } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Search } from "lucide-react";
+import { Modal } from "@g4rcez/components";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -58,9 +59,6 @@ export const RecentNotesDialog = () => {
         if (filteredNotes[selectedIndex]) {
           openNote(filteredNotes[selectedIndex]);
         }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        closeDialog();
       }
     };
 
@@ -87,14 +85,13 @@ export const RecentNotesDialog = () => {
     dispatch.recentNotesDialog(false);
   };
 
-  if (!state.recentNotesDialog) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-black/50 backdrop-blur-sm" onClick={closeDialog}>
-      <div 
-        className="w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal
+      open={state.recentNotesDialog}
+      onChange={(val) => dispatch.recentNotesDialog(val)}
+      title="Recent Notes"
+    >
+      <div className="flex flex-col h-[60vh]">
         <div className="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <Search className="w-5 h-5 text-gray-400 mr-3" />
           <input
@@ -164,6 +161,6 @@ export const RecentNotesDialog = () => {
           )}
         </ul>
       </div>
-    </div>
+    </Modal>
   );
 };
