@@ -1,13 +1,13 @@
 # Implementation Plan - Recent Notes Dialog
 
-## Phase 1: Data Access Layer
+## Phase 1: Data Access Layer [checkpoint: a8e08cc]
 - [x] Task: Create a repository method to fetch notes sorted by `updatedAt`.
     - [x] Sub-task: Write tests for `getRecentNotes` in `src/store/repositories/dexie/notes.repository.ts`.
     - [x] Sub-task: Implement `getRecentNotes` in `src/store/repositories/dexie/notes.repository.ts`.
 - [x] Task: Expose recent notes in the global store.
     - [x] Sub-task: Write tests for `useRecentNotes` selector/hook in `src/store/global.store.ts`.
     - [x] Sub-task: Implement `useRecentNotes` selector/hook.
-- [ ] Task: Conductor - User Manual Verification 'Data Access Layer' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Data Access Layer' (Protocol in workflow.md)
 
 ## Phase 2: UI Components
 - [ ] Task: Create `RecentNotesDialog` component.
