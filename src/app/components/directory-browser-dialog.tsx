@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { FolderTree } from "lucide-react";
 import { useGlobalStore, repositories } from "../../store/global.store";
+import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
 import { TreeView } from "./tree-view";
 import { Note } from "../../store/note";
@@ -11,6 +12,9 @@ import { Modal } from "@g4rcez/components";
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
   const [storageDir, setStorageDir] = useState<string | null>(null);
+
+  // This component requires filesystem access (Electron only)
+  if (!isElectron()) return null;
 
   // Load storage directory when dialog opens
   useEffect(() => {

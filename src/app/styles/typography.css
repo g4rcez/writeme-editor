@@ -1,9 +1,9 @@
 .tiptap {
-  @apply whitespace-pre-wrap leading-loose;
+  @apply whitespace-pre-wrap leading-relaxed;
 }
 
 .tiptap p {
-  @apply text-pretty leading-loose proportional-nums;
+  @apply text-pretty leading-relaxed proportional-nums;
 }
 
 .tiptap p.is-empty::before {
@@ -21,27 +21,27 @@
 .tiptap h4,
 .tiptap h5,
 .tiptap h6 {
-  @apply leading-loose text-pretty mt-12 mb-2 font-bold tracking-wide;
+  @apply leading-snug text-pretty mt-10 mb-2 font-semibold tracking-tight;
 }
 
 .tiptap h1 {
-  @apply text-5xl mt-12;
-}
-
-.tiptap h2 {
   @apply text-4xl mt-10;
 }
 
+.tiptap h2 {
+  @apply text-2xl mt-8;
+}
+
 .tiptap h3 {
-  @apply text-3xl mt-8;
+  @apply text-xl mt-6;
 }
 
 .tiptap blockquote {
-  @apply my-8 ml-0 pl-4 py-4 border-l-4 border-l-primary rounded-r-lg;
+  @apply my-6 ml-0 pl-4 py-3 border-l-2 border-l-primary/40 rounded-r-lg;
 }
 
 .tiptap blockquote[data-callout="false"] {
-  @apply !border-l-4 !border-l-primary border border-card-border italic;
+  @apply !border-l-2 !border-l-primary/40 border border-card-border italic;
 }
 
 .tiptap blockquote[data-callout="true"][data-theme="danger"] {

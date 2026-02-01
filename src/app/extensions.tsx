@@ -56,7 +56,7 @@ export const createExtensions = (
       bulletListMarker: "-",
       tightListClass: "tight",
       transformCopiedText: true,
-      transformPastedText: false,
+      transformPastedText: true,
     }),
     ShikiBlock.configure({
       getCurrentTheme,

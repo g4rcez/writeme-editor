@@ -5,34 +5,30 @@ import { Node as ProsemirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, type PluginView } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
-    NodeViewContent,
-    NodeViewWrapper,
-    type ReactNodeViewProps,
-    ReactNodeViewRenderer,
+  NodeViewContent,
+  NodeViewWrapper,
+  type ReactNodeViewProps,
+  ReactNodeViewRenderer,
 } from "@tiptap/react";
 import mermaid from "mermaid";
+import { Fragment, useCallback, useEffect, useRef } from "react";
 import {
-    Fragment,
-    useCallback,
-    useEffect,
-    useRef
-} from "react";
-import {
-    type BundledLanguage,
-    type BundledTheme,
-    type Highlighter,
-    bundledLanguages,
-    bundledThemes,
-    createHighlighter,
+  type BundledLanguage,
+  type BundledTheme,
+  type Highlighter,
+  bundledLanguages,
+  bundledThemes,
+  createHighlighter,
 } from "shiki";
 import {
-    getCurrentElementName,
-    updateNodeContent,
+  getCurrentElementName,
+  updateNodeContent,
 } from "../../lib/editor-utils";
 import { globalState } from "../../store/global.store";
 import { ExcalidrawCode } from "./excalidraw";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
+import {Mermaid} from "./mermaid";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -370,6 +366,8 @@ const MermaidChart = ({ chart }: { chart: string }) => {
       theme: "dark",
       startOnLoad: true,
       securityLevel: "loose",
+      c4: {},
+      darkMode: false,
     });
   }, []);
 
@@ -448,7 +446,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           {language === "mermaid" && code && (
             <div className="px-4 pb-4">
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <MermaidChart chart={code} />
+                <Mermaid chart={code} />
               </div>
             </div>
           )}

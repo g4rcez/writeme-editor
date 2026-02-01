@@ -1,19 +1,22 @@
 import { Brouther, Outlet } from "brouther";
+import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
+import { repositories, useGlobalStore } from "../store/global.store";
+import { SettingsRepository } from "../store/settings";
+import { useUIStore } from "../store/ui.store";
 import { Commander } from "./commander";
-import { Layout } from "./components/layout";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
 import { OpenProjectDialog } from "./components/open-project-dialog";
-import { TabsBar } from "./components/tabs-bar";
+import { Sidebar } from "./components/sidebar";
 import { PWAInstallButton } from "./elements/pwa-install-button";
+import { Footer } from "./footer";
 import { Navbar } from "./navbar";
 import { router } from "./router";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
-import { useGlobalStore, repositories } from "../store/global.store";
-import { SettingsRepository } from "../store/settings";
 
 export const App = () => {
   const [state, dispatch] = useGlobalStore();
+  const [uiState, uiDispatch] = useUIStore();
 
   // Session restoration
   useEffect(() => {
@@ -39,20 +42,50 @@ export const App = () => {
     restoreSession();
   }, []);
 
+  // Focus mode keyboard shortcut: Cmd/Ctrl + Shift + F
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
+        e.preventDefault();
+        uiDispatch.toggleFocusMode();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [uiDispatch]);
+
   return (
     <StrictMode>
       <Brouther config={router.config}>
-        <div className="flex flex-col flex-1 h-full">
+        <div className="flex flex-col flex-1 justify-center items-center isolate">
           <Commander />
           <Navbar />
-          <TabsBar />
-          <ShortcutsCommands />
-          <DirectoryBrowserDialog />
-          <OpenProjectDialog />
-          <Layout className="flex flex-col gap-4 h-full pt-4">
-            <Outlet />
-          </Layout>
+          <div className="flex flex-1 min-h-0">
+            {!uiState.focusMode && (
+              <div className="hidden lg:block">
+                <Sidebar />
+              </div>
+            )}
+            <div className="flex flex-col flex-1 min-w-0">
+              <ShortcutsCommands />
+              <DirectoryBrowserDialog />
+              <OpenProjectDialog />
+              <Outlet />
+            </div>
+          </div>
           <PWAInstallButton />
+          {uiState.focusMode && (
+            <button
+              title="Exit focus mode (⌘⇧F)"
+              onClick={() => uiDispatch.toggleFocusMode()}
+              className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-all hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
+            >
+              <Maximize2 className="size-4" />
+              <span>Exit Focus</span>
+            </button>
+          )}
+          <Footer />
         </div>
       </Brouther>
     </StrictMode>

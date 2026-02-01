@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, FileText } from "lucide-react";
 import { useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
 import { clsx } from "clsx";
@@ -11,31 +11,20 @@ export const TabsBar: React.FC = () => {
   const handleTabClick = useCallback(
     (tab: Tab) => {
       dispatch.activeTabId(tab.id);
-      // Also need to set the current note in the store
       const note = state.notes.find((n) => n.id === tab.noteId);
       if (note) {
         dispatch.setNote(note);
       }
     },
-    [dispatch, state.notes]
+    [dispatch, state.notes],
   );
 
   const handleCloseTab = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
-      dispatch.removeTab(tabId).then((result) => {
-        if (result && result.tabs && result.tabs.length === 0) {
-          dispatch.setNote(null);
-        } else if (result && result.activeTabId) {
-            const activeTab = (result.tabs || state.tabs).find(t => t.id === result.activeTabId);
-            if (activeTab) {
-                const note = state.notes.find(n => n.id === activeTab.noteId);
-                if (note) dispatch.setNote(note);
-            }
-        }
-      });
+      dispatch.removeTab(tabId);
     },
-    [dispatch, state.notes, state.tabs]
+    [dispatch, state.notes, state.tabs],
   );
 
   const handleMiddleClick = useCallback(
@@ -44,14 +33,13 @@ export const TabsBar: React.FC = () => {
         handleCloseTab(e as any, tabId);
       }
     },
-    [handleCloseTab]
+    [handleCloseTab],
   );
 
-  // Scroll active tab into view
   useEffect(() => {
     if (state.activeTabId && scrollRef.current) {
       const activeElement = scrollRef.current.querySelector(
-        `[data-tab-id="${state.activeTabId}"]`
+        `[data-tab-id="${state.activeTabId}"]`,
       );
       if (activeElement) {
         activeElement.scrollIntoView({
@@ -68,36 +56,36 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex flex-row items-center w-full h-10 bg-background border-b border-border overflow-x-auto scrollbar-none select-none"
+      className="flex overflow-x-auto fixed flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate z-10 backdrop-blur-sm scrollbar-none"
     >
       {state.tabs.map((tab) => {
         const note = state.notes.find((n) => n.id === tab.noteId);
         const isActive = state.activeTabId === tab.id;
         const title = note?.title || "Untitled";
-
         return (
           <div
             key={tab.id}
             data-tab-id={tab.id}
+            title={note?.filePath || title}
             onClick={() => handleTabClick(tab)}
             onMouseDown={(e) => handleMiddleClick(e, tab.id)}
             className={clsx(
-              "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 border-r border-border cursor-pointer transition-colors relative",
+              "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
               isActive
-                ? "bg-muted text-foreground"
-                : "bg-background text-muted-foreground hover:bg-muted/50"
+                ? "bg-background shadow-sm text-foreground"
+                : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
             )}
-            title={note?.filePath || title}
           >
-            <span className="truncate text-sm flex-1">{title}</span>
+            <FileText className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
+            <span className="flex-1 text-xs truncate">{title}</span>
             <button
               onClick={(e) => handleCloseTab(e, tab.id)}
-              className="p-0.5 rounded-md hover:bg-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
             {isActive && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />
             )}
           </div>
         );

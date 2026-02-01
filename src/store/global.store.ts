@@ -33,33 +33,29 @@ export const useGlobalStore = createGlobalReducer(
     note: async (note: Note) => {
       await repositories.notes.update(note.id, note);
       const storageDir = JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}").storageDirectory || "default";
-      // We need to trigger addTab but dispatchers are not directly available inside here 
-      // without some trick or using the same logic.
-      // Better: let's use the hook's dispatchers if we can, or just duplicate logic for now.
-      
       const currentTabs = get.state().tabs;
       const existingTab = currentTabs.find((t) => t.noteId === note.id);
       if (existingTab) {
         return { note: note, activeTabId: existingTab.id };
       }
       const newTab: Tab = {
-        id: crypto.randomUUID(),
         noteId: note.id,
         project: storageDir,
-        order: currentTabs.length,
         createdAt: new Date(),
+        id: crypto.randomUUID(),
+        order: currentTabs.length,
       };
       await repositories.tabs.save(newTab);
-      return { 
-        note: note, 
+      return {
+        note: note,
+        activeTabId: newTab.id,
         tabs: [...currentTabs, newTab],
-        activeTabId: newTab.id 
       };
     },
     setNote: (note: Note | null) => ({ note }),
     notes: (notes: Note[]) => ({ notes }),
     recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
-    loadRecentNotes: async (limit: number = 20) => {
+    loadRecentNotes: async (limit = 20) => {
       const recent = await repositories.notes.getRecentNotes(limit);
       return { recentNotes: recent };
     },

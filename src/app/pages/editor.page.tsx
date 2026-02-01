@@ -39,7 +39,7 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 w-full">
+    <div className="flex flex-col gap-8 w-full h-full">
       <Editor note={loadedNote} key={loadedNote.id} content={loadedNote.content} />
     </div>
   );

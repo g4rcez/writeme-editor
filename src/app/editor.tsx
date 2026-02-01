@@ -1,24 +1,25 @@
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
-    EditorContent,
-    EditorContext,
-    useEditor,
-    type Editor as TipTapEditor,
+  EditorContent,
+  EditorContext,
+  useEditor,
+  type Editor as TipTapEditor,
 } from "@tiptap/react";
 import { renderToMarkdown } from "@tiptap/static-renderer";
 import "katex/dist/katex.min.css";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-    COPY_EVENT_DISPATCHED,
-    COPY_EVENT_FINISHED,
-    COPY_EVENT_STARTED,
+  COPY_EVENT_DISPATCHED,
+  COPY_EVENT_FINISHED,
+  COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
+import { detectMarkdown } from "../lib/markdown-paste";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
 import {
-    globalState,
-    repositories,
-    useGlobalStore,
+  globalState,
+  repositories,
+  useGlobalStore,
 } from "../store/global.store";
 import { Note } from "../store/note";
 import { editorGlobalRef } from "./editor-global-ref";
@@ -76,8 +77,9 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     editable: true,
     autofocus: false,
     content: props.content,
+    immediatelyRender: true,
     enableContentCheck: true,
-    immediatelyRender: false,
+    enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
     onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
     editorProps: {
@@ -102,6 +104,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
         }
         return false;
       },
+      handlePaste: () => false,
     },
   });
 
@@ -137,12 +140,12 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   }, [state.theme, editor]);
 
   return (
-    <div className="flex flex-col justify-start items-start w-full h-full">
+    <div className="flex flex-col justify-start pt-6 items-start mx-auto w-full h-full max-w-safe">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}
           editor={editor}
-          className="items-stretch w-full text-lg"
+          className="items-stretch w-full text-lg py-editor"
         />
       </EditorContext.Provider>
     </div>
@@ -163,7 +166,7 @@ export const Editor = (props: { content: string; note?: Note }) => {
   return (
     <Fragment key={props.note?.id}>
       {content === null ? (
-        <div className="flex justify-center items-center p-8">Loading...</div>
+        <div className="flex justify-center items-center">Loading...</div>
       ) : (
         <InnerEditor
           id={id}

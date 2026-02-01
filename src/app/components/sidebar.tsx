@@ -1,0 +1,241 @@
+import { useEffect, useRef, useState } from "react";
+import { FileText, Clock, FolderOpen, ChevronLeft, GripVertical } from "lucide-react";
+import { clsx } from "clsx";
+import { useUIStore } from "../../store/ui.store";
+import { useGlobalStore, repositories } from "../../store/global.store";
+import { Note } from "../../store/note";
+import { SettingsRepository } from "../../store/settings";
+import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
+
+type SidebarSection = "recent" | "all" | "projects";
+
+export const Sidebar = () => {
+  const [uiState, uiDispatch] = useUIStore();
+  const [state, dispatch] = useGlobalStore();
+  const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const settings = SettingsRepository.load();
+  const storageDir = settings.storageDirectory || "";
+
+  // Load notes on mount
+  useEffect(() => {
+    const loadNotes = async () => {
+      const notes = await repositories.notes.getAll();
+      dispatch.notes(notes);
+      dispatch.loadRecentNotes(10);
+    };
+    loadNotes();
+  }, [dispatch]);
+
+  // Resize handler
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = e.clientX;
+      uiDispatch.setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, uiDispatch]);
+
+  const openNote = async (note: Note) => {
+    const fullNote = await repositories.notes.getOne(note.id);
+    if (fullNote) {
+      dispatch.note(fullNote);
+    }
+  };
+
+  const getDisplayPath = (note: Note) => {
+    if (!note.filePath || !storageDir) return "";
+    const relativePath = getRelativePath(storageDir, note.filePath);
+    const folderPath = relativePath.includes("/")
+      ? relativePath.substring(0, relativePath.lastIndexOf("/"))
+      : "";
+    return formatSimplifiedPath(folderPath);
+  };
+
+  // Group notes by project/folder
+  const groupedNotes = state.notes.reduce((acc, note) => {
+    const project = note.project || "default";
+    if (!acc[project]) acc[project] = [];
+    acc[project].push(note);
+    return acc;
+  }, {} as Record<string, Note[]>);
+
+  if (!uiState.sidebarOpen) {
+    return null;
+  }
+
+  return (
+    <aside
+      ref={sidebarRef}
+      className="relative flex flex-col h-full bg-card-background/50 border-r border-border/50 select-none"
+      style={{ width: uiState.sidebarWidth }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+        <span className="text-xs font-medium text-foreground/60 uppercase tracking-wide">
+          Notes
+        </span>
+        <button
+          onClick={() => uiDispatch.toggleSidebar()}
+          className="p-1 rounded-md text-foreground/50 hover:text-foreground hover:bg-muted/30 transition-colors"
+          title="Close sidebar"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Section Tabs */}
+      <div className="flex border-b border-border/50">
+        <button
+          onClick={() => setActiveSection("recent")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
+            activeSection === "recent"
+              ? "text-foreground border-b-2 border-primary"
+              : "text-foreground/50 hover:text-foreground"
+          )}
+          title="Recent notes"
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Recent</span>
+        </button>
+        <button
+          onClick={() => setActiveSection("all")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
+            activeSection === "all"
+              ? "text-foreground border-b-2 border-primary"
+              : "text-foreground/50 hover:text-foreground"
+          )}
+          title="All notes"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>All</span>
+        </button>
+        <button
+          onClick={() => setActiveSection("projects")}
+          className={clsx(
+            "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
+            activeSection === "projects"
+              ? "text-foreground border-b-2 border-primary"
+              : "text-foreground/50 hover:text-foreground"
+          )}
+          title="Projects"
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          <span>Projects</span>
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {activeSection === "recent" && (
+          <NoteList
+            notes={state.recentNotes}
+            currentNoteId={state.note?.id}
+            onSelect={openNote}
+            getDisplayPath={getDisplayPath}
+          />
+        )}
+
+        {activeSection === "all" && (
+          <NoteList
+            notes={state.notes}
+            currentNoteId={state.note?.id}
+            onSelect={openNote}
+            getDisplayPath={getDisplayPath}
+          />
+        )}
+
+        {activeSection === "projects" && (
+          <div className="space-y-4">
+            {Object.entries(groupedNotes).map(([project, notes]) => (
+              <div key={project}>
+                <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-foreground/50 uppercase tracking-wide">
+                  <FolderOpen className="w-3 h-3" />
+                  <span>{project === "00000000-0000-0000-0000-000000000000" ? "Default" : project}</span>
+                </div>
+                <NoteList
+                  notes={notes}
+                  currentNoteId={state.note?.id}
+                  onSelect={openNote}
+                  getDisplayPath={getDisplayPath}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {state.notes.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center text-foreground/50 p-4">
+            <FileText className="w-8 h-8 mb-2 opacity-50" />
+            <p className="text-sm">No notes yet</p>
+            <p className="text-xs">Create one with ⌘N</p>
+          </div>
+        )}
+      </div>
+
+      {/* Resize Handle */}
+      <div
+        onMouseDown={() => setIsResizing(true)}
+        className={clsx(
+          "absolute top-0 right-0 w-1 h-full cursor-col-resize group",
+          isResizing && "bg-primary/50"
+        )}
+      >
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <GripVertical className="w-3 h-3 text-foreground/30" />
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+type NoteListProps = {
+  notes: Note[];
+  currentNoteId?: string;
+  onSelect: (note: Note) => void;
+  getDisplayPath: (note: Note) => string;
+};
+
+const NoteList = ({ notes, currentNoteId, onSelect, getDisplayPath }: NoteListProps) => (
+  <ul className="space-y-0.5">
+    {notes.map((note) => {
+      const isActive = note.id === currentNoteId;
+      const displayPath = getDisplayPath(note);
+
+      return (
+        <li key={note.id}>
+          <button
+            onClick={() => onSelect(note)}
+            className={clsx(
+              "w-full flex flex-col px-2 py-1.5 rounded-md text-left transition-colors",
+              isActive
+                ? "bg-primary/10 text-foreground"
+                : "text-foreground/70 hover:bg-muted/30 hover:text-foreground"
+            )}
+          >
+            <span className="text-sm truncate">{note.title || "Untitled"}</span>
+            {displayPath && (
+              <span className="text-xs text-foreground/40 truncate">{displayPath}</span>
+            )}
+          </button>
+        </li>
+      );
+    })}
+  </ul>
+);

@@ -6,6 +6,7 @@ import {
   globalState,
   repositories,
 } from "../store/global.store";
+import { isElectron } from "../lib/is-electron";
 import { Note } from "../store/note";
 import { SettingsRepository } from "../store/settings";
 import { App } from "./app";
@@ -44,6 +45,7 @@ function showInstallPromotion() {
 
 /**
  * Main app wrapper that handles workspace initialization
+ * In browser mode, skip workspace setup entirely (use IndexedDB only)
  */
 const Main = () => {
   const [isConfigured, setIsConfigured] = useState(false);
@@ -52,6 +54,11 @@ const Main = () => {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Browser mode: always configured (IndexedDB only)
+        if (!isElectron()) {
+          setIsConfigured(true);
+          return;
+        }
         const settings = SettingsRepository.load();
         setIsConfigured(!!settings.storageDirectory);
       } catch (error) {
@@ -72,6 +79,11 @@ const Main = () => {
     );
   }
 
+  // Browser mode: skip workspace setup, go directly to app
+  if (!isElectron()) {
+    return <App />;
+  }
+
   if (!isConfigured) {
     return <WorkspaceSetup onComplete={() => setIsConfigured(true)} />;
   }
@@ -88,8 +100,9 @@ export async function main() {
   initializePWA();
 
   // Check if workspace is configured before loading notes
+  // Browser mode: always configured (uses IndexedDB only)
   const settings = SettingsRepository.load();
-  const isConfigured = !!settings.storageDirectory;
+  const isConfigured = !isElectron() || !!settings.storageDirectory;
 
   if (isConfigured) {
     try {

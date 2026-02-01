@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useGlobalStore } from "../../store/global.store";
+import { isElectron } from "../../lib/is-electron";
 import { Project } from "../../store/project";
 import { SettingsRepository } from "../../store/settings";
 import { FolderOpen } from "lucide-react";
@@ -11,6 +12,9 @@ export const OpenProjectDialog = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // Projects are filesystem-based (Electron only)
+  if (!isElectron()) return null;
 
   // Load projects when dialog opens
   useEffect(() => {

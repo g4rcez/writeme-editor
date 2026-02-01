@@ -1,11 +1,15 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
 import { globalDispatch, repositories, useGlobalStore } from "../../store/global.store";
+import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
 import { createStandaloneNote, generateNotePath, getUniqueFilePath } from "../../lib/file-utils";
 import { Note } from "../../store/note";
 import { Project } from "../../store/project";
 import { db } from "../../store/repositories/dexie/dexie-db";
+
+// Shortcuts that require filesystem access (Electron only)
+const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e", "mod+shift+p"];
 
 const noop = () => {};
 
@@ -184,9 +188,12 @@ export const useWritemeShortcuts = () => {
           type: Type.Command,
           action: noop,
         },
-      ].toSorted((a, b) =>
-        a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
-      ),
+      ]
+        // Filter out filesystem shortcuts in browser mode
+        .filter((s) => isElectron() || !FILESYSTEM_SHORTCUTS.includes(s.bind))
+        .toSorted((a, b) =>
+          a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
+        ),
     [],
   );
 };

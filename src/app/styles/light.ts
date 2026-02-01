@@ -8,31 +8,31 @@ export const lightTheme: typeof defaultLightTheme = {
     sm: "0.875rem",
     lg: "1.125rem",
   },
-  custom: { logo: "#112A40" },
+  custom: { logo: "#3d7aed" },
   colors: {
-    foreground: "hsla(208,50%,23%)",
-    background: "hsla(208,30%,98.4%)",
-    border: "hsla(210, 25%, 88%)",
-    muted: "hsla(210, 30%, 86%)",
+    foreground: "hsla(220,25%,20%)",
+    background: "hsla(220,20%,99%)",
+    border: "hsla(220,15%,92%)",
+    muted: "hsla(220,20%,90%)",
     disabled: "hsla(225,11%,51%)",
     emphasis: {
-      foreground: "hsla(0,0%,0%   )",
+      foreground: "hsla(0,0%,0%)",
       DEFAULT: "hsla(44,100%,55%)",
       subtle: "hsla(44,100%,65%)",
       hover: "hsla(44,100%,50%)",
     },
     primary: {
       foreground: "hsla(210, 40%, 98%)",
-      DEFAULT: "hsla(200, 98%, 39%)",
-      subtle: "hsla(200, 94%, 85%)",
-      hover: "hsla(200, 98%, 30%)",
+      DEFAULT: "hsla(221, 83%, 53%)",
+      subtle: "hsla(221, 83%, 90%)",
+      hover: "hsla(221, 83%, 45%)",
     },
     secondary: {
-      background: "hsla(210, 25%, 35%)",
-      DEFAULT: "hsla(210, 25%, 45%)",
-      subtle: "hsla(207, 29%, 39%)",
-      hover: "hsla(210, 21%, 67%)",
-      foreground: "hsla(225,10%,53%)",
+      background: "hsla(252, 67%, 45%)",
+      DEFAULT: "hsla(252, 67%, 55%)",
+      subtle: "hsla(252, 67%, 90%)",
+      hover: "hsla(252, 67%, 65%)",
+      foreground: "hsla(252, 67%, 95%)",
     },
     info: {
       DEFAULT: "hsla(263, 70%, 50%)",
@@ -71,9 +71,9 @@ export const lightTheme: typeof defaultLightTheme = {
       slider: "hsla(0, 0%, 100%)",
     },
     card: {
-      muted: "hsla(210, 25%, 94%)",
-      border: "hsla(225,20%,93.6%)",
-      background: "hsla(240,20%,100%)",
+      muted: "hsla(220, 20%, 96%)",
+      border: "hsla(220,15%,92%)",
+      background: "hsla(220,20%,99.5%)",
     },
     floating: {
       foreground: "hsla(217, 15%, 20%)",
@@ -96,11 +96,11 @@ export const lightTheme: typeof defaultLightTheme = {
     },
     button: {
       muted: {
-        bg: "hsla(218,15%,95%)",
-        text: "hsla(210,20%,42%)",
+        bg: "hsla(220,15%,95%)",
+        text: "hsla(220,25%,35%)",
       },
       primary: {
-        bg: "hsla(200, 98%, 39%)",
+        bg: "hsla(221, 83%, 53%)",
         text: "hsla(210, 40%, 98%)",
       },
       warn: {
@@ -130,12 +130,12 @@ export const lightTheme: typeof defaultLightTheme = {
     },
     tag: {
       muted: {
-        bg: "hsla(203,40%,95%)",
-        text: "hsla(202,35%,37%)",
+        bg: "hsla(220,20%,95%)",
+        text: "hsla(220,25%,35%)",
       },
       primary: {
-        bg: "hsla(200, 94%, 85%)",
-        text: "hsla(200, 98%, 39%)",
+        bg: "hsla(221, 83%, 90%)",
+        text: "hsla(221, 83%, 45%)",
       },
       warn: {
         text: "hsla(45, 5%, 11%)",
@@ -164,14 +164,14 @@ export const lightTheme: typeof defaultLightTheme = {
     },
     alert: {
       muted: {
-        bg: "hsla(210, 30%, 86%)",
-        text: "hsla(210, 30%, 86%)",
-        border: "hsla(210, 10%, 70%)",
+        bg: "hsla(220, 20%, 94%)",
+        text: "hsla(220, 25%, 35%)",
+        border: "hsla(220, 15%, 85%)",
       },
       primary: {
-        text: "hsla(200, 98%, 39%)",
-        border: "hsla(200, 94%, 85%)",
-        bg: "hsla(200, 100%, 96%)",
+        text: "hsla(221, 83%, 45%)",
+        border: "hsla(221, 83%, 80%)",
+        bg: "hsla(221, 100%, 97%)",
       },
       warn: {
         bg: "hsla(48, 100%, 96%)",

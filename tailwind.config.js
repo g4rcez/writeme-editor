@@ -9,6 +9,33 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      boxShadow: {
+        soft: "0 2px 8px -2px hsla(0, 0%, 0%, 0.06)",
+        medium: "0 4px 16px -4px hsla(0, 0%, 0%, 0.1)",
+        "soft-lg": "0 4px 12px -3px hsla(0, 0%, 0%, 0.08)",
+      },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
+      },
+      transitionDuration: {
+        fast: "150ms",
+        normal: "200ms",
+        slow: "300ms",
+      },
+      animation: {
+        "fade-in": "fadeIn 200ms ease-out",
+        "fade-in-scale": "fadeInScale 200ms ease-out",
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        fadeInScale: {
+          from: { opacity: "0", transform: "scale(0.98)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+      },
       fontSize: {
         xs: [
           "calc(var(--default-size) * 0.75)",
@@ -84,6 +111,9 @@ export default {
         72: "calc(var(--default-size) * 18)",
         80: "calc(var(--default-size) * 20)",
         96: "calc(var(--default-size) * 24)",
+        safe: "70vw",
+        navbar: "calc(var(--default-size) * 3)",
+        editor: "calc(var(--default-size) * 6)",
       },
     },
   },
