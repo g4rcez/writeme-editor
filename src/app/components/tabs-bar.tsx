@@ -1,8 +1,8 @@
-import React, { useCallback, useRef, useEffect } from "react";
-import { X, FileText } from "lucide-react";
+import { clsx } from "clsx";
+import { FileText, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
-import { clsx } from "clsx";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
@@ -30,7 +30,7 @@ export const TabsBar: React.FC = () => {
   const handleMiddleClick = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       if (e.button === 1) {
-        handleCloseTab(e as any, tabId);
+        handleCloseTab(e,tabId);
       }
     },
     [handleCloseTab],
@@ -56,7 +56,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex overflow-x-auto fixed flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate z-10 backdrop-blur-sm scrollbar-none"
+      className="flex overflow-x-auto fixed z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate backdrop-blur-sm scrollbar-none"
     >
       {state.tabs.map((tab) => {
         const note = state.notes.find((n) => n.id === tab.noteId);
@@ -67,7 +67,9 @@ export const TabsBar: React.FC = () => {
             key={tab.id}
             data-tab-id={tab.id}
             title={note?.filePath || title}
-            onClick={() => handleTabClick(tab)}
+            onClick={() =>
+              state.tabs.length === 1 ? undefined : handleTabClick(tab)
+            }
             onMouseDown={(e) => handleMiddleClick(e, tab.id)}
             className={clsx(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",

@@ -50,8 +50,6 @@ export class NotesRepository implements Repository<Note> {
       if (!writeResult.success) {
         throw new Error(`Failed to write file: ${writeResult.error}`);
       }
-
-      // Update note metadata
       item.filePath = uniquePath;
       item.fileSize = writeResult.fileSize;
       item.lastSynced = new Date(writeResult.lastModified);
@@ -72,18 +70,9 @@ export class NotesRepository implements Repository<Note> {
     return item;
   }
 
-  /**
-   * Update existing note: conditionally updates filesystem or IndexedDB
-   * - Filesystem mode: content in .md file, metadata in IndexedDB
-   * - IndexedDB mode: full note (including content) in IndexedDB
-   * Handles lazy migration for old notes without filePath (in filesystem mode)
-   */
   async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsRepository.load();
-
-    // Standalone files: write directly to file path, skip normal project flow
-    // (only applies when filesystem access is available)
     if (item.project === "__standalone__" && item.filePath && mode === "filesystem") {
       const result = await window.electronAPI.fs.writeFile(
         item.filePath,
@@ -95,61 +84,44 @@ export class NotesRepository implements Repository<Note> {
       }
       return item;
     }
-
-    // Get existing note to check for changes
     const existing = await db.notes.get(id);
-
     if (!existing) {
       throw new Error(`Note ${id} not found`);
     }
-
     if (mode === "filesystem") {
-      // Filesystem mode: write content to file, metadata to IndexedDB
       let filePath = existing.filePath;
-
-      // LAZY MIGRATION: Old notes without filePath get migrated on first update
       if (!filePath && (existing as any).content) {
         console.log("Lazy migration for note:", item.title);
-
         filePath = generateNotePath(
           settings.storageDirectory!,
           item.project,
           item.title,
         );
-
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
           const result = await window.electronAPI.fs.statFile(path);
           return result.exists;
         });
-
-        // Write old content to file
         const writeResult = await window.electronAPI.fs.writeFile(
           uniquePath,
           (existing as any).content || item.content,
         );
-
         if (writeResult.success) {
           filePath = uniquePath;
           item.filePath = filePath;
           item.lastSynced = new Date(writeResult.lastModified);
         }
       }
-
-      // Handle title change = file rename
       if (existing.title !== item.title && filePath) {
         const newPath = generateNotePath(
           settings.storageDirectory!,
           item.project,
           item.title,
         );
-
-        // Only rename if path actually changed
         if (newPath !== filePath) {
           const moveResult = await window.electronAPI.fs.moveFile(
             filePath,
             newPath,
           );
-
           if (moveResult.success) {
             filePath = moveResult.newPath;
           } else {
@@ -160,31 +132,23 @@ export class NotesRepository implements Repository<Note> {
           }
         }
       }
-
-      // Write updated content to file
       if (filePath) {
         const writeResult = await window.electronAPI.fs.writeFile(
           filePath,
           item.content,
         );
-
         if (!writeResult.success) {
           throw new Error(`Failed to update file: ${writeResult.error}`);
         }
-
         item.fileSize = writeResult.fileSize;
         item.lastSynced = new Date(writeResult.lastModified);
       }
-
       item.filePath = filePath;
-      item.updatedBy = settings.defaultAuthor;
       item.updatedAt = new Date();
-
-      // Update metadata in IndexedDB (WITHOUT content)
+      item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
       await db.notes.put(metadata, id);
     } else {
-      // IndexedDB mode: update full note including content
       item.updatedBy = settings.defaultAuthor;
       item.updatedAt = new Date();
       item.fileSize = item.content.length;

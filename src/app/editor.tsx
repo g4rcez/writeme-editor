@@ -140,7 +140,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   }, [state.theme, editor]);
 
   return (
-    <div className="flex flex-col justify-start pt-6 items-start mx-auto w-full h-full max-w-safe">
+    <div className="flex flex-col justify-start w-full pt-6 items-start mx-auto w-full h-full max-w-safe">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}

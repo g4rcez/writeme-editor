@@ -13,15 +13,15 @@ const state = JSON.parse(
 const initialState = {
   help: false,
   commander: false,
-  recentNotesDialog: false,
-  directoryBrowserDialog: false,
-  openProjectDialog: false,
-  notes: [] as Note[],
-  recentNotes: [] as Note[],
-  projects: [] as Project[],
   tabs: [] as Tab[],
-  activeTabId: (state.activeTabId || null) as string | null,
+  notes: [] as Note[],
+  openProjectDialog: false,
+  recentNotesDialog: false,
+  projects: [] as Project[],
+  recentNotes: [] as Note[],
   theme: state.theme || "dark",
+  directoryBrowserDialog: false,
+  activeTabId: (state.activeTabId || null) as string | null,
   note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
 };
 
@@ -32,24 +32,30 @@ export const useGlobalStore = createGlobalReducer(
   (get) => ({
     note: async (note: Note) => {
       await repositories.notes.update(note.id, note);
-      const storageDir = JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}").storageDirectory || "default";
-      const currentTabs = get.state().tabs;
-      const existingTab = currentTabs.find((t) => t.noteId === note.id);
+      const storageDir =
+        JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}")
+          .storageDirectory || Note.DEFAULT_PROJECT;
+      const state = get.state();
+      const existingTab = state.tabs.find((t) => t.noteId === note.id);
+      const updatedNotes = state.notes.map((n) =>
+        n.id === note.id ? note : n
+      );
       if (existingTab) {
-        return { note: note, activeTabId: existingTab.id };
+        return { note: note, notes: updatedNotes, activeTabId: existingTab.id };
       }
       const newTab: Tab = {
+        id: note.id,
         noteId: note.id,
         project: storageDir,
         createdAt: new Date(),
-        id: crypto.randomUUID(),
-        order: currentTabs.length,
+        order: state.tabs.length,
       };
       await repositories.tabs.save(newTab);
       return {
         note: note,
+        notes: updatedNotes,
         activeTabId: newTab.id,
-        tabs: [...currentTabs, newTab],
+        tabs: [...state.tabs, newTab],
       };
     },
     setNote: (note: Note | null) => ({ note }),
@@ -85,10 +91,11 @@ export const useGlobalStore = createGlobalReducer(
       };
     },
     removeTab: async (tabId: string) => {
-      const currentTabs = get.state().tabs;
+      const state = get.state();
+      const currentTabs = state.tabs;
+      if (currentTabs.length === 1) return state;
       const newTabs = currentTabs.filter((t) => t.id !== tabId);
       await repositories.tabs.delete(tabId);
-
       let nextActiveTabId = get.state().activeTabId;
       if (nextActiveTabId === tabId) {
         const index = currentTabs.findIndex((t) => t.id === tabId);
@@ -100,7 +107,6 @@ export const useGlobalStore = createGlobalReducer(
           nextActiveTabId = newTabs[newTabs.length - 1].id;
         }
       }
-
       return {
         tabs: newTabs,
         activeTabId: nextActiveTabId,

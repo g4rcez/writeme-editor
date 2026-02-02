@@ -9,7 +9,7 @@ export class TabsRepository {
   }
 
   async save(tab: Tab): Promise<void> {
-    await db.tabs.put(tab);
+    await db.tabs.put(tab, tab.id);
   }
 
   async delete(id: string): Promise<void> {

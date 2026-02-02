@@ -2,6 +2,7 @@ import { Brouther, Outlet } from "brouther";
 import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
 import { repositories, useGlobalStore } from "../store/global.store";
+import { Note } from "../store/note";
 import { SettingsRepository } from "../store/settings";
 import { useUIStore } from "../store/ui.store";
 import { Commander } from "./commander";
@@ -18,18 +19,19 @@ export const App = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
 
-  // Session restoration
+  // Session restoration (IndexedDB-first: always restore, use default project as fallback)
   useEffect(() => {
     const restoreSession = async () => {
       const settings = SettingsRepository.load();
-      if (!settings.storageDirectory) return;
+      // Use storageDirectory if configured, otherwise use default project for IndexedDB-only mode
+      const project = settings.storageDirectory || Note.DEFAULT_PROJECT;
 
       // Load tabs for current project
-      await dispatch.loadTabs(settings.storageDirectory);
+      await dispatch.loadTabs(project);
 
       // If there's an active tab, ensure its note is loaded
       if (state.activeTabId) {
-        const tabs = await repositories.tabs.getAll(settings.storageDirectory);
+        const tabs = await repositories.tabs.getAll(project);
         const activeTab = tabs.find((t) => t.id === state.activeTabId);
         if (activeTab) {
           const note = await repositories.notes.getOne(activeTab.noteId);
@@ -61,7 +63,7 @@ export const App = () => {
         <div className="flex flex-col flex-1 justify-center items-center isolate">
           <Commander />
           <Navbar />
-          <div className="flex flex-1 min-h-0">
+          <div className="w-full flex flex-1 min-h-0">
             {!uiState.focusMode && (
               <div className="hidden lg:block">
                 <Sidebar />

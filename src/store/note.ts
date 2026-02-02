@@ -2,7 +2,11 @@ import { uuid } from "@g4rcez/components";
 import { EntityBase } from "./repository";
 
 export class Note implements EntityBase {
-  private static PROJECT = "00000000-0000-0000-0000-000000000000";
+  // Default project for IndexedDB-only mode (no filesystem sync)
+  public static readonly DEFAULT_PROJECT = "writeme-default";
+  // Legacy project ID for backward compatibility
+  private static readonly LEGACY_PROJECT = "00000000-0000-0000-0000-000000000000";
+  private static PROJECT = Note.DEFAULT_PROJECT;
   public readonly type = "__writeme_note";
 
   private constructor(
@@ -71,11 +75,16 @@ export class Note implements EntityBase {
   }
 
   public static parse(a: any): Note {
+    // Normalize legacy project IDs to new default
+    let project = a.project || Note.PROJECT;
+    if (project === Note.LEGACY_PROJECT) {
+      project = Note.DEFAULT_PROJECT;
+    }
     return new Note(
       a.title || "Untitled",
       a.content || "",
       a.id || uuid(),
-      a.project || Note.PROJECT,
+      project,
       a.createdAt ? new Date(a.createdAt) : new Date(),
       a.updatedAt ? new Date(a.updatedAt) : new Date(),
       a.filePath || null,

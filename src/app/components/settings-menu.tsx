@@ -1,8 +1,11 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Settings, Check, PanelLeft, Maximize2, Info, AlignLeft, AlignCenter, AlignJustify } from "lucide-react";
+import { Settings, Check, PanelLeft, Maximize2, Info, AlignLeft, AlignCenter, AlignJustify, Database, FolderSync } from "lucide-react";
 import { Link } from "brouther";
+import { useState } from "react";
+import { SettingsRepository } from "../../store/settings";
 import { useUIStore, ContentWidth } from "../../store/ui.store";
 import { links } from "../router";
+import { StorageConfigDialog } from "./workspace-setup";
 
 const widthOptions: { value: ContentWidth; label: string; icon: React.ElementType }[] = [
   { value: "narrow", label: "Narrow", icon: AlignLeft },
@@ -12,8 +15,16 @@ const widthOptions: { value: ContentWidth; label: string; icon: React.ElementTyp
 
 export const SettingsMenu = () => {
   const [state, dispatch] = useUIStore();
+  const [storageDialogOpen, setStorageDialogOpen] = useState(false);
+  const settings = SettingsRepository.load();
+  const hasSync = !!settings.storageDirectory;
 
   return (
+    <>
+      <StorageConfigDialog
+        open={storageDialogOpen}
+        onOpenChange={setStorageDialogOpen}
+      />
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
@@ -83,6 +94,21 @@ export const SettingsMenu = () => {
 
           <DropdownMenu.Separator className="h-px bg-border my-1" />
 
+          {/* Storage Configuration */}
+          <DropdownMenu.Item
+            onSelect={() => setStorageDialogOpen(true)}
+            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer outline-none transition-colors hover:bg-muted/50 focus:bg-muted/50"
+          >
+            {hasSync ? (
+              <FolderSync className="w-4 h-4 text-green-500" />
+            ) : (
+              <Database className="w-4 h-4 text-blue-500" />
+            )}
+            <span className="flex-1">Storage: {hasSync ? "Folder Sync" : "Local"}</span>
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Separator className="h-px bg-border my-1" />
+
           {/* About Link */}
           <DropdownMenu.Item asChild>
             <Link
@@ -96,5 +122,6 @@ export const SettingsMenu = () => {
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+    </>
   );
 };

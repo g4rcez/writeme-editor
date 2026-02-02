@@ -1,16 +1,12 @@
 import { createTheme } from "@g4rcez/components";
-import { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   globalDispatch,
   globalState,
   repositories,
 } from "../store/global.store";
-import { isElectron } from "../lib/is-electron";
 import { Note } from "../store/note";
-import { SettingsRepository } from "../store/settings";
 import { App } from "./app";
-import { WorkspaceSetup } from "./components/workspace-setup";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 
@@ -44,50 +40,11 @@ function showInstallPromotion() {
 }
 
 /**
- * Main app wrapper that handles workspace initialization
- * In browser mode, skip workspace setup entirely (use IndexedDB only)
+ * Main app wrapper
+ * IndexedDB-first mode: App starts immediately without requiring workspace configuration
+ * Filesystem sync can be configured later via Settings menu
  */
 const Main = () => {
-  const [isConfigured, setIsConfigured] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        // Browser mode: always configured (IndexedDB only)
-        if (!isElectron()) {
-          setIsConfigured(true);
-          return;
-        }
-        const settings = SettingsRepository.load();
-        setIsConfigured(!!settings.storageDirectory);
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initialize();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  // Browser mode: skip workspace setup, go directly to app
-  if (!isElectron()) {
-    return <App />;
-  }
-
-  if (!isConfigured) {
-    return <WorkspaceSetup onComplete={() => setIsConfigured(true)} />;
-  }
-
   return <App />;
 };
 
@@ -99,43 +56,37 @@ export async function main() {
 
   initializePWA();
 
-  // Check if workspace is configured before loading notes
-  // Browser mode: always configured (uses IndexedDB only)
-  const settings = SettingsRepository.load();
-  const isConfigured = !isElectron() || !!settings.storageDirectory;
+  // Always load notes from IndexedDB (IndexedDB-first mode)
+  try {
+    const notes = await repositories.notes.getAll();
+    globalDispatch.notes(notes);
 
-  if (isConfigured) {
-    try {
-      const notes = await repositories.notes.getAll();
-      globalDispatch.notes(notes);
+    // Get the ID of the previously focused note from localStorage
+    const currentNoteId = globalState().note?.id;
+    let noteToOpen: Note | null = null;
 
-      // Get the ID of the previously focused note from localStorage
-      const currentNoteId = globalState().note?.id;
-      let noteToOpen: Note | null = null;
-
-      if (currentNoteId) {
-        // Restore previously focused note with full content
-        noteToOpen = await repositories.notes.getOne(currentNoteId);
-      }
-
-      if (!noteToOpen && notes.length > 0) {
-        // Fall back to first note with full content
-        noteToOpen = await repositories.notes.getOne(notes[0].id);
-      }
-
-      if (noteToOpen) {
-        globalDispatch.note(noteToOpen);
-      } else if (notes.length === 0) {
-        // Create new note only if no notes exist
-        const note = Note.new("Untitled", "");
-        await repositories.notes.save(note);
-        globalDispatch.note(note);
-      }
-    } catch (error) {
-      console.error("Failed to load notes:", error);
-      // Continue anyway - workspace setup might fix this
+    if (currentNoteId) {
+      // Restore previously focused note with full content
+      noteToOpen = await repositories.notes.getOne(currentNoteId);
     }
+
+    if (!noteToOpen && notes.length > 0) {
+      // Fall back to first note with full content
+      noteToOpen = await repositories.notes.getOne(notes[0].id);
+    }
+
+    if (noteToOpen) {
+      globalDispatch.note(noteToOpen);
+    } else if (notes.length === 0) {
+      // Create new note only if no notes exist
+      const note = Note.new("Untitled", "");
+      await repositories.notes.save(note);
+      globalDispatch.note(note);
+    }
+  } catch (error) {
+    console.error("Failed to load notes:", error);
   }
+
   if (globalState().theme === "dark") {
     document.documentElement.classList.add("dark");
   }
