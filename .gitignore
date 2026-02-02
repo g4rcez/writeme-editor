@@ -92,3 +92,4 @@ typings/
 out/
 erl_crash.dump
 dev-dist
+dist/
