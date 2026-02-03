@@ -15,7 +15,6 @@ export default function EditorPage() {
       return;
     }
 
-    // If note has content or is new (no filePath), use directly
     if (state.note.content || !state.note.filePath) {
       setLoadedNote(state.note);
       setIsLoading(false);

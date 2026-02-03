@@ -10,7 +10,11 @@ import {
 } from "./elements/shortcut-items";
 import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { SettingsRepository } from "../store/settings";
-import { createStandaloneNote, generateNotePath, getUniqueFilePath } from "../lib/file-utils";
+import {
+  createStandaloneNote,
+  generateNotePath,
+  getUniqueFilePath,
+} from "../lib/file-utils";
 import { db } from "../store/repositories/dexie/dexie-db";
 
 export const Commander = () => {
@@ -22,24 +26,14 @@ export const Commander = () => {
     <CommandPalette
       open={state.commander}
       onChangeVisibility={dispatch.commander}
-      commands={[
-        {
-          title: "Notas",
-          type: "group",
-          items: [
-            {
-              title: "New note",
-              type: "shortcut",
-              action: (args) => {
-                const newNote = Note.new("Untitled", "");
-                repositories.notes.save(newNote);
-                dispatch.note(newNote);
-                args.setOpen(false);
-              },
-            },
-            // Filesystem commands (Electron only)
-            ...(isElectron()
-              ? [
+      commands={
+        [
+          ...(isElectron()
+            ? [
+              {
+                title: "Filesystem",
+                type: "group",
+                items: [
                   {
                     title: "Browse files",
                     shortcut: mapShortcutOS("mod+shift+e"),
@@ -47,98 +41,6 @@ export const Commander = () => {
                     action: (args: { setOpen: (v: boolean) => void }) => {
                       args.setOpen(false);
                       dispatch.directoryBrowserDialog(true);
-                    },
-                  },
-                  {
-                    title: "Open...",
-                    shortcut: mapShortcutOS("mod+o"),
-                    type: "shortcut" as const,
-                    action: async (args: { setOpen: (v: boolean) => void }) => {
-                      args.setOpen(false);
-                      const result =
-                        await window.electronAPI.fs.openFileOrDirectory();
-                      if (!result) return;
-
-                      if (result.isDirectory) {
-                        // Save/update project in IndexedDB
-                        let project = await repositories.projects.getByFolderPath(
-                          result.path
-                        );
-                        if (!project) {
-                          project = Project.fromPath(result.path);
-                          await repositories.projects.save(project);
-                        } else {
-                          project.updatedAt = new Date();
-                          await repositories.projects.update(project.id, project);
-                        }
-
-                        // Migrate IndexedDB-only notes to filesystem
-                        // These are notes with content but no filePath (created in web mode)
-                        const allNotes = await db.notes.toArray();
-                        const webOnlyNotes = allNotes.filter(
-                          (n: any) => !n.filePath && n.content
-                        );
-
-                        for (const noteData of webOnlyNotes) {
-                          try {
-                            const note = Note.parse(noteData);
-                            const filePath = generateNotePath(
-                              result.path,
-                              note.project,
-                              note.title
-                            );
-                            const uniquePath = await getUniqueFilePath(
-                              filePath,
-                              async (p) => {
-                                const r = await window.electronAPI.fs.statFile(p);
-                                return r.exists;
-                              }
-                            );
-
-                            const writeResult =
-                              await window.electronAPI.fs.writeFile(
-                                uniquePath,
-                                note.content
-                              );
-                            if (writeResult.success) {
-                              // Update IndexedDB: set filePath, remove content (now in file)
-                              await db.notes.update(note.id, {
-                                filePath: uniquePath,
-                                fileSize: writeResult.fileSize,
-                                lastSynced: new Date(writeResult.lastModified),
-                                content: undefined, // Remove content from IndexedDB
-                              });
-                              console.log(
-                                `Migrated note "${note.title}" to ${uniquePath}`
-                              );
-                            }
-                          } catch (err) {
-                            console.error(
-                              "Failed to migrate note:",
-                              noteData.title,
-                              err
-                            );
-                          }
-                        }
-
-                        SettingsRepository.save({ storageDirectory: result.path });
-                        window.location.reload();
-                      } else {
-                        const file = await window.electronAPI.fs.readFile(
-                          result.path
-                        );
-                        if (file.success) {
-                          const noteData = createStandaloneNote(
-                            result.path,
-                            file.content
-                          );
-                          const note = Note.parse(noteData);
-                          // Index metadata in IndexedDB for recent notes
-                          const { content: _, ...metadata } = noteData;
-                          await db.notes.put(metadata as any, note.id);
-                          dispatch.setNote(note);
-                        }
-                      }
                     },
                   },
                   {
@@ -150,37 +52,148 @@ export const Commander = () => {
                       dispatch.openProjectDialog(true);
                     },
                   },
-                ]
-              : []),
-            ...state.notes.map((note): CommandItemTypes => {
-              return {
-                type: "shortcut",
-                title: `Note: ${note.title}`,
-                action: (args) => {
-                  args.setOpen(false);
-                  dispatch.note(note);
-                },
-              };
-            }),
-          ],
-        },
-        {
-          title: "Actions",
-          items: commands
-            .filter((x) => !x.hidden)
-            .filter((x) => x.type === Type.Shortcut)
-            .map((x) => ({
-              title: x.description,
-              shortcut: mapShortcutOS(x.bind),
-              type: "shortcut",
-              action: (args) => {
-                x.action();
-                args.setOpen(false);
+                  {
+                    title: "Open...",
+                    shortcut: mapShortcutOS("mod+o"),
+                    type: "shortcut" as const,
+                    action: async (args: {
+                      setOpen: (v: boolean) => void;
+                    }) => {
+                      args.setOpen(false);
+                      const result =
+                        await window.electronAPI.fs.openFileOrDirectory();
+                      if (!result) return;
+                      if (result.isDirectory) {
+                        let project =
+                          await repositories.projects.getByFolderPath(
+                            result.path,
+                          );
+                        if (!project) {
+                          project = Project.fromPath(result.path);
+                          await repositories.projects.save(project);
+                        } else {
+                          project.updatedAt = new Date();
+                          await repositories.projects.update(
+                            project.id,
+                            project,
+                          );
+                        }
+                        const allNotes = await db.notes.toArray();
+                        const webOnlyNotes = allNotes.filter(
+                          (n: any) => !n.filePath && n.content,
+                        );
+                        for (const noteData of webOnlyNotes) {
+                          try {
+                            const note = Note.parse(noteData);
+                            const filePath = generateNotePath(
+                              result.path,
+                              note.project,
+                              note.title,
+                            );
+                            const uniquePath = await getUniqueFilePath(
+                              filePath,
+                              async (p) => {
+                                const r =
+                                  await window.electronAPI.fs.statFile(p);
+                                return r.exists;
+                              },
+                            );
+                            const writeResult =
+                              await window.electronAPI.fs.writeFile(
+                                uniquePath,
+                                note.content,
+                              );
+                            if (writeResult.success) {
+                              await db.notes.update(note.id, {
+                                content: undefined,
+                                filePath: uniquePath,
+                                fileSize: writeResult.fileSize,
+                                lastSynced: new Date(
+                                  writeResult.lastModified,
+                                ),
+                              });
+                              console.log(
+                                `Migrated note "${note.title}" to ${uniquePath}`,
+                              );
+                            }
+                          } catch (err) {
+                            console.error(
+                              "Failed to migrate note:",
+                              noteData.title,
+                              err,
+                            );
+                          }
+                        }
+                        SettingsRepository.save({
+                          storageDirectory: result.path,
+                        });
+                        window.location.reload();
+                      } else {
+                        const file = await window.electronAPI.fs.readFile(
+                          result.path,
+                        );
+                        if (file.success) {
+                          const noteData = createStandaloneNote(
+                            result.path,
+                            file.content,
+                          );
+                          const note = Note.parse(noteData);
+                          // Index metadata in IndexedDB for recent notes
+                          const { content: _, ...metadata } = noteData;
+                          await db.notes.put(metadata as any, note.id);
+                          dispatch.setNote(note);
+                        }
+                      }
+                    },
+                  },
+                ],
               },
-            })),
-          type: "group",
-        },
-      ]}
+            ]
+            : []),
+          {
+            title: "Notes",
+            type: "group",
+            items: [
+              {
+                title: "New note",
+                type: "shortcut",
+                action: (args) => {
+                  const newNote = Note.new("Untitled", "");
+                  repositories.notes.save(newNote);
+                  dispatch.note(newNote);
+                  args.setOpen(false);
+                },
+              },
+              ...state.notes.map((note): CommandItemTypes => {
+                return {
+                  type: "shortcut",
+                  title: `Note: ${note.title}`,
+                  action: (args) => {
+                    args.setOpen(false);
+                    dispatch.note(note);
+                  },
+                };
+              }),
+            ],
+          },
+          {
+            title: "Actions",
+            type: "group",
+            items: commands
+              .filter((x) => !x.hidden)
+              .filter((x) => x.type === Type.Shortcut)
+              .map((x) => ({
+                title: x.description,
+                shortcut: mapShortcutOS(x.bind),
+                type: "shortcut",
+                action: (args) => {
+                  x.action();
+                  args.setOpen(false);
+                },
+              })),
+          },
+        ] as const
+      }
     />
   );
 };

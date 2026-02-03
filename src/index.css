@@ -6,7 +6,9 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
+html,
+body,
+#root {
   font-size: 14px;
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
@@ -39,6 +41,7 @@ code {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -50,6 +53,7 @@ code {
     opacity: 0;
     transform: scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -75,7 +79,9 @@ code {
 }
 
 .hover-lift {
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal);
 }
 
 .hover-lift:hover {
@@ -128,5 +134,10 @@ code {
 }
 
 .drag-handle + .ProseMirror .ProseMirror-selectednode {
-  outline: 2px solid #68D391;
+  outline: 2px solid #68d391;
+}
+
+input[data-combikeysbypass] {
+  outline: none;
+  border: none;
 }

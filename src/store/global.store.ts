@@ -19,8 +19,8 @@ const initialState = {
   recentNotesDialog: false,
   projects: [] as Project[],
   recentNotes: [] as Note[],
-  theme: state.theme || "dark",
   directoryBrowserDialog: false,
+  theme: state.theme || ("dark" as "light" | "dark"),
   activeTabId: (state.activeTabId || null) as string | null,
   note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
 };
@@ -38,7 +38,7 @@ export const useGlobalStore = createGlobalReducer(
       const state = get.state();
       const existingTab = state.tabs.find((t) => t.noteId === note.id);
       const updatedNotes = state.notes.map((n) =>
-        n.id === note.id ? note : n
+        n.id === note.id ? note : n,
       );
       if (existingTab) {
         return { note: note, notes: updatedNotes, activeTabId: existingTab.id };

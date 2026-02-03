@@ -10,7 +10,7 @@ export const lightTheme: typeof defaultLightTheme = {
   },
   custom: { logo: "#3d7aed" },
   colors: {
-    foreground: "hsla(220,25%,20%)",
+    foreground: "hsla(221,10%,23%)",
     background: "hsla(220,20%,99%)",
     border: "hsla(220,15%,92%)",
     muted: "hsla(220,20%,90%)",

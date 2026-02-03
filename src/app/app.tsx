@@ -19,17 +19,11 @@ export const App = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
 
-  // Session restoration (IndexedDB-first: always restore, use default project as fallback)
   useEffect(() => {
     const restoreSession = async () => {
       const settings = SettingsRepository.load();
-      // Use storageDirectory if configured, otherwise use default project for IndexedDB-only mode
       const project = settings.storageDirectory || Note.DEFAULT_PROJECT;
-
-      // Load tabs for current project
       await dispatch.loadTabs(project);
-
-      // If there's an active tab, ensure its note is loaded
       if (state.activeTabId) {
         const tabs = await repositories.tabs.getAll(project);
         const activeTab = tabs.find((t) => t.id === state.activeTabId);
@@ -44,7 +38,6 @@ export const App = () => {
     restoreSession();
   }, []);
 
-  // Focus mode keyboard shortcut: Cmd/Ctrl + Shift + F
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
@@ -52,7 +45,6 @@ export const App = () => {
         uiDispatch.toggleFocusMode();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [uiDispatch]);

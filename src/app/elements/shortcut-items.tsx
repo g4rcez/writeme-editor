@@ -1,9 +1,17 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
-import { globalDispatch, repositories, useGlobalStore } from "../../store/global.store";
+import {
+  globalDispatch,
+  repositories,
+  useGlobalStore,
+} from "../../store/global.store";
 import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
-import { createStandaloneNote, generateNotePath, getUniqueFilePath } from "../../lib/file-utils";
+import {
+  createStandaloneNote,
+  generateNotePath,
+  getUniqueFilePath,
+} from "../../lib/file-utils";
 import { Note } from "../../store/note";
 import { Project } from "../../store/project";
 import { db } from "../../store/repositories/dexie/dexie-db";
@@ -11,7 +19,7 @@ import { db } from "../../store/repositories/dexie/dexie-db";
 // Shortcuts that require filesystem access (Electron only)
 const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e", "mod+shift+p"];
 
-const noop = () => {};
+const noop = () => { };
 
 export enum Type {
   Shortcut = "shortcut",
@@ -39,19 +47,17 @@ const zoom = (op: (a: number, b: number) => number) => {
 };
 
 export const useWritemeShortcuts = () => {
-  const [, dispatch] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
   return useMemo(
     (): Shortcut[] =>
       [
         {
           bind: "mod+shift+m",
           type: Type.Shortcut,
-          description: "Toggle Mode",
+          description: state.theme === "dark" ? "Light Mode" : "Dark Mode",
           action: () => {
             document.documentElement.classList.toggle("dark");
-            globalDispatch.theme((prev) =>
-              prev === "dark" ? "light" : "dark",
-            );
+            dispatch.theme((prev) => (prev === "dark" ? "light" : "dark"));
           },
         },
         {
@@ -107,7 +113,9 @@ export const useWritemeShortcuts = () => {
 
             if (result.isDirectory) {
               // Save/update project in IndexedDB
-              let project = await repositories.projects.getByFolderPath(result.path);
+              let project = await repositories.projects.getByFolderPath(
+                result.path,
+              );
               if (!project) {
                 project = Project.fromPath(result.path);
                 await repositories.projects.save(project);
@@ -120,19 +128,29 @@ export const useWritemeShortcuts = () => {
               // These are notes with content but no filePath (created in web mode)
               const allNotes = await db.notes.toArray();
               const webOnlyNotes = allNotes.filter(
-                (n: any) => !n.filePath && n.content
+                (n: any) => !n.filePath && n.content,
               );
 
               for (const noteData of webOnlyNotes) {
                 try {
                   const note = Note.parse(noteData);
-                  const filePath = generateNotePath(result.path, note.project, note.title);
-                  const uniquePath = await getUniqueFilePath(filePath, async (p) => {
-                    const r = await window.electronAPI.fs.statFile(p);
-                    return r.exists;
-                  });
+                  const filePath = generateNotePath(
+                    result.path,
+                    note.project,
+                    note.title,
+                  );
+                  const uniquePath = await getUniqueFilePath(
+                    filePath,
+                    async (p) => {
+                      const r = await window.electronAPI.fs.statFile(p);
+                      return r.exists;
+                    },
+                  );
 
-                  const writeResult = await window.electronAPI.fs.writeFile(uniquePath, note.content);
+                  const writeResult = await window.electronAPI.fs.writeFile(
+                    uniquePath,
+                    note.content,
+                  );
                   if (writeResult.success) {
                     // Update IndexedDB: set filePath, remove content (now in file)
                     await db.notes.update(note.id, {
@@ -141,7 +159,9 @@ export const useWritemeShortcuts = () => {
                       lastSynced: new Date(writeResult.lastModified),
                       content: undefined, // Remove content from IndexedDB
                     });
-                    console.log(`Migrated note "${note.title}" to ${uniquePath}`);
+                    console.log(
+                      `Migrated note "${note.title}" to ${uniquePath}`,
+                    );
                   }
                 } catch (err) {
                   console.error("Failed to migrate note:", noteData.title, err);
@@ -153,7 +173,10 @@ export const useWritemeShortcuts = () => {
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);
               if (file.success) {
-                const noteData = createStandaloneNote(result.path, file.content);
+                const noteData = createStandaloneNote(
+                  result.path,
+                  file.content,
+                );
                 const note = Note.parse(noteData);
                 // Index metadata in IndexedDB for recent notes
                 const { content: _, ...metadata } = noteData;
