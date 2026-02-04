@@ -37,9 +37,10 @@ export const useGlobalStore = createGlobalReducer(
           .storageDirectory || Note.DEFAULT_PROJECT;
       const state = get.state();
       const existingTab = state.tabs.find((t) => t.noteId === note.id);
-      const updatedNotes = state.notes.map((n) =>
-        n.id === note.id ? note : n,
-      );
+      const existsInNotes = state.notes.some((n) => n.id === note.id);
+      const updatedNotes = existsInNotes
+        ? state.notes.map((n) => (n.id === note.id ? note : n))
+        : [...state.notes, note];
       if (existingTab) {
         return { note: note, notes: updatedNotes, activeTabId: existingTab.id };
       }
@@ -59,7 +60,27 @@ export const useGlobalStore = createGlobalReducer(
       };
     },
     setNote: (note: Note | null) => ({ note }),
-    notes: (notes: Note[]) => ({ notes }),
+    notes: (notes: Note[]) => {
+      // Merge incoming notes with existing state, preserving in-memory changes
+      // This prevents stale DB data from overwriting recent edits (like title changes)
+      const state = get.state();
+      const existingNotesMap = new Map(state.notes.map((n) => [n.id, n]));
+      const mergedNotes = notes.map((note) => {
+        const existing = existingNotesMap.get(note.id);
+        if (existing) {
+          // Keep existing if it's newer (recently edited in memory)
+          if (existing.updatedAt > note.updatedAt) {
+            return existing;
+          }
+          // Preserve content from existing if new has none (lazy loading)
+          if (existing.content && !note.content) {
+            return { ...note, content: existing.content };
+          }
+        }
+        return note;
+      });
+      return { notes: mergedNotes };
+    },
     recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
     loadRecentNotes: async (limit = 20) => {
       const recent = await repositories.notes.getRecentNotes(limit);

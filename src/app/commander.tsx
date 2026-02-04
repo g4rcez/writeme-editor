@@ -14,6 +14,7 @@ import {
   createStandaloneNote,
   generateNotePath,
   getUniqueFilePath,
+  getUniqueNoteTitle,
 } from "../lib/file-utils";
 import { db } from "../store/repositories/dexie/dexie-db";
 
@@ -158,7 +159,19 @@ export const Commander = () => {
                 title: "New note",
                 type: "shortcut",
                 action: (args) => {
-                  const newNote = Note.new("Untitled", "");
+                  const settings = SettingsRepository.load();
+                  const currentProject =
+                    settings.storageDirectory || Note.DEFAULT_PROJECT;
+                  const isDefaultProject =
+                    currentProject === Note.DEFAULT_PROJECT;
+                  const notesForUniqueness = isDefaultProject
+                    ? state.notes
+                    : state.notes.filter((n) => n.project === currentProject);
+                  const title = getUniqueNoteTitle(
+                    "Untitled",
+                    notesForUniqueness,
+                  );
+                  const newNote = Note.new(title, "", currentProject);
                   repositories.notes.save(newNote);
                   dispatch.note(newNote);
                   args.setOpen(false);

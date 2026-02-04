@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { FileText, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef } from "react";
-import { useGlobalStore } from "../../store/global.store";
+import { repositories, useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
 
 export const TabsBar: React.FC = () => {
@@ -9,14 +9,15 @@ export const TabsBar: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleTabClick = useCallback(
-    (tab: Tab) => {
+    async (tab: Tab) => {
       dispatch.activeTabId(tab.id);
-      const note = state.notes.find((n) => n.id === tab.noteId);
-      if (note) {
-        dispatch.setNote(note);
+      // Load full note with content from repository instead of using empty-content version from state
+      const fullNote = await repositories.notes.getOne(tab.noteId);
+      if (fullNote) {
+        dispatch.setNote(fullNote);
       }
     },
-    [dispatch, state.notes],
+    [dispatch],
   );
 
   const handleCloseTab = useCallback(

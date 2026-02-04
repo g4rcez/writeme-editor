@@ -22,7 +22,7 @@ export const Navbar = () => {
                 placeholder="Untitled"
                 value={editingTitle ?? state.note.title}
                 onChange={(e) => setEditingTitle(e.target.value)}
-                className="flex-1 px-3 max-w-md h-8 text-sm text-center bg-transparent rounded-md border transition-all outline-none focus:ring-2 truncate border-border/50 focus:border-primary/50 focus:ring-primary/20"
+                className="flex-1 px-3 max-w-md h-8 text-sm text-left bg-transparent rounded-md border transition-all outline-none focus:ring-2 truncate border-border/50 focus:border-primary/50 focus:ring-primary/20"
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (value !== state.note.title) {

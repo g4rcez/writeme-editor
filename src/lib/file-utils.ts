@@ -184,30 +184,53 @@ export function createStandaloneNote(filePath: string, content: string) {
  */
 export function formatSimplifiedPath(path: string): string {
   if (!path) return "";
-  
+
   const segments = path.split("/").filter(Boolean);
-  
+
   if (segments.length <= 3) {
     return segments.join(" / ");
   }
-  
+
   // Keep first, ellipsis, second to last, last
   // Spec: "The immediate parent folder should be clearly visible."
   // So: Root / ... / Parent / [Note]
-  // But this function receives the path relative to root? 
+  // But this function receives the path relative to root?
   // If input is "Folder/Sub/File.md", we probably usually strip the filename before calling this?
   // Let's assume input is the folder path.
-  
+
   // A / B / C / D -> A / ... / C / D
-  
+
   const first = segments[0];
   const last = segments[segments.length - 1];
   const secondLast = segments[segments.length - 2];
-  
-  // If 4 segments: A, B, C, D -> A / ... / C / D ? 
-  // Or A / B / C / D ? 
+
+  // If 4 segments: A, B, C, D -> A / ... / C / D ?
+  // Or A / B / C / D ?
   // Let's stick to max 3 items displayed.
-  
+
   return `${first} / ... / ${secondLast} / ${last}`;
+}
+
+/**
+ * Generate a unique note title by appending -N suffix if needed
+ * @param baseTitle - The desired title (e.g., "Untitled")
+ * @param existingNotes - Array of notes to check against
+ * @returns A unique title (e.g., "Untitled", "Untitled-1", "Untitled-2")
+ */
+export function getUniqueNoteTitle(
+  baseTitle: string,
+  existingNotes: { title: string }[],
+): string {
+  const existingTitles = new Set(existingNotes.map((n) => n.title));
+
+  if (!existingTitles.has(baseTitle)) {
+    return baseTitle;
+  }
+
+  let counter = 1;
+  while (existingTitles.has(`${baseTitle}-${counter}`)) {
+    counter++;
+  }
+  return `${baseTitle}-${counter}`;
 }
 

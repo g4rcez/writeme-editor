@@ -15,16 +15,23 @@ export default function EditorPage() {
       return;
     }
 
-    if (state.note.content || !state.note.filePath) {
+    // If note has content, use it directly
+    if (state.note.content) {
       setLoadedNote(state.note);
       setIsLoading(false);
       return;
     }
 
-    // Load content from filesystem
+    // Always load from repository to ensure we have the latest content
+    // This handles both filesystem mode (content in files) and IndexedDB mode
     setIsLoading(true);
     repositories.notes.getOne(state.note.id).then((fullNote) => {
-      setLoadedNote(fullNote);
+      if (fullNote) {
+        setLoadedNote(fullNote);
+      } else {
+        // Fallback to state note if repository returns null (e.g., new unsaved note)
+        setLoadedNote(state.note);
+      }
       setIsLoading(false);
     });
   }, [state.note?.id]);

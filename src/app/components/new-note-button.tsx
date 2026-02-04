@@ -3,16 +3,22 @@ import { useEffect } from "react";
 import { useGlobalStore, repositories } from "../../store/global.store";
 import { Note } from "../../store/note";
 import { SettingsRepository } from "../../store/settings";
+import { getUniqueNoteTitle } from "../../lib/file-utils";
 
 export const NewNoteButton = () => {
-  const [, dispatch] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
 
   const createNewNote = async () => {
     const settings = SettingsRepository.load();
-    const note = Note.new("Untitled", "", settings.storageDirectory || undefined);
+    const currentProject = settings.storageDirectory || Note.DEFAULT_PROJECT;
+    const isDefaultProject = currentProject === Note.DEFAULT_PROJECT;
+    const notesForUniqueness = isDefaultProject
+      ? state.notes
+      : state.notes.filter((n) => n.project === currentProject);
+    const title = getUniqueNoteTitle("Untitled", notesForUniqueness);
+    const note = Note.new(title, "", currentProject);
     await repositories.notes.save(note);
     dispatch.note(note);
-    dispatch.notes(await repositories.notes.getAll());
   };
 
   useEffect(() => {
