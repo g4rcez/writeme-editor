@@ -1,9 +1,7 @@
 import { Brouther, Outlet } from "brouther";
 import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
-import { repositories, useGlobalStore } from "../store/global.store";
-import { Note } from "../store/note";
-import { SettingsRepository } from "../store/settings";
+import { useGlobalStore } from "../store/global.store";
 import { useUIStore } from "../store/ui.store";
 import { Commander } from "./commander";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
@@ -16,27 +14,8 @@ import { router } from "./router";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 
 export const App = () => {
-  const [state, dispatch] = useGlobalStore();
+  useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
-
-  useEffect(() => {
-    const restoreSession = async () => {
-      const settings = SettingsRepository.load();
-      const project = settings.storageDirectory || Note.DEFAULT_PROJECT;
-      await dispatch.loadTabs(project);
-      if (state.activeTabId) {
-        const tabs = await repositories.tabs.getAll(project);
-        const activeTab = tabs.find((t) => t.id === state.activeTabId);
-        if (activeTab) {
-          const note = await repositories.notes.getOne(activeTab.noteId);
-          if (note) {
-            dispatch.setNote(note);
-          }
-        }
-      }
-    };
-    restoreSession();
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

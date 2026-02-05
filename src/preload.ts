@@ -3,6 +3,9 @@ import { Note } from "./store/note";
 import type { ReadDirResult } from "./types/tree";
 
 contextBridge.exposeInMainWorld("electronAPI", {
+  env: {
+    getHome: () => ipcRenderer.invoke("env:getHome"),
+  },
   notes: {
     clipboard: async () => {
       return ipcRenderer.invoke("notes:clipboard");
@@ -142,6 +145,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 declare global {
   interface Window {
     electronAPI: {
+      env: {
+        getHome(): Promise<string>;
+      };
       notes: {
         clipboard(): Promise<string>;
         findAll(): Promise<Note[]>;

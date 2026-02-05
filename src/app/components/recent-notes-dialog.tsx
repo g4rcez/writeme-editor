@@ -77,7 +77,7 @@ export const RecentNotesDialog = () => {
   }, [selectedIndex, filteredNotes]);
 
   const openNote = (note: Note) => {
-    dispatch.note(note);
+    dispatch.selectNoteById(note.id);
     closeDialog();
   };
 

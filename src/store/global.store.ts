@@ -157,6 +157,37 @@ export const useGlobalStore = createGlobalReducer(
       if (result === "light") document.documentElement.classList.remove("dark");
       return { theme: result };
     },
+    selectNoteById: async (noteId: string) => {
+      const fullNote = await repositories.notes.getOne(noteId);
+      if (!fullNote) return {};
+      // Replicate note() logic for tab management without DB update
+      const storageDir =
+        JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}")
+          .storageDirectory || Note.DEFAULT_PROJECT;
+      const state = get.state();
+      const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
+      const existsInNotes = state.notes.some((n) => n.id === fullNote.id);
+      const updatedNotes = existsInNotes
+        ? state.notes.map((n) => (n.id === fullNote.id ? fullNote : n))
+        : [...state.notes, fullNote];
+      if (existingTab) {
+        return { note: fullNote, notes: updatedNotes, activeTabId: existingTab.id };
+      }
+      const newTab: Tab = {
+        id: fullNote.id,
+        noteId: fullNote.id,
+        project: storageDir,
+        createdAt: new Date(),
+        order: state.tabs.length,
+      };
+      await repositories.tabs.save(newTab);
+      return {
+        note: fullNote,
+        notes: updatedNotes,
+        activeTabId: newTab.id,
+        tabs: [...state.tabs, newTab],
+      };
+    },
   }),
   {
     interceptor: [

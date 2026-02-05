@@ -109,11 +109,8 @@ export const SearchBar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, closeSearch]);
 
-  const selectNote = async (note: Note) => {
-    const fullNote = await repositories.notes.getOne(note.id);
-    if (fullNote) {
-      dispatch.note(fullNote);
-    }
+  const selectNote = (note: Note) => {
+    dispatch.selectNoteById(note.id);
     closeSearch();
   };
 

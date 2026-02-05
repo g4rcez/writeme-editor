@@ -159,11 +159,8 @@ export const Commander = () => {
                 title: "New note",
                 type: "shortcut",
                 action: (args) => {
-                  const settings = SettingsRepository.load();
-                  const currentProject =
-                    settings.storageDirectory || Note.DEFAULT_PROJECT;
-                  const isDefaultProject =
-                    currentProject === Note.DEFAULT_PROJECT;
+                  const currentProject = Note.DEFAULT_PROJECT;
+                  const isDefaultProject = true;
                   const notesForUniqueness = isDefaultProject
                     ? state.notes
                     : state.notes.filter((n) => n.project === currentProject);
@@ -183,7 +180,7 @@ export const Commander = () => {
                   title: `Note: ${note.title}`,
                   action: (args) => {
                     args.setOpen(false);
-                    dispatch.note(note);
+                    dispatch.selectNoteById(note.id);
                   },
                 };
               }),

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
@@ -9,6 +9,8 @@ async function main() {
   }
 
   await notesIpcHandler();
+
+  ipcMain.handle("env:getHome", () => app.getPath("home"));
 
   const createWindow = () => {
     const mainWindow = new BrowserWindow({

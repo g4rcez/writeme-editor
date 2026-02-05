@@ -2,16 +2,14 @@ import { Plus } from "lucide-react";
 import { useEffect } from "react";
 import { useGlobalStore, repositories } from "../../store/global.store";
 import { Note } from "../../store/note";
-import { SettingsRepository } from "../../store/settings";
 import { getUniqueNoteTitle } from "../../lib/file-utils";
 
 export const NewNoteButton = () => {
   const [state, dispatch] = useGlobalStore();
 
   const createNewNote = async () => {
-    const settings = SettingsRepository.load();
-    const currentProject = settings.storageDirectory || Note.DEFAULT_PROJECT;
-    const isDefaultProject = currentProject === Note.DEFAULT_PROJECT;
+    const currentProject = Note.DEFAULT_PROJECT;
+    const isDefaultProject = true;
     const notesForUniqueness = isDefaultProject
       ? state.notes
       : state.notes.filter((n) => n.project === currentProject);
