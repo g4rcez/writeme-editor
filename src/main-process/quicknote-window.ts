@@ -22,7 +22,7 @@ export const createQuickNoteWindow = (preloadPath: string) => {
     x: Math.round(width / 2 - 300),
     y: Math.round(height / 2 - 200),
     alwaysOnTop: true,
-    frame: false,
+    frame: true,
     show: false,
     webPreferences: {
       nodeIntegration: true,
