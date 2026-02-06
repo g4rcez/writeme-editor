@@ -2,12 +2,12 @@ import { Brouther, Outlet } from "brouther";
 import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
 import { CursorPositionStore } from "../store/cursor-position.store";
-import { globalState, useGlobalStore } from "../store/global.store";
+import { globalDispatch, globalState, repositories, useGlobalStore } from "../store/global.store";
+import { Note } from "../store/note";
 import { useUIStore } from "../store/ui.store";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Commander } from "./commander";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
-import { OpenProjectDialog } from "./components/open-project-dialog";
 import { Sidebar } from "./components/sidebar";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Footer } from "./footer";
@@ -45,6 +45,22 @@ export const App = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  // Listen for quicknote:open from main process (global shortcut / tray menu)
+  useEffect(() => {
+    if (!window.electronAPI?.onQuicknoteOpen) return;
+    const cleanup = window.electronAPI.onQuicknoteOpen(async () => {
+      const existing = await repositories.notes.getLatestQuicknote();
+      if (existing) {
+        globalDispatch.selectNoteById(existing.id);
+      } else {
+        const quicknote = Note.new("Quick Note", "", "quicknote");
+        await repositories.notes.save(quicknote);
+        globalDispatch.selectNoteById(quicknote.id);
+      }
+    });
+    return cleanup;
+  }, []);
+
   return (
     <StrictMode>
       <Brouther config={router.config}>
@@ -60,7 +76,6 @@ export const App = () => {
             <div className="flex flex-col flex-1 min-w-0">
               <ShortcutsCommands />
               <DirectoryBrowserDialog />
-              <OpenProjectDialog />
               <Outlet />
             </div>
           </div>

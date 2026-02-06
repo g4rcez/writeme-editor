@@ -82,23 +82,15 @@ export function sanitizeFilename(title: string): string {
 /**
  * Generate full file path for a note
  * @param rootDir - User-chosen storage directory
- * @param projectId - Project UUID or default project ID
  * @param noteTitle - Note title to be sanitized
  * @returns Absolute path to the note file (with forward slashes)
  */
 export function generateNotePath(
   rootDir: string,
-  projectId: string,
   noteTitle: string,
 ): string {
   const filename = sanitizeFilename(noteTitle);
-
-  // Default project gets special "default" folder name
-  const isDefaultProject =
-    projectId === "00000000-0000-0000-0000-000000000000";
-  const projectFolder = isDefaultProject ? "default" : projectId;
-
-  return joinPath(rootDir, projectFolder, `${filename}.md`);
+  return joinPath(rootDir, `${filename}.md`);
 }
 
 /**
@@ -126,7 +118,7 @@ export async function getUniqueFilePath(
 }
 
 /**
- * Extract project folder and filename from full path
+ * Extract filename from full path relative to root directory
  * @param filePath - Absolute file path
  * @param rootDir - Storage root directory
  * @returns Parsed components of the path
@@ -135,18 +127,12 @@ export function parseNotePath(
   filePath: string,
   rootDir: string,
 ): {
-  projectFolder: string;
   filename: string;
-  isDefaultProject: boolean;
 } {
   const relativePath = getRelativePath(rootDir, filePath);
-  const parts = relativePath.split(/[/\\]/); // Handle both forward and back slashes
-
-  const projectFolder = parts[0] || "default";
+  const parts = relativePath.split(/[/\\]/);
   const filename = parts[parts.length - 1];
-  const isDefaultProject = projectFolder === "default";
-
-  return { projectFolder, filename, isDefaultProject };
+  return { filename };
 }
 
 /**
@@ -154,7 +140,7 @@ export function parseNotePath(
  * Standalone notes are saved directly to their file path, bypassing project structure
  * @param filePath - Absolute path to the .md file
  * @param content - File content
- * @returns Note with project="__standalone__" and filePath set
+ * @returns Note with filePath set
  */
 export function createStandaloneNote(filePath: string, content: string) {
   const filename = filePath.split(/[/\\]/).pop() || "Untitled";
@@ -164,7 +150,7 @@ export function createStandaloneNote(filePath: string, content: string) {
     id: crypto.randomUUID(),
     title,
     content,
-    project: "__standalone__",
+    project: "",
     filePath,
     createdAt: now,
     updatedAt: now,

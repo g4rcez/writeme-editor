@@ -1,5 +1,4 @@
 import { Note } from "../store/note";
-import { Project } from "../store/project";
 import { repositories, useGlobalStore } from "../store/global.store";
 import { isElectron } from "../lib/is-electron";
 import {
@@ -45,15 +44,6 @@ export const Commander = () => {
                     },
                   },
                   {
-                    title: "Open project",
-                    shortcut: mapShortcutOS("mod+shift+p"),
-                    type: "shortcut" as const,
-                    action: (args: { setOpen: (v: boolean) => void }) => {
-                      args.setOpen(false);
-                      dispatch.openProjectDialog(true);
-                    },
-                  },
-                  {
                     title: "Open...",
                     shortcut: mapShortcutOS("mod+o"),
                     type: "shortcut" as const,
@@ -65,20 +55,6 @@ export const Commander = () => {
                         await window.electronAPI.fs.openFileOrDirectory();
                       if (!result) return;
                       if (result.isDirectory) {
-                        let project =
-                          await repositories.projects.getByFolderPath(
-                            result.path,
-                          );
-                        if (!project) {
-                          project = Project.fromPath(result.path);
-                          await repositories.projects.save(project);
-                        } else {
-                          project.updatedAt = new Date();
-                          await repositories.projects.update(
-                            project.id,
-                            project,
-                          );
-                        }
                         const allNotes = await db.notes.toArray();
                         const webOnlyNotes = allNotes.filter(
                           (n: any) => !n.filePath && n.content,
@@ -88,7 +64,6 @@ export const Commander = () => {
                             const note = Note.parse(noteData);
                             const filePath = generateNotePath(
                               result.path,
-                              note.project,
                               note.title,
                             );
                             const uniquePath = await getUniqueFilePath(
@@ -159,16 +134,11 @@ export const Commander = () => {
                 title: "New note",
                 type: "shortcut",
                 action: (args) => {
-                  const currentProject = Note.DEFAULT_PROJECT;
-                  const isDefaultProject = true;
-                  const notesForUniqueness = isDefaultProject
-                    ? state.notes
-                    : state.notes.filter((n) => n.project === currentProject);
                   const title = getUniqueNoteTitle(
                     "Untitled",
-                    notesForUniqueness,
+                    state.notes,
                   );
-                  const newNote = Note.new(title, "", currentProject);
+                  const newNote = Note.new(title, "");
                   repositories.notes.save(newNote);
                   dispatch.note(newNote);
                   args.setOpen(false);

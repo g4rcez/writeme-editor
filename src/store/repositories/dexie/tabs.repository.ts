@@ -1,11 +1,8 @@
 import { db, Tab } from "./dexie-db";
 
 export class TabsRepository {
-  async getAll(project: string): Promise<Tab[]> {
-    return await db.tabs
-      .where("project")
-      .equals(project)
-      .sortBy("order");
+  async getAll(): Promise<Tab[]> {
+    return await db.tabs.orderBy("order").toArray();
   }
 
   async save(tab: Tab): Promise<void> {
@@ -16,8 +13,8 @@ export class TabsRepository {
     await db.tabs.delete(id);
   }
 
-  async clear(project: string): Promise<void> {
-    await db.tabs.where("project").equals(project).delete();
+  async clear(): Promise<void> {
+    await db.tabs.clear();
   }
 
   async updateOrder(tabs: Tab[]): Promise<void> {

@@ -31,7 +31,6 @@ export class NotesRepository implements Repository<Note> {
       // Filesystem mode: write content to file, metadata to IndexedDB
       const filePath = generateNotePath(
         settings.storageDirectory!,
-        item.project,
         item.title,
       );
 
@@ -73,7 +72,7 @@ export class NotesRepository implements Repository<Note> {
   async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsRepository.load();
-    if (item.project === "__standalone__" && item.filePath && mode === "filesystem") {
+    if (item.filePath && !item.filePath.startsWith(settings.storageDirectory!) && mode === "filesystem") {
       const result = await window.electronAPI.fs.writeFile(
         item.filePath,
         item.content,
@@ -94,7 +93,6 @@ export class NotesRepository implements Repository<Note> {
         console.log("Lazy migration for note:", item.title);
         filePath = generateNotePath(
           settings.storageDirectory!,
-          item.project,
           item.title,
         );
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
@@ -114,7 +112,6 @@ export class NotesRepository implements Repository<Note> {
       if (existing.title !== item.title && filePath) {
         const newPath = generateNotePath(
           settings.storageDirectory!,
-          item.project,
           item.title,
         );
         if (newPath !== filePath) {
@@ -230,6 +227,32 @@ export class NotesRepository implements Repository<Note> {
     return metadataList.map((metadata) =>
       Note.parse({ ...metadata, content: "" }),
     );
+  }
+
+  /**
+   * Get the most recently updated quicknote.
+   * Returns null if no quicknotes exist.
+   */
+  async getLatestQuicknote(): Promise<Note | null> {
+    const result = await db.notes
+      .where("noteType")
+      .equals("quicknote")
+      .reverse()
+      .sortBy("updatedAt");
+
+    if (result.length === 0) return null;
+
+    const metadata = result[0] as any;
+    const mode = getStorageMode();
+
+    if (mode === "filesystem" && metadata.filePath) {
+      const readResult = await window.electronAPI.fs.readFile(metadata.filePath);
+      if (readResult.success) {
+        return Note.parse({ ...metadata, content: readResult.content });
+      }
+    }
+
+    return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
   /**

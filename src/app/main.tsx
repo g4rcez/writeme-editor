@@ -62,9 +62,7 @@ export async function main() {
     globalDispatch.notes(notes);
 
     // Load tabs BEFORE setting any note to prevent race condition
-    const settings = JSON.parse(localStorage.getItem("EDITOR_PREFERENCES") || "{}");
-    const storageDir = settings.storageDirectory || Note.DEFAULT_PROJECT;
-    await globalDispatch.loadTabs(storageDir);
+    await globalDispatch.loadTabs();
 
     // Get the ID of the previously focused note from localStorage
     const currentNoteId = globalState().note?.id;
@@ -102,4 +100,3 @@ export async function main() {
     createRoot(rootElement).render(<Main />);
   }
 }
-

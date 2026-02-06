@@ -1,6 +1,5 @@
 import Dexie, { EntityTable } from "dexie";
 import { Note } from "../../note";
-import { Project } from "../../project";
 
 export interface Tab {
   id: string;
@@ -12,7 +11,7 @@ export interface Tab {
 
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
-  projects: EntityTable<Project, "id">;
+  projects: EntityTable<any, "id">;
   tabs: EntityTable<Tab, "id">;
 };
 
@@ -25,21 +24,16 @@ db.version(1).stores({
 // Version 2 (hybrid storage - add metadata fields, content no longer indexed)
 db.version(2)
   .stores({
-    // Remove 'content' from indexed fields, add new metadata fields
-    // *tags creates a multiEntry index for searching by tags
     notes:
       "&id, title, project, filePath, *tags, createdAt, updatedAt, createdBy, updatedBy",
     projects: "&id, title, description, *notes, createdAt, updatedAt",
   })
   .upgrade(async (tx) => {
-    // Migrate existing notes from v1 to v2
     const notes = await tx.table("notes").toArray();
-
     console.log(`Migrating ${notes.length} notes to schema v2...`);
-
     for (const note of notes) {
       await tx.table("notes").update(note.id, {
-        filePath: null, // Mark for migration - will be set when note is saved
+        filePath: null,
         fileSize: note.content?.length || 0,
         lastSynced: null,
         tags: [],
@@ -47,7 +41,6 @@ db.version(2)
         updatedBy: "system",
       });
     }
-
     console.log("Schema migration to v2 complete");
   });
 
@@ -59,24 +52,17 @@ db.version(3)
     projects: "&id, title, folderPath, description, createdAt, updatedAt",
   })
   .upgrade(async (tx) => {
-    // Migrate existing projects to have folderPath
     const projects = await tx.table("projects").toArray();
-
     console.log(`Migrating ${projects.length} projects to schema v3...`);
-
     for (const project of projects) {
       await tx.table("projects").update(project.id, {
         folderPath: project.folderPath || "",
       });
     }
-
     console.log("Schema migration to v3 complete");
   });
 
 // Version 4 (IndexedDB content support for web mode)
-// No structural change to indexes - content field already exists on Note objects
-// This version enables storing full note content in IndexedDB when running
-// without filesystem access (web mode or Electron without storageDirectory)
 db.version(4)
   .stores({
     notes:
@@ -94,3 +80,42 @@ db.version(5).stores({
   projects: "&id, title, folderPath, description, createdAt, updatedAt",
   tabs: "&id, noteId, order, project, createdAt",
 });
+
+// Version 6 (Remove project concept — folder IS the project)
+// Drop project from notes/tabs indexes; keep projects table in schema (can't remove)
+db.version(6)
+  .stores({
+    notes:
+      "&id, title, filePath, *tags, createdAt, updatedAt, createdBy, updatedBy",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+  })
+  .upgrade(async (tx) => {
+    console.log("Migrating to v6: removing project references...");
+    const notes = await tx.table("notes").toArray();
+    for (const note of notes) {
+      await tx.table("notes").update(note.id, { project: "" });
+    }
+    const tabs = await tx.table("tabs").toArray();
+    for (const tab of tabs) {
+      await tx.table("tabs").update(tab.id, { project: "" });
+    }
+    console.log("Schema migration to v6 complete");
+  });
+
+// Version 7 (Add noteType field for quicknotes support)
+db.version(7)
+  .stores({
+    notes:
+      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+  })
+  .upgrade(async (tx) => {
+    console.log("Migrating to v7: adding noteType field...");
+    const notes = await tx.table("notes").toArray();
+    for (const note of notes) {
+      await tx.table("notes").update(note.id, { noteType: "note" });
+    }
+    console.log("Schema migration to v7 complete");
+  });

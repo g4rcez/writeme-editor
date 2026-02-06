@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
   env: {
     getHome: () => ipcRenderer.invoke("env:getHome"),
   },
+  onQuicknoteOpen: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on("quicknote:open", handler);
+    return () => {
+      ipcRenderer.removeListener("quicknote:open", handler);
+    };
+  },
   notes: {
     clipboard: async () => {
       return ipcRenderer.invoke("notes:clipboard");
@@ -148,6 +155,7 @@ declare global {
       env: {
         getHome(): Promise<string>;
       };
+      onQuicknoteOpen(callback: () => void): () => void;
       notes: {
         clipboard(): Promise<string>;
         findAll(): Promise<Note[]>;

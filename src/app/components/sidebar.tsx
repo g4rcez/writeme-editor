@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   FileText,
   Clock,
-  FolderOpen,
   GripVertical,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -13,7 +12,7 @@ import { SettingsRepository } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Modal } from "@g4rcez/components";
 
-type SidebarSection = "recent" | "all" | "projects";
+type SidebarSection = "recent" | "all";
 
 type NoteListProps = {
   notes: Note[];
@@ -72,7 +71,6 @@ export const Sidebar = () => {
       dispatch.loadRecentNotes(10);
     };
     loadNotes();
-    dispatch.loadProjects();
   }, [dispatch]);
 
   useEffect(() => {
@@ -106,28 +104,6 @@ export const Sidebar = () => {
       ? relativePath.substring(0, relativePath.lastIndexOf("/"))
       : "";
     return formatSimplifiedPath(folderPath);
-  };
-
-  const groupedNotes = state.notes.reduce(
-    (acc, note) => {
-      const project = note.project || "default";
-      if (!acc[project]) acc[project] = [];
-      acc[project].push(note);
-      return acc;
-    },
-    {} as Record<string, Note[]>,
-  );
-
-  const projectsMap = new Map(state.projects.map((p) => [p.id, p]));
-
-  const [homePath, setHomePath] = useState("");
-
-  useEffect(() => {
-    window.electronAPI?.env?.getHome().then((home) => setHomePath(home || ""));
-  }, []);
-
-  const formatProjectPath = (path: string) => {
-    return homePath && path.startsWith(homePath) ? path.replace(homePath, "~") : path;
   };
 
   return (
@@ -166,19 +142,6 @@ export const Sidebar = () => {
             <FileText className="w-3.5 h-3.5" />
             <span>All</span>
           </button>
-          <button
-            onClick={() => setActiveSection("projects")}
-            className={clsx(
-              "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
-              activeSection === "projects"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-foreground/50 hover:text-foreground",
-            )}
-            title="Projects"
-          >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span>Projects</span>
-          </button>
         </div>
 
         {/* Content */}
@@ -199,38 +162,6 @@ export const Sidebar = () => {
               onSelect={openNote}
               getDisplayPath={getDisplayPath}
             />
-          )}
-
-          {activeSection === "projects" && (
-            <div className="space-y-4">
-              {Object.entries(groupedNotes).map(([project, notes]) => {
-                const proj = projectsMap.get(project);
-                const isDefault = project === "00000000-0000-0000-0000-000000000000";
-                return (
-                  <div key={project}>
-                    <div className="flex gap-1.5 items-center py-1 px-2 text-xs font-medium tracking-wide uppercase text-foreground/50">
-                      <FolderOpen className="w-3 h-3 shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="truncate">
-                          {proj?.title || (isDefault ? "Default" : "Unknown")}
-                        </span>
-                        {proj?.folderPath && (
-                          <span className="text-[10px] font-normal normal-case text-foreground/30 truncate">
-                            {formatProjectPath(proj.folderPath)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <NoteList
-                      notes={notes}
-                      currentNoteId={state.note?.id}
-                      onSelect={openNote}
-                      getDisplayPath={getDisplayPath}
-                    />
-                  </div>
-                );
-              })}
-            </div>
           )}
 
           {state.notes.length === 0 && (

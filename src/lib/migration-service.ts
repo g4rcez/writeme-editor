@@ -75,7 +75,6 @@ export class MigrationService {
     // Generate file path
     const filePath = generateNotePath(
       storageDirectory,
-      note.project,
       note.title,
     );
 

@@ -8,13 +8,8 @@ export const NewNoteButton = () => {
   const [state, dispatch] = useGlobalStore();
 
   const createNewNote = async () => {
-    const currentProject = Note.DEFAULT_PROJECT;
-    const isDefaultProject = true;
-    const notesForUniqueness = isDefaultProject
-      ? state.notes
-      : state.notes.filter((n) => n.project === currentProject);
-    const title = getUniqueNoteTitle("Untitled", notesForUniqueness);
-    const note = Note.new(title, "", currentProject);
+    const title = getUniqueNoteTitle("Untitled", state.notes);
+    const note = Note.new(title, "");
     await repositories.notes.save(note);
     dispatch.note(note);
   };

@@ -2,10 +2,8 @@ import { createGlobalReducer } from "use-typed-reducer";
 import { editorGlobalRef } from "../app/editor-global-ref";
 import { CursorPositionStore } from "./cursor-position.store";
 import { NotesRepository } from "./repositories/dexie/notes.repository";
-import { ProjectsRepository } from "./repositories/dexie/projects.repository";
 import { TabsRepository } from "./repositories/dexie/tabs.repository";
 import { Note } from "./note";
-import { Project } from "./project";
 import { Tab } from "./repositories/dexie/dexie-db";
 
 const state = JSON.parse(
@@ -17,9 +15,7 @@ const initialState = {
   commander: false,
   tabs: [] as Tab[],
   notes: [] as Note[],
-  openProjectDialog: false,
   recentNotesDialog: false,
-  projects: [] as Project[],
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
   theme: state.theme || ("dark" as "light" | "dark"),
@@ -34,9 +30,6 @@ export const useGlobalStore = createGlobalReducer(
   (get) => ({
     note: async (note: Note) => {
       await repositories.notes.update(note.id, note);
-      const storageDir =
-        JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}")
-          .storageDirectory || Note.DEFAULT_PROJECT;
       const state = get.state();
       const existingTab = state.tabs.find((t) => t.noteId === note.id);
       const existsInNotes = state.notes.some((n) => n.id === note.id);
@@ -49,7 +42,7 @@ export const useGlobalStore = createGlobalReducer(
       const newTab: Tab = {
         id: note.id,
         noteId: note.id,
-        project: storageDir,
+        project: "",
         createdAt: new Date(),
         order: state.tabs.length,
       };
@@ -90,11 +83,11 @@ export const useGlobalStore = createGlobalReducer(
     },
     tabs: (tabs: Tab[]) => ({ tabs }),
     activeTabId: (activeTabId: string | null) => ({ activeTabId }),
-    loadTabs: async (project: string) => {
-      const tabs = await repositories.tabs.getAll(project);
+    loadTabs: async () => {
+      const tabs = await repositories.tabs.getAll();
       return { tabs };
     },
-    addTab: async (noteId: string, project: string) => {
+    addTab: async (noteId: string) => {
       const currentTabs = get.state().tabs;
       const existingTab = currentTabs.find((t) => t.noteId === noteId);
       if (existingTab) {
@@ -103,7 +96,7 @@ export const useGlobalStore = createGlobalReducer(
       const newTab: Tab = {
         id: crypto.randomUUID(),
         noteId,
-        project,
+        project: "",
         order: currentTabs.length,
         createdAt: new Date(),
       };
@@ -154,12 +147,6 @@ export const useGlobalStore = createGlobalReducer(
     directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
       directoryBrowserDialog,
     }),
-    openProjectDialog: (openProjectDialog: boolean) => ({ openProjectDialog }),
-    projects: (projects: Project[]) => ({ projects }),
-    loadProjects: async () => {
-      const projects = await repositories.projects.getAll();
-      return { projects };
-    },
     theme: (theme: Toggle<string>) => {
       const result =
         typeof theme === "function" ? theme(get.state().theme) : theme;
@@ -178,10 +165,6 @@ export const useGlobalStore = createGlobalReducer(
       }
       const fullNote = await repositories.notes.getOne(noteId);
       if (!fullNote) return {};
-      // Replicate note() logic for tab management without DB update
-      const storageDir =
-        JSON.parse(window.localStorage.getItem("EDITOR_PREFERENCES") || "{}")
-          .storageDirectory || Note.DEFAULT_PROJECT;
       const state = get.state();
       const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
       const existsInNotes = state.notes.some((n) => n.id === fullNote.id);
@@ -194,7 +177,7 @@ export const useGlobalStore = createGlobalReducer(
       const newTab: Tab = {
         id: fullNote.id,
         noteId: fullNote.id,
-        project: storageDir,
+        project: "",
         createdAt: new Date(),
         order: state.tabs.length,
       };
@@ -226,6 +209,5 @@ export const globalDispatch = useGlobalStore.dispatchers;
 
 export const repositories = {
   notes: new NotesRepository(),
-  projects: new ProjectsRepository(),
   tabs: new TabsRepository(),
 };
