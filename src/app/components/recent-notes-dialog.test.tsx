@@ -31,7 +31,7 @@ describe("RecentNotesDialog", () => {
   const mockDispatch = {
     recentNotesDialog: vi.fn(),
     loadRecentNotes: vi.fn(),
-    note: vi.fn(),
+    selectNoteById: vi.fn(),
   };
 
   const mockState = {
@@ -70,7 +70,7 @@ describe("RecentNotesDialog", () => {
     const note1 = screen.getByText("Note 1");
     fireEvent.click(note1);
     
-    expect(mockDispatch.note).toHaveBeenCalled();
+    expect(mockDispatch.selectNoteById).toHaveBeenCalledWith("1");
     expect(mockDispatch.recentNotesDialog).toHaveBeenCalledWith(false);
   });
 });

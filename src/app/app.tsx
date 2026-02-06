@@ -8,6 +8,7 @@ import { useUIStore } from "../store/ui.store";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Commander } from "./commander";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
+import { RecentNotesDialog } from "./components/recent-notes-dialog";
 import { Sidebar } from "./components/sidebar";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Footer } from "./footer";
@@ -66,6 +67,7 @@ export const App = () => {
       <Brouther config={router.config}>
         <div className="flex flex-col flex-1 justify-center items-center isolate">
           <Commander />
+          <RecentNotesDialog />
           <Navbar />
           <div className="w-full flex flex-1 min-h-0">
             {!uiState.focusMode && (
