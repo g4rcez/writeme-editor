@@ -10,6 +10,7 @@ import {
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
+import { handleWindowClose, openQuickNote } from "./main-process/window-lifecycle";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -51,10 +52,7 @@ async function main() {
 
     // Hide window instead of closing (tray-resident behavior)
     mainWindow.on("close", (e) => {
-      if (!isQuitting) {
-        e.preventDefault();
-        mainWindow?.hide();
-      }
+      handleWindowClose(e, mainWindow!, isQuitting);
     });
   };
 
@@ -75,7 +73,7 @@ async function main() {
       {
         label: "Quick Note",
         click: () => {
-          openQuicknote();
+          openQuickNote(mainWindow);
         },
       },
       { type: "separator" },
@@ -101,13 +99,6 @@ async function main() {
     }
   };
 
-  const openQuicknote = () => {
-    if (!mainWindow) return;
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.webContents.send("quicknote:open");
-  };
-
   app.on("before-quit", () => {
     isQuitting = true;
   });
@@ -118,7 +109,7 @@ async function main() {
 
     // Register global shortcut for quicknote
     globalShortcut.register("CommandOrControl+Alt+N", () => {
-      openQuicknote();
+      openQuicknote(mainWindow);
     });
   });
 
