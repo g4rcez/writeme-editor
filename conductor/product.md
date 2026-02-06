@@ -18,3 +18,4 @@ A privacy-focused, offline-first rich-text editor for technical content creators
 - **Quick Navigation:** A specialized dialog for lightning-fast switching between recently edited notes, accessible via command palette or keyboard shortcut.
 - **Tabbed Interface:** Manage multiple open files simultaneously using a VS Code-style tab bar, with persistent session restoration.
 - **Smart Cross-Referencing:** Easily link to other notes or local files using the `@` mention syntax, complete with autocompletion and clickable navigation chips.
+- **Dedicated Quick Note Window:** A lightweight, always-on-top window for capturing ideas instantly, accessible via global shortcut or command palette.
