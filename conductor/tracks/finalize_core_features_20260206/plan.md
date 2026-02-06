@@ -25,8 +25,8 @@
 - [x] Task: Conductor - User Manual Verification 'Background App' (Protocol in workflow.md) [checkpoint: acf9c7f]
 
 ## Phase 3: Recent Notes Integration
-- [ ] Task: Mount RecentNotesDialog
-    - [ ] Sub-task: Update `src/app/app.tsx` to include `<RecentNotesDialog />`.
+- [x] Task: Mount RecentNotesDialog [2bc0623]
+    - [x] Sub-task: Update `src/app/app.tsx` to include `<RecentNotesDialog />`.
 - [ ] Task: Verify and Enhance Access
     - [ ] Sub-task: Verify `recentNotesDialog` toggle works via keyboard shortcut (`src/app/elements/shortcut-items.tsx`).
     - [ ] Sub-task: Add "Open Recent Notes" command to `src/app/commander.tsx`.
