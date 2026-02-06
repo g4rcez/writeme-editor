@@ -2,7 +2,12 @@ import { Brouther, Outlet } from "brouther";
 import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
 import { CursorPositionStore } from "../store/cursor-position.store";
-import { globalDispatch, globalState, repositories, useGlobalStore } from "../store/global.store";
+import {
+  globalDispatch,
+  globalState,
+  repositories,
+  useGlobalStore,
+} from "../store/global.store";
 import { Note } from "../store/note";
 import { useUIStore } from "../store/ui.store";
 import { editorGlobalRef } from "./editor-global-ref";
@@ -15,6 +20,7 @@ import { Footer } from "./footer";
 import { Navbar } from "./navbar";
 import { router } from "./router";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
+import { Dates } from "../lib/dates";
 
 export const App = () => {
   useGlobalStore();
@@ -38,7 +44,7 @@ export const App = () => {
         CursorPositionStore.save(
           state.note.id,
           editorGlobalRef.current.state.selection.anchor,
-          window.scrollY
+          window.scrollY,
         );
       }
     };
@@ -46,7 +52,6 @@ export const App = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  // Listen for quicknote:open from main process (global shortcut / tray menu)
   useEffect(() => {
     if (!window.electronAPI?.onQuicknoteOpen) return;
     const cleanup = window.electronAPI.onQuicknoteOpen(async () => {
@@ -54,7 +59,11 @@ export const App = () => {
       if (existing) {
         globalDispatch.selectNoteById(existing.id);
       } else {
-        const quicknote = Note.new("Quick Note", "", "quicknote");
+        const quicknote = Note.new(
+          `Quick Note - ${Dates.yearMonthDay(new Date())}`,
+          "",
+          "quicknote",
+        );
         await repositories.notes.save(quicknote);
         globalDispatch.selectNoteById(quicknote.id);
       }
@@ -83,7 +92,7 @@ export const App = () => {
           <Commander />
           <RecentNotesDialog />
           <Navbar />
-          <div className="w-full flex flex-1 min-h-0">
+          <div className="flex flex-1 w-full min-h-0">
             {!uiState.focusMode && (
               <div className="hidden lg:block">
                 <Sidebar />
