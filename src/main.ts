@@ -10,7 +10,8 @@ import {
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
-import { handleWindowClose, openQuickNote } from "./main-process/window-lifecycle";
+import { handleWindowClose } from "./main-process/window-lifecycle";
+import { createQuickNoteWindow } from "./main-process/quicknote-window";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -73,7 +74,7 @@ async function main() {
       {
         label: "Quick Note",
         click: () => {
-          openQuickNote(mainWindow);
+          createQuickNoteWindow(path.join(__dirname, "preload.js"));
         },
       },
       { type: "separator" },
@@ -109,7 +110,7 @@ async function main() {
 
     // Register global shortcut for quicknote
     globalShortcut.register("CommandOrControl+Alt+N", () => {
-      openQuicknote(mainWindow);
+      createQuickNoteWindow(path.join(__dirname, "preload.js"));
     });
   });
 

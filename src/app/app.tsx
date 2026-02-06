@@ -62,6 +62,20 @@ export const App = () => {
     return cleanup;
   }, []);
 
+  const isQuickNote = window.location.hash.includes("quicknote");
+
+  if (isQuickNote) {
+    return (
+      <StrictMode>
+        <Brouther config={router.config}>
+          <div className="flex flex-col flex-1 h-screen bg-background">
+            <Outlet />
+          </div>
+        </Brouther>
+      </StrictMode>
+    );
+  }
+
   return (
     <StrictMode>
       <Brouther config={router.config}>
