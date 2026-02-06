@@ -144,6 +144,15 @@ export const Commander = () => {
                   args.setOpen(false);
                 },
               },
+              {
+                title: "Recent notes",
+                shortcut: mapShortcutOS("mod+e"),
+                type: "shortcut",
+                action: (args) => {
+                  args.setOpen(false);
+                  dispatch.recentNotesDialog(true);
+                },
+              },
               ...state.notes.map((note): CommandItemTypes => {
                 return {
                   type: "shortcut",
