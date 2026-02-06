@@ -27,9 +27,9 @@
 ## Phase 3: Recent Notes Integration
 - [x] Task: Mount RecentNotesDialog [2bc0623]
     - [x] Sub-task: Update `src/app/app.tsx` to include `<RecentNotesDialog />`.
-- [ ] Task: Verify and Enhance Access
-    - [ ] Sub-task: Verify `recentNotesDialog` toggle works via keyboard shortcut (`src/app/elements/shortcut-items.tsx`).
-    - [ ] Sub-task: Add "Open Recent Notes" command to `src/app/commander.tsx`.
+- [x] Task: Verify and Enhance Access [d3a8916]
+    - [x] Sub-task: Verify `recentNotesDialog` toggle works via keyboard shortcut (`src/app/elements/shortcut-items.tsx`).
+    - [x] Sub-task: Add "Open Recent Notes" command to `src/app/commander.tsx`.
 - [ ] Task: Final Verification
     - [ ] Sub-task: Write/Update integration tests for `RecentNotesDialog` to ensure it interacts correctly with the store and navigation.
 - [ ] Task: Conductor - User Manual Verification 'Recent Notes Integration' (Protocol in workflow.md)
