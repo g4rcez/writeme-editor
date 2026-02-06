@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from "vitest";
 import { ExcalidrawCode } from "./excalidraw";
 import * as ExcalidrawPkg from "@excalidraw/excalidraw";
 
-// Mock the external library
 vi.mock("@excalidraw/excalidraw", () => ({
   Excalidraw: ({ onChange, initialData }: any) => (
     <div data-testid="excalidraw-mock">
@@ -24,18 +23,18 @@ describe("ExcalidrawCode", () => {
     await waitFor(() => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
     });
-    
+
     expect(screen.getByText(/initial/)).toBeInTheDocument();
   });
 
   it("handles empty/invalid code gracefully", async () => {
-     // Mock console.error to avoid noise
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    
+    // Mock console.error to avoid noise
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
+
     render(<ExcalidrawCode code="invalid-json" />);
-    
+
     await waitFor(() => {
-        expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
+      expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
     });
 
     consoleSpy.mockRestore();
@@ -45,14 +44,10 @@ describe("ExcalidrawCode", () => {
     const onChange = vi.fn();
     const code = JSON.stringify([]);
     render(<ExcalidrawCode code={code} onChange={onChange} />);
-
     await waitFor(() => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
     });
-
-    // Simulate change
     screen.getByText("Change").click();
-
     expect(onChange).toHaveBeenCalledWith(JSON.stringify([{ type: "rectangle", id: "1" }]));
   });
 });
