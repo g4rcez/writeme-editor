@@ -25,6 +25,9 @@ async function main() {
   await notesIpcHandler();
 
   ipcMain.handle("env:getHome", () => app.getPath("home"));
+  ipcMain.handle("app:openQuickNote", () => {
+    createQuickNoteWindow(path.join(__dirname, "preload.js"));
+  });
 
   const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -86,8 +89,6 @@ async function main() {
       },
     ]);
     tray.setContextMenu(contextMenu);
-
-    // On non-macOS, clicking the tray icon toggles window visibility
     if (process.platform !== "darwin") {
       tray.on("click", () => {
         if (mainWindow?.isVisible()) {

@@ -153,6 +153,15 @@ export const Commander = () => {
                   dispatch.recentNotesDialog(true);
                 },
               },
+              {
+                title: "Quick note",
+                shortcut: mapShortcutOS("mod+alt+n"),
+                type: "shortcut",
+                action: (args) => {
+                  args.setOpen(false);
+                  window.electronAPI.app.openQuickNote();
+                },
+              },
               ...state.notes.map((note): CommandItemTypes => {
                 return {
                   type: "shortcut",

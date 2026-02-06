@@ -17,7 +17,8 @@
 - [x] Task: Handle Data/State
     - [x] Sub-task: Ensure the Quick Note window can access the DB (Dexie) and load the correct note.
     - [x] Sub-task: Verify saving works from the secondary window.
-- [ ] Task: Final Verification
-    - [ ] Sub-task: Verify `alwaysOnTop` behavior.
-    - [ ] Sub-task: Verify independent lifecycle (main window closed, quick note open).
-- [ ] Task: Conductor - User Manual Verification 'Quick Note UX' (Protocol in workflow.md)
+- [x] Task: Final Verification
+    - [x] Sub-task: Verify `alwaysOnTop` behavior.
+    - [x] Sub-task: Verify independent lifecycle (main window closed, quick note open).
+    - [x] Sub-task: Add "Quick note" command to `src/app/commander.tsx`.
+- [x] Task: Conductor - User Manual Verification 'Quick Note UX' (Protocol in workflow.md)
