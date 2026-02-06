@@ -9,6 +9,7 @@
 
 ## Editor & Content
 - **Editor Engine:** [Tiptap](https://tiptap.dev/) - Headless rich-text editor framework based on ProseMirror.
+- **Editor Extensions:** `@tiptap/extension-mention` for cross-referencing logic.
 - **Markdown Support:** `tiptap-markdown` and various `unified`/`remark`/`rehype` plugins for high-fidelity processing.
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework for rapid UI development.
 - **Syntax Highlighting:** [Shiki](https://shiki.style/) - Powerful syntax highlighter for code blocks.
