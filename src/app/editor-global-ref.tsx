@@ -1,4 +1,3 @@
 import { Editor } from "@tiptap/core";
-import { createRef } from "react";
 
-export const editorGlobalRef = createRef<Editor>();
+export const editorGlobalRef: { current: Editor | null } = { current: null };

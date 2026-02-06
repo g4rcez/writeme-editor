@@ -16,6 +16,7 @@ import {
 } from "../ipc/copy-event";
 import { detectMarkdown } from "../lib/markdown-paste";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
+import { CursorPositionStore } from "../store/cursor-position.store";
 import {
   globalState,
   repositories,
@@ -138,6 +139,20 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
       editor.view.dispatch(tr);
     }
   }, [state.theme, editor]);
+
+  useEffect(() => {
+    if (!editor || !props.note) return;
+    const position = CursorPositionStore.get(props.note.id);
+    if (!position) return;
+
+    const maxPos = editor.state.doc.content.size;
+    const safePos = Math.min(position.cursor, maxPos);
+
+    requestAnimationFrame(() => {
+      editor.chain().setTextSelection(safePos).run();
+      window.scrollTo(0, position.scroll);
+    });
+  }, [editor, props.note?.id]);
 
   return (
     <div className="flex flex-col justify-start w-full pt-6 items-start mx-auto w-full h-full max-w-safe">

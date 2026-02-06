@@ -1,4 +1,6 @@
 import { createGlobalReducer } from "use-typed-reducer";
+import { editorGlobalRef } from "../app/editor-global-ref";
+import { CursorPositionStore } from "./cursor-position.store";
 import { NotesRepository } from "./repositories/dexie/notes.repository";
 import { ProjectsRepository } from "./repositories/dexie/projects.repository";
 import { TabsRepository } from "./repositories/dexie/tabs.repository";
@@ -115,6 +117,14 @@ export const useGlobalStore = createGlobalReducer(
       const state = get.state();
       const currentTabs = state.tabs;
       if (currentTabs.length === 1) return state;
+      const tab = currentTabs.find((t) => t.id === tabId);
+      if (tab && state.activeTabId === tabId && editorGlobalRef.current) {
+        CursorPositionStore.save(
+          tab.noteId,
+          editorGlobalRef.current.state.selection.anchor,
+          window.scrollY
+        );
+      }
       const newTabs = currentTabs.filter((t) => t.id !== tabId);
       await repositories.tabs.delete(tabId);
       let nextActiveTabId = get.state().activeTabId;
@@ -158,6 +168,14 @@ export const useGlobalStore = createGlobalReducer(
       return { theme: result };
     },
     selectNoteById: async (noteId: string) => {
+      const currentState = get.state();
+      if (currentState.note && editorGlobalRef.current) {
+        CursorPositionStore.save(
+          currentState.note.id,
+          editorGlobalRef.current.state.selection.anchor,
+          window.scrollY
+        );
+      }
       const fullNote = await repositories.notes.getOne(noteId);
       if (!fullNote) return {};
       // Replicate note() logic for tab management without DB update

@@ -1,8 +1,10 @@
 import { Brouther, Outlet } from "brouther";
 import { Maximize2 } from "lucide-react";
 import { StrictMode, useEffect } from "react";
-import { useGlobalStore } from "../store/global.store";
+import { CursorPositionStore } from "../store/cursor-position.store";
+import { globalState, useGlobalStore } from "../store/global.store";
 import { useUIStore } from "../store/ui.store";
+import { editorGlobalRef } from "./editor-global-ref";
 import { Commander } from "./commander";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
 import { OpenProjectDialog } from "./components/open-project-dialog";
@@ -27,6 +29,21 @@ export const App = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [uiDispatch]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const state = globalState();
+      if (state.note && editorGlobalRef.current) {
+        CursorPositionStore.save(
+          state.note.id,
+          editorGlobalRef.current.state.selection.anchor,
+          window.scrollY
+        );
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   return (
     <StrictMode>
