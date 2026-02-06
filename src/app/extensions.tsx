@@ -22,6 +22,7 @@ import { ShikiBlock } from "./elements/code-block";
 import { ColorReplacer } from "./elements/color-replacer";
 import { TaskListItem } from "./elements/task-list-item";
 import { Frontmatter } from "./elements/frontmatter";
+import { FileReference } from "./extensions/file-reference";
 
 export const createExtensions = (
   getCurrentTheme: () => BundledTheme,
@@ -137,6 +138,7 @@ export const createExtensions = (
     TaskListItem,
     Callout,
     ReplacerCommands,
+    FileReference,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
   ];
 };
