@@ -7,9 +7,19 @@
     - [x] Sub-task: Implement robust `onChange` handling to serialize and save diagram state.
     - [ ] Sub-task: Uncomment `<Excalidraw />` in `src/app/elements/excalidraw.tsx`.
     - [ ] Sub-task: Implement robust `onChange` handling to serialize and save diagram state.
-- [ ] Task: Conductor - User Manual Verification 'Excalidraw Finalization' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Excalidraw Finalization' (Protocol in workflow.md) [checkpoint: 4f3ee36]
 
-## Phase 2: Recent Notes Integration
+## Phase 2: Background App & Global Shortcuts
+- [ ] Task: Verify and Fix Background Implementation
+    - [ ] Sub-task: Verify `src/main.ts` implementation for Tray, Hide-on-Close, and Global Shortcuts.
+    - [ ] Sub-task: Write integration/E2E tests (using Playwright/Electron) to verify:
+        - App hides on close.
+        - Tray icon exists.
+        - Global shortcut triggers `quicknote:open` event.
+    - [ ] Sub-task: Fix any issues found during verification.
+- [ ] Task: Conductor - User Manual Verification 'Background App' (Protocol in workflow.md)
+
+## Phase 3: Recent Notes Integration
 - [ ] Task: Mount RecentNotesDialog
     - [ ] Sub-task: Update `src/app/app.tsx` to include `<RecentNotesDialog />`.
 - [ ] Task: Verify and Enhance Access
