@@ -1,8 +1,10 @@
 # Implementation Plan: Finalize Core Features (Excalidraw & Recent Notes)
 
 ## Phase 1: Excalidraw Finalization
-- [ ] Task: Enable Excalidraw Component
-    - [ ] Sub-task: Write unit tests for `ExcalidrawCode` component to verify initialization and change handling.
+- [x] Task: Enable Excalidraw Component [00d8306]
+    - [x] Sub-task: Write unit tests for `ExcalidrawCode` component to verify initialization and change handling.
+    - [x] Sub-task: Uncomment `<Excalidraw />` in `src/app/elements/excalidraw.tsx`.
+    - [x] Sub-task: Implement robust `onChange` handling to serialize and save diagram state.
     - [ ] Sub-task: Uncomment `<Excalidraw />` in `src/app/elements/excalidraw.tsx`.
     - [ ] Sub-task: Implement robust `onChange` handling to serialize and save diagram state.
 - [ ] Task: Conductor - User Manual Verification 'Excalidraw Finalization' (Protocol in workflow.md)
