@@ -23,17 +23,17 @@ export const ExcalidrawCode = (props: {
 
   return (
     <div className="w-full min-w-full h-[500px]">
-      {/* <Excalidraw */}
-      {/*   theme="light" */}
-      {/*   gridModeEnabled */}
-      {/*   autoFocus={false} */}
-      {/*   initialData={state} */}
-      {/*   isCollaborating={false} */}
-      {/*   onChange={(elements) => { */}
-      {/*     if (elements.length === 0) return; */}
-      {/*     props.onChange?.(JSON.stringify(elements)); */}
-      {/*   }} */}
-      {/* /> */}
+      <Excalidraw
+        theme="light"
+        gridModeEnabled
+        autoFocus={false}
+        initialData={state}
+        isCollaborating={false}
+        onChange={(elements) => {
+          if (elements.length === 0) return;
+          props.onChange?.(JSON.stringify(elements));
+        }}
+      />
     </div>
   );
 };
