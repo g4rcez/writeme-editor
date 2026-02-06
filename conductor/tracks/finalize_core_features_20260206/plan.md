@@ -22,8 +22,7 @@
         - App hides on close.
         - Tray icon exists.
         - Global shortcut triggers `quicknote:open` event.
-    - [ ] Sub-task: Fix any issues found during verification.
-- [ ] Task: Conductor - User Manual Verification 'Background App' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Background App' (Protocol in workflow.md) [checkpoint: acf9c7f]
 
 ## Phase 3: Recent Notes Integration
 - [ ] Task: Mount RecentNotesDialog
