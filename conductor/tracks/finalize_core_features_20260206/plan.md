@@ -32,4 +32,4 @@
     - [x] Sub-task: Add "Open Recent Notes" command to `src/app/commander.tsx`.
 - [x] Task: Final Verification [d3a8916]
     - [x] Sub-task: Write/Update integration tests for `RecentNotesDialog` to ensure it interacts correctly with the store and navigation.
-- [ ] Task: Conductor - User Manual Verification 'Recent Notes Integration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Recent Notes Integration' (Protocol in workflow.md) [checkpoint: 700a78b]
