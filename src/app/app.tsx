@@ -55,12 +55,13 @@ export const App = () => {
   useEffect(() => {
     if (!window.electronAPI?.onQuicknoteOpen) return;
     const cleanup = window.electronAPI.onQuicknoteOpen(async () => {
-      const existing = await repositories.notes.getLatestQuicknote();
+      const today = new Date();
+      const existing = await repositories.notes.getQuicknoteByDate(today);
       if (existing) {
         globalDispatch.selectNoteById(existing.id);
       } else {
         const quicknote = Note.new(
-          `Quick Note - ${Dates.yearMonthDay(new Date())}`,
+          `Quick Note - ${Dates.yearMonthDay(today)}`,
           "",
           "quicknote",
         );

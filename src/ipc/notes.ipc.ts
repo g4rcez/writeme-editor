@@ -132,10 +132,10 @@ export const notesIpcHandler = async () => {
     }
   });
 
-  // Delete file
+  // Delete file or directory
   ipcMain.handle("fs:deleteFile", async (event, filePath: string) => {
     try {
-      await fs.unlink(filePath);
+      await fs.rm(filePath, { recursive: true, force: true });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };

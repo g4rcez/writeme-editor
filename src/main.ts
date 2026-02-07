@@ -5,6 +5,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  shell,
   Tray,
 } from "electron";
 import path from "node:path";
@@ -46,15 +47,24 @@ async function main() {
       mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
       mainWindow.loadFile(
-        path.join(
-          __dirname,
-          `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`,
-        ),
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
       );
     }
     mainWindow.webContents.openDevTools();
-
-    // Hide window instead of closing (tray-resident behavior)
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith("http:") || url.startsWith("https:")) {
+        shell.openExternal(url);
+      }
+      return { action: "deny" };
+    });
+    mainWindow.webContents.on("will-navigate", (event, url) => {
+      const requestedHost = new URL(url).host;
+      const currentHost = new URL(mainWindow.webContents.getURL()).host;
+      if (requestedHost && requestedHost !== currentHost) {
+        event.preventDefault();
+        shell.openExternal(url);
+      }
+    });
     mainWindow.on("close", (e) => {
       handleWindowClose(e, mainWindow!, isQuitting);
     });
@@ -62,7 +72,9 @@ async function main() {
 
   const createTray = () => {
     const iconPath = path.join(app.getAppPath(), "public", "favicon-16x16.png");
-    const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    const icon = nativeImage
+      .createFromPath(iconPath)
+      .resize({ width: 16, height: 16 });
     tray = new Tray(icon);
     tray.setToolTip("Writeme");
 

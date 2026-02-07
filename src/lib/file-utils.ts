@@ -16,6 +16,20 @@ function joinPath(...segments: string[]): string {
 }
 
 /**
+ * Get directory name from path
+ * @param filePath File path
+ * @returns Directory path
+ */
+export function getDirname(filePath: string): string {
+  const lastSlash = Math.max(
+    filePath.lastIndexOf("/"),
+    filePath.lastIndexOf("\\")
+  );
+  if (lastSlash === -1) return ".";
+  return filePath.substring(0, lastSlash) || "/";
+}
+
+/**
  * Get file extension from path
  * @param filePath File path
  * @returns Extension including the dot (e.g., ".md")

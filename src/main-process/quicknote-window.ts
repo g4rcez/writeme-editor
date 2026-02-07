@@ -12,40 +12,35 @@ export const createQuickNoteWindow = (preloadPath: string) => {
     quickNoteWindow.focus();
     return;
   }
-
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
-
   quickNoteWindow = new BrowserWindow({
     width: 600,
+    frame: true,
     height: 400,
+    show: false,
+    alwaysOnTop: true,
     x: Math.round(width / 2 - 300),
     y: Math.round(height / 2 - 200),
-    alwaysOnTop: true,
-    frame: true,
-    show: false,
     webPreferences: {
       nodeIntegration: true,
       preload: preloadPath,
     },
   });
-
   const hash = "quicknote";
-  
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     quickNoteWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${hash}`);
   } else {
     // In production, we load the file and add the hash
     quickNoteWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-      { hash: hash }
+      { hash: hash },
     );
   }
 
   quickNoteWindow.once("ready-to-show", () => {
     quickNoteWindow?.show();
     quickNoteWindow?.focus();
-    // Send event to tell React to initialize Quick Note mode
     quickNoteWindow?.webContents.send("quicknote:open");
   });
 

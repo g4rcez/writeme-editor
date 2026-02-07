@@ -256,6 +256,42 @@ export class NotesRepository implements Repository<Note> {
   }
 
   /**
+   * Get a quicknote for a specific date.
+   * Dates are compared by year, month, and day.
+   */
+  async getQuicknoteByDate(date: Date): Promise<Note | null> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const result = await db.notes
+      .where("noteType")
+      .equals("quicknote")
+      .and((note) => {
+        const noteDate = new Date(note.updatedAt);
+        return noteDate >= startOfDay && noteDate <= endOfDay;
+      })
+      .toArray();
+
+    if (result.length === 0) return null;
+
+    // Return the first one found for that day
+    const metadata = result[0] as any;
+    const mode = getStorageMode();
+
+    if (mode === "filesystem" && metadata.filePath) {
+      const readResult = await window.electronAPI.fs.readFile(metadata.filePath);
+      if (readResult.success) {
+        return Note.parse({ ...metadata, content: readResult.content });
+      }
+    }
+
+    return Note.parse({ ...metadata, content: metadata.content || "" });
+  }
+
+  /**
    * Delete note: conditionally removes from filesystem and/or IndexedDB
    * - Filesystem mode with filePath: delete file + remove from IndexedDB
    * - IndexedDB mode: just remove from IndexedDB

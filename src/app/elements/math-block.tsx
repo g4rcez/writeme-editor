@@ -3,15 +3,17 @@ import { useId, useMemo } from "react";
 
 const expressionImprovements = (expr: string): string =>
   expr
+    .replace(/^\/\/.*/, "")
     .replace(/\*\*/g, "^")
+    .replace(/(fatorial)/g, "! ")
     .replace(/([\d., ]+)" /g, "$1inches ")
-    .replace(/([\d., ]+)(C|°C) /g, "$1celsius ")
-    .replace(/([\d., ]+)(F|°F) /g, "$1fahrenheit ")
-    .replace(/([\d., ]+)(K|°K) /g, "$1kelvin ")
+    .replace(/([\d., ]+)(C|°C|°c) /g, "$1celsius ")
+    .replace(/([\d., ]+)(F|°F|°f) /g, "$1fahrenheit ")
+    .replace(/([\d., ]+)(K|°K|°k) /g, "$1kelvin ")
     .replace(/([\d.,]+) ?percent of /g, "$1% ")
-    .replace(/to (F|°F)/g, "to fahrenheit ")
-    .replace(/to (K|°K)/g, "to kelvin ")
-    .replace(/to (C|°C)/g, "to celsius ")
+    .replace(/to (F|°F|°f)/g, "to fahrenheit ")
+    .replace(/to (K|°K|°k)/g, "to kelvin ")
+    .replace(/to (C|°C|°c)/g, "to celsius ");
 
 const MathEvaluate = (props: { code: string }) => {
   const id = useId();
@@ -21,6 +23,9 @@ const MathEvaluate = (props: { code: string }) => {
       const parser = mathParser();
       return lines.map((x) => {
         const expr = x.trim();
+        if (x.startsWith("//")) {
+          return [];
+        }
         if (expr === "") return [];
         const translated = expressionImprovements(expr);
         const result = parser.evaluate(translated);
@@ -28,7 +33,7 @@ const MathEvaluate = (props: { code: string }) => {
           x,
           format(result, {
             precision: 5,
-            notation: "fixed",
+            notation: "auto",
             fraction: "ratio",
           }),
         ];
@@ -47,7 +52,7 @@ const MathEvaluate = (props: { code: string }) => {
             className="flex gap-4 font-mono list-none"
           >
             {expr}
-            <span className="text-primary">//? {value}</span>
+            <span className="text-primary">= {value}</span>
           </li>
         ),
       )}

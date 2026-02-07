@@ -82,14 +82,9 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     enableContentCheck: true,
     enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
-    onCreate: ({ editor: currentEditor }) => {
-      try {
-        return migrateMathStrings(currentEditor);
-      } catch (e) {
-        console.log(e);
-      }
-    },
+    onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
     editorProps: {
+      handlePaste: () => false,
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
           const { from, to } = view.state.selection;
@@ -127,7 +122,6 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
         }
         return false;
       },
-      handlePaste: () => false,
     },
   });
 
@@ -189,6 +183,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
 };
 
 export const Editor = (props: { content: string; note?: Note }) => {
+  const [state] = useGlobalStore();
   const [content, setContent] = useState<null | string>(props.content);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { ChevronRight, ChevronDown, Folder, FolderOpen, FileText, File, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FolderOpen, FileText, File, Loader2, Trash2 } from "lucide-react";
 import type { TreeNode, FlattenedNode } from "../../types/tree";
 
 interface TreeNodeItemProps {
@@ -9,6 +9,8 @@ interface TreeNodeItemProps {
   isFocused: boolean;
   isLoading: boolean;
   onActivate: () => void;
+  onDelete?: (node: TreeNode) => void;
+  onHover?: () => void;
 }
 
 const TreeNodeItem = ({
@@ -18,6 +20,8 @@ const TreeNodeItem = ({
   isFocused,
   isLoading,
   onActivate,
+  onDelete,
+  onHover,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
   const isMarkdown = node.extension === ".md";
@@ -40,12 +44,13 @@ const TreeNodeItem = ({
       aria-expanded={isDirectory ? isExpanded : undefined}
       aria-selected={isFocused}
       className={`
-        flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded-md transition-colors
+        group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded-md transition-colors
         ${isFocused ? "bg-blue-50 dark:bg-blue-900/30" : "hover:bg-gray-100 dark:hover:bg-gray-800/50"}
         ${!isDirectory && !isMarkdown ? "opacity-50 cursor-default" : ""}
       `}
       style={{ paddingLeft }}
       onClick={onActivate}
+      onMouseEnter={onHover}
     >
       {isDirectory ? (
         <>
@@ -81,6 +86,19 @@ const TreeNodeItem = ({
       >
         {node.name}
       </span>
+      
+      {onDelete && (
+        <button
+          className="p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(node);
+          }}
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
+        </button>
+      )}
     </div>
   );
 };
@@ -90,16 +108,42 @@ const flattenVisibleNodes = (
   nodes: TreeNode[],
   expandedPaths: Set<string>,
   childrenCache: Map<string, TreeNode[]>,
+  searchQuery: string,
   depth = 0,
   parentPath: string | null = null
 ): FlattenedNode[] => {
+  const query = searchQuery.toLowerCase();
+
   return nodes.flatMap((node) => {
-    const isExpanded = expandedPaths.has(node.path);
+    const children = node.type === "directory" ? childrenCache.get(node.path) || [] : [];
+    
+    // Check if this node or any of its children (recursively) match the search query
+    const matchesSearch = !query || node.name.toLowerCase().includes(query);
+    const hasMatchingChild = query && node.type === "directory" && (
+        children.some(child => child.name.toLowerCase().includes(query)) ||
+        // We might need recursive check here for deep matches
+        // but for simplicity let's check one level or use a pre-calculated map
+        false 
+    );
+
+    // If searching, we auto-expand or show if it has matches
+    const isExpanded = query ? true : expandedPaths.has(node.path);
+    
+    // In search mode, we only show nodes that match or have matching children
+    // Actually, for a simple tree search, we often show matching items and their parents
+    if (query && !matchesSearch && !hasMatchingChild) {
+        // Advanced: check children recursively
+        const subResult = flattenVisibleNodes(children, expandedPaths, childrenCache, searchQuery, depth + 1, node.path);
+        if (subResult.length === 0) return [];
+        
+        // If we found matches in subResult, we must show this parent node too
+        return [{ node, depth, isExpanded, parentPath }, ...subResult];
+    }
+
     const result: FlattenedNode[] = [{ node, depth, isExpanded, parentPath }];
 
     if (node.type === "directory" && isExpanded) {
-      const children = childrenCache.get(node.path) || [];
-      result.push(...flattenVisibleNodes(children, expandedPaths, childrenCache, depth + 1, node.path));
+      result.push(...flattenVisibleNodes(children, expandedPaths, childrenCache, searchQuery, depth + 1, node.path));
     }
 
     return result;
@@ -109,9 +153,12 @@ const flattenVisibleNodes = (
 interface TreeViewProps {
   rootPath: string;
   onFileSelect: (node: TreeNode) => void;
+  onDelete?: (node: TreeNode) => Promise<boolean>;
+  onFocusChange?: (node: TreeNode | null) => void;
+  searchQuery?: string;
 }
 
-export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
+export const TreeView = ({ rootPath, onFileSelect, onDelete, onFocusChange, searchQuery = "" }: TreeViewProps) => {
   const [rootChildren, setRootChildren] = useState<TreeNode[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,32 +172,33 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
   const [focusedIndex, setFocusedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const loadRoot = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await window.electronAPI.fs.readDir(rootPath);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setRootChildren(result.entries);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load directory");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [rootPath]);
+
   // Load root directory on mount
   useEffect(() => {
-    const loadRoot = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await window.electronAPI.fs.readDir(rootPath);
-        if (result.error) {
-          setError(result.error);
-        } else {
-          setRootChildren(result.entries);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load directory");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadRoot();
-  }, [rootPath]);
+  }, [loadRoot]);
 
   // Flatten visible nodes for navigation
   const flattenedNodes = useMemo(() => {
     if (!rootChildren) return [];
-    return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache);
-  }, [rootChildren, expandedPaths, childrenCache]);
+    return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, searchQuery);
+  }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
 
   // Clamp focusedIndex when flattenedNodes changes
   useEffect(() => {
@@ -159,10 +207,19 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
     }
   }, [flattenedNodes.length, focusedIndex]);
 
+  useEffect(() => {
+    if (onFocusChange) {
+      onFocusChange(flattenedNodes[focusedIndex]?.node || null);
+    }
+  }, [flattenedNodes, focusedIndex, onFocusChange]);
+
   // Load children for a directory
   const loadChildren = useCallback(async (path: string): Promise<TreeNode[]> => {
     if (childrenCache.has(path)) {
-      return childrenCache.get(path)!;
+      // Force reload if we are calling this explicitly (e.g. after delete),
+      // but usually this is called by toggle/expand which might rely on cache.
+      // For now, simple cache check.
+      // To support force reload, we'd need a flag or manual cache invalidation before calling.
     }
 
     setLoadingPaths((prev) => new Set(prev).add(path));
@@ -182,13 +239,20 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
         return next;
       });
     }
-  }, [childrenCache]);
+  }, [childrenCache]); // Careful with deps here
 
   // Expand a directory
   const expandNode = useCallback(async (path: string) => {
-    await loadChildren(path);
+    // Always load fresh children when expanding? 
+    // Or only if not in cache? 
+    // For now, standard behavior: load if not cached or force via other means.
+    // The loadChildren above checks cache.
+    // If we want to refresh, we must clear cache first.
+    if (!childrenCache.has(path)) {
+        await loadChildren(path);
+    }
     setExpandedPaths((prev) => new Set(prev).add(path));
-  }, [loadChildren]);
+  }, [loadChildren, childrenCache]);
 
   // Collapse a directory
   const collapseNode = useCallback((path: string) => {
@@ -217,6 +281,44 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
       onFileSelect(node);
     }
   }, [toggleNode, onFileSelect]);
+
+  const handleNodeDelete = useCallback(async (node: TreeNode) => {
+    if (!onDelete) return;
+    
+    const success = await onDelete(node);
+    if (success) {
+      // Refresh logic
+      // Check if node is in root
+      if (rootChildren?.some(n => n.path === node.path)) {
+        loadRoot();
+        return;
+      }
+
+      // Check cache for parent
+      for (const [parentPath, children] of childrenCache.entries()) {
+        if (children.some(n => n.path === node.path)) {
+           // Reload this parent
+           // We need to bypass cache check in loadChildren.
+           // Simplest: clear cache entry then load.
+           setChildrenCache(prev => {
+               const next = new Map(prev);
+               next.delete(parentPath);
+               return next;
+           });
+           // We can't call loadChildren immediately because state update is async
+           // and loadChildren checks current state cache.
+           // However, setState accepts a callback or we can pass a 'force' arg if we modify loadChildren.
+           
+           // Better: Direct call to API and update state.
+           window.electronAPI.fs.readDir(parentPath).then(result => {
+               const newChildren = result.entries || [];
+               setChildrenCache(prev => new Map(prev).set(parentPath, newChildren));
+           });
+           return;
+        }
+      }
+    }
+  }, [onDelete, rootChildren, childrenCache, loadRoot]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -274,7 +376,26 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
           e.preventDefault();
           await activateNode(currentNode);
           break;
+
+        case "Delete":
+        case "Backspace":
+          if (onDelete) {
+            e.preventDefault();
+            await handleNodeDelete(currentNode.node);
+          }
+          break;
+
+        case "n":
+        case "N":
+        case "m":
+        case "M":
+          // Let the parent handle these shortcuts
+          break;
+
+        default:
+          return; // Don't stop propagation for other keys
       }
+      e.stopPropagation();
     };
 
     const container = containerRef.current;
@@ -282,7 +403,7 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
       container.addEventListener("keydown", handleKeyDown);
       return () => container.removeEventListener("keydown", handleKeyDown);
     }
-  }, [flattenedNodes, focusedIndex, expandNode, collapseNode, activateNode, childrenCache]);
+  }, [flattenedNodes, focusedIndex, expandNode, collapseNode, activateNode, childrenCache, onDelete, handleNodeDelete]);
 
   // Focus container on mount
   useEffect(() => {
@@ -336,6 +457,8 @@ export const TreeView = ({ rootPath, onFileSelect }: TreeViewProps) => {
             setFocusedIndex(index);
             activateNode(flatNode);
           }}
+          onDelete={onDelete ? handleNodeDelete : undefined}
+          onHover={() => setFocusedIndex(index)}
         />
       ))}
     </div>
