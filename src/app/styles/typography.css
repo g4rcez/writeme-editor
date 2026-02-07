@@ -180,3 +180,7 @@
 .tiptap a {
   @apply cursor-pointer text-primary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
 }
+
+.tiptap .mention {
+  @apply px-1 py-0.5 text-primary-foreground bg-primary/70 rounded;
+}

@@ -39,49 +39,27 @@ function showInstallPromotion() {
   );
 }
 
-/**
- * Main app wrapper
- * IndexedDB-first mode: App starts immediately without requiring workspace configuration
- * Filesystem sync can be configured later via Settings menu
- */
-const Main = () => {
-  return <App />;
-};
-
 export async function main() {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
     throw new Error("Root element not found");
   }
-
   initializePWA();
-
-  // Always load notes from IndexedDB (IndexedDB-first mode)
   try {
     const notes = await repositories.notes.getAll();
     globalDispatch.notes(notes);
-
-    // Load tabs BEFORE setting any note to prevent race condition
     await globalDispatch.loadTabs();
-
-    // Get the ID of the previously focused note from localStorage
     const currentNoteId = globalState().note?.id;
     let noteToOpen: Note | null = null;
-
     if (currentNoteId) {
-      // Restore previously focused note with full content
       noteToOpen = await repositories.notes.getOne(currentNoteId);
     }
-
     if (!noteToOpen && notes.length > 0) {
-      // Fall back to first note with full content
       noteToOpen = await repositories.notes.getOne(notes[0].id);
     }
-
     if (noteToOpen) {
       globalDispatch.note(noteToOpen);
     } else if (notes.length === 0) {
-      // Create new note only if no notes exist
       const note = Note.new("Untitled", "");
       await repositories.notes.save(note);
       globalDispatch.note(note);
@@ -97,6 +75,6 @@ export async function main() {
     const head = document.getElementsByTagName("head")[0]!;
     head.append(createStyle("default-theme", createTheme(lightTheme)));
     head.append(createStyle("dark-theme", createTheme(darkTheme, "dark")));
-    createRoot(rootElement).render(<Main />);
+    createRoot(rootElement).render(<App />);
   }
 }

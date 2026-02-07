@@ -143,6 +143,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
       return ipcRenderer.invoke("fs:readDir", dirPath);
     },
 
+    readDirRecursive: async (
+      dirPath: string,
+    ): Promise<{
+      success: boolean;
+      files: { name: string; path: string; relativePath: string }[];
+      error?: string;
+    }> => {
+      return ipcRenderer.invoke("fs:readDirRecursive", dirPath);
+    },
+
     openFileOrDirectory: async (): Promise<{
       path: string;
       isDirectory: boolean;
@@ -181,6 +191,11 @@ declare global {
         deleteFile(filePath: string): Promise<any>;
         moveFile(oldPath: string, newPath: string): Promise<any>;
         readDir(dirPath: string): Promise<ReadDirResult>;
+        readDirRecursive(dirPath: string): Promise<{
+          success: boolean;
+          files: { name: string; path: string; relativePath: string }[];
+          error?: string;
+        }>;
         openFileOrDirectory(): Promise<{
           path: string;
           isDirectory: boolean;

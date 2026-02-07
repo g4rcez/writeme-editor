@@ -1,4 +1,5 @@
 import { uuid } from "@g4rcez/components";
+import Mention from "@tiptap/extension-mention";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
   EditorContent,
@@ -14,7 +15,6 @@ import {
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
-import { detectMarkdown } from "../lib/markdown-paste";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
 import { CursorPositionStore } from "../store/cursor-position.store";
 import {
@@ -76,13 +76,19 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   const editor = useEditor({
     extensions,
     editable: true,
-    autofocus: false,
+    autofocus: true,
     content: props.content,
     immediatelyRender: true,
     enableContentCheck: true,
     enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
-    onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
+    onCreate: ({ editor: currentEditor }) => {
+      try {
+        return migrateMathStrings(currentEditor);
+      } catch (e) {
+        console.log(e);
+      }
+    },
     editorProps: {
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
@@ -92,7 +98,23 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
             type: "doc",
             content: selectedContent.content.toJSON(),
           };
-          const html = tiptapToMarkdown({ content, extensions });
+
+          const copyExtensions = extensions.map((extension) => {
+            if (extension.name === "mention") {
+              return Mention.extend({
+                renderHTML({ node }) {
+                  const label = node.attrs.label ?? node.attrs.id;
+                  return `[[${label}]]`;
+                },
+              }).configure({});
+            }
+            return extension;
+          });
+
+          const html = tiptapToMarkdown({
+            content,
+            extensions: copyExtensions,
+          });
           const text = renderToMarkdown({ content, extensions });
           navigator.clipboard.write([
             new ClipboardItem({
@@ -144,23 +166,22 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     if (!editor || !props.note) return;
     const position = CursorPositionStore.get(props.note.id);
     if (!position) return;
-
     const maxPos = editor.state.doc.content.size;
     const safePos = Math.min(position.cursor, maxPos);
-
-    requestAnimationFrame(() => {
+    const raf = requestAnimationFrame ?? ((fn: Function) => fn());
+    raf(() => {
       editor.chain().setTextSelection(safePos).run();
       window.scrollTo(0, position.scroll);
     });
   }, [editor, props.note?.id]);
 
   return (
-    <div className="flex flex-col justify-start w-full pt-6 items-start mx-auto w-full h-full max-w-safe">
+    <div className="flex flex-col justify-start items-start mx-auto w-full h-full max-w-safe">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}
           editor={editor}
-          className="items-stretch w-full text-lg py-editor"
+          className="w-full text-lg"
         />
       </EditorContext.Provider>
     </div>

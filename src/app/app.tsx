@@ -23,7 +23,7 @@ import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { Dates } from "../lib/dates";
 
 export const App = () => {
-  useGlobalStore();
+  const [state] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
 
   useEffect(() => {
@@ -101,7 +101,9 @@ export const App = () => {
             <div className="flex flex-col flex-1 min-w-0">
               <ShortcutsCommands />
               <DirectoryBrowserDialog />
-              <Outlet />
+              <div className="block py-28">
+                <Outlet />
+              </div>
             </div>
           </div>
           <PWAInstallButton />

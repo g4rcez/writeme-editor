@@ -160,6 +160,45 @@ export const notesIpcHandler = async () => {
     },
   );
 
+  // Recursive directory walk — collects .md files up to a depth limit
+  ipcMain.handle(
+    "fs:readDirRecursive",
+    async (_event, dirPath: string, maxDepth = 10) => {
+      type FileEntry = { name: string; path: string; relativePath: string };
+      const results: FileEntry[] = [];
+
+      const walk = async (currentDir: string, depth: number) => {
+        if (depth > maxDepth) return;
+        let entries;
+        try {
+          entries = await fs.readdir(currentDir, { withFileTypes: true });
+        } catch {
+          return; // Skip unreadable directories
+        }
+        for (const entry of entries) {
+          if (entry.name.startsWith(".")) continue;
+          const fullPath = path.join(currentDir, entry.name);
+          if (entry.isDirectory()) {
+            await walk(fullPath, depth + 1);
+          } else if (entry.name.endsWith(".md")) {
+            results.push({
+              name: entry.name,
+              path: fullPath,
+              relativePath: path.relative(dirPath, fullPath),
+            });
+          }
+        }
+      };
+
+      try {
+        await walk(dirPath, 0);
+        return { success: true, files: results };
+      } catch (error: any) {
+        return { success: false, files: [], error: error.message };
+      }
+    },
+  );
+
   // Read directory (single level for lazy loading)
   ipcMain.handle("fs:readDir", async (event, dirPath: string) => {
     try {

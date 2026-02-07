@@ -28,7 +28,7 @@ import { globalState } from "../../store/global.store";
 import { ExcalidrawCode } from "./excalidraw";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
-import {Mermaid} from "./mermaid";
+import { Mermaid } from "./mermaid";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -260,8 +260,15 @@ export function ShikiPlugin({
               loadTheme(THEME_MAP.dark),
             ]);
           }
-          const tr = view.state.tr.setMeta("shikiPluginForceDecoration", true);
-          view.dispatch(tr);
+          try {
+            const tr = view.state.tr.setMeta(
+              "shikiPluginForceDecoration",
+              true,
+            );
+            view.dispatch(tr);
+          } catch (e) {
+            console.warn("[code-block]", e);
+          }
         }
         async checkUndecoratedBlocks() {
           const codeBlocks = findChildren(
