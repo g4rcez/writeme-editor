@@ -7,6 +7,7 @@ export default function EditorPage() {
   const [state] = useGlobalStore();
   const [loadedNote, setLoadedNote] = useState<Note | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  console.log(state)
 
   useEffect(() => {
     if (!state.note) {

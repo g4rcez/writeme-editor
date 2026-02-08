@@ -47,6 +47,7 @@ export async function main() {
   initializePWA();
   try {
     const notes = await repositories.notes.getAll();
+    console.log(notes)
     globalDispatch.notes(notes);
     await globalDispatch.loadTabs();
     const currentNoteId = globalState().note?.id;
@@ -67,14 +68,11 @@ export async function main() {
   } catch (error) {
     console.error("Failed to load notes:", error);
   }
-
   if (globalState().theme === "dark") {
     document.documentElement.classList.add("dark");
   }
-  if (!rootElement.innerHTML) {
-    const head = document.getElementsByTagName("head")[0]!;
-    head.append(createStyle("default-theme", createTheme(lightTheme)));
-    head.append(createStyle("dark-theme", createTheme(darkTheme, "dark")));
-    createRoot(rootElement).render(<App />);
-  }
+  const head = document.getElementsByTagName("head")[0]!;
+  head.append(createStyle("default-theme", createTheme(lightTheme)));
+  head.append(createStyle("dark-theme", createTheme(darkTheme, "dark")));
+  createRoot(rootElement).render(<App />);
 }

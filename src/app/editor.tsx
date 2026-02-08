@@ -82,7 +82,11 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     enableContentCheck: true,
     enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
-    onCreate: ({ editor: currentEditor }) => migrateMathStrings(currentEditor),
+    onCreate: ({ editor: currentEditor }) => {
+      try {
+        return void migrateMathStrings(currentEditor);
+      } catch (e) {}
+    },
     editorProps: {
       handlePaste: () => false,
       handleKeyDown: (view, event) => {
@@ -124,10 +128,9 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
       },
     },
   });
-
+  console.log(editor);
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
-
   useEffect(() => {
     if (editor === null) return;
     if (!props.note) return;
@@ -185,11 +188,11 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
 export const Editor = (props: { content: string; note?: Note }) => {
   const [state] = useGlobalStore();
   const [content, setContent] = useState<null | string>(props.content);
+  console.log(content, state);
 
   useEffect(() => {
     if (props.content === null) return;
-    const initializeEditor = async () => setContent(props.content);
-    initializeEditor();
+    setContent(props.content);
   }, [props.content]);
 
   const id = useMemo(() => props.note?.id || uuid(), [props.note]);

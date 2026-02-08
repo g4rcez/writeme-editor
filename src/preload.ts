@@ -97,7 +97,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
         throw error;
       }
     },
-
     search: async (query: string): Promise<Note[]> => {
       try {
         const notesData = await ipcRenderer.invoke("notes:search", query);
@@ -108,41 +107,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
       }
     },
   },
-
-  // File system APIs for hybrid storage
   fs: {
     chooseDirectory: async (): Promise<string | null> => {
       return ipcRenderer.invoke("fs:chooseDirectory");
     },
-
     writeFile: async (filePath: string, content: string) => {
       return ipcRenderer.invoke("fs:writeFile", filePath, content);
     },
-
     readFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:readFile", filePath);
     },
-
     statFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:statFile", filePath);
     },
-
     mkdir: async (dirPath: string) => {
       return ipcRenderer.invoke("fs:mkdir", dirPath);
     },
-
     deleteFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:deleteFile", filePath);
     },
-
     moveFile: async (oldPath: string, newPath: string) => {
       return ipcRenderer.invoke("fs:moveFile", oldPath, newPath);
     },
-
     readDir: async (dirPath: string): Promise<ReadDirResult> => {
       return ipcRenderer.invoke("fs:readDir", dirPath);
     },
-
     readDirRecursive: async (
       dirPath: string,
     ): Promise<{
@@ -152,7 +141,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     }> => {
       return ipcRenderer.invoke("fs:readDirRecursive", dirPath);
     },
-
     openFileOrDirectory: async (): Promise<{
       path: string;
       isDirectory: boolean;

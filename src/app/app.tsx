@@ -1,6 +1,6 @@
-import { Brouther, Outlet } from "brouther";
+import { Brouther, Outlet, usePageStats, useBrouther } from "brouther";
 import { Maximize2 } from "lucide-react";
-import { StrictMode, useEffect } from "react";
+import { Fragment, StrictMode, useEffect } from "react";
 import { CursorPositionStore } from "../store/cursor-position.store";
 import {
   globalDispatch,
@@ -21,6 +21,13 @@ import { Navbar } from "./navbar";
 import { router } from "./router";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { Dates } from "../lib/dates";
+
+const X = () => {
+  const page = usePageStats();
+  const b = useBrouther()
+  console.log({ page, b });
+  return null;
+};
 
 export const App = () => {
   const [state] = useGlobalStore();
@@ -74,25 +81,17 @@ export const App = () => {
 
   const isQuickNote = window.location.hash.includes("quicknote");
 
-  if (isQuickNote) {
-    return (
-      <StrictMode>
-        <Brouther config={router.config}>
-          <div className="flex flex-col flex-1 h-screen bg-background">
-            <Outlet />
-          </div>
-        </Brouther>
-      </StrictMode>
-    );
-  }
-
   return (
     <StrictMode>
       <Brouther config={router.config}>
         <div className="flex flex-col flex-1 justify-center items-center isolate">
-          <Commander />
-          <RecentNotesDialog />
-          <Navbar />
+          {isQuickNote ? (
+            <Fragment>
+              <Commander />
+              <RecentNotesDialog />
+              <Navbar />
+            </Fragment>
+          ) : null}
           <div className="flex flex-1 w-full min-h-0">
             {!uiState.focusMode && (
               <div className="hidden lg:block">
@@ -103,11 +102,12 @@ export const App = () => {
               <ShortcutsCommands />
               <DirectoryBrowserDialog />
               <div className="block py-28">
+                <X />
                 <Outlet />
               </div>
             </div>
           </div>
-          <PWAInstallButton />
+          {isQuickNote ? null : <PWAInstallButton />}
           {uiState.focusMode && (
             <button
               title="Exit focus mode (⌘⇧F)"

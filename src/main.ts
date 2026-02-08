@@ -22,13 +22,10 @@ async function main() {
   if (started) {
     app.quit();
   }
-
   await notesIpcHandler();
-
+  const preload = path.join(__dirname, "preload.js");
   ipcMain.handle("env:getHome", () => app.getPath("home"));
-  ipcMain.handle("app:openQuickNote", () => {
-    createQuickNoteWindow(path.join(__dirname, "preload.js"));
-  });
+  ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preload));
 
   const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -37,9 +34,12 @@ async function main() {
       center: true,
       accentColor: "#000000",
       webPreferences: {
+        preload,
+        defaultFontSize: 16,
         nodeIntegration: true,
+        contextIsolation: true,
+        defaultEncoding: "utf-8",
         accessibleTitle: "writeme",
-        preload: path.join(__dirname, "preload.js"),
       },
     });
 
@@ -77,7 +77,6 @@ async function main() {
       .resize({ width: 16, height: 16 });
     tray = new Tray(icon);
     tray.setToolTip("Writeme");
-
     const contextMenu = Menu.buildFromTemplate([
       {
         label: "Show Writeme",
@@ -112,32 +111,17 @@ async function main() {
       });
     }
   };
-
-  app.on("before-quit", () => {
-    isQuitting = true;
-  });
-
+  app.on("before-quit", () => void (isQuitting = true));
+  app.on("will-quit", () => globalShortcut.unregisterAll());
   app.on("ready", () => {
     createWindow();
     createTray();
-
-    // Register global shortcut for quicknote
-    globalShortcut.register("CommandOrControl+Alt+N", () => {
-      createQuickNoteWindow(path.join(__dirname, "preload.js"));
-    });
+    globalShortcut.register("CommandOrControl+Alt+N", () =>
+      createQuickNoteWindow(preload),
+    );
   });
-
-  app.on("will-quit", () => {
-    globalShortcut.unregisterAll();
-  });
-
-  // App stays alive in the tray on all platforms
-  app.on("window-all-closed", () => {
-    // Do nothing — app stays alive in the tray
-  });
-
+  app.on("window-all-closed", () => {});
   app.on("activate", () => {
-    // macOS dock click: show the existing window
     if (mainWindow) {
       mainWindow.show();
     } else {

@@ -18,7 +18,7 @@ import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
-import { Markdown } from "tiptap-markdown";
+import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { ReplacerCommands } from "./commands/commands";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Blockquote } from "./elements/blockquote";
@@ -36,8 +36,9 @@ export const createExtensions = (
   return [
     Frontmatter,
     StarterKit.configure({
-      codeBlock: false,
+      codeBlock: {},
       blockquote: false,
+      undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
     TableKit.configure({

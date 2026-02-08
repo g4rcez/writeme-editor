@@ -40,18 +40,13 @@ type HighlighterOptions = {
   languages: (BundledLanguage | null | undefined)[];
 };
 
-// Theme mapping based on system theme
 const THEME_MAP = {
-  light: "catppuccin-latte" as BundledTheme,
   dark: "catppuccin-mocha" as BundledTheme,
+  light: "catppuccin-latte" as BundledTheme,
 };
 
-/**
- * Get the appropriate theme based on current system theme
- */
-export function getThemeForMode(mode: string): BundledTheme {
-  return mode === "light" ? THEME_MAP.light : THEME_MAP.dark;
-}
+export const getThemeForMode = (mode: string): BundledTheme =>
+  mode === "light" ? THEME_MAP.light : THEME_MAP.dark;
 
 export function resetHighlighter() {
   highlighter = undefined;
@@ -72,21 +67,14 @@ export function loadHighlighter(opts: HighlighterOptions) {
     highlighterPromise = createHighlighter({
       langs: [...langs, shikiMathGrammer],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
-    }).then((h) => {
-      highlighter = h;
-    });
+    }).then((h) => void (highlighter = h));
     return highlighterPromise;
   }
-
   if (highlighterPromise) {
     return highlighterPromise;
   }
 }
 
-/**
- * Loads a theme if it's valid and not yet loaded.
- * @returns true or false depending on if it got loaded.
- */
 export async function loadTheme(theme: BundledTheme) {
   if (
     highlighter &&
@@ -103,10 +91,6 @@ export async function loadTheme(theme: BundledTheme) {
   return false;
 }
 
-/**
- * Loads a language if it's valid and not yet loaded
- * @returns true or false depending on if it got loaded.
- */
 export async function loadLanguage(language: BundledLanguage) {
   if (
     highlighter &&
@@ -123,10 +107,6 @@ export async function loadLanguage(language: BundledLanguage) {
   return false;
 }
 
-/**
- * Initializes the highlighter based on the prosemirror document,
- * with the themes and languages in the document.
- */
 export async function initHighlighter({
   doc,
   name,
@@ -150,13 +130,21 @@ export async function initHighlighter({
   ];
 
   if (!highlighter) {
-    const loader = loadHighlighter({ languages, themes });
-    await loader;
+    try {
+      const loader = loadHighlighter({ languages, themes });
+      await loader;
+    } catch (e) {
+      console.warn("Failed to load Shiki highlighter:", e);
+    }
   } else {
-    await Promise.all([
-      ...themes.flatMap((theme) => loadTheme(theme)),
-      ...languages.flatMap((language) => !!language && loadLanguage(language)),
-    ]);
+    try {
+      await Promise.all([
+        ...themes.flatMap((theme) => loadTheme(theme)),
+        ...languages.flatMap((language) => !!language && loadLanguage(language)),
+      ]);
+    } catch (e) {
+      console.warn("Failed to load Shiki themes/languages:", e);
+    }
   }
 }
 
@@ -222,7 +210,6 @@ function getDecorations({
       from += 1;
     }
   });
-
   return DecorationSet.create(doc, decorations);
 }
 
