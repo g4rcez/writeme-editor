@@ -1,30 +1,29 @@
-import { Link } from "brouther";
-import { links } from "../router";
+import { Link } from "react-router-dom";
 
 const examples = [
   {
     title: ">>math",
-    href: links.mathExample,
+    to: "/examples/math",
     description: "A simple way to solve math expressions on the fly.",
   },
   {
     title: ">>uuid",
-    href: links.uuidExample,
+    to: "/examples/uuid",
     description: "Generate unique identifiers with UUID v4 format.",
   },
   {
     title: ">>eval",
-    href: links.evalExample,
+    to: "/examples/eval",
     description: "Execute JavaScript code directly in your editor.",
   },
   {
     title: ">>latex",
-    href: links.latexExample,
+    to: "/examples/latex",
     description: "Render beautiful mathematical formulas using LaTeX.",
   },
   {
     title: ">>expr",
-    href: links.exprExample,
+    to: "/examples/expr",
     description: "Safely evaluate mathematical expressions and functions.",
   },
 ];
@@ -35,7 +34,7 @@ export default function AboutPage() {
       {examples.map((example) => (
         <li key={example.title} className="block">
           <Link
-            href={example.href}
+            to={example.to}
             className="flex flex-col gap-1 p-3 rounded-lg border transition-all duration-300 ease-linear hocus:text-primary hocus:border-primary bg-card-background border-card-border"
           >
             <h2 className="text-lg font-semibold">{example.title}</h2>

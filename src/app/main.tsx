@@ -47,7 +47,6 @@ export async function main() {
   initializePWA();
   try {
     const notes = await repositories.notes.getAll();
-    console.log(notes)
     globalDispatch.notes(notes);
     await globalDispatch.loadTabs();
     const currentNoteId = globalState().note?.id;
