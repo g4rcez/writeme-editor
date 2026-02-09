@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { FolderTree, FolderPlus, Edit2, FilePlus } from "lucide-react";
-import { useGlobalStore, repositories } from "../../store/global.store";
+import { useGlobalStore, repositories, globalState } from "../../store/global.store";
 import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
 import { TreeView } from "./tree-view";
@@ -105,15 +105,25 @@ export const DirectoryBrowserDialog = () => {
 
         if (existingNote) {
           const deleted = await repositories.notes.delete(existingNote.id);
-          if (deleted) refreshView();
+          if (deleted) {
+            const tabs = globalState().tabs;
+            const tab = tabs.find((t) => t.noteId === existingNote.id);
+            if (tab) await dispatch.removeTab(tab.id);
+            refreshView();
+          }
           return deleted;
         }
       } else {
         // If it's a directory, we might want to cleanup multiple notes from DB
         const allNotes = await repositories.notes.getAll();
-        const notesInDir = allNotes.filter((n) => n.filePath?.startsWith(node.path + "/"));
+        const notesInDir = allNotes.filter((n) =>
+          n.filePath?.startsWith(node.path + "/"),
+        );
         for (const note of notesInDir) {
-           await repositories.notes.delete(note.id);
+          await repositories.notes.delete(note.id);
+          const tabs = globalState().tabs;
+          const tab = tabs.find((t) => t.noteId === note.id);
+          if (tab) await dispatch.removeTab(tab.id);
         }
       }
 

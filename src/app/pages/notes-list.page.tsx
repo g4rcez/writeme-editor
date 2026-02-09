@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { repositories } from "../../store/global.store";
+import { repositories, globalState, globalDispatch } from "../../store/global.store";
 import { db } from "../../store/repositories/dexie/dexie-db";
 import { Note } from "../../store/note";
 import { Link, useNavigate } from "react-router-dom";
@@ -99,6 +99,12 @@ export default function NotesListPage() {
     if (confirm("Are you sure you want to delete this note?")) {
       await repositories.notes.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
+
+      const tabs = globalState().tabs;
+      const tabToRemove = tabs.find((t) => t.noteId === id);
+      if (tabToRemove) {
+        await globalDispatch.removeTab(tabToRemove.id);
+      }
     }
   };
 
