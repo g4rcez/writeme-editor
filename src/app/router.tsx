@@ -15,6 +15,7 @@ const LatexExamplePage = lazy(() => import("./pages/examples/latex.page"));
 const ExprExamplePage = lazy(() => import("./pages/examples/expr.page"));
 const TagsPage = lazy(() => import("./pages/tags.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
+const SharePage = lazy(() => import("./pages/share.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -30,6 +31,10 @@ export const router = createRouter([
       {
         path: "note/:noteId",
         element: <NotePage />,
+      },
+      {
+        path: "share",
+        element: <SharePage />,
       },
       {
         path: "notes",
