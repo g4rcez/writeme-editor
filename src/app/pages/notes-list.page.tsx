@@ -2,10 +2,10 @@ import { useEffect, useState, useMemo } from "react";
 import { repositories } from "../../store/global.store";
 import { db } from "../../store/repositories/dexie/dexie-db";
 import { Note } from "../../store/note";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createColumns, Table } from "@g4rcez/components";
 import { format } from "date-fns";
-import { Search, Trash2, FileText, Hash } from "lucide-react";
+import { Search, Trash2, FileText, Hash, LinkIcon } from "lucide-react";
 
 interface NoteWithTags extends Note {
   tagsList: string[];
@@ -16,9 +16,18 @@ export default function NotesListPage() {
   const [notes, setNotes] = useState<NoteWithTags[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const navigate = useNavigate();
   const cols = createColumns<NoteWithTags>((col) => {
-    col.add("title", "Title");
+    col.add("title", "Title", {
+      Element: (props) => (
+        <Link
+          to={`/note/${props.row.id}`}
+          className="transition-colors duration-300 ease-linear flex gap-1.5 items-center hover:underline text-primary hover:text-primary-hover"
+        >
+          <LinkIcon size={14} />
+          {props.row.title}
+        </Link>
+      ),
+    });
     col.add("tagCount", "Hashtags", {
       Element: (props) => props.row.tagCount,
     });

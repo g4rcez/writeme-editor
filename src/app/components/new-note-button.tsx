@@ -21,16 +21,15 @@ export const NewNoteButton = () => {
         createNewNote();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
     <button
+      title="New note (⌘N)"
       onClick={createNewNote}
       className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md text-foreground/70 transition-all hover:text-foreground hover:bg-muted/30"
-      title="New note (⌘N)"
     >
       <Plus className="w-4 h-4" />
       <span className="hidden sm:inline">New</span>
