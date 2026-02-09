@@ -11,6 +11,7 @@ import { Note } from "../../store/note";
 import { SettingsRepository } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Modal } from "@g4rcez/components";
+import { useNavigate } from "react-router-dom";
 
 type SidebarSection = "recent" | "all";
 
@@ -60,6 +61,7 @@ export const Sidebar = () => {
   const [state, dispatch] = useGlobalStore();
   const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
   const [isResizing, setIsResizing] = useState(false);
+  const navigate = useNavigate();
 
   const settings = SettingsRepository.load();
   const storageDir = settings.storageDirectory || "";
@@ -94,7 +96,7 @@ export const Sidebar = () => {
   }, [isResizing, uiDispatch]);
 
   const openNote = (note: Note) => {
-    dispatch.selectNoteById(note.id);
+    navigate(`/note/${note.id}`);
   };
 
   const getDisplayPath = (note: Note) => {

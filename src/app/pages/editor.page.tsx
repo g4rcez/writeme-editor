@@ -1,53 +1,23 @@
-import { useEffect, useState } from "react";
-import { repositories, useGlobalStore } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { Editor } from "../editor";
+import { useEffect } from "react";
+import { useGlobalStore } from "../../store/global.store";
+import { useNavigate } from "react-router-dom";
 
 export default function EditorPage() {
   const [state] = useGlobalStore();
-  const [loadedNote, setLoadedNote] = useState<Note | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!state.note) {
-      setLoadedNote(null);
-      setIsLoading(false);
-      return;
+    if (state.note) {
+      navigate(`/note/${state.note.id}`, { replace: true });
     }
-    if (state.note.content) {
-      setLoadedNote(state.note);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    repositories.notes.getOne(state.note.id).then((fullNote) => {
-      if (fullNote) setLoadedNote(fullNote);
-      else setLoadedNote(state.note);
-      setIsLoading(false);
-    });
-  }, [state.note?.id]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">Loading...</div>
-    );
-  }
-
-  if (!loadedNote) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        No note selected
-      </div>
-    );
-  }
+  }, [state.note, navigate]);
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
-      <Editor
-        note={loadedNote}
-        key={loadedNote.id}
-        content={loadedNote.content}
-      />
+    <div className="flex justify-center items-center p-8 w-full h-full">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Welcome to Writeme</h2>
+        <p className="text-muted-foreground">Select a note to start writing.</p>
+      </div>
     </div>
   );
 }

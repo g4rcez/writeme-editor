@@ -9,10 +9,18 @@ export interface Tab {
   createdAt: Date;
 }
 
+export interface Hashtag {
+  id: string;
+  hashtag: string;
+  filename: string;
+  project: string;
+}
+
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
   projects: EntityTable<any, "id">;
   tabs: EntityTable<Tab, "id">;
+  hashtags: EntityTable<Hashtag, "id">;
 };
 
 // Version 1 (original schema)
@@ -119,3 +127,12 @@ db.version(7)
     }
     console.log("Schema migration to v7 complete");
   });
+
+// Version 8 (Hashtags support)
+db.version(8).stores({
+  notes:
+    "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, createdAt",
+  hashtags: "&id, hashtag, filename, project",
+});

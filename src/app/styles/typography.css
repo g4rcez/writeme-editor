@@ -105,12 +105,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li>label {
+.tiptap ul[data-type="taskList"] li > label {
   @apply select-none mr-4;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li>div {
+.tiptap ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
 }
 
@@ -145,13 +145,13 @@
   vertical-align: top;
 }
 
-.tiptap table td>*,
-.tiptap table th>* {
+.tiptap table td > *,
+.tiptap table th > * {
   margin-bottom: 0;
 }
 
 .tiptap table th {
-  @apply bg-background text-left font-bold;
+  @apply bg-table-background text-left font-bold;
 }
 
 .tiptap table .selectedCell:after {

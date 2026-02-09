@@ -5,6 +5,7 @@ import { SettingsRepository } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Search } from "lucide-react";
 import { Modal } from "@g4rcez/components";
+import { useNavigate } from "react-router-dom";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -12,6 +13,7 @@ export const RecentNotesDialog = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const navigate = useNavigate();
 
   // Load recent notes when dialog opens
   useEffect(() => {
@@ -77,7 +79,7 @@ export const RecentNotesDialog = () => {
   }, [selectedIndex, filteredNotes]);
 
   const openNote = (note: Note) => {
-    dispatch.selectNoteById(note.id);
+    navigate(`/note/${note.id}`);
     closeDialog();
   };
 

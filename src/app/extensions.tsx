@@ -1,15 +1,11 @@
-import {
-  AnyExtension,
-  mergeAttributes,
-  nodeInputRule,
-  PasteRule,
-} from "@tiptap/core";
+import { AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskList } from "@tiptap/extension-list";
 import MathExtension from "@tiptap/extension-mathematics";
+import Mention from "@tiptap/extension-mention";
 import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -18,7 +14,6 @@ import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
-import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { ReplacerCommands } from "./commands/commands";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Blockquote } from "./elements/blockquote";
@@ -27,8 +22,9 @@ import { ShikiBlock } from "./elements/code-block";
 import { ColorReplacer } from "./elements/color-replacer";
 import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
-import Mention from "@tiptap/extension-mention";
+import { Hashtag } from "./extensions/hashtag";
 import { suggestion } from "./extensions/suggestion";
+import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 
 export const createExtensions = (
   getCurrentTheme: () => BundledTheme,
@@ -36,7 +32,7 @@ export const createExtensions = (
   return [
     Frontmatter,
     StarterKit.configure({
-      codeBlock: {},
+      codeBlock: false,
       blockquote: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
@@ -144,19 +140,16 @@ export const createExtensions = (
     TaskList,
     TaskListItem,
     Callout,
+    Hashtag,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
     Mention.extend({
       renderText({ node }) {
         return `[[${node.attrs.label ?? node.attrs.id}]]`;
       },
-      renderHTML({ node, HTMLAttributes }) {
+      renderHTML({ node }) {
         const label = node.attrs.label ?? node.attrs.id;
-        return [
-          "span",
-          mergeAttributes({ class: "mention" }, HTMLAttributes),
-          `[[${label}]]`,
-        ];
+        return `[[${label}]]`;
       },
       addPasteRules() {
         return [

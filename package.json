@@ -90,6 +90,7 @@
     "@tiptap/static-renderer": "3.19.0",
     "@types/dompurify": "3.2.0",
     "@types/electron-squirrel-startup": "1.0.2",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "8.54.0",
     "@typescript-eslint/parser": "8.54.0",
     "chrono-node": "2.9.0",
@@ -110,6 +111,7 @@
     "radix-ui": "1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-force-graph-2d": "^1.29.1",
     "react-hotkeys-hook": "5.2.4",
     "react-router-dom": "^7.13.0",
     "react-textarea-autosize": "8.5.9",
@@ -133,6 +135,7 @@
     "unified": "11.0.5",
     "unist-util-visit": "5.1.0",
     "use-typed-reducer": "4.2.5",
+    "uuid": "^13.0.0",
     "vite-plugin-pwa": "1.2.0",
     "zod": "4.3.6"
   }

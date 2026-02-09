@@ -5,10 +5,13 @@ import { NewNoteButton } from "./components/new-note-button";
 import { SettingsMenu } from "./components/settings-menu";
 import { TabsBar } from "./components/tabs-bar";
 import { ThemeToggle } from "./components/theme-toggle";
+import { Network, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Navbar = () => {
   const [state, dispatch] = useGlobalStore();
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => setEditingTitle(null), [state.note?.id]);
 
@@ -36,6 +39,20 @@ export const Navbar = () => {
             )}
           </div>
           <nav className="flex gap-1 items-center">
+            <button
+              onClick={() => navigate("/notes")}
+              title="All Notes"
+              className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
+            >
+              <FileText className="size-4" />
+            </button>
+            <button
+              onClick={() => navigate("/tags")}
+              title="Graph View"
+              className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
+            >
+              <Network className="size-4" />
+            </button>
             <NewNoteButton />
             <ThemeToggle />
             <SettingsMenu />

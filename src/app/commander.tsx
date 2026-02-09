@@ -16,11 +16,13 @@ import {
   getUniqueNoteTitle,
 } from "../lib/file-utils";
 import { db } from "../store/repositories/dexie/dexie-db";
+import { useNavigate } from "react-router-dom";
 
 export const Commander = () => {
   const [state, dispatch] = useGlobalStore();
   const commands = useWritemeShortcuts();
   useShortcuts();
+  const navigate = useNavigate();
 
   return (
     <CommandPalette
@@ -117,7 +119,7 @@ export const Commander = () => {
                           // Index metadata in IndexedDB for recent notes
                           const { content: _, ...metadata } = noteData;
                           await db.notes.put(metadata as any, note.id);
-                          dispatch.setNote(note);
+                          navigate(`/note/${note.id}`);
                         }
                       }
                     },
@@ -142,6 +144,7 @@ export const Commander = () => {
                   repositories.notes.save(newNote);
                   dispatch.note(newNote);
                   args.setOpen(false);
+                  navigate(`/note/${newNote.id}`);
                 },
               },
               {
@@ -168,7 +171,7 @@ export const Commander = () => {
                   title: `Note: ${note.title}`,
                   action: (args) => {
                     args.setOpen(false);
-                    dispatch.selectNoteById(note.id);
+                    navigate(`/note/${note.id}`);
                   },
                 };
               }),

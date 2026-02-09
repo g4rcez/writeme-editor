@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { Maximize2 } from "lucide-react";
 import { Fragment, useEffect, Suspense } from "react";
 import { CursorPositionStore } from "../store/cursor-position.store";
@@ -24,6 +24,7 @@ import { Dates } from "../lib/dates";
 export const RootLayout = () => {
   const [state] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,6 +59,7 @@ export const RootLayout = () => {
       const existing = await repositories.notes.getQuicknoteByDate(today);
       if (existing) {
         globalDispatch.selectNoteById(existing.id);
+        navigate(`/note/${existing.id}`);
       } else {
         const quicknote = Note.new(
           `Quick Note - ${Dates.yearMonthDay(today)}`,
@@ -66,10 +68,11 @@ export const RootLayout = () => {
         );
         await repositories.notes.save(quicknote);
         globalDispatch.selectNoteById(quicknote.id);
+        navigate(`/note/${quicknote.id}`);
       }
     });
     return cleanup;
-  }, []);
+  }, [navigate]);
 
   const isQuickNote = window.location.hash.includes("quicknote");
 
@@ -91,7 +94,7 @@ export const RootLayout = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <ShortcutsCommands />
           <DirectoryBrowserDialog />
-          <div className="block py-28">
+          <div className="block mt-24 mb-10">
             <Suspense fallback={<div className="flex justify-center p-10">Loading...</div>}>
               <Outlet />
             </Suspense>

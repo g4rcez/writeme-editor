@@ -6,7 +6,11 @@ export default {
   plugins: [typography, forms],
   darkMode: "class",
   presets: [Preset],
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@g4rcez/components/dist/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
     extend: {
       boxShadow: {

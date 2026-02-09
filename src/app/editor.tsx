@@ -1,5 +1,4 @@
 import { uuid } from "@g4rcez/components";
-import Mention from "@tiptap/extension-mention";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
   EditorContent,
@@ -85,7 +84,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     onCreate: ({ editor: currentEditor }) => {
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) {}
+      } catch (e) { }
     },
     editorProps: {
       handlePaste: () => false,
@@ -98,22 +97,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
             content: selectedContent.content.toJSON(),
           };
 
-          const copyExtensions = extensions.map((extension) => {
-            if (extension.name === "mention") {
-              return Mention.extend({
-                renderHTML({ node }) {
-                  const label = node.attrs.label ?? node.attrs.id;
-                  return `[[${label}]]`;
-                },
-              }).configure({});
-            }
-            return extension;
-          });
-
-          const html = tiptapToMarkdown({
-            content,
-            extensions: copyExtensions,
-          });
+          const html = tiptapToMarkdown({ content, extensions });
           const text = renderToMarkdown({ content, extensions });
           navigator.clipboard.write([
             new ClipboardItem({
@@ -128,7 +112,6 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
       },
     },
   });
-  console.log(editor);
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
   useEffect(() => {
@@ -149,6 +132,13 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     });
     return () => {
       clearTimeout(saveTimeout);
+      try {
+        const html = (editor.storage as any).markdown.getMarkdown();
+        props.note.setContent(html);
+        repositories.notes.update(props.note.id, props.note);
+      } catch (error) {
+        console.warn("Failed to perform final save on unmount:", error);
+      }
     };
   }, [editor, props.note]);
 
@@ -173,7 +163,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   }, [editor, props.note?.id]);
 
   return (
-    <div className="flex flex-col justify-start items-start mx-auto w-full h-full max-w-safe">
+    <div className="flex flex-col justify-start items-start mx-auto w-full h-full max-w-safe py-4">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}
@@ -188,7 +178,6 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
 export const Editor = (props: { content: string; note?: Note }) => {
   const [state] = useGlobalStore();
   const [content, setContent] = useState<null | string>(props.content);
-  console.log(content, state);
 
   useEffect(() => {
     if (props.content === null) return;

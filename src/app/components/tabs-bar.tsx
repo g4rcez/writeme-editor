@@ -3,24 +3,34 @@ import { FileText, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
+import { useNavigate } from "react-router-dom";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const handleTabClick = useCallback(
     (tab: Tab) => {
-      dispatch.selectNoteById(tab.noteId);
+      navigate(`/note/${tab.noteId}`);
     },
-    [dispatch],
+    [navigate],
   );
 
   const handleCloseTab = useCallback(
-    (e: React.MouseEvent, tabId: string) => {
+    async (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
-      dispatch.removeTab(tabId);
+      const result = await dispatch.removeTab(tabId);
+      if (result.activeTabId && result.activeTabId !== tabId) {
+          const newTab = result.tabs.find((t) => t.id === result.activeTabId);
+          if (newTab) {
+              navigate(`/note/${newTab.noteId}`);
+          }
+      } else if (!result.activeTabId) {
+          navigate('/');
+      }
     },
-    [dispatch, state.notes, state.tabs],
+    [dispatch, navigate],
   );
 
   const handleMiddleClick = useCallback(
