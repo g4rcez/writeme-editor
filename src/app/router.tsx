@@ -40,6 +40,10 @@ export const router = createRouter([
         element: <QuicknotePage />,
       },
       {
+        path: "quicknote/:noteId",
+        element: <NotePage />,
+      },
+      {
         path: "about",
         element: <AboutPage />,
       },

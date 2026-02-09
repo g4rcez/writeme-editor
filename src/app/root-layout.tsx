@@ -20,6 +20,7 @@ import { Footer } from "./footer";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { Dates } from "../lib/dates";
+import { css } from "@g4rcez/components";
 
 export const RootLayout = () => {
   const [state] = useGlobalStore();
@@ -59,16 +60,16 @@ export const RootLayout = () => {
       const existing = await repositories.notes.getQuicknoteByDate(today);
       if (existing) {
         globalDispatch.selectNoteById(existing.id);
-        navigate(`/note/${existing.id}`);
+        navigate(`/quicknote/${existing.id}`);
       } else {
         const quicknote = Note.new(
-          `Quick Note - ${Dates.yearMonthDay(today)}`,
+          `${Dates.yearMonthDay(today)}_quick_note`,
           "",
-          "quicknote",
+          "quick",
         );
         await repositories.notes.save(quicknote);
         globalDispatch.selectNoteById(quicknote.id);
-        navigate(`/note/${quicknote.id}`);
+        navigate(`/quicknote/${quicknote.id}`);
       }
     });
     return cleanup;
@@ -86,7 +87,7 @@ export const RootLayout = () => {
         </Fragment>
       ) : null}
       <div className="flex flex-1 w-full min-h-0">
-        {!uiState.focusMode && (
+        {!uiState.focusMode && !isQuickNote && (
           <div className="hidden lg:block">
             <Sidebar />
           </div>
@@ -94,8 +95,12 @@ export const RootLayout = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <ShortcutsCommands />
           <DirectoryBrowserDialog />
-          <div className="block mt-24 mb-10">
-            <Suspense fallback={<div className="flex justify-center p-10">Loading...</div>}>
+          <div className={css("block", isQuickNote ? "py-8" : "mt-24 mb-10")}>
+            <Suspense
+              fallback={
+                <div className="flex justify-center p-10">Loading...</div>
+              }
+            >
               <Outlet />
             </Suspense>
           </div>

@@ -74,11 +74,6 @@
   @apply list-decimal;
 }
 
-/* .tiptap ul[data-tight="true"], */
-/* .tiptap ol[data-tight="true"] { */
-/*   @apply !-my-1; */
-/* } */
-
 .tiptap img {
   @apply block h-auto my-6 max-w-full rounded-xl;
 }
@@ -106,11 +101,12 @@
 }
 
 .tiptap ul[data-type="taskList"] li > label {
-  @apply select-none mr-4;
+  @apply select-none mr-3;
   flex: 0 0 auto;
 }
 
 .tiptap ul[data-type="taskList"] li > div {
+  @apply items-center;
   flex: 1 1 auto;
 }
 
@@ -123,7 +119,7 @@
 }
 
 .tiptap input[type="checkbox"] {
-  @apply rounded text-primary;
+  @apply rounded text-primary mb-0.5 size-5;
 }
 
 [type="checkbox"]:checked {

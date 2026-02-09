@@ -1,3 +1,4 @@
+import { startOfDay } from "date-fns";
 import { BrowserWindow, screen } from "electron";
 import path from "node:path";
 
@@ -18,32 +19,38 @@ export const createQuickNoteWindow = (preloadPath: string) => {
     width: 600,
     frame: true,
     height: 400,
-    show: false,
+    show: true,
     alwaysOnTop: true,
+    center: true,
+    title: "Quick notes",
     x: Math.round(width / 2 - 300),
     y: Math.round(height / 2 - 200),
     webPreferences: {
-      nodeIntegration: true,
       preload: preloadPath,
+      nodeIntegration: true,
+      contextIsolation: true,
+      accessibleTitle: "Quick notes",
     },
   });
   const hash = "quicknote";
+  const search = new URLSearchParams([
+    ["date", startOfDay(new Date().toISOString()).toISOString()],
+  ]).toString();
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    quickNoteWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${hash}`);
+    quickNoteWindow.loadURL(
+      `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${hash}?${search}`,
+    );
   } else {
-    // In production, we load the file and add the hash
     quickNoteWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-      { hash: hash },
+      { hash, search: search },
     );
   }
-
   quickNoteWindow.once("ready-to-show", () => {
     quickNoteWindow?.show();
     quickNoteWindow?.focus();
     quickNoteWindow?.webContents.send("quicknote:open");
   });
-
   quickNoteWindow.on("closed", () => {
     quickNoteWindow = null;
   });

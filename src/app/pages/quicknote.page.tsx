@@ -1,9 +1,32 @@
-import { useGlobalStore } from "../../store/global.store";
+import { startOfDay } from "date-fns";
+import { useEffect, useState } from "react";
+import { Dates } from "../../lib/dates";
+import { repositories, useGlobalStore } from "../../store/global.store";
+import { Note } from "../../store/note";
 import { Editor } from "../editor";
 
 export default function QuickNotePage() {
-  const [state] = useGlobalStore();
-  if (!state.note) {
+  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useGlobalStore();
+
+  useEffect(() => {
+    async function request() {
+      setLoading(true);
+      const quickNote = state.notes.find((x) => x.noteType === "quick");
+      if (quickNote) {
+        dispatch.note(quickNote);
+      } else {
+        const title = Dates.yearMonthDay(startOfDay(new Date()));
+        const note = Note.new(`${title}-QuickNote`, "", "quick");
+        await repositories.notes.save(note);
+        dispatch.note(note, false);
+      }
+      setLoading(false);
+    }
+    request();
+  }, []);
+
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-full text-gray-500">
         Loading Quick Note...
@@ -11,8 +34,10 @@ export default function QuickNotePage() {
     );
   }
   return (
-    <div className="w-full h-full">
-      <h1 className="font-semibold">{state.note.title}</h1>
+    <div className="mx-auto w-full h-full max-w-safe">
+      <h1 className="py-2 mb-4 text-lg font-semibold border-b border-card-border">
+        {state.note.title}
+      </h1>
       <Editor content={state.note.content} note={state.note} />
     </div>
   );

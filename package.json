@@ -1,9 +1,21 @@
 {
   "name": "writeme",
+  "private": true,
   "productName": "writeme",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
+  "license": "MIT",
+  "author": {
+    "name": "g4rcez",
+    "url": "https://github.com/g4rcez/writeme-editor"
+  },
+  "keywords": [
+    "markdown",
+    "text-editor",
+    "editor",
+    "tiptap"
+  ],
   "scripts": {
     "dev": "npm run native:dev",
     "browser:dev": "vite --host",
@@ -18,12 +30,6 @@
     "pwa:dev": "npm run pwa:assets && npm run browser:dev",
     "pwa:build": "npm run pwa:assets && npm run browser:build"
   },
-  "keywords": [],
-  "author": {
-    "name": "g4rcez",
-    "email": "allan.f.garcez@gmail.com"
-  },
-  "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "7.11.1",
     "@electron-forge/maker-deb": "7.11.1",
@@ -90,7 +96,7 @@
     "@tiptap/static-renderer": "3.19.0",
     "@types/dompurify": "3.2.0",
     "@types/electron-squirrel-startup": "1.0.2",
-    "@types/uuid": "^10.0.0",
+    "@types/uuid": "10.0.0",
     "@typescript-eslint/eslint-plugin": "8.54.0",
     "@typescript-eslint/parser": "8.54.0",
     "chrono-node": "2.9.0",
@@ -111,9 +117,9 @@
     "radix-ui": "1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-force-graph-2d": "^1.29.1",
+    "react-force-graph-2d": "1.29.1",
     "react-hotkeys-hook": "5.2.4",
-    "react-router-dom": "^7.13.0",
+    "react-router-dom": "7.13.0",
     "react-textarea-autosize": "8.5.9",
     "rehype-format": "5.0.1",
     "rehype-raw": "7.0.0",
@@ -127,7 +133,6 @@
     "remark-rehype": "11.1.2",
     "remark-stringify": "11.0.0",
     "shiki": "3.22.0",
-    "sonner": "2.0.7",
     "tailwind-merge": "3.4.0",
     "tiptap-extension-code-block-shiki": "1.0.0",
     "tiptap-extension-global-drag-handle": "0.1.18",
@@ -135,7 +140,7 @@
     "unified": "11.0.5",
     "unist-util-visit": "5.1.0",
     "use-typed-reducer": "4.2.5",
-    "uuid": "^13.0.0",
+    "uuid": "13.0.0",
     "vite-plugin-pwa": "1.2.0",
     "zod": "4.3.6"
   }

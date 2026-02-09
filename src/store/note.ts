@@ -1,27 +1,32 @@
 import { uuid } from "@g4rcez/components";
 import { EntityBase } from "./repository";
 
+type NoteType = "note" | "quick";
+
 export class Note implements EntityBase {
   public readonly type = "__writeme_note";
 
   private constructor(
     public title: string,
-    public content: string, // Kept in memory, NOT persisted to IndexedDB
+    public content: string,
     public readonly id: string,
     public readonly project: string,
     public readonly createdAt: Date,
     public updatedAt: Date,
-    // NEW METADATA FIELDS for hybrid storage
     public filePath: string | null,
     public fileSize: number,
     public lastSynced: Date | null,
     public tags: string[],
     public createdBy: string,
     public updatedBy: string,
-    public noteType: string,
-  ) {}
+    public noteType: NoteType,
+  ) { }
 
-  public static new(title: string, content: string, noteType = "note") {
+  public static new(
+    title: string,
+    content: string,
+    noteType: NoteType = "note",
+  ) {
     const now = new Date();
     return new Note(
       title,
@@ -30,12 +35,12 @@ export class Note implements EntityBase {
       "",
       now,
       now,
-      null, // filePath - will be set when first saved
-      0, // fileSize
-      null, // lastSynced
-      [], // tags
-      "user", // createdBy
-      "user", // updatedBy
+      null,
+      0,
+      null,
+      [],
+      "user",
+      "user",
       noteType,
     );
   }

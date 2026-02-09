@@ -2,50 +2,29 @@ import { Note } from "../../note";
 import { EntityBase, Repository } from "../../repository";
 import { db } from "./dexie-db";
 import { SettingsRepository } from "../../settings";
-import {
-  generateNotePath,
-  getUniqueFilePath,
-} from "../../../lib/file-utils";
+import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
+import { endOfDay, startOfDay } from "date-fns";
 
-/**
- * Hybrid storage repository for notes
- * - Content stored as .md files on file system
- * - Metadata stored in IndexedDB for fast queries
- */
 export class NotesRepository implements Repository<Note> {
   async count(): Promise<number> {
     return await db.notes.count();
   }
 
-  /**
-   * Save new note: conditionally stores to filesystem or IndexedDB
-   * - Filesystem mode: content in .md file, metadata in IndexedDB
-   * - IndexedDB mode: full note (including content) in IndexedDB
-   */
   async save(item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsRepository.load();
 
     if (mode === "filesystem") {
-      // Filesystem mode: write content to file, metadata to IndexedDB
-      const filePath = generateNotePath(
-        settings.storageDirectory!,
-        item.title,
-      );
-
-      // Check for duplicates and get unique path
+      const filePath = generateNotePath(settings.storageDirectory!, item.title);
       const uniquePath = await getUniqueFilePath(filePath, async (path) => {
         const result = await window.electronAPI.fs.statFile(path);
         return result.exists;
       });
-
-      // Write content to file
       const writeResult = await window.electronAPI.fs.writeFile(
         uniquePath,
         item.content,
       );
-
       if (!writeResult.success) {
         throw new Error(`Failed to write file: ${writeResult.error}`);
       }
@@ -54,25 +33,25 @@ export class NotesRepository implements Repository<Note> {
       item.lastSynced = new Date(writeResult.lastModified);
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
-
-      // Save metadata (WITHOUT content) to IndexedDB
       const { content: _, ...metadata } = item as any;
       await db.notes.add(metadata, item.id);
     } else {
-      // IndexedDB mode: store full note including content
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       item.fileSize = item.content.length;
       await db.notes.add(item as any, item.id);
     }
-
     return item;
   }
 
   async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsRepository.load();
-    if (item.filePath && !item.filePath.startsWith(settings.storageDirectory!) && mode === "filesystem") {
+    if (
+      item.filePath &&
+      !item.filePath.startsWith(settings.storageDirectory!) &&
+      mode === "filesystem"
+    ) {
       const result = await window.electronAPI.fs.writeFile(
         item.filePath,
         item.content,
@@ -91,10 +70,7 @@ export class NotesRepository implements Repository<Note> {
       let filePath = existing.filePath;
       if (!filePath && (existing as any).content) {
         console.log("Lazy migration for note:", item.title);
-        filePath = generateNotePath(
-          settings.storageDirectory!,
-          item.title,
-        );
+        filePath = generateNotePath(settings.storageDirectory!, item.title);
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
           const result = await window.electronAPI.fs.statFile(path);
           return result.exists;
@@ -155,11 +131,6 @@ export class NotesRepository implements Repository<Note> {
     return item;
   }
 
-  /**
-   * Get single note: conditionally loads from filesystem or IndexedDB
-   * - Filesystem mode: metadata from IndexedDB, content from .md file
-   * - IndexedDB mode: full note from IndexedDB
-   */
   async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await db.notes.get(id);
 
@@ -236,7 +207,7 @@ export class NotesRepository implements Repository<Note> {
   async getLatestQuicknote(): Promise<Note | null> {
     const result = await db.notes
       .where("noteType")
-      .equals("quicknote")
+      .equals("quick")
       .reverse()
       .sortBy("updatedAt");
 
@@ -246,7 +217,9 @@ export class NotesRepository implements Repository<Note> {
     const mode = getStorageMode();
 
     if (mode === "filesystem" && metadata.filePath) {
-      const readResult = await window.electronAPI.fs.readFile(metadata.filePath);
+      const readResult = await window.electronAPI.fs.readFile(
+        metadata.filePath,
+      );
       if (readResult.success) {
         return Note.parse({ ...metadata, content: readResult.content });
       }
@@ -255,39 +228,30 @@ export class NotesRepository implements Repository<Note> {
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  /**
-   * Get a quicknote for a specific date.
-   * Dates are compared by year, month, and day.
-   */
   async getQuicknoteByDate(date: Date): Promise<Note | null> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
+    const datetime = new Date(date);
+    const start = startOfDay(datetime);
+    const end = endOfDay(datetime);
     const result = await db.notes
       .where("noteType")
-      .equals("quicknote")
+      .equals("quick")
       .and((note) => {
         const noteDate = new Date(note.updatedAt);
-        return noteDate >= startOfDay && noteDate <= endOfDay;
+        return noteDate >= start && noteDate <= end;
       })
       .toArray();
-
+    console.log(result);
     if (result.length === 0) return null;
-
-    // Return the first one found for that day
     const metadata = result[0] as any;
     const mode = getStorageMode();
-
     if (mode === "filesystem" && metadata.filePath) {
-      const readResult = await window.electronAPI.fs.readFile(metadata.filePath);
+      const readResult = await window.electronAPI.fs.readFile(
+        metadata.filePath,
+      );
       if (readResult.success) {
         return Note.parse({ ...metadata, content: readResult.content });
       }
     }
-
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 

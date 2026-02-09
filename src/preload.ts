@@ -10,11 +10,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
   },
   onQuicknoteOpen: (callback: () => void) => {
-    const handler = () => callback();
-    ipcRenderer.on("quicknote:open", handler);
-    return () => {
-      ipcRenderer.removeListener("quicknote:open", handler);
-    };
+    ipcRenderer.on("quicknote:open", callback);
+    return () => ipcRenderer.removeListener("quicknote:open", callback);
   },
   notes: {
     clipboard: async () => {
@@ -23,15 +20,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     findAll: async (): Promise<Note[]> => {
       try {
         const notesData = await ipcRenderer.invoke("notes:findAll");
-        return notesData.map(() => {
-          return {};
-        });
+        return notesData.map(() => ({}));
       } catch (error) {
         console.error("Error in findAll:", error);
         throw error;
       }
     },
-
     findById: async (id: string): Promise<Note | null> => {
       try {
         const noteData = await ipcRenderer.invoke("notes:findById", id);

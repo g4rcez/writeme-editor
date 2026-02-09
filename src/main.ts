@@ -86,18 +86,11 @@ async function main() {
         },
       },
       {
-        label: "Quick Note",
-        click: () => {
-          createQuickNoteWindow(path.join(__dirname, "preload.js"));
-        },
+        label: "Quick note",
+        click: () => createQuickNoteWindow(path.join(__dirname, "preload.js")),
       },
       { type: "separator" },
-      {
-        label: "Quit",
-        click: () => {
-          app.quit();
-        },
-      },
+      { label: "Quit", click: () => app.quit() },
     ]);
     tray.setContextMenu(contextMenu);
     if (process.platform !== "darwin") {
@@ -120,7 +113,7 @@ async function main() {
       createQuickNoteWindow(preload),
     );
   });
-  app.on("window-all-closed", () => {});
+  app.on("window-all-closed", () => { });
   app.on("activate", () => {
     if (mainWindow) {
       mainWindow.show();
