@@ -1,4 +1,8 @@
-import { ComponentsProvider, createTheme } from "@g4rcez/components";
+import {
+  ComponentsProvider,
+  createTokenStyles,
+  TokenRemap,
+} from "@g4rcez/components";
 import { createRoot } from "react-dom/client";
 import {
   globalDispatch,
@@ -36,6 +40,13 @@ window.EXCALIDRAW_ASSET_PATH = "/";
 
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
+
+const tokenRemap: TokenRemap = {
+  colors: (t) => {
+    t.value = t.value.replace("hsla(", "").replace(/\)$/, "");
+    return t;
+  },
+};
 
 async function initializePWA() {
   if ("serviceWorker" in navigator) {
@@ -83,7 +94,17 @@ export async function main() {
     document.documentElement.classList.add("dark");
   }
   const head = document.getElementsByTagName("head")[0]!;
-  head.append(createStyle("default-theme", createTheme(lightTheme)));
-  head.append(createStyle("dark-theme", createTheme(darkTheme, "dark")));
+  head.append(
+    createStyle("default-theme", createTokenStyles(lightTheme, tokenRemap)),
+  );
+  head.append(
+    createStyle(
+      "dark-theme",
+      createTokenStyles(darkTheme, {
+        ...tokenRemap,
+        name: "dark",
+      }),
+    ),
+  );
   createRoot(rootElement).render(<App />);
 }

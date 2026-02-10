@@ -9,7 +9,7 @@ html,
 body,
 #root {
   font-size: 16px;
-  font-family: "Inter", sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
   font-optical-sizing: auto;
   font-weight: normal;
   font-style: normal;
@@ -17,9 +17,18 @@ body,
   font-feature-settings: "cv01", "cv02", "cv03", "cv04", "ss01";
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Outfit", sans-serif;
+}
+
 pre,
 code {
-  font-family: "Fira Code", monospace;
+  font-family: "JetBrains Mono", monospace;
   font-optical-sizing: auto;
   font-weight: normal;
   font-style: normal;
@@ -132,7 +141,7 @@ code {
   z-index: 2;
 }
 
-.drag-handle + .ProseMirror .ProseMirror-selectednode {
+.drag-handle+.ProseMirror .ProseMirror-selectednode {
   outline: 2px solid #68d391;
 }
 

@@ -8,7 +8,6 @@ export const lightTheme: typeof defaultLightTheme = {
     sm: "0.875rem",
     lg: "1.125rem",
   },
-  custom: { logo: "#3d7aed" },
   colors: {
     foreground: "hsla(221,10%,23%)",
     background: "hsla(220,20%,99%)",
@@ -28,11 +27,11 @@ export const lightTheme: typeof defaultLightTheme = {
       hover: "hsla(221, 83%, 45%)",
     },
     secondary: {
-      background: "hsla(252, 67%, 45%)",
-      DEFAULT: "hsla(252, 67%, 55%)",
-      subtle: "hsla(252, 67%, 90%)",
-      hover: "hsla(252, 67%, 65%)",
-      foreground: "hsla(252, 67%, 95%)",
+      background: "hsla(202, 67%, 45%)",
+      DEFAULT: "hsla(202, 67%, 55%)",
+      subtle: "hsla(202, 67%, 90%)",
+      hover: "hsla(202, 67%, 65%)",
+      foreground: "hsla(202, 67%, 95%)",
     },
     info: {
       DEFAULT: "hsla(263, 70%, 50%)",

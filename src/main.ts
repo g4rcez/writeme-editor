@@ -39,7 +39,7 @@ async function main() {
         nodeIntegration: true,
         contextIsolation: true,
         defaultEncoding: "utf-8",
-        accessibleTitle: "writeme",
+        accessibleTitle: "Writeme",
       },
     });
 
@@ -50,7 +50,9 @@ async function main() {
         path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
       );
     }
-    mainWindow.webContents.openDevTools();
+    if (process.env.NODE_ENV === "development") {
+      mainWindow.webContents.openDevTools();
+    }
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
       if (url.startsWith("http:") || url.startsWith("https:")) {
         shell.openExternal(url);
@@ -59,10 +61,12 @@ async function main() {
     });
     mainWindow.webContents.on("will-navigate", (event, url) => {
       const requestedHost = new URL(url).host;
-      const currentHost = new URL(mainWindow.webContents.getURL()).host;
-      if (requestedHost && requestedHost !== currentHost) {
-        event.preventDefault();
-        shell.openExternal(url);
+      if (mainWindow) {
+        const currentHost = new URL(mainWindow.webContents.getURL()).host;
+        if (requestedHost && requestedHost !== currentHost) {
+          event.preventDefault();
+          shell.openExternal(url);
+        }
       }
     });
     mainWindow.on("close", (e) => {
@@ -113,7 +117,7 @@ async function main() {
       createQuickNoteWindow(preload),
     );
   });
-  app.on("window-all-closed", () => { });
+  app.on("window-all-closed", () => {});
   app.on("activate", () => {
     if (mainWindow) {
       mainWindow.show();

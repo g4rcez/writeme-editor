@@ -3,7 +3,8 @@
 }
 
 .tiptap p {
-  @apply text-pretty leading-relaxed proportional-nums;
+  @apply text-pretty proportional-nums;
+  line-height: 2.15;
 }
 
 .tiptap p.is-empty::before {
@@ -12,7 +13,7 @@
 }
 
 .tiptap code.inline-code {
-  @apply font-mono bg-primary px-2 py-0.5 rounded text-primary-foreground;
+  @apply font-mono bg-info px-1 py-0.5 rounded text-info-foreground;
 }
 
 .tiptap h1,
@@ -58,7 +59,7 @@
 
 .tiptap ul:not(:first-child),
 .tiptap ol:not(:first-child) {
-  @apply list-outside ml-8 mt-2 mb-4 space-y-2;
+  @apply list-outside ml-8 mb-2;
 }
 
 .tiptap ul:first,
@@ -87,11 +88,6 @@
   box-decoration-break: clone;
 }
 
-.tiptap ul li p,
-.tiptap ol li p {
-  @apply my-2;
-}
-
 .tiptap ul[data-type="taskList"] {
   @apply list-none ml-0 p-0;
 }
@@ -100,12 +96,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li > label {
+.tiptap ul[data-type="taskList"] li>label {
   @apply select-none mr-3;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li > div {
+.tiptap ul[data-type="taskList"] li>div {
   @apply items-center;
   flex: 1 1 auto;
 }
@@ -119,7 +115,7 @@
 }
 
 .tiptap input[type="checkbox"] {
-  @apply rounded text-primary mb-0.5 size-5;
+  @apply rounded text-primary mt-1.5 size-5;
 }
 
 [type="checkbox"]:checked {
@@ -141,8 +137,8 @@
   vertical-align: top;
 }
 
-.tiptap table td > *,
-.tiptap table th > * {
+.tiptap table td>*,
+.tiptap table th>* {
   margin-bottom: 0;
 }
 
@@ -179,4 +175,48 @@
 
 .tiptap .mention {
   @apply px-1 py-0.5 text-primary-foreground bg-primary/70 rounded;
+}
+
+.tiptap ul,
+.tiptap ol {
+  margin-bottom: 1rem;
+}
+
+.tiptap li {
+  line-height: 1.5;
+}
+
+.tiptap li>ul,
+.tiptap li>ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap ul ul {
+  list-style-type: circle;
+}
+
+.tiptap ul ul ul {
+  list-style-type: square;
+}
+
+.tiptap ol.nested-list {
+  counter-reset: item;
+  list-style-type: none;
+}
+
+.tiptap ol.nested-list li {
+  display: block;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap ol.nested-list li::before {
+  content: counters(item, ".") ". ";
+  counter-increment: item;
+  font-weight: bold;
+}
+
+.tiptap ol.nested-list li>ol {
+  margin-top: 0.5rem;
 }
