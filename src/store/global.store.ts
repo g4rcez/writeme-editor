@@ -16,6 +16,7 @@ const initialState = {
   tabs: [] as Tab[],
   notes: [] as Note[],
   recentNotesDialog: false,
+  readItLaterDialog: false,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
   theme: state.theme || ("dark" as "light" | "dark"),
@@ -40,6 +41,7 @@ export const useGlobalStore = createGlobalReducer(
     help: (help: boolean) => ({ help }),
     commander: (commander: boolean) => ({ commander }),
     recentNotesDialog: (recentNotesDialog: boolean) => ({ recentNotesDialog }),
+    readItLaterDialog: (readItLaterDialog: boolean) => ({ readItLaterDialog }),
     loadRecentNotes: async (limit = 20) => {
       const recent = await repositories.notes.getRecentNotes(limit);
       return { recentNotes: recent };

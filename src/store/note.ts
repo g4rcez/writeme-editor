@@ -21,6 +21,8 @@ export class Note implements EntityBase {
     public updatedBy: string,
     public noteType: NoteType,
     public url: string | null,
+    public description: string | null,
+    public favicon: string | null,
   ) { }
 
   public static new(
@@ -28,6 +30,8 @@ export class Note implements EntityBase {
     content: string,
     noteType: NoteType = "note",
     url: string | null = null,
+    description: string | null = null,
+    favicon: string | null = null,
   ) {
     const now = new Date();
     return new Note(
@@ -45,6 +49,8 @@ export class Note implements EntityBase {
       "user",
       noteType,
       url,
+      description,
+      favicon,
     );
   }
 
@@ -95,6 +101,8 @@ export class Note implements EntityBase {
       a.updatedBy || "user",
       a.noteType || "note",
       a.url || null,
+      a.description || null,
+      a.favicon || null,
     );
   }
 }

@@ -16,28 +16,50 @@ export default function ReadItLaterPage() {
       Element: (props) => (
         <Link
           to={`/note/${props.row.id}`}
-          className="transition-colors duration-300 ease-linear flex gap-1.5 items-center hover:underline text-primary hover:text-primary-hover"
+          className="flex gap-1.5 items-center font-medium transition-colors duration-300 ease-linear hover:underline text-primary hover:text-primary-hover"
         >
-          <Bookmark size={14} />
+          {props.row.favicon ? (
+            <img
+              src={props.row.favicon}
+              alt="Favicon"
+              className="object-contain rounded-sm size-4"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <span className="block size-4 bg-disabled" />
+          )}
           {props.row.title}
         </Link>
       ),
     });
-    col.add("url", "URL", {
+    col.add("description", "Description", {
       Element: (props) => (
-         props.row.url ? (
+        <span
+          className="block text-sm text-muted-foreground truncate max-w-[300px]"
+          title={props.row.description || ""}
+        >
+          {props.row.description || "-"}
+        </span>
+      ),
+    });
+    col.add("url", "URL", {
+      Element: (props) => {
+        if (!props.value) return "-";
+        const origin = new URL(props.value).host
+        return (
           <a
-            href={props.row.url}
             target="_blank"
+            href={props.row.url}
             rel="noopener noreferrer"
             className="flex gap-1 items-center text-blue-500 hover:underline"
-            onClick={(e) => e.stopPropagation()}
           >
             <ExternalLink size={12} />
-            Link
+            {origin}
           </a>
-        ) : <span className="text-muted-foreground">-</span>
-      ),
+        );
+      },
     });
     col.add("createdAt", "Created At", {
       Element: (props) => (
@@ -62,7 +84,9 @@ export default function ReadItLaterPage() {
       setLoading(true);
       try {
         const allNotes = await repositories.notes.getAll();
-        const readItLaterNotes = allNotes.filter(n => n.noteType === "read-it-later");
+        const readItLaterNotes = allNotes.filter(
+          (n) => n.noteType === "read-it-later",
+        );
         setNotes(readItLaterNotes);
       } catch (error) {
         console.error("Failed to load read-it-later notes:", error);
@@ -81,7 +105,7 @@ export default function ReadItLaterPage() {
       result = result.filter(
         (n) =>
           n.title.toLowerCase().includes(lower) ||
-          (n.url && n.url.toLowerCase().includes(lower))
+          (n.url && n.url.toLowerCase().includes(lower)),
       );
     }
     // Implement sort by date desc
@@ -105,7 +129,7 @@ export default function ReadItLaterPage() {
   }
 
   return (
-    <div className="flex-col p-6 mx-auto max-w-safe bg-background">
+    <div className="flex-col py-6 mx-auto max-w-safe bg-background">
       <div className="flex justify-between items-center mb-6">
         <h1 className="flex gap-2 items-center text-2xl font-bold">
           <Bookmark className="w-6 h-6" />

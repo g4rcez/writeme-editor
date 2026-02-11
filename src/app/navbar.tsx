@@ -5,7 +5,7 @@ import { NewNoteButton } from "./components/new-note-button";
 import { SettingsMenu } from "./components/settings-menu";
 import { TabsBar } from "./components/tabs-bar";
 import { ThemeToggle } from "./components/theme-toggle";
-import { Network, FileText } from "lucide-react";
+import { Network, FileText, LogsIcon, BookmarkCheckIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const Navbar = () => {
@@ -43,7 +43,15 @@ export const Navbar = () => {
                 title="All Notes"
                 className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
               >
-                <FileText className="size-4" />
+                <LogsIcon className="size-4" />
+              </button>
+            </Link>
+            <Link to="/read-it-later">
+              <button
+                title="Read it later"
+                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
+              >
+                <BookmarkCheckIcon className="size-4" />
               </button>
             </Link>
             <Link to="/tags">

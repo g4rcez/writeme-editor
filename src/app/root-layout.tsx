@@ -14,6 +14,7 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { Commander } from "./commander";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
 import { RecentNotesDialog } from "./components/recent-notes-dialog";
+import { ReadItLaterDialog } from "./components/read-it-later-dialog";
 import { Sidebar } from "./components/sidebar";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Footer } from "./footer";
@@ -83,6 +84,7 @@ export const RootLayout = () => {
         <Fragment>
           <Commander />
           <RecentNotesDialog />
+          <ReadItLaterDialog />
           <Navbar />
         </Fragment>
       ) : null}

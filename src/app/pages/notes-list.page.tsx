@@ -1,16 +1,28 @@
-import { useEffect, useState, useMemo } from "react";
-import { repositories, globalState, globalDispatch } from "../../store/global.store";
-import { db } from "../../store/repositories/dexie/dexie-db";
+import { createColumns, Table, Tag, TagProps } from "@g4rcez/components";
+import { FileText, LinkIcon, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  globalDispatch,
+  globalState,
+  repositories,
+} from "../../store/global.store";
 import { Note } from "../../store/note";
-import { Link, useNavigate } from "react-router-dom";
-import { createColumns, Table } from "@g4rcez/components";
-import { format } from "date-fns";
-import { Search, Trash2, FileText, Hash, LinkIcon } from "lucide-react";
+import { db } from "../../store/repositories/dexie/dexie-db";
 
 interface NoteWithTags extends Note {
   tagsList: string[];
   tagCount: number;
 }
+
+const tag: Record<
+  Note["noteType"],
+  { title: string; theme: TagProps["theme"] }
+> = {
+  "read-it-later": { theme: "info", title: "Read it later" },
+  quick: { theme: "muted", title: "Quick note" },
+  note: { theme: "primary", title: "Note" },
+};
 
 export default function NotesListPage() {
   const [notes, setNotes] = useState<NoteWithTags[]>([]);
@@ -21,11 +33,18 @@ export default function NotesListPage() {
       Element: (props) => (
         <Link
           to={`/note/${props.row.id}`}
-          className="transition-colors duration-300 ease-linear flex gap-1.5 items-center hover:underline text-primary hover:text-primary-hover"
+          className="flex gap-1.5 items-baseline transition-colors duration-300 ease-linear hover:underline text-primary hover:text-primary-hover"
         >
-          <LinkIcon size={14} />
+          <LinkIcon className="min-w-4" size={12} />
           {props.row.title}
         </Link>
+      ),
+    });
+    col.add("noteType", "Type", {
+      Element: (props) => (
+        <Tag className="rounded-xl" size="small" theme={tag[props.value].theme}>
+          {tag[props.value].title}
+        </Tag>
       ),
     });
     col.add("tagCount", "Hashtags", {
@@ -53,7 +72,6 @@ export default function NotesListPage() {
           db.hashtags.toArray(),
         ]);
 
-        // Group tags by filename
         const tagsMap = new Map<string, string[]>();
         allHashtags.forEach((h) => {
           if (!tagsMap.has(h.filename)) {
@@ -62,17 +80,15 @@ export default function NotesListPage() {
           tagsMap.get(h.filename)?.push(h.hashtag);
         });
 
-        const notesWithTags = allNotes.map((note) => {
-          // Key for tags is filename (path or title)
+        const notesWithTags = allNotes.map((note): NoteWithTags => {
           const key = note.filePath || note.title;
           const tags = tagsMap.get(key) || [];
           return {
             ...note,
             tagsList: tags,
             tagCount: tags.length,
-          };
+          } as NoteWithTags;
         });
-
         setNotes(notesWithTags);
       } catch (error) {
         console.error("Failed to load notes list:", error);
@@ -99,11 +115,10 @@ export default function NotesListPage() {
     if (confirm("Are you sure you want to delete this note?")) {
       await repositories.notes.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
-
       const tabs = globalState().tabs;
       const tabToRemove = tabs.find((t) => t.noteId === id);
       if (tabToRemove) {
-        await globalDispatch.removeTab(tabToRemove.id);
+        globalDispatch.removeTab(tabToRemove.id);
       }
     }
   };
@@ -117,7 +132,7 @@ export default function NotesListPage() {
   }
 
   return (
-    <div className="flex-col p-6 mx-auto max-w-safe bg-background">
+    <div className="flex-col py-6 mx-auto max-w-safe bg-background">
       <div className="flex justify-between items-center mb-6">
         <h1 className="flex gap-2 items-center text-2xl font-bold">
           <FileText className="w-6 h-6" />

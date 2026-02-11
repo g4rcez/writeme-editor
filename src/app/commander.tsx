@@ -171,6 +171,14 @@ export const Commander = () => {
                 },
               },
               {
+                title: 'New "read it later" note',
+                type: "shortcut",
+                action: (args) => {
+                  args.setOpen(false);
+                  dispatch.readItLaterDialog(true);
+                },
+              },
+              {
                 title: "Share content",
                 type: "shortcut",
                 action: (args) => {

@@ -22,7 +22,7 @@
 .tiptap h4,
 .tiptap h5,
 .tiptap h6 {
-  @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold;
+  @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold text-secondary;
 }
 
 .tiptap h1 {
@@ -30,11 +30,11 @@
 }
 
 .tiptap h2 {
-  @apply text-2xl mt-8;
+  @apply text-3xl mt-8;
 }
 
 .tiptap h3 {
-  @apply text-xl mt-6;
+  @apply text-2xl mt-6;
 }
 
 .tiptap blockquote {

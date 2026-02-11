@@ -8,14 +8,18 @@ describe("Note", () => {
     expect(note.content).toBe("Test Content");
     expect(note.noteType).toBe("note");
     expect(note.url).toBeNull();
+    expect(note.description).toBeNull();
+    expect(note.favicon).toBeNull();
   });
 
   it("should create a new read-it-later note", () => {
-    const note = Note.new("Article", "Content", "read-it-later", "https://example.com");
+    const note = Note.new("Article", "Content", "read-it-later", "https://example.com", "A description", "https://example.com/favicon.ico");
     expect(note.title).toBe("Article");
     expect(note.content).toBe("Content");
     expect(note.noteType).toBe("read-it-later");
     expect(note.url).toBe("https://example.com");
+    expect(note.description).toBe("A description");
+    expect(note.favicon).toBe("https://example.com/favicon.ico");
   });
 
   it("should parse a note object", () => {
@@ -24,12 +28,16 @@ describe("Note", () => {
       content: "Parsed Content",
       noteType: "read-it-later",
       url: "https://parsed.com",
+      description: "Parsed Desc",
+      favicon: "https://parsed.com/icon.png",
     };
     const note = Note.parse(data);
     expect(note.title).toBe("Parsed Title");
     expect(note.content).toBe("Parsed Content");
     expect(note.noteType).toBe("read-it-later");
     expect(note.url).toBe("https://parsed.com");
+    expect(note.description).toBe("Parsed Desc");
+    expect(note.favicon).toBe("https://parsed.com/icon.png");
   });
 
   it("should handle missing url in parse", () => {
