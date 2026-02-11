@@ -81,8 +81,8 @@ code {
 }
 
 *:focus-visible {
-  outline: 2px solid hsla(221, 83%, 53%, 0.5);
-  outline-offset: 2px;
+  outline: 1px solid hsla(221,83%,53%,0.1);
+  outline-offset: 1px;
   transition: outline-offset var(--transition-fast);
 }
 

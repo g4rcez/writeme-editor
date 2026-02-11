@@ -57,22 +57,16 @@
   @apply border-b border-border my-10;
 }
 
-.tiptap ul:not(:first-child),
-.tiptap ol:not(:first-child) {
-  @apply list-outside ml-8 mb-2;
+.tiptap ul:not(:first-child) {
+  @apply list-outside ml-4 mb-2;
 }
 
-.tiptap ul:first,
-.tiptap ol:first {
+.tiptap ul:first {
   @apply list-outside ml-8 my-12 space-y-2;
 }
 
 .tiptap ul {
   @apply list-disc;
-}
-
-.tiptap ol {
-  @apply list-decimal;
 }
 
 .tiptap img {
@@ -96,12 +90,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li>label {
+.tiptap ul[data-type="taskList"] li > label {
   @apply select-none mr-3;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li>div {
+.tiptap ul[data-type="taskList"] li > div {
   @apply items-center;
   flex: 1 1 auto;
 }
@@ -115,7 +109,8 @@
 }
 
 .tiptap input[type="checkbox"] {
-  @apply rounded text-primary mt-1.5 size-5;
+  @apply rounded text-primary size-5;
+  margin-top: 0.55rem;
 }
 
 [type="checkbox"]:checked {
@@ -137,8 +132,8 @@
   vertical-align: top;
 }
 
-.tiptap table td>*,
-.tiptap table th>* {
+.tiptap table td > *,
+.tiptap table th > * {
   margin-bottom: 0;
 }
 
@@ -170,7 +165,7 @@
 }
 
 .tiptap a {
-  @apply cursor-pointer text-primary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
+  @apply cursor-pointer text-secondary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
 }
 
 .tiptap .mention {
@@ -182,12 +177,8 @@
   margin-bottom: 1rem;
 }
 
-.tiptap li {
-  line-height: 1.5;
-}
-
-.tiptap li>ul,
-.tiptap li>ol {
+.tiptap li > ul,
+.tiptap li > ol {
   margin-top: 0.25rem;
   margin-bottom: 0.5rem;
 }
@@ -200,23 +191,27 @@
   list-style-type: square;
 }
 
-.tiptap ol.nested-list {
-  counter-reset: item;
+.tiptap ol {
   list-style-type: none;
+  counter-reset: section;
+  padding-left: 0;
 }
 
-.tiptap ol.nested-list li {
-  display: block;
-  position: relative;
-  margin-bottom: 0.5rem;
+.tiptap ol li {
+  counter-increment: section;
 }
 
-.tiptap ol.nested-list li::before {
-  content: counters(item, ".") ". ";
-  counter-increment: item;
-  font-weight: bold;
+.tiptap ol li p {
+  display: inline-block;
 }
 
-.tiptap ol.nested-list li>ol {
-  margin-top: 0.5rem;
+
+.tiptap ol li::before {
+  @apply inline-block;
+  content: counters(section, ".") ". ";
+}
+
+.tiptap ol li > ol {
+  margin-left: 2rem;
+  counter-reset: section;
 }

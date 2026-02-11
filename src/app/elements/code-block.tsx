@@ -140,7 +140,9 @@ export async function initHighlighter({
     try {
       await Promise.all([
         ...themes.flatMap((theme) => loadTheme(theme)),
-        ...languages.flatMap((language) => !!language && loadLanguage(language)),
+        ...languages.flatMap(
+          (language) => !!language && loadLanguage(language),
+        ),
       ]);
     } catch (e) {
       console.warn("Failed to load Shiki themes/languages:", e);
@@ -468,10 +470,18 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   addKeyboardShortcuts() {
     return {
       ...this.parent?.(),
-      Tab: () => {
-        const name = getCurrentElementName(this.editor);
-        if (name === "codeBlock")
-          return this.editor.chain().focus().insertContent("    ").run();
+      Tab: ({ editor }) => {
+        const name = getCurrentElementName(editor);
+        if (name === "codeBlock") {
+          return editor
+            .chain()
+            .focus()
+            .command((args) => {
+              args.tr.insertText("    ");
+              return true;
+            })
+            .run();
+        }
         return false;
       },
     };
