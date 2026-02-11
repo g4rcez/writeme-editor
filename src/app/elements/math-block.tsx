@@ -15,7 +15,7 @@ const expressionImprovements = (expr: string): string =>
     .replace(/to (K|°K|°k)/g, "to kelvin ")
     .replace(/to (C|°C|°c)/g, "to celsius ");
 
-const MathEvaluate = (props: { code: string }) => {
+export const MathEvaluate = (props: { code: string }) => {
   const id = useId();
   const expressions = useMemo(() => {
     try {

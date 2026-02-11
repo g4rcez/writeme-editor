@@ -1,10 +1,14 @@
-.tiptap pre {
+/* .tiptap pre {
   @apply bg-card-background p-6 rounded-lg font-mono my-4;
+}
+
+.code-content-renderer > div > * {
+  @apply font-mono;
 }
 
 .tiptap pre code {
   @apply bg-transparent text-sm leading-snug;
-}
+} */
 
 .tiptap .node-codeBlock {
   @apply rounded-lg;
@@ -37,8 +41,4 @@
 .tiptap .tiptap-mathematics-render.inline-math-error,
 .tiptap .tiptap-mathematics-render.block-math-error {
   @apply bg-danger-subtle text-danger border border-danger rounded-xl p-4;
-}
-
-.code-content-renderer > div > * {
-  @apply font-mono;
 }

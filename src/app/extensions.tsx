@@ -18,7 +18,8 @@ import { ReplacerCommands } from "./commands/commands";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Blockquote } from "./elements/blockquote";
 import { Callout } from "./elements/callout";
-import { ShikiBlock } from "./elements/code-block";
+import { CodeBlockV2 } from "./extensions/code-block-v2";
+// import { ShikiBlock } from "./elements/code-block";
 import { ColorReplacer } from "./elements/color-replacer";
 import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
@@ -62,13 +63,14 @@ export const createExtensions = (
       transformCopiedText: true,
       transformPastedText: true,
     }),
-    ShikiBlock.configure({
+    CodeBlockV2,
+    /*ShikiBlock.configure({
       getCurrentTheme,
       themeAware: true,
       exitOnArrowDown: true,
       exitOnTripleEnter: true,
       defaultTheme: getCurrentTheme(),
-    }),
+    }),*/
     FileHandler.configure({
       allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
       onDrop: (currentEditor, files, pos) => {
