@@ -22,7 +22,7 @@
 .tiptap h4,
 .tiptap h5,
 .tiptap h6 {
-  @apply leading-snug text-pretty mt-10 mb-2 font-semibold tracking-tight;
+  @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold;
 }
 
 .tiptap h1 {

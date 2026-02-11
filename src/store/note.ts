@@ -1,7 +1,7 @@
 import { uuid } from "@g4rcez/components";
 import { EntityBase } from "./repository";
 
-type NoteType = "note" | "quick";
+type NoteType = "note" | "quick" | "read-it-later";
 
 export class Note implements EntityBase {
   public readonly type = "__writeme_note";
@@ -20,12 +20,14 @@ export class Note implements EntityBase {
     public createdBy: string,
     public updatedBy: string,
     public noteType: NoteType,
+    public url: string | null,
   ) { }
 
   public static new(
     title: string,
     content: string,
     noteType: NoteType = "note",
+    url: string | null = null,
   ) {
     const now = new Date();
     return new Note(
@@ -42,6 +44,7 @@ export class Note implements EntityBase {
       "user",
       "user",
       noteType,
+      url,
     );
   }
 
@@ -91,6 +94,7 @@ export class Note implements EntityBase {
       a.createdBy || "user",
       a.updatedBy || "user",
       a.noteType || "note",
+      a.url || null,
     );
   }
 }

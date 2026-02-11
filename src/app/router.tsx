@@ -16,6 +16,7 @@ const ExprExamplePage = lazy(() => import("./pages/examples/expr.page"));
 const TagsPage = lazy(() => import("./pages/tags.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
+const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -39,6 +40,10 @@ export const router = createRouter([
       {
         path: "notes",
         element: <NotesListPage />,
+      },
+      {
+        path: "read-it-later",
+        element: <ReadItLaterPage />,
       },
       {
         path: "quicknote",
