@@ -435,8 +435,20 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
               {code.split("\n").length} lines - {code.length} characters
             </div>
           </div>
-          <div className="p-4 font-mono">
-            <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
+          <div className="flex">
+            <div
+              className="flex flex-col shrink-0 text-right select-none text-muted-foreground bg-card-background border-r border-card-border py-4 px-3"
+              aria-hidden="true"
+            >
+              {Array.from({
+                length: props.node.textContent.split("\n").length,
+              }).map((_, i) => (
+                <span key={i}>{i + 1}</span>
+              ))}
+            </div>
+            <div className="p-4 font-mono w-full overflow-x-auto whitespace-pre">
+              <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
+            </div>
           </div>
           {language === "math" && code && <MathBlock code={code} />}
           {language === "mermaid" && code && (
