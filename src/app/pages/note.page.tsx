@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { negate } from "@g4rcez/components";
+import { negate, Tooltip } from "@g4rcez/components";
 import { ChevronDownIcon } from "lucide-react";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -18,12 +18,17 @@ const Wrapper = (props: PropsWithChildren) => {
       setState(
         Array.from(
           document.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6"),
-        ).map((h) => {
+        ).map((h, index) => {
+          const level = Number(h.tagName.replace(/[^0-9]/g, ""));
           return (
-            <motion.li key={`heading-${h.innerText}`} className="font-medium">
+            <motion.li
+              key={`heading-${h.innerText}-${index}`}
+              className="font-medium"
+            >
               <a
                 href={`#${h.id}`}
-                className="transition-colors duration-300 ease-linear cursor-pointer text-secondary hover:text-primary-hover"
+                style={{ marginLeft: level === 1 ? 0 : `${level * 1}rem` }}
+                className="transition-colors duration-300 ease-linear cursor-pointer hover:underline text-secondary hover:text-primary-hover"
               >
                 {h.innerText}
               </a>
@@ -39,21 +44,26 @@ const Wrapper = (props: PropsWithChildren) => {
   }, [open]);
 
   return (
-    <div ref={ref} className="flex relative flex-col gap-4 w-full h-full">
-      <header className="mx-auto w-full max-w-safe">
-        <motion.div>
-          <button
-            onClick={() => setOpen(negate)}
-            className="flex gap-1 items-center py-2 text-disabled"
+    <div ref={ref} className="flex flex-col gap-4 w-full h-full">
+      <header className="fixed left-4 top-12 py-2 text-disabled">
+        <Tooltip
+          placement="bottom-end"
+          onChange={setOpen}
+          title={
+            <span className="flex gap-1 items-center">
+              <ChevronDownIcon size={12} />
+              Table of contents
+              <ChevronDownIcon size={12} />
+            </span>
+          }
+        >
+          <motion.ul
+            animate={open.toString()}
+            variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
           >
-            <ChevronDownIcon size={12} />
-            Table of contents
-            <ChevronDownIcon size={12} />
-          </button>
-        </motion.div>
-        <motion.ul className="flex flex-col gap-1">
-          <AnimatePresence>{open ? state : false}</AnimatePresence>
-        </motion.ul>
+            <AnimatePresence>{open ? state : false}</AnimatePresence>
+          </motion.ul>
+        </Tooltip>
       </header>
       {props.children}
     </div>
