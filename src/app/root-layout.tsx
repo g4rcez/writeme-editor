@@ -17,14 +17,12 @@ import { RecentNotesDialog } from "./components/recent-notes-dialog";
 import { ReadItLaterDialog } from "./components/read-it-later-dialog";
 import { Sidebar } from "./components/sidebar";
 import { PWAInstallButton } from "./elements/pwa-install-button";
-import { Footer } from "./footer";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { Dates } from "../lib/dates";
 import { css } from "@g4rcez/components";
 
 export const RootLayout = () => {
-  const [state] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
   const navigate = useNavigate();
 
@@ -119,7 +117,7 @@ export const RootLayout = () => {
           <span>Exit Focus</span>
         </button>
       )}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

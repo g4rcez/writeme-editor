@@ -41,8 +41,8 @@ type HighlighterOptions = {
 };
 
 const THEME_MAP = {
-  dark: "catppuccin-mocha" as BundledTheme,
-  light: "catppuccin-latte" as BundledTheme,
+  dark: "tokyo-night" as BundledTheme,
+  light: "github-light" as BundledTheme,
 };
 
 export const getThemeForMode = (mode: string): BundledTheme =>

@@ -25,6 +25,8 @@ import { TaskListItem } from "./elements/task-list-item";
 import { Hashtag } from "./extensions/hashtag";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
+import { UniqueID } from '@tiptap/extension-unique-id';
+import { Heading } from '@tiptap/extension-heading';
 
 export const createExtensions = (
   getCurrentTheme: () => BundledTheme,
@@ -37,6 +39,8 @@ export const createExtensions = (
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
+    Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
+    UniqueID.configure({ types: ['heading'] }),
     TableKit.configure({
       table: {
         resizable: true,

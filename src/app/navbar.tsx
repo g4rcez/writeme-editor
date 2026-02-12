@@ -38,20 +38,20 @@ export const Navbar = () => {
             )}
           </div>
           <nav className="flex gap-1 items-center">
+            <Link to="/read-it-later">
+              <button
+                title="Notes"
+                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
+              >
+                <BookmarkCheckIcon className="size-4" />
+              </button>
+            </Link>
             <Link to="/notes">
               <button
                 title="All Notes"
                 className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
               >
                 <LogsIcon className="size-4" />
-              </button>
-            </Link>
-            <Link to="/read-it-later">
-              <button
-                title="Read it later"
-                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
-              >
-                <BookmarkCheckIcon className="size-4" />
               </button>
             </Link>
             <Link to="/tags">

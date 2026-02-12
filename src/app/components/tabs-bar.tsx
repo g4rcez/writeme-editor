@@ -1,9 +1,9 @@
 import { clsx } from "clsx";
-import { FileText, X } from "lucide-react";
+import { FileText, XIcon } from "lucide-react";
 import React, { useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
-import { useNavigate } from "react-router-dom";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
@@ -22,12 +22,12 @@ export const TabsBar: React.FC = () => {
       e.stopPropagation();
       const result = await dispatch.removeTab(tabId);
       if (result.activeTabId && result.activeTabId !== tabId) {
-          const newTab = result.tabs.find((t) => t.id === result.activeTabId);
-          if (newTab) {
-              navigate(`/note/${newTab.noteId}`);
-          }
+        const newTab = result.tabs.find((t) => t.id === result.activeTabId);
+        if (newTab) {
+          navigate(`/note/${newTab.noteId}`);
+        }
       } else if (!result.activeTabId) {
-          navigate('/');
+        navigate("/");
       }
     },
     [dispatch, navigate],
@@ -36,7 +36,7 @@ export const TabsBar: React.FC = () => {
   const handleMiddleClick = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       if (e.button === 1) {
-        handleCloseTab(e,tabId);
+        handleCloseTab(e, tabId);
       }
     },
     [handleCloseTab],
@@ -90,7 +90,7 @@ export const TabsBar: React.FC = () => {
               onClick={(e) => handleCloseTab(e, tab.id)}
               className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
             >
-              <X className="w-3 h-3" />
+              <XIcon className="size-3" />
             </button>
             {isActive && (
               <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />

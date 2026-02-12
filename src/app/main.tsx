@@ -22,21 +22,11 @@ declare global {
   }
 }
 
-const tweaks = {
-  table: { sticky: 88, filters: false, sorters: false, operations: false },
-};
-
-const App = () => {
-  return (
-    <StrictMode>
-      <ComponentsProvider tweaks={tweaks}>
-        <RouterProvider router={router} />
-      </ComponentsProvider>
-    </StrictMode>
-  );
-};
-
 window.EXCALIDRAW_ASSET_PATH = "/";
+
+const tweaks = {
+  table: { sticky: 87, filters: false, sorters: false, operations: false },
+};
 
 const createStyle = (id: string, innerText: string) =>
   Object.assign(document.createElement("style"), { id, innerText });
@@ -106,5 +96,11 @@ export async function main() {
       }),
     ),
   );
-  createRoot(rootElement).render(<App />);
+  createRoot(rootElement).render(
+    <StrictMode>
+      <ComponentsProvider tweaks={tweaks}>
+        <RouterProvider router={router} />
+      </ComponentsProvider>
+    </StrictMode>,
+  );
 }

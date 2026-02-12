@@ -1,11 +1,11 @@
 import { createColumns, Table, Tag, TagProps } from "@g4rcez/components";
-import { FileText, LinkIcon, Search, Trash2 } from "lucide-react";
+import { LinkIcon, LogsIcon, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  globalDispatch,
-  globalState,
-  repositories,
+    globalDispatch,
+    globalState,
+    repositories,
 } from "../../store/global.store";
 import { Note } from "../../store/note";
 import { db } from "../../store/repositories/dexie/dexie-db";
@@ -135,7 +135,7 @@ export default function NotesListPage() {
     <div className="flex-col py-6 mx-auto max-w-safe bg-background">
       <div className="flex justify-between items-center mb-6">
         <h1 className="flex gap-2 items-center text-2xl font-bold">
-          <FileText className="w-6 h-6" />
+          <LogsIcon className="w-6 h-6" />
           All Notes
         </h1>
         <div className="relative w-64">
