@@ -27,7 +27,8 @@ export function parseReadItLaterHtml(
   doc.querySelectorAll("a[href]").forEach((anchor: HTMLAnchorElement) => {
     anchor.href = anchor.href.replace(hostOrigin, origin);
   });
-  const title = doc.title || "Read It Later Note";
+  const title =
+    doc.title || doc.querySelector("title")?.innerText || "Read It Later Note";
   let description = null;
   const metaDesc =
     doc.querySelector('meta[name="description"]') ||

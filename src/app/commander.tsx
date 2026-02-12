@@ -224,6 +224,20 @@ export const Commander = () => {
                 },
               })),
           },
+          {
+            title: "About",
+            type: "group",
+            items: [
+              {
+                title: "About the project",
+                type: "shortcut",
+                action: (args) => {
+                  args.setOpen(false);
+                  navigate("/about");
+                },
+              },
+            ],
+          },
         ] as const
       }
     />

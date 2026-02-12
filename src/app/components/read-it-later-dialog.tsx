@@ -22,7 +22,7 @@ export const ReadItLaterDialog = () => {
       const response = await fetch(url);
       const html = await response.text();
       const article = parseReadItLaterHtml(
-        DOMPurify.sanitize(html),
+        DOMPurify.sanitize(html, { WHOLE_DOCUMENT: true }),
         url,
         window.location.origin,
       );
@@ -57,10 +57,11 @@ export const ReadItLaterDialog = () => {
 
   return (
     <Modal
+      type="dialog"
+      title="Read It Later"
       open={state.readItLaterDialog}
       onChange={dispatch.readItLaterDialog}
-      title="Read It Later"
-      type="dialog"
+      className="max-w-[512px]"
     >
       <div className="flex flex-col gap-4 p-4">
         <p className="text-sm text-muted-foreground">
@@ -79,9 +80,10 @@ export const ReadItLaterDialog = () => {
         />
         <div className="flex gap-2 justify-end">
           <button
+            type="button"
+            disabled={loading}
             onClick={() => dispatch.readItLaterDialog(false)}
             className="py-2 px-4 text-sm rounded hover:bg-muted"
-            disabled={loading}
           >
             Cancel
           </button>

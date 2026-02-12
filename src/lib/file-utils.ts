@@ -1,13 +1,3 @@
-/**
- * Browser-compatible path utilities
- * Works in both Node.js (main process) and browser (renderer process)
- */
-
-/**
- * Join path segments using forward slashes (cross-platform compatible)
- * @param segments Path segments to join
- * @returns Joined path
- */
 function joinPath(...segments: string[]): string {
   return segments
     .join("/")
@@ -15,51 +5,30 @@ function joinPath(...segments: string[]): string {
     .replace(/\/$/, ""); // Remove trailing slash
 }
 
-/**
- * Get directory name from path
- * @param filePath File path
- * @returns Directory path
- */
 export function getDirname(filePath: string): string {
   const lastSlash = Math.max(
     filePath.lastIndexOf("/"),
-    filePath.lastIndexOf("\\")
+    filePath.lastIndexOf("\\"),
   );
   if (lastSlash === -1) return ".";
   return filePath.substring(0, lastSlash) || "/";
 }
 
-/**
- * Get file extension from path
- * @param filePath File path
- * @returns Extension including the dot (e.g., ".md")
- */
 function getExtension(filePath: string): string {
   const lastDot = filePath.lastIndexOf(".");
   const lastSlash = Math.max(
     filePath.lastIndexOf("/"),
     filePath.lastIndexOf("\\"),
   );
-
-  // Extension must be after the last path separator
   if (lastDot > lastSlash && lastDot !== -1) {
     return filePath.substring(lastDot);
   }
   return "";
 }
 
-/**
- * Get relative path from base to target
- * @param from Base path
- * @param to Target path
- * @returns Relative path
- */
 export function getRelativePath(from: string, to: string): string {
-  // Normalize separators
   const normalizedFrom = from.replace(/\\/g, "/");
   const normalizedTo = to.replace(/\\/g, "/");
-
-  // If target starts with base, return the relative part
   if (normalizedTo.startsWith(normalizedFrom)) {
     return normalizedTo.substring(normalizedFrom.length).replace(/^\//, "");
   }
@@ -67,18 +36,8 @@ export function getRelativePath(from: string, to: string): string {
   return normalizedTo;
 }
 
-/**
- * Sanitize note title to valid filename
- * - Remove/replace invalid characters
- * - Convert to lowercase
- * - Replace spaces with hyphens
- * - Limit length to 255 chars (filesystem limit)
- */
 export function sanitizeFilename(title: string): string {
-  // Characters invalid in filenames across Windows, macOS, and Linux
-  // eslint-disable-next-line no-control-regex
   const invalidChars = /[<>:"/\\|?*\x00-\x1F]/g;
-
   const sanitized = title
     .replace(invalidChars, "") // Remove invalid characters
     .replace(/\s+/g, "-") // Replace whitespace with hyphens
@@ -86,34 +45,16 @@ export function sanitizeFilename(title: string): string {
     .toLowerCase()
     .trim()
     .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-
   const maxLength = 255 - 3; // Reserve space for .md extension
   const truncated = sanitized.substring(0, maxLength);
-
   return truncated || "untitled";
 }
 
-/**
- * Generate full file path for a note
- * @param rootDir - User-chosen storage directory
- * @param noteTitle - Note title to be sanitized
- * @returns Absolute path to the note file (with forward slashes)
- */
-export function generateNotePath(
-  rootDir: string,
-  noteTitle: string,
-): string {
+export function generateNotePath(rootDir: string, noteTitle: string): string {
   const filename = sanitizeFilename(noteTitle);
   return joinPath(rootDir, `${filename}.md`);
 }
 
-/**
- * Handle duplicate filenames by appending counter
- * Checks if file exists and appends -1, -2, etc. until unique path is found
- * @param basePath - Original file path
- * @param checkExists - Async function to check if path exists
- * @returns Unique file path
- */
 export async function getUniqueFilePath(
   basePath: string,
   checkExists: (path: string) => Promise<boolean>,
@@ -131,12 +72,6 @@ export async function getUniqueFilePath(
   return testPath;
 }
 
-/**
- * Extract filename from full path relative to root directory
- * @param filePath - Absolute file path
- * @param rootDir - Storage root directory
- * @returns Parsed components of the path
- */
 export function parseNotePath(
   filePath: string,
   rootDir: string,
@@ -149,13 +84,6 @@ export function parseNotePath(
   return { filename };
 }
 
-/**
- * Create a standalone note from an external file path
- * Standalone notes are saved directly to their file path, bypassing project structure
- * @param filePath - Absolute path to the .md file
- * @param content - File content
- * @returns Note with filePath set
- */
 export function createStandaloneNote(filePath: string, content: string) {
   const filename = filePath.split(/[/\\]/).pop() || "Untitled";
   const title = filename.replace(/\.md$/i, "");
@@ -234,3 +162,25 @@ export function getUniqueNoteTitle(
   return `${baseTitle}-${counter}`;
 }
 
+interface ReadingTimeResult {
+  minutes: number;
+  words: number;
+  formatted: string;
+}
+
+export const getReadingTime = (
+  text: string,
+  wordsPerMinute: number = 225,
+): ReadingTimeResult => {
+  const words = text
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+  const wordCount = words.length;
+  const minutes = Math.ceil(wordCount / wordsPerMinute);
+  return {
+    minutes,
+    words: wordCount,
+    formatted: `${minutes} min read`,
+  };
+};

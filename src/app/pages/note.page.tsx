@@ -1,8 +1,10 @@
-import { motion, AnimatePresence } from "motion/react";
-import { negate, Tooltip } from "@g4rcez/components";
+import { Tag, Tooltip } from "@g4rcez/components";
 import { ChevronDownIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Dates } from "../../lib/dates";
+import { getReadingTime } from "../../lib/file-utils";
 import { globalDispatch, useGlobalStore } from "../../store/global.store";
 import { Editor } from "../editor";
 
@@ -106,6 +108,18 @@ export default function NotePage() {
 
   return (
     <Wrapper>
+      {loadedNote.noteType === "read-it-later" ? (
+        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
+          <h1 className="text-xl font-medium">{loadedNote.title}</h1>
+          <span className="flex gap-2 items-center text-sm">
+            <Tag size="small">Read it later</Tag>-
+            <time dateTime={loadedNote.createdAt.toISOString()}>
+              {Dates.yearMonthDay(loadedNote.createdAt)}
+            </time>
+            -<i>{getReadingTime(loadedNote.content).formatted}</i>
+          </span>
+        </header>
+      ) : null}
       <Editor
         note={loadedNote}
         key={loadedNote.id}

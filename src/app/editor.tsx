@@ -64,17 +64,19 @@ const useCopyEvents = (editor: TipTapEditor) => {
   }, [editor]);
 };
 
-const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
+const InnerEditor = (props: {
+  content: string;
+  note?: Note;
+  id: string;
+  readonly?: boolean;
+}) => {
   const [state] = useGlobalStore();
 
-  const extensions = useMemo(
-    () => createExtensions(() => getThemeForMode(globalState().theme)),
-    [state.theme],
-  );
+  const extensions = createExtensions(() => getThemeForMode(globalState().theme));
 
   const editor = useEditor({
     extensions,
-    editable: true,
+    editable: !props.readonly,
     autofocus: true,
     content: props.content,
     immediatelyRender: true,
@@ -84,7 +86,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
     onCreate: ({ editor: currentEditor }) => {
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) { }
+      } catch (e) {}
     },
     editorProps: {
       handlePaste: () => false,
@@ -117,6 +119,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   useEffect(() => {
     if (editor === null) return;
     if (!props.note) return;
+    if (props.readonly) return;
     let saveTimeout: NodeJS.Timeout;
     editor.on("update", () => {
       clearTimeout(saveTimeout);
@@ -140,7 +143,7 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
         console.warn("Failed to perform final save on unmount:", error);
       }
     };
-  }, [editor, props.note]);
+  }, [editor, props.note, props.readonly]);
 
   useEffect(() => {
     if (editor) {
@@ -175,8 +178,11 @@ const InnerEditor = (props: { content: string; note?: Note; id: string }) => {
   );
 };
 
-export const Editor = (props: { content: string; note?: Note }) => {
-  const [state] = useGlobalStore();
+export const Editor = (props: {
+  content: string;
+  note?: Note;
+  readonly?: boolean;
+}) => {
   const [content, setContent] = useState<null | string>(props.content);
 
   useEffect(() => {
@@ -196,6 +202,7 @@ export const Editor = (props: { content: string; note?: Note }) => {
           content={content}
           note={props.note}
           key={props.note?.id}
+          readonly={props.readonly}
         />
       )}
     </Fragment>

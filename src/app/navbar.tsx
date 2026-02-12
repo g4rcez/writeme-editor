@@ -38,6 +38,7 @@ export const Navbar = () => {
             )}
           </div>
           <nav className="flex gap-1 items-center">
+            <NewNoteButton />
             <Link to="/read-it-later">
               <button
                 title="Notes"
@@ -62,7 +63,6 @@ export const Navbar = () => {
                 <Network className="size-4" />
               </button>
             </Link>
-            <NewNoteButton />
             <ThemeToggle />
             <SettingsMenu />
           </nav>
