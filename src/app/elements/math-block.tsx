@@ -1,5 +1,6 @@
-import { parser as mathParser, format } from "mathjs";
-import { useId, useMemo } from "react";
+import { create, all, format } from "mathjs";
+import { useId, useMemo, useState, useEffect } from "react";
+import { fetchExchangeRates, type ExchangeRateData } from "../../lib/currency";
 
 const expressionImprovements = (expr: string): string =>
   expr
@@ -17,10 +18,31 @@ const expressionImprovements = (expr: string): string =>
 
 const MathEvaluate = (props: { code: string }) => {
   const id = useId();
+  const [ratesData, setRatesData] = useState<ExchangeRateData | null>(null);
+
+  useEffect(() => {
+    fetchExchangeRates("EUR")
+      .then(setRatesData)
+      .catch((e) => console.error("Failed to fetch rates for MathBlock", e));
+  }, []);
+
   const expressions = useMemo(() => {
     try {
+      const math = create(all);
+      if (ratesData) {
+        try {
+          math.createUnit("EUR");
+        } catch (e) {}
+        Object.entries(ratesData.rates).forEach(([code, rate]) => {
+          if (code !== "EUR") {
+            try {
+              math.createUnit(code, math.unit(1 / rate, "EUR"));
+            } catch (e) {}
+          }
+        });
+      }
       const lines = props.code.split("\n");
-      const parser = mathParser();
+      const parser = math.parser();
       return lines.map((x) => {
         const expr = x.trim();
         if (x.startsWith("//")) {
@@ -41,7 +63,7 @@ const MathEvaluate = (props: { code: string }) => {
     } catch (e) {
       return [];
     }
-  }, [props.code]);
+  }, [props.code, ratesData]);
 
   return (
     <ul className="list-none !list-outside !mx-0 flex flex-col gap-1">
@@ -69,3 +91,4 @@ export const MathBlock = (props: { code: string }) => {
     </div>
   );
 };
+

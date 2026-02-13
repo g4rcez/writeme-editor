@@ -87,7 +87,6 @@ export async function loadTheme(theme: BundledTheme) {
     loadingThemes.delete(theme);
     return true;
   }
-
   return false;
 }
 
@@ -103,7 +102,6 @@ export async function loadLanguage(language: BundledLanguage) {
     loadingLanguages.delete(language);
     return true;
   }
-
   return false;
 }
 
@@ -119,15 +117,12 @@ export async function initHighlighter({
   defaultTheme: BundledTheme;
 }) {
   const codeBlocks = findChildren(doc, (node) => node.type.name === name);
-
-  const themes = [
-    ...codeBlocks.map((block) => block.node.attrs.theme as BundledTheme),
-    defaultTheme,
-  ];
-  const languages = [
-    ...codeBlocks.map((block) => block.node.attrs.language as BundledLanguage),
-    defaultLanguage,
-  ];
+  const themes = codeBlocks
+    .map((block) => block.node.attrs.theme as BundledTheme)
+    .concat(defaultTheme);
+  const languages = codeBlocks
+    .map((block) => block.node.attrs.language as BundledLanguage)
+    .concat(defaultLanguage);
 
   if (!highlighter) {
     try {
@@ -138,19 +133,21 @@ export async function initHighlighter({
     }
   } else {
     try {
-      await Promise.all([
-        ...themes.flatMap((theme) => loadTheme(theme)),
-        ...languages.flatMap(
-          (language) => !!language && loadLanguage(language),
-        ),
-      ]);
+      await Promise.all(
+        themes
+          .flatMap((theme) => loadTheme(theme))
+          .concat(
+            languages.flatMap(
+              (language) => !!language && loadLanguage(language),
+            ),
+          ),
+      );
     } catch (e) {
       console.warn("Failed to load Shiki themes/languages:", e);
     }
   }
 }
 
-/** Create code decorations for the current document */
 function getDecorations({
   doc,
   name,
@@ -163,52 +160,38 @@ function getDecorations({
   defaultTheme: BundledTheme;
 }) {
   const decorations: Decoration[] = [];
-
   const codeBlocks = findChildren(doc, (node) => node.type.name === name);
-
   codeBlocks.forEach((block) => {
     let from = block.pos + 1;
     let language = block.node.attrs.language || defaultLanguage;
     const theme = block.node.attrs.theme || defaultTheme;
-
     const highlighter = getShiki();
-
     if (!highlighter) return;
-
     if (!highlighter.getLoadedLanguages().includes(language)) {
       language = "plaintext";
     }
-
     const themeToApply = highlighter.getLoadedThemes().includes(theme)
       ? theme
       : highlighter.getLoadedThemes()[0];
-
     const themeResolved = highlighter.getTheme(themeToApply);
-
     decorations.push(
       Decoration.node(block.pos, block.pos + block.node.nodeSize, {
         style: `background-color: ${themeResolved.bg}`,
       }),
     );
-
     const tokens = highlighter.codeToTokensBase(block.node.textContent, {
       lang: language,
       theme: themeToApply,
     });
-
     for (const line of tokens) {
       for (const token of line) {
         const to = from + token.content.length;
-
         const decoration = Decoration.inline(from, to, {
           style: `color: ${token.color}`,
         });
-
         decorations.push(decoration);
-
         from = to;
       }
-
       from += 1;
     }
   });
@@ -437,7 +420,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           </div>
           <div className="flex">
             <div
-              className="flex flex-col shrink-0 text-right select-none text-muted-foreground bg-card-background border-r border-card-border py-4 px-3"
+              className="flex flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground bg-card-background border-card-border"
               aria-hidden="true"
             >
               {Array.from({
@@ -446,7 +429,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
                 <span key={i}>{i + 1}</span>
               ))}
             </div>
-            <div className="p-4 font-mono w-full overflow-x-auto whitespace-pre">
+            <div className="overflow-x-auto p-4 w-full font-mono whitespace-pre">
               <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
             </div>
           </div>

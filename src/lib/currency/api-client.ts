@@ -35,16 +35,13 @@ export async function fetchExchangeRates(
   baseCurrency: string,
 ): Promise<ExchangeRateData> {
   try {
-    // Try primary API first (Frankfurter)
     return await fetchFromFrankfurter(baseCurrency);
   } catch (primaryError) {
     console.warn(
       "Primary API (Frankfurter) failed, trying fallback:",
       primaryError,
     );
-
     try {
-      // Fallback to ExchangeRate-API
       return await fetchFromExchangeRateAPI(baseCurrency);
     } catch (fallbackError) {
       console.error("Both APIs failed:", { primaryError, fallbackError });

@@ -49,8 +49,8 @@ const Wrapper = (props: PropsWithChildren) => {
     <div ref={ref} className="flex flex-col gap-4 w-full h-full">
       <header className="fixed left-4 top-12 py-2 text-disabled">
         <Tooltip
-          placement="bottom-end"
           onChange={setOpen}
+          placement="bottom-end"
           title={
             <span className="flex gap-1 items-center">
               <ChevronDownIcon size={12} />
@@ -61,6 +61,7 @@ const Wrapper = (props: PropsWithChildren) => {
         >
           <motion.ul
             animate={open.toString()}
+            className="overflow-y-auto max-h-72 overscroll-contain"
             variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
           >
             <AnimatePresence>{open ? state : false}</AnimatePresence>
