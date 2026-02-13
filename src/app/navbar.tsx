@@ -6,63 +6,77 @@ import { SettingsMenu } from "./components/settings-menu";
 import { TabsBar } from "./components/tabs-bar";
 import { ThemeToggle } from "./components/theme-toggle";
 import { Network, FileText, LogsIcon, BookmarkCheckIcon } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { cn } from "@g4rcez/components";
 
 export const Navbar = () => {
   const [state, dispatch] = useGlobalStore();
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const location = useLocation();
 
   useEffect(() => setEditingTitle(null), [state.note?.id]);
 
+  const isEditor = location.pathname.startsWith("/note/") || location.pathname === "/";
+
   return (
     <Fragment>
-      <header className="fixed top-0 z-10 w-full border-b h-navbar bg-background/90 border-border/50 backdrop-blur-md">
-        <div className="flex justify-between items-center mx-auto w-full h-12 max-w-safe">
-          <div className="flex gap-2 items-center">
-            {state.note && (
-              <input
-                placeholder="Untitled"
-                value={editingTitle ?? state.note.title}
-                onChange={(e) => setEditingTitle(e.target.value)}
-                className="flex-1 px-3 max-w-md h-8 text-sm text-left bg-transparent rounded-md border transition-all outline-none focus:ring-2 truncate border-border/50 focus:border-primary/50 focus:ring-primary/20"
-                onBlur={(e) => {
-                  const value = e.target.value;
-                  if (value !== state.note.title) {
-                    const note = Note.parse(state.note);
-                    note.title = value;
-                    dispatch.note(note);
-                  }
-                  setEditingTitle(null);
-                }}
-              />
+      <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
+        <div className="flex justify-between items-center mx-auto px-4 w-full h-16 max-w-7xl">
+          <div className="flex gap-6 items-center">
+            <Link to="/" className="text-xl font-black tracking-tighter uppercase font-display hover:opacity-80 transition-opacity">
+              WRITEME
+            </Link>
+
+            {state.note && isEditor && (
+              <div className="hidden md:flex items-center pl-6 border-l border-border/30 h-8">
+                <input
+                  placeholder="Untitled Note"
+                  value={editingTitle ?? state.note.title}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  className="w-64 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/50 truncate"
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value !== state.note.title) {
+                      const note = Note.parse(state.note);
+                      note.title = value;
+                      dispatch.note(note);
+                    }
+                    setEditingTitle(null);
+                  }}
+                />
+              </div>
             )}
           </div>
-          <nav className="flex gap-1 items-center">
+
+          <nav className="flex gap-2 items-center">
+            <div className="hidden sm:flex gap-1 mr-2 border-r border-border/30 pr-2">
+              <Link to="/notes">
+                <button
+                  title="All Notes"
+                  className="flex justify-center items-center w-9 h-9 rounded-full transition-all text-foreground/70 hover:text-foreground hover:bg-secondary/50"
+                >
+                  <LogsIcon className="size-4" />
+                </button>
+              </Link>
+              <Link to="/read-it-later">
+                <button
+                  title="Read It Later"
+                  className="flex justify-center items-center w-9 h-9 rounded-full transition-all text-foreground/70 hover:text-foreground hover:bg-secondary/50"
+                >
+                  <BookmarkCheckIcon className="size-4" />
+                </button>
+              </Link>
+              <Link to="/tags">
+                <button
+                  title="Graph View"
+                  className="flex justify-center items-center w-9 h-9 rounded-full transition-all text-foreground/70 hover:text-foreground hover:bg-secondary/50"
+                >
+                  <Network className="size-4" />
+                </button>
+              </Link>
+            </div>
+            
             <NewNoteButton />
-            <Link to="/read-it-later">
-              <button
-                title="Notes"
-                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
-              >
-                <BookmarkCheckIcon className="size-4" />
-              </button>
-            </Link>
-            <Link to="/notes">
-              <button
-                title="All Notes"
-                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
-              >
-                <LogsIcon className="size-4" />
-              </button>
-            </Link>
-            <Link to="/tags">
-              <button
-                title="Graph View"
-                className="flex justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
-              >
-                <Network className="size-4" />
-              </button>
-            </Link>
             <ThemeToggle />
             <SettingsMenu />
           </nav>
