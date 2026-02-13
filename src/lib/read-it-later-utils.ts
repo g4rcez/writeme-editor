@@ -1,3 +1,62 @@
+const bundledLanguages = [
+  "typescript",
+  "javascript",
+  "markdown",
+  "haskell",
+  "python",
+  "kotlin",
+  "csharp",
+  "swift",
+  "shell",
+  "scala",
+  "yaml",
+  "rust",
+  "ruby",
+  "json",
+  "java",
+  "html",
+  "bash",
+  "yml",
+  "xml",
+  "sql",
+  "php",
+  "css",
+  "cpp",
+  "ts",
+  "sh",
+  "rs",
+  "rb",
+  "py",
+  "md",
+  "kt",
+  "js",
+  "hs",
+  "go",
+  "cs",
+  "c",
+];
+
+const mustBeParsed = bundledLanguages.filter((x) => x.length >= 3);
+
+const unwantedSelectors = [
+  "script",
+  "style",
+  "noscript",
+  "iframe",
+  "header",
+  "footer",
+  "nav",
+  "aside",
+  "form",
+  "svg",
+  "canvas",
+  ".ads",
+  ".sidebar",
+  "#sidebar",
+  ".menu",
+  "#menu",
+];
+
 const regex = { init: /^\/+/, end: /\/+$/ };
 
 const trailingPath = (str: string) =>
@@ -18,7 +77,7 @@ export function parseReadItLaterHtml(
   hostOrigin: string,
 ): {
   title: string;
-  content: string;
+  html: string;
   description: string | null;
   favicon: string | null;
 } {
@@ -58,26 +117,9 @@ export function parseReadItLaterHtml(
   } else if (url) {
     try {
       favicon = new URL("/favicon.ico", url).href;
-    } catch (e) {}
+    } catch (e) { }
   }
-  const unwantedSelectors = [
-    "script",
-    "style",
-    "noscript",
-    "iframe",
-    "header",
-    "footer",
-    "nav",
-    "aside",
-    "form",
-    "svg",
-    "canvas",
-    ".ads",
-    ".sidebar",
-    "#sidebar",
-    ".menu",
-    "#menu",
-  ];
+
   unwantedSelectors.forEach((selector) => {
     doc.querySelectorAll(selector).forEach((el) => el.remove());
   });
@@ -89,73 +131,36 @@ export function parseReadItLaterHtml(
       pre.innerHTML = "";
       pre.appendChild(code);
     }
-    const code = pre.querySelector("code")!;
-    const classes = [...pre.classList, ...code.classList];
-    const langClass = classes.find(
-      (c) => {
-        const lower = c.toLowerCase();
-        return lower.startsWith("language-") ||
+    const original = pre.querySelector("code")!;
+    const code = doc.createElement("code");
+    const length = original.childElementCount;
+    original.childNodes.forEach((c, i) => {
+      code.appendChild(c);
+      if (length - 1 === i) return;
+      code.appendChild(doc.createElement("br"));
+    });
+    const classes = [...pre.classList, ...original.classList];
+    const langClass = classes.find((c) => {
+      const lower = c.toLowerCase();
+      return (
+        lower.startsWith("language-") ||
         lower.startsWith("lang-") ||
-        bundledLanguages.includes(lower);
-      }
-    );
+        bundledLanguages.includes(lower)
+      );
+    });
     if (langClass) {
-      const lang = langClass.toLowerCase()
+      const lang = langClass
+        .toLowerCase()
         .replace("language-", "")
         .replace("lang-", "");
       code.classList.remove(...code.classList);
       code.classList.add(`language-${lang}`);
       pre.removeAttribute("class");
     }
-    
-    // Replace <br>, <div>, <p> with newlines in code block to preserve line breaks
-    code.innerHTML = code.innerHTML
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<div[^>]*>/gi, "")
-      .replace(/<\/div>/gi, "\n")
-      .replace(/<p[^>]*>/gi, "")
-      .replace(/<\/p>/gi, "\n");
+    original.innerHTML = code.innerHTML;
   });
 
   const mainContent =
     doc.querySelector("article") || doc.querySelector("main") || doc.body;
-  return { title, favicon, description, content: mainContent.innerHTML };
+  return { title, favicon, description, html: mainContent.innerHTML };
 }
-
-const bundledLanguages = [
-  "javascript",
-  "js",
-  "typescript",
-  "ts",
-  "python",
-  "py",
-  "java",
-  "c",
-  "cpp",
-  "csharp",
-  "cs",
-  "go",
-  "rust",
-  "rs",
-  "php",
-  "ruby",
-  "rb",
-  "swift",
-  "kotlin",
-  "kt",
-  "scala",
-  "haskell",
-  "hs",
-  "shell",
-  "bash",
-  "sh",
-  "sql",
-  "json",
-  "yaml",
-  "yml",
-  "xml",
-  "html",
-  "css",
-  "markdown",
-  "md",
-];

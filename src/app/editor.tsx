@@ -72,7 +72,9 @@ const InnerEditor = (props: {
 }) => {
   const [state] = useGlobalStore();
 
-  const extensions = createExtensions(() => getThemeForMode(globalState().theme));
+  const extensions = createExtensions(() =>
+    getThemeForMode(globalState().theme),
+  );
 
   const editor = useEditor({
     extensions,
@@ -166,7 +168,7 @@ const InnerEditor = (props: {
   }, [editor, props.note?.id]);
 
   return (
-    <div className="flex flex-col justify-start items-start mx-auto w-full h-full max-w-safe py-4">
+    <div className="flex flex-col justify-start items-start py-4 mx-auto w-full h-full max-w-safe">
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}
@@ -183,14 +185,13 @@ export const Editor = (props: {
   note?: Note;
   readonly?: boolean;
 }) => {
+  const id = useMemo(() => props.note?.id || uuid(), [props.note]);
   const [content, setContent] = useState<null | string>(props.content);
 
   useEffect(() => {
     if (props.content === null) return;
     setContent(props.content);
   }, [props.content]);
-
-  const id = useMemo(() => props.note?.id || uuid(), [props.note]);
 
   return (
     <Fragment key={props.note?.id}>

@@ -9,7 +9,13 @@ export default defineConfig({
   build: { sourcemap: true },
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   plugins: [
-    react(),
+    react({
+      babel: {
+        plugins: [
+          ['babel-plugin-react-compiler']
+        ],
+      },
+    }),
     VitePWA({
       registerType: "autoUpdate",
       devOptions: { enabled: true },

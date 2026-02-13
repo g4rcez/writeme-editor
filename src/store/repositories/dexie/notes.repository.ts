@@ -240,7 +240,6 @@ export class NotesRepository implements Repository<Note> {
         return noteDate >= start && noteDate <= end;
       })
       .toArray();
-    console.log(result);
     if (result.length === 0) return null;
     const metadata = result[0] as any;
     const mode = getStorageMode();

@@ -27,7 +27,7 @@ export const ReadItLaterDialog = () => {
         window.location.origin,
       );
       const tempEditor = new Editor({
-        content: article.content,
+        content: article.html,
         extensions: createExtensions(() => getThemeForMode(state.theme)),
       });
       const markdown = (tempEditor.storage as any).markdown.getMarkdown();

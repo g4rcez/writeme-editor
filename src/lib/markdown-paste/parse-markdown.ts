@@ -8,21 +8,17 @@ import { visit } from "unist-util-visit";
 import type { Root, Code } from "mdast";
 
 const LANGUAGE_ALIASES: Record<string, string> = {
-  js: "javascript",
-  ts: "typescript",
-  py: "python",
   rb: "ruby",
   sh: "bash",
-  shell: "bash",
   yml: "yaml",
-  dockerfile: "docker",
+  py: "python",
+  shell: "bash",
   "": "markdown",
+  js: "javascript",
+  ts: "typescript",
+  dockerfile: "docker",
 };
 
-/**
- * Custom remark plugin to normalize code block languages.
- * Sets default language to "markdown" when missing and applies aliases.
- */
 function remarkCodeBlockLanguage() {
   return (tree: Root) => {
     visit(tree, "code", (node: Code) => {
@@ -32,15 +28,6 @@ function remarkCodeBlockLanguage() {
   };
 }
 
-/**
- * Parses markdown text to HTML using unified/remark pipeline.
- * Handles GFM (GitHub Flavored Markdown) including tables, strikethrough, etc.
- *
- * Note: We do NOT pre-sanitize markdown with DOMPurify because:
- * 1. DOMPurify is designed for HTML, not markdown
- * 2. It corrupts code blocks containing HTML-like content (e.g., `<div>`)
- * 3. rehypeSanitize already sanitizes the output HTML properly
- */
 export async function parseMarkdownToHtml(text: string): Promise<string> {
   console.log("[markdown-paste] Input length:", text.length);
   console.log("[markdown-paste] First 200 chars:", text.slice(0, 200));
@@ -54,10 +41,7 @@ export async function parseMarkdownToHtml(text: string): Promise<string> {
       .use(rehypeSanitize)
       .use(rehypeStringify)
       .process(text);
-    const html = String(result);
-    console.log("[markdown-paste] Output length:", html.length);
-    console.log("[markdown-paste] First 200 chars output:", html);
-    return html;
+    return result.toString();
   } catch (error) {
     console.error("[markdown-paste] Parse error:", error);
     throw error;

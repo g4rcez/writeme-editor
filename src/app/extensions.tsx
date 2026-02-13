@@ -34,6 +34,7 @@ export const createExtensions = (
   return [
     Frontmatter,
     StarterKit.configure({
+      heading: false,
       codeBlock: false,
       blockquote: false,
       undoRedo: { depth: 20 },

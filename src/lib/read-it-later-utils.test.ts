@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseReadItLaterHtml } from "./read-it-later-utils";
 
 describe("parseReadItLaterHtml", () => {
@@ -20,11 +20,11 @@ describe("parseReadItLaterHtml", () => {
 
     const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
     expect(result.title).toBe("Test Title");
-    expect(result.content).toContain("Main Heading");
-    expect(result.content).toContain("Some content.");
-    expect(result.content).not.toContain("Navigation");
-    expect(result.content).not.toContain("Footer");
-    expect(result.content).not.toContain("console.log");
+    expect(result.html).toContain("Main Heading");
+    expect(result.html).toContain("Some content.");
+    expect(result.html).not.toContain("Navigation");
+    expect(result.html).not.toContain("Footer");
+    expect(result.html).not.toContain("console.log");
   });
 
   it("should use a fallback title if none is found", () => {
@@ -72,7 +72,7 @@ describe("parseReadItLaterHtml", () => {
       </html>
     `;
     const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
-    expect(result.content).toContain('class="language-javascript"');
+    expect(result.html).toContain('class="language-javascript"');
     // Ensure <br> are converted to newlines or preserved in a way TipTap likes?
     // Actually TipTap likes text nodes with newlines inside pre. 
     // If it's <br>, we should probably convert to newline.
@@ -81,13 +81,13 @@ describe("parseReadItLaterHtml", () => {
   it("should handle mixed case language classes", () => {
     const html = `<html><body><pre class="JavaScript"><code>console.log('hi')</code></pre></body></html>`;
     const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
-    expect(result.content).toContain('language-javascript');
+    expect(result.html).toContain('language-javascript');
   });
 
   it("should normalize div and p tags in code blocks", () => {
     const html = `<html><body><pre><div>line 1</div><div>line 2</div><p>line 3</p></pre></body></html>`;
     const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
     // Expect divs and p tags to be replaced by newlines
-    expect(result.content).toContain('line 1\nline 2\nline 3\n');
+    expect(result.html).toContain('line 1\nline 2\nline 3\n');
   });
 });
