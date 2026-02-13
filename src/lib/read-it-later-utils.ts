@@ -159,7 +159,6 @@ export function parseReadItLaterHtml(
     }
     original.innerHTML = code.innerHTML;
   });
-
   const mainContent =
     doc.querySelector("article") || doc.querySelector("main") || doc.body;
   return { title, favicon, description, html: mainContent.innerHTML };
