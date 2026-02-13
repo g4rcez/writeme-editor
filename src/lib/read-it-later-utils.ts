@@ -81,7 +81,81 @@ export function parseReadItLaterHtml(
   unwantedSelectors.forEach((selector) => {
     doc.querySelectorAll(selector).forEach((el) => el.remove());
   });
+
+  doc.querySelectorAll("pre").forEach((pre) => {
+    if (!pre.querySelector("code")) {
+      const code = doc.createElement("code");
+      code.innerHTML = pre.innerHTML;
+      pre.innerHTML = "";
+      pre.appendChild(code);
+    }
+    const code = pre.querySelector("code")!;
+    const classes = [...pre.classList, ...code.classList];
+    const langClass = classes.find(
+      (c) => {
+        const lower = c.toLowerCase();
+        return lower.startsWith("language-") ||
+        lower.startsWith("lang-") ||
+        bundledLanguages.includes(lower);
+      }
+    );
+    if (langClass) {
+      const lang = langClass.toLowerCase()
+        .replace("language-", "")
+        .replace("lang-", "");
+      code.classList.remove(...code.classList);
+      code.classList.add(`language-${lang}`);
+      pre.removeAttribute("class");
+    }
+    
+    // Replace <br>, <div>, <p> with newlines in code block to preserve line breaks
+    code.innerHTML = code.innerHTML
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<div[^>]*>/gi, "")
+      .replace(/<\/div>/gi, "\n")
+      .replace(/<p[^>]*>/gi, "")
+      .replace(/<\/p>/gi, "\n");
+  });
+
   const mainContent =
     doc.querySelector("article") || doc.querySelector("main") || doc.body;
   return { title, favicon, description, content: mainContent.innerHTML };
 }
+
+const bundledLanguages = [
+  "javascript",
+  "js",
+  "typescript",
+  "ts",
+  "python",
+  "py",
+  "java",
+  "c",
+  "cpp",
+  "csharp",
+  "cs",
+  "go",
+  "rust",
+  "rs",
+  "php",
+  "ruby",
+  "rb",
+  "swift",
+  "kotlin",
+  "kt",
+  "scala",
+  "haskell",
+  "hs",
+  "shell",
+  "bash",
+  "sh",
+  "sql",
+  "json",
+  "yaml",
+  "yml",
+  "xml",
+  "html",
+  "css",
+  "markdown",
+  "md",
+];
