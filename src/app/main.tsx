@@ -3,18 +3,17 @@ import {
   createTokenStyles,
   TokenRemap,
 } from "@g4rcez/components";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
 import {
   globalDispatch,
   globalState,
   repositories,
 } from "../store/global.store";
-import { Note } from "../store/note";
+import { router } from "./router";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
-import { router } from "./router";
-import { StrictMode } from "react";
-import { RouterProvider } from "react-router-dom";
 
 declare global {
   interface Window {
@@ -52,37 +51,7 @@ async function initializePWA() {
   }
 }
 
-export async function main() {
-  const rootElement = document.getElementById("root");
-  if (!rootElement) {
-    throw new Error("Root element not found");
-  }
-  initializePWA();
-  try {
-    const notes = await repositories.notes.getAll();
-    globalDispatch.notes(notes);
-    globalDispatch.loadTabs();
-    const currentNoteId = globalState().note?.id;
-    let noteToOpen: Note | null = null;
-    if (currentNoteId) {
-      noteToOpen = await repositories.notes.getOne(currentNoteId);
-    }
-    if (!noteToOpen && notes.length > 0) {
-      noteToOpen = await repositories.notes.getOne(notes[0].id);
-    }
-    if (noteToOpen) {
-      globalDispatch.note(noteToOpen);
-    } else if (notes.length === 0) {
-      const note = Note.new("Untitled", "# Hello world");
-      await repositories.notes.save(note);
-      globalDispatch.note(note);
-    }
-  } catch (error) {
-    console.error("Failed to load notes:", error);
-  }
-  if (globalState().theme === "dark") {
-    document.documentElement.classList.add("dark");
-  }
+const themeConfiguration = () => {
   const head = document.getElementsByTagName("head")[0]!;
   head.append(
     createStyle("default-theme", createTokenStyles(lightTheme, tokenRemap)),
@@ -96,6 +65,31 @@ export async function main() {
       }),
     ),
   );
+  if (globalState().theme === "dark") {
+    document.documentElement.classList.add("dark");
+  }
+};
+
+export async function main() {
+  const rootElement = document.getElementById("root");
+  if (!rootElement) {
+    throw new Error("Root element not found");
+  }
+  themeConfiguration();
+  initializePWA();
+  try {
+    const notes = await repositories.notes.getAll();
+    const tabs = await repositories.tabs.getAll();
+    globalDispatch.init(notes, tabs);
+    const tab = tabs[0];
+    const find = notes.find((x) => x.id === tab?.id);
+    if (find) {
+      const note = await repositories.notes.getOne(notes[0].id);
+      globalDispatch.note(note);
+    }
+  } catch (error) {
+    console.error("Failed to load notes:", error);
+  }
   createRoot(rootElement).render(
     <StrictMode>
       <ComponentsProvider tweaks={tweaks}>

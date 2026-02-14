@@ -4,7 +4,7 @@
   "orientation": "any",
   "display": "standalone",
   "short_name": "Writeme",
-  "theme_color": "#0284C5",
+  "theme_color": "#66A6FF",
   "background_color": "#000000",
   "id": "https://www.writeme.dev/",
   "scope": "https://www.writeme.dev/",

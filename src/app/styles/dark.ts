@@ -7,7 +7,7 @@ export const darkTheme: typeof defaultDarkTheme = {
   colors: {
   ...defaultDarkTheme.colors,
     foreground: "hsla(220, 20%, 96%)",
-    background: "hsla(221, 2%, 10%)",
+    background: "hsla(221, 12%, 9%)",
     border: "hsla(220, 10%, 25%)",
     muted: "hsla(220, 10%, 20%)",
     disabled: "hsla(220, 5%, 40%)",

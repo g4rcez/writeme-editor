@@ -13,7 +13,7 @@
 }
 
 .tiptap code.inline-code {
-  @apply font-mono bg-info px-1 py-0.5 rounded text-info-foreground;
+  @apply font-mono bg-primary text-primary-foreground rounded text-info-foreground text-sm p-1;
 }
 
 .tiptap h1,
@@ -22,7 +22,7 @@
 .tiptap h4,
 .tiptap h5,
 .tiptap h6 {
-  @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold text-secondary;
+  @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold text-primary;
 }
 
 .tiptap h1 {
@@ -165,7 +165,7 @@
 }
 
 .tiptap a {
-  @apply cursor-pointer text-secondary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
+  @apply cursor-pointer text-primary underline ease-linear duration-300 transition-colors hover:text-primary-hover;
 }
 
 .tiptap .mention {

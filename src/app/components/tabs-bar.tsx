@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 import { FileText, XIcon } from "lucide-react";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGlobalStore } from "../../store/global.store";
 import { Tab } from "../../store/repositories/dexie/dexie-db";
@@ -10,37 +10,18 @@ export const TabsBar: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const handleTabClick = useCallback(
-    (tab: Tab) => {
-      navigate(`/note/${tab.noteId}`);
-    },
-    [navigate],
-  );
+  const handleTabClick = (tab: Tab) => navigate(`/note/${tab.noteId}`);
 
-  const handleCloseTab = useCallback(
-    async (e: React.MouseEvent, tabId: string) => {
-      e.stopPropagation();
-      const result = await dispatch.removeTab(tabId);
-      if (result.activeTabId && result.activeTabId !== tabId) {
-        const newTab = result.tabs.find((t) => t.id === result.activeTabId);
-        if (newTab) {
-          navigate(`/note/${newTab.noteId}`);
-        }
-      } else if (!result.activeTabId) {
-        navigate("/");
-      }
-    },
-    [dispatch, navigate],
-  );
+  const handleCloseTab = async (e: React.MouseEvent, tabId: string) => {
+    e.stopPropagation();
+    dispatch.removeTab(tabId);
+  };
 
-  const handleMiddleClick = useCallback(
-    (e: React.MouseEvent, tabId: string) => {
-      if (e.button === 1) {
-        handleCloseTab(e, tabId);
-      }
-    },
-    [handleCloseTab],
-  );
+  const handleMiddleClick = (e: React.MouseEvent, tabId: string) => {
+    if (e.button === 1) {
+      handleCloseTab(e, tabId);
+    }
+  };
 
   useEffect(() => {
     if (state.activeTabId && scrollRef.current) {
@@ -73,9 +54,7 @@ export const TabsBar: React.FC = () => {
             key={tab.id}
             data-tab-id={tab.id}
             title={note?.filePath || title}
-            onClick={() =>
-              state.tabs.length === 1 ? undefined : handleTabClick(tab)
-            }
+            onClick={() => handleTabClick(tab)}
             onMouseDown={(e) => handleMiddleClick(e, tab.id)}
             className={clsx(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",

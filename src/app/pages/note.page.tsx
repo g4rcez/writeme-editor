@@ -47,7 +47,7 @@ const Wrapper = (props: PropsWithChildren) => {
 
   return (
     <div ref={ref} className="flex flex-col gap-4 w-full h-full">
-      <header className="fixed left-4 top-12 py-2 text-disabled">
+      <header className="fixed left-4 py-2 top-navbar text-disabled">
         <Tooltip
           onChange={setOpen}
           placement="bottom-end"
@@ -61,7 +61,7 @@ const Wrapper = (props: PropsWithChildren) => {
         >
           <motion.ul
             animate={open.toString()}
-            className="overflow-y-auto max-h-72 overscroll-contain"
+            className="overflow-y-auto overscroll-contain max-h-72"
             variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
           >
             <AnimatePresence>{open ? state : false}</AnimatePresence>
@@ -112,6 +112,16 @@ export default function NotePage() {
       {loadedNote.noteType === "read-it-later" ? (
         <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
           <h1 className="text-xl font-medium">{loadedNote.title}</h1>
+          {loadedNote.url ? (
+            <a
+              target="_blank"
+              className="link"
+              href={loadedNote.url}
+              rel="noopener noreferrer nofollow"
+            >
+              {new URL(loadedNote.url).hostname}
+            </a>
+          ) : null}
           <span className="flex gap-2 items-center text-sm">
             <Tag size="small">Read it later</Tag>-
             <time dateTime={loadedNote.createdAt.toISOString()}>

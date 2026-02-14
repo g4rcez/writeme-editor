@@ -1,493 +1,647 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WriteMe — The Minimalist Workspace</title>
-    
-    <meta name="description" content="A privacy-first, lightning-fast markdown editor.">
-    <meta property="og:title" content="WriteMe — The Minimalist Workspace">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://app.writeme.dev">
-    
-    <link rel="icon" type="image/png" href="../public/favicon-32x32.png">
-    <link rel="apple-touch-icon" href="../public/apple-touch-icon.png">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" />
+    <meta
+      name="description"
+      content="A privacy-first, lightning-fast markdown editor."
+    />
+    <meta property="og:title" content="WriteMe — The Minimalist Workspace" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://app.writeme.dev" />
+    <link rel="icon" type="image/png" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
+    />
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        :root {
-            /* Palette adapted from original */
-            --bg: #0b0d10;
-            --fg: #e2e8f0;
-            --muted: #94a3b8;
-            --border: #1e293b;
-            
-            --primary: #4682B4; 
-            --primary-hover: #5a9bc8;
-            --primary-bg: rgba(70, 130, 180, 0.1);
-            
-            --surface: #13161c;
-            --surface-hover: #1a1e26;
-            
-            --radius: 8px;
+      :root {
+        --bg: #0b0d10;
+        --fg: #e2e8f0;
+        --muted: #94a3b8;
+        --border: #1e293b;
+        --primary: #4682b4;
+        --primary-hover: #5a9bc8;
+        --primary-bg: rgba(70, 130, 180, 0.1);
+        --surface: #13161c;
+        --surface-hover: #1a1e26;
+        --radius: 8px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family:
+          "IBM Plex Sans",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.5;
+        overflow-x: hidden;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      .logo,
+      .btn-cta,
+      .nav-desktop {
+        font-family: "Outfit", sans-serif;
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+        transition: opacity 0.2s;
+      }
+
+      a:hover {
+        opacity: 0.8;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: hsla(221, 40%, 12%, 0.6);
+        backdrop-filter: blur(24px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .header-inner {
+        height: 4.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+      }
+
+      .logo {
+        font-weight: 700;
+        font-size: 1.4rem;
+        letter-spacing: 0.01em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-transform: uppercase;
+      }
+
+      .nav-desktop {
+        display: none;
+        gap: 30px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .btn-cta {
+        background: var(--fg);
+        color: var(--bg);
+        padding: 5px 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        border-radius: var(--radius);
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+
+      .btn-cta:hover {
+        transform: translateY(-2px);
+        background: #fff;
+      }
+
+      .hero {
+        padding: 100px 0 80px;
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+        background: radial-gradient(
+          circle at center top,
+          hsla(215, 100%, 40%, 0.4) 0%,
+          transparent 70%
+        );
+      }
+
+      h1 {
+        font-size: clamp(3rem, 10vw, 7rem);
+        font-weight: 800;
+        line-height: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.01em;
+        margin-bottom: 20px;
+        color: var(--fg);
+      }
+
+      .hero p {
+        font-size: clamp(1rem, 2vw, 1.25rem);
+        color: var(--muted);
+        max-width: 600px;
+        margin: 0 auto 40px;
+        font-weight: 400;
+        text-wrap: pretty;
+      }
+
+      /* MARQUEE */
+      .marquee-container {
+        border-bottom: 1px solid var(--border);
+        overflow: hidden;
+        background: var(--surface);
+        padding: 15px 0;
+      }
+
+      .marquee-content {
+        display: flex;
+        gap: 40px;
+        white-space: nowrap;
+        animation: scroll 20s linear infinite;
+      }
+
+      .marquee-item {
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      @keyframes scroll {
+        0% {
+          transform: translateX(0);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background-color: var(--bg);
-            color: var(--fg);
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-            line-height: 1.5;
-            overflow-x: hidden;
+        100% {
+          transform: translateX(-50%);
         }
+      }
 
-        h1, h2, h3, h4, h5, h6, .logo, .btn-cta, .nav-desktop {
-            font-family: 'Outfit', sans-serif;
-        }
+      /* PRODUCT GRID (FEATURES) */
+      .grid-section {
+        padding: 60px 0;
+      }
 
-        a { text-decoration: none; color: inherit; transition: opacity 0.2s; }
-        a:hover { opacity: 0.8; }
+      .section-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin-bottom: 20px;
+        display: block;
+        text-align: center;
+      }
 
-        /* UTILS */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        .grid {
-            display: grid;
-            gap: 1px;
-            background: var(--border); /* Creates the border lines between cells */
-            border: 1px solid var(--border);
-        }
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        border-top: 1px solid var(--border);
+        border-left: 1px solid var(--border);
+      }
 
-        /* HEADER */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(11, 13, 16, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-        }
+      .feature-card {
+        background: var(--bg);
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transition: background 0.3s;
+        position: relative;
+        overflow: hidden;
+      }
 
-        .header-inner {
-            height: 70px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+      .feature-card:hover {
+        background: var(--surface);
+      }
 
-        .logo {
-            font-weight: 700;
-            font-size: 1.4rem;
-            letter-spacing: -0.02em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-transform: uppercase;
-        }
+      .feature-icon {
+        width: 50px;
+        height: 50px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+      }
 
+      .feature-card h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .feature-card p {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .app-preview {
+        border: 1px solid var(--border);
+        margin: 0 0;
+        background: var(--surface);
+        padding: 20px;
+        position: relative;
+        border-radius: 1rem;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 80px 0 40px;
+        background: var(--surface);
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 40px;
+        margin-bottom: 60px;
+      }
+
+      .footer-brand h2 {
+        font-size: 2rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .footer-links a {
+        color: var(--muted);
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .footer-links a:hover {
+        color: var(--primary);
+      }
+
+      .bottom-bar {
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        text-align: center;
+      }
+
+      @media (min-width: 768px) {
         .nav-desktop {
-            display: none;
-            gap: 30px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .btn-cta {
-            background: var(--fg);
-            color: var(--bg);
-            padding: 10px 20px;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            border-radius: var(--radius);
-            transition: transform 0.2s, background 0.2s;
-        }
-        .btn-cta:hover {
-            transform: translateY(-2px);
-            background: #fff;
-        }
-
-        /* HERO */
-        .hero {
-            padding: 100px 0 80px;
-            border-bottom: 1px solid var(--border);
-            text-align: center;
-            background: radial-gradient(circle at center top, rgba(70, 130, 180, 0.15) 0%, transparent 60%);
-        }
-
-        h1 {
-            font-size: clamp(3rem, 10vw, 8rem);
-            font-weight: 800;
-            line-height: 0.9;
-            text-transform: uppercase;
-            letter-spacing: -0.04em;
-            margin-bottom: 20px;
-            color: var(--fg);
-        }
-
-        .hero p {
-            font-size: clamp(1rem, 2vw, 1.5rem);
-            color: var(--muted);
-            max-width: 600px;
-            margin: 0 auto 40px;
-            font-weight: 300;
-        }
-
-        /* MARQUEE */
-        .marquee-container {
-            border-bottom: 1px solid var(--border);
-            overflow: hidden;
-            background: var(--surface);
-            padding: 15px 0;
-        }
-        .marquee-content {
-            display: flex;
-            gap: 40px;
-            white-space: nowrap;
-            animation: scroll 20s linear infinite;
-        }
-        .marquee-item {
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--muted);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        @keyframes scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-
-        /* PRODUCT GRID (FEATURES) */
-        .grid-section {
-            padding: 60px 0;
-        }
-        .section-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--muted);
-            margin-bottom: 20px;
-            display: block;
+          display: flex;
         }
 
         .features-grid {
-            display: grid;
-            grid-template-columns: repeat(1, 1fr);
-            border-top: 1px solid var(--border);
-            border-left: 1px solid var(--border);
+          grid-template-columns: repeat(2, 1fr);
         }
 
-        .feature-card {
-            background: var(--bg);
-            border-right: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            transition: background 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card:hover {
-            background: var(--surface);
-        }
-        
-        .feature-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-        }
-
-        .feature-card h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .feature-card p {
-            color: var(--muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        /* APP PREVIEW (Large Card) */
-        .app-preview {
-            border: 1px solid var(--border);
-            margin: 60px 0;
-            background: var(--surface);
-            padding: 20px;
-            position: relative;
-        }
-        .browser-mockup {
-            border: 1px solid var(--border);
-            background: var(--bg);
-            aspect-ratio: 16/9;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .mockup-ui {
-            width: 90%;
-            height: 90%;
-            border: 1px solid var(--border);
-            background: #0f1115;
-            display: grid;
-            grid-template-columns: 200px 1fr;
-        }
-        .mockup-sidebar { border-right: 1px solid var(--border); }
-
-        /* FOOTER */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 80px 0 40px;
-            background: var(--surface);
-        }
-        
         .footer-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 40px;
-            margin-bottom: 60px;
+          grid-template-columns: 2fr 1fr 1fr;
         }
 
-        .footer-brand h2 {
-            font-size: 2rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 10px;
+        .footer-cta {
+          background: radial-gradient(
+            circle at center bottom,
+            hsla(215, 100%, 40%, 0.4) 0%,
+            transparent 70%
+          );
         }
-        
-        .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .footer-links a {
-            color: var(--muted);
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .footer-links a:hover { color: var(--primary); }
 
         .bottom-bar {
-            border-top: 1px solid var(--border);
-            padding-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            color: var(--muted);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            text-align: center;
+          flex-direction: row;
+          justify-content: space-between;
+          text-align: left;
         }
+      }
 
-        /* RESPONSIVE */
-        @media (min-width: 768px) {
-            .nav-desktop { display: flex; }
-            .features-grid { grid-template-columns: repeat(2, 1fr); }
-            .footer-grid { grid-template-columns: 2fr 1fr 1fr; }
-            .bottom-bar { flex-direction: row; justify-content: space-between; text-align: left; }
+      @media (min-width: 1024px) {
+        .features-grid {
+          grid-template-columns: repeat(3, 1fr);
         }
-
-        @media (min-width: 1024px) {
-            .features-grid { grid-template-columns: repeat(3, 1fr); }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
 
+  <body>
     <header>
-        <div class="container header-inner">
-            <a href="#" class="logo">
-                <img src="../public/logo.png" alt="WriteMe Logo" style="height: 32px; width: auto;"> WriteMe
-            </a>
-            <nav class="nav-desktop">
-                <a href="#features">Zero distraction</a>
-                <a href="#philosophy">Privacy</a>
-                <a href="https://github.com/g4rcez/writeme-editor">Open Source</a>
-            </nav>
-            <a href="https://app.writeme.dev" class="btn-cta">Enter Workspace</a>
-        </div>
+      <div class="container header-inner">
+        <a href="#" class="logo">
+          <img
+            src="/logo.svg"
+            alt="WriteMe Logo"
+            style="height: 32px; width: auto"
+          />
+          WriteMe
+        </a>
+        <nav class="nav-desktop">
+          <a href="#features">Zero distraction</a>
+          <a href="#philosophy">Privacy</a>
+          <a href="https://github.com/g4rcez/writeme-editor">Open Source</a>
+        </nav>
+        <a href="https://app.writeme.dev" class="btn-cta">Start writing</a>
+      </div>
     </header>
-
     <main>
-        <!-- Hero Section -->
-        <section class="container hero">
-            <h1>Just you and<br>your thoughts.</h1>
-            <p>A zero distraction workspace for your mind. Privacy by design, focus by nature. Unleash your productivity in a pure, focused environment.</p>
-            <a href="https://app.writeme.dev" class="btn-cta" style="padding: 15px 40px; font-size: 1rem;">Start Working</a>
-        </section>
+      <section class="container hero">
+        <h1>Just you and<br />your thoughts.</h1>
+        <p>
+          A zero distraction workspace for your mind. Privacy by design, focus
+          by nature. Unleash your productivity in a pure and powerfull editor.
+        </p>
+        <a
+          href="https://app.writeme.dev"
+          class="btn-cta"
+          style="padding: 15px 30px; font-size: 1rem"
+          >Start writing</a
+        >
+      </section>
+      <div class="marquee-container">
+        <div class="marquee-content">
+          <div class="marquee-item">
+            <i data-lucide="shield-check"></i>Respect privacy
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="wind"></i>No distractions
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="wrench"></i>Tools out of the box
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="shield"></i>Future proof
+          </div>
+          <div class="marquee-item"><i data-lucide="house"></i>Local first</div>
+          <div class="marquee-item">
+            <i data-lucide="eye-off"></i>No tracking
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="shield-check"></i>Code blocks
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="calculator"></i>Math solver
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="bookmark"></i>Read it later
+          </div>
+          <div class="marquee-item">
+            <i data-lucide="keyboard"></i>Keyboard driven
+          </div>
+          <div class="marquee-item"><i data-lucide="heading1"></i>Markdown</div>
+          <div class="marquee-item">
+            <i data-lucide="layers-2"></i>Fast Commands
+          </div>
+        </div>
+      </div>
+      <section class="container grid-section" id="features">
+        <span class="section-title">The features</span>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="eye-off"></i></div>
+            <h3>True Privacy</h3>
+            <p>
+              Your workspace is private. No clouds, no trackers, no eyes but
+              yours. Everything stays on your device.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="wind"></i></div>
+            <h3>Zero distraction</h3>
+            <p>
+              Minimalist interface designed to disappear. No toolbars, no
+              popups—just a blank canvas for your flow.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="brain"></i></div>
+            <h3>Flow State</h3>
+            <p>
+              Lightning-fast performance ensures your tools never interrupt your
+              stream of consciousness.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="layers"></i></div>
+            <h3>Pure Markdown</h3>
+            <p>
+              The simplicity of text. Your data is stored in open,
+              human-readable formats. Ownership is absolute.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="palette"></i></div>
+            <h3>Focused Visuals</h3>
+            <p>
+              Integrated sketching and diagramming that feel like a natural
+              extension of your pen, not a distraction.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i data-lucide="infinity"></i></div>
+            <h3>Infinite productivity</h3>
+            <p>
+              Read it later, fast commands, language parsers, and everything
+              with a beautiful UI to help you focus on what matters.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="container" style="margin-bottom: 100px">
+        <span class="section-title">Welcome to Writeme</span>
+        <div class="app-preview" style="overflow: clip">
+          <img
+            src="/screenshot.png"
+            style="display: block; max-width: 100%; border-radius: 1rem"
+          />
+        </div>
+      </section>
 
-        <!-- Marquee -->
-        <div class="marquee-container">
-            <div class="marquee-content">
-                <!-- Repeated items for continuous scroll illusion -->
-                <div class="marquee-item"><i data-lucide="shield-check"></i> END-TO-END PRIVACY</div>
-                <div class="marquee-item"><i data-lucide="wind"></i> ZERO DISTRACTIONS</div>
-                <div class="marquee-item"><i data-lucide="zap"></i> PEAK PERFORMANCE</div>
-                <div class="marquee-item"><i data-lucide="coffee"></i> FOCUSED WRITING</div>
-                <div class="marquee-item"><i data-lucide="lock"></i> LOCAL-FIRST</div>
-                <div class="marquee-item"><i data-lucide="eye-off"></i> NO TRACKING</div>
-                <div class="marquee-item"><i data-lucide="shield-check"></i> END-TO-END PRIVACY</div>
-                <div class="marquee-item"><i data-lucide="wind"></i> ZERO DISTRACTIONS</div>
-                <div class="marquee-item"><i data-lucide="zap"></i> PEAK PERFORMANCE</div>
-                <div class="marquee-item"><i data-lucide="coffee"></i> FOCUSED WRITING</div>
-                <div class="marquee-item"><i data-lucide="lock"></i> LOCAL-FIRST</div>
-                <div class="marquee-item"><i data-lucide="eye-off"></i> NO TRACKING</div>
-            </div>
+      <!-- CTA Section -->
+      <section
+        class="container footer-cta"
+        style="
+          padding: 100px 0;
+          border-top: 1px solid var(--border);
+          text-align: center;
+        "
+      >
+        <h2
+          style="
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+          "
+        >
+          Find your Flow
+        </h2>
+        <p
+          style="
+            color: var(--muted);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-inline: auto;
+          "
+        >
+          Step into a zero distraction environment where your productivity meets
+          peace of mind. Launch the web workspace or wait for the native
+          experience.
+        </p>
+
+        <div
+          style="
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+          "
+        >
+          <a
+            href="https://app.writeme.dev"
+            class="btn-cta"
+            style="padding: 15px 40px; font-size: 1rem"
+            >Start writing</a
+          >
+          <div
+            style="
+              border: 1px solid var(--border);
+              padding: 15px 30px;
+              font-weight: 700;
+              text-transform: uppercase;
+              font-size: 0.8rem;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              color: var(--muted);
+            "
+          >
+            <i data-lucide="monitor"></i> Desktop App Coming Soon
+          </div>
         </div>
 
-        <!-- Product Grid (Features) -->
-        <section class="container grid-section" id="features">
-            <span class="section-title">The Path to Focus</span>
-            <div class="features-grid">
-                <!-- Card 1 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="eye-off"></i></div>
-                    <h3>True Privacy</h3>
-                    <p>Your workspace is private. No clouds, no trackers, no eyes but yours. Everything stays on your device.</p>
-                </div>
-                
-                <!-- Card 2 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="wind"></i></div>
-                    <h3>Zero distraction</h3>
-                    <p>Minimalist interface designed to disappear. No toolbars, no popups—just a blank canvas for your flow.</p>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="brain"></i></div>
-                    <h3>Flow State</h3>
-                    <p>Lightning-fast performance ensures your tools never interrupt your stream of consciousness.</p>
-                </div>
-
-                <!-- Card 4 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="layers"></i></div>
-                    <h3>Pure Markdown</h3>
-                    <p>The simplicity of text. Your data is stored in open, human-readable formats. Ownership is absolute.</p>
-                </div>
-
-                <!-- Card 5 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="palette"></i></div>
-                    <h3>Focused Visuals</h3>
-                    <p>Integrated sketching and diagramming that feel like a natural extension of your pen, not a distraction.</p>
-                </div>
-
-                <!-- Card 6 -->
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="infinity"></i></div>
-                    <h3>Absolute Focus</h3>
-                    <p>Tools for mathematics and logic that stay out of the way until you need them. Total productivity.</p>
-                </div>
+        <div
+          style="
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: left;
+          "
+        >
+          <div style="display: flex; gap: 20px; align-items: center">
+            <div style="font-size: 2rem; color: var(--primary)">
+              <i data-lucide="coffee"></i>
             </div>
-        </section>
-
-        <!-- Mockup Section -->
-        <section class="container" style="margin-bottom: 100px;">
-            <span class="section-title">The Workspace</span>
-            <div class="app-preview">
-                <div class="browser-mockup">
-                    <div class="mockup-ui">
-                        <div class="mockup-sidebar" style="padding: 20px;">
-                            <div style="height: 10px; width: 60%; background: var(--border); margin-bottom: 20px;"></div>
-                            <div style="height: 8px; width: 80%; background: var(--surface-hover); margin-bottom: 10px;"></div>
-                            <div style="height: 8px; width: 80%; background: var(--surface-hover); margin-bottom: 10px;"></div>
-                            <div style="height: 8px; width: 80%; background: var(--surface-hover); margin-bottom: 10px;"></div>
-                        </div>
-                        <div style="padding: 40px;">
-                            <div style="height: 20px; width: 40%; background: var(--border); margin-bottom: 30px;"></div>
-                            <div style="height: 8px; width: 100%; background: var(--surface-hover); margin-bottom: 15px;"></div>
-                            <div style="height: 8px; width: 90%; background: var(--surface-hover); margin-bottom: 15px;"></div>
-                            <div style="height: 8px; width: 95%; background: var(--surface-hover); margin-bottom: 15px;"></div>
-                            <div style="height: 8px; width: 60%; background: var(--surface-hover); margin-bottom: 15px;"></div>
-                        </div>
-                    </div>
-                </div>
+            <div>
+              <h4
+                style="
+                  text-transform: uppercase;
+                  font-weight: 800;
+                  margin-bottom: 5px;
+                "
+              >
+                Shape the future
+              </h4>
+              <p style="color: var(--muted); font-size: 0.9rem">
+                Want a specific feature? I accept donations to prioritize
+                community requests. Help me build the tool you need.
+              </p>
+              <a
+                href="#"
+                style="
+                  color: var(--fg);
+                  font-weight: 700;
+                  text-decoration: underline;
+                  margin-top: 10px;
+                  display: inline-block;
+                  text-transform: uppercase;
+                  font-size: 0.8rem;
+                "
+                >Request a feature <i data-lucide="external-link" size="14"></i
+              ></a>
             </div>
-        </section>
-
-        <!-- CTA Section -->
-        <section class="container" style="padding: 100px 0; border-top: 1px solid var(--border); text-align: center;">
-            <h2 style="font-size: clamp(2rem, 5vw, 4rem); font-weight: 800; text-transform: uppercase; margin-bottom: 20px;">Find your Flow</h2>
-            <p style="color: var(--muted); margin-bottom: 40px; font-size: 1.1rem; max-width: 600px; margin-inline: auto;">Step into a zero distraction environment where your productivity meets peace of mind. Launch the web workspace or wait for the native experience.</p>
-            
-            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px;">
-                <a href="https://app.writeme.dev" class="btn-cta" style="padding: 15px 40px; font-size: 1rem;">Enter Workspace</a>
-                <div style="border: 1px solid var(--border); padding: 15px 30px; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; color: var(--muted);">
-                    <i data-lucide="monitor"></i> Desktop App Coming Soon
-                </div>
-            </div>
-
-            <div style="background: var(--surface); border: 1px solid var(--border); padding: 40px; max-width: 800px; margin: 0 auto; text-align: left;">
-                <div style="display: flex; gap: 20px; align-items: center;">
-                    <div style="font-size: 2rem; color: var(--primary);"><i data-lucide="coffee"></i></div>
-                    <div>
-                        <h4 style="text-transform: uppercase; font-weight: 800; margin-bottom: 5px;">Shape the future</h4>
-                        <p style="color: var(--muted); font-size: 0.9rem;">Want a specific feature? I accept donations to prioritize community requests. Help me build the tool you need.</p>
-                        <a href="#" style="color: var(--fg); font-weight: 700; text-decoration: underline; margin-top: 10px; display: inline-block; text-transform: uppercase; font-size: 0.8rem;">Request a feature <i data-lucide="external-link" size="14"></i></a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <h2>WriteMe</h2>
-                    <p style="color: var(--muted); max-width: 300px;">The open-source editor for those who value focus and privacy.</p>
-                </div>
-                <div class="footer-links">
-                    <span style="color: var(--fg); font-weight: 700; margin-bottom: 10px;">PRODUCT</span>
-                    <a href="https://app.writeme.dev">Web App</a>
-                    <a href="#">Desktop (Soon)</a>
-                    <a href="#">Changelog</a>
-                </div>
-                <div class="footer-links">
-                    <span style="color: var(--fg); font-weight: 700; margin-bottom: 10px;">COMMUNITY</span>
-                    <a href="https://github.com/g4rcez/writeme-editor">GitHub</a>
-                    <a href="#">Twitter</a>
-                    <a href="#">Discord</a>
-                </div>
-            </div>
-            <div class="bottom-bar">
-                <span>© 2024 WriteMe Editor</span>
-                <span>Designed & Built by g4rcez</span>
-            </div>
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <h2>WriteMe</h2>
+            <p style="color: var(--muted); max-width: 300px">
+              The open-source editor for those who value focus and privacy.
+            </p>
+          </div>
+          <div class="footer-links">
+            <span
+              style="color: var(--fg); font-weight: 700; margin-bottom: 10px"
+              >PRODUCT</span
+            >
+            <a href="https://app.writeme.dev">Web App</a>
+            <a href="#">Desktop (Soon)</a>
+            <a href="#">Changelog</a>
+          </div>
+          <div class="footer-links">
+            <span
+              style="color: var(--fg); font-weight: 700; margin-bottom: 10px"
+              >COMMUNITY</span
+            >
+            <a href="https://github.com/g4rcez/writeme-editor">GitHub</a>
+            <a href="#">Twitter</a>
+            <a href="#">Discord</a>
+          </div>
         </div>
+        <div class="bottom-bar">
+          <span>© 2024 WriteMe Editor</span>
+          <span>Designed & Built by g4rcez</span>
+        </div>
+      </div>
     </footer>
-
     <script>
-        lucide.createIcons();
+      lucide.createIcons();
     </script>
-</body>
+  </body>
 </html>

@@ -1,6 +1,8 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { css } from "@g4rcez/components";
 import { Maximize2 } from "lucide-react";
-import { Fragment, useEffect, Suspense } from "react";
+import { Fragment, Suspense, useEffect } from "react";
+import { Outlet, useNavigate, useLocation, matchPath } from "react-router-dom";
+import { Dates } from "../lib/dates";
 import { CursorPositionStore } from "../store/cursor-position.store";
 import {
   globalDispatch,
@@ -10,69 +12,90 @@ import {
 } from "../store/global.store";
 import { Note } from "../store/note";
 import { useUIStore } from "../store/ui.store";
-import { editorGlobalRef } from "./editor-global-ref";
 import { Commander } from "./commander";
+import { CreateNoteDialog } from "./components/create-note-dialog";
 import { DirectoryBrowserDialog } from "./components/directory-browser-dialog";
-import { RecentNotesDialog } from "./components/recent-notes-dialog";
 import { ReadItLaterDialog } from "./components/read-it-later-dialog";
+import { RecentNotesDialog } from "./components/recent-notes-dialog";
 import { Sidebar } from "./components/sidebar";
+import { editorGlobalRef } from "./editor-global-ref";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
-import { Dates } from "../lib/dates";
-import { css } from "@g4rcez/components";
+
+const noop = () => { };
+
+const redirectOnEmptyTabs = (path: string, tabs: any[]) => {
+  if (tabs.length === 0) {
+    const match = matchPath("/note/:id", path);
+    return match ? "/" : undefined;
+  }
+  return undefined;
+};
 
 export const RootLayout = () => {
+  const [state] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
-        e.preventDefault();
-        uiDispatch.toggleFocusMode();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [uiDispatch]);
+    const pathToRedirect = redirectOnEmptyTabs(location.pathname, state.tabs);
+    if (pathToRedirect) {
+      return void navigate(pathToRedirect);
+    }
+  }, [location, state.tabs.length]);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const state = globalState();
-      if (state.note && editorGlobalRef.current) {
-        CursorPositionStore.save(
-          state.note.id,
-          editorGlobalRef.current.state.selection.anchor,
-          window.scrollY,
-        );
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+  useEffect(
+    function registerBindings() {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
+          e.preventDefault();
+          uiDispatch.toggleFocusMode();
+        }
+      };
 
-  useEffect(() => {
-    if (!window.electronAPI?.onQuicknoteOpen) return;
-    const cleanup = window.electronAPI.onQuicknoteOpen(async () => {
-      const today = new Date();
-      const existing = await repositories.notes.getQuicknoteByDate(today);
-      if (existing) {
-        globalDispatch.selectNoteById(existing.id);
-        navigate(`/quicknote/${existing.id}`);
-      } else {
-        const quicknote = Note.new(
-          `${Dates.yearMonthDay(today)}_quick_note`,
-          "",
-          "quick",
-        );
-        await repositories.notes.save(quicknote);
-        globalDispatch.selectNoteById(quicknote.id);
-        navigate(`/quicknote/${quicknote.id}`);
-      }
-    });
-    return cleanup;
-  }, [navigate]);
+      const handleBeforeUnload = () => {
+        const state = globalState();
+        if (state.note && editorGlobalRef.current) {
+          CursorPositionStore.save(
+            state.note.id,
+            editorGlobalRef.current.state.selection.anchor,
+            window.scrollY,
+          );
+        }
+      };
+      const controller = new AbortController();
+      const opts = { signal: controller.signal };
+      const cleanup = !window.electronAPI?.onQuicknoteOpen
+        ? noop
+        : window.electronAPI.onQuicknoteOpen(async () => {
+          const today = new Date();
+          const existing = await repositories.notes.getQuicknoteByDate(today);
+          if (existing) {
+            globalDispatch.selectNoteById(existing.id);
+            navigate(`/quicknote/${existing.id}`);
+          } else {
+            const quicknote = Note.new(
+              `${Dates.yearMonthDay(today)}_quick_note`,
+              "",
+              "quick",
+            );
+            await repositories.notes.save(quicknote);
+            globalDispatch.selectNoteById(quicknote.id);
+            navigate(`/quicknote/${quicknote.id}`);
+          }
+        });
+
+      window.addEventListener("keydown", handleKeyDown, opts);
+      window.addEventListener("beforeunload", handleBeforeUnload, opts);
+      return () => {
+        cleanup();
+        controller.abort();
+      };
+    },
+    [navigate],
+  );
 
   const isQuickNote = window.location.hash.includes("quicknote");
 
@@ -81,6 +104,7 @@ export const RootLayout = () => {
       {!isQuickNote ? (
         <Fragment>
           <Commander />
+          <CreateNoteDialog />
           <RecentNotesDialog />
           <ReadItLaterDialog />
           <Navbar />
@@ -95,7 +119,9 @@ export const RootLayout = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <ShortcutsCommands />
           <DirectoryBrowserDialog />
-          <div className={css("block", isQuickNote ? "py-8" : "mt-24 mb-10")}>
+          <div
+            className={css("block", isQuickNote ? "py-8" : "mt-navbar mb-10")}
+          >
             <Suspense
               fallback={
                 <div className="flex justify-center p-10">Loading...</div>

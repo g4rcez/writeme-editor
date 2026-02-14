@@ -6,21 +6,34 @@ import { TabsRepository } from "./repositories/dexie/tabs.repository";
 import { Note } from "./note";
 import { Tab } from "./repositories/dexie/dexie-db";
 
+export type NoteCreationType = "note" | "quick";
+
 const state = JSON.parse(
   window.localStorage.getItem("EDITOR_PREFERENCES") || "{}",
 );
 
+export enum CommanderType {
+  All = "all",
+  Notes = "Notes",
+}
+
+export type Commander = {
+  enabled: boolean;
+  type: CommanderType;
+};
+
 const initialState = {
   help: false,
-  commander: false,
   tabs: [] as Tab[],
   notes: [] as Note[],
-  recentNotesDialog: false,
   readItLaterDialog: false,
+  recentNotesDialog: false,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
   theme: state.theme || ("dark" as "light" | "dark"),
   activeTabId: (state.activeTabId || null) as string | null,
+  commander: { enabled: false, type: CommanderType.All } as Commander,
+  createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
   note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
 };
 
@@ -33,170 +46,186 @@ export const repositories = {
 
 export const useGlobalStore = createGlobalReducer(
   initialState,
-  (get) => ({
-    tabs: (tabs: Tab[]) => ({ tabs }),
-    setNote: (note: Note | null) => ({ note }),
-    recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
-    activeTabId: (activeTabId: string | null) => ({ activeTabId }),
-    help: (help: boolean) => ({ help }),
-    commander: (commander: boolean) => ({ commander }),
-    recentNotesDialog: (recentNotesDialog: boolean) => ({ recentNotesDialog }),
-    readItLaterDialog: (readItLaterDialog: boolean) => ({ readItLaterDialog }),
-    loadRecentNotes: async (limit = 20) => {
-      const recent = await repositories.notes.getRecentNotes(limit);
-      return { recentNotes: recent };
-    },
-    loadTabs: async () => {
-      const tabs = await repositories.tabs.getAll();
-      return { tabs };
-    },
-    reorderTabs: async (tabs: Tab[]) => {
-      const updatedTabs = tabs.map((t, i) => ({ ...t, order: i }));
-      await repositories.tabs.updateOrder(updatedTabs);
-      return { tabs: updatedTabs };
-    },
-    directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
-      directoryBrowserDialog,
-    }),
-    note: async (note: Note, createTab: boolean = true) => {
-      await repositories.notes.update(note.id, note);
-      const state = get.state();
-      const existingTab = state.tabs.find((t) => t.noteId === note.id);
-      const existsInNotes = state.notes.some((n) => n.id === note.id);
-      const updatedNotes = existsInNotes
-        ? state.notes.map((n) => (n.id === note.id ? note : n))
-        : [...state.notes, note];
-      if (existingTab) {
-        return { note: note, notes: updatedNotes, activeTabId: existingTab.id };
-      }
-      const newTab: Tab = {
-        id: note.id,
-        noteId: note.id,
-        project: "",
-        createdAt: new Date(),
-        order: state.tabs.length,
-      };
-      if (createTab) await repositories.tabs.save(newTab);
-      return {
-        note: note,
-        notes: updatedNotes,
-        activeTabId: createTab ? newTab.id : state.activeTabId,
-        tabs: createTab ? [...state.tabs, newTab] : state.tabs,
-      };
-    },
-    notes: (notes: Note[]) => {
+  (get) => {
+    const setNotes = (notes: Note[]) => {
       const state = get.state();
       const existingNotesMap = new Map(state.notes.map((n) => [n.id, n]));
-      const mergedNotes = notes.map((note) => {
+      const mergedNotes = notes.map((note): Note => {
         const existing = existingNotesMap.get(note.id);
         if (existing) {
           if (existing.updatedAt > note.updatedAt) {
             return existing;
           }
-          if (existing.content && !note.content) {
-            return { ...note, content: existing.content };
-          }
         }
         return note;
       });
-      return { notes: mergedNotes };
-    },
-    addTab: async (noteId: string) => {
-      const currentTabs = get.state().tabs;
-      const existingTab = currentTabs.find((t) => t.noteId === noteId);
-      if (existingTab) {
-        return { activeTabId: existingTab.id };
-      }
-      const newTab: Tab = {
-        id: crypto.randomUUID(),
-        noteId,
-        project: "",
-        order: currentTabs.length,
-        createdAt: new Date(),
-      };
-      await repositories.tabs.save(newTab);
-      return {
-        tabs: [...currentTabs, newTab],
-        activeTabId: newTab.id,
-      };
-    },
-    removeTab: async (tabId: string) => {
-      const state = get.state();
-      const currentTabs = state.tabs;
-      if (currentTabs.length === 1) return state;
-      const tab = currentTabs.find((t) => t.id === tabId);
-      if (tab && state.activeTabId === tabId && editorGlobalRef.current) {
-        CursorPositionStore.save(
-          tab.noteId,
-          editorGlobalRef.current.state.selection.anchor,
-          window.scrollY,
-        );
-      }
-      const newTabs = currentTabs.filter((t) => t.id !== tabId);
-      await repositories.tabs.delete(tabId);
-      let nextActiveTabId = get.state().activeTabId;
-      if (nextActiveTabId === tabId) {
-        const index = currentTabs.findIndex((t) => t.id === tabId);
+      return { notes: mergedNotes as Note[] };
+    };
+
+    return {
+      notes: setNotes,
+      tabs: (tabs: Tab[]) => ({ tabs }),
+      help: (help: boolean) => ({ help }),
+      setNote: (note: Note | null) => ({ note }),
+      recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
+      activeTabId: (activeTabId: string | null) => ({ activeTabId }),
+      commander: (enabled: boolean, type?: CommanderType) => ({
+        commander: { enabled, type: type || CommanderType.All },
+      }),
+      init: (notes: Note[], tabs: Tab[]) => ({
+        notes: setNotes(notes).notes,
+        tabs,
+      }),
+      recentNotesDialog: (recentNotesDialog: boolean) => ({
+        recentNotesDialog,
+      }),
+      readItLaterDialog: (readItLaterDialog: boolean) => ({
+        readItLaterDialog,
+      }),
+      setCreateNoteDialog: (createNoteDialog: {
+        isOpen: boolean;
+        type: NoteCreationType;
+      }) => ({ createNoteDialog }),
+      loadRecentNotes: async (limit = 20) => {
+        const recent = await repositories.notes.getRecentNotes(limit);
+        return { recentNotes: recent };
+      },
+      reorderTabs: async (tabs: Tab[]) => {
+        const updatedTabs = tabs.map((t, i) => ({ ...t, order: i }));
+        await repositories.tabs.updateOrder(updatedTabs);
+        return { tabs: updatedTabs };
+      },
+      directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
+        directoryBrowserDialog,
+      }),
+      note: async (note: Note, createTab: boolean = true) => {
+        await repositories.notes.update(note.id, note);
+        const state = get.state();
+        const existingTab = state.tabs.find((t) => t.noteId === note.id);
+        const existsInNotes = state.notes.some((n) => n.id === note.id);
+        const updatedNotes = existsInNotes
+          ? state.notes.map((n) => (n.id === note.id ? note : n))
+          : [...state.notes, note];
+        if (existingTab) {
+          return {
+            note: note,
+            notes: updatedNotes,
+            activeTabId: existingTab.id,
+          };
+        }
+        const newTab: Tab = {
+          id: note.id,
+          noteId: note.id,
+          project: "",
+          createdAt: new Date(),
+          order: state.tabs.length,
+        };
+        if (createTab) await repositories.tabs.save(newTab);
+        return {
+          note: note,
+          notes: updatedNotes,
+          activeTabId: createTab ? newTab.id : state.activeTabId,
+          tabs: createTab ? [...state.tabs, newTab] : state.tabs,
+        };
+      },
+      addTab: async (noteId: string) => {
+        const currentTabs = get.state().tabs;
+        const existingTab = currentTabs.find((t) => t.noteId === noteId);
+        if (existingTab) {
+          return { activeTabId: existingTab.id };
+        }
+        const newTab: Tab = {
+          id: crypto.randomUUID(),
+          noteId,
+          project: "",
+          order: currentTabs.length,
+          createdAt: new Date(),
+        };
+        await repositories.tabs.save(newTab);
+        return {
+          tabs: [...currentTabs, newTab],
+          activeTabId: newTab.id,
+        };
+      },
+      removeTab: async (tabId: string) => {
+        const state = get.state();
+        const currentTabs = state.tabs;
+        const tab = currentTabs.find((t) => t.id === tabId);
+        if (tab && state.activeTabId === tabId && editorGlobalRef.current) {
+          CursorPositionStore.save(
+            tab.noteId,
+            editorGlobalRef.current.state.selection.anchor,
+            window.scrollY,
+          );
+        }
+        const newTabs = currentTabs.filter((t) => t.id !== tabId);
+        await repositories.tabs.delete(tabId);
+        let nextActiveTabId = get.state().activeTabId;
         if (newTabs.length === 0) {
           nextActiveTabId = null;
-        } else if (index < newTabs.length) {
-          nextActiveTabId = newTabs[index].id;
-        } else {
-          nextActiveTabId = newTabs[newTabs.length - 1].id;
+        } else if (nextActiveTabId === tabId) {
+          const index = currentTabs.findIndex((t) => t.id === tabId);
+          if (index < newTabs.length) {
+            nextActiveTabId = newTabs[index].id;
+          } else {
+            nextActiveTabId = newTabs[newTabs.length - 1].id;
+          }
         }
-      }
-      return {
-        tabs: newTabs,
-        activeTabId: nextActiveTabId,
-      };
-    },
-    theme: (theme: Toggle<string>) => {
-      const result =
-        typeof theme === "function" ? theme(get.state().theme) : theme;
-      if (result === "dark") document.documentElement.classList.add("dark");
-      if (result === "light") document.documentElement.classList.remove("dark");
-      return { theme: result };
-    },
-    selectNoteById: async (noteId: string) => {
-      const currentState = get.state();
-      if (currentState.note && editorGlobalRef.current) {
-        CursorPositionStore.save(
-          currentState.note.id,
-          editorGlobalRef.current.state.selection.anchor,
-          window.scrollY,
-        );
-      }
-      const fullNote = await repositories.notes.getOne(noteId);
-      if (!fullNote) return {};
-      const state = get.state();
-      const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
-      const existsInNotes = state.notes.some((n) => n.id === fullNote.id);
-      const updatedNotes = existsInNotes
-        ? state.notes.map((n) => (n.id === fullNote.id ? fullNote : n))
-        : [...state.notes, fullNote];
-      if (existingTab) {
+        return {
+          tabs: newTabs,
+          activeTabId: nextActiveTabId,
+          note: newTabs.length === 0 ? null : get.state().note,
+        };
+      },
+      theme: (theme: Toggle<string>) => {
+        const result =
+          typeof theme === "function" ? theme(get.state().theme) : theme;
+        if (result === "dark") document.documentElement.classList.add("dark");
+        if (result === "light")
+          document.documentElement.classList.remove("dark");
+        return { theme: result };
+      },
+      selectNoteById: async (noteId: string) => {
+        const currentState = get.state();
+        if (currentState.note && editorGlobalRef.current) {
+          CursorPositionStore.save(
+            currentState.note.id,
+            editorGlobalRef.current.state.selection.anchor,
+            window.scrollY,
+          );
+        }
+        const fullNote = await repositories.notes.getOne(noteId);
+        if (!fullNote) return {};
+        const state = get.state();
+        const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
+        const existsInNotes = state.notes.some((n) => n.id === fullNote.id);
+        const updatedNotes = existsInNotes
+          ? state.notes.map((n) => (n.id === fullNote.id ? fullNote : n))
+          : [...state.notes, fullNote];
+        if (existingTab) {
+          return {
+            note: fullNote,
+            notes: updatedNotes,
+            activeTabId: existingTab.id,
+          };
+        }
+        const newTab: Tab = {
+          id: fullNote.id,
+          noteId: fullNote.id,
+          project: "",
+          createdAt: new Date(),
+          order: state.tabs.length,
+        };
+        await repositories.tabs.save(newTab);
         return {
           note: fullNote,
           notes: updatedNotes,
-          activeTabId: existingTab.id,
+          activeTabId: newTab.id,
+          tabs: [...state.tabs, newTab],
         };
-      }
-      const newTab: Tab = {
-        id: fullNote.id,
-        noteId: fullNote.id,
-        project: "",
-        createdAt: new Date(),
-        order: state.tabs.length,
-      };
-      await repositories.tabs.save(newTab);
-      return {
-        note: fullNote,
-        notes: updatedNotes,
-        activeTabId: newTab.id,
-        tabs: [...state.tabs, newTab],
-      };
-    },
-  }),
+      },
+    };
+  },
   {
     interceptor: [
       (state) => {

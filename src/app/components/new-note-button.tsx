@@ -7,11 +7,8 @@ import { getUniqueNoteTitle } from "../../lib/file-utils";
 export const NewNoteButton = () => {
   const [state, dispatch] = useGlobalStore();
 
-  const createNewNote = async () => {
-    const title = getUniqueNoteTitle("Untitled", state.notes);
-    const note = Note.new(title, "");
-    await repositories.notes.save(note);
-    dispatch.note(note);
+  const createNewNote = () => {
+    dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
   };
 
   useEffect(() => {

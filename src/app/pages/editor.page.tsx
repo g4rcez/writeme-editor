@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGlobalStore } from "../../store/global.store";
 import { useNavigate } from "react-router-dom";
+import { DashboardPage } from "./dashboard.page";
 
 export default function EditorPage() {
   const [state] = useGlobalStore();
@@ -12,12 +13,5 @@ export default function EditorPage() {
     }
   }, [state.note, navigate]);
 
-  return (
-    <div className="flex justify-center items-center p-8 w-full h-full">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">Welcome to Writeme</h2>
-        <p className="text-muted-foreground">Select a note to start writing.</p>
-      </div>
-    </div>
-  );
+  return <DashboardPage />;
 }

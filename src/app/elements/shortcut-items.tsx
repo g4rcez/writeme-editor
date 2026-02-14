@@ -1,8 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
-import {
-  useGlobalStore,
-} from "../../store/global.store";
+import { useGlobalStore } from "../../store/global.store";
 import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
 import {
@@ -16,7 +14,7 @@ import { db } from "../../store/repositories/dexie/dexie-db";
 // Shortcuts that require filesystem access (Electron only)
 const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e"];
 
-const noop = () => { };
+const noop = () => {};
 
 export enum Type {
   Shortcut = "shortcut",
@@ -107,9 +105,7 @@ export const useWritemeShortcuts = () => {
           action: async () => {
             const result = await window.electronAPI.fs.openFileOrDirectory();
             if (!result) return;
-
             if (result.isDirectory) {
-              // Migrate IndexedDB-only notes to filesystem
               const allNotes = await db.notes.toArray();
               const webOnlyNotes = allNotes.filter(
                 (n: any) => !n.filePath && n.content,
@@ -118,10 +114,7 @@ export const useWritemeShortcuts = () => {
               for (const noteData of webOnlyNotes) {
                 try {
                   const note = Note.parse(noteData);
-                  const filePath = generateNotePath(
-                    result.path,
-                    note.title,
-                  );
+                  const filePath = generateNotePath(result.path, note.title);
                   const uniquePath = await getUniqueFilePath(
                     filePath,
                     async (p) => {
