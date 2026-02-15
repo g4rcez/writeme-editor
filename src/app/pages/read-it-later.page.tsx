@@ -1,4 +1,4 @@
-import { createColumns, Table } from "@g4rcez/components";
+import { createColumns, Input, Table } from "@g4rcez/components";
 import { format } from "date-fns";
 import { Bookmark, ExternalLink, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -47,7 +47,7 @@ export default function ReadItLaterPage() {
     col.add("url", "URL", {
       Element: (props) => {
         if (!props.value) return "-";
-        const origin = new URL(props.value).host
+        const origin = new URL(props.value).host;
         return (
           <a
             target="_blank"
@@ -135,14 +135,14 @@ export default function ReadItLaterPage() {
           <Bookmark className="w-6 h-6" />
           Read It Later
         </h1>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 w-4 h-4 -translate-y-1/2 text-muted-foreground" />
-          <input
+        <div className="flex justify-between items-center">
+          <Input
+            required
             type="text"
-            placeholder="Search..."
             value={search}
+            placeholder="Search..."
             onChange={(e) => setSearch(e.target.value)}
-            className="py-2 pr-4 pl-9 w-full text-sm bg-transparent rounded-md border focus:ring-2 focus:outline-none border-input focus:ring-primary"
+            left={<Search size={16} className="text-muted-foreground" />}
           />
         </div>
       </div>

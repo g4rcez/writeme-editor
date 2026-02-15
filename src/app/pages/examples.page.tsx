@@ -1,3 +1,4 @@
+import { Card } from "@g4rcez/components";
 import { Link } from "react-router-dom";
 
 const examples = [
@@ -26,19 +27,45 @@ const examples = [
     to: "/examples/expr",
     description: "Safely evaluate mathematical expressions and functions.",
   },
+  {
+    title: ">>money",
+    to: "/examples/money",
+    description: "Convert between different currencies in real-time.",
+  },
+  {
+    title: ">>draw",
+    to: "/examples/draw",
+    description: "Create and insert Excalidraw diagrams directly.",
+  },
+  {
+    title: ">>table",
+    to: "/examples/table",
+    description: "Quickly insert tables with custom row and column sizes.",
+  },
+  {
+    title: ">>copy",
+    to: "/examples/copy",
+    description: "Automatically sync and paste your clipboard content.",
+  },
+  {
+    title: ">>endcopy",
+    to: "/examples/endcopy",
+    description: "Stop the active clipboard listening process.",
+  },
 ];
 
 export default function AboutPage() {
   return (
-    <ul className="grid grid-cols-1 gap-8 justify-start items-start w-full lg:grid-cols-3 h-fit">
+    <ul className="grid grid-cols-1 gap-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
       {examples.map((example) => (
-        <li key={example.title} className="block">
+        <li key={example.title}>
           <Link
             to={example.to}
-            className="flex flex-col gap-1 p-3 rounded-lg border transition-all duration-300 ease-linear hocus:text-primary hocus:border-primary bg-card-background border-card-border"
+            className="transition-all duration-300 ease-in group hover:text-primary"
           >
-            <h2 className="text-lg font-semibold">{example.title}</h2>
-            <p className="text-secondary">{example.description}</p>
+            <Card title={example.title} className="block">
+              <p className="group-hover:underline">{example.description}</p>
+            </Card>
           </Link>
         </li>
       ))}

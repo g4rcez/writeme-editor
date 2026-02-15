@@ -2,18 +2,17 @@ import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
 import { type ExtendedRegExpMatchArray } from "@tiptap/react";
 import { evaluate } from "mathjs";
-import { replacerRules } from "./replace-rules";
-import { ReplacerHandlerParams } from "./types";
 import {
-  ClipboardCloseListenerCommand,
-  ClipboardListenerCommand,
-} from "./clipboard-listener.command";
-import {
-  parseCurrencyExpression,
   convertCurrency,
   formatConversionResult,
   formatErrorMessage,
 } from "../../lib/currency";
+import {
+  ClipboardCloseListenerCommand,
+  ClipboardListenerCommand,
+} from "./clipboard-listener.command";
+import { replacerRules } from "./replace-rules";
+import { ReplacerHandlerParams } from "./types";
 
 export type ReplacerCommand = {
   find: RegExp;

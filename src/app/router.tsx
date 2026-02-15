@@ -13,6 +13,10 @@ const UuidExamplePage = lazy(() => import("./pages/examples/uuid.page"));
 const EvalExamplePage = lazy(() => import("./pages/examples/eval.page"));
 const LatexExamplePage = lazy(() => import("./pages/examples/latex.page"));
 const ExprExamplePage = lazy(() => import("./pages/examples/expr.page"));
+const MoneyExamplePage = lazy(() => import("./pages/examples/money.page"));
+const DrawExamplePage = lazy(() => import("./pages/examples/draw.page"));
+const TableExamplePage = lazy(() => import("./pages/examples/table.page"));
+const CopyExamplePage = lazy(() => import("./pages/examples/copy.page"));
 const TagsPage = lazy(() => import("./pages/tags.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
@@ -87,6 +91,22 @@ export const router = createRouter([
           {
             path: "expr",
             element: <ExprExamplePage />,
+          },
+          {
+            path: "money",
+            element: <MoneyExamplePage />,
+          },
+          {
+            path: "draw",
+            element: <DrawExamplePage />,
+          },
+          {
+            path: "table",
+            element: <TableExamplePage />,
+          },
+          {
+            path: "copy",
+            element: <CopyExamplePage />,
           },
         ],
       },

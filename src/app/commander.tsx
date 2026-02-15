@@ -230,6 +230,14 @@ export const Commander = () => {
               navigate("/about");
             },
           },
+          {
+            title: "Examples",
+            type: "shortcut",
+            action: (args) => {
+              args.setOpen(false);
+              navigate("/examples");
+            },
+          }
         ],
       },
     ];

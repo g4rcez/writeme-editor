@@ -1,15 +1,13 @@
-import { Plus } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useEffect } from "react";
-import { useGlobalStore, repositories } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { getUniqueNoteTitle } from "../../lib/file-utils";
+import { useGlobalStore } from "../../store/global.store";
+import { NavbarButton } from "./navbar-button";
 
 export const NewNoteButton = () => {
-  const [state, dispatch] = useGlobalStore();
+  const [, dispatch] = useGlobalStore();
 
-  const createNewNote = () => {
+  const createNewNote = () =>
     dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
-  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,13 +21,10 @@ export const NewNoteButton = () => {
   }, []);
 
   return (
-    <button
+    <NavbarButton
+      Icon={PlusIcon}
       title="New note (⌘N)"
       onClick={createNewNote}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md text-foreground/70 transition-all hover:text-foreground hover:bg-muted/30"
-    >
-      <Plus className="w-4 h-4" />
-      <span className="hidden sm:inline">New</span>
-    </button>
+    />
   );
 };

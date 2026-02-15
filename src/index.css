@@ -150,6 +150,12 @@ code {
 }
 
 input[data-combikeysbypass] {
-  outline: none;
-  border: none;
+  outline: transparent;
+  border: transparent;
+}
+
+input,
+input:focus {
+  border: transparent;
+  outline: transparent;
 }

@@ -1,7 +1,13 @@
 import { Tag, Tooltip } from "@g4rcez/components";
 import { ChevronDownIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import {
+  PropsWithChildren,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Dates } from "../../lib/dates";
 import { getReadingTime } from "../../lib/file-utils";
@@ -74,36 +80,21 @@ const Wrapper = (props: PropsWithChildren) => {
 };
 
 export default function NotePage() {
-  const { noteId } = useParams<{ noteId: string }>();
   const [state] = useGlobalStore();
+  const params = useParams<{ noteId: string }>();
   const navigate = useNavigate();
-  const isLoading = state.note === null;
-  const loadedNote = state.note;
+  const loadedNote = useDeferredValue(
+    state.note?.id === params.noteId ? state.note : null,
+  );
+  const isLoading = state.note === null || loadedNote === null;
 
   useEffect(() => {
-    globalDispatch.selectNoteById(noteId);
-  }, [noteId]);
+    globalDispatch.selectNoteById(params.noteId);
+  }, [params.noteId]);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">Loading...</div>
-    );
-  }
-
-  if (!loadedNote) {
-    return (
-      <div className="flex flex-col gap-4 justify-center items-center p-8">
-        <h2 className="text-xl">Note not found</h2>
-        <p className="text-muted-foreground">
-          The note you are looking for does not exist or has been deleted.
-        </p>
-        <button
-          onClick={() => navigate("/")}
-          className="py-2 px-4 rounded bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          Go to Home
-        </button>
-      </div>
     );
   }
 
