@@ -13,36 +13,38 @@ export const Markdown = Extension.create({
       breaks: true,
       linkify: true,
       tightLists: true,
+      inlineMath: false,
       bulletListMarker: "-",
       tightListClass: "tight",
-      transformCopiedText: false,
-      transformPastedText: false,
+      transformCopiedText: true,
+      transformPastedText: true,
     };
   },
   addCommands() {
     return {
       setContent:
         (content, options) =>
-          ({ editor, tr, dispatch }) => {
-            const doc = editor.storage.markdown.parser.parse(content);
-            if (dispatch) {
-              const transaction = tr
-                .setMeta("preventUpdate", true)
-                .replaceWith(0, tr.doc.content.size, doc);
-              if (options?.emitUpdate) {
-                transaction.setMeta("preventUpdate", false);
-              }
+        ({ editor, tr, dispatch }) => {
+          const doc = editor.storage.markdown.parser.parse(content);
+          console.log({ doc });
+          if (dispatch) {
+            const transaction = tr
+              .setMeta("preventUpdate", true)
+              .replaceWith(0, tr.doc.content.size, doc);
+            if (options?.emitUpdate) {
+              transaction.setMeta("preventUpdate", false);
             }
-            return true;
-          },
+          }
+          return true;
+        },
       insertContentAt:
-        (range, content, options) =>
-          ({ editor, tr, dispatch }) => {
-            const doc = editor.storage.markdown.parser.parse(content, {
-              inline: true,
-            });
-            return true;
-          },
+        (range, content) =>
+        ({ editor }) => {
+          const doc = editor.storage.markdown.parser.parse(content, {
+            inline: true,
+          });
+          return true;
+        },
     };
   },
   onBeforeCreate() {
