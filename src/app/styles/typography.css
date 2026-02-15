@@ -205,7 +205,6 @@
   display: inline-block;
 }
 
-
 .tiptap ol li::before {
   @apply inline-block;
   content: counters(section, ".") ". ";
@@ -214,4 +213,8 @@
 .tiptap ol li > ol {
   margin-left: 2rem;
   counter-reset: section;
+}
+
+.tiptap .tiptap-mathematics-render[data-type="inline-math"] {
+  @apply text-sm text-center rounded-lg p-1 px-2 mx-2;
 }

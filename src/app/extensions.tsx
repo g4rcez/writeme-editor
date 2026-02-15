@@ -4,7 +4,7 @@ import FileHandler from "@tiptap/extension-file-handler";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskList } from "@tiptap/extension-list";
-import MathExtension from "@tiptap/extension-mathematics";
+import BlockMath, { InlineMath } from "@tiptap/extension-mathematics";
 import Mention from "@tiptap/extension-mention";
 import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
@@ -35,7 +35,6 @@ export const createExtensions = (
     Frontmatter,
     StarterKit.configure({
       heading: false,
-      codeBlock: false,
       blockquote: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
@@ -121,7 +120,8 @@ export const createExtensions = (
         });
       },
     }),
-    MathExtension.configure({
+    InlineMath,
+    BlockMath.configure({
       blockOptions: {
         onClick: (node, pos) => {
           const latex = prompt("Math expression:", node.attrs.latex);

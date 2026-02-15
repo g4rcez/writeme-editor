@@ -1,11 +1,13 @@
 import { Excalidraw, restoreElements } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useEffect, useState } from "react";
+import { useGlobalStore } from "../../store/global.store";
 
 export const ExcalidrawCode = (props: {
   code: string;
   onChange?: (s: string) => void;
 }) => {
+  const [global] = useGlobalStore();
   const [state, setState] = useState<any | null>(null);
 
   useEffect(() => {
@@ -24,10 +26,9 @@ export const ExcalidrawCode = (props: {
   return (
     <div className="w-full min-w-full h-[500px]">
       <Excalidraw
-        theme="light"
         gridModeEnabled
-        autoFocus={false}
         initialData={state}
+        theme={global.theme}
         isCollaborating={false}
         onChange={(elements) => {
           if (elements.length === 0) return;

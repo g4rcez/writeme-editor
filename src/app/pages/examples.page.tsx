@@ -18,11 +18,6 @@ const examples = [
     description: "Execute JavaScript code directly in your editor.",
   },
   {
-    title: ">>latex",
-    to: "/examples/latex",
-    description: "Render beautiful mathematical formulas using LaTeX.",
-  },
-  {
     title: ">>expr",
     to: "/examples/expr",
     description: "Safely evaluate mathematical expressions and functions.",
@@ -31,11 +26,6 @@ const examples = [
     title: ">>money",
     to: "/examples/money",
     description: "Convert between different currencies in real-time.",
-  },
-  {
-    title: ">>draw",
-    to: "/examples/draw",
-    description: "Create and insert Excalidraw diagrams directly.",
   },
   {
     title: ">>table",
@@ -47,11 +37,6 @@ const examples = [
     to: "/examples/copy",
     description: "Automatically sync and paste your clipboard content.",
   },
-  {
-    title: ">>endcopy",
-    to: "/examples/endcopy",
-    description: "Stop the active clipboard listening process.",
-  },
 ];
 
 export default function AboutPage() {
@@ -59,8 +44,7 @@ export default function AboutPage() {
     <ul className="grid grid-cols-1 gap-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
       {examples.map((example) => (
         <li key={example.title}>
-          <Link
-            to={example.to}
+          <Link to={example.to}
             className="transition-all duration-300 ease-in group hover:text-primary"
           >
             <Card title={example.title} className="block">

@@ -12,7 +12,7 @@ export interface TaskItemOptions {
   };
 }
 
-export const inputRegex = /^\s*(\[([( |x])?\])\s$/;
+export const inputRegex = /^\s*([-*+])?\s*(\[([( |x])?\])\s$/;
 
 const parseChecked = (a: any): boolean => {
   if (typeof a === "object") return !a.checked;
@@ -204,6 +204,18 @@ export const TaskListItem = Node.create<TaskItemOptions>({
     return [
       wrappingInputRule({
         find: inputRegex,
+        type: this.type,
+        getAttributes: (match) => ({
+          checked: match[match.length - 1] === "x",
+        }),
+      }),
+    ];
+  },
+
+  addPasteRules() {
+    return [
+      wrappingInputRule({
+        find: /^\s*([-*+])?\s*(\[([( |x])?\])\s/,
         type: this.type,
         getAttributes: (match) => ({
           checked: match[match.length - 1] === "x",

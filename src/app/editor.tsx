@@ -101,12 +101,11 @@ const InnerEditor = (props: {
             content: selectedContent.content.toJSON(),
           };
 
-          const html = tiptapToMarkdown({ content, extensions });
-          const text = renderToMarkdown({ content, extensions });
+          const markdown = (editor.storage as any).markdown.getMarkdown();
           navigator.clipboard.write([
             new ClipboardItem({
-              "text/html": new Blob([html], { type: "text/html" }),
-              "text/plain": new Blob([text], { type: "text/plain" }),
+              "text/html": new Blob([tiptapToMarkdown({ content, extensions })], { type: "text/html" }),
+              "text/plain": new Blob([markdown], { type: "text/plain" }),
             }),
           ]);
           event.preventDefault();
