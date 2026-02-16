@@ -36,7 +36,7 @@ const Wrapper = (props: PropsWithChildren) => {
               <a
                 href={`#${h.id}`}
                 style={{ marginLeft: level === 1 ? 0 : `${level * 1}rem` }}
-                className="transition-colors duration-300 ease-linear cursor-pointer hover:underline text-secondary hover:text-primary-hover"
+                className="transition-colors duration-300 ease-linear cursor-pointer hover:underline text-primary hover:text-primary-hover"
               >
                 {h.innerText}
               </a>
