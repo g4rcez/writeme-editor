@@ -23,7 +23,7 @@ import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 
-const noop = () => { };
+const noop = () => {};
 
 const redirectOnEmptyTabs = (path: string, tabs: any[]) => {
   if (tabs.length === 0) {
@@ -42,7 +42,7 @@ export const RootLayout = () => {
   useEffect(() => {
     const pathToRedirect = redirectOnEmptyTabs(location.pathname, state.tabs);
     if (pathToRedirect) {
-      return void navigate(pathToRedirect);
+      // return void navigate(pathToRedirect);
     }
   }, [location, state.tabs.length]);
 
@@ -70,22 +70,22 @@ export const RootLayout = () => {
       const cleanup = !window.electronAPI?.onQuicknoteOpen
         ? noop
         : window.electronAPI.onQuicknoteOpen(async () => {
-          const today = new Date();
-          const existing = await repositories.notes.getQuicknoteByDate(today);
-          if (existing) {
-            globalDispatch.selectNoteById(existing.id);
-            navigate(`/quicknote/${existing.id}`);
-          } else {
-            const quicknote = Note.new(
-              `${Dates.yearMonthDay(today)}_quick_note`,
-              "",
-              "quick",
-            );
-            await repositories.notes.save(quicknote);
-            globalDispatch.selectNoteById(quicknote.id);
-            navigate(`/quicknote/${quicknote.id}`);
-          }
-        });
+            const today = new Date();
+            const existing = await repositories.notes.getQuicknoteByDate(today);
+            if (existing) {
+              globalDispatch.selectNoteById(existing.id);
+              navigate(`/quicknote/${existing.id}`);
+            } else {
+              const quicknote = Note.new(
+                `${Dates.yearMonthDay(today)}_quick_note`,
+                "",
+                "quick",
+              );
+              await repositories.notes.save(quicknote);
+              globalDispatch.selectNoteById(quicknote.id);
+              navigate(`/quicknote/${quicknote.id}`);
+            }
+          });
 
       window.addEventListener("keydown", handleKeyDown, opts);
       window.addEventListener("beforeunload", handleBeforeUnload, opts);

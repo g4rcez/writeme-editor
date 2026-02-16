@@ -1,3 +1,4 @@
+import { parse as mdParser } from "marked";
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
@@ -25,6 +26,7 @@ import { Note } from "../store/note";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
+import { Node, Fragment as ProsemirrorFragment } from "@tiptap/pm/model";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -69,6 +71,7 @@ const InnerEditor = (props: {
   note?: Note;
   id: string;
   readonly?: boolean;
+  onPasteRawText?: (text: string) => string;
 }) => {
   const [state] = useGlobalStore();
 
@@ -85,13 +88,50 @@ const InnerEditor = (props: {
     enableContentCheck: true,
     enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
+    parseOptions: { preserveWhitespace: "full" },
     onCreate: ({ editor: currentEditor }) => {
       try {
         return void migrateMathStrings(currentEditor);
       } catch (e) {}
     },
     editorProps: {
-      handlePaste: () => false,
+      handlePaste(view, event, slice) {
+        const clip = event.clipboardData;
+        if (!clip) return;
+        try {
+          const raw = event.clipboardData?.getData("text/plain");
+          const html = mdParser(raw || "", {
+            gfm: true,
+            async: false,
+            breaks: true,
+            silent: false,
+          });
+          event.clipboardData.setData("text/plain", "");
+          event.clipboardData.setData("text/html", html);
+        } catch (e) {
+          console.log(e);
+        }
+        return false;
+      },
+      // handlePaste(view, event, slice) {
+      //   const schema = view.state.schema;
+      //   // Convert content to blocks data model
+      //   const rawContent = event.clipboardData?.getData("text/plain");
+      //   // Use `const rawContent = event.clipboardData?.getData('text/html')` if you'd rather deal with HTML
+      //   // Build TipTap JSON content: import type { JSONContent } from '@tiptap/react'
+      //   const content = someDeserializeFunc(rawContent); // i.e. [{ type: 'heading', content: [] }]
+      //   // Convert JSON content to ProseMirror nodes and apply them in a transaction
+      //   const nodes = content.map((c) => Node.fromJSON(schema, c));
+      //   const fragment = Fragment.fromArray(nodes);
+      //   const pastedSlice = new Slice(fragment, slice.openStart, slice.openEnd);
+      //   const pasteTr = view.state.tr.replaceRange(
+      //     view.state.selection.from,
+      //     view.state.selection.to,
+      //     pastedSlice,
+      //   );
+      //   view.updateState(view.state.apply(pasteTr));
+      //   return true;
+      // },
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
           const { from, to } = view.state.selection;
@@ -104,7 +144,10 @@ const InnerEditor = (props: {
           const markdown = (editor.storage as any).markdown.getMarkdown();
           navigator.clipboard.write([
             new ClipboardItem({
-              "text/html": new Blob([tiptapToMarkdown({ content, extensions })], { type: "text/html" }),
+              "text/html": new Blob(
+                [tiptapToMarkdown({ content, extensions })],
+                { type: "text/html" },
+              ),
               "text/plain": new Blob([markdown], { type: "text/plain" }),
             }),
           ]);
@@ -127,8 +170,9 @@ const InnerEditor = (props: {
       saveTimeout = setTimeout(async () => {
         try {
           const html = (editor.storage as any).markdown.getMarkdown();
-          props.note.setContent(html);
-          await repositories.notes.update(props.note.id, props.note);
+          const note = Note.parse(props.note);
+          note.setContent(html);
+          await repositories.notes.update(note.id, note);
         } catch (error) {
           console.error("Failed to save document:", error);
         }
@@ -138,8 +182,9 @@ const InnerEditor = (props: {
       clearTimeout(saveTimeout);
       try {
         const html = (editor.storage as any).markdown.getMarkdown();
-        props.note.setContent(html);
-        repositories.notes.update(props.note.id, props.note);
+        const note = Note.parse(props.note);
+        note.setContent(html);
+        repositories.notes.update(note.id, note);
       } catch (error) {
         console.warn("Failed to perform final save on unmount:", error);
       }
@@ -183,6 +228,7 @@ export const Editor = (props: {
   content: string;
   note?: Note;
   readonly?: boolean;
+  onPasteRawText?: (text: string) => string;
 }) => {
   const id = useMemo(() => props.note?.id || uuid(), [props.note]);
   const [content, setContent] = useState<null | string>(props.content);
@@ -203,6 +249,7 @@ export const Editor = (props: {
           note={props.note}
           key={props.note?.id}
           readonly={props.readonly}
+          onPasteRawText={props.onPasteRawText}
         />
       )}
     </Fragment>

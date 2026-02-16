@@ -1,16 +1,12 @@
 import { clsx } from "clsx";
 import { FileText, XIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useGlobalStore } from "../../store/global.store";
-import { Tab } from "../../store/repositories/dexie/dexie-db";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
-  const handleTabClick = (tab: Tab) => navigate(`/note/${tab.noteId}`);
 
   const handleCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
@@ -43,18 +39,18 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex overflow-x-auto fixed z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate backdrop-blur-sm scrollbar-none"
+      className="flex overflow-x-auto sticky z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate backdrop-blur-sm scrollbar-none"
     >
       {state.tabs.map((tab) => {
         const note = state.notes.find((n) => n.id === tab.noteId);
         const isActive = state.activeTabId === tab.id;
         const title = note?.title || "Untitled";
         return (
-          <div
+          <Link
             key={tab.id}
             data-tab-id={tab.id}
             title={note?.filePath || title}
-            onClick={() => handleTabClick(tab)}
+            to={tab.noteId ? `/note/${tab.noteId}` : "#"}
             onMouseDown={(e) => handleMiddleClick(e, tab.id)}
             className={clsx(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
@@ -74,7 +70,7 @@ export const TabsBar: React.FC = () => {
             {isActive && (
               <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />
             )}
-          </div>
+          </Link>
         );
       })}
     </div>

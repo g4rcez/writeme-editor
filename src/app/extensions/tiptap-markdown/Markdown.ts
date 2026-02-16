@@ -3,6 +3,7 @@ import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
 import { MarkdownParser } from "./parse/MarkdownParser";
 import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
+import { safeMarkdown } from "../../../lib/encoding";
 
 export const Markdown = Extension.create({
   name: "markdown",
@@ -18,6 +19,9 @@ export const Markdown = Extension.create({
       tightListClass: "tight",
       transformCopiedText: true,
       transformPastedText: true,
+      onBeforePaste: (text: string) => {
+        return safeMarkdown(text);
+      },
     };
   },
   addCommands() {
@@ -26,7 +30,6 @@ export const Markdown = Extension.create({
         (content, options) =>
         ({ editor, tr, dispatch }) => {
           const doc = editor.storage.markdown.parser.parse(content);
-          console.log({ doc });
           if (dispatch) {
             const transaction = tr
               .setMeta("preventUpdate", true)
@@ -38,7 +41,7 @@ export const Markdown = Extension.create({
           return true;
         },
       insertContentAt:
-        (range, content) =>
+        (_, content) =>
         ({ editor }) => {
           const doc = editor.storage.markdown.parser.parse(content, {
             inline: true,
@@ -76,6 +79,7 @@ export const Markdown = Extension.create({
       MarkdownClipboard.configure({
         transformPastedText: this.options.transformPastedText,
         transformCopiedText: this.options.transformCopiedText,
+        onBeforePaste: this.options.onBeforePaste,
       }),
     ];
   },

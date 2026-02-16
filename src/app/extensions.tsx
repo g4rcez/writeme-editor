@@ -1,6 +1,11 @@
-import { AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
+import {
+  AnyExtension,
+  nodeInputRule,
+  PasteRule
+} from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
+import { Heading } from "@tiptap/extension-heading";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskList } from "@tiptap/extension-list";
@@ -10,6 +15,7 @@ import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
+import { UniqueID } from "@tiptap/extension-unique-id";
 import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
@@ -25,8 +31,44 @@ import { TaskListItem } from "./elements/task-list-item";
 import { Hashtag } from "./extensions/hashtag";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
-import { UniqueID } from "@tiptap/extension-unique-id";
-import { Heading } from "@tiptap/extension-heading";
+
+function removeEmptyWrappers(element: Element): void {
+  const children = Array.from(element.children);
+  children.forEach((child) => removeEmptyWrappers(child));
+  children.forEach((child) => {
+    if (
+      (child.tagName === "SPAN" || child.tagName === "DIV") &&
+      !child.attributes.length
+    ) {
+      while (child.firstChild) {
+        element.insertBefore(child.firstChild, child);
+      }
+      element.removeChild(child);
+    }
+  });
+}
+
+export function cleanPastedHTML(html: string): string {
+  try {
+    const tempContainer = document.createElement("div");
+    tempContainer.innerHTML = html;
+    const elementsWithStyle = tempContainer.querySelectorAll("*[style]");
+    elementsWithStyle.forEach((el) => el.removeAttribute("style"));
+    const elementsWithClass = tempContainer.querySelectorAll("*[class]");
+    elementsWithClass.forEach((el) => el.removeAttribute("class"));
+    const elementsWithDataAttrs = tempContainer.querySelectorAll("*");
+    elementsWithDataAttrs.forEach((el) => {
+      Array.from(el.attributes)
+        .filter((attr) => attr.name.startsWith("data-"))
+        .forEach((attr) => el.removeAttribute(attr.name));
+    });
+    removeEmptyWrappers(tempContainer);
+    return tempContainer.innerHTML;
+  } catch (error) {
+    console.error("Error cleaning pasted HTML:", error);
+    return html;
+  }
+}
 
 export const createExtensions = (
   getCurrentTheme: () => BundledTheme,
@@ -39,6 +81,7 @@ export const createExtensions = (
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
+    ,
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
     UniqueID.configure({ types: ["heading"] }),
     TableKit.configure({
@@ -62,16 +105,6 @@ export const createExtensions = (
       closeSingleQuote: false,
       openDoubleQuote: false,
       openSingleQuote: false,
-    }),
-    Markdown.configure({
-      html: true,
-      breaks: true,
-      linkify: true,
-      tightLists: true,
-      bulletListMarker: "-",
-      tightListClass: "tight",
-      transformCopiedText: true,
-      transformPastedText: true,
     }),
     ShikiBlock.configure({
       getCurrentTheme,
@@ -232,5 +265,6 @@ export const createExtensions = (
         },
       },
     } as any),
+    Markdown,
   ];
 };

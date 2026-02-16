@@ -3,7 +3,7 @@ import { lazy } from "react";
 import { RootLayout } from "./root-layout";
 import { isElectron } from "../lib/is-electron";
 
-const EditorPage = lazy(() => import("./pages/editor.page"));
+const DashboardPage = lazy(() => import("./pages/dashboard.page"));
 const NotePage = lazy(() => import("./pages/note.page"));
 const QuicknotePage = lazy(() => import("./pages/quicknote.page"));
 const AboutPage = lazy(() => import("./pages/about.page"));
@@ -29,7 +29,7 @@ export const router = createRouter([
     children: [
       {
         index: true,
-        element: <EditorPage />,
+        element: <DashboardPage />,
       },
       {
         path: "note/:noteId",

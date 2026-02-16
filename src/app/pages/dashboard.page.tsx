@@ -26,17 +26,23 @@ const Section = (props: { title: string; items: Item[] }) => {
             return (
               <li
                 key={`item-section-${props.title}-${x.title}`}
-                className="flex gap-1 justify-between items-center w-full"
+                className="flex gap-1 justify-between items-baseline w-full"
               >
                 <Render
                   to={(x as any).href}
                   onClick={(x as any).action}
-                  className="flex gap-2 items-center text-left"
+                  className="flex gap-2 items-baseline text-left hover:text-primary transition-colors duration-300 ease-in-out"
                 >
-                  <x.Icon size={12} />
-                  {x.title}
+                  <div className="flex items-center justify-center size-5 flex-1">
+                    <x.Icon size={12} />
+                  </div>
+                  <p className="text-pretty whitespace-break-spaces max-w-md">
+                    {x.title}
+                  </p>
                 </Render>
-                {x.shortcut}
+                <span className="proportional-nums w-4 text-center">
+                  {x.shortcut}
+                </span>
               </li>
             );
           })}
@@ -89,37 +95,6 @@ export const DashboardPage = () => {
           }))}
         />
       </main>
-      {/* <div className="grid grid-cols-1 gap-4 w-full max-w-2xl sm:grid-cols-2"> */}
-      {/*   <button */}
-      {/*     onClick={createNewNote} */}
-      {/*     className="flex flex-col gap-4 justify-center items-center p-8 h-48 rounded-xl border shadow transition-all hover:shadow-md border-border bg-card text-card-foreground group hover:bg-muted/50 hover:scale-[1.02]" */}
-      {/*   > */}
-      {/*     <div className="p-4 rounded-full transition-colors bg-primary/10 text-primary group-hover:bg-primary/20"> */}
-      {/*       <Plus className="w-8 h-8" /> */}
-      {/*     </div> */}
-      {/*     <div className="text-center"> */}
-      {/*       <h3 className="text-lg font-semibold">Create New Note</h3> */}
-      {/*       <p className="mt-1 text-sm text-muted-foreground"> */}
-      {/*         Start writing a fresh idea */}
-      {/*       </p> */}
-      {/*     </div> */}
-      {/*   </button> */}
-      {/**/}
-      {/*   <Link */}
-      {/*     to="/read-it-later" */}
-      {/*     className="flex flex-col gap-4 justify-center items-center p-8 h-48 rounded-xl border shadow transition-all hover:shadow-md border-border bg-card text-card-foreground group hover:bg-muted/50 hover:scale-[1.02]" */}
-      {/*   > */}
-      {/*     <div className="p-4 rounded-full transition-colors bg-secondary text-secondary-foreground group-hover:bg-secondary/80"> */}
-      {/*       <BookmarkCheckIcon className="w-8 h-8" /> */}
-      {/*     </div> */}
-      {/*     <div className="text-center"> */}
-      {/*       <h3 className="text-lg font-semibold">Read It Later</h3> */}
-      {/*       <p className="mt-1 text-sm text-muted-foreground"> */}
-      {/*         Access your saved items */}
-      {/*       </p> */}
-      {/*     </div> */}
-      {/*   </Link> */}
-      {/* </div> */}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import ForceGraph2D from "react-force-graph-2d";
+import { useGlobalStore } from "../../store/global.store";
 
 interface GraphNode {
   id: string;
@@ -21,7 +22,35 @@ interface TagsGraphProps {
   onNodeClick: (node: GraphNode) => void;
 }
 
+const wrapText = (
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+) => {
+  const words = text.split(" ");
+  let line = "";
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + " ";
+    const metrics = context.measureText(testLine);
+    const testWidth = metrics.width;
+
+    if (testWidth > maxWidth && n > 0) {
+      context.fillText(line, x, y);
+      line = words[n] + " ";
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  context.fillText(line, x, y);
+};
+
 export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
+  const [state] = useGlobalStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
@@ -39,11 +68,13 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  const bgColor = "hsl(var(--floating-background))";
+  const bgColor = "hsl(var(--background))";
   const textColor = "hsl(var(--foreground))";
   const linkColor = "hsl(var(--foreground))";
-  const fileColor = "#0069A8";
-  const tagColor = "#7F22FE";
+  const fileColor =
+    state.theme === "dark" ? "hsla(215, 100%, 70%)" : "hsla(215, 100%, 70%)";
+  const tagColor =
+    state.theme === "dark" ? "hsla(35, 100%, 70%)" : "hsla(35, 100%, 70%)";
 
   return (
     <div ref={containerRef} className="w-full h-full">
@@ -51,7 +82,7 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
         linkWidth={2}
         enableNodeDrag
         autoPauseRedraw
-        nodeRelSize={6}
+        nodeRelSize={2000}
         nodeLabel="name"
         showPointerCursor
         cooldownTime={5000}
@@ -81,7 +112,9 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
           ctx.fill();
           if (globalScale > 1.5 || node.type === "tag") {
             ctx.fillStyle = textColor;
-            ctx.fillText(label, node.x, node.y + node.val + fontSize);
+            const y = node.y + node.val + fontSize;
+            // ctx.fillText(label, node.x, y, 200);
+            wrapText(ctx, label, node.x, y, 220, fontSize + 2.5);
           }
         }}
       />

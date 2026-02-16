@@ -133,24 +133,17 @@ export class NotesRepository implements Repository<Note> {
 
   async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await db.notes.get(id);
-
     if (!metadata) {
       return null;
     }
-
     const mode = getStorageMode();
-
-    // If we have a filePath and filesystem access, load content from file
     if (mode === "filesystem" && metadata.filePath) {
       const readResult = await window.electronAPI.fs.readFile(
         metadata.filePath,
       );
-
       if (readResult.success) {
-        // Check if file was modified externally
         const fileModified = new Date(readResult.lastModified);
         if (metadata.lastSynced && fileModified > metadata.lastSynced) {
-          // File changed externally - update sync timestamp
           metadata.lastSynced = fileModified;
           metadata.fileSize = readResult.fileSize;
           await db.notes.update(id, {
@@ -162,11 +155,9 @@ export class NotesRepository implements Repository<Note> {
       } else {
         console.warn(`File not found for note ${id}: ${metadata.filePath}`);
         console.warn("Error:", readResult.error);
-        // Fall through to check if content exists in IndexedDB
+        return null;
       }
     }
-
-    // IndexedDB mode or fallback: content should be in metadata
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
@@ -176,8 +167,6 @@ export class NotesRepository implements Repository<Note> {
    */
   async getAll(): Promise<Note[]> {
     const metadataList = await db.notes.toArray();
-
-    // Return notes with empty content - will be loaded on-demand
     return metadataList
       .map((metadata) => Note.parse({ ...metadata, content: "" }))
       .toSorted((a, b) => +b.updatedAt - +a.updatedAt);
@@ -188,11 +177,9 @@ export class NotesRepository implements Repository<Note> {
    */
   async getRecentNotes(limit?: number): Promise<Note[]> {
     let collection = db.notes.orderBy("updatedAt").reverse();
-
     if (limit) {
       collection = collection.limit(limit);
     }
-
     const metadataList = await collection.toArray();
 
     return metadataList.map((metadata) =>

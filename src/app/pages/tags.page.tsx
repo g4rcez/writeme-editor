@@ -76,7 +76,7 @@ export default function TagsPage() {
   }
 
   return (
-    <div className="w-full overflow-y-hidden h-full bg-background relative">
+    <div className="w-full overflow-y-hidden h-full relative">
       <div className="absolute top-4 right-8 z-10 bg-card-background/80 backdrop-blur p-2 rounded border border-card-border">
         <h1 className="text-lg font-bold">Tags Graph</h1>
         <p className="text-xs text-foreground/70">
