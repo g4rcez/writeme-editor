@@ -10,8 +10,9 @@ import {
   type ReactNodeViewProps,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
+import { Loader2, Wand2 } from "lucide-react";
 import mermaid from "mermaid";
-import { Fragment, useCallback, useEffect, useRef } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   type BundledLanguage,
   type BundledTheme,
@@ -25,6 +26,7 @@ import {
   updateNodeContent,
 } from "../../lib/editor-utils";
 import { globalState } from "../../store/global.store";
+import { canFormat, formatCode } from "./code-block-formatting";
 import { ExcalidrawCode } from "./excalidraw";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
@@ -370,6 +372,7 @@ const getAllLanguages = (): string[] => {
 const LanguageSelector = (props: ReactNodeViewProps) => {
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
+  const [isFormatting, setIsFormatting] = useState(false);
 
   const handleLanguageChange = (newLanguage: string) => {
     const { view, getPos } = props;
@@ -381,6 +384,21 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         language: newLanguage,
       }),
     );
+  };
+
+  const handleFormat = async () => {
+    if (!canFormat(language)) return;
+    setIsFormatting(true);
+    try {
+      const formatted = await formatCode(code, language);
+      if (formatted === code) return;
+      const pos = props.getPos();
+      if (typeof pos !== "number") return;
+      const targetNode = props.editor.state.doc.nodeAt(pos);
+      updateNodeContent(props.editor, targetNode, formatted);
+    } finally {
+      setIsFormatting(false);
+    }
   };
 
   const onChangeDraw = useCallback((nextState: any) => {
@@ -413,6 +431,24 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
                   </option>
                 ))}
               </select>
+              {canFormat(language) && (
+                <button
+                  onClick={handleFormat}
+                  disabled={isFormatting}
+                  className="p-1 rounded-md transition-colors hover:bg-muted"
+                  title="Format code"
+                  type="button"
+                >
+                  {isFormatting ? (
+                    <Loader2 className="animate-spin size-4" />
+                  ) : (
+                    <span className="flex gap-1 items-center text-sm">
+                      <Wand2 className="size-4" />
+                      Format
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
             <div className="text-xs text-foreground">
               {code.split("\n").length} lines - {code.length} characters
