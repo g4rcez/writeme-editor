@@ -3,7 +3,7 @@ import { shortcuts } from "../../lib/shortcuts";
 import { useGlobalStore } from "../../store/global.store";
 import { repositories } from "../../store/repositories";
 import { isElectron } from "../../lib/is-electron";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 import {
   createStandaloneNote,
   generateNotePath,
@@ -145,8 +145,7 @@ export const useWritemeShortcuts = () => {
                   console.error("Failed to migrate note:", noteData.title, err);
                 }
               }
-
-              await SettingsRepository.save({ directory: result.path });
+              await SettingsService.save({ directory: result.path });
               window.location.reload();
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);

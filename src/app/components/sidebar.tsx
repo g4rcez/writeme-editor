@@ -8,7 +8,7 @@ import { clsx } from "clsx";
 import { useUIStore } from "../../store/ui.store";
 import { useGlobalStore, repositories } from "../../store/global.store";
 import { Note } from "../../store/note";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
@@ -63,7 +63,7 @@ export const Sidebar = () => {
   const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
 
-  const settings = SettingsRepository.load();
+  const settings = SettingsService.load();
   const storageDir = settings.storageDirectory || "";
 
   useEffect(() => {

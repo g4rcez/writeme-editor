@@ -9,7 +9,7 @@ import {
 } from "../lib/file-utils";
 import { CommanderType, repositories, useGlobalStore } from "../store/global.store";
 import { Note } from "../store/note";
-import { SettingsRepository } from "../store/settings";
+import { SettingsService } from "../store/settings";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,

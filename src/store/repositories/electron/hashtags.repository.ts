@@ -1,38 +1,10 @@
-import { EntityBase } from "@/store/repository";
 import { Hashtag, IHashtagRepository } from "../entities/hashtag";
+import { BaseRepository } from "../base.repository";
+import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 
-export class HashtagsRepository implements IHashtagRepository {
-  async count(): Promise<number> {
-    return await window.electronAPI.db.count("hashtags");
-  }
-
-  async getOne(id: EntityBase["id"]): Promise<Hashtag | null> {
-    return (await window.electronAPI.db.get<Hashtag>("hashtags", id)) || null;
-  }
-
-  async update(id: EntityBase["id"], item: Hashtag): Promise<Hashtag> {
-    await window.electronAPI.db.save("hashtags", { ...item, id });
-    return item;
-  }
-
-  async getAll(query?: { limit?: number }): Promise<Hashtag[]> {
-    const all = await window.electronAPI.db.getAll<Hashtag>("hashtags");
-    if (query?.limit) {
-      return all.slice(0, query.limit);
-    }
-    return all;
-  }
-
-  async save(hashtag: Hashtag): Promise<Hashtag> {
-    await window.electronAPI.db.save("hashtags", hashtag);
-    return hashtag;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const existing = await this.getOne(id);
-    if (!existing) return false;
-    await window.electronAPI.db.delete("hashtags", id);
-    return true;
+export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
+  constructor() {
+    super(new ElectronStorageAdapter(), "hashtags");
   }
 
   async findByHashtag(tag: string): Promise<Hashtag[]> {

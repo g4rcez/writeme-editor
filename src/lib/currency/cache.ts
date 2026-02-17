@@ -1,28 +1,10 @@
-/**
- * Exchange rate cache manager
- * Stores exchange rates in localStorage with TTL support
- */
-
 import type { ExchangeRateData, CachedRates } from "./types";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
-/**
- * Cache key prefix for localStorage
- */
 const CACHE_KEY_PREFIX = "WRITEME_CURRENCY_RATES_";
 
-/**
- * Default cache duration (1 hour in milliseconds)
- */
 const DEFAULT_CACHE_DURATION = 60 * 60 * 1000;
 
-/**
- * Get cached exchange rates for a base currency
- * Returns null if cache miss or expired
- *
- * @param baseCurrency - The base currency code
- * @returns Cached rates or null if not found/expired
- */
 export function getCachedRates(baseCurrency: string): CachedRates | null {
   const cacheKey = buildCacheKey(baseCurrency);
 
@@ -31,25 +13,17 @@ export function getCachedRates(baseCurrency: string): CachedRates | null {
     if (!cached) {
       return null;
     }
-
     const parsedCache: CachedRates = JSON.parse(cached);
-
-    // Check if cache is still valid
     if (isCacheValid(parsedCache)) {
       return parsedCache;
     }
-
-    // Cache expired, remove it
     localStorage.removeItem(cacheKey);
     return null;
   } catch (error) {
     console.error("Error reading currency cache:", error);
-    // If cache is corrupted, remove it
     try {
       localStorage.removeItem(cacheKey);
-    } catch {
-      // Ignore cleanup errors
-    }
+    } catch {}
     return null;
   }
 }
@@ -80,10 +54,7 @@ export function setCachedRates(
     console.error("Error saving currency cache:", error);
 
     // If quota exceeded, try to clear old cache entries
-    if (
-      error instanceof Error &&
-      error.name === "QuotaExceededError"
-    ) {
+    if (error instanceof Error && error.name === "QuotaExceededError") {
       clearOldCacheEntries();
       // Try again after cleanup
       try {
@@ -113,9 +84,7 @@ export function isCacheValid(cached: CachedRates): boolean {
  * @param baseCurrency - The base currency code
  * @returns Stale cached rates or null if not found
  */
-export function getStaleCachedRates(
-  baseCurrency: string,
-): CachedRates | null {
+export function getStaleCachedRates(baseCurrency: string): CachedRates | null {
   const cacheKey = buildCacheKey(baseCurrency);
 
   try {
@@ -207,8 +176,7 @@ function clearOldCacheEntries(): void {
  * @returns Cache key for localStorage
  */
 function buildCacheKey(baseCurrency: string): string {
-  const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  return `${CACHE_KEY_PREFIX}${baseCurrency}_${date}`;
+  return `${CACHE_KEY_PREFIX}${baseCurrency}`;
 }
 
 /**
@@ -219,7 +187,7 @@ function buildCacheKey(baseCurrency: string): string {
  */
 function getCacheDuration(): number {
   try {
-    const settings = SettingsRepository.load();
+    const settings = SettingsService.load();
     return settings.currency?.cacheDuration || DEFAULT_CACHE_DURATION;
   } catch {
     return DEFAULT_CACHE_DURATION;

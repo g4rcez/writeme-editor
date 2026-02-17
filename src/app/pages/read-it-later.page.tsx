@@ -1,17 +1,19 @@
 import { createColumns, Input, Table } from "@g4rcez/components";
 import { format } from "date-fns";
 import { Bookmark, ExternalLink, Search, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { repositories } from "../../store/global.store";
-import { Note } from "../../store/note";
+import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
 
 export default function ReadItLaterPage() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const {
+    loading,
+    search,
+    setSearch,
+    filteredNotes,
+    handleDelete,
+  } = useNoteList({ noteType: "read-it-later" });
 
-  const cols = createColumns<Note>((col) => {
+  const cols = createColumns<NoteWithTags>((col) => {
     col.add("title", "Title", {
       Element: (props) => (
         <Link
@@ -79,46 +81,42 @@ export default function ReadItLaterPage() {
     });
   });
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const allNotes = await repositories.notes.getAll();
-        const readItLaterNotes = allNotes.filter(
-          (n) => n.noteType === "read-it-later",
-        );
-        setNotes(readItLaterNotes);
-      } catch (error) {
-        console.error("Failed to load read-it-later notes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center w-full h-full">
+        Loading...
+      </div>
+    );
+  }
 
-    loadData();
-  }, []);
-
-  const filteredNotes = useMemo(() => {
-    let result = notes;
-    if (search) {
-      const lower = search.toLowerCase();
-      result = result.filter(
-        (n) =>
-          n.title.toLowerCase().includes(lower) ||
-          (n.url && n.url.toLowerCase().includes(lower)),
-      );
-    }
-    // Implement sort by date desc
-    return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [notes, search]);
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (confirm("Are you sure you want to delete this note?")) {
-      await repositories.notes.delete(id);
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-    }
-  };
+  return (
+    <div className="flex-col py-6 mx-auto max-w-safe bg-background">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="flex gap-2 items-center text-2xl font-bold">
+          <Bookmark className="w-6 h-6" />
+          Read It Later
+        </h1>
+        <div className="flex justify-between items-center">
+          <Input
+            required
+            type="text"
+            value={search}
+            placeholder="Search..."
+            onChange={(e) => setSearch(e.target.value)}
+            left={<Search size={16} className="text-muted-foreground" />}
+          />
+        </div>
+      </div>
+      <Table
+        cols={cols}
+        reference="id"
+        useControl={false}
+        name="read-it-later"
+        rows={filteredNotes}
+      />
+    </div>
+  );
+}
 
   if (loading) {
     return (

@@ -1,5 +1,5 @@
 import { repositories } from "../store/global.store";
-import { SettingsRepository } from "../store/settings";
+import { SettingsService } from "../store/settings";
 import { generateNotePath, getUniqueFilePath } from "./file-utils";
 
 /**
@@ -32,7 +32,7 @@ export class MigrationService {
   static async migrateAllNotes(
     onProgress?: (current: number, total: number) => void,
   ): Promise<{ success: number; failed: number; errors: string[] }> {
-    const settings = SettingsRepository.load();
+    const settings = SettingsService.load();
 
     if (!settings.directory) {
       throw new Error(

@@ -1,39 +1,12 @@
 import { EntityBase } from "@/store/repository";
-import { db } from "./dexie-db";
 import { ITabRepository, Tab } from "../entities/tab";
+import { BaseRepository } from "../base.repository";
+import { DexieStorageAdapter } from "../adapters/dexie.adapter";
+import { db } from "./dexie-db";
 
-export class TabsRepository implements ITabRepository {
-  async count(): Promise<number> {
-    return await db.tabs.count();
-  }
-
-  async getOne(id: EntityBase["id"]): Promise<Tab | null> {
-    return (await db.tabs.get(id)) || null;
-  }
-
-  async update(id: EntityBase["id"], item: Tab): Promise<Tab> {
-    await db.tabs.put(item, id);
-    return item;
-  }
-
-  async getAll(query?: { limit?: number }): Promise<Tab[]> {
-    let collection = db.tabs.orderBy("order");
-    if (query?.limit) {
-      collection = collection.limit(query.limit);
-    }
-    return await collection.toArray();
-  }
-
-  async save(tab: Tab): Promise<Tab> {
-    await db.tabs.put(tab, tab.id);
-    return tab;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const existing = await db.tabs.get(id);
-    if (!existing) return false;
-    await db.tabs.delete(id);
-    return true;
+export class TabsRepository extends BaseRepository<Tab> implements ITabRepository {
+  constructor() {
+    super(new DexieStorageAdapter(), "tabs", (a, b) => a.order - b.order);
   }
 
   async clear(): Promise<void> {

@@ -5,7 +5,7 @@ import { getDirname } from "../../lib/file-utils";
 import { globalState, useGlobalStore } from "../../store/global.store";
 import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 import type { TreeNode } from "../../types/tree";
 import { TreeView } from "./tree-view";
 
@@ -22,7 +22,7 @@ export const DirectoryBrowserDialog = () => {
 
   useEffect(() => {
     if (state.directoryBrowserDialog) {
-      const settings = SettingsRepository.load();
+      const settings = SettingsService.load();
       if (settings.directory) return void setStorageDir(settings.directory);
       window.electronAPI.env.getHome().then(setStorageDir);
     }
@@ -32,92 +32,82 @@ export const DirectoryBrowserDialog = () => {
     dispatch.directoryBrowserDialog(false);
   }, [dispatch]);
 
-  const handleFileSelect = useCallback(
-    async (node: TreeNode) => {
-      if (node.extension !== ".md") return;
-      try {
-        const result = await window.electronAPI.fs.readFile(node.path);
-        if (!result.success) {
-          console.error("Failed to read file:", result.error);
+  const handleFileSelect = async (node: TreeNode) => {
+    if (node.extension !== ".md") return;
+    try {
+      const result = await window.electronAPI.fs.readFile(node.path);
+      if (!result.success) {
+        console.error("Failed to read file:", result.error);
+        return;
+      }
+      const title = node.name.replace(/\.md$/, "");
+      const allNotes = await repositories.notes.getAll();
+      const existingNote = allNotes.find((n) => n.filePath === node.path);
+      if (existingNote) {
+        const fullNote = await repositories.notes.getOne(existingNote.id);
+        if (fullNote) {
+          dispatch.note(fullNote);
+          closeDialog();
           return;
         }
-        const title = node.name.replace(/\.md$/, "");
+      }
+      const newNote = Note.new(title, result.content);
+      newNote.filePath = node.path;
+      newNote.fileSize = result.fileSize;
+      newNote.lastSynced = new Date(result.lastModified);
+      await repositories.notes.save(newNote);
+      dispatch.note(newNote);
+      closeDialog();
+    } catch (error) {
+      console.error("Error opening file:", error);
+    }
+  };
+
+  const handleDelete = async (node: TreeNode): Promise<boolean> => {
+    const isDir = node.type === "directory";
+    try {
+      if (!isDir) {
         const allNotes = await repositories.notes.getAll();
         const existingNote = allNotes.find((n) => n.filePath === node.path);
+
         if (existingNote) {
-          const fullNote = await repositories.notes.getOne(existingNote.id);
-          if (fullNote) {
-            dispatch.note(fullNote);
-            closeDialog();
-            return;
-          }
-        }
-        const newNote = Note.new(title, result.content);
-        newNote.filePath = node.path;
-        newNote.fileSize = result.fileSize;
-        newNote.lastSynced = new Date(result.lastModified);
-        await repositories.notes.save(newNote);
-        dispatch.note(newNote);
-        closeDialog();
-      } catch (error) {
-        console.error("Error opening file:", error);
-      }
-    },
-    [dispatch, closeDialog],
-  );
-
-  const handleDelete = useCallback(
-    async (node: TreeNode): Promise<boolean> => {
-      const isDir = node.type === "directory";
-
-      try {
-        if (!isDir) {
-          const allNotes = await repositories.notes.getAll();
-          const existingNote = allNotes.find((n) => n.filePath === node.path);
-
-          if (existingNote) {
-            const deleted = await repositories.notes.delete(existingNote.id);
-            if (deleted) {
-              const tabs = globalState().tabs;
-              const tab = tabs.find((t) => t.noteId === existingNote.id);
-              if (tab) await dispatch.removeTab(tab.id);
-              refreshView();
-            }
-            return deleted;
-          }
-        } else {
-          // If it's a directory, we might want to cleanup multiple notes from DB
-          const allNotes = await repositories.notes.getAll();
-          const notesInDir = allNotes.filter((n) =>
-            n.filePath?.startsWith(node.path + "/"),
-          );
-          for (const note of notesInDir) {
-            await repositories.notes.delete(note.id);
-            const tabs = globalState().tabs;
-            const tab = tabs.find((t) => t.noteId === note.id);
+          const deleted = await repositories.notes.delete(existingNote.id);
+          if (deleted) {
+            const tabs = state.tabs;
+            const tab = tabs.find((t) => t.noteId === existingNote.id);
             if (tab) await dispatch.removeTab(tab.id);
+            refreshView();
           }
+          return deleted;
         }
-
-        // Delete from filesystem (handles both files and recursive dirs now)
-        const result = await window.electronAPI.fs.deleteFile(node.path);
-        if (
-          result === true ||
-          (typeof result === "object" && result && result.success)
-        ) {
-          refreshView();
-          return true;
-        } else {
-          console.error("Failed to delete:", result?.error || "Unknown error");
-          return false;
+      } else {
+        const allNotes = await repositories.notes.getAll();
+        const notesInDir = allNotes.filter((n) =>
+          n.filePath?.startsWith(node.path + "/"),
+        );
+        for (const note of notesInDir) {
+          await repositories.notes.delete(note.id);
+          const tabs = globalState().tabs;
+          const tab = tabs.find((t) => t.noteId === note.id);
+          if (tab) await dispatch.removeTab(tab.id);
         }
-      } catch (error) {
-        console.error("Error deleting:", error);
+      }
+      const result = await window.electronAPI.fs.deleteFile(node.path);
+      if (
+        result === true ||
+        (typeof result === "object" && result && result.success)
+      ) {
+        refreshView();
+        return true;
+      } else {
+        console.error("Failed to delete:", result?.error || "Unknown error");
         return false;
       }
-    },
-    [refreshView],
-  );
+    } catch (error) {
+      console.error("Error deleting:", error);
+      return false;
+    }
+  };
 
   const handleCreateFile = useCallback(async () => {
     if (!storageDir) return;

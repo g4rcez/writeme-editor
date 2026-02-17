@@ -10,21 +10,21 @@ import {
 import { SaveIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { globalDispatch } from "../../store/global.store";
-import { AppSettings, SettingsRepository } from "../../store/settings";
+import { AppSettings, SettingsService } from "../../store/settings";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setSettings(SettingsRepository.load());
+    setSettings(SettingsService.load());
   }, []);
 
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
     try {
-      await SettingsRepository.save(settings);
+      await SettingsService.save(settings);
       alert("Settings saved successfully!");
     } catch (error) {
       console.error("Failed to save settings:", error);

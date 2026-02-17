@@ -369,6 +369,77 @@ const getAllLanguages = (): string[] => {
   return allLanguages.sort();
 };
 
+const CodeBlockHeader = ({ 
+  language, 
+  code, 
+  handleLanguageChange, 
+  handleFormat, 
+  isFormatting 
+}: { 
+  language: string; 
+  code: string; 
+  handleLanguageChange: (lang: string) => void; 
+  handleFormat: () => void; 
+  isFormatting: boolean; 
+}) => {
+  return (
+    <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
+      <div className="flex gap-2 items-center">
+        <select
+          value={language}
+          aria-description="Language"
+          onChange={(e) => handleLanguageChange(e.target.value)}
+          className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
+        >
+          <option value="plaintext">Plain Text</option>
+          {getAllLanguages().map((lang) => (
+            <option key={lang} value={lang}>
+              {lang.charAt(0).toUpperCase() + lang.slice(1)}
+            </option>
+          ))}
+        </select>
+        {canFormat(language) && (
+          <button
+            onClick={handleFormat}
+            disabled={isFormatting}
+            className="p-1 rounded-md transition-colors hover:bg-muted"
+            title="Format code"
+            type="button"
+          >
+            {isFormatting ? (
+              <Loader2 className="animate-spin size-4" />
+            ) : (
+              <span className="flex gap-1 items-center text-sm">
+                <Wand2 className="size-4" />
+                Format
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+      <div className="text-xs text-foreground">
+        {code.split("\n").length} lines - {code.length} characters
+      </div>
+    </div>
+  );
+};
+
+const CodeBlockAddons = ({ language, code }: { language: string; code: string }) => {
+  if (language === "math" && code) {
+    return <MathBlock code={code} />;
+  }
+  if (language === "mermaid" && code) {
+    return (
+      <div className="px-4 pb-4">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Mermaid chart={code} />
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const LanguageSelector = (props: ReactNodeViewProps) => {
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
@@ -416,44 +487,13 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         <ExcalidrawCode code={code} onChange={onChangeDraw} />
       ) : (
         <Fragment>
-          <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
-            <div className="flex gap-2 items-center">
-              <select
-                value={language}
-                aria-description="Language"
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
-              >
-                <option value="plaintext">Plain Text</option>
-                {getAllLanguages().map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                  </option>
-                ))}
-              </select>
-              {canFormat(language) && (
-                <button
-                  onClick={handleFormat}
-                  disabled={isFormatting}
-                  className="p-1 rounded-md transition-colors hover:bg-muted"
-                  title="Format code"
-                  type="button"
-                >
-                  {isFormatting ? (
-                    <Loader2 className="animate-spin size-4" />
-                  ) : (
-                    <span className="flex gap-1 items-center text-sm">
-                      <Wand2 className="size-4" />
-                      Format
-                    </span>
-                  )}
-                </button>
-              )}
-            </div>
-            <div className="text-xs text-foreground">
-              {code.split("\n").length} lines - {code.length} characters
-            </div>
-          </div>
+          <CodeBlockHeader 
+            language={language}
+            code={code}
+            handleLanguageChange={handleLanguageChange}
+            handleFormat={handleFormat}
+            isFormatting={isFormatting}
+          />
           <div className="flex">
             <div
               className="flex flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground bg-card-background border-card-border"
@@ -469,14 +509,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
               <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
             </div>
           </div>
-          {language === "math" && code && <MathBlock code={code} />}
-          {language === "mermaid" && code && (
-            <div className="px-4 pb-4">
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <Mermaid chart={code} />
-              </div>
-            </div>
-          )}
+          <CodeBlockAddons language={language} code={code} />
         </Fragment>
       )}
     </NodeViewWrapper>

@@ -72,6 +72,68 @@ export const useGlobalStore = createGlobalReducer(
       return { notes: mergedNotes as Note[] };
     };
 
+    const updateNoteInList = (note: Note) => {
+      const state = get.state();
+      const existsInNotes = state.notes.some((n) => n.id === note.id);
+      return existsInNotes
+        ? state.notes.map((n) => (n.id === note.id ? note : n))
+        : [...state.notes, note];
+    };
+
+    const createTab = (noteId: string, id?: string): Tab => {
+      const state = get.state();
+      const now = new Date();
+      return {
+        id: id || crypto.randomUUID(),
+        noteId,
+        project: "",
+        type: "tab",
+        createdAt: now,
+        updatedAt: now,
+        order: state.tabs.length,
+      };
+    };
+
+    const saveCursorPosition = (noteId: string) => {
+      if (editorGlobalRef.current) {
+        CursorPositionStore.save(
+          noteId,
+          editorGlobalRef.current.state.selection.anchor,
+          window.scrollY,
+        );
+      }
+    };
+
+    const selectOrAddTab = async (fullNote: Note, createTabIfMissing: boolean = true) => {
+      const state = get.state();
+      const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
+      const updatedNotes = updateNoteInList(fullNote);
+
+      if (existingTab) {
+        return {
+          note: fullNote,
+          notes: updatedNotes,
+          activeTabId: existingTab.id,
+        };
+      }
+
+      if (!createTabIfMissing) {
+        return {
+          note: fullNote,
+          notes: updatedNotes,
+        };
+      }
+
+      const newTab = createTab(fullNote.id, fullNote.id);
+      await repositories.tabs.save(newTab);
+      return {
+        note: fullNote,
+        notes: updatedNotes,
+        activeTabId: newTab.id,
+        tabs: [...state.tabs, newTab],
+      };
+    };
+
     return {
       notes: setNotes,
       tabs: (tabs: Tab[]) => ({ tabs }),
@@ -108,40 +170,14 @@ export const useGlobalStore = createGlobalReducer(
       directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
         directoryBrowserDialog,
       }),
-      note: async (note: Note, createTab: boolean = true) => {
+      note: async (note: Note, createTabIfMissing: boolean = true) => {
         try {
           await repositories.notes.update(note.id, note);
         } catch (error: any) {
           uiDispatch.setError(error.message || "Failed to update note");
           return {};
         }
-        const state = get.state();
-        const existingTab = state.tabs.find((t) => t.noteId === note.id);
-        const existsInNotes = state.notes.some((n) => n.id === note.id);
-        const updatedNotes = existsInNotes
-          ? state.notes.map((n) => (n.id === note.id ? note : n))
-          : [...state.notes, note];
-        if (existingTab) {
-          return {
-            note: note,
-            notes: updatedNotes,
-            activeTabId: existingTab.id,
-          };
-        }
-        const newTab: Tab = {
-          id: note.id,
-          noteId: note.id,
-          project: "",
-          createdAt: new Date(),
-          order: state.tabs.length,
-        };
-        if (createTab) await repositories.tabs.save(newTab);
-        return {
-          note: note,
-          notes: updatedNotes,
-          activeTabId: createTab ? newTab.id : state.activeTabId,
-          tabs: createTab ? [...state.tabs, newTab] : state.tabs,
-        };
+        return selectOrAddTab(note, createTabIfMissing);
       },
       addTab: async (noteId: string) => {
         const currentTabs = get.state().tabs;
@@ -149,13 +185,7 @@ export const useGlobalStore = createGlobalReducer(
         if (existingTab) {
           return { activeTabId: existingTab.id };
         }
-        const newTab: Tab = {
-          id: crypto.randomUUID(),
-          noteId,
-          project: "",
-          order: currentTabs.length,
-          createdAt: new Date(),
-        };
+        const newTab = createTab(noteId);
         await repositories.tabs.save(newTab);
         return {
           tabs: [...currentTabs, newTab],
@@ -166,12 +196,8 @@ export const useGlobalStore = createGlobalReducer(
         const state = get.state();
         const currentTabs = state.tabs;
         const tab = currentTabs.find((t) => t.id === tabId);
-        if (tab && state.activeTabId === tabId && editorGlobalRef.current) {
-          CursorPositionStore.save(
-            tab.noteId,
-            editorGlobalRef.current.state.selection.anchor,
-            window.scrollY,
-          );
+        if (tab && state.activeTabId === tabId) {
+          saveCursorPosition(tab.noteId);
         }
         const newTabs = currentTabs.filter((t) => t.id !== tabId);
         await repositories.tabs.delete(tabId);
@@ -202,12 +228,8 @@ export const useGlobalStore = createGlobalReducer(
       },
       selectNoteById: async (noteId: string) => {
         const currentState = get.state();
-        if (currentState.note && editorGlobalRef.current) {
-          CursorPositionStore.save(
-            currentState.note.id,
-            editorGlobalRef.current.state.selection.anchor,
-            window.scrollY,
-          );
+        if (currentState.note) {
+          saveCursorPosition(currentState.note.id);
         }
         let fullNote: Note | null = null;
         try {
@@ -217,37 +239,12 @@ export const useGlobalStore = createGlobalReducer(
           return {};
         }
         if (!fullNote) return {};
-        const state = get.state();
-        const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
-        const existsInNotes = state.notes.some((n) => n.id === fullNote.id);
-        const updatedNotes = existsInNotes
-          ? state.notes.map((n) => (n.id === fullNote.id ? fullNote : n))
-          : [...state.notes, fullNote];
-        if (existingTab) {
-          return {
-            note: fullNote,
-            notes: updatedNotes,
-            activeTabId: existingTab.id,
-          };
-        }
-        const newTab: Tab = {
-          id: fullNote.id,
-          noteId: fullNote.id,
-          project: "",
-          createdAt: new Date(),
-          order: state.tabs.length,
-        };
-        await repositories.tabs.save(newTab);
-        return {
-          note: fullNote,
-          notes: updatedNotes,
-          activeTabId: newTab.id,
-          tabs: [...state.tabs, newTab],
-        };
+        return selectOrAddTab(fullNote);
       },
     } as const;
   },
 );
+
 
 export const globalState = useGlobalStore.getState;
 

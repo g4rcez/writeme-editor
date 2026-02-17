@@ -1,9 +1,6 @@
-import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
 import { PropsWithChildren } from "react";
 import { useUIStore, contentWidthClasses } from "../../store/ui.store";
-
-const cn = (...inputs: Parameters<typeof clsx>) => twMerge(clsx(inputs));
+import { css } from "@g4rcez/components";
 
 type LayoutProps = PropsWithChildren<{
   className?: string;
@@ -16,7 +13,7 @@ export const Layout = ({ children, className, ignoreWidth }: LayoutProps) => {
 
   return (
     <div
-      className={cn(
+      className={css(
         "mx-auto w-full transition-all duration-300",
         widthClass,
         className

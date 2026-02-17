@@ -7,7 +7,7 @@ import {
 import { CommanderType, useGlobalStore } from "../../store/global.store";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
 type Item = { title: string; Icon: LucideIcon; shortcut: string } & (
   | { action: Function }
@@ -59,7 +59,7 @@ export const DashboardPage = () => {
   const [cwd, setCwd] = useState<string | null>(null);
 
   useEffect(() => {
-    const settings = SettingsRepository.get();
+    const settings = SettingsService.get();
     if (settings.directory) {
       setCwd(settings.directory);
     } else {

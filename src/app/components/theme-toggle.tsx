@@ -1,6 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import { useGlobalStore } from "../../store/global.store";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
 export const ThemeToggle = () => {
   const [state, dispatch] = useGlobalStore();
@@ -9,7 +9,7 @@ export const ThemeToggle = () => {
   const toggleTheme = async () => {
     const nextTheme = isDark ? "light" : "dark";
     dispatch.theme(nextTheme);
-    await SettingsRepository.save({ theme: nextTheme });
+    await SettingsService.save({ theme: nextTheme });
   };
 
   return (

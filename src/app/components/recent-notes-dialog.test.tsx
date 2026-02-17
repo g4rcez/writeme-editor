@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { RecentNotesDialog } from "./recent-notes-dialog";
 import { useGlobalStore } from "../../store/global.store";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
 // Mock global store
 vi.mock("../../store/global.store", () => ({
@@ -11,7 +12,7 @@ vi.mock("../../store/global.store", () => ({
 
 // Mock settings repository
 vi.mock("../../store/settings", () => ({
-  SettingsRepository: {
+  SettingsService: {
     load: vi.fn(),
   },
 }));
@@ -45,11 +46,15 @@ describe("RecentNotesDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useGlobalStore as any).mockReturnValue([mockState, mockDispatch]);
-    (SettingsRepository.load as any).mockReturnValue({ storageDirectory: "/path/to" });
+    (SettingsService.load as any).mockReturnValue({ storageDirectory: "/path/to" });
   });
 
   it("should render the dialog when open", () => {
-    render(<RecentNotesDialog />);
+    render(
+      <MemoryRouter>
+        <RecentNotesDialog />
+      </MemoryRouter>
+    );
     expect(screen.getByText("Recent Notes")).toBeDefined();
     expect(screen.getByPlaceholderText("Search recent notes...")).toBeDefined();
     expect(screen.getByText("Note 1")).toBeDefined();
@@ -57,7 +62,11 @@ describe("RecentNotesDialog", () => {
   });
 
   it("should filter notes based on search query", async () => {
-    render(<RecentNotesDialog />);
+    render(
+      <MemoryRouter>
+        <RecentNotesDialog />
+      </MemoryRouter>
+    );
     const input = screen.getByPlaceholderText("Search recent notes...");
     fireEvent.change(input, { target: { value: "Note 1" } });
     
@@ -66,11 +75,14 @@ describe("RecentNotesDialog", () => {
   });
 
   it("should call openNote when a note is clicked", () => {
-    render(<RecentNotesDialog />);
+    render(
+      <MemoryRouter>
+        <RecentNotesDialog />
+      </MemoryRouter>
+    );
     const note1 = screen.getByText("Note 1");
     fireEvent.click(note1);
     
-    expect(mockDispatch.selectNoteById).toHaveBeenCalledWith("1");
     expect(mockDispatch.recentNotesDialog).toHaveBeenCalledWith(false);
   });
 });

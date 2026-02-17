@@ -1,18 +1,30 @@
 import { AppSettings, SettingsSchema } from "./settings.schema";
-import { repositories } from "./repositories";
+import { isElectron } from "../lib/is-electron";
+import { SettingsRepository as BrowserSettingsRepository } from "./repositories/browser/settings.repository";
+import { SettingsRepository as ElectronSettingsRepository } from "./repositories/electron/settings.repository";
+import { ISettingsRepository } from "./repositories/entities/settings";
 
 export type { AppSettings };
 
-export class SettingsRepository {
+export class SettingsService {
   private static cache: AppSettings = SettingsSchema.parse({});
   private static initialized = false;
+  private static _repo: ISettingsRepository | null = null;
+
+  private static get repo(): ISettingsRepository {
+    if (!this._repo) {
+      this._repo = isElectron()
+        ? new ElectronSettingsRepository()
+        : new BrowserSettingsRepository();
+    }
+    return this._repo;
+  }
 
   static async init(): Promise<void> {
     if (this.initialized) return;
     try {
-      const settings = await repositories.settings.getAll();
+      const settings = await this.repo.getAll();
       const settingsMap: Record<string, any> = {};
-
       settings.forEach((s) => {
         try {
           settingsMap[s.name] = JSON.parse(s.value);
@@ -31,7 +43,7 @@ export class SettingsRepository {
   static load(): AppSettings {
     if (!this.initialized) {
       console.warn(
-        "SettingsRepository.load() called before init(). Returning defaults.",
+        "SettingsService.load() called before init(). Returning defaults.",
       );
     }
     return { ...this.cache };
@@ -49,17 +61,17 @@ export class SettingsRepository {
 
   private static async persistSetting(name: string, value: any): Promise<void> {
     const stringValue = JSON.stringify(value);
-
-    // Find existing to get ID
-    const all = await repositories.settings.getAll();
+    const all = await this.repo.getAll();
     const existing = all.find((s) => s.name === name);
-
     const id = existing ? existing.id : crypto.randomUUID();
-
-    await repositories.settings.save({
+    await this.repo.save({
+      ...existing,
       id,
       name,
       value: stringValue,
+      type: existing.type,
+      updatedAt: new Date(),
+      createdAt: existing ? existing.createdAt : new Date(),
     });
   }
 

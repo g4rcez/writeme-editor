@@ -1,39 +1,11 @@
-import { EntityBase } from "@/store/repository";
 import { db } from "./dexie-db";
 import { Hashtag, IHashtagRepository } from "../entities/hashtag";
+import { BaseRepository } from "../base.repository";
+import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 
-export class HashtagsRepository implements IHashtagRepository {
-  async count(): Promise<number> {
-    return await db.hashtags.count();
-  }
-
-  async getOne(id: EntityBase["id"]): Promise<Hashtag | null> {
-    return (await db.hashtags.get(id)) || null;
-  }
-
-  async update(id: EntityBase["id"], item: Hashtag): Promise<Hashtag> {
-    await db.hashtags.put(item, id);
-    return item;
-  }
-
-  async getAll(query?: { limit?: number }): Promise<Hashtag[]> {
-    let collection = db.hashtags.toCollection();
-    if (query?.limit) {
-      collection = collection.limit(query.limit);
-    }
-    return await collection.toArray();
-  }
-
-  async save(hashtag: Hashtag): Promise<Hashtag> {
-    await db.hashtags.put(hashtag);
-    return hashtag;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const existing = await db.hashtags.get(id);
-    if (!existing) return false;
-    await db.hashtags.delete(id);
-    return true;
+export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
+  constructor() {
+    super(new DexieStorageAdapter(), "hashtags");
   }
 
   async findByHashtag(tag: string): Promise<Hashtag[]> {
@@ -70,7 +42,7 @@ export class HashtagsRepository implements IHashtagRepository {
           updatedAt: new Date(),
           type: "hashtag",
         }));
-        await db.hashtags.bulkAdd(newEntries as Hashtag[]);
+        await db.hashtags.bulkAdd(newEntries);
       }
     });
   }
