@@ -7,6 +7,7 @@ export type UISettings = {
   focusMode: boolean;
   sidebarOpen: boolean;
   sidebarWidth: number;
+  error: string | null;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -27,6 +28,7 @@ const initialState: UISettings = {
   focusMode: persistedState.focusMode || false,
   sidebarOpen: persistedState.sidebarOpen ?? true,
   sidebarWidth: persistedState.sidebarWidth || 240,
+  error: null,
 };
 
 type Toggle<T> = T | ((prev: T) => T);
@@ -44,11 +46,14 @@ export const useUIStore = createGlobalReducer(
     setSidebarWidth: (width: number) => ({
       sidebarWidth: Math.max(180, Math.min(400, width)),
     }),
+    setError: (error: string | null) => ({ error }),
+    clearError: () => ({ error: null }),
   }),
   {
     interceptor: [
       (state) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const { error, ...toPersist } = state;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
         return state;
       },
     ],

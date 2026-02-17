@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "../../lib/shortcuts";
 import { useGlobalStore } from "../../store/global.store";
+import { repositories } from "../../store/repositories";
 import { isElectron } from "../../lib/is-electron";
 import { SettingsRepository } from "../../store/settings";
 import {
@@ -9,7 +10,6 @@ import {
   getUniqueFilePath,
 } from "../../lib/file-utils";
 import { Note } from "../../store/note";
-import { db } from "../../store/repositories/dexie/dexie-db";
 
 // Shortcuts that require filesystem access (Electron only)
 const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e"];
@@ -106,7 +106,7 @@ export const useWritemeShortcuts = () => {
             const result = await window.electronAPI.fs.openFileOrDirectory();
             if (!result) return;
             if (result.isDirectory) {
-              const allNotes = await db.notes.toArray();
+              const allNotes = await repositories.notes.getAll();
               const webOnlyNotes = allNotes.filter(
                 (n: any) => !n.filePath && n.content,
               );
@@ -128,12 +128,15 @@ export const useWritemeShortcuts = () => {
                     note.content,
                   );
                   if (writeResult.success) {
-                    await db.notes.update(note.id, {
+                    const updatedNote = {
+                      ...note,
                       filePath: uniquePath,
                       fileSize: writeResult.fileSize,
                       lastSynced: new Date(writeResult.lastModified),
                       content: undefined,
-                    });
+                    };
+                    // @ts-ignore
+                    await repositories.notes.update(note.id, updatedNote);
                     console.log(
                       `Migrated note "${note.title}" to ${uniquePath}`,
                     );
@@ -143,7 +146,7 @@ export const useWritemeShortcuts = () => {
                 }
               }
 
-              SettingsRepository.save({ storageDirectory: result.path });
+              await SettingsRepository.save({ directory: result.path });
               window.location.reload();
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);
@@ -153,8 +156,7 @@ export const useWritemeShortcuts = () => {
                   file.content,
                 );
                 const note = Note.parse(noteData);
-                const { content: _, ...metadata } = noteData;
-                await db.notes.put(metadata as any, note.id);
+                await repositories.notes.save(note);
                 dispatch.setNote(note);
               }
             }

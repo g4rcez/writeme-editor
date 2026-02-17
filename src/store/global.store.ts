@@ -1,16 +1,12 @@
 import { createGlobalReducer } from "use-typed-reducer";
 import { editorGlobalRef } from "../app/editor-global-ref";
 import { CursorPositionStore } from "./cursor-position.store";
-import { NotesRepository } from "./repositories/dexie/notes.repository";
-import { TabsRepository } from "./repositories/dexie/tabs.repository";
+import { repositories } from "./repositories";
 import { Note } from "./note";
-import { Tab } from "./repositories/dexie/dexie-db";
+import { Tab } from "./repositories/entities/tab";
+import { uiDispatch } from "./ui.store";
 
 export type NoteCreationType = "note" | "quick";
-
-const state = JSON.parse(
-  window.localStorage.getItem("EDITOR_PREFERENCES") || "{}",
-);
 
 export enum CommanderType {
   All = "all",
@@ -22,7 +18,24 @@ export type Commander = {
   type: CommanderType;
 };
 
-const initialState = {
+type Toggle<T> = T | ((prev: T) => T);
+
+type State = {
+  help: boolean;
+  tabs: Tab[];
+  notes: Note[];
+  readItLaterDialog: boolean;
+  recentNotesDialog: boolean;
+  recentNotes: Note[];
+  directoryBrowserDialog: boolean;
+  theme: "light" | "dark";
+  activeTabId: string | null;
+  commander: Commander;
+  createNoteDialog: { isOpen: boolean; type: NoteCreationType };
+  note: Note | null;
+};
+
+const initialState: State = {
   help: false,
   tabs: [] as Tab[],
   notes: [] as Note[],
@@ -30,31 +43,28 @@ const initialState = {
   recentNotesDialog: false,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
-  theme: state.theme || ("dark" as "light" | "dark"),
-  activeTabId: (state.activeTabId || null) as string | null,
+  theme: "dark" as "light" | "dark",
+  activeTabId: null as string | null,
   commander: { enabled: false, type: CommanderType.All } as Commander,
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
-  note: (state.note ? Note.parse(state.note) || null : null) as Note | null,
+  note: null as Note | null,
 };
 
-type Toggle<T> = T | ((prev: T) => T);
-
-export const repositories = {
-  notes: new NotesRepository(),
-  tabs: new TabsRepository(),
-};
+type Getter = { state: () => State };
 
 export const useGlobalStore = createGlobalReducer(
   initialState,
-  (get) => {
+  (get: Getter) => {
     const setNotes = (notes: Note[]) => {
       const state = get.state();
-      const existingNotesMap = new Map(state.notes.map((n) => [n.id, n]));
+      const existingNotesMap = new Map<string, Note>(
+        state.notes.map((n) => [n.id, n]),
+      );
       const mergedNotes = notes.map((note): Note => {
         const existing = existingNotesMap.get(note.id);
         if (existing) {
           if (existing.updatedAt > note.updatedAt) {
-            return existing;
+            return existing as Note;
           }
         }
         return note;
@@ -87,7 +97,7 @@ export const useGlobalStore = createGlobalReducer(
         type: NoteCreationType;
       }) => ({ createNoteDialog }),
       loadRecentNotes: async (limit = 20) => {
-        const recent = await repositories.notes.getRecentNotes(limit);
+        const recent = await repositories.notes.getAll({ limit });
         return { recentNotes: recent };
       },
       reorderTabs: async (tabs: Tab[]) => {
@@ -99,7 +109,12 @@ export const useGlobalStore = createGlobalReducer(
         directoryBrowserDialog,
       }),
       note: async (note: Note, createTab: boolean = true) => {
-        await repositories.notes.update(note.id, note);
+        try {
+          await repositories.notes.update(note.id, note);
+        } catch (error: any) {
+          uiDispatch.setError(error.message || "Failed to update note");
+          return {};
+        }
         const state = get.state();
         const existingTab = state.tabs.find((t) => t.noteId === note.id);
         const existsInNotes = state.notes.some((n) => n.id === note.id);
@@ -183,7 +198,7 @@ export const useGlobalStore = createGlobalReducer(
         if (result === "dark") document.documentElement.classList.add("dark");
         if (result === "light")
           document.documentElement.classList.remove("dark");
-        return { theme: result };
+        return { theme: result as "light" | "dark" };
       },
       selectNoteById: async (noteId: string) => {
         const currentState = get.state();
@@ -194,7 +209,13 @@ export const useGlobalStore = createGlobalReducer(
             window.scrollY,
           );
         }
-        const fullNote = await repositories.notes.getOne(noteId);
+        let fullNote: Note | null = null;
+        try {
+          fullNote = await repositories.notes.getOne(noteId);
+        } catch (error: any) {
+          uiDispatch.setError(error.message || "Failed to load note");
+          return {};
+        }
         if (!fullNote) return {};
         const state = get.state();
         const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
@@ -224,21 +245,12 @@ export const useGlobalStore = createGlobalReducer(
           tabs: [...state.tabs, newTab],
         };
       },
-    };
-  },
-  {
-    interceptor: [
-      (state) => {
-        window.localStorage.setItem(
-          "EDITOR_PREFERENCES",
-          JSON.stringify(state),
-        );
-        return state;
-      },
-    ],
+    } as const;
   },
 );
 
 export const globalState = useGlobalStore.getState;
 
 export const globalDispatch = useGlobalStore.dispatchers;
+
+export { repositories };

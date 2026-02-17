@@ -19,6 +19,7 @@ const TagsPage = lazy(() => import("./pages/tags.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
 const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
+const SettingsPage = lazy(() => import("./pages/settings.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -62,6 +63,10 @@ export const router = createRouter([
       {
         path: "tags",
         element: <TagsPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
       },
       {
         path: "examples",

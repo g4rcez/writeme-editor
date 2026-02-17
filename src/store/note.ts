@@ -1,5 +1,5 @@
 import { uuid } from "@g4rcez/components";
-import { EntityBase } from "./repository";
+import { EntityBase, Repository } from "./repository";
 
 type NoteType = "note" | "quick" | "read-it-later";
 
@@ -105,4 +105,10 @@ export class Note implements EntityBase {
       a.favicon || null,
     );
   }
+}
+
+export interface INoteRepository extends Repository<Note> {
+  getRecentNotes: (limit?: number) => Promise<Note[]>;
+  getLatestQuicknote: () => Promise<Note | null>;
+  getQuicknoteByDate: (date: Date) => Promise<Note | null>;
 }

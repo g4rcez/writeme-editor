@@ -12,7 +12,7 @@ export type StorageMode = "filesystem" | "indexeddb";
 export const getStorageMode = (): StorageMode => {
   if (!isElectron()) return "indexeddb";
   const settings = SettingsRepository.load();
-  return settings.storageDirectory ? "filesystem" : "indexeddb";
+  return settings.directory ? "filesystem" : "indexeddb";
 };
 
 /**

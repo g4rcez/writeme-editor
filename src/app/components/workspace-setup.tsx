@@ -19,7 +19,7 @@ export const StorageConfigDialog = ({
 }: StorageConfigDialogProps) => {
   const settings = SettingsRepository.load();
   const [directory, setDirectory] = useState<string | null>(
-    settings.storageDirectory
+    settings.directory
   );
   const [author, setAuthor] = useState(settings.defaultAuthor || "");
   const [isSelecting, setIsSelecting] = useState(false);
@@ -39,33 +39,33 @@ export const StorageConfigDialog = ({
     }
   };
 
-  const handleSaveWithSync = () => {
+  const handleSaveWithSync = async () => {
     if (!directory) return;
-    SettingsRepository.save({
-      storageDirectory: directory,
+    await SettingsRepository.save({
+      directory: directory,
       defaultAuthor: author || "user",
     });
     onOpenChange(false);
     window.location.reload();
   };
 
-  const handleUseLocalOnly = () => {
-    SettingsRepository.save({
-      storageDirectory: null,
+  const handleUseLocalOnly = async () => {
+    await SettingsRepository.save({
+      directory: null,
       defaultAuthor: author || "user",
     });
     onOpenChange(false);
     window.location.reload();
   };
 
-  const handleClearSync = () => {
+  const handleClearSync = async () => {
     setDirectory(null);
-    SettingsRepository.save({
-      storageDirectory: null,
+    await SettingsRepository.save({
+      directory: null,
     });
   };
 
-  const currentMode = settings.storageDirectory
+  const currentMode = settings.directory
     ? "Folder Sync"
     : "Local Storage";
 
@@ -77,7 +77,7 @@ export const StorageConfigDialog = ({
     >
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
-          {settings.storageDirectory ? (
+          {settings.directory ? (
             <FolderSync className="w-5 h-5 text-green-500" />
           ) : (
             <Database className="w-5 h-5 text-blue-500" />
@@ -85,8 +85,8 @@ export const StorageConfigDialog = ({
           <div className="flex flex-col">
             <span className="text-sm font-medium">Current Mode: {currentMode}</span>
             <span className="text-xs text-foreground/60">
-              {settings.storageDirectory
-                ? `Syncing to: ${settings.storageDirectory}`
+              {settings.directory
+                ? `Syncing to: ${settings.directory}`
                 : "Notes stored in browser IndexedDB"}
             </span>
           </div>
@@ -168,7 +168,7 @@ export const StorageConfigDialog = ({
           >
             <span className="flex items-center justify-center gap-2">
               <Database className="w-4 h-4" />
-              {settings.storageDirectory ? "Switch to Local Only" : "Keep Local Only"}
+              {settings.directory ? "Switch to Local Only" : "Keep Local Only"}
             </span>
           </button>
           <button

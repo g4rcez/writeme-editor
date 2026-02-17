@@ -1,4 +1,4 @@
-import { db } from "../store/repositories/dexie/dexie-db";
+import { repositories } from "../store/global.store";
 import { SettingsRepository } from "../store/settings";
 import { generateNotePath, getUniqueFilePath } from "./file-utils";
 
@@ -11,7 +11,7 @@ export class MigrationService {
    * @returns True if there are notes without a filePath
    */
   static async needsMigration(): Promise<boolean> {
-    const notes = await db.notes.toArray();
+    const notes = await repositories.notes.getAll();
     return notes.some((note: any) => !note.filePath);
   }
 
@@ -20,7 +20,7 @@ export class MigrationService {
    * @returns Number of notes without filePath
    */
   static async getMigrationCount(): Promise<number> {
-    const notes = await db.notes.toArray();
+    const notes = await repositories.notes.getAll();
     return notes.filter((note: any) => !note.filePath).length;
   }
 
@@ -34,13 +34,13 @@ export class MigrationService {
   ): Promise<{ success: number; failed: number; errors: string[] }> {
     const settings = SettingsRepository.load();
 
-    if (!settings.storageDirectory) {
+    if (!settings.directory) {
       throw new Error(
         "Storage directory not configured. Cannot migrate notes.",
       );
     }
 
-    const notes = await db.notes.toArray();
+    const notes = await repositories.notes.getAll();
     const notesToMigrate = notes.filter((note: any) => !note.filePath);
 
     let success = 0;
@@ -51,7 +51,7 @@ export class MigrationService {
       const note: any = notesToMigrate[i];
 
       try {
-        await this.migrateNote(note, settings.storageDirectory);
+        await this.migrateNote(note, settings.directory);
         success++;
 
         if (onProgress) {
@@ -69,12 +69,12 @@ export class MigrationService {
   /**
    * Migrate a single note to file-based storage
    * @param note Note object from IndexedDB
-   * @param storageDirectory Root directory for file storage
+   * @param directory Root directory for file storage
    */
-  static async migrateNote(note: any, storageDirectory: string): Promise<void> {
+  static async migrateNote(note: any, directory: string): Promise<void> {
     // Generate file path
     const filePath = generateNotePath(
-      storageDirectory,
+      directory,
       note.title,
     );
 
@@ -95,13 +95,14 @@ export class MigrationService {
     }
 
     // Update note in IndexedDB with file metadata
-    await db.notes.update(note.id, {
+    const updatedNote = {
+      ...note,
       filePath: uniquePath,
       fileSize: writeResult.fileSize,
       lastSynced: new Date(writeResult.lastModified),
-    });
-
-    // Remove content from IndexedDB to save space
-    await db.notes.update(note.id, { content: undefined });
+      content: undefined
+    };
+    // @ts-ignore
+    await repositories.notes.update(note.id, updatedNote);
   }
 }

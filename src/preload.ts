@@ -142,6 +142,30 @@ contextBridge.exposeInMainWorld("electronAPI", {
       return ipcRenderer.invoke("fs:openFileOrDirectory");
     },
   },
+  db: {
+    get: (table: string, id: string) => ipcRenderer.invoke("db:get", table, id),
+    getAll: (table: string) => ipcRenderer.invoke("db:getAll", table),
+    save: (table: string, item: any) =>
+      ipcRenderer.invoke("db:save", table, item),
+    delete: (table: string, id: string) =>
+      ipcRenderer.invoke("db:delete", table, id),
+    count: (table: string) => ipcRenderer.invoke("db:count", table),
+    notes: {
+      getLatestQuicknote: () => ipcRenderer.invoke("db:notes:getLatestQuicknote"),
+      getQuicknoteByDate: (start: string, end: string) =>
+        ipcRenderer.invoke("db:notes:getQuicknoteByDate", start, end),
+      getRecentNotes: (limit: number) =>
+        ipcRenderer.invoke("db:notes:getRecentNotes", limit),
+    },
+    tabs: {
+      updateOrder: (tabs: any[]) =>
+        ipcRenderer.invoke("db:tabs:updateOrder", tabs),
+    },
+    hashtags: {
+      sync: (filename: string, tags: string[]) =>
+        ipcRenderer.invoke("db:hashtags:sync", filename, tags),
+    },
+  },
 });
 
 declare global {
@@ -182,6 +206,24 @@ declare global {
           path: string;
           isDirectory: boolean;
         } | null>;
+      };
+      db: {
+        get<T>(table: string, id: string): Promise<T | undefined>;
+        getAll<T>(table: string): Promise<T[]>;
+        save<T>(table: string, item: T): Promise<void>;
+        delete(table: string, id: string): Promise<void>;
+        count(table: string): Promise<number>;
+        notes: {
+          getLatestQuicknote(): Promise<any>;
+          getQuicknoteByDate(start: string, end: string): Promise<any>;
+          getRecentNotes(limit: number): Promise<any[]>;
+        };
+        tabs: {
+          updateOrder(tabs: any[]): Promise<void>;
+        };
+        hashtags: {
+          sync(filename: string, tags: string[]): Promise<void>;
+        };
       };
     };
   }

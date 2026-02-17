@@ -1,14 +1,13 @@
-import { useEffect, useCallback, useState } from "react";
-import { FolderTree, FolderPlus, Edit2, FilePlus } from "lucide-react";
-import { useGlobalStore, repositories, globalState } from "../../store/global.store";
-import { isElectron } from "../../lib/is-electron";
-import { SettingsRepository } from "../../store/settings";
-import { TreeView } from "./tree-view";
-import { Note } from "../../store/note";
-import { db } from "../../store/repositories/dexie/dexie-db";
-import type { TreeNode } from "../../types/tree";
-import { Modal } from "@g4rcez/components";
+import { Modal, Button } from "@g4rcez/components";
+import { Edit2, FilePlus, FolderPlus, FolderTree } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { getDirname } from "../../lib/file-utils";
+import { globalState, useGlobalStore } from "../../store/global.store";
+import { repositories } from "../../store/repositories";
+import { Note } from "../../store/note";
+import { SettingsRepository } from "../../store/settings";
+import type { TreeNode } from "../../types/tree";
+import { TreeView } from "./tree-view";
 
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -17,18 +16,15 @@ export const DirectoryBrowserDialog = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // This component requires filesystem access (Electron only)
-  if (!isElectron()) return null;
-
   const refreshView = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
   }, []);
 
-  // Load storage directory when dialog opens
   useEffect(() => {
     if (state.directoryBrowserDialog) {
       const settings = SettingsRepository.load();
-      setStorageDir(settings.storageDirectory);
+      if (settings.directory) return void setStorageDir(settings.directory);
+      window.electronAPI.env.getHome().then(setStorageDir);
     }
   }, [state.directoryBrowserDialog]);
 
@@ -39,25 +35,16 @@ export const DirectoryBrowserDialog = () => {
   const handleFileSelect = useCallback(
     async (node: TreeNode) => {
       if (node.extension !== ".md") return;
-
       try {
-        // Read file content
         const result = await window.electronAPI.fs.readFile(node.path);
-
         if (!result.success) {
           console.error("Failed to read file:", result.error);
           return;
         }
-
-        // Extract title from filename (remove .md extension)
         const title = node.name.replace(/\.md$/, "");
-
-        // Check if this note already exists in the database by filePath
         const allNotes = await repositories.notes.getAll();
         const existingNote = allNotes.find((n) => n.filePath === node.path);
-
         if (existingNote) {
-          // Load full note with content
           const fullNote = await repositories.notes.getOne(existingNote.id);
           if (fullNote) {
             dispatch.note(fullNote);
@@ -65,88 +52,72 @@ export const DirectoryBrowserDialog = () => {
             return;
           }
         }
-
-        // Create a new note from the file (file already exists, just register in IndexedDB)
         const newNote = Note.new(title, result.content);
         newNote.filePath = node.path;
         newNote.fileSize = result.fileSize;
         newNote.lastSynced = new Date(result.lastModified);
-
-        // Add metadata directly to IndexedDB without re-writing the file
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { content: _content, ...metadata } = newNote as unknown as Record<string, unknown>;
-        await db.notes.add(metadata as unknown as Note, newNote.id);
-
+        await repositories.notes.save(newNote);
         dispatch.note(newNote);
         closeDialog();
       } catch (error) {
         console.error("Error opening file:", error);
       }
     },
-    [dispatch, closeDialog]
+    [dispatch, closeDialog],
   );
 
-  const handleDelete = useCallback(async (node: TreeNode): Promise<boolean> => {
-    const isDir = node.type === "directory";
-    const msg = isDir 
-      ? `To delete this directory and ALL its contents, type its name: "${node.name}"`
-      : `To delete this file, type its name: "${node.name}"`;
+  const handleDelete = useCallback(
+    async (node: TreeNode): Promise<boolean> => {
+      const isDir = node.type === "directory";
 
-    const confirmation = window.prompt(msg);
-    if (confirmation !== node.name) {
-      return false;
-    }
+      try {
+        if (!isDir) {
+          const allNotes = await repositories.notes.getAll();
+          const existingNote = allNotes.find((n) => n.filePath === node.path);
 
-    try {
-      if (!isDir) {
-        // Sync with IndexedDB if this is a registered note
-        const allNotes = await repositories.notes.getAll();
-        const existingNote = allNotes.find((n) => n.filePath === node.path);
-
-        if (existingNote) {
-          const deleted = await repositories.notes.delete(existingNote.id);
-          if (deleted) {
-            const tabs = globalState().tabs;
-            const tab = tabs.find((t) => t.noteId === existingNote.id);
-            if (tab) await dispatch.removeTab(tab.id);
-            refreshView();
+          if (existingNote) {
+            const deleted = await repositories.notes.delete(existingNote.id);
+            if (deleted) {
+              const tabs = globalState().tabs;
+              const tab = tabs.find((t) => t.noteId === existingNote.id);
+              if (tab) await dispatch.removeTab(tab.id);
+              refreshView();
+            }
+            return deleted;
           }
-          return deleted;
+        } else {
+          // If it's a directory, we might want to cleanup multiple notes from DB
+          const allNotes = await repositories.notes.getAll();
+          const notesInDir = allNotes.filter((n) =>
+            n.filePath?.startsWith(node.path + "/"),
+          );
+          for (const note of notesInDir) {
+            await repositories.notes.delete(note.id);
+            const tabs = globalState().tabs;
+            const tab = tabs.find((t) => t.noteId === note.id);
+            if (tab) await dispatch.removeTab(tab.id);
+          }
         }
-      } else {
-        // If it's a directory, we might want to cleanup multiple notes from DB
-        const allNotes = await repositories.notes.getAll();
-        const notesInDir = allNotes.filter((n) =>
-          n.filePath?.startsWith(node.path + "/"),
-        );
-        for (const note of notesInDir) {
-          await repositories.notes.delete(note.id);
-          const tabs = globalState().tabs;
-          const tab = tabs.find((t) => t.noteId === note.id);
-          if (tab) await dispatch.removeTab(tab.id);
-        }
-      }
 
-      // Delete from filesystem (handles both files and recursive dirs now)
-      const result = await window.electronAPI.fs.deleteFile(node.path);
-      if (
-        result === true ||
-        (typeof result === "object" && result && result.success)
-      ) {
-        refreshView();
-        return true;
-      } else {
-        console.error(
-          "Failed to delete:",
-          result?.error || "Unknown error"
-        );
+        // Delete from filesystem (handles both files and recursive dirs now)
+        const result = await window.electronAPI.fs.deleteFile(node.path);
+        if (
+          result === true ||
+          (typeof result === "object" && result && result.success)
+        ) {
+          refreshView();
+          return true;
+        } else {
+          console.error("Failed to delete:", result?.error || "Unknown error");
+          return false;
+        }
+      } catch (error) {
+        console.error("Error deleting:", error);
         return false;
       }
-    } catch (error) {
-      console.error("Error deleting:", error);
-      return false;
-    }
-  }, [refreshView]);
+    },
+    [refreshView],
+  );
 
   const handleCreateFile = useCallback(async () => {
     if (!storageDir) return;
@@ -207,7 +178,7 @@ export const DirectoryBrowserDialog = () => {
 
     const newPath = window.prompt(
       `Move/Rename "${focusedNode.name}" to:`,
-      focusedNode.path
+      focusedNode.path,
     );
     if (!newPath || newPath === focusedNode.path) return;
 
@@ -216,7 +187,7 @@ export const DirectoryBrowserDialog = () => {
       if (focusedNode.extension === ".md") {
         const allNotes = await repositories.notes.getAll();
         const existingNote = allNotes.find(
-          (n) => n.filePath === focusedNode.path
+          (n) => n.filePath === focusedNode.path,
         );
 
         if (existingNote) {
@@ -225,7 +196,10 @@ export const DirectoryBrowserDialog = () => {
             const oldDir = getDirname(focusedNode.path);
             const newDir = getDirname(newPath);
             if (oldDir === newDir) {
-              const newTitle = newPath.split(/[/\\]/).pop()?.replace(/\.md$/, "");
+              const newTitle = newPath
+                .split(/[/\\]/)
+                .pop()
+                ?.replace(/\.md$/, "");
               if (newTitle) fullNote.title = newTitle;
             }
             fullNote.filePath = newPath;
@@ -237,14 +211,21 @@ export const DirectoryBrowserDialog = () => {
       } else if (focusedNode.type === "directory") {
         // If it's a directory, update all notes contained within it
         const allNotes = await repositories.notes.getAll();
-        const notesInDir = allNotes.filter((n) => n.filePath?.startsWith(focusedNode.path + "/"));
-        
+        const notesInDir = allNotes.filter((n) =>
+          n.filePath?.startsWith(focusedNode.path + "/"),
+        );
+
         // Physically move first
-        const result = await window.electronAPI.fs.moveFile(focusedNode.path, newPath);
+        const result = await window.electronAPI.fs.moveFile(
+          focusedNode.path,
+          newPath,
+        );
         if (result.success) {
           // Update paths in DB
           for (const note of notesInDir) {
-            const relativePart = note.filePath!.substring(focusedNode.path.length);
+            const relativePart = note.filePath!.substring(
+              focusedNode.path.length,
+            );
             const updatedNote = await repositories.notes.getOne(note.id);
             if (updatedNote) {
               updatedNote.filePath = newPath + relativePart;
@@ -261,7 +242,7 @@ export const DirectoryBrowserDialog = () => {
       // Fallback for non-note files or if not in DB
       const result = await window.electronAPI.fs.moveFile(
         focusedNode.path,
-        newPath
+        newPath,
       );
       if (result.success) {
         refreshView();
@@ -278,22 +259,25 @@ export const DirectoryBrowserDialog = () => {
     if (!state.directoryBrowserDialog) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in a prompt (though prompts are blocking, 
+      // Don't trigger if user is typing in a prompt (though prompts are blocking,
       // some browser environments or future non-blocking versions might need this)
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
       switch (e.key.toLowerCase()) {
-        case 'n':
+        case "n":
           e.preventDefault();
           handleCreateFolder();
           break;
-        case 't':
+        case "t":
           e.preventDefault();
           handleCreateFile();
           break;
-        case 'm':
+        case "m":
           if (focusedNode) {
             e.preventDefault();
             handleMove();
@@ -302,9 +286,14 @@ export const DirectoryBrowserDialog = () => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.directoryBrowserDialog, handleCreateFolder, handleMove, focusedNode]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    state.directoryBrowserDialog,
+    handleCreateFolder,
+    handleMove,
+    focusedNode,
+  ]);
 
   return (
     <Modal
@@ -313,45 +302,48 @@ export const DirectoryBrowserDialog = () => {
       title="Browse Files"
     >
       <div className="flex flex-col h-[60vh]">
-        <div className="flex items-center justify-between px-4 pb-2 border-b border-gray-200 dark:border-gray-800 mb-2">
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
+        <div className="flex justify-between items-center px-4 pb-2 mb-2 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex gap-4 items-center text-sm text-gray-500">
+            <div className="flex gap-2 items-center">
               <FolderTree className="w-4 h-4" />
               <span>Select a file to open</span>
             </div>
-            <div className="flex items-center gap-1 border-l pl-4 border-gray-200 dark:border-gray-800">
+            <div className="flex gap-1 items-center pl-4 border-l border-gray-200 dark:border-gray-800">
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-xs px-2 py-1 border border-gray-200 dark:border-gray-800 rounded bg-transparent outline-none focus:border-blue-500 transition-colors w-32"
+                className="py-1 px-2 w-32 text-xs bg-transparent rounded border border-gray-200 transition-colors outline-none dark:border-gray-800 focus:border-blue-500"
               />
-              <button
+              <Button
                 onClick={handleCreateFile}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-600 dark:text-gray-400"
+                className="p-1 text-gray-600 rounded transition-colors dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 title="New File (T)"
+                theme="muted"
               >
                 <FilePlus className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateFolder}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-600 dark:text-gray-400"
+                className="p-1 text-gray-600 rounded transition-colors dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 title="New Folder (N)"
+                theme="muted"
               >
                 <FolderPlus className="w-4 h-4" />
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleMove}
                 disabled={!focusedNode}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-600 dark:text-gray-400 disabled:opacity-30"
+                className="p-1 text-gray-600 rounded transition-colors dark:text-gray-400 hover:bg-gray-100 disabled:opacity-30 dark:hover:bg-gray-800"
                 title="Move/Rename (M)"
+                theme="muted"
               >
                 <Edit2 className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
-          <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">
+          <div className="py-1 px-2 text-xs text-gray-400 rounded border border-gray-200 dark:border-gray-700">
             ↑↓ navigate • Enter select • T file • N folder • M move • Del delete
           </div>
         </div>
@@ -359,7 +351,7 @@ export const DirectoryBrowserDialog = () => {
         <div className="overflow-y-auto flex-1 scrollbar-thin">
           {storageDir ? (
             <>
-              <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+              <div className="py-2 px-4 text-xs text-gray-500 bg-gray-50 border-b border-gray-100 dark:border-gray-800 dark:bg-gray-800/50">
                 {storageDir}
               </div>
               <TreeView
@@ -374,7 +366,7 @@ export const DirectoryBrowserDialog = () => {
           ) : (
             <div className="p-8 text-center text-gray-500">
               <p>No storage directory configured.</p>
-              <p className="text-sm mt-2">
+              <p className="mt-2 text-sm">
                 Please set up your workspace first.
               </p>
             </div>

@@ -39,7 +39,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex overflow-x-auto sticky z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background/90 isolate backdrop-blur-sm scrollbar-none"
+      className="flex overflow-x-auto sticky z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background isolate scrollbar-none"
     >
       {state.tabs.map((tab) => {
         const note = state.notes.find((n) => n.id === tab.noteId);

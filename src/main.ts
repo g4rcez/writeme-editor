@@ -11,6 +11,7 @@ import {
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
+import { databaseIpcHandler } from "./ipc/database.ipc";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
 
@@ -23,6 +24,7 @@ async function main() {
     app.quit();
   }
   await notesIpcHandler();
+  databaseIpcHandler();
   const preload = path.join(__dirname, "preload.js");
   ipcMain.handle("env:getHome", () => app.getPath("home"));
   ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preload));

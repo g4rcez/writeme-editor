@@ -3,7 +3,7 @@ import { useGlobalStore, repositories } from "./global.store";
 import { Note } from "./note";
 
 // Mock repositories
-vi.mock("./repositories/dexie/notes.repository", () => {
+vi.mock("./repositories/browser/notes.repository", () => {
   return {
     NotesRepository: vi.fn().mockImplementation(function() {
       return {
@@ -14,7 +14,7 @@ vi.mock("./repositories/dexie/notes.repository", () => {
   };
 });
 
-vi.mock("./repositories/dexie/projects.repository", () => {
+vi.mock("./repositories/browser/projects.repository", () => {
   return {
     ProjectsRepository: vi.fn().mockImplementation(function() {
       return {
@@ -24,7 +24,7 @@ vi.mock("./repositories/dexie/projects.repository", () => {
   };
 });
 
-vi.mock("./repositories/dexie/tabs.repository", () => {
+vi.mock("./repositories/browser/tabs.repository", () => {
   return {
     TabsRepository: vi.fn().mockImplementation(function() {
       return {

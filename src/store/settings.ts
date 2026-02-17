@@ -1,67 +1,69 @@
-export interface AppSettings {
-  storageDirectory: string | null;
-  defaultAuthor: string;
-  autoSyncInterval: number;
-  conflictResolution: "ask" | "file-wins" | "editor-wins";
-  theme: "light" | "dark";
-  currency: {
-    cacheDuration: number;
-    preferredAPI: "exchangerate-api" | "frankfurter";
-    apiKey?: string;
-  };
-}
+import { AppSettings, SettingsSchema } from "./settings.schema";
+import { repositories } from "./repositories";
+
+export type { AppSettings };
 
 export class SettingsRepository {
-  private static STORAGE_KEY = "WRITEME_SETTINGS";
+  private static cache: AppSettings = SettingsSchema.parse({});
+  private static initialized = false;
 
-  static load(): AppSettings {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return { ...this.defaults(), ...parsed };
-      } catch (error) {
-        console.error("Failed to parse settings:", error);
-        return this.defaults();
-      }
+  static async init(): Promise<void> {
+    if (this.initialized) return;
+    try {
+      const settings = await repositories.settings.getAll();
+      const settingsMap: Record<string, any> = {};
+
+      settings.forEach((s) => {
+        try {
+          settingsMap[s.name] = JSON.parse(s.value);
+        } catch (e) {
+          console.warn(`Failed to parse setting ${s.name}:`, e);
+          settingsMap[s.name] = s.value; // Fallback
+        }
+      });
+      this.cache = SettingsSchema.parse(settingsMap);
+      this.initialized = true;
+    } catch (error) {
+      console.error("Failed to load settings from DB:", error);
     }
-    return this.defaults();
   }
 
-  /**
-   * Save partial settings update
-   * Merges with existing settings and persists to localStorage
-   */
-  static save(settings: Partial<AppSettings>): AppSettings {
-    const current = this.load();
-    const updated = { ...current, ...settings };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
+  static load(): AppSettings {
+    if (!this.initialized) {
+      console.warn(
+        "SettingsRepository.load() called before init(). Returning defaults.",
+      );
+    }
+    return { ...this.cache };
+  }
+
+  static async save(settings: Partial<AppSettings>): Promise<AppSettings> {
+    const updated = SettingsSchema.parse({ ...this.cache, ...settings });
+    this.cache = updated;
+    const promises = Object.entries(settings).map(([key, value]) =>
+      this.persistSetting(key, value),
+    );
+    await Promise.all(promises);
     return updated;
   }
 
-  /**
-   * Reset settings to defaults
-   */
-  static reset(): AppSettings {
-    const defaults = this.defaults();
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(defaults));
-    return defaults;
+  private static async persistSetting(name: string, value: any): Promise<void> {
+    const stringValue = JSON.stringify(value);
+
+    // Find existing to get ID
+    const all = await repositories.settings.getAll();
+    const existing = all.find((s) => s.name === name);
+
+    const id = existing ? existing.id : crypto.randomUUID();
+
+    await repositories.settings.save({
+      id,
+      name,
+      value: stringValue,
+    });
   }
 
-  /**
-   * Default settings
-   */
-  static defaults(): AppSettings {
-    return {
-      storageDirectory: null,
-      defaultAuthor: "user",
-      autoSyncInterval: 5000, // 5 seconds
-      conflictResolution: "ask",
-      theme: "dark",
-      currency: {
-        cacheDuration: 60 * 60 * 1000, // 1 hour
-        preferredAPI: "frankfurter",
-      },
-    };
+  static get(): AppSettings {
+    return this.load();
   }
 }

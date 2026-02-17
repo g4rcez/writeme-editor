@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { CommanderType, useGlobalStore } from "../../store/global.store";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { SettingsRepository } from "../../store/settings";
 
 type Item = { title: string; Icon: LucideIcon; shortcut: string } & (
   | { action: Function }
@@ -54,6 +56,19 @@ const Section = (props: { title: string; items: Item[] }) => {
 
 export const DashboardPage = () => {
   const [state, dispatch] = useGlobalStore();
+  const [cwd, setCwd] = useState<string | null>(null);
+
+  useEffect(() => {
+    const settings = SettingsRepository.get();
+    if (settings.directory) {
+      setCwd(settings.directory);
+    } else {
+        // Fallback to home if not set, similar to DirectoryBrowserDialog
+        if (window.electronAPI) {
+            window.electronAPI.env.getHome().then(setCwd);
+        }
+    }
+  }, []);
 
   const onSearch = () => dispatch.commander(true, CommanderType.Notes);
 
@@ -66,6 +81,11 @@ export const DashboardPage = () => {
         <h2 className="text-7xl font-bold tracking-wide text-primary">
           WriteMe
         </h2>
+        {cwd && (
+          <p className="text-sm text-muted-foreground font-mono">
+            {cwd}
+          </p>
+        )}
       </header>
       <main className="flex flex-col gap-8 mx-auto w-full max-w-safe">
         <Section

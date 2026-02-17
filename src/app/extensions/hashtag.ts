@@ -2,9 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Node } from "@tiptap/pm/model";
-import { v7 as uuidv7 } from "uuid";
-import { db } from "../../store/repositories/dexie/dexie-db";
-import { globalState } from "../../store/global.store";
+import { repositories, globalState } from "../../store/global.store";
 import { isElectron } from "../../lib/is-electron";
 
 function findHashtags(doc: Node): { decorations: DecorationSet, tags: string[] } {
@@ -51,30 +49,7 @@ async function saveHashtags(noteId: string, filename: string, tags: string[]) {
     
     saveTimer[noteId] = setTimeout(async () => {
         try {
-            await db.transaction('rw', db.hashtags, async () => {
-                const existing = await db.hashtags.where('filename').equals(filename).toArray();
-                const existingTags = existing.map(e => e.hashtag);
-                
-                const added = tags.filter(t => !existingTags.includes(t));
-                const removed = existingTags.filter(t => !tags.includes(t));
-                
-                if (added.length === 0 && removed.length === 0) return;
-                
-                if (removed.length > 0) {
-                    const idsToRemove = existing.filter(e => removed.includes(e.hashtag)).map(e => e.id);
-                    await db.hashtags.bulkDelete(idsToRemove);
-                }
-                
-                if (added.length > 0) {
-                    const newEntries = added.map(tag => ({
-                        id: uuidv7(),
-                        hashtag: tag,
-                        filename: filename,
-                        project: "default" 
-                    }));
-                    await db.hashtags.bulkAdd(newEntries);
-                }
-            });
+            await repositories.hashtags.sync(filename, tags);
         } catch (e) {
             console.error("Failed to sync hashtags", e);
         }

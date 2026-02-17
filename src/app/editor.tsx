@@ -81,57 +81,39 @@ const InnerEditor = (props: {
 
   const editor = useEditor({
     extensions,
-    editable: !props.readonly,
     autofocus: true,
     content: props.content,
     immediatelyRender: true,
     enableContentCheck: true,
+    editable: !props.readonly,
     enableCoreExtensions: true,
     shouldRerenderOnTransaction: false,
     parseOptions: { preserveWhitespace: "full" },
     onCreate: ({ editor: currentEditor }) => {
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) {}
+      } catch (e) { }
     },
     editorProps: {
-      handlePaste(view, event, slice) {
+      handlePaste(_, event) {
         const clip = event.clipboardData;
-        if (!clip) return;
+        if (!clip) return false;
         try {
           const raw = event.clipboardData?.getData("text/plain");
           const html = mdParser(raw || "", {
             gfm: true,
             async: false,
-            breaks: true,
+            breaks: false,
             silent: false,
           });
           event.clipboardData.setData("text/plain", "");
           event.clipboardData.setData("text/html", html);
         } catch (e) {
           console.log(e);
+          return false;
         }
         return false;
       },
-      // handlePaste(view, event, slice) {
-      //   const schema = view.state.schema;
-      //   // Convert content to blocks data model
-      //   const rawContent = event.clipboardData?.getData("text/plain");
-      //   // Use `const rawContent = event.clipboardData?.getData('text/html')` if you'd rather deal with HTML
-      //   // Build TipTap JSON content: import type { JSONContent } from '@tiptap/react'
-      //   const content = someDeserializeFunc(rawContent); // i.e. [{ type: 'heading', content: [] }]
-      //   // Convert JSON content to ProseMirror nodes and apply them in a transaction
-      //   const nodes = content.map((c) => Node.fromJSON(schema, c));
-      //   const fragment = Fragment.fromArray(nodes);
-      //   const pastedSlice = new Slice(fragment, slice.openStart, slice.openEnd);
-      //   const pasteTr = view.state.tr.replaceRange(
-      //     view.state.selection.from,
-      //     view.state.selection.to,
-      //     pastedSlice,
-      //   );
-      //   view.updateState(view.state.apply(pasteTr));
-      //   return true;
-      // },
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
           const { from, to } = view.state.selection;

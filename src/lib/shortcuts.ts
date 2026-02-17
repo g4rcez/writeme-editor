@@ -97,16 +97,16 @@ export const shortcutKeys = (
       );
     });
   };
-  const removeAll = () =>
-    Object.entries(shortcutMap).forEach(
-      ([_, { target, options, nativeOptions }]) => {
-        element.removeEventListener(
-          options.eventType as any,
-          target,
-          nativeOptions,
-        );
-      },
-    );
+  const removeAll = () => {
+    for (const { target, options, nativeOptions } of shortcutMap.values()) {
+      element.removeEventListener(
+        options.eventType as any,
+        target,
+        nativeOptions,
+      );
+    }
+    shortcutMap.clear();
+  };
   const remove = (shortcut: string): void => {
     const x = shortcutMap.get(shortcut);
     if (x === undefined) return;

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { repositories, useGlobalStore } from "../../store/global.store";
-import { db } from "../../store/repositories/dexie/dexie-db";
 import { TagsGraph } from "../components/tags-graph";
 
 export default function TagsPage() {
@@ -18,7 +17,7 @@ export default function TagsPage() {
       try {
         const [allNotes, allHashtags] = await Promise.all([
           repositories.notes.getAll(),
-          db.hashtags.toArray(),
+          repositories.hashtags.getAll(),
         ]);
         const nodes: any[] = [];
         const links: any[] = [];

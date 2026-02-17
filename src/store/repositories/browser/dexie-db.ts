@@ -1,26 +1,16 @@
 import Dexie, { EntityTable } from "dexie";
 import { Note } from "../../note";
-
-export interface Tab {
-  id: string;
-  noteId: string;
-  order: number;
-  project: string;
-  createdAt: Date;
-}
-
-export interface Hashtag {
-  id: string;
-  hashtag: string;
-  filename: string;
-  project: string;
-}
+import { Tab } from "../entities/tab";
+import { Hashtag } from "../entities/hashtag";
+import { Settings } from "../entities/settings";
+import { Project } from "../entities/project";
 
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
-  projects: EntityTable<any, "id">;
+  projects: EntityTable<Project, "id">;
   tabs: EntityTable<Tab, "id">;
   hashtags: EntityTable<Hashtag, "id">;
+  settings: EntityTable<Settings, "id">;
 };
 
 // Version 1 (original schema)
@@ -52,7 +42,6 @@ db.version(2)
     console.log("Schema migration to v2 complete");
   });
 
-// Version 3 (add folderPath to projects for Open Project feature)
 db.version(3)
   .stores({
     notes:
@@ -136,3 +125,36 @@ db.version(8).stores({
   tabs: "&id, noteId, order, createdAt",
   hashtags: "&id, hashtag, filename, project",
 });
+
+// Version 9 (Settings support)
+db.version(9)
+  .stores({
+    notes:
+      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+    hashtags: "&id, hashtag, filename, project",
+    settings: "&id, &name, value",
+  })
+  .upgrade(async (tx) => {
+    const defaults = [
+      { name: "autosave", value: "true" },
+      { name: "autosaveDelay", value: "5000" },
+      { name: "theme", value: '"dark"' }, // JSON stringified string
+    ];
+
+    for (const def of defaults) {
+      const exists = await tx
+        .table("settings")
+        .where("name")
+        .equals(def.name)
+        .first();
+      if (!exists) {
+        await tx.table("settings").add({
+          id: crypto.randomUUID(),
+          name: def.name,
+          value: def.value,
+        });
+      }
+    }
+  });

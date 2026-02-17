@@ -99,9 +99,9 @@ const updatePosition = (editor: any, element: HTMLElement) => {
 
 export const suggestion = {
   items: async (args: { query: string }) => {
-    const { storageDirectory } = SettingsRepository.load();
-    if (!storageDirectory) return [];
-    const { entries } = await window.electronAPI.fs.readDir(storageDirectory);
+    const { directory } = SettingsRepository.load();
+    if (!directory) return [];
+    const { entries } = await window.electronAPI.fs.readDir(directory);
     const query = args.query.toLowerCase();
     return entries
       .map((entry) => entry.name)

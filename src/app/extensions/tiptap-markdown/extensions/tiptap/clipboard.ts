@@ -6,17 +6,12 @@ import { elementFromString } from "../../util/dom";
 function dedent(text: string): string {
   const lines = text.split("\n");
   let minIndent = Infinity;
-
-  // Find minimum indentation (ignoring empty lines)
   for (const line of lines) {
     if (line.trim().length === 0) continue;
     const indent = line.match(/^\s*/)?.[0].length ?? 0;
     if (indent < minIndent) minIndent = indent;
   }
-
   if (minIndent === Infinity) return text;
-
-  // Remove minimum indentation from all lines
   return lines
     .map((line) => (line.length >= minIndent ? line.slice(minIndent) : line))
     .join("\n");
@@ -35,10 +30,7 @@ export const MarkdownClipboard = Extension.create({
       new Plugin({
         key: new PluginKey("markdownClipboard"),
         props: {
-          clipboardTextParser: (text, context, plainText) => {
-            // if (plainText || !this.options.transformPastedText) {
-            //   return null; // pasting with shift key prevents formatting
-            // }
+          clipboardTextParser: (text, context) => {
             const dedentedText = dedent(this.options.onBeforePaste(text));
             const parsed = this.editor.storage.markdown.parser.parse(
               dedentedText,

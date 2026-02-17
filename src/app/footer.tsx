@@ -10,9 +10,9 @@ export const Footer = () => {
   useEffect(() => {
     const loadPath = async () => {
       const settings = SettingsRepository.load();
-      if (!settings.storageDirectory) return;
+      if (!settings.directory) return;
       const home = (await window.electronAPI?.env?.getHome()) || "";
-      const path = settings.storageDirectory;
+      const path = settings.directory;
       setVaultPath(
         home && path.startsWith(home) ? path.replace(home, "~") : path,
       );

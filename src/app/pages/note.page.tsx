@@ -23,27 +23,28 @@ const Wrapper = (props: PropsWithChildren) => {
     const div = ref.current;
     if (div === null) return;
     const fn = () => {
-      setState(
-        Array.from(
-          document.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6"),
-        ).map((h, index) => {
-          const level = Number(h.tagName.replace(/[^0-9]/g, ""));
-          return (
-            <motion.li
-              key={`heading-${h.innerText}-${index}`}
-              className="font-medium"
-            >
-              <a
-                href={`#${h.id}`}
-                style={{ marginLeft: level === 1 ? 0 : `${level * 1}rem` }}
-                className="transition-colors duration-300 ease-linear cursor-pointer hover:underline text-primary hover:text-primary-hover"
-              >
-                {h.innerText}
-              </a>
-            </motion.li>
-          );
-        }),
+      const array = Array.from(
+        document.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6"),
       );
+      if (array.length === 0) return setState(null);
+      const items = array.map((h, index) => {
+        const level = Number(h.tagName.replace(/[^0-9]/g, ""));
+        return (
+          <motion.li
+            key={`heading-${h.innerText}-${index}`}
+            className="font-medium"
+          >
+            <a
+              href={`#${h.id}`}
+              style={{ marginLeft: level === 1 ? 0 : `${level * 1}rem` }}
+              className="transition-colors duration-300 ease-linear cursor-pointer hover:underline text-primary hover:text-primary-hover"
+            >
+              {h.innerText}
+            </a>
+          </motion.li>
+        );
+      });
+      setState(items);
     };
     const observer = new MutationObserver(fn);
     fn();
@@ -54,25 +55,27 @@ const Wrapper = (props: PropsWithChildren) => {
   return (
     <div ref={ref} className="flex flex-col gap-4 w-full h-full">
       <header className="fixed left-4 py-2 top-navbar text-disabled">
-        <Tooltip
-          onChange={setOpen}
-          placement="bottom-end"
-          title={
-            <span className="flex gap-1 items-center">
-              <ChevronDownIcon size={12} />
-              Table of contents
-              <ChevronDownIcon size={12} />
-            </span>
-          }
-        >
-          <motion.ul
-            animate={open.toString()}
-            className="overflow-y-auto overscroll-contain max-h-72"
-            variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
+        {state ? (
+          <Tooltip
+            onChange={setOpen}
+            placement="bottom-end"
+            title={
+              <span className="flex gap-1 items-center">
+                <ChevronDownIcon size={12} />
+                Table of contents
+                <ChevronDownIcon size={12} />
+              </span>
+            }
           >
-            <AnimatePresence>{open ? state : false}</AnimatePresence>
-          </motion.ul>
-        </Tooltip>
+            <motion.ul
+              animate={open.toString()}
+              className="overflow-y-auto overscroll-contain max-h-72"
+              variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
+            >
+              <AnimatePresence>{open ? state : false}</AnimatePresence>
+            </motion.ul>
+          </Tooltip>
+        ) : null}
       </header>
       {props.children}
     </div>

@@ -1,14 +1,13 @@
-import { Note } from "../../note";
-import { EntityBase, Repository } from "../../repository";
-import { db } from "./dexie-db";
-import { SettingsRepository } from "../../settings";
+import { endOfDay, startOfDay } from "date-fns";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
-import { endOfDay, startOfDay } from "date-fns";
+import { INoteRepository, Note } from "../../note";
+import { EntityBase } from "../../repository";
+import { SettingsRepository } from "../../settings";
 
-export class NotesRepository implements Repository<Note> {
+export class NotesRepository implements INoteRepository {
   async count(): Promise<number> {
-    return await db.notes.count();
+    return await window.electronAPI.db.count("notes");
   }
 
   async save(item: Note): Promise<Note> {
@@ -16,7 +15,7 @@ export class NotesRepository implements Repository<Note> {
     const settings = SettingsRepository.load();
 
     if (mode === "filesystem") {
-      const filePath = generateNotePath(settings.storageDirectory!, item.title);
+      const filePath = generateNotePath(settings.directory!, item.title);
       const uniquePath = await getUniqueFilePath(filePath, async (path) => {
         const result = await window.electronAPI.fs.statFile(path);
         return result.exists;
@@ -34,12 +33,12 @@ export class NotesRepository implements Repository<Note> {
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
-      await db.notes.add(metadata, item.id);
+      await window.electronAPI.db.save("notes", { ...metadata, id: item.id });
     } else {
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       item.fileSize = item.content.length;
-      await db.notes.add(item as any, item.id);
+      await window.electronAPI.db.save("notes", { ...item, id: item.id });
     }
     return item;
   }
@@ -49,7 +48,7 @@ export class NotesRepository implements Repository<Note> {
     const settings = SettingsRepository.load();
     if (
       item.filePath &&
-      !item.filePath.startsWith(settings.storageDirectory!) &&
+      !item.filePath.startsWith(settings.directory!) &&
       mode === "filesystem"
     ) {
       const result = await window.electronAPI.fs.writeFile(
@@ -62,7 +61,7 @@ export class NotesRepository implements Repository<Note> {
       }
       return item;
     }
-    const existing = await db.notes.get(id);
+    const existing = await window.electronAPI.db.get<Note>("notes", id);
     if (!existing) {
       throw new Error(`Note ${id} not found`);
     }
@@ -70,7 +69,7 @@ export class NotesRepository implements Repository<Note> {
       let filePath = existing.filePath;
       if (!filePath && (existing as any).content) {
         console.log("Lazy migration for note:", item.title);
-        filePath = generateNotePath(settings.storageDirectory!, item.title);
+        filePath = generateNotePath(settings.directory!, item.title);
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
           const result = await window.electronAPI.fs.statFile(path);
           return result.exists;
@@ -86,10 +85,7 @@ export class NotesRepository implements Repository<Note> {
         }
       }
       if (existing.title !== item.title && filePath) {
-        const newPath = generateNotePath(
-          settings.storageDirectory!,
-          item.title,
-        );
+        const newPath = generateNotePath(settings.directory!, item.title);
         if (newPath !== filePath) {
           const moveResult = await window.electronAPI.fs.moveFile(
             filePath,
@@ -120,19 +116,19 @@ export class NotesRepository implements Repository<Note> {
       item.updatedAt = new Date();
       item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
-      await db.notes.put(metadata, id);
+      await window.electronAPI.db.save("notes", { ...metadata, id });
     } else {
       item.updatedBy = settings.defaultAuthor;
       item.updatedAt = new Date();
       item.fileSize = item.content.length;
-      await db.notes.put(item as any, id);
+      await window.electronAPI.db.save("notes", { ...item, id });
     }
 
     return item;
   }
 
   async getOne(id: EntityBase["id"]): Promise<Note | null> {
-    const metadata: any = await db.notes.get(id);
+    const metadata: any = await window.electronAPI.db.get("notes", id);
     if (!metadata) {
       return null;
     }
@@ -143,13 +139,16 @@ export class NotesRepository implements Repository<Note> {
       );
       if (readResult.success) {
         const fileModified = new Date(readResult.lastModified);
-        if (metadata.lastSynced && fileModified > metadata.lastSynced) {
-          metadata.lastSynced = fileModified;
+        if (
+          metadata.lastSynced &&
+          new Date(metadata.lastSynced) < fileModified
+        ) {
+          // Note: In strict comparisons, ensure types match.
+          // metadata.lastSynced might be string from SQLite.
+          // Using new Date() wrapper to be safe.
+          metadata.lastSynced = fileModified.toISOString();
           metadata.fileSize = readResult.fileSize;
-          await db.notes.update(id, {
-            lastSynced: metadata.lastSynced,
-            fileSize: metadata.fileSize,
-          });
+          await window.electronAPI.db.save("notes", { ...metadata, id });
         }
         return Note.parse({ ...metadata, content: readResult.content });
       } else {
@@ -161,46 +160,31 @@ export class NotesRepository implements Repository<Note> {
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  /**
-   * Get all notes: metadata from IndexedDB (without loading content)
-   * Content is loaded lazily when note is opened via getOne()
-   */
-  async getAll(): Promise<Note[]> {
-    const metadataList = await db.notes.toArray();
-    return metadataList
-      .map((metadata) => Note.parse({ ...metadata, content: "" }))
-      .toSorted((a, b) => +b.updatedAt - +a.updatedAt);
+  async getAll(query?: { limit?: number }): Promise<Note[]> {
+    const all = await window.electronAPI.db.getAll("notes");
+    const notes = all.map((metadata: any) =>
+      Note.parse({ ...metadata, content: "" }),
+    );
+    const sorted = notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
+    if (query?.limit) {
+      return sorted.slice(0, query.limit);
+    }
+    return sorted;
   }
 
-  /**
-   * Get recent notes sorted by modification date
-   */
   async getRecentNotes(limit?: number): Promise<Note[]> {
-    let collection = db.notes.orderBy("updatedAt").reverse();
-    if (limit) {
-      collection = collection.limit(limit);
-    }
-    const metadataList = await collection.toArray();
-
-    return metadataList.map((metadata) =>
+    const metadataList = await window.electronAPI.db.notes.getRecentNotes(
+      limit || 20,
+    );
+    return metadataList.map((metadata: any) =>
       Note.parse({ ...metadata, content: "" }),
     );
   }
 
-  /**
-   * Get the most recently updated quicknote.
-   * Returns null if no quicknotes exist.
-   */
   async getLatestQuicknote(): Promise<Note | null> {
-    const result = await db.notes
-      .where("noteType")
-      .equals("quick")
-      .reverse()
-      .sortBy("updatedAt");
+    const metadata = await window.electronAPI.db.notes.getLatestQuicknote();
+    if (!metadata) return null;
 
-    if (result.length === 0) return null;
-
-    const metadata = result[0] as any;
     const mode = getStorageMode();
 
     if (mode === "filesystem" && metadata.filePath) {
@@ -217,18 +201,15 @@ export class NotesRepository implements Repository<Note> {
 
   async getQuicknoteByDate(date: Date): Promise<Note | null> {
     const datetime = new Date(date);
-    const start = startOfDay(datetime);
-    const end = endOfDay(datetime);
-    const result = await db.notes
-      .where("noteType")
-      .equals("quick")
-      .and((note) => {
-        const noteDate = new Date(note.updatedAt);
-        return noteDate >= start && noteDate <= end;
-      })
-      .toArray();
-    if (result.length === 0) return null;
-    const metadata = result[0] as any;
+    const start = startOfDay(datetime).toISOString();
+    const end = endOfDay(datetime).toISOString();
+
+    const metadata = await window.electronAPI.db.notes.getQuicknoteByDate(
+      start,
+      end,
+    );
+    if (!metadata) return null;
+
     const mode = getStorageMode();
     if (mode === "filesystem" && metadata.filePath) {
       const readResult = await window.electronAPI.fs.readFile(
@@ -241,21 +222,12 @@ export class NotesRepository implements Repository<Note> {
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  /**
-   * Delete note: conditionally removes from filesystem and/or IndexedDB
-   * - Filesystem mode with filePath: delete file + remove from IndexedDB
-   * - IndexedDB mode: just remove from IndexedDB
-   */
   async delete(id: EntityBase["id"]): Promise<boolean> {
-    const note: any = await db.notes.get(id);
-
+    const note: any = await window.electronAPI.db.get("notes", id);
     if (!note) {
       return false;
     }
-
     const mode = getStorageMode();
-
-    // Delete file if we're in filesystem mode and file exists
     if (mode === "filesystem" && note.filePath) {
       const deleteResult = await window.electronAPI.fs.deleteFile(
         note.filePath,
@@ -268,8 +240,7 @@ export class NotesRepository implements Repository<Note> {
       }
     }
 
-    // Remove from IndexedDB
-    await db.notes.delete(id);
+    await window.electronAPI.db.delete("notes", id);
 
     return true;
   }

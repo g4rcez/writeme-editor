@@ -19,10 +19,9 @@ import { Link } from "react-router-dom";
 import {
   globalDispatch,
   globalState,
-  repositories,
 } from "../../store/global.store";
+import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
-import { db } from "../../store/repositories/dexie/dexie-db";
 
 interface NoteWithTags extends Note {
   tagsList: string[];
@@ -120,7 +119,7 @@ export default function NotesListPage() {
       try {
         const [allNotes, allHashtags] = await Promise.all([
           repositories.notes.getAll(),
-          db.hashtags.toArray(),
+          repositories.hashtags.getAll(),
         ]);
 
         const tagsMap = new Map<string, string[]>();

@@ -22,7 +22,7 @@ export const Navbar = () => {
 
   return (
     <Fragment>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md border-border/40">
+      <header className="sticky top-0 z-50 w-full border-b bg-background border-border/40">
         <div className="flex gap-8 justify-between items-center mx-auto w-full h-16 max-w-safe">
           <div className="flex flex-1 gap-6 items-center">
             <Link

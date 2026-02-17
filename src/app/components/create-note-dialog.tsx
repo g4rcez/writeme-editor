@@ -48,7 +48,7 @@ export const CreateNoteDialog = () => {
       open={isOpen}
       className="max-w-md"
       onChange={handleClose}
-      title={type === "note" ? "Create new Note" : "Create quick Note"}
+      title={type === "note" ? "Create new note" : "Create quick note"}
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4 p-4">
         <Input

@@ -50,9 +50,22 @@ export function sanitizeFilename(title: string): string {
   return truncated || "untitled";
 }
 
+export const mdExtension = (s: string) => (s.endsWith(".md") ? s : `${s}.md`);
+
 export function generateNotePath(rootDir: string, noteTitle: string): string {
-  const filename = sanitizeFilename(noteTitle);
-  return joinPath(rootDir, `${filename}.md`);
+  if (noteTitle.startsWith("/")) {
+    return mdExtension(noteTitle);
+  }
+  const segments = noteTitle.split(/[/\\]/);
+  const sanitizedSegments = segments
+    .map((s) => sanitizeFilename(s))
+    .filter(Boolean);
+  if (sanitizedSegments.length === 0) {
+    return joinPath(rootDir, "untitled.md");
+  }
+  const filename = sanitizedSegments.pop()!;
+  const folderPath = sanitizedSegments.join("/");
+  return joinPath(rootDir, folderPath, mdExtension(filename));
 }
 
 export async function getUniqueFilePath(

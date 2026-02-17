@@ -1,5 +1,5 @@
 import { css } from "@g4rcez/components";
-import { Maximize2 } from "lucide-react";
+import { AlertTriangle, Maximize2, X } from "lucide-react";
 import { Fragment, Suspense, useEffect } from "react";
 import { Outlet, useNavigate, useLocation, matchPath } from "react-router-dom";
 import { Dates } from "../lib/dates";
@@ -22,6 +22,7 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
+import { isElectron } from "../lib/is-electron";
 
 const noop = () => {};
 
@@ -118,9 +119,9 @@ export const RootLayout = () => {
         )}
         <div className="flex flex-col flex-1 min-w-0">
           <ShortcutsCommands />
-          <DirectoryBrowserDialog />
+          {isElectron() ? <DirectoryBrowserDialog /> : null}
           <div
-            className={css("block", isQuickNote ? "py-8" : "mt-navbar mb-10")}
+            className={css("block", isQuickNote ? "py-8" : "py-4")}
           >
             <Suspense
               fallback={
@@ -133,6 +134,25 @@ export const RootLayout = () => {
         </div>
       </div>
       {isQuickNote ? null : <PWAInstallButton />}
+      
+      {uiState.error && (
+        <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right-4 fade-in duration-300">
+          <div className="flex items-center gap-3 py-3 px-4 rounded-lg border shadow-xl bg-destructive/10 border-destructive text-destructive backdrop-blur-md max-w-md">
+            <AlertTriangle className="size-5 shrink-0" />
+            <div className="flex-1 text-sm font-medium">
+              {uiState.error}
+            </div>
+            <button
+              onClick={() => uiDispatch.clearError()}
+              className="p-1 rounded-md hover:bg-destructive/20 transition-colors"
+              title="Dismiss error"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {uiState.focusMode && (
         <button
           title="Exit focus mode (⌘⇧F)"
@@ -143,7 +163,6 @@ export const RootLayout = () => {
           <span>Exit Focus</span>
         </button>
       )}
-      {/* <Footer /> */}
     </div>
   );
 };
