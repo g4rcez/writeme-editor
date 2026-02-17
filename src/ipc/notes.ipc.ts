@@ -10,23 +10,6 @@ export const notesIpcHandler = async () => {
     return x;
   });
 
-  // Legacy handlers (kept for backward compatibility)
-  ipcMain.handle("notes:setup", async (...args) => {
-    console.log("HANDLE");
-  });
-
-  ipcMain.handle("notes:findAll", async () => {
-    return [];
-  });
-
-  ipcMain.handle("notes:findById", async (_, id: string) => {
-    return {};
-  });
-
-  ipcMain.handle("notes:save", async (_, noteData: any) => {
-    return undefined;
-  });
-
   // File system handlers for hybrid storage
 
   // Directory selection dialog

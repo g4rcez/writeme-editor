@@ -104,6 +104,36 @@ export const useGlobalStore = createGlobalReducer(
       }
     };
 
+    const selectOrAddTab = async (fullNote: Note, createTabIfMissing: boolean = true) => {
+      const state = get.state();
+      const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
+      const updatedNotes = updateNoteInList(fullNote);
+
+      if (existingTab) {
+        return {
+          note: fullNote,
+          notes: updatedNotes,
+          activeTabId: existingTab.id,
+        };
+      }
+
+      if (!createTabIfMissing) {
+        return {
+          note: fullNote,
+          notes: updatedNotes,
+        };
+      }
+
+      const newTab = createTab(fullNote.id, fullNote.id);
+      await repositories.tabs.save(newTab);
+      return {
+        note: fullNote,
+        notes: updatedNotes,
+        activeTabId: newTab.id,
+        tabs: [...state.tabs, newTab],
+      };
+    };
+
     return {
       notes: setNotes,
       tabs: (tabs: Tab[]) => ({ tabs }),
@@ -147,33 +177,7 @@ export const useGlobalStore = createGlobalReducer(
           uiDispatch.setError(error.message || "Failed to update note");
           return {};
         }
-        const state = get.state();
-        const existingTab = state.tabs.find((t) => t.noteId === note.id);
-        const updatedNotes = updateNoteInList(note);
-
-        if (existingTab) {
-          return {
-            note: note,
-            notes: updatedNotes,
-            activeTabId: existingTab.id,
-          };
-        }
-
-        if (!createTabIfMissing) {
-          return {
-            note: note,
-            notes: updatedNotes,
-          };
-        }
-
-        const newTab = createTab(note.id, note.id);
-        await repositories.tabs.save(newTab);
-        return {
-          note: note,
-          notes: updatedNotes,
-          activeTabId: newTab.id,
-          tabs: [...state.tabs, newTab],
-        };
+        return selectOrAddTab(note, createTabIfMissing);
       },
       addTab: async (noteId: string) => {
         const currentTabs = get.state().tabs;
@@ -235,25 +239,7 @@ export const useGlobalStore = createGlobalReducer(
           return {};
         }
         if (!fullNote) return {};
-        const state = get.state();
-        const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
-        const updatedNotes = updateNoteInList(fullNote);
-
-        if (existingTab) {
-          return {
-            note: fullNote,
-            notes: updatedNotes,
-            activeTabId: existingTab.id,
-          };
-        }
-        const newTab = createTab(fullNote.id, fullNote.id);
-        await repositories.tabs.save(newTab);
-        return {
-          note: fullNote,
-          notes: updatedNotes,
-          activeTabId: newTab.id,
-          tabs: [...state.tabs, newTab],
-        };
+        return selectOrAddTab(fullNote);
       },
     } as const;
   },

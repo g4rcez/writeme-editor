@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useGlobalStore } from "../../store/global.store";
 import { Note } from "../../store/note";
 import { SettingsService } from "../../store/settings";
@@ -6,21 +6,29 @@ import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Search } from "lucide-react";
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
+import { useListSearch } from "../hooks/use-list-search";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
   const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const navigate = useNavigate();
+
+  const closeDialog = useCallback(() => {
+    dispatch.recentNotesDialog(false);
+  }, [dispatch]);
+
+  const openNote = useCallback((note: Note) => {
+    navigate(`/note/${note.id}`);
+    closeDialog();
+  }, [navigate, closeDialog]);
 
   // Load recent notes when dialog opens
   useEffect(() => {
     if (state.recentNotesDialog) {
       dispatch.loadRecentNotes();
       setQuery("");
-      setSelectedIndex(0);
       // Small delay to ensure render
       setTimeout(() => inputRef.current?.focus(), 10);
     }
@@ -43,30 +51,11 @@ export const RecentNotesDialog = () => {
     return titleMatch || pathMatch;
   });
 
-  // Handle keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!state.recentNotesDialog) return;
-
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((prev) => 
-          prev < filteredNotes.length - 1 ? prev + 1 : prev
-        );
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (filteredNotes[selectedIndex]) {
-          openNote(filteredNotes[selectedIndex]);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.recentNotesDialog, filteredNotes, selectedIndex]);
+  const { selectedIndex, setSelectedIndex } = useListSearch({
+    items: filteredNotes,
+    onSelect: openNote,
+    isOpen: state.recentNotesDialog,
+  });
 
   // Scroll selected item into view
   useEffect(() => {
@@ -77,15 +66,6 @@ export const RecentNotesDialog = () => {
       }
     }
   }, [selectedIndex, filteredNotes]);
-
-  const openNote = (note: Note) => {
-    navigate(`/note/${note.id}`);
-    closeDialog();
-  };
-
-  const closeDialog = () => {
-    dispatch.recentNotesDialog(false);
-  };
 
   return (
     <Modal
@@ -104,7 +84,6 @@ export const RecentNotesDialog = () => {
             value={query}
             onChange={(e) => {
                 setQuery(e.target.value);
-                setSelectedIndex(0);
             }}
           />
           <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">

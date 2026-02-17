@@ -4,13 +4,13 @@ import { useGlobalStore, repositories } from "../../store/global.store";
 import { Note } from "../../store/note";
 import { SettingsService } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
+import { useListSearch } from "../hooks/use-list-search";
 
 export const SearchBar = () => {
   const [, dispatch] = useGlobalStore();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Note[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +21,6 @@ export const SearchBar = () => {
     setIsOpen(true);
     setQuery("");
     setResults([]);
-    setSelectedIndex(0);
     setTimeout(() => inputRef.current?.focus(), 10);
   }, []);
 
@@ -30,6 +29,17 @@ export const SearchBar = () => {
     setQuery("");
     setResults([]);
   }, []);
+
+  const selectNote = useCallback((note: Note) => {
+    dispatch.selectNoteById(note.id);
+    closeSearch();
+  }, [dispatch, closeSearch]);
+
+  const { selectedIndex, setSelectedIndex } = useListSearch({
+    items: results,
+    onSelect: selectNote,
+    isOpen: isOpen,
+  });
 
   // Keyboard shortcut: Cmd/Ctrl + K
   useEffect(() => {
@@ -67,33 +77,11 @@ export const SearchBar = () => {
         return titleMatch || pathMatch;
       });
       setResults(filtered.slice(0, 8));
-      setSelectedIndex(0);
     };
 
     const debounce = setTimeout(searchNotes, 150);
     return () => clearTimeout(debounce);
   }, [query]);
-
-  // Arrow key navigation
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyNav = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === "Enter" && results[selectedIndex]) {
-        e.preventDefault();
-        selectNote(results[selectedIndex]);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyNav);
-    return () => window.removeEventListener("keydown", handleKeyNav);
-  }, [isOpen, results, selectedIndex]);
 
   // Click outside to close
   useEffect(() => {
@@ -108,11 +96,6 @@ export const SearchBar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, closeSearch]);
-
-  const selectNote = (note: Note) => {
-    dispatch.selectNoteById(note.id);
-    closeSearch();
-  };
 
   return (
     <div ref={containerRef} className="relative">

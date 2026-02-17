@@ -9,24 +9,13 @@ import {
 import {
   LinkIcon,
   LogsIcon,
-  Search,
   SearchIcon,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  globalDispatch,
-  globalState,
-} from "../../store/global.store";
-import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
-
-interface NoteWithTags extends Note {
-  tagsList: string[];
-  tagCount: number;
-}
+import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
 
 const tag: Record<
   Note["noteType"],
@@ -38,34 +27,25 @@ const tag: Record<
 };
 
 export default function NotesListPage() {
-  const [notes, setNotes] = useState<NoteWithTags[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  const toggleSelection = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const selectAll = () =>
-    setSelectedIds(new Set(filteredNotes.map((n) => n.id)));
-
-  const deselectAll = () => setSelectedIds(new Set());
+  const {
+    loading,
+    search,
+    setSearch,
+    filteredNotes,
+    selectedIds,
+    toggleSelection,
+    selectAll,
+    deselectAll,
+    handleDelete,
+    handleBatchDelete,
+  } = useNoteList();
 
   const cols = createColumns<NoteWithTags>((col) => {
     col.add(
       "id",
       <Checkbox
-        checked={selectedIds.size === notes.length}
-        onChange={selectAll}
+        checked={selectedIds.size === filteredNotes.length && filteredNotes.length > 0}
+        onChange={selectedIds.size === filteredNotes.length ? deselectAll : selectAll}
       />,
       {
         thProps: { className: "w-12" },
@@ -112,89 +92,6 @@ export default function NotesListPage() {
       ),
     });
   });
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [allNotes, allHashtags] = await Promise.all([
-          repositories.notes.getAll(),
-          repositories.hashtags.getAll(),
-        ]);
-
-        const tagsMap = new Map<string, string[]>();
-        allHashtags.forEach((h) => {
-          if (!tagsMap.has(h.filename)) {
-            tagsMap.set(h.filename, []);
-          }
-          tagsMap.get(h.filename)?.push(h.hashtag);
-        });
-
-        const notesWithTags = allNotes.map((note): NoteWithTags => {
-          const key = note.filePath || note.title;
-          const tags = tagsMap.get(key) || [];
-          return {
-            ...note,
-            tagsList: tags,
-            tagCount: tags.length,
-          } as NoteWithTags;
-        });
-        setNotes(notesWithTags);
-      } catch (error) {
-        console.error("Failed to load notes list:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  const filteredNotes = useMemo(() => {
-    if (!search) return notes;
-    const lower = search.toLowerCase();
-    return notes.filter(
-      (n) =>
-        n.title.toLowerCase().includes(lower) ||
-        n.tagsList.some((t) => t.toLowerCase().includes(lower)),
-    );
-  }, [notes, search]);
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (confirm("Are you sure you want to delete this note?")) {
-      await repositories.notes.delete(id);
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-      const tabs = globalState().tabs;
-      const tabToRemove = tabs.find((t) => t.noteId === id);
-      if (tabToRemove) {
-        globalDispatch.removeTab(tabToRemove.id);
-      }
-      // Also remove from selection if it was selected
-      if (selectedIds.has(id)) {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    }
-  };
-
-  const handleBatchDelete = async () => {
-    if (confirm(`Are you sure you want to delete ${selectedIds.size} notes?`)) {
-      const tabs = globalState().tabs;
-      for (const id of selectedIds) {
-        await repositories.notes.delete(id);
-        const tabToRemove = tabs.find((t) => t.noteId === id);
-        if (tabToRemove) {
-          await globalDispatch.removeTab(tabToRemove.id);
-        }
-      }
-      setNotes((prev) => prev.filter((n) => !selectedIds.has(n.id)));
-      setSelectedIds(new Set());
-    }
-  };
 
   if (loading) {
     return (
