@@ -12,4 +12,7 @@ export class Hashtag implements EntityBase {
   ) {}
 }
 
-export interface IHashtagRepository extends Repository<Hashtag> {}
+export interface IHashtagRepository extends Repository<Hashtag> {
+  findByHashtag(tag: string): Promise<Hashtag[]>;
+  sync(filename: string, tags: string[]): Promise<void>;
+}

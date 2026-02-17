@@ -3,16 +3,18 @@ import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
 import { INoteRepository, Note } from "../../note";
 import { EntityBase } from "../../repository";
-import { SettingsRepository } from "../../settings";
+import { SettingsService } from "../../settings";
+import { BaseRepository } from "../base.repository";
+import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 
-export class NotesRepository implements INoteRepository {
-  async count(): Promise<number> {
-    return await window.electronAPI.db.count("notes");
+export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+  constructor() {
+    super(new ElectronStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
   }
 
   async save(item: Note): Promise<Note> {
     const mode = getStorageMode();
-    const settings = SettingsRepository.load();
+    const settings = SettingsService.load();
 
     if (mode === "filesystem") {
       const filePath = generateNotePath(settings.directory!, item.title);
@@ -33,19 +35,19 @@ export class NotesRepository implements INoteRepository {
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
-      await window.electronAPI.db.save("notes", { ...metadata, id: item.id });
+      await this.adapter.save(this.collection, { ...metadata, id: item.id });
     } else {
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       item.fileSize = item.content.length;
-      await window.electronAPI.db.save("notes", { ...item, id: item.id });
+      await this.adapter.save(this.collection, { ...item, id: item.id });
     }
     return item;
   }
 
   async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const mode = getStorageMode();
-    const settings = SettingsRepository.load();
+    const settings = SettingsService.load();
     if (
       item.filePath &&
       !item.filePath.startsWith(settings.directory!) &&
@@ -61,7 +63,7 @@ export class NotesRepository implements INoteRepository {
       }
       return item;
     }
-    const existing = await window.electronAPI.db.get<Note>("notes", id);
+    const existing = await this.getOne(id);
     if (!existing) {
       throw new Error(`Note ${id} not found`);
     }
@@ -116,19 +118,19 @@ export class NotesRepository implements INoteRepository {
       item.updatedAt = new Date();
       item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
-      await window.electronAPI.db.save("notes", { ...metadata, id });
+      await this.adapter.save(this.collection, { ...metadata, id });
     } else {
       item.updatedBy = settings.defaultAuthor;
       item.updatedAt = new Date();
       item.fileSize = item.content.length;
-      await window.electronAPI.db.save("notes", { ...item, id });
+      await this.adapter.save(this.collection, { ...item, id });
     }
 
     return item;
   }
 
   async getOne(id: EntityBase["id"]): Promise<Note | null> {
-    const metadata: any = await window.electronAPI.db.get("notes", id);
+    const metadata: any = await this.adapter.get(this.collection, id);
     if (!metadata) {
       return null;
     }
@@ -143,12 +145,9 @@ export class NotesRepository implements INoteRepository {
           metadata.lastSynced &&
           new Date(metadata.lastSynced) < fileModified
         ) {
-          // Note: In strict comparisons, ensure types match.
-          // metadata.lastSynced might be string from SQLite.
-          // Using new Date() wrapper to be safe.
           metadata.lastSynced = fileModified.toISOString();
           metadata.fileSize = readResult.fileSize;
-          await window.electronAPI.db.save("notes", { ...metadata, id });
+          await this.adapter.save(this.collection, { ...metadata, id });
         }
         return Note.parse({ ...metadata, content: readResult.content });
       } else {
@@ -161,7 +160,7 @@ export class NotesRepository implements INoteRepository {
   }
 
   async getAll(query?: { limit?: number }): Promise<Note[]> {
-    const all = await window.electronAPI.db.getAll("notes");
+    const all = await this.adapter.getAll<Note>(this.collection);
     const notes = all.map((metadata: any) =>
       Note.parse({ ...metadata, content: "" }),
     );
@@ -223,7 +222,7 @@ export class NotesRepository implements INoteRepository {
   }
 
   async delete(id: EntityBase["id"]): Promise<boolean> {
-    const note: any = await window.electronAPI.db.get("notes", id);
+    const note: any = await this.adapter.get(this.collection, id);
     if (!note) {
       return false;
     }
@@ -240,7 +239,7 @@ export class NotesRepository implements INoteRepository {
       }
     }
 
-    await window.electronAPI.db.delete("notes", id);
+    await this.adapter.delete(this.collection, id);
 
     return true;
   }

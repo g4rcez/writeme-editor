@@ -1,5 +1,4 @@
 import { isElectron } from "./is-electron";
-import { SettingsRepository } from "../store/settings";
 
 export type StorageMode = "filesystem" | "indexeddb";
 
@@ -11,8 +10,7 @@ export type StorageMode = "filesystem" | "indexeddb";
  */
 export const getStorageMode = (): StorageMode => {
   if (!isElectron()) return "indexeddb";
-  const settings = SettingsRepository.load();
-  return settings.directory ? "filesystem" : "indexeddb";
+  return "filesystem";
 };
 
 /**

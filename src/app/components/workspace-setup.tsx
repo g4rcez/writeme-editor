@@ -2,7 +2,7 @@ import { Modal } from "@g4rcez/components";
 import { Database, FolderSync, X } from "lucide-react";
 import { useState } from "react";
 import { isElectron } from "../../lib/is-electron";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
 interface StorageConfigDialogProps {
   open: boolean;
@@ -17,7 +17,7 @@ export const StorageConfigDialog = ({
   open,
   onOpenChange,
 }: StorageConfigDialogProps) => {
-  const settings = SettingsRepository.load();
+  const settings = SettingsService.load();
   const [directory, setDirectory] = useState<string | null>(
     settings.directory
   );
@@ -41,7 +41,7 @@ export const StorageConfigDialog = ({
 
   const handleSaveWithSync = async () => {
     if (!directory) return;
-    await SettingsRepository.save({
+    await SettingsService.save({
       directory: directory,
       defaultAuthor: author || "user",
     });
@@ -50,7 +50,7 @@ export const StorageConfigDialog = ({
   };
 
   const handleUseLocalOnly = async () => {
-    await SettingsRepository.save({
+    await SettingsService.save({
       directory: null,
       defaultAuthor: author || "user",
     });
@@ -60,7 +60,7 @@ export const StorageConfigDialog = ({
 
   const handleClearSync = async () => {
     setDirectory(null);
-    await SettingsRepository.save({
+    await SettingsService.save({
       directory: null,
     });
   };

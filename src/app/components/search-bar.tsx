@@ -2,7 +2,7 @@ import { Search, X } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGlobalStore, repositories } from "../../store/global.store";
 import { Note } from "../../store/note";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 
 export const SearchBar = () => {
@@ -14,7 +14,7 @@ export const SearchBar = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const settings = SettingsRepository.load();
+  const settings = SettingsService.load();
   const storageDir = settings.storageDirectory || "";
 
   const openSearch = useCallback(() => {

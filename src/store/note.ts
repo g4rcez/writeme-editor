@@ -85,7 +85,7 @@ export class Note implements EntityBase {
     }
   }
 
-  public static parse(a: any): Note {
+  public static parse(a: Partial<Note>): Note {
     return new Note(
       a.title || "Untitled",
       a.content || "",

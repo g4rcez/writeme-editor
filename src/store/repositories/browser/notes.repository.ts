@@ -1,26 +1,27 @@
 import { endOfDay, startOfDay } from "date-fns";
 import { INoteRepository, Note } from "../../note";
 import { EntityBase } from "../../repository";
-import { SettingsRepository } from "../../settings";
+import { SettingsService } from "../../settings";
 import { db } from "./dexie-db";
+import { BaseRepository } from "../base.repository";
+import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 
-export class NotesRepository implements INoteRepository {
-  async count(): Promise<number> {
-    return await db.notes.count();
+export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+  constructor() {
+    super(new DexieStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
   }
 
   async save(item: Note): Promise<Note> {
-    const settings = SettingsRepository.load();
+    const settings = SettingsService.load();
     item.createdBy = settings.defaultAuthor;
     item.updatedBy = settings.defaultAuthor;
     item.fileSize = item.content.length;
-    await db.notes.add(item as any, item.id);
-    return item;
+    return await super.save(item);
   }
 
   async update(id: EntityBase["id"], item: Note): Promise<Note> {
-    const settings = SettingsRepository.load();
-    const existing = await db.notes.get(id);
+    const settings = SettingsService.load();
+    const existing = await this.getOne(id);
     if (!existing) {
       throw new Error(`Note ${id} not found`);
     }
@@ -28,13 +29,11 @@ export class NotesRepository implements INoteRepository {
     item.updatedBy = settings.defaultAuthor;
     item.updatedAt = new Date();
     item.fileSize = item.content.length;
-    await db.notes.put(item as any, id);
-
-    return item;
+    return await super.update(id, item);
   }
 
   async getOne(id: EntityBase["id"]): Promise<Note | null> {
-    const metadata: any = await db.notes.get(id);
+    const metadata: any = await super.getOne(id);
     if (!metadata) {
       return null;
     }
@@ -42,16 +41,10 @@ export class NotesRepository implements INoteRepository {
   }
 
   async getAll(query?: { limit?: number }): Promise<Note[]> {
-    let collection = db.notes.toCollection();
-    if (query?.limit) {
-      collection = collection.limit(query.limit);
-    }
-    const metadataList = await collection.toArray();
-    return metadataList
-      .map((metadata) =>
-        Note.parse({ ...metadata, content: metadata.content || "" }),
-      )
-      .toSorted((a, b) => +b.updatedAt - +a.updatedAt);
+    const items = await super.getAll(query);
+    return items.map((metadata) =>
+      Note.parse({ ...metadata, content: metadata.content || "" }),
+    );
   }
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
@@ -94,16 +87,5 @@ export class NotesRepository implements INoteRepository {
     if (result.length === 0) return null;
     const metadata = result[0] as any;
     return Note.parse({ ...metadata, content: metadata.content || "" });
-  }
-
-  async delete(id: EntityBase["id"]): Promise<boolean> {
-    const note: any = await db.notes.get(id);
-
-    if (!note) {
-      return false;
-    }
-
-    await db.notes.delete(id);
-    return true;
   }
 }

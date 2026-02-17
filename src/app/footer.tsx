@@ -1,7 +1,7 @@
 import { PanelLeftIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useUIStore } from "../store/ui.store";
-import { SettingsRepository } from "../store/settings";
+import { SettingsService } from "../store/settings";
 
 export const Footer = () => {
   const [, uiDispatch] = useUIStore();
@@ -9,7 +9,7 @@ export const Footer = () => {
 
   useEffect(() => {
     const loadPath = async () => {
-      const settings = SettingsRepository.load();
+      const settings = SettingsService.load();
       if (!settings.directory) return;
       const home = (await window.electronAPI?.env?.getHome()) || "";
       const path = settings.directory;

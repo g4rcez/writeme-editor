@@ -15,7 +15,7 @@ import { router } from "./router";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
-import { SettingsRepository } from "../store/settings";
+import { SettingsService } from "../store/settings";
 
 declare global {
   interface Window {
@@ -80,8 +80,8 @@ export async function main() {
   themeConfiguration();
   initializePWA();
   try {
-    await SettingsRepository.init();
-    const settings = SettingsRepository.load();
+    await SettingsService.init();
+    const settings = SettingsService.load();
     globalDispatch.theme(settings.theme);
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();

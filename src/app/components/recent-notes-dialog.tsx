@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useGlobalStore } from "../../store/global.store";
 import { Note } from "../../store/note";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
 import { Search } from "lucide-react";
 import { Modal } from "@g4rcez/components";
@@ -26,7 +26,7 @@ export const RecentNotesDialog = () => {
     }
   }, [state.recentNotesDialog, dispatch]);
 
-  const settings = SettingsRepository.load();
+  const settings = SettingsService.load();
   const storageDir = settings.storageDirectory || "";
 
   // Filter notes

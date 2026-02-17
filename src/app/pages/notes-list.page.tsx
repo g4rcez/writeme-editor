@@ -235,7 +235,7 @@ export default function NotesListPage() {
 
       {selectedIds.size > 0 && (
         <div className="fixed bottom-8 left-1/2 z-50 duration-200 -translate-x-1/2 animate-in slide-in-from-bottom-4 fade-in">
-          <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-card text-card-foreground">
+          <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-floating-background text-card-foreground">
             <span className="font-medium">{selectedIds.size} selected</span>
             <div className="w-px h-4 bg-border" />
             <button

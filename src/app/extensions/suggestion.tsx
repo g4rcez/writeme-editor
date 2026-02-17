@@ -2,7 +2,7 @@ import { css } from "@g4rcez/components";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { SettingsRepository } from "../../store/settings";
+import { SettingsService } from "../../store/settings";
 
 const MentionList = forwardRef((props: any, ref: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -99,7 +99,7 @@ const updatePosition = (editor: any, element: HTMLElement) => {
 
 export const suggestion = {
   items: async (args: { query: string }) => {
-    const { directory } = SettingsRepository.load();
+    const { directory } = SettingsService.load();
     if (!directory) return [];
     const { entries } = await window.electronAPI.fs.readDir(directory);
     const query = args.query.toLowerCase();
