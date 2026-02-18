@@ -58,7 +58,8 @@ class DatabaseManager {
         noteId TEXT,
         "order" INTEGER,
         project TEXT,
-        createdAt TEXT
+        createdAt TEXT,
+        updatedAt TEXT
       );
 
       CREATE TABLE IF NOT EXISTS hashtags (
@@ -84,12 +85,16 @@ class DatabaseManager {
 
     for (const table of tables) {
       try {
-        const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as any[];
-        
+        const columns = this.db
+          .prepare(`PRAGMA table_info(${table})`)
+          .all() as any[];
+
         for (const col of commonColumns) {
           if (!columns.some((c: any) => c.name === col)) {
             console.log(`Migrating table ${table}: adding '${col}' column`);
-            this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`).run();
+            this.db
+              .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
+              .run();
           }
         }
 
@@ -97,8 +102,19 @@ class DatabaseManager {
           for (const col of noteColumns) {
             if (!columns.some((c: any) => c.name === col)) {
               console.log(`Migrating table ${table}: adding '${col}' column`);
-              this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`).run();
+              this.db
+                .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
+                .run();
             }
+          }
+        }
+
+        if (table === "tabs") {
+          if (!columns.some((c: any) => c.name === "updatedAt")) {
+            console.log(`Migrating table ${table}: adding 'updatedAt' column`);
+            this.db
+              .prepare(`ALTER TABLE ${table} ADD COLUMN updatedAt TEXT`)
+              .run();
           }
         }
       } catch (e) {
@@ -110,7 +126,7 @@ class DatabaseManager {
     const defaults = [
       { name: "autosave", value: "true" },
       { name: "autosaveDelay", value: "5000" },
-      { name: "theme", value: "\"dark\"" },
+      { name: "theme", value: '"dark"' },
     ];
 
     const insertSetting = this.db.prepare(`
@@ -149,12 +165,12 @@ class DatabaseManager {
       if (v instanceof Date) return v.toISOString();
       return v;
     });
-    
+
     const placeholders = keys.map(() => "?").join(",");
     const columns = keys.map((k) => `"${k}"`).join(","); // Quote columns for safety/reserved words
-    
+
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO ${table} (${columns}) VALUES (${placeholders})`
+      `INSERT OR REPLACE INTO ${table} (${columns}) VALUES (${placeholders})`,
     );
     stmt.run(...values);
   }
@@ -173,7 +189,7 @@ class DatabaseManager {
   // Specific query for quicknotes
   public getLatestQuicknote(): any {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType = 'quick' ORDER BY updatedAt DESC LIMIT 1`
+      `SELECT * FROM notes WHERE noteType = 'quick' ORDER BY updatedAt DESC LIMIT 1`,
     );
     const result = stmt.get() as any;
     if (result && result.tags) {
@@ -184,7 +200,7 @@ class DatabaseManager {
 
   public getQuicknoteByDate(start: string, end: string): any {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType = 'quick' AND updatedAt >= ? AND updatedAt <= ? LIMIT 1`
+      `SELECT * FROM notes WHERE noteType = 'quick' AND updatedAt >= ? AND updatedAt <= ? LIMIT 1`,
     );
     const result = stmt.get(start, end) as any;
     if (result && result.tags) {
@@ -195,7 +211,7 @@ class DatabaseManager {
 
   public getRecentNotes(limit: number): any[] {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes ORDER BY updatedAt DESC LIMIT ?`
+      `SELECT * FROM notes ORDER BY updatedAt DESC LIMIT ?`,
     );
     const results = stmt.all(limit) as any[];
     return results.map((row) => {
@@ -206,40 +222,48 @@ class DatabaseManager {
     });
   }
 
-  public updateTabsOrder(tabs: {id: string, order: number}[]): void {
-      const updateStmt = this.db.prepare('UPDATE tabs SET "order" = ? WHERE id = ?');
-      const transaction = this.db.transaction((tabs) => {
-          for (const tab of tabs) {
-              updateStmt.run(tab.order, tab.id);
-          }
-      });
-      transaction(tabs);
+  public updateTabsOrder(tabs: { id: string; order: number }[]): void {
+    const updateStmt = this.db.prepare(
+      'UPDATE tabs SET "order" = ? WHERE id = ?',
+    );
+    const transaction = this.db.transaction((tabs) => {
+      for (const tab of tabs) {
+        updateStmt.run(tab.order, tab.id);
+      }
+    });
+    transaction(tabs);
   }
 
   public syncHashtags(filename: string, tags: string[]): void {
-      const getExistingStmt = this.db.prepare('SELECT * FROM hashtags WHERE filename = ?');
-      const deleteStmt = this.db.prepare('DELETE FROM hashtags WHERE id = ?');
-      const insertStmt = this.db.prepare('INSERT INTO hashtags (id, hashtag, filename, project) VALUES (?, ?, ?, ?)');
+    const getExistingStmt = this.db.prepare(
+      "SELECT * FROM hashtags WHERE filename = ?",
+    );
+    const deleteStmt = this.db.prepare("DELETE FROM hashtags WHERE id = ?");
+    const insertStmt = this.db.prepare(
+      "INSERT INTO hashtags (id, hashtag, filename, project) VALUES (?, ?, ?, ?)",
+    );
 
-      const transaction = this.db.transaction(() => {
-          const existing = getExistingStmt.all(filename) as any[];
-          const existingTags = existing.map(e => e.hashtag);
-          
-          const added = tags.filter(t => !existingTags.includes(t));
-          const removed = existingTags.filter(t => !tags.includes(t));
+    const transaction = this.db.transaction(() => {
+      const existing = getExistingStmt.all(filename) as any[];
+      const existingTags = existing.map((e) => e.hashtag);
 
-          if (added.length === 0 && removed.length === 0) return;
+      const added = tags.filter((t) => !existingTags.includes(t));
+      const removed = existingTags.filter((t) => !tags.includes(t));
 
-          const idsToRemove = existing.filter(e => removed.includes(e.hashtag)).map(e => e.id);
-          for (const id of idsToRemove) {
-              deleteStmt.run(id);
-          }
+      if (added.length === 0 && removed.length === 0) return;
 
-          for (const tag of added) {
-              insertStmt.run(crypto.randomUUID(), tag, filename, "default");
-          }
-      });
-      transaction();
+      const idsToRemove = existing
+        .filter((e) => removed.includes(e.hashtag))
+        .map((e) => e.id);
+      for (const id of idsToRemove) {
+        deleteStmt.run(id);
+      }
+
+      for (const tag of added) {
+        insertStmt.run(crypto.randomUUID(), tag, filename, "default");
+      }
+    });
+    transaction();
   }
 }
 

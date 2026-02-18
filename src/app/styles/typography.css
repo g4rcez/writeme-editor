@@ -66,7 +66,7 @@
 }
 
 .tiptap ul {
-  @apply list-disc;
+  @apply list-disc inline-flex;
 }
 
 .tiptap img {
@@ -90,12 +90,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li > label {
+.tiptap ul[data-type="taskList"] li>label {
   @apply select-none mr-3;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li > div {
+.tiptap ul[data-type="taskList"] li>div {
   @apply items-center;
   flex: 1 1 auto;
 }
@@ -132,8 +132,8 @@
   vertical-align: top;
 }
 
-.tiptap table td > *,
-.tiptap table th > * {
+.tiptap table td>*,
+.tiptap table th>* {
   margin-bottom: 0;
 }
 
@@ -174,11 +174,12 @@
 
 .tiptap ul,
 .tiptap ol {
+  @apply flex flex-col;
   margin-bottom: 1rem;
 }
 
-.tiptap li > ul,
-.tiptap li > ol {
+.tiptap li>ul,
+.tiptap li>ol {
   margin-top: 0.25rem;
   margin-bottom: 0.5rem;
 }
@@ -192,25 +193,28 @@
 }
 
 .tiptap ol {
+  @apply flex min-w-full flex-col;
   list-style-type: none;
   counter-reset: section;
   padding-left: 0;
 }
 
 .tiptap ol li {
+  @apply flex items-baseline;
   counter-increment: section;
 }
 
 .tiptap ol li p {
-  display: inline-block;
+  @apply flex flex-wrap;
+  white-space-collapse: break-spaces;
 }
 
 .tiptap ol li::before {
-  @apply inline-block;
+  @apply inline-flex;
   content: counters(section, ".") ". ";
 }
 
-.tiptap ol li > ol {
+.tiptap ol li>ol {
   margin-left: 2rem;
   counter-reset: section;
 }

@@ -1,4 +1,4 @@
-import { uuid } from "@g4rcez/components";
+import { Button, Select, uuid } from "@g4rcez/components";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import { Node as ProsemirrorNode } from "@tiptap/pm/model";
@@ -10,9 +10,16 @@ import {
   type ReactNodeViewProps,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { Loader2, Wand2 } from "lucide-react";
+import { Loader2, Wand2, Play, TerminalSquare, X } from "lucide-react";
 import mermaid from "mermaid";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type BundledLanguage,
   type BundledTheme,
@@ -21,6 +28,7 @@ import {
   bundledThemes,
   createHighlighter,
 } from "shiki";
+import Convert from "ansi-to-html";
 import {
   getCurrentElementName,
   updateNodeContent,
@@ -31,6 +39,8 @@ import { ExcalidrawCode } from "./excalidraw";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
+import { EXECUTION_CONFIG } from "../../lib/execution-config";
+import { isElectron } from "@/lib/is-electron";
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -61,7 +71,9 @@ export function getShiki() {
   return highlighter;
 }
 
-export function loadHighlighter(opts: HighlighterOptions) {
+export function loadHighlighter(
+  opts: HighlighterOptions,
+): Promise<void> | undefined {
   if (!highlighter && !highlighterPromise) {
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
@@ -69,7 +81,9 @@ export function loadHighlighter(opts: HighlighterOptions) {
     highlighterPromise = createHighlighter({
       langs: [...langs, shikiMathGrammer],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
-    }).then((h) => void (highlighter = h));
+    }).then((h: Highlighter): void => {
+      highlighter = h;
+    });
     return highlighterPromise;
   }
   if (highlighterPromise) {
@@ -227,6 +241,7 @@ export function ShikiPlugin({
             name,
             defaultLanguage,
             defaultTheme: currentTheme,
+            // @ts-ignore
           });
           if (getCurrentTheme) {
             await Promise.all([
@@ -277,6 +292,7 @@ export function ShikiPlugin({
           name,
           defaultLanguage,
           defaultTheme: currentTheme,
+          // @ts-ignore
         });
       },
       apply: (transaction, decorationSet, oldState, newState) => {
@@ -316,6 +332,7 @@ export function ShikiPlugin({
             name,
             defaultLanguage,
             defaultTheme: currentTheme,
+            // @ts-ignore
           });
         }
         return decorationSet.map(transaction.mapping, transaction.doc);
@@ -369,52 +386,78 @@ const getAllLanguages = (): string[] => {
   return allLanguages.sort();
 };
 
-const CodeBlockHeader = ({ 
-  language, 
-  code, 
-  handleLanguageChange, 
-  handleFormat, 
-  isFormatting 
-}: { 
-  language: string; 
-  code: string; 
-  handleLanguageChange: (lang: string) => void; 
-  handleFormat: () => void; 
-  isFormatting: boolean; 
+const CodeBlockHeader = ({
+  language,
+  code,
+  handleLanguageChange: onChangeLanguage,
+  handleFormat,
+  isFormatting,
+  executablePath,
+  handleRun,
+  isRunning,
+}: {
+  language: string;
+  code: string;
+  handleLanguageChange: (lang: string) => void;
+  handleFormat: () => void;
+  isFormatting: boolean;
+  executablePath: string | null;
+  handleRun: () => void;
+  isRunning: boolean;
 }) => {
   return (
     <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
       <div className="flex gap-2 items-center">
-        <select
+        <Select
+          hiddenLabel
           value={language}
+          className="h-8 text-xs"
           aria-description="Language"
-          onChange={(e) => handleLanguageChange(e.target.value)}
-          className="py-1 px-2 text-xs bg-transparent rounded border focus:ring-2 focus:outline-none focus:ring-primary"
-        >
-          <option value="plaintext">Plain Text</option>
-          {getAllLanguages().map((lang) => (
-            <option key={lang} value={lang}>
-              {lang.charAt(0).toUpperCase() + lang.slice(1)}
-            </option>
-          ))}
-        </select>
+          placeholder="Select a language"
+          onChange={(e) => onChangeLanguage(e.target.value)}
+          options={[
+            { value: "plaintext", label: "Plain text" },
+            ...getAllLanguages().map((lang) => ({
+              value: lang,
+              label: lang.charAt(0).toUpperCase() + lang.slice(1),
+            })),
+          ]}
+        />
         {canFormat(language) && (
-          <button
+          <Button
+            size="small"
+            theme="ghost-primary"
+            title="Format code"
             onClick={handleFormat}
             disabled={isFormatting}
-            className="p-1 rounded-md transition-colors hover:bg-muted"
-            title="Format code"
-            type="button"
           >
             {isFormatting ? (
               <Loader2 className="animate-spin size-4" />
             ) : (
-              <span className="flex gap-1 items-center text-sm">
+              <span className="flex gap-1 items-center text-xs">
                 <Wand2 className="size-4" />
                 Format
               </span>
             )}
-          </button>
+          </Button>
+        )}
+        {executablePath && (
+          <Button
+            size="small"
+            onClick={handleRun}
+            disabled={isRunning}
+            theme="ghost-success"
+            title={`Run with ${EXECUTION_CONFIG[language as BundledLanguage]?.label}`}
+          >
+            {isRunning ? (
+              <Loader2 className="animate-spin size-4" />
+            ) : (
+              <span className="flex gap-1 items-center text-sm">
+                <Play className="fill-current size-4" />
+                Run
+              </span>
+            )}
+          </Button>
         )}
       </div>
       <div className="text-xs text-foreground">
@@ -424,7 +467,90 @@ const CodeBlockHeader = ({
   );
 };
 
-const CodeBlockAddons = ({ language, code }: { language: string; code: string }) => {
+const ExecutionOutput = ({
+  output,
+  stderr,
+  onClose,
+}: {
+  output: string;
+  stderr: string;
+  onClose: () => void;
+}) => {
+  const converter = useMemo(
+    () =>
+      new Convert({
+        newline: true,
+        escapeXML: true,
+        stream: false,
+      }),
+    [],
+  );
+
+  if (!output && !stderr) return null;
+
+  const sanitizeAnsi = (text: string) => {
+    return (
+      text
+        // Strip OSC escape sequences (like hyperlinks: \x1B]8;;url\x07text\x1B]8;;\x07)
+        .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
+        // Strip non-SGR CSI escape sequences (like cursor moves, clears, etc.)
+        // but keep the SGR (color/style) sequences (\x1B[...m) for the converter.
+        .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
+        // Remove Null bytes and other weird control chars except \n, \r, \t
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    );
+  };
+
+  const htmlOutput = output ? converter.toHtml(sanitizeAnsi(output)) : "";
+  const htmlStderr = stderr ? converter.toHtml(sanitizeAnsi(stderr)) : "";
+
+  return (
+    <div className="border-t border-card-border bg-card-background">
+      <div className="flex justify-between items-center py-1 px-3 border-b border-card-border bg-muted/30">
+        <span className="flex gap-2 items-center text-xs font-medium text-muted-foreground">
+          <TerminalSquare className="size-3" />
+          Output
+        </span>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+          title="Clear output"
+        >
+          <X className="size-3" />
+        </button>
+      </div>
+      <div
+        className="overflow-auto p-3 max-h-48 font-mono text-xs whitespace-pre-wrap"
+        style={{
+          fontFamily:
+            "'Symbols Nerd Font', 'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+        }}
+      >
+        {htmlOutput && (
+          <div
+            className="text-green-600 dark:text-green-400"
+            dangerouslySetInnerHTML={{ __html: htmlOutput }}
+          />
+        )}
+        {htmlStderr && (
+          <div
+            className="text-red-600 dark:text-red-400"
+            dangerouslySetInnerHTML={{ __html: htmlStderr }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CodeBlockAddons = ({
+  language,
+  code,
+}: {
+  language: string;
+  code: string;
+}) => {
   if (language === "math" && code) {
     return <MathBlock code={code} />;
   }
@@ -444,6 +570,26 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
   const [isFormatting, setIsFormatting] = useState(false);
+  const [executablePath, setExecutablePath] = useState<string | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState<{
+    stdout: string;
+    stderr: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    const checkExecutable = async () => {
+      const config = EXECUTION_CONFIG[language as BundledLanguage];
+      if (config) {
+        const path = await window.electronAPI.execution.resolve(config.command);
+        setExecutablePath(path);
+      } else {
+        setExecutablePath(null);
+      }
+    };
+    checkExecutable();
+  }, [language]);
 
   const handleLanguageChange = (newLanguage: string) => {
     const { view, getPos } = props;
@@ -455,6 +601,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         language: newLanguage,
       }),
     );
+    setOutput(null);
   };
 
   const handleFormat = async () => {
@@ -469,6 +616,26 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
       updateNodeContent(props.editor, targetNode, formatted);
     } finally {
       setIsFormatting(false);
+    }
+  };
+
+  const handleRun = async () => {
+    const config = EXECUTION_CONFIG[language as BundledLanguage];
+    if (!config || !executablePath) return;
+
+    setIsRunning(true);
+    setOutput(null);
+    try {
+      const result = await window.electronAPI.execution.run(
+        config.command,
+        config.args,
+        code,
+      );
+      setOutput({ stdout: result.stdout, stderr: result.stderr });
+    } catch (e) {
+      setOutput({ stdout: "", stderr: `Error: ${e}` });
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -487,12 +654,15 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         <ExcalidrawCode code={code} onChange={onChangeDraw} />
       ) : (
         <Fragment>
-          <CodeBlockHeader 
+          <CodeBlockHeader
             language={language}
             code={code}
             handleLanguageChange={handleLanguageChange}
             handleFormat={handleFormat}
             isFormatting={isFormatting}
+            executablePath={executablePath}
+            handleRun={handleRun}
+            isRunning={isRunning}
           />
           <div className="flex">
             <div
@@ -510,6 +680,13 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
             </div>
           </div>
           <CodeBlockAddons language={language} code={code} />
+          {output && (
+            <ExecutionOutput
+              output={output.stdout}
+              stderr={output.stderr}
+              onClose={() => setOutput(null)}
+            />
+          )}
         </Fragment>
       )}
     </NodeViewWrapper>

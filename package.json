@@ -24,7 +24,7 @@
     "build:package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "vitest run",
     "pwa:assets": "node scripts/generate-pwa-assets.js",
     "pwa:dev": "npm run pwa:assets && npm run browser:dev",
@@ -101,8 +101,10 @@
     "@types/dompurify": "3.2.0",
     "@types/electron-squirrel-startup": "1.0.2",
     "@types/uuid": "11.0.0",
+    "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "8.56.0",
     "@typescript-eslint/parser": "8.56.0",
+    "ansi-to-html": "^0.7.2",
     "better-sqlite3": "^12.6.2",
     "chrono-node": "2.9.0",
     "class-variance-authority": "0.7.1",
@@ -150,6 +152,7 @@
     "use-typed-reducer": "4.3.0",
     "uuid": "13.0.0",
     "vite-plugin-pwa": "1.2.0",
+    "which": "^6.0.1",
     "zod": "4.3.6"
   }
 }

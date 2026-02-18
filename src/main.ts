@@ -1,9 +1,18 @@
-import { app, BrowserWindow, globalShortcut, Menu, nativeImage, shell, Tray } from "electron";
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  Menu,
+  nativeImage,
+  shell,
+  Tray,
+} from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
 import { databaseIpcHandler } from "./ipc/database.ipc";
 import { appIpcHandler } from "./ipc/app.ipc";
+import { executionIpcHandler } from "./ipc/execution.ipc";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
 
@@ -19,6 +28,7 @@ async function main() {
   await notesIpcHandler();
   databaseIpcHandler();
   appIpcHandler(preload);
+  executionIpcHandler();
 
   const createWindow = () => {
     mainWindow = new BrowserWindow({

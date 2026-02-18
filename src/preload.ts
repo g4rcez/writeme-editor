@@ -68,7 +68,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("db:delete", table, id),
     count: (table: string) => ipcRenderer.invoke("db:count", table),
     notes: {
-      getLatestQuicknote: () => ipcRenderer.invoke("db:notes:getLatestQuicknote"),
+      getLatestQuicknote: () =>
+        ipcRenderer.invoke("db:notes:getLatestQuicknote"),
       getQuicknoteByDate: (start: string, end: string) =>
         ipcRenderer.invoke("db:notes:getQuicknoteByDate", start, end),
       getRecentNotes: (limit: number) =>
@@ -82,6 +83,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
       sync: (filename: string, tags: string[]) =>
         ipcRenderer.invoke("db:hashtags:sync", filename, tags),
     },
+  },
+  execution: {
+    resolve: (command: string) =>
+      ipcRenderer.invoke("execution:resolve", command),
+    run: (command: string, args: string[] = [], code: string) =>
+      ipcRenderer.invoke("execution:run", command, args, code),
   },
 });
 
@@ -134,6 +141,14 @@ declare global {
         hashtags: {
           sync(filename: string, tags: string[]): Promise<void>;
         };
+      };
+      execution: {
+        resolve(command: string): Promise<string | null>;
+        run(
+          command: string,
+          args: string[] | undefined,
+          code: string,
+        ): Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
       };
     };
   }

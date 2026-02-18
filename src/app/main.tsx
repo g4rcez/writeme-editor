@@ -3,6 +3,7 @@ import {
   createTokenStyles,
   TokenRemap,
   Modal,
+  Tweaks,
 } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -26,7 +27,8 @@ declare global {
 
 window.EXCALIDRAW_ASSET_PATH = "/";
 
-const tweaks = {
+const tweaks: Tweaks = {
+  input: { iconFeedback: false },
   table: { sticky: 87, filters: false, sorters: false, operations: false },
 };
 

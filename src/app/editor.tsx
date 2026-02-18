@@ -27,6 +27,7 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
 import { Node, Fragment as ProsemirrorFragment } from "@tiptap/pm/model";
+import { BubbleMenu } from "@tiptap/react/menus";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -194,8 +195,31 @@ const InnerEditor = (props: {
   }, [editor, props.note?.id]);
 
   return (
-    <div className="flex flex-col justify-start items-start py-4 mx-auto w-full h-full max-w-safe">
+    <div
+      id="editor-container"
+      className="flex flex-col justify-start items-start py-4 mx-auto w-full h-full max-w-safe"
+    >
       <EditorContext.Provider value={{ editor }}>
+        <BubbleMenu editor={editor}>
+          <ul className="flex overflow-y-auto flex-col gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48">
+            <li>
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={editor.isActive("bold") ? "is-active" : ""}
+              >
+                Bold
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={editor.isActive("italic") ? "is-active" : ""}
+              >
+                Italic
+              </button>
+            </li>
+          </ul>
+        </BubbleMenu>
         <EditorContent
           key={props.id}
           editor={editor}

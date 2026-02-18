@@ -1,13 +1,13 @@
-import { useGlobalStore, repositories } from "../../store/global.store";
-import { Modal } from "@g4rcez/components";
-import { Note } from "../../store/note";
+import { Button, Input, Modal } from "@g4rcez/components";
+import { Editor } from "@tiptap/core";
+import DOMPurify from "dompurify";
+import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { parseReadItLaterHtml } from "../../lib/read-it-later-utils";
-import { Editor } from "@tiptap/core";
-import { createExtensions } from "../extensions";
+import { repositories, useGlobalStore } from "../../store/global.store";
+import { Note } from "../../store/note";
 import { getThemeForMode } from "../elements/code-block";
-import { useState } from "react";
-import DOMPurify from "dompurify";
+import { createExtensions } from "../extensions";
 
 export const ReadItLaterDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -15,7 +15,8 @@ export const ReadItLaterDialog = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleCreate = async () => {
+  const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!url) return;
     setLoading(true);
     try {
@@ -58,44 +59,44 @@ export const ReadItLaterDialog = () => {
   return (
     <Modal
       type="dialog"
-      title="Read It Later"
+      title="Read it later"
+      className="max-w-[512px]"
       open={state.readItLaterDialog}
       onChange={dispatch.readItLaterDialog}
-      className="max-w-[512px]"
     >
-      <div className="flex flex-col gap-4 p-4">
-        <p className="text-sm text-muted-foreground">
+      <form onSubmit={handleCreate} className="flex flex-col gap-6">
+        <p className="text-sm">
           Enter a URL to fetch its content and save it as a note.
         </p>
-        <input
+        <Input
+          required
           type="url"
-          placeholder="https://example.com"
           value={url}
+          title="URL to the article/post"
+          placeholder="https://example.com"
           onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleCreate();
-          }}
           className="p-2 w-full bg-transparent rounded border focus:ring-2 focus:outline-none border-input focus:ring-primary"
           autoFocus
         />
         <div className="flex gap-2 justify-end">
-          <button
+          <Button
             type="button"
-            disabled={loading}
+            loading={loading}
+            theme="ghost-muted"
             onClick={() => dispatch.readItLaterDialog(false)}
-            className="py-2 px-4 text-sm rounded hover:bg-muted"
           >
             Cancel
-          </button>
-          <button
-            onClick={handleCreate}
-            className="py-2 px-4 text-sm text-white rounded disabled:opacity-50 bg-primary hover:bg-primary/90"
-            disabled={loading || !url}
+          </Button>
+          <Button
+            type="submit"
+            disabled={!url}
+            theme="primary"
+            loading={loading}
           >
-            {loading ? "Creating..." : "Create Note"}
-          </button>
+            {loading ? "Creating note..." : "Create Note"}
+          </Button>
         </div>
-      </div>
+      </form>
     </Modal>
   );
 };

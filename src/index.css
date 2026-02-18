@@ -105,10 +105,6 @@ code {
   @apply h-full outline-none;
 }
 
-.tiptap :first-child {
-  margin-top: 0;
-}
-
 [cmdk-group-heading] {
   @apply px-2 mb-2 text-sm text-primary;
 }

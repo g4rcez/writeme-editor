@@ -8,14 +8,16 @@ export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleCloseTab = async (e: React.MouseEvent, tabId: string) => {
+  const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
     dispatch.removeTab(tabId);
   };
 
-  const handleMiddleClick = (e: React.MouseEvent, tabId: string) => {
+  const onMiddleClick = (e: React.MouseEvent, tabId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (e.button === 1) {
-      handleCloseTab(e, tabId);
+      onCloseTab(e, tabId);
     }
   };
 
@@ -51,7 +53,7 @@ export const TabsBar: React.FC = () => {
             data-tab-id={tab.id}
             title={note?.filePath || title}
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
-            onMouseDown={(e) => handleMiddleClick(e, tab.id)}
+            onMouseDown={(e) => onMiddleClick(e, tab.id)}
             className={clsx(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
               isActive
@@ -62,7 +64,7 @@ export const TabsBar: React.FC = () => {
             <FileText className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
             <span className="flex-1 text-xs truncate">{title}</span>
             <button
-              onClick={(e) => handleCloseTab(e, tab.id)}
+              onClick={(e) => onCloseTab(e, tab.id)}
               className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
             >
               <XIcon className="size-3" />

@@ -21,18 +21,18 @@ export type Commander = {
 type Toggle<T> = T | ((prev: T) => T);
 
 type State = {
-  help: boolean;
   tabs: Tab[];
+  help: boolean;
   notes: Note[];
-  readItLaterDialog: boolean;
-  recentNotesDialog: boolean;
+  note: Note | null;
   recentNotes: Note[];
-  directoryBrowserDialog: boolean;
+  commander: Commander;
   theme: "light" | "dark";
   activeTabId: string | null;
-  commander: Commander;
+  readItLaterDialog: boolean;
+  recentNotesDialog: boolean;
+  directoryBrowserDialog: boolean;
   createNoteDialog: { isOpen: boolean; type: NoteCreationType };
-  note: Note | null;
 };
 
 const initialState: State = {

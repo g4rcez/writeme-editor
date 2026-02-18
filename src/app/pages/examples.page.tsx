@@ -37,6 +37,11 @@ const examples = [
     to: "/examples/copy",
     description: "Automatically sync and paste your clipboard content.",
   },
+  {
+    title: "Code Runner",
+    to: "/examples/code-run",
+    description: "Execute code snippets directly in your notes via OS REPL.",
+  },
 ];
 
 export default function AboutPage() {
@@ -44,7 +49,8 @@ export default function AboutPage() {
     <ul className="grid grid-cols-1 gap-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
       {examples.map((example) => (
         <li key={example.title}>
-          <Link to={example.to}
+          <Link
+            to={example.to}
             className="transition-all duration-300 ease-in group hover:text-primary"
           >
             <Card title={example.title} className="block">
