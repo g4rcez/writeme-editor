@@ -104,7 +104,10 @@ export const useGlobalStore = createGlobalReducer(
       }
     };
 
-    const selectOrAddTab = async (fullNote: Note, createTabIfMissing: boolean = true) => {
+    const selectOrAddTab = async (
+      fullNote: Note,
+      createTabIfMissing: boolean = true,
+    ) => {
       const state = get.state();
       const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
       const updatedNotes = updateNoteInList(fullNote);
@@ -139,6 +142,16 @@ export const useGlobalStore = createGlobalReducer(
       tabs: (tabs: Tab[]) => ({ tabs }),
       help: (help: boolean) => ({ help }),
       setNote: (note: Note | null) => ({ note }),
+      syncNoteState: (note: Note) => {
+        const state = get.state();
+        const updatedNotes = state.notes.map((n) =>
+          n.id === note.id ? note : n,
+        );
+        return {
+          note,
+          notes: updatedNotes,
+        };
+      },
       recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
       activeTabId: (activeTabId: string | null) => ({ activeTabId }),
       commander: (enabled: boolean, type?: CommanderType) => ({
@@ -244,7 +257,6 @@ export const useGlobalStore = createGlobalReducer(
     } as const;
   },
 );
-
 
 export const globalState = useGlobalStore.getState;
 

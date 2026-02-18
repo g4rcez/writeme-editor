@@ -15,8 +15,11 @@ import {
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
+import { identifyDomain } from "../lib/url-utils";
 import { CursorPositionStore } from "../store/cursor-position.store";
+import * as YAML from "yaml";
 import {
+  globalDispatch,
   globalState,
   repositories,
   useGlobalStore,
@@ -91,11 +94,57 @@ const InnerEditor = (props: {
     shouldRerenderOnTransaction: false,
     parseOptions: { preserveWhitespace: "full" },
     onCreate: ({ editor: currentEditor }) => {
+      currentEditor.storage.note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
       } catch (e) {}
     },
+    onUpdate: ({ editor: currentEditor }) => {
+      currentEditor.storage.note = props.note;
+    },
     editorProps: {
+      handlePaste: (view, event) => {
+        const text = event.clipboardData?.getData("text/plain");
+        if (text && text.startsWith("---") && props.note) {
+          const match = text.match(/^---\n([\s\S]*?)\n---/);
+          if (match) {
+            try {
+              const parsed = YAML.parse(match[1]);
+              if (parsed && typeof parsed === "object") {
+                const note = Note.parse(props.note);
+                let changed = false;
+                if (parsed.title && parsed.title !== note.title) {
+                  note.setTitle(parsed.title);
+                  changed = true;
+                }
+                if (parsed.tags) {
+                  const newTags = Array.isArray(parsed.tags)
+                    ? parsed.tags
+                        .map((t: any) => String(t).trim())
+                        .filter(Boolean)
+                    : String(parsed.tags)
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean);
+
+                  if (
+                    newTags.sort().join(",") !== [...note.tags].sort().join(",")
+                  ) {
+                    note.tags = newTags;
+                    changed = true;
+                  }
+                }
+                if (changed) {
+                  globalDispatch.syncNoteState(note);
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to parse pasted frontmatter:", e);
+            }
+          }
+        }
+        return false;
+      },
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
           const { from, to } = view.state.selection;
@@ -124,6 +173,13 @@ const InnerEditor = (props: {
   });
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
+
+  useEffect(() => {
+    if (editor) {
+      editor.storage.note = props.note;
+    }
+  }, [editor, props.note]);
+
   useEffect(() => {
     if (editor === null) return;
     if (!props.note) return;
@@ -136,7 +192,7 @@ const InnerEditor = (props: {
           const html = (editor.storage as any).markdown.getMarkdown();
           const note = Note.parse(props.note);
           note.setContent(html);
-          await repositories.notes.update(note.id, note);
+          await globalDispatch.note(note);
         } catch (error) {
           console.error("Failed to save document:", error);
         }
@@ -148,7 +204,7 @@ const InnerEditor = (props: {
         const html = (editor.storage as any).markdown.getMarkdown();
         const note = Note.parse(props.note);
         note.setContent(html);
-        repositories.notes.update(note.id, note);
+        globalDispatch.note(note);
       } catch (error) {
         console.warn("Failed to perform final save on unmount:", error);
       }

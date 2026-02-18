@@ -48,8 +48,18 @@ export const notesIpcHandler = async () => {
         // Write file
         await fs.writeFile(filePath, content, "utf-8");
 
-        // Get file stats for metadata
-        const stats = await fs.stat(filePath);
+        let stats;
+        try {
+          stats = await fs.stat(filePath);
+        } catch (e) {
+          // If stat fails right after write (e.g. file moved), return partial success
+          return {
+            success: true,
+            filePath,
+            fileSize: content.length,
+            lastModified: new Date(),
+          };
+        }
 
         return {
           success: true,
@@ -192,7 +202,9 @@ export const notesIpcHandler = async () => {
         .map((entry): TreeNode => {
           const fullPath = path.join(dirPath, entry.name);
           const isDirectory = entry.isDirectory();
-          const ext = isDirectory ? undefined : path.extname(entry.name).toLowerCase();
+          const ext = isDirectory
+            ? undefined
+            : path.extname(entry.name).toLowerCase();
 
           return {
             name: entry.name,

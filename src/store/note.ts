@@ -23,7 +23,8 @@ export class Note implements EntityBase {
     public url: string | null,
     public description: string | null,
     public favicon: string | null,
-  ) { }
+    public metadata: Record<string, any> = {},
+  ) {}
 
   public static new(
     title: string,
@@ -32,6 +33,7 @@ export class Note implements EntityBase {
     url: string | null = null,
     description: string | null = null,
     favicon: string | null = null,
+    metadata: Record<string, any> = {},
   ) {
     const now = new Date();
     return new Note(
@@ -51,6 +53,7 @@ export class Note implements EntityBase {
       url,
       description,
       favicon,
+      metadata,
     );
   }
 
@@ -103,6 +106,7 @@ export class Note implements EntityBase {
       a.url || null,
       a.description || null,
       a.favicon || null,
+      a.metadata || {},
     );
   }
 }

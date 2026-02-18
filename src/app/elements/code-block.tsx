@@ -14,6 +14,7 @@ import { Loader2, Wand2, Play, TerminalSquare, X } from "lucide-react";
 import mermaid from "mermaid";
 import {
   Fragment,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -28,6 +29,7 @@ import {
   bundledThemes,
   createHighlighter,
 } from "shiki";
+import { clsx } from "clsx";
 import Convert from "ansi-to-html";
 import {
   getCurrentElementName,
@@ -41,6 +43,65 @@ import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
 import { EXECUTION_CONFIG } from "../../lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
+
+export type CodeBlockFrameProps = {
+  children: ReactNode;
+  lineCount: number;
+  header?: ReactNode;
+  footer?: ReactNode;
+  isTransparent?: boolean;
+  isBodyVisible?: boolean;
+  className?: string;
+};
+
+export const CodeBlockFrame = ({
+  children,
+  lineCount,
+  header,
+  footer,
+  isTransparent = false,
+  isBodyVisible = true,
+  className,
+}: CodeBlockFrameProps) => {
+  return (
+    <NodeViewWrapper
+      as="div"
+      className={clsx(
+        "overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
+        isTransparent ? "bg-transparent" : "bg-card-background",
+        className,
+      )}
+    >
+      {header}
+      <div
+        className={clsx(
+          "transition-all duration-200",
+          isBodyVisible
+            ? "h-auto opacity-100"
+            : "h-0 opacity-0 pointer-events-none overflow-hidden",
+        )}
+      >
+        <div className="flex">
+          <div
+            className={clsx(
+              "flex flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
+              isTransparent ? "bg-transparent" : "bg-card-background",
+            )}
+            aria-hidden="true"
+          >
+            {Array.from({ length: lineCount }).map((_, i) => (
+              <span key={i}>{i + 1}</span>
+            ))}
+          </div>
+          <div className="overflow-x-auto p-4 w-full font-mono whitespace-pre relative">
+            {children}
+          </div>
+        </div>
+      </div>
+      {footer}
+    </NodeViewWrapper>
+  );
+};
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<void> | undefined;
@@ -169,11 +230,13 @@ function getDecorations({
   name,
   defaultTheme,
   defaultLanguage,
+  renderBackground = true,
 }: {
   doc: ProsemirrorNode;
   name: string;
   defaultLanguage: BundledLanguage | null | undefined;
   defaultTheme: BundledTheme;
+  renderBackground?: boolean;
 }) {
   const decorations: Decoration[] = [];
   const codeBlocks = findChildren(doc, (node) => node.type.name === name);
@@ -190,11 +253,13 @@ function getDecorations({
       ? theme
       : highlighter.getLoadedThemes()[0];
     const themeResolved = highlighter.getTheme(themeToApply);
-    decorations.push(
-      Decoration.node(block.pos, block.pos + block.node.nodeSize, {
-        style: `background-color: ${themeResolved.bg}`,
-      }),
-    );
+    if (renderBackground) {
+      decorations.push(
+        Decoration.node(block.pos, block.pos + block.node.nodeSize, {
+          style: `background-color: ${themeResolved.bg}`,
+        }),
+      );
+    }
     const tokens = highlighter.codeToTokensBase(block.node.textContent, {
       lang: language,
       theme: themeToApply,
@@ -218,10 +283,12 @@ export function ShikiPlugin({
   name,
   defaultLanguage,
   getCurrentTheme,
+  renderBackground = true,
 }: {
   name: string;
   defaultLanguage: BundledLanguage | null | undefined;
   getCurrentTheme?: () => BundledTheme;
+  renderBackground?: boolean;
 }) {
   const shikiPlugin: Plugin<any> = new Plugin({
     key: new PluginKey("shiki"),
@@ -292,6 +359,7 @@ export function ShikiPlugin({
           name,
           defaultLanguage,
           defaultTheme: currentTheme,
+          renderBackground,
           // @ts-ignore
         });
       },
@@ -332,6 +400,7 @@ export function ShikiPlugin({
             name,
             defaultLanguage,
             defaultTheme: currentTheme,
+            renderBackground,
             // @ts-ignore
           });
         }
@@ -645,40 +714,34 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     updateNodeContent(props.editor, targetNode, nextState);
   }, []);
 
-  return (
-    <NodeViewWrapper
-      as="div"
-      className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
-    >
-      {language === "excalidraw" ? (
+  if (language === "excalidraw") {
+    return (
+      <NodeViewWrapper
+        as="div"
+        className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
+      >
         <ExcalidrawCode code={code} onChange={onChangeDraw} />
-      ) : (
+      </NodeViewWrapper>
+    );
+  }
+
+  return (
+    <CodeBlockFrame
+      lineCount={props.node.textContent.split("\n").length}
+      header={
+        <CodeBlockHeader
+          language={language}
+          code={code}
+          handleLanguageChange={handleLanguageChange}
+          handleFormat={handleFormat}
+          isFormatting={isFormatting}
+          executablePath={executablePath}
+          handleRun={handleRun}
+          isRunning={isRunning}
+        />
+      }
+      footer={
         <Fragment>
-          <CodeBlockHeader
-            language={language}
-            code={code}
-            handleLanguageChange={handleLanguageChange}
-            handleFormat={handleFormat}
-            isFormatting={isFormatting}
-            executablePath={executablePath}
-            handleRun={handleRun}
-            isRunning={isRunning}
-          />
-          <div className="flex">
-            <div
-              className="flex flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground bg-card-background border-card-border"
-              aria-hidden="true"
-            >
-              {Array.from({
-                length: props.node.textContent.split("\n").length,
-              }).map((_, i) => (
-                <span key={i}>{i + 1}</span>
-              ))}
-            </div>
-            <div className="overflow-x-auto p-4 w-full font-mono whitespace-pre">
-              <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
-            </div>
-          </div>
           <CodeBlockAddons language={language} code={code} />
           {output && (
             <ExecutionOutput
@@ -688,8 +751,10 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
             />
           )}
         </Fragment>
-      )}
-    </NodeViewWrapper>
+      }
+    >
+      <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
+    </CodeBlockFrame>
   );
 };
 

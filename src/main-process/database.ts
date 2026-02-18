@@ -39,7 +39,8 @@ class DatabaseManager {
         lastSynced TEXT,
         url TEXT,
         description TEXT,
-        favicon TEXT
+        favicon TEXT,
+        metadata TEXT -- JSON object
       );
 
       CREATE TABLE IF NOT EXISTS projects (
@@ -81,7 +82,7 @@ class DatabaseManager {
     // Migration for missing 'type' column if tables existed without it
     const tables = ["notes", "projects", "tabs", "hashtags", "settings"];
     const commonColumns = ["type"];
-    const noteColumns = ["url", "description", "favicon"];
+    const noteColumns = ["url", "description", "favicon", "metadata"];
 
     for (const table of tables) {
       try {
@@ -144,6 +145,9 @@ class DatabaseManager {
     if (result && result.tags) {
       result.tags = JSON.parse(result.tags);
     }
+    if (result && result.metadata) {
+      result.metadata = JSON.parse(result.metadata);
+    }
     return result as T;
   }
 
@@ -154,14 +158,22 @@ class DatabaseManager {
       if (row.tags) {
         row.tags = JSON.parse(row.tags);
       }
+      if (row.metadata) {
+        row.metadata = JSON.parse(row.metadata);
+      }
       return row;
     });
   }
 
   public save<T extends { id: string }>(table: string, item: T): void {
     const keys = Object.keys(item);
-    const values = Object.values(item).map((v) => {
-      if (Array.isArray(v)) return JSON.stringify(v);
+    const values = Object.values(item).map((v: any) => {
+      if (
+        Array.isArray(v) ||
+        (v !== null && typeof v === "object" && !(v instanceof Date))
+      ) {
+        return JSON.stringify(v);
+      }
       if (v instanceof Date) return v.toISOString();
       return v;
     });
@@ -195,6 +207,9 @@ class DatabaseManager {
     if (result && result.tags) {
       result.tags = JSON.parse(result.tags);
     }
+    if (result && result.metadata) {
+      result.metadata = JSON.parse(result.metadata);
+    }
     return result;
   }
 
@@ -205,6 +220,9 @@ class DatabaseManager {
     const result = stmt.get(start, end) as any;
     if (result && result.tags) {
       result.tags = JSON.parse(result.tags);
+    }
+    if (result && result.metadata) {
+      result.metadata = JSON.parse(result.metadata);
     }
     return result;
   }
@@ -217,6 +235,9 @@ class DatabaseManager {
     return results.map((row) => {
       if (row.tags) {
         row.tags = JSON.parse(row.tags);
+      }
+      if (row.metadata) {
+        row.metadata = JSON.parse(row.metadata);
       }
       return row;
     });
