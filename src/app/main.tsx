@@ -2,6 +2,7 @@ import {
   ComponentsProvider,
   createTokenStyles,
   TokenRemap,
+  Modal,
 } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

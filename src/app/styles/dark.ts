@@ -9,7 +9,6 @@ export const darkTheme: typeof defaultDarkTheme = {
     foreground: "hsla(220, 20%, 96%)",
     background: "hsla(221, 12%, 9%)",
     border: "hsla(220, 10%, 25%)",
-    muted: "hsla(220, 10%, 20%)",
     disabled: "hsla(220, 5%, 40%)",
     emphasis: {
       foreground: "hsla(220, 30%, 10%)",

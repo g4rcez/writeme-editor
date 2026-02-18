@@ -5,13 +5,8 @@ import { Link } from "react-router-dom";
 import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
 
 export default function ReadItLaterPage() {
-  const {
-    loading,
-    search,
-    setSearch,
-    filteredNotes,
-    handleDelete,
-  } = useNoteList({ noteType: "read-it-later" });
+  const { loading, search, setSearch, filteredNotes, handleDelete } =
+    useNoteList({ noteType: "read-it-later" });
 
   const cols = createColumns<NoteWithTags>((col) => {
     col.add("title", "Title", {
@@ -80,43 +75,6 @@ export default function ReadItLaterPage() {
       ),
     });
   });
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center w-full h-full">
-        Loading...
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-col py-6 mx-auto max-w-safe bg-background">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="flex gap-2 items-center text-2xl font-bold">
-          <Bookmark className="w-6 h-6" />
-          Read It Later
-        </h1>
-        <div className="flex justify-between items-center">
-          <Input
-            required
-            type="text"
-            value={search}
-            placeholder="Search..."
-            onChange={(e) => setSearch(e.target.value)}
-            left={<Search size={16} className="text-muted-foreground" />}
-          />
-        </div>
-      </div>
-      <Table
-        cols={cols}
-        reference="id"
-        useControl={false}
-        name="read-it-later"
-        rows={filteredNotes}
-      />
-    </div>
-  );
-}
 
   if (loading) {
     return (

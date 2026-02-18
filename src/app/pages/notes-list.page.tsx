@@ -1,4 +1,5 @@
 import {
+  Button,
   Checkbox,
   createColumns,
   Input,
@@ -6,13 +7,7 @@ import {
   Tag,
   TagProps,
 } from "@g4rcez/components";
-import {
-  LinkIcon,
-  LogsIcon,
-  SearchIcon,
-  Trash2,
-  X,
-} from "lucide-react";
+import { LinkIcon, LogsIcon, SearchIcon, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Note } from "../../store/note";
 import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
@@ -44,8 +39,12 @@ export default function NotesListPage() {
     col.add(
       "id",
       <Checkbox
-        checked={selectedIds.size === filteredNotes.length && filteredNotes.length > 0}
-        onChange={selectedIds.size === filteredNotes.length ? deselectAll : selectAll}
+        checked={
+          selectedIds.size === filteredNotes.length && filteredNotes.length > 0
+        }
+        onChange={
+          selectedIds.size === filteredNotes.length ? deselectAll : selectAll
+        }
       />,
       {
         thProps: { className: "w-12" },
@@ -80,7 +79,7 @@ export default function NotesListPage() {
     col.add("tagCount", "Hashtags", {
       Element: (props) => props.row.tagCount,
     });
-    col.add("id", "Actions", {
+    col.add("createdAt", "Actions", {
       Element: (props) => (
         <button
           onClick={(e) => handleDelete(e, props.row.id)}
@@ -135,13 +134,14 @@ export default function NotesListPage() {
           <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-floating-background text-card-foreground">
             <span className="font-medium">{selectedIds.size} selected</span>
             <div className="w-px h-4 bg-border" />
-            <button
+            <Button
+              size="small"
+              theme="ghost-danger"
               onClick={handleBatchDelete}
-              className="flex gap-2 items-center text-sm font-medium transition-colors text-destructive hover:text-destructive/80"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="size-4" />
               Delete
-            </button>
+            </Button>
             <button
               onClick={deselectAll}
               className="p-1 ml-2 rounded-full transition-colors hover:bg-muted/50"

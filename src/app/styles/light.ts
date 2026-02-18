@@ -9,10 +9,10 @@ export const lightTheme: typeof defaultLightTheme = {
     lg: "1.125rem",
   },
   colors: {
+    ...defaultLightTheme.colors,
     foreground: "hsla(220, 30%, 15%)",
     background: "hsla(220, 20%, 98%)",
     border: "hsla(220, 15%, 85%)",
-    muted: "hsla(220, 10%, 90%)",
     disabled: "hsla(220, 10%, 60%)",
     emphasis: {
       foreground: "hsla(220, 30%, 10%)",

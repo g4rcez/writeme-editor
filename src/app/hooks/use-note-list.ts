@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
 import { globalDispatch, globalState } from "../../store/global.store";
+import { Modal } from "@g4rcez/components";
 
 export interface NoteWithTags extends Note {
   tagsList: string[];
@@ -35,8 +36,8 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         tagsMap.get(h.filename)?.push(h.hashtag);
       });
 
-      const filteredByProp = options.noteType 
-        ? allNotes.filter(n => n.noteType === options.noteType)
+      const filteredByProp = options.noteType
+        ? allNotes.filter((n) => n.noteType === options.noteType)
         : allNotes;
 
       const notesWithTags = filteredByProp.map((note): NoteWithTags => {
@@ -68,14 +69,16 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         (n) =>
           n.title.toLowerCase().includes(lower) ||
           n.tagsList.some((t) => t.toLowerCase().includes(lower)) ||
-          (n.url && n.url.toLowerCase().includes(lower))
+          (n.url && n.url.toLowerCase().includes(lower)),
       );
     }
-    
+
     if (options.noteType === "read-it-later") {
-        return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return result.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      );
     }
-    
+
     return result;
   }, [notes, search, options.noteType]);
 
@@ -98,11 +101,20 @@ export function useNoteList(options: UseNoteListOptions = {}) {
 
   const handleDelete = async (e: React.MouseEvent | undefined, id: string) => {
     e?.stopPropagation();
-    if (confirm("Are you sure you want to delete this note?")) {
+    const confirmed = await Modal.confirm({
+      title: "Delete note",
+      description: "Are you sure you want to delete this note?",
+      confirm: {
+        text: "Delete",
+        theme: "danger",
+      },
+    });
+
+    if (confirmed) {
       await repositories.notes.delete(id);
       setNotes((prev) => prev.filter((n) => n.id !== id));
       const tabs = globalState().tabs;
-      const tabToRemove = tabs.find((t) => t.noteId === id);
+      const tabToRemove = tabs.find((t: any) => t.noteId === id);
       if (tabToRemove) {
         globalDispatch.removeTab(tabToRemove.id);
       }
@@ -118,11 +130,20 @@ export function useNoteList(options: UseNoteListOptions = {}) {
   };
 
   const handleBatchDelete = async () => {
-    if (confirm(`Are you sure you want to delete ${selectedIds.size} notes?`)) {
+    const confirmed = await Modal.confirm({
+      title: "Delete Notes",
+      description: `Are you sure you want to delete ${selectedIds.size} notes?`,
+      confirm: {
+        text: "Delete",
+        theme: "danger",
+      },
+    });
+
+    if (confirmed) {
       const tabs = globalState().tabs;
       for (const id of selectedIds) {
         await repositories.notes.delete(id);
-        const tabToRemove = tabs.find((t) => t.noteId === id);
+        const tabToRemove = tabs.find((t: any) => t.noteId === id);
         if (tabToRemove) {
           await globalDispatch.removeTab(tabToRemove.id);
         }
@@ -145,6 +166,6 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     deselectAll,
     handleDelete,
     handleBatchDelete,
-    refresh: loadData
+    refresh: loadData,
   };
 }
