@@ -1,4 +1,3 @@
-import { parse as mdParser } from "marked";
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
@@ -22,6 +21,7 @@ import {
   repositories,
   useGlobalStore,
 } from "../store/global.store";
+
 import { Note } from "../store/note";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
@@ -93,28 +93,9 @@ const InnerEditor = (props: {
     onCreate: ({ editor: currentEditor }) => {
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) { }
+      } catch (e) {}
     },
     editorProps: {
-      handlePaste(_, event) {
-        const clip = event.clipboardData;
-        if (!clip) return false;
-        try {
-          const raw = event.clipboardData?.getData("text/plain");
-          const html = mdParser(raw || "", {
-            gfm: true,
-            async: false,
-            breaks: false,
-            silent: false,
-          });
-          event.clipboardData.setData("text/plain", "");
-          event.clipboardData.setData("text/html", html);
-        } catch (e) {
-          console.log(e);
-          return false;
-        }
-        return false;
-      },
       handleKeyDown: (view, event) => {
         if ((event.ctrlKey || event.metaKey) && event.key === "c") {
           const { from, to } = view.state.selection;

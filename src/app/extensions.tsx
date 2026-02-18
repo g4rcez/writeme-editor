@@ -1,8 +1,4 @@
-import {
-  AnyExtension,
-  nodeInputRule,
-  PasteRule
-} from "@tiptap/core";
+import { AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
@@ -28,6 +24,7 @@ import { ShikiBlock } from "./elements/code-block";
 import { ColorReplacer } from "./elements/color-replacer";
 import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
+import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
@@ -81,7 +78,6 @@ export const createExtensions = (
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
-    ,
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
     UniqueID.configure({ types: ["heading"] }),
     TableKit.configure({
@@ -184,6 +180,7 @@ export const createExtensions = (
     }),
     TaskList,
     TaskListItem,
+    YoutubeBlock,
     Callout,
     Hashtag,
     ReplacerCommands,
