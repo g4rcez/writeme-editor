@@ -7,10 +7,10 @@ import {
   PanelLeft,
   LucideIcon,
 } from "lucide-react";
-import { useLayoutContext, ActivityType } from "../../contexts/layout-context";
-import { globalDispatch, useGlobalStore } from "../../../store/global.store";
+import { useLayoutContext, ActivityType } from "@/app/contexts/layout-context";
+import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { css, Tooltip } from "@g4rcez/components";
-import { Note } from "../../../store/note";
+import { Note } from "@/store/note";
 
 type ActivityIconProps = {
   icon: LucideIcon;
@@ -70,7 +70,7 @@ export const ActivityBar = () => {
   };
 
   return (
-    <div className="flex flex-col items-center py-2 h-full border-r w-[52px] bg-sidebar/50 backdrop-blur-xl border-border/40">
+    <div className="flex flex-col items-center bg-background py-2 h-full border-r w-[52px] bg-sidebar/50 backdrop-blur-xl border-border/40">
       <div className="flex flex-col flex-1 gap-1 w-full">
         <ActivityIcon
           label="Explorer"

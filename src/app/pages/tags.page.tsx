@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { repositories, useGlobalStore } from "../../store/global.store";
-import { TagsGraph } from "../components/tags-graph";
+import { repositories, useGlobalStore } from "@/store/global.store";
+import { TagsGraph } from "@/app/components/tags-graph";
 
 export default function TagsPage() {
   const [graphData, setGraphData] = useState<{ nodes: any[]; links: any[] }>({

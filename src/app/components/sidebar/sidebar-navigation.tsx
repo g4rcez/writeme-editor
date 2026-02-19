@@ -9,14 +9,14 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { useGlobalStore } from "../../../store/global.store";
-import { useLayoutContext } from "../../contexts/layout-context";
-import { repositories } from "../../../store/repositories";
+import { useGlobalStore } from "@/store/global.store";
+import { useLayoutContext } from "@/app/contexts/layout-context";
+import { repositories } from "@/store/repositories";
 import { useEffect, useState } from "react";
-import { Hashtag } from "../../../store/repositories/entities/hashtag";
-import { SettingsService } from "../../../store/settings";
-import { Note } from "../../../store/note";
-import { formatSimplifiedPath, getRelativePath } from "../../../lib/file-utils";
+import { Hashtag } from "@/store/repositories/entities/hashtag";
+import { SettingsService } from "@/store/settings";
+import { Note } from "@/store/note";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 
 type SidebarItemProps = {
   icon: React.ReactNode;

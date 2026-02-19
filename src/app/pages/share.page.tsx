@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { repositories } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { base64ToUtf8 } from "../../lib/encoding";
+import { repositories } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { base64ToUtf8 } from "@/lib/encoding";
 
 export default function SharePage() {
   const [searchParams] = useSearchParams();

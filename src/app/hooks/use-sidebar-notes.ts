@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { repositories } from "../../store/repositories";
-import { Note } from "../../store/note";
-import { useGlobalStore } from "../../store/global.store";
-import { useLayoutContext } from "../contexts/layout-context";
+import { repositories } from "@/store/repositories";
+import { Note } from "@/store/note";
+import { useGlobalStore } from "@/store/global.store";
+import { useLayoutContext } from "@/app/contexts/layout-context";
 import { NoteWithTags } from "./use-note-list";
 
 export function useSidebarNotes() {
@@ -14,7 +14,6 @@ export function useSidebarNotes() {
   const loadData = async (allNotes: Note[]) => {
     setLoading(true);
     try {
-      // 1. Enrich notes with tags (same as useNoteList)
       const allHashtags = await repositories.hashtags.getAll();
       const tagsMap = new Map<string, string[]>();
       allHashtags.forEach((h) => {
@@ -23,17 +22,15 @@ export function useSidebarNotes() {
         }
         tagsMap.get(h.filename)?.push(h.hashtag);
       });
-
       const notesWithTags = allNotes.map((note: Note): NoteWithTags => {
         const key = note.filePath || note.title;
         const tags = tagsMap.get(key) || [];
         return {
           ...note,
-          tagsList: tags,
+          tags: tags,
           tagCount: tags.length,
         } as NoteWithTags;
       });
-
       setInnerNotes(notesWithTags);
     } catch (error) {
       console.error("Failed to load sidebar notes:", error);
@@ -49,14 +46,11 @@ export function useSidebarNotes() {
   const filteredNotes = useMemo(() => {
     let result = innerNotes;
     const { activeView, searchQuery, activeActivity } = layoutState;
-
-    // 1. Filter by Activity or View Type
     if (activeActivity === "favorites") {
       result = result.filter((n) => n.favorite);
     } else if (activeActivity === "tags" && activeView.type === "tag") {
-      result = result.filter((n) => n.tagsList.includes(activeView.id));
+      result = result.filter((n) => n.tags.includes(activeView.id));
     } else {
-      // Standard view filtering
       switch (activeView.type) {
         case "all":
           result = result.filter((n) => n.noteType === "note");
@@ -84,21 +78,19 @@ export function useSidebarNotes() {
           if (activeView.id) {
             result = result.filter(
               (n) =>
-                n.tagsList.includes(activeView.id) ||
+                n.tags.includes(activeView.id) ||
                 n.tags.includes(activeView.id),
             );
           }
           break;
       }
     }
-
-    // 2. Filter by Search Query
     if (searchQuery) {
       const lower = searchQuery.toLowerCase();
       result = result.filter(
         (n) =>
           n.title.toLowerCase().includes(lower) ||
-          n.tagsList.some((t) => t.toLowerCase().includes(lower)) ||
+          n.tags.some((t) => t.toLowerCase().includes(lower)) ||
           (n.url && n.url.toLowerCase().includes(lower)),
       );
     }

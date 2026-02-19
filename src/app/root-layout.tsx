@@ -1,25 +1,25 @@
 import { Maximize2 } from "lucide-react";
 import { Fragment, Suspense, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Dates } from "../lib/dates";
-import { isElectron } from "../lib/is-electron";
-import { CursorPositionStore } from "../store/cursor-position.store";
+import { Dates } from "@/lib/dates";
+import { isElectron } from "@/lib/is-electron";
+import { CursorPositionStore } from "@/store/cursor-position.store";
 import {
   globalDispatch,
   repositories,
   useGlobalStore,
-} from "../store/global.store";
-import { Note } from "../store/note";
-import { useUIStore } from "../store/ui.store";
-import { AIDrawer } from "./ai/ai-drawer";
-import { Commander } from "./commander";
-import { CreateNoteDialog } from "./components/create-note-dialog";
-import { ReadItLaterDialog } from "./components/read-it-later-dialog";
-import { RecentNotesDialog } from "./components/recent-notes-dialog";
-import { LayoutProvider } from "./contexts/layout-context";
-import { editorGlobalRef } from "./editor-global-ref";
-import { PWAInstallButton } from "./elements/pwa-install-button";
-import { MainLayout } from "./layouts/main.layout";
+} from "@/store/global.store";
+import { Note } from "@/store/note";
+import { useUIStore } from "@/store/ui.store";
+import { AIDrawer } from "@/app/ai/ai-drawer";
+import { Commander } from "@/app/commander";
+import { CreateNoteDialog } from "@/app/components/create-note-dialog";
+import { ReadItLaterDialog } from "@/app/components/read-it-later-dialog";
+import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
+import { LayoutProvider } from "@/app/contexts/layout-context";
+import { editorGlobalRef } from "@/app/editor-global-ref";
+import { PWAInstallButton } from "@/app/elements/pwa-install-button";
+import { MainLayout } from "@/app/layouts/main.layout";
 
 const noop = () => {};
 

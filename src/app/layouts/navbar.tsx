@@ -5,10 +5,10 @@ import { StackPlusIcon } from "@phosphor-icons/react/dist/csr/StackPlus";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { NavbarButton } from "../components/navbar-button";
-import { NewNoteButton } from "../components/new-note-button";
-import { SettingsMenu } from "../components/settings-menu";
-import { ThemeToggle } from "../components/theme-toggle";
+import { NavbarButton } from "@/app/components/navbar-button";
+import { NewNoteButton } from "@/app/components/new-note-button";
+import { SettingsMenu } from "@/app/components/settings-menu";
+import { ThemeToggle } from "@/app/components/theme-toggle";
 
 export const Navbar = () => {
   const [state, dispatch] = useGlobalStore();
@@ -23,7 +23,7 @@ export const Navbar = () => {
     location.pathname.startsWith("/note/") || location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b h-navbar bg-background border-border/40">
+    <header className="sticky top-0 z-50 w-full border-b h-navbar bg-background border-border/20">
       <div className="flex gap-8 justify-between items-center px-3.5 w-full h-full">
         <div className="flex flex-1 gap-x-6 items-center">
           <Link to="/" className="transition-opacity hover:opacity-80">

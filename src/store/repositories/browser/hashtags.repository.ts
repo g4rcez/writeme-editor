@@ -2,8 +2,12 @@ import { db } from "./dexie-db";
 import { Hashtag, IHashtagRepository } from "../entities/hashtag";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
+import { uuid } from "@g4rcez/components";
 
-export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
+export class HashtagsRepository
+  extends BaseRepository<Hashtag>
+  implements IHashtagRepository
+{
   constructor() {
     super(new DexieStorageAdapter(), "hashtags");
   }
@@ -34,13 +38,13 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
 
       if (added.length > 0) {
         const newEntries = added.map((tag) => ({
-          id: crypto.randomUUID(),
+          id: uuid(),
           hashtag: tag,
+          type: "hashtag",
           filename: filename,
           project: "default",
           createdAt: new Date(),
           updatedAt: new Date(),
-          type: "hashtag",
         }));
         await db.hashtags.bulkAdd(newEntries);
       }

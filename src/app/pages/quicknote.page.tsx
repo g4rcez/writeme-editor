@@ -1,9 +1,9 @@
 import { startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
-import { Dates } from "../../lib/dates";
-import { repositories, useGlobalStore } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { Editor } from "../editor";
+import { Dates } from "@/lib/dates";
+import { repositories, useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { Editor } from "@/app/editor";
 
 export default function QuickNotePage() {
   const [loading, setLoading] = useState(true);

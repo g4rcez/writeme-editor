@@ -1,15 +1,9 @@
 import { Button, Modal, Textarea, css } from "@g4rcez/components";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  AlertCircleIcon,
-  CheckIcon,
-  RefreshCwIcon,
-  SendIcon,
-  StopCircleIcon,
-} from "lucide-react";
+import { AlertCircle, Check, RefreshCw, Send, StopCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { globalDispatch, useGlobalStore } from "../../store/global.store";
+import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { editorGlobalRef } from "../editor-global-ref";
 import { AIDiffView } from "./ai-diff-view";
 import { useAIChat } from "./use-ai-chat";
@@ -92,7 +86,7 @@ export const AIDrawer = () => {
       <div className="flex overflow-hidden flex-col h-full min-w-[400px]">
         {!config && (
           <div className="flex flex-col gap-4 justify-center items-center p-8 text-center">
-            <AlertCircleIcon size={48} className="text-warning" />
+            <AlertCircle size={48} className="text-warning" />
             <h3 className="text-lg font-bold">AI Not Configured</h3>
             <p className="text-sm text-muted-foreground">
               Please configure your AI CLI command in settings to start using
@@ -158,7 +152,7 @@ export const AIDrawer = () => {
                               theme="primary"
                               onClick={() => onApply(msg)}
                             >
-                              <CheckIcon size={12} className="mr-1" />
+                              <Check size={12} className="mr-1" />
                               Apply
                             </Button>
                           )}
@@ -175,7 +169,7 @@ export const AIDrawer = () => {
           </div>
           {isStreaming && (
             <div className="flex gap-2 items-center text-xs animate-pulse text-muted-foreground">
-              <RefreshCwIcon size={12} className="animate-spin" />
+              <RefreshCw size={12} className="animate-spin" />
               AI is thinking...
             </div>
           )}
@@ -200,7 +194,7 @@ export const AIDrawer = () => {
                     onClick={stop}
                     className="p-2 rounded-md transition-colors text-destructive hover:bg-destructive/10"
                   >
-                    <StopCircleIcon size={20} />
+                    <StopCircle size={20} />
                   </button>
                 ) : (
                   <button
@@ -209,7 +203,7 @@ export const AIDrawer = () => {
                     disabled={!input.trim()}
                     className="p-2 rounded-md transition-colors disabled:opacity-50 text-primary hover:bg-primary/10"
                   >
-                    <SendIcon size={20} />
+                    <Send size={20} />
                   </button>
                 )}
               </div>

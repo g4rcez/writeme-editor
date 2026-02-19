@@ -1,8 +1,8 @@
 import { css } from "@g4rcez/components";
-import { FileText, XIcon } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useGlobalStore } from "../../store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { Tab } from "@/store/repositories/entities/tab";
 import { Note } from "@/store/note";
 
@@ -69,7 +69,7 @@ export const TabsBar: React.FC = () => {
               onClick={(e) => onCloseTab(e, tab.id)}
               className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
             >
-              <XIcon className="size-3" />
+              <X className="size-3" />
             </button>
             {isActive && (
               <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />

@@ -1,19 +1,19 @@
 import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
-import { version } from "../../package.json";
-import { utf8ToBase64 } from "../lib/encoding";
+import { version } from "@/../package.json";
+import { utf8ToBase64 } from "@/lib/encoding";
 import {
   createStandaloneNote,
   generateNotePath,
   getUniqueFilePath,
-} from "../lib/file-utils";
+} from "@/lib/file-utils";
 import {
   CommanderType,
   repositories,
   useGlobalStore,
-} from "../store/global.store";
-import { Note } from "../store/note";
-import { SettingsService } from "../store/settings";
+} from "@/store/global.store";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,
@@ -22,8 +22,8 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 import { useMemo } from "react";
-import { FileTextIcon, SparklesIcon, HistoryIcon } from "lucide-react";
-import { isElectron } from "../lib/is-electron";
+import { FileText, Sparkles, History } from "lucide-react";
+import { isElectron } from "@/lib/is-electron";
 
 export const Commander = () => {
   useShortcuts();

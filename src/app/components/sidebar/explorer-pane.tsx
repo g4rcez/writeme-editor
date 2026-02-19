@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { TreeView } from "../tree-view";
-import { SettingsService } from "../../../store/settings";
+import { SettingsService } from "@/store/settings";
 import { Button } from "@g4rcez/components";
 import { FolderOpen, Plus, FolderPlus } from "lucide-react";
-import { repositories, globalDispatch } from "../../../store/global.store";
-import { Note } from "../../../store/note";
+import { repositories, globalDispatch } from "@/store/global.store";
+import { Note } from "@/store/note";
 import { useNavigate } from "react-router-dom";
-import { TreeNode } from "../../../types/tree";
-import { isElectron } from "../../../lib/is-electron";
+import { TreeNode } from "@/types/tree";
+import { isElectron } from "@/lib/is-electron";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 
 export const ExplorerPane = () => {
@@ -24,29 +24,22 @@ export const ExplorerPane = () => {
     }
   };
 
-  const handleFileSelect = async (node: TreeNode) => {
+  const onFileSelect = async (node: TreeNode) => {
     if (node.type === "file" && node.extension === ".md") {
-      // 1. Check if note exists in DB
       const allNotes = await repositories.notes.getAll();
       let note = allNotes.find((n) => n.filePath === node.path);
-
       if (!note) {
-        // 2. Create new note from file
         const content = await window.electronAPI.fs.readFile(node.path);
-
         note = Note.new(node.name.replace(".md", ""), content || "");
         note.filePath = node.path;
         await repositories.notes.save(note);
-        // Refresh global notes
         const updatedNotes = await repositories.notes.getAll();
         globalDispatch.notes(updatedNotes);
       }
-
       navigate(`/note/${note.id}`);
     }
   };
 
-  // Browser Mode: Just render the note list
   if (!isElectron()) {
     return <NoteListSidebar />;
   }
@@ -92,7 +85,7 @@ export const ExplorerPane = () => {
         </div>
       </div>
       <div className="flex-1 overflow-auto scrollbar-hide">
-        <TreeView rootPath={rootPath} onFileSelect={handleFileSelect} />
+        <TreeView rootPath={rootPath} onFileSelect={onFileSelect} />
       </div>
     </div>
   );

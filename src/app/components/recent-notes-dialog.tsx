@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useGlobalStore } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { SettingsService } from "../../store/settings";
-import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
+import { useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { Search } from "lucide-react";
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
-import { useListSearch } from "../hooks/use-list-search";
+import { useListSearch } from "@/app/hooks/use-list-search";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -19,10 +19,13 @@ export const RecentNotesDialog = () => {
     dispatch.recentNotesDialog(false);
   }, [dispatch]);
 
-  const openNote = useCallback((note: Note) => {
-    navigate(`/note/${note.id}`);
-    closeDialog();
-  }, [navigate, closeDialog]);
+  const openNote = useCallback(
+    (note: Note) => {
+      navigate(`/note/${note.id}`);
+      closeDialog();
+    },
+    [navigate, closeDialog],
+  );
 
   // Load recent notes when dialog opens
   useEffect(() => {
@@ -42,12 +45,12 @@ export const RecentNotesDialog = () => {
     if (!query) return true;
     const lowerQuery = query.toLowerCase();
     const titleMatch = note.title.toLowerCase().includes(lowerQuery);
-    
+
     let pathMatch = false;
     if (note.filePath) {
-        pathMatch = note.filePath.toLowerCase().includes(lowerQuery);
+      pathMatch = note.filePath.toLowerCase().includes(lowerQuery);
     }
-    
+
     return titleMatch || pathMatch;
   });
 
@@ -60,7 +63,9 @@ export const RecentNotesDialog = () => {
   // Scroll selected item into view
   useEffect(() => {
     if (listRef.current && filteredNotes.length > 0) {
-      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
+      const selectedElement = listRef.current.children[
+        selectedIndex
+      ] as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: "nearest" });
       }
@@ -83,7 +88,7 @@ export const RecentNotesDialog = () => {
             placeholder="Search recent notes..."
             value={query}
             onChange={(e) => {
-                setQuery(e.target.value);
+              setQuery(e.target.value);
             }}
           />
           <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">
@@ -93,15 +98,16 @@ export const RecentNotesDialog = () => {
 
         <ul ref={listRef} className="overflow-y-auto flex-1 p-2 scrollbar-thin">
           {filteredNotes.map((note, index) => {
-            const relativePath = note.filePath && storageDir
-                ? getRelativePath(storageDir, note.filePath) 
+            const relativePath =
+              note.filePath && storageDir
+                ? getRelativePath(storageDir, note.filePath)
                 : "";
-            
+
             // Remove filename from path for display
-            const folderPath = relativePath.includes('/') 
-                ? relativePath.substring(0, relativePath.lastIndexOf('/')) 
-                : "";
-            
+            const folderPath = relativePath.includes("/")
+              ? relativePath.substring(0, relativePath.lastIndexOf("/"))
+              : "";
+
             const displayPath = formatSimplifiedPath(folderPath);
 
             return (
@@ -116,29 +122,31 @@ export const RecentNotesDialog = () => {
                 onMouseEnter={() => setSelectedIndex(index)}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`font-medium ${
-                      index === selectedIndex ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-gray-100"
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      index === selectedIndex
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-gray-900 dark:text-gray-100"
+                    }`}
+                  >
                     {note.title || "Untitled"}
                   </span>
                   <span className="text-xs text-gray-400">
                     {new Date(note.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
-                
+
                 {displayPath && (
-                    <div className="text-xs text-gray-500 mt-0.5 truncate">
-                        {displayPath}
-                    </div>
+                  <div className="text-xs text-gray-500 mt-0.5 truncate">
+                    {displayPath}
+                  </div>
                 )}
               </li>
             );
           })}
-          
+
           {filteredNotes.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              No notes found
-            </div>
+            <div className="p-8 text-center text-gray-500">No notes found</div>
           )}
         </ul>
       </div>

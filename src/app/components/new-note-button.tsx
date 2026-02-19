@@ -1,6 +1,6 @@
-import { PlusIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect } from "react";
-import { useGlobalStore } from "../../store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { NavbarButton } from "./navbar-button";
 
 export const NewNoteButton = () => {
@@ -21,10 +21,6 @@ export const NewNoteButton = () => {
   }, []);
 
   return (
-    <NavbarButton
-      Icon={PlusIcon}
-      title="New note (⌘N)"
-      onClick={createNewNote}
-    />
+    <NavbarButton Icon={Plus} title="New note (⌘N)" onClick={createNewNote} />
   );
 };

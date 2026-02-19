@@ -10,8 +10,8 @@ import markdownItFrontMatter from "markdown-it-front-matter";
 import { useEffect, useMemo, useState } from "react";
 import { BundledLanguage } from "shiki";
 import * as YAML from "yaml";
-import { globalDispatch, globalState } from "../../store/global.store";
-import { Note } from "../../store/note";
+import { globalDispatch, globalState } from "@/store/global.store";
+import { Note } from "@/store/note";
 import { getThemeForMode, ShikiPlugin, CodeBlockFrame } from "./code-block";
 
 const FrontmatterView = (props: any) => {

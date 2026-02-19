@@ -1,3 +1,15 @@
+import {
+  COPY_EVENT_DISPATCHED,
+  COPY_EVENT_FINISHED,
+  COPY_EVENT_STARTED,
+} from "@/ipc/copy-event";
+import { tiptapToMarkdown } from "@/lib/render-tiptap-to-markdown";
+import { CursorPositionStore } from "@/store/cursor-position.store";
+import {
+  globalDispatch,
+  globalState,
+  useGlobalStore,
+} from "@/store/global.store";
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
@@ -7,30 +19,17 @@ import {
   type Editor as TipTapEditor,
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 import * as YAML from "yaml";
-import {
-  COPY_EVENT_DISPATCHED,
-  COPY_EVENT_FINISHED,
-  COPY_EVENT_STARTED,
-} from "../ipc/copy-event";
-import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
-import { CursorPositionStore } from "../store/cursor-position.store";
-import {
-  globalDispatch,
-  globalState,
-  useGlobalStore,
-} from "../store/global.store";
-
+import { isElectron } from "@/lib/is-electron";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Sparkles } from "lucide-react";
-import { Note } from "../store/note";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
-import { isElectron } from "@/lib/is-electron";
-import { SettingsService } from "../store/settings";
 
 const getScrollContainer = () =>
   document.getElementById("main-scroll-container") || window;
@@ -116,7 +115,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) {}
+      } catch (e) { }
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
@@ -139,12 +138,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                        .map((t: any) => String(t).trim())
-                        .filter(Boolean)
+                      .map((t: any) => String(t).trim())
+                      .filter(Boolean)
                     : String(parsed.tags)
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean);
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean);
 
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
@@ -172,7 +171,6 @@ const InnerEditor = (props: {
             type: "doc",
             content: selectedContent.content.toJSON(),
           };
-
           const markdown = (editor.storage as any).markdown.getMarkdown();
           navigator.clipboard.write([
             new ClipboardItem({
@@ -217,11 +215,9 @@ const InnerEditor = (props: {
         try {
           const html = (editor.storage as any).markdown.getMarkdown();
           if (!noteRef.current) return;
-
           const note = Note.parse(noteRef.current);
           note.setContent(html);
           await globalDispatch.note(note);
-
           CursorPositionStore.save(
             note.id,
             editor.state.selection.anchor,
@@ -282,7 +278,7 @@ const InnerEditor = (props: {
   return (
     <div
       id="editor-container"
-      className="flex flex-col justify-start px-2 items-start py-4 mx-auto w-full bg-card-background max-w-safe"
+      className="flex flex-col justify-start items-start p-4 mx-auto w-full bg-card-background max-w-safe"
       style={{ fontSize: `${settings.editorFontSize}px` }}
     >
       <EditorContext.Provider value={{ editor }}>

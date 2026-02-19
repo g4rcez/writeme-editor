@@ -1,3 +1,5 @@
+import { uuid } from "@g4rcez/components";
+
 function joinPath(...segments: string[]): string {
   return segments
     .join("/")
@@ -102,7 +104,7 @@ export function createStandaloneNote(filePath: string, content: string) {
   const title = filename.replace(/\.md$/i, "");
   const now = new Date();
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     title,
     content,
     project: "",

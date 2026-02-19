@@ -16,7 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Tooltip, Button } from "@g4rcez/components";
-import type { TreeNode, FlattenedNode } from "../../types/tree";
+import type { TreeNode, FlattenedNode } from "@/types/tree";
 
 interface TreeNodeItemProps {
   depth: number;
@@ -242,15 +242,13 @@ export const TreeView = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lifted state for expansion and caching
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
-  const [childrenCache, setChildrenCache] = useState<Map<string, TreeNode[]>>(
-    new Map(),
+  const [expandedPaths, setExpandedPaths] = useState(() => new Set<string>());
+  const [childrenCache, setChildrenCache] = useState(
+    new Map<string, TreeNode[]>(),
   );
-  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set());
+  const [loadingPaths, setLoadingPaths] = useState(new Set<string>());
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
 
-  // Keyboard navigation state
   const [focusedIndex, setFocusedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -271,12 +269,10 @@ export const TreeView = ({
     }
   }, [rootPath]);
 
-  // Load root directory on mount
   useEffect(() => {
     loadRoot();
   }, [loadRoot]);
 
-  // Flatten visible nodes for navigation
   const flattenedNodes = useMemo(() => {
     if (!rootChildren) return [];
     return flattenVisibleNodes(

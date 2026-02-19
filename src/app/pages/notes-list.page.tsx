@@ -7,10 +7,10 @@ import {
   Tag,
   TagProps,
 } from "@g4rcez/components";
-import { LinkIcon, LogsIcon, SearchIcon, Trash2, X } from "lucide-react";
+import { Link as LinkIcon, Logs, Search, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Note } from "../../store/note";
-import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
+import { Note } from "@/store/note";
+import { useNoteList, NoteWithTags } from "@/app/hooks/use-note-list";
 
 const tag: Record<
   Note["noteType"],
@@ -105,7 +105,7 @@ export default function NotesListPage() {
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-4 items-center">
           <h1 className="flex gap-2 items-center text-2xl font-bold">
-            <LogsIcon className="w-6 h-6" />
+            <Logs className="w-6 h-6" />
             All Notes
           </h1>
         </div>
@@ -114,7 +114,7 @@ export default function NotesListPage() {
             hiddenLabel
             type="text"
             value={search}
-            left={<SearchIcon size={16} />}
+            left={<Search size={16} />}
             title="Search notes or tags..."
             placeholder="Search notes or tags..."
             onChange={(e) => setSearch(e.target.value)}
@@ -134,11 +134,7 @@ export default function NotesListPage() {
           <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-floating-background text-card-foreground">
             <span className="font-medium">{selectedIds.size} selected</span>
             <div className="w-px h-4 bg-border" />
-            <Button
-              size="small"
-              theme="ghost-danger"
-              onClick={onBatchDelete}
-            >
+            <Button size="small" theme="ghost-danger" onClick={onBatchDelete}>
               <Trash2 className="size-4" />
               Delete
             </Button>

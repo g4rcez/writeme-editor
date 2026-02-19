@@ -1,4 +1,4 @@
-import { isElectron } from "../../lib/is-electron";
+import { isElectron } from "@/lib/is-electron";
 import {
   Button,
   Card,
@@ -10,17 +10,17 @@ import {
   uuid,
 } from "@g4rcez/components";
 import {
-  SaveIcon,
-  SettingsIcon,
+  Save,
+  Settings,
   Plus,
   Trash2,
   Sparkles,
   AlertCircle,
 } from "lucide-react";
 import { useEffect, useState, Fragment } from "react";
-import { globalDispatch, repositories } from "../../store/global.store";
-import { AppSettings, SettingsService } from "../../store/settings";
-import { AIConfig } from "../../store/repositories/electron/ai.repository";
+import { globalDispatch, repositories } from "@/store/global.store";
+import { AppSettings, SettingsService } from "@/store/settings";
+import { AIConfig } from "@/store/repositories/electron/ai.repository";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -105,7 +105,7 @@ export default function SettingsPage() {
     <div className="py-4 pb-20 mx-auto space-y-6 w-full max-w-safe">
       <header className="flex justify-between items-center px-4">
         <h1 className="flex gap-2 items-center text-3xl font-bold">
-          <SettingsIcon className="size-8" />
+          <Settings className="size-8" />
           Settings
         </h1>
         <Button
@@ -114,7 +114,7 @@ export default function SettingsPage() {
           onClick={handleSave}
           className="flex gap-2 items-center"
         >
-          <SaveIcon size={16} />
+          <Save size={16} />
           {saving ? "Saving..." : "Save Changes"}
         </Button>
       </header>
@@ -296,7 +296,7 @@ export default function SettingsPage() {
                     onClick={handleSave}
                     className="flex gap-2 items-center"
                   >
-                    <SaveIcon size={16} />
+                    <Save size={16} />
                     {saving ? "Saving AI Configs..." : "Save AI Configurations"}
                   </Button>
                 </div>

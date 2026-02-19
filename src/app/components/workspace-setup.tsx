@@ -1,8 +1,8 @@
 import { Modal } from "@g4rcez/components";
 import { Database, FolderSync, X } from "lucide-react";
 import { useState } from "react";
-import { isElectron } from "../../lib/is-electron";
-import { SettingsService } from "../../store/settings";
+import { isElectron } from "@/lib/is-electron";
+import { SettingsService } from "@/store/settings";
 
 interface StorageConfigDialogProps {
   open: boolean;
@@ -18,9 +18,7 @@ export const StorageConfigDialog = ({
   onOpenChange,
 }: StorageConfigDialogProps) => {
   const settings = SettingsService.load();
-  const [directory, setDirectory] = useState<string | null>(
-    settings.directory
-  );
+  const [directory, setDirectory] = useState<string | null>(settings.directory);
   const [author, setAuthor] = useState(settings.defaultAuthor || "");
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -65,16 +63,10 @@ export const StorageConfigDialog = ({
     });
   };
 
-  const currentMode = settings.directory
-    ? "Folder Sync"
-    : "Local Storage";
+  const currentMode = settings.directory ? "Folder Sync" : "Local Storage";
 
   return (
-    <Modal
-      open={open}
-      onChange={onOpenChange}
-      title="Storage Configuration"
-    >
+    <Modal open={open} onChange={onOpenChange} title="Storage Configuration">
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
           {settings.directory ? (
@@ -83,7 +75,9 @@ export const StorageConfigDialog = ({
             <Database className="w-5 h-5 text-blue-500" />
           )}
           <div className="flex flex-col">
-            <span className="text-sm font-medium">Current Mode: {currentMode}</span>
+            <span className="text-sm font-medium">
+              Current Mode: {currentMode}
+            </span>
             <span className="text-xs text-foreground/60">
               {settings.directory
                 ? `Syncing to: ${settings.directory}`
@@ -98,7 +92,9 @@ export const StorageConfigDialog = ({
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
                 Sync Folder
-                <span className="ml-2 text-xs text-foreground/50">(optional)</span>
+                <span className="ml-2 text-xs text-foreground/50">
+                  (optional)
+                </span>
               </label>
               <div className="flex gap-2">
                 <input
@@ -126,14 +122,17 @@ export const StorageConfigDialog = ({
                 </button>
               </div>
               <p className="text-xs text-foreground/50">
-                When enabled, notes are also saved as .md files you can edit with any text editor
+                When enabled, notes are also saved as .md files you can edit
+                with any text editor
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">
                 Your Name
-                <span className="ml-2 text-xs text-foreground/50">(optional)</span>
+                <span className="ml-2 text-xs text-foreground/50">
+                  (optional)
+                </span>
               </label>
               <input
                 type="text"
@@ -181,7 +180,8 @@ export const StorageConfigDialog = ({
 
         <p className="text-xs text-foreground/50 text-center">
           Local storage keeps your notes in the browser's IndexedDB database.
-          {isElectron() && " Folder sync additionally saves them as markdown files."}
+          {isElectron() &&
+            " Folder sync additionally saves them as markdown files."}
         </p>
       </div>
     </Modal>

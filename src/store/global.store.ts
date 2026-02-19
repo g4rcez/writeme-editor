@@ -1,5 +1,5 @@
 import { createGlobalReducer } from "use-typed-reducer";
-import { editorGlobalRef } from "../app/editor-global-ref";
+import { editorGlobalRef } from "@/app/editor-global-ref";
 import { CursorPositionStore } from "./cursor-position.store";
 import { Note } from "./note";
 import { repositories } from "./repositories";

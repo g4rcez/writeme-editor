@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { repositories } from "../../store/repositories";
-import { Note } from "../../store/note";
-import { useGlobalStore } from "../../store/global.store";
+import { repositories } from "@/store/repositories";
+import { Note } from "@/store/note";
+import { useGlobalStore } from "@/store/global.store";
 import { Modal } from "@g4rcez/components";
 
 export type NoteWithTags = Note & {
-  tagsList: string[];
   tagCount: number;
 };
 
@@ -41,7 +40,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         const tags = tagsMap.get(key) || [];
         return {
           ...note,
-          tagsList: tags,
+          tags: tags,
           tagCount: tags.length,
         } as NoteWithTags;
       });
@@ -64,7 +63,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
       result = result.filter(
         (n: NoteWithTags) =>
           n.title.toLowerCase().includes(lower) ||
-          n.tagsList.some((t) => t.toLowerCase().includes(lower)) ||
+          n.tags.some((t) => t.toLowerCase().includes(lower)) ||
           (n.url && n.url.toLowerCase().includes(lower)),
       );
     }

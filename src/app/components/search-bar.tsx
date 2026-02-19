@@ -1,10 +1,10 @@
 import { Search, X } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useGlobalStore, repositories } from "../../store/global.store";
-import { Note } from "../../store/note";
-import { SettingsService } from "../../store/settings";
-import { formatSimplifiedPath, getRelativePath } from "../../lib/file-utils";
-import { useListSearch } from "../hooks/use-list-search";
+import { useGlobalStore, repositories } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
+import { useListSearch } from "@/app/hooks/use-list-search";
 
 export const SearchBar = () => {
   const [, dispatch] = useGlobalStore();
@@ -15,7 +15,7 @@ export const SearchBar = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const settings = SettingsService.load();
-  const storageDir = settings.storageDirectory || "";
+  const storageDir = settings.directory || "";
 
   const openSearch = useCallback(() => {
     setIsOpen(true);
@@ -30,10 +30,13 @@ export const SearchBar = () => {
     setResults([]);
   }, []);
 
-  const selectNote = useCallback((note: Note) => {
-    dispatch.selectNoteById(note.id);
-    closeSearch();
-  }, [dispatch, closeSearch]);
+  const selectNote = useCallback(
+    (note: Note) => {
+      dispatch.selectNoteById(note.id);
+      closeSearch();
+    },
+    [dispatch, closeSearch],
+  );
 
   const { selectedIndex, setSelectedIndex } = useListSearch({
     items: results,
@@ -88,7 +91,10 @@ export const SearchBar = () => {
     if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         closeSearch();
       }
     };

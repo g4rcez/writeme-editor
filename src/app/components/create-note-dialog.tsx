@@ -2,10 +2,10 @@ import { Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dates } from "../../lib/dates";
-import { getUniqueNoteTitle } from "../../lib/file-utils";
-import { repositories, useGlobalStore } from "../../store/global.store";
-import { Note } from "../../store/note";
+import { Dates } from "@/lib/dates";
+import { getUniqueNoteTitle } from "@/lib/file-utils";
+import { repositories, useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
 
 export const CreateNoteDialog = () => {
   const [state, dispatch] = useGlobalStore();

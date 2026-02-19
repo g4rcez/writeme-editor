@@ -1,14 +1,9 @@
 import { Excalidraw, restoreElements } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
 import { useEffect, useRef, useState } from "react";
-import { useGlobalStore } from "../../store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { Button } from "@g4rcez/components";
-import {
-  ExpandIcon,
-  FullscreenIcon,
-  ShrinkIcon,
-  TrashIcon,
-} from "lucide-react";
+import { Expand, Maximize, Shrink, Trash } from "lucide-react";
 import { Editor } from "@tiptap/core";
 
 export const ExcalidrawCode = (props: {
@@ -44,9 +39,7 @@ export const ExcalidrawCode = (props: {
   }, []);
 
   if (state === null) return null;
-
-  const Icon = isFullScreen ? ShrinkIcon : ExpandIcon;
-
+  const Icon = isFullScreen ? Shrink : Expand;
   return (
     <div ref={ref} className="relative p-6 w-full min-w-full bg-card h-[800px]">
       <Excalidraw
@@ -68,7 +61,7 @@ export const ExcalidrawCode = (props: {
           <Icon size={16} />
         </Button>
         <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
-          <TrashIcon size={16} />
+          <Trash size={16} />
         </Button>
       </div>
     </div>

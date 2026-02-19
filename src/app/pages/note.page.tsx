@@ -3,9 +3,9 @@ import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
 import { PropsWithChildren, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Dates } from "../../lib/dates";
-import { getReadingTime } from "../../lib/file-utils";
-import { repositories } from "../../store/global.store";
+import { Dates } from "@/lib/dates";
+import { getReadingTime } from "@/lib/file-utils";
+import { repositories } from "@/store/global.store";
 import { Editor } from "../editor";
 import { TableOfContents } from "../components/table-of-contents";
 

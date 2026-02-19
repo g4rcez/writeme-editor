@@ -1,12 +1,12 @@
 import { Modal, Button } from "@g4rcez/components";
 import { Edit2, FilePlus, FolderPlus, FolderTree } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { getDirname } from "../../lib/file-utils";
-import { globalState, useGlobalStore } from "../../store/global.store";
-import { repositories } from "../../store/repositories";
-import { Note } from "../../store/note";
-import { SettingsService } from "../../store/settings";
-import type { TreeNode } from "../../types/tree";
+import { getDirname } from "@/lib/file-utils";
+import { globalState, useGlobalStore } from "@/store/global.store";
+import { repositories } from "@/store/repositories";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
+import type { TreeNode } from "@/types/tree";
 import { TreeView } from "./tree-view";
 
 export const DirectoryBrowserDialog = () => {

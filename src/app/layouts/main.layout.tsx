@@ -1,9 +1,9 @@
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { ActivityBar } from "../components/sidebar/activity-bar";
-import { SidebarContent } from "../components/sidebar/sidebar-content";
-import { TabsBar } from "../components/tabs-bar";
+import { ActivityBar } from "@/app/components/sidebar/activity-bar";
+import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
+import { TabsBar } from "@/app/components/tabs-bar";
 import { Navbar } from "./navbar";
 import { css } from "@g4rcez/components";
 
@@ -73,7 +73,7 @@ export const MainLayout = () => {
           <TabsBar />
           <div
             id="main-scroll-container"
-            className="overflow-y-auto flex-1 w-full"
+            className="overflow-y-auto bg-card-background flex-1 w-full"
           >
             <Outlet />
           </div>

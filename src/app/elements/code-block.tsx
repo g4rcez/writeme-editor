@@ -31,17 +31,14 @@ import {
 } from "shiki";
 import { clsx } from "clsx";
 import Convert from "ansi-to-html";
-import {
-  getCurrentElementName,
-  updateNodeContent,
-} from "../../lib/editor-utils";
-import { globalState } from "../../store/global.store";
+import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
+import { globalState } from "@/store/global.store";
 import { canFormat, formatCode } from "./code-block-formatting";
 import { ExcalidrawCode } from "./excalidraw";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
-import { EXECUTION_CONFIG } from "../../lib/execution-config";
+import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
 
 export type CodeBlockFrameProps = {

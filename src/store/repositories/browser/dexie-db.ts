@@ -4,6 +4,7 @@ import { Tab } from "../entities/tab";
 import { Hashtag } from "../entities/hashtag";
 import { Settings } from "../entities/settings";
 import { Project } from "../entities/project";
+import { uuid } from "@g4rcez/components";
 
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
@@ -151,7 +152,7 @@ db.version(9)
         .first();
       if (!exists) {
         await tx.table("settings").add({
-          id: crypto.randomUUID(),
+          id: uuid(),
           name: def.name,
           value: def.value,
         });

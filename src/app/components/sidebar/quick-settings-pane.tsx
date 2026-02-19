@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { SettingsService, AppSettings } from "../../../store/settings";
-import { useGlobalStore, globalDispatch } from "../../../store/global.store";
+import { SettingsService, AppSettings } from "@/store/settings";
+import { useGlobalStore, globalDispatch } from "@/store/global.store";
 import { Moon, Sun, Save, Type, Clock } from "lucide-react";
 import { clsx } from "clsx";
 

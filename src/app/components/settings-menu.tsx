@@ -1,5 +1,5 @@
-import { SettingsIcon } from "lucide-react";
-import { useGlobalStore } from "../../store/global.store";
+import { Settings } from "lucide-react";
+import { useGlobalStore } from "@/store/global.store";
 import { NavbarButton } from "./navbar-button";
 
 export const SettingsMenu = () => {
@@ -7,7 +7,7 @@ export const SettingsMenu = () => {
   return (
     <NavbarButton
       title="Settings"
-      Icon={SettingsIcon}
+      Icon={Settings}
       aria-label="Settings menu"
       onClick={() => dispatch.commander(true)}
     />

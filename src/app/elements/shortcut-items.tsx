@@ -1,15 +1,15 @@
 import { useEffect, useMemo } from "react";
-import { shortcuts } from "../../lib/shortcuts";
-import { useGlobalStore } from "../../store/global.store";
-import { repositories } from "../../store/repositories";
-import { isElectron } from "../../lib/is-electron";
-import { SettingsService } from "../../store/settings";
+import { shortcuts } from "@/lib/shortcuts";
+import { useGlobalStore } from "@/store/global.store";
+import { repositories } from "@/store/repositories";
+import { isElectron } from "@/lib/is-electron";
+import { SettingsService } from "@/store/settings";
 import {
   createStandaloneNote,
   generateNotePath,
   getUniqueFilePath,
-} from "../../lib/file-utils";
-import { Note } from "../../store/note";
+} from "@/lib/file-utils";
+import { Note } from "@/store/note";
 
 // Shortcuts that require filesystem access (Electron only)
 const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e"];

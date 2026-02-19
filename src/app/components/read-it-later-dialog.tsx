@@ -3,9 +3,9 @@ import { Editor } from "@tiptap/core";
 import DOMPurify from "dompurify";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { parseReadItLaterHtml } from "../../lib/read-it-later-utils";
-import { repositories, useGlobalStore } from "../../store/global.store";
-import { Note } from "../../store/note";
+import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
+import { repositories, useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
 import { getThemeForMode } from "../elements/code-block";
 import { createExtensions } from "../extensions";
 

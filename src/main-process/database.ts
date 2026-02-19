@@ -1,3 +1,4 @@
+import { uuid } from "@g4rcez/components";
 import Database from "better-sqlite3";
 import { app } from "electron";
 import path from "node:path";
@@ -199,7 +200,7 @@ class DatabaseManager {
     `);
 
     for (const def of defaults) {
-      insertSetting.run(crypto.randomUUID(), "setting", def.name, def.value);
+      insertSetting.run(uuid(), "setting", def.name, def.value);
     }
   }
 
@@ -338,9 +339,8 @@ class DatabaseManager {
       for (const id of idsToRemove) {
         deleteStmt.run(id);
       }
-
       for (const tag of added) {
-        insertStmt.run(crypto.randomUUID(), tag, filename, "default");
+        insertStmt.run(uuid(), tag, filename, "default");
       }
     });
     transaction();

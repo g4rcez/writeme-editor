@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Search, FileText, Type } from "lucide-react";
-import { useLayoutContext } from "../../contexts/layout-context";
-import { useGlobalStore } from "../../../store/global.store";
+import { useLayoutContext } from "@/app/contexts/layout-context";
+import { useGlobalStore } from "@/store/global.store";
 import { useNavigate } from "react-router-dom";
-import { Note } from "../../../store/note";
+import { Note } from "@/store/note";
 
 export const SearchPane = () => {
   const { state: layoutState, dispatch: layoutDispatch } = useLayoutContext();

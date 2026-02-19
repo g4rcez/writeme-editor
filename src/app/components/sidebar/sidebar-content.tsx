@@ -1,29 +1,24 @@
-import { useLayoutContext } from "../../contexts/layout-context";
-import { ExplorerPane } from "./explorer-pane";
-import { SearchPane } from "./search-pane";
-import { QuickSettingsPane } from "./quick-settings-pane";
+import { useLayoutContext } from "@/app/contexts/layout-context";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
-import { useEffect } from "react";
+import { ExplorerPane } from "./explorer-pane";
+import { QuickSettingsPane } from "./quick-settings-pane";
+import { SearchPane } from "./search-pane";
+import { TagsPane } from "./tags-pane";
 
 export const SidebarContent = () => {
-  const { state, dispatch } = useLayoutContext();
-
-  // Reset view when activity changes?
-  // Maybe not, keep them independent if they have different sub-states.
-
+  const { state } = useLayoutContext();
   switch (state.activeActivity) {
     case "explorer":
       return <ExplorerPane />;
     case "search":
       return <SearchPane />;
     case "favorites":
-      // We can reuse NoteListSidebar but we need to tell it to filter by favorites
-      // For now, let's update NoteListSidebar to respect the activeView in context
-      // which we will set when switching to favorites activity.
       return <NoteListSidebar />;
     case "tags":
-      // Similar to favorites, show note list but with tag focus
-      return <NoteListSidebar />;
+      if (state.activeView.type === "tag") {
+        return <NoteListSidebar />;
+      }
+      return <TagsPane />;
     case "settings":
       return <QuickSettingsPane />;
     default:

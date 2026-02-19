@@ -3,6 +3,7 @@ import { isElectron } from "../lib/is-electron";
 import { SettingsRepository as BrowserSettingsRepository } from "./repositories/browser/settings.repository";
 import { SettingsRepository as ElectronSettingsRepository } from "./repositories/electron/settings.repository";
 import { ISettingsRepository } from "./repositories/entities/settings";
+import { uuid } from "@g4rcez/components";
 
 export type { AppSettings };
 
@@ -63,7 +64,7 @@ export class SettingsService {
     const stringValue = JSON.stringify(value);
     const all = await this.repo.getAll();
     const existing = all.find((s) => s.name === name);
-    const id = existing ? existing.id : crypto.randomUUID();
+    const id = existing ? existing.id : uuid();
     const now = new Date();
     await this.repo.save({
       id,
