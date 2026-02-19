@@ -159,21 +159,21 @@ db.version(9)
     }
   });
 
-// Version 10 (Metadata support)
-db.version(10)
+// Version 11 (Favorite support)
+db.version(11)
   .stores({
     notes:
-      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy",
+      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
     projects: "&id, title, folderPath, description, createdAt, updatedAt",
     tabs: "&id, noteId, order, createdAt",
     hashtags: "&id, hashtag, filename, project",
     settings: "&id, &name, value",
   })
   .upgrade(async (tx) => {
-    console.log("Migrating to v10: adding metadata field to notes...");
+    console.log("Migrating to v11: adding favorite field to notes...");
     const notes = await tx.table("notes").toArray();
     for (const note of notes) {
-      await tx.table("notes").update(note.id, { metadata: {} });
+      await tx.table("notes").update(note.id, { favorite: false });
     }
-    console.log("Schema migration to v10 complete");
+    console.log("Schema migration to v11 complete");
   });

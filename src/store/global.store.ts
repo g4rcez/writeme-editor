@@ -32,6 +32,9 @@ type State = {
   help: boolean;
   notes: Note[];
   note: Note | null;
+  editorFontSize: number;
+  sidebarWidth: number;
+  isSidebarCollapsed: boolean;
   recentNotes: Note[];
   commander: Commander;
   activeTabId: string | null;
@@ -54,6 +57,9 @@ const initialState: State = {
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
   theme: "dark" as "light" | "dark",
+  editorFontSize: 16,
+  sidebarWidth: 208,
+  isSidebarCollapsed: false,
   activeTabId: null as string | null,
   aiDrawer: { isOpen: false, chatId: null },
   commander: { enabled: false, type: CommanderType.All } as Commander,
@@ -117,7 +123,7 @@ export const useGlobalStore = createGlobalReducer(
       createTabIfMissing: boolean = true,
     ) => {
       const state = get.state();
-      if (state.activeTabId === note.id && state.note?.id === note.id) {
+      if (state.activeTabId === note.id && state.note === note) {
         return state;
       }
       const existingTab = state.tabs.find((t) => t.noteId === note.id);
@@ -162,15 +168,42 @@ export const useGlobalStore = createGlobalReducer(
       commander: (enabled: boolean, type?: CommanderType) => ({
         commander: { enabled, type: type || CommanderType.All },
       }),
-      init: (theme: Theme, notes: Note[], tabs: Tab[]) => {
+      init: (
+        theme: Theme,
+        notes: Note[],
+        tabs: Tab[],
+        editorFontSize: number,
+        sidebarWidth: number,
+        isSidebarCollapsed: boolean,
+      ) => {
         if (theme === "dark") document.documentElement.classList.add("dark");
         if (theme === "light")
           document.documentElement.classList.remove("dark");
         return {
           tabs,
           theme,
+          editorFontSize,
+          sidebarWidth,
+          isSidebarCollapsed,
           notes: setNotes(notes).notes,
         };
+      },
+      setEditorFontSize: (editorFontSize: number) => {
+        SettingsService.save({ editorFontSize });
+        return { editorFontSize };
+      },
+      setSidebarWidth: (sidebarWidth: number) => {
+        SettingsService.save({ sidebarWidth });
+        return { sidebarWidth };
+      },
+      setSidebarCollapsed: (isSidebarCollapsed: boolean) => {
+        SettingsService.save({ isSidebarCollapsed });
+        return { isSidebarCollapsed };
+      },
+      toggleSidebar: () => {
+        const isSidebarCollapsed = !get.state().isSidebarCollapsed;
+        SettingsService.save({ isSidebarCollapsed });
+        return { isSidebarCollapsed };
       },
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,

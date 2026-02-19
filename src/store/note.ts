@@ -24,6 +24,7 @@ export class Note implements EntityBase {
     public description: string | null,
     public favicon: string | null,
     public metadata: Record<string, any> = {},
+    public favorite: boolean = false,
   ) {}
 
   public static new(
@@ -34,6 +35,7 @@ export class Note implements EntityBase {
     description: string | null = null,
     favicon: string | null = null,
     metadata: Record<string, any> = {},
+    favorite: boolean = false,
   ) {
     const now = new Date();
     return new Note(
@@ -54,6 +56,7 @@ export class Note implements EntityBase {
       description,
       favicon,
       metadata,
+      favorite,
     );
   }
 
@@ -107,6 +110,7 @@ export class Note implements EntityBase {
       a.description || null,
       a.favicon || null,
       a.metadata || {},
+      a.favorite || false,
     );
   }
 }

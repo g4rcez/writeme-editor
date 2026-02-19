@@ -22,11 +22,13 @@ export const TableOfContents = () => {
         ),
       );
 
+      const container =
+        document.getElementById("main-scroll-container") || document.body;
       const targetElements =
         elements.length > 0
           ? elements
           : Array.from(
-              document.querySelectorAll<HTMLHeadingElement>(
+              container.querySelectorAll<HTMLHeadingElement>(
                 "h1, h2, h3, h4, h5, h6",
               ),
             );

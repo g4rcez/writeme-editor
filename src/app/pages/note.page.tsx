@@ -11,7 +11,7 @@ import { TableOfContents } from "../components/table-of-contents";
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
-    <div className="flex flex-col gap-4 w-full h-full relative">
+    <div className="flex relative flex-col gap-4 w-full">
       <TableOfContents />
       {props.children}
     </div>
@@ -49,7 +49,7 @@ export default function NotePage() {
   return (
     <Wrapper>
       {note.noteType === "read-it-later" ? (
-        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
+        <header className="bg-card-background flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
           <h1 className="text-xl font-medium">{note.title}</h1>
           {note.url ? (
             <a

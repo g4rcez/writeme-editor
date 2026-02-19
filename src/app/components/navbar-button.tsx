@@ -1,3 +1,4 @@
+import { Button, Tooltip } from "@g4rcez/components";
 import { LucideIcon } from "lucide-react";
 import { ComponentProps } from "react";
 
@@ -5,12 +6,18 @@ export const NavbarButton = (
   props: ComponentProps<"button"> & { Icon: LucideIcon },
 ) => {
   return (
-    <button
-      {...props}
-      type="button"
-      className="flex gap-1.5 items-center py-1.5 px-2.5 text-sm rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
+    <Tooltip
+      placement="bottom-start"
+      as={Button}
+      size="small"
+      theme="ghost-muted"
+      title={
+        <span {...props}>
+          <props.Icon className="size-4" />
+        </span>
+      }
     >
-      <props.Icon className="size-4" />
-    </button>
+      {props.title}
+    </Tooltip>
   );
 };

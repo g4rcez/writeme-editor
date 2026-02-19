@@ -30,6 +30,26 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
 import { isElectron } from "@/lib/is-electron";
+import { SettingsService } from "../store/settings";
+
+const getScrollContainer = () =>
+  document.getElementById("main-scroll-container") || window;
+
+const getScrollY = () => {
+  const container = getScrollContainer();
+  return container === window
+    ? window.scrollY
+    : (container as HTMLElement).scrollTop;
+};
+
+const setScrollY = (y: number) => {
+  const container = getScrollContainer();
+  if (container === window) {
+    window.scrollTo(0, y);
+  } else {
+    (container as HTMLElement).scrollTop = y;
+  }
+};
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -102,7 +122,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
-      handlePaste: (view, event) => {
+      handlePaste: (_, event) => {
         const text = event.clipboardData?.getData("text/plain");
         if (text && text.startsWith("---") && props.note) {
           const match = text.match(/^---\n([\s\S]*?)\n---/);
@@ -205,7 +225,7 @@ const InnerEditor = (props: {
           CursorPositionStore.save(
             note.id,
             editor.state.selection.anchor,
-            window.scrollY,
+            getScrollY(),
           );
         } catch (error) {
           console.error("Failed to save document:", error);
@@ -228,7 +248,7 @@ const InnerEditor = (props: {
           CursorPositionStore.save(
             note.id,
             editor.state.selection.anchor,
-            window.scrollY,
+            getScrollY(),
           );
         }
       } catch (error) {
@@ -253,14 +273,17 @@ const InnerEditor = (props: {
     const raf = requestAnimationFrame ?? ((fn: Function) => fn());
     raf(() => {
       editor.chain().setTextSelection(safePos).run();
-      window.scrollTo(0, position.scroll);
+      setScrollY(position.scroll);
     });
   }, [editor, props.note?.id]);
+
+  const settings = SettingsService.load();
 
   return (
     <div
       id="editor-container"
-      className="flex flex-col justify-start items-start py-4 mx-auto w-full h-full max-w-safe"
+      className="flex flex-col justify-start px-2 items-start py-4 mx-auto w-full bg-card-background max-w-safe"
+      style={{ fontSize: `${settings.editorFontSize}px` }}
     >
       <EditorContext.Provider value={{ editor }}>
         <BubbleMenu className="z-navbar isolate" editor={editor}>
@@ -283,7 +306,6 @@ const InnerEditor = (props: {
             ) : null}
           </ul>
         </BubbleMenu>
-
         <EditorContent
           key={props.id}
           editor={editor}

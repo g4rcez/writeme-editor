@@ -40,7 +40,8 @@ class DatabaseManager {
         url TEXT,
         description TEXT,
         favicon TEXT,
-        metadata TEXT -- JSON object
+        metadata TEXT, -- JSON object
+        favorite INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS projects (
@@ -126,7 +127,13 @@ class DatabaseManager {
       "aiMessages",
     ];
     const commonColumns = ["type", "createdAt", "updatedAt"];
-    const noteColumns = ["url", "description", "favicon", "metadata"];
+    const noteColumns = [
+      "url",
+      "description",
+      "favicon",
+      "metadata",
+      "favorite",
+    ];
     const aiMessageColumns = ["selectionSlice"];
 
     for (const table of tables) {
@@ -148,8 +155,9 @@ class DatabaseManager {
           for (const col of noteColumns) {
             if (!columns.some((c: any) => c.name === col)) {
               console.log(`Migrating table ${table}: adding '${col}' column`);
+              const type = col === "favorite" ? "INTEGER DEFAULT 0" : "TEXT";
               this.db
-                .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
+                .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`)
                 .run();
             }
           }
@@ -214,6 +222,9 @@ class DatabaseManager {
     }
     if ("isDefault" in row) {
       row.isDefault = Boolean(row.isDefault);
+    }
+    if ("favorite" in row) {
+      row.favorite = Boolean(row.favorite);
     }
     return row;
   }

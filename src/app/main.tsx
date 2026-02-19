@@ -89,7 +89,14 @@ export async function main() {
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
     const tabs = await repositories.tabs.getAll();
-    globalDispatch.init(settings.theme, notes, tabs);
+    globalDispatch.init(
+      settings.theme,
+      notes,
+      tabs,
+      settings.editorFontSize,
+      settings.sidebarWidth,
+      settings.isSidebarCollapsed,
+    );
     const tab = sortByNewest(tabs)[0];
     const find = notes.find((x) => x.id === tab?.id);
     if (find) {
