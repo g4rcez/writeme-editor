@@ -25,13 +25,12 @@ import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { isElectron } from "../lib/is-electron";
 import { AIDrawer } from "./ai/ai-drawer";
 
-const noop = () => {};
+const noop = () => { };
 
 export const RootLayout = () => {
+  const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
-  const [state] = useGlobalStore();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(
     function registerBindings() {
@@ -43,7 +42,6 @@ export const RootLayout = () => {
       };
 
       const handleBeforeUnload = () => {
-        const state = globalState();
         if (state.note && editorGlobalRef.current) {
           CursorPositionStore.save(
             state.note.id,
@@ -57,22 +55,22 @@ export const RootLayout = () => {
       const cleanup = !window.electronAPI?.onQuicknoteOpen
         ? noop
         : window.electronAPI.onQuicknoteOpen(async () => {
-            const today = new Date();
-            const existing = await repositories.notes.getQuicknoteByDate(today);
-            if (existing) {
-              globalDispatch.selectNoteById(existing.id);
-              navigate(`/quicknote/${existing.id}`);
-            } else {
-              const quicknote = Note.new(
-                `${Dates.yearMonthDay(today)}_quick_note`,
-                "",
-                "quick",
-              );
-              await repositories.notes.save(quicknote);
-              globalDispatch.selectNoteById(quicknote.id);
-              navigate(`/quicknote/${quicknote.id}`);
-            }
-          });
+          const today = new Date();
+          const existing = await repositories.notes.getQuicknoteByDate(today);
+          if (existing) {
+            dispatch.selectNoteById(existing.id);
+            navigate(`/quicknote/${existing.id}`);
+          } else {
+            const quicknote = Note.new(
+              `${Dates.yearMonthDay(today)}_quick_note`,
+              "",
+              "quick",
+            );
+            await repositories.notes.save(quicknote);
+            globalDispatch.selectNoteById(quicknote.id);
+            navigate(`/quicknote/${quicknote.id}`);
+          }
+        });
 
       window.addEventListener("keydown", handleKeyDown, opts);
       window.addEventListener("beforeunload", handleBeforeUnload, opts);
@@ -83,14 +81,6 @@ export const RootLayout = () => {
     },
     [navigate],
   );
-
-  useEffect(() => {
-    const isNoteRoute = matchPath("/note/:noteId", location.pathname);
-    const hasTabs = state.tabs.length > 0;
-    if (isNoteRoute && !hasTabs) {
-      navigate("/", { replace: true });
-    }
-  }, [location.pathname, state.tabs.length, navigate]);
 
   const isQuickNote = window.location.hash.includes("quicknote");
 
@@ -126,23 +116,6 @@ export const RootLayout = () => {
         </div>
       </div>
       {isQuickNote ? null : <PWAInstallButton />}
-
-      {uiState.error && (
-        <div className="fixed right-6 top-20 z-50 duration-300 animate-in slide-in-from-right-4 fade-in">
-          <div className="flex gap-3 items-center py-3 px-4 max-w-md rounded-lg border shadow-xl bg-destructive/10 border-destructive text-destructive backdrop-blur-md">
-            <AlertTriangle className="size-5 shrink-0" />
-            <div className="flex-1 text-sm font-medium">{uiState.error}</div>
-            <button
-              onClick={() => uiDispatch.clearError()}
-              className="p-1 rounded-md transition-colors hover:bg-destructive/20"
-              title="Dismiss error"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {uiState.focusMode && (
         <button
           title="Exit focus mode (⌘⇧F)"

@@ -18,6 +18,7 @@ import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
+import { sortByNewest } from "@/lib/array";
 
 declare global {
   interface Window {
@@ -81,16 +82,15 @@ export async function main() {
     throw new Error("Root element not found");
   }
   themeConfiguration();
-  initializePWA();
+  // initializePWA();
   try {
     await SettingsService.init();
     const settings = SettingsService.load();
-    globalDispatch.theme(settings.theme);
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
     const tabs = await repositories.tabs.getAll();
-    globalDispatch.init(notes, tabs);
-    const tab = tabs[0];
+    globalDispatch.init(settings.theme, notes, tabs);
+    const tab = sortByNewest(tabs)[0];
     const find = notes.find((x) => x.id === tab?.id);
     if (find) {
       const note = await repositories.notes.getOne(notes[0].id);

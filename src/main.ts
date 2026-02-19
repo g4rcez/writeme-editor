@@ -36,13 +36,9 @@ function registerAIHandlers() {
     },
   );
 
-  ipcMain.on("ai:stop", () => {
-    console.log("AI Stop received");
-    AIRunner.stop();
-  });
+  ipcMain.on("ai:stop", () => AIRunner.stop());
 
   ipcMain.handle("ai:get-configs", () => {
-    console.log("Handling ai:get-configs");
     try {
       return dbManager().getAll("aiConfigs");
     } catch (e) {
@@ -85,7 +81,6 @@ function registerAIHandlers() {
         "SELECT * FROM aiChats WHERE noteId = ? ORDER BY createdAt DESC",
       );
       const results = stmt.all(noteId);
-      // @ts-ignore
       return results.map((r) => db.normalizeRow(r));
     } catch (e: any) {
       console.error("Error in ai:get-chats:", e);
@@ -241,7 +236,7 @@ async function main() {
       createQuickNoteWindow(preload),
     );
   });
-  app.on("window-all-closed", () => {});
+  app.on("window-all-closed", () => { });
   app.on("activate", () => {
     if (mainWindow) {
       mainWindow.show();

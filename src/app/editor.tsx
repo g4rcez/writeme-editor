@@ -70,9 +70,9 @@ const useCopyEvents = (editor: TipTapEditor) => {
 };
 
 const InnerEditor = (props: {
-  content: string;
-  note?: Note;
   id: string;
+  note?: Note;
+  content?: string;
   readonly?: boolean;
   onPasteRawText?: (text: string) => string;
 }) => {
@@ -85,18 +85,18 @@ const InnerEditor = (props: {
   const editor = useEditor({
     extensions,
     autofocus: true,
-    content: props.content,
     immediatelyRender: true,
     enableContentCheck: true,
     editable: !props.readonly,
     enableCoreExtensions: true,
+    content: props.content ?? "",
     shouldRerenderOnTransaction: false,
     parseOptions: { preserveWhitespace: "full" },
     onCreate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) {}
+      } catch (e) { }
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
@@ -119,12 +119,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                        .map((t: any) => String(t).trim())
-                        .filter(Boolean)
+                      .map((t: any) => String(t).trim())
+                      .filter(Boolean)
                     : String(parsed.tags)
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean);
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean);
 
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
@@ -289,27 +289,22 @@ export const Editor = (props: {
   onPasteRawText?: (text: string) => string;
 }) => {
   const id = useMemo(() => props.note?.id || uuid(), [props.note]);
-  const [content, setContent] = useState<null | string>(props.content);
-
-  useEffect(() => {
-    if (props.content === null) return;
-    setContent(props.content);
-  }, [props.content]);
 
   return (
     <Fragment key={props.note?.id}>
-      {content === null ? (
-        <div className="flex justify-center items-center">Loading...</div>
-      ) : (
+      {props.note?.content ? (
         <InnerEditor
           id={id}
-          content={content}
           note={props.note}
           key={props.note?.id}
+          content={props.content}
           readonly={props.readonly}
           onPasteRawText={props.onPasteRawText}
         />
+      ) : (
+        <div className="flex justify-center items-center">Loading...</div>
       )}
     </Fragment>
   );
 };
+

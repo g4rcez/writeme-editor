@@ -1,17 +1,19 @@
 import { css } from "@g4rcez/components";
 import { FileText, XIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useGlobalStore } from "../../store/global.store";
+import { Tab } from "@/store/repositories/entities/tab";
+import { Note } from "@/store/note";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
+  const params = useParams<{ noteId: string }>();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log({ tabId });
     dispatch.removeTab(tabId);
   };
 
@@ -43,9 +45,9 @@ export const TabsBar: React.FC = () => {
       ref={scrollRef}
       className="flex overflow-x-auto sticky z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background isolate scrollbar-none"
     >
-      {state.tabs.map((tab: any) => {
-        const note = state.notes.find((n: any) => n.id === tab.noteId);
-        const isActive = state.activeTabId === tab.id;
+      {state.tabs.map((tab: Tab) => {
+        const note = state.notes.find((n: Note) => n.id === tab.noteId);
+        const isActive = params?.noteId === tab.noteId;
         const title = note?.title || "Untitled";
         return (
           <Link

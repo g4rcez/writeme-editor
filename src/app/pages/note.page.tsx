@@ -1,22 +1,25 @@
+import { Note } from "@/store/note";
+import { useUIStore } from "@/store/ui.store";
 import { Tag, Tooltip } from "@g4rcez/components";
 import { ChevronDownIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   PropsWithChildren,
-  useDeferredValue,
   useEffect,
   useRef,
-  useState,
+  useState
 } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Dates } from "../../lib/dates";
 import { getReadingTime } from "../../lib/file-utils";
-import { useGlobalStore } from "../../store/global.store";
+import { repositories } from "../../store/global.store";
 import { Editor } from "../editor";
 
 const Wrapper = (props: PropsWithChildren) => {
   const ref = useRef(null);
-  const [state, setState] = useState<React.ReactNode[] | null>(null);
+  const [tableOfContents, setTableOfContents] = useState<
+    React.ReactNode[] | null
+  >(null);
   const [open, setOpen] = useState(true);
   useEffect(() => {
     if (!open) return;
@@ -26,7 +29,7 @@ const Wrapper = (props: PropsWithChildren) => {
       const array = Array.from(
         document.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6"),
       );
-      if (array.length === 0) return setState(null);
+      if (array.length === 0) return setTableOfContents(null);
       const items = array.map((h, index) => {
         const level = Number(h.tagName.replace(/[^0-9]/g, ""));
         return (
@@ -44,7 +47,7 @@ const Wrapper = (props: PropsWithChildren) => {
           </motion.li>
         );
       });
-      setState(items);
+      setTableOfContents(items);
     };
     const observer = new MutationObserver(fn);
     fn();
@@ -55,7 +58,7 @@ const Wrapper = (props: PropsWithChildren) => {
   return (
     <div ref={ref} className="flex flex-col gap-4 w-full h-full">
       <header className="fixed left-4 py-2 top-navbar text-disabled">
-        {state ? (
+        {tableOfContents ? (
           <Tooltip
             onChange={setOpen}
             placement="bottom-end"
@@ -72,7 +75,9 @@ const Wrapper = (props: PropsWithChildren) => {
               className="overflow-y-auto overscroll-contain max-h-72"
               variants={{ true: { opacity: 1 }, false: { opacity: 0 } }}
             >
-              <AnimatePresence>{open ? state : false}</AnimatePresence>
+              <AnimatePresence>
+                {open ? tableOfContents : false}
+              </AnimatePresence>
             </motion.ul>
           </Tooltip>
         ) : null}
@@ -83,18 +88,31 @@ const Wrapper = (props: PropsWithChildren) => {
 };
 
 export default function NotePage() {
-  const [state, dispatch] = useGlobalStore();
+  const [uiState] = useUIStore();
+  const [note, setNote] = useState<Note | null>(null);
   const params = useParams<{ noteId: string }>();
-  const note = state.note?.id === params.noteId ? state.note : null;
+  const id = params.noteId;
   const isLoading = note === null;
+
   useEffect(() => {
-    console.log(params.noteId);
-    dispatch.selectNoteById(params.noteId);
-  }, [params.noteId]);
+    repositories.notes.getOne(id).then((x) => {
+      if (x) setNote(x);
+      else setNote(null);
+    });
+  }, [id]);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">Loading...</div>
+    );
+  }
+
+  if (uiState.error && note === null) {
+    return (
+      <div className="flex flex-col gap-4 justify-center items-center p-8">
+        <span className="text-lg font-medium capitalize">Note not found</span>
+        <Link to="/">Go to dashboard</Link>
+      </div>
     );
   }
 
@@ -122,11 +140,7 @@ export default function NotePage() {
           </span>
         </header>
       ) : null}
-      <Editor
-        note={note}
-        key={note.id}
-        content={note.content || ""}
-      />
+      <Editor note={note} key={note.id} content={note.content || ""} />
     </Wrapper>
   );
 }

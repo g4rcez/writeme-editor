@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
-import {
-  globalDispatch,
-  globalState,
-  useGlobalStore,
-} from "../../store/global.store";
+import { useGlobalStore } from "../../store/global.store";
 import { Modal } from "@g4rcez/components";
 
 export type NoteWithTags = Note & {
@@ -19,7 +15,7 @@ type UseNoteListOptions = {
 };
 
 export function useNoteList(options: UseNoteListOptions = {}) {
-  const [state] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
   const [innerNotes, setInnerNotes] = useState(state.notes);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -112,10 +108,10 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     if (confirmed) {
       await repositories.notes.delete(id);
       setInnerNotes((prev: NoteWithTags[]) => prev.filter((n) => n.id !== id));
-      const tabs = globalState().tabs;
+      const tabs = state.tabs;
       const tabToRemove = tabs.find((t: any) => t.noteId === id);
       if (tabToRemove) {
-        globalDispatch.removeTab(tabToRemove.id);
+        dispatch.removeTab(tabToRemove.id);
       }
       if (selectedIds.has(id)) {
         setSelectedIds((prev) => {
@@ -139,12 +135,12 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     });
 
     if (confirmed) {
-      const tabs = globalState().tabs;
+      const tabs = state.tabs;
       for (const id of selectedIds) {
         await repositories.notes.delete(id);
         const tabToRemove = tabs.find((t: any) => t.noteId === id);
         if (tabToRemove) {
-          await globalDispatch.removeTab(tabToRemove.id);
+          await dispatch.removeTab(tabToRemove.id);
         }
         options.onDelete?.(id);
       }

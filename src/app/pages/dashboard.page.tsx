@@ -8,10 +8,11 @@ import { CommanderType, useGlobalStore } from "../../store/global.store";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SettingsService } from "../../store/settings";
+import { NoteWithTags } from "../hooks/use-note-list";
 
 type Item = { title: string; Icon: LucideIcon; shortcut: string } & (
-  | { action: Function }
   | { href: string }
+  | { action: Function }
 );
 
 const Section = (props: { title: string; items: Item[] }) => {
@@ -33,16 +34,16 @@ const Section = (props: { title: string; items: Item[] }) => {
                 <Render
                   to={(x as any).href}
                   onClick={(x as any).action}
-                  className="flex gap-2 items-baseline text-left hover:text-primary transition-colors duration-300 ease-in-out"
+                  className="flex gap-2 items-baseline text-left transition-colors duration-300 ease-in-out hover:text-primary"
                 >
-                  <div className="flex items-center justify-center size-5 flex-1">
+                  <div className="flex flex-1 justify-center items-center size-5">
                     <x.Icon size={12} />
                   </div>
-                  <p className="text-pretty whitespace-break-spaces max-w-md">
+                  <p className="max-w-md text-pretty whitespace-break-spaces">
                     {x.title}
                   </p>
                 </Render>
-                <span className="proportional-nums w-4 text-center">
+                <span className="w-4 proportional-nums text-center">
                   {x.shortcut}
                 </span>
               </li>
@@ -54,7 +55,7 @@ const Section = (props: { title: string; items: Item[] }) => {
   );
 };
 
-export const DashboardPage = () => {
+export default function DashboardPage() {
   const [state, dispatch] = useGlobalStore();
   const [cwd, setCwd] = useState<string | null>(null);
 
@@ -63,10 +64,10 @@ export const DashboardPage = () => {
     if (settings.directory) {
       setCwd(settings.directory);
     } else {
-        // Fallback to home if not set, similar to DirectoryBrowserDialog
-        if (window.electronAPI) {
-            window.electronAPI.env.getHome().then(setCwd);
-        }
+      // Fallback to home if not set, similar to DirectoryBrowserDialog
+      if (window.electronAPI) {
+        window.electronAPI.env.getHome().then(setCwd);
+      }
     }
   }, []);
 
@@ -82,9 +83,7 @@ export const DashboardPage = () => {
           WriteMe
         </h2>
         {cwd && (
-          <p className="text-sm text-muted-foreground font-mono">
-            {cwd}
-          </p>
+          <p className="font-mono text-sm text-muted-foreground">{cwd}</p>
         )}
       </header>
       <main className="flex flex-col gap-8 mx-auto w-full max-w-safe">
@@ -107,7 +106,7 @@ export const DashboardPage = () => {
         />
         <Section
           title="Recent files"
-          items={state.notes.slice(0, 5).map((x, i) => ({
+          items={state.notes.slice(0, 5).map((x: NoteWithTags, i: number) => ({
             title: x.title,
             Icon: FileTextIcon,
             href: `/note/${x.id}`,
@@ -117,6 +116,4 @@ export const DashboardPage = () => {
       </main>
     </div>
   );
-};
-
-export default DashboardPage;
+}
