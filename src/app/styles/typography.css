@@ -174,7 +174,7 @@
 
 .tiptap ul,
 .tiptap ol {
-  @apply flex flex-col;
+  @apply flex flex-col min-w-full;
   margin-bottom: 1rem;
 }
 
@@ -193,7 +193,7 @@
 }
 
 .tiptap ol {
-  @apply flex min-w-full flex-col;
+  @apply flex min-w-full flex-col min-w-full;
   list-style-type: none;
   counter-reset: section;
   padding-left: 0;
@@ -215,7 +215,7 @@
 }
 
 .tiptap ol li>ol {
-  margin-left: 2rem;
+  @apply min-w-full ml-8;
   counter-reset: section;
 }
 

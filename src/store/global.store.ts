@@ -1,10 +1,13 @@
+import { uuid } from "@g4rcez/components";
 import { createGlobalReducer } from "use-typed-reducer";
 import { editorGlobalRef } from "../app/editor-global-ref";
 import { CursorPositionStore } from "./cursor-position.store";
-import { repositories } from "./repositories";
 import { Note } from "./note";
+import { repositories } from "./repositories";
 import { Tab } from "./repositories/entities/tab";
 import { uiDispatch } from "./ui.store";
+
+type Toggle<T> = T | ((prev: T) => T);
 
 export type NoteCreationType = "note" | "quick";
 
@@ -13,41 +16,48 @@ export enum CommanderType {
   Notes = "Notes",
 }
 
-export type Commander = {
-  enabled: boolean;
-  type: CommanderType;
+export type Commander = { enabled: boolean; type: CommanderType };
+
+export type AiContext = {
+  context: string;
+  selection: string;
+  selectionSlice: { from: number; to: number } | null;
 };
 
-type Toggle<T> = T | ((prev: T) => T);
+export type Theme = "light" | "dark";
 
 type State = {
   tabs: Tab[];
+  theme: Theme;
   help: boolean;
   notes: Note[];
   note: Note | null;
   recentNotes: Note[];
   commander: Commander;
-  theme: "light" | "dark";
   activeTabId: string | null;
   readItLaterDialog: boolean;
   recentNotesDialog: boolean;
+  aiContext: AiContext | null;
   directoryBrowserDialog: boolean;
+  aiDrawer: { isOpen: boolean; chatId: string | null };
   createNoteDialog: { isOpen: boolean; type: NoteCreationType };
 };
 
 const initialState: State = {
   help: false,
+  aiContext: null,
   tabs: [] as Tab[],
   notes: [] as Note[],
   readItLaterDialog: false,
   recentNotesDialog: false,
+  note: null as Note | null,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
   theme: "dark" as "light" | "dark",
   activeTabId: null as string | null,
+  aiDrawer: { isOpen: false, chatId: null },
   commander: { enabled: false, type: CommanderType.All } as Commander,
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
-  note: null as Note | null,
 };
 
 type Getter = { state: () => State };
@@ -63,9 +73,7 @@ export const useGlobalStore = createGlobalReducer(
       const mergedNotes = notes.map((note): Note => {
         const existing = existingNotesMap.get(note.id);
         if (existing) {
-          if (existing.updatedAt > note.updatedAt) {
-            return existing as Note;
-          }
+          if (existing.updatedAt > note.updatedAt) return existing as Note;
         }
         return note;
       });
@@ -77,19 +85,19 @@ export const useGlobalStore = createGlobalReducer(
       const existsInNotes = state.notes.some((n) => n.id === note.id);
       return existsInNotes
         ? state.notes.map((n) => (n.id === note.id ? note : n))
-        : [...state.notes, note];
+        : state.notes.concat(note);
     };
 
-    const createTab = (noteId: string, id?: string): Tab => {
+    const createTab = (noteId: string): Tab => {
       const state = get.state();
       const now = new Date();
       return {
-        id: id || crypto.randomUUID(),
         noteId,
         project: "",
         type: "tab",
         createdAt: now,
         updatedAt: now,
+        id: noteId, // Use noteId as the ID directly
         order: state.tabs.length,
       };
     };
@@ -109,6 +117,13 @@ export const useGlobalStore = createGlobalReducer(
       createTabIfMissing: boolean = true,
     ) => {
       const state = get.state();
+
+      // Optimization: If this note is already active, just return current state
+      // This prevents infinite loops if the router and store call each other
+      if (state.activeTabId === fullNote.id && state.note?.id === fullNote.id) {
+        return {};
+      }
+
       const existingTab = state.tabs.find((t) => t.noteId === fullNote.id);
       const updatedNotes = updateNoteInList(fullNote);
 
@@ -121,19 +136,17 @@ export const useGlobalStore = createGlobalReducer(
       }
 
       if (!createTabIfMissing) {
-        return {
-          note: fullNote,
-          notes: updatedNotes,
-        };
+        return { note: fullNote, notes: updatedNotes };
       }
 
-      const newTab = createTab(fullNote.id, fullNote.id);
+      const newTab = createTab(fullNote.id);
       await repositories.tabs.save(newTab);
+
       return {
         note: fullNote,
         notes: updatedNotes,
         activeTabId: newTab.id,
-        tabs: [...state.tabs, newTab],
+        tabs: state.tabs.concat(newTab),
       };
     };
 
@@ -171,6 +184,16 @@ export const useGlobalStore = createGlobalReducer(
         isOpen: boolean;
         type: NoteCreationType;
       }) => ({ createNoteDialog }),
+      setAiDrawer: (
+        aiDrawer: Toggle<{ isOpen: boolean; chatId: string | null }>,
+      ) => {
+        const result =
+          typeof aiDrawer === "function"
+            ? aiDrawer(get.state().aiDrawer)
+            : aiDrawer;
+        return { aiDrawer: result };
+      },
+      setAiContext: (aiContext: AiContext) => ({ aiContext }),
       loadRecentNotes: async (limit = 20) => {
         const recent = await repositories.notes.getAll({ limit });
         return { recentNotes: recent };
@@ -207,28 +230,43 @@ export const useGlobalStore = createGlobalReducer(
       },
       removeTab: async (tabId: string) => {
         const state = get.state();
-        const currentTabs = state.tabs;
-        const tab = currentTabs.find((t) => t.id === tabId);
-        if (tab && state.activeTabId === tabId) {
+        const currentTabs = Array.from(state.tabs);
+        const index = currentTabs.findIndex((t) => t.id === tabId);
+        if (index === -1) {
+          return state;
+        }
+        const tab = currentTabs[index];
+        if (state.activeTabId === tabId) {
           saveCursorPosition(tab.noteId);
         }
         const newTabs = currentTabs.filter((t) => t.id !== tabId);
         await repositories.tabs.delete(tabId);
-        let nextActiveTabId = get.state().activeTabId;
-        if (newTabs.length === 0) {
-          nextActiveTabId = null;
-        } else if (nextActiveTabId === tabId) {
-          const index = currentTabs.findIndex((t) => t.id === tabId);
-          if (index < newTabs.length) {
-            nextActiveTabId = newTabs[index].id;
+        const orderedTabs = newTabs.map((t, i) => ({ ...t, order: i }));
+        if (orderedTabs.length > 0) {
+          await repositories.tabs.updateOrder(orderedTabs);
+        }
+        let nextActiveTabId = state.activeTabId;
+        let nextNote = state.note;
+        if (state.activeTabId === tabId) {
+          if (newTabs.length === 0) {
+            nextActiveTabId = null;
+            nextNote = null;
           } else {
-            nextActiveTabId = newTabs[newTabs.length - 1].id;
+            const nextTab = newTabs[index] || newTabs[index - 1];
+            nextActiveTabId = nextTab.id;
+            if (nextTab) {
+              nextNote =
+                state.notes.find((n) => n.id === nextTab.noteId) || null;
+            } else {
+              nextActiveTabId = null;
+              nextNote = null;
+            }
           }
         }
         return {
-          tabs: newTabs,
+          note: nextNote,
+          tabs: orderedTabs,
           activeTabId: nextActiveTabId,
-          note: newTabs.length === 0 ? null : get.state().note,
         };
       },
       theme: (theme: Toggle<string>) => {

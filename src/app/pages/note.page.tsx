@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Dates } from "../../lib/dates";
 import { getReadingTime } from "../../lib/file-utils";
-import { globalDispatch, useGlobalStore } from "../../store/global.store";
+import { useGlobalStore } from "../../store/global.store";
 import { Editor } from "../editor";
 
 const Wrapper = (props: PropsWithChildren) => {
@@ -83,16 +83,13 @@ const Wrapper = (props: PropsWithChildren) => {
 };
 
 export default function NotePage() {
-  const [state] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
   const params = useParams<{ noteId: string }>();
-  const navigate = useNavigate();
-  const loadedNote = useDeferredValue(
-    state.note?.id === params.noteId ? state.note : null,
-  );
-  const isLoading = state.note === null || loadedNote === null;
-
+  const note = state.note?.id === params.noteId ? state.note : null;
+  const isLoading = note === null;
   useEffect(() => {
-    globalDispatch.selectNoteById(params.noteId);
+    console.log(params.noteId);
+    dispatch.selectNoteById(params.noteId);
   }, [params.noteId]);
 
   if (isLoading) {
@@ -103,32 +100,32 @@ export default function NotePage() {
 
   return (
     <Wrapper>
-      {loadedNote.noteType === "read-it-later" ? (
+      {note.noteType === "read-it-later" ? (
         <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
-          <h1 className="text-xl font-medium">{loadedNote.title}</h1>
-          {loadedNote.url ? (
+          <h1 className="text-xl font-medium">{note.title}</h1>
+          {note.url ? (
             <a
               target="_blank"
               className="link"
-              href={loadedNote.url}
+              href={note.url}
               rel="noopener noreferrer nofollow"
             >
-              {new URL(loadedNote.url).hostname}
+              {new URL(note.url).hostname}
             </a>
           ) : null}
           <span className="flex gap-2 items-center text-sm">
             <Tag size="small">Read it later</Tag>-
-            <time dateTime={loadedNote.createdAt.toISOString()}>
-              {Dates.yearMonthDay(loadedNote.createdAt)}
+            <time dateTime={note.createdAt.toISOString()}>
+              {Dates.yearMonthDay(note.createdAt)}
             </time>
-            -<i>{getReadingTime(loadedNote.content).formatted}</i>
+            -<i>{getReadingTime(note.content).formatted}</i>
           </span>
         </header>
       ) : null}
       <Editor
-        note={loadedNote}
-        key={loadedNote.id}
-        content={loadedNote.content || ""}
+        note={note}
+        key={note.id}
+        content={note.content || ""}
       />
     </Wrapper>
   );

@@ -7,7 +7,11 @@ import {
   generateNotePath,
   getUniqueFilePath,
 } from "../lib/file-utils";
-import { CommanderType, repositories, useGlobalStore } from "../store/global.store";
+import {
+  CommanderType,
+  repositories,
+  useGlobalStore,
+} from "../store/global.store";
 import { Note } from "../store/note";
 import { SettingsService } from "../store/settings";
 import { editorGlobalRef } from "./editor-global-ref";
@@ -18,7 +22,8 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 import { useMemo } from "react";
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, SparklesIcon, HistoryIcon } from "lucide-react";
+import { isElectron } from "../lib/is-electron";
 
 export const Commander = () => {
   useShortcuts();
@@ -27,7 +32,7 @@ export const Commander = () => {
   const navigate = useNavigate();
 
   const options = useMemo(() => {
-    const noteGroup = state.notes.map((note): CommandItemTypes => {
+    const noteGroup = state.notes.map((note: Note): CommandItemTypes => {
       return {
         type: "shortcut",
         title: `Note: ${note.title}`,
@@ -151,12 +156,28 @@ export const Commander = () => {
               args.setOpen(false);
               navigate("/settings");
             },
-          }
+          },
         ],
       },
     ];
-    return [notesItem, ...otherStuff];
-  }, [state.commander]);
+    const aiItem: CommandItemTypes = {
+      title: "AI Assistant",
+      type: "group",
+      items: [
+        {
+          title: "Open AI Chat",
+          shortcut: mapShortcutOS("mod+alt+a"),
+          type: "shortcut",
+          action: (args) => {
+            args.setOpen(false);
+            dispatch.setAiDrawer({ isOpen: true, chatId: null });
+          },
+        },
+      ],
+    };
+
+    return [aiItem, notesItem, ...otherStuff];
+  }, [state.commander, state.notes, navigate, dispatch, commands]);
 
   return (
     <CommandPalette

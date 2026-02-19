@@ -32,7 +32,7 @@ export default function NotesListPage() {
     selectAll,
     deselectAll,
     handleDelete,
-    handleBatchDelete,
+    handleBatchDelete: onBatchDelete,
   } = useNoteList();
 
   const cols = createColumns<NoteWithTags>((col) => {
@@ -137,7 +137,7 @@ export default function NotesListPage() {
             <Button
               size="small"
               theme="ghost-danger"
-              onClick={handleBatchDelete}
+              onClick={onBatchDelete}
             >
               <Trash2 className="size-4" />
               Delete

@@ -90,6 +90,37 @@ contextBridge.exposeInMainWorld("electronAPI", {
     run: (command: string, args: string[] = [], code: string) =>
       ipcRenderer.invoke("execution:run", command, args, code),
   },
+  ai: {
+    query: (params: {
+      commandTemplate: string;
+      prompt: string;
+      selection: string;
+      context: string;
+    }) => ipcRenderer.send("ai:query", params),
+    stop: () => ipcRenderer.send("ai:stop"),
+    onChunk: (callback: (data: { chunk: string }) => void) => {
+      ipcRenderer.on("ai:chunk", (_, data) => callback(data));
+      return () => ipcRenderer.removeAllListeners("ai:chunk");
+    },
+    onDone: (callback: (data: { code: number | null }) => void) => {
+      ipcRenderer.on("ai:done", (_, data) => callback(data));
+      return () => ipcRenderer.removeAllListeners("ai:done");
+    },
+    onError: (callback: (data: { error: string }) => void) => {
+      ipcRenderer.on("ai:error", (_, data) => callback(data));
+      return () => ipcRenderer.removeAllListeners("ai:error");
+    },
+    getConfigs: () => ipcRenderer.invoke("ai:get-configs"),
+    saveConfig: (config: any) => ipcRenderer.invoke("ai:save-config", config),
+    deleteConfig: (id: string) => ipcRenderer.invoke("ai:delete-config", id),
+    getChats: (noteId?: string) => ipcRenderer.invoke("ai:get-chats", noteId),
+    saveChat: (chat: any) => ipcRenderer.invoke("ai:save-chat", chat),
+    getMessages: (chatId: string) =>
+      ipcRenderer.invoke("ai:get-messages", chatId),
+    saveMessage: (message: any) =>
+      ipcRenderer.invoke("ai:save-message", message),
+    test: () => ipcRenderer.invoke("ai:test"),
+  },
 });
 
 declare global {
@@ -149,6 +180,26 @@ declare global {
           args: string[] | undefined,
           code: string,
         ): Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
+      };
+      ai: {
+        query(params: {
+          commandTemplate: string;
+          prompt: string;
+          selection: string;
+          context: string;
+          systemPrompt: string;
+        }): void;
+        stop(): void;
+        onChunk(callback: (data: { chunk: string }) => void): () => void;
+        onDone(callback: (data: { code: number | null }) => void): () => void;
+        onError(callback: (data: { error: string }) => void): () => void;
+        getConfigs(): Promise<any[]>;
+        saveConfig(config: any): Promise<void>;
+        deleteConfig(id: string): Promise<void>;
+        getChats(noteId?: string): Promise<any[]>;
+        saveChat(chat: any): Promise<void>;
+        getMessages(chatId: string): Promise<any[]>;
+        saveMessage(message: any): Promise<void>;
       };
     };
   }

@@ -10,12 +10,15 @@ import { NotesRepository as ElectronNotesRepository } from "./electron/notes.rep
 import { ProjectsRepository as ElectronProjectsRepository } from "./electron/projects.repository";
 import { SettingsRepository as ElectronSettingsRepository } from "./electron/settings.repository";
 import { TabsRepository as ElectronTabsRepository } from "./electron/tabs.repository";
+import { AIRepository as ElectronAIRepository } from "./electron/ai.repository";
 import { IHashtagRepository } from "./entities/hashtag";
 import { IProjectRepository } from "./entities/project";
 import { ISettingsRepository } from "./entities/settings";
 import { ITabRepository } from "./entities/tab";
+import { IAIRepository } from "./entities/ai";
 
 type Result = {
+  ai: IAIRepository;
   tabs: ITabRepository;
   notes: INoteRepository;
   hashtags: IHashtagRepository;
@@ -27,6 +30,7 @@ const getRepositories = (): Result => {
   if (isElectron()) {
     console.log("Using Electron (SQLite) repositories");
     return {
+      ai: new ElectronAIRepository(),
       tabs: new ElectronTabsRepository(),
       notes: new ElectronNotesRepository(),
       hashtags: new ElectronHashtagsRepository(),
@@ -41,6 +45,15 @@ const getRepositories = (): Result => {
       hashtags: new BrowserHashtagsRepository(),
       projects: new BrowserProjectsRepository(),
       settings: new BrowserSettingsRepository(),
+      ai: {
+        getChats: async () => [],
+        saveChat: async () => { },
+        getConfigs: async () => [],
+        getMessages: async () => [],
+        saveConfig: async () => { },
+        saveMessage: async () => { },
+        deleteConfig: async () => { },
+      },
     };
   }
 };

@@ -23,29 +23,15 @@ import { PWAInstallButton } from "./elements/pwa-install-button";
 import { Navbar } from "./navbar";
 import { ShortcutsCommands } from "./tutorial/shortcuts-commands";
 import { isElectron } from "../lib/is-electron";
+import { AIDrawer } from "./ai/ai-drawer";
 
 const noop = () => {};
 
-const redirectOnEmptyTabs = (path: string, tabs: any[]) => {
-  if (tabs.length === 0) {
-    const match = matchPath("/note/:id", path);
-    return match ? "/" : undefined;
-  }
-  return undefined;
-};
-
 export const RootLayout = () => {
-  const [state] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
+  const [state] = useGlobalStore();
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    const pathToRedirect = redirectOnEmptyTabs(location.pathname, state.tabs);
-    if (pathToRedirect) {
-      // return void navigate(pathToRedirect);
-    }
-  }, [location, state.tabs.length]);
 
   useEffect(
     function registerBindings() {
@@ -98,6 +84,14 @@ export const RootLayout = () => {
     [navigate],
   );
 
+  useEffect(() => {
+    const isNoteRoute = matchPath("/note/:noteId", location.pathname);
+    const hasTabs = state.tabs.length > 0;
+    if (isNoteRoute && !hasTabs) {
+      navigate("/", { replace: true });
+    }
+  }, [location.pathname, state.tabs.length, navigate]);
+
   const isQuickNote = window.location.hash.includes("quicknote");
 
   return (
@@ -120,9 +114,7 @@ export const RootLayout = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <ShortcutsCommands />
           {isElectron() ? <DirectoryBrowserDialog /> : null}
-          <div
-            className={css("block", isQuickNote ? "py-8" : "py-4")}
-          >
+          <div className={css("block", isQuickNote ? "py-8" : "py-4")}>
             <Suspense
               fallback={
                 <div className="flex justify-center p-10">Loading...</div>
@@ -134,17 +126,15 @@ export const RootLayout = () => {
         </div>
       </div>
       {isQuickNote ? null : <PWAInstallButton />}
-      
+
       {uiState.error && (
-        <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-right-4 fade-in duration-300">
-          <div className="flex items-center gap-3 py-3 px-4 rounded-lg border shadow-xl bg-destructive/10 border-destructive text-destructive backdrop-blur-md max-w-md">
+        <div className="fixed right-6 top-20 z-50 duration-300 animate-in slide-in-from-right-4 fade-in">
+          <div className="flex gap-3 items-center py-3 px-4 max-w-md rounded-lg border shadow-xl bg-destructive/10 border-destructive text-destructive backdrop-blur-md">
             <AlertTriangle className="size-5 shrink-0" />
-            <div className="flex-1 text-sm font-medium">
-              {uiState.error}
-            </div>
+            <div className="flex-1 text-sm font-medium">{uiState.error}</div>
             <button
               onClick={() => uiDispatch.clearError()}
-              className="p-1 rounded-md hover:bg-destructive/20 transition-colors"
+              className="p-1 rounded-md transition-colors hover:bg-destructive/20"
               title="Dismiss error"
             >
               <X className="size-4" />
@@ -163,6 +153,7 @@ export const RootLayout = () => {
           <span>Exit Focus</span>
         </button>
       )}
+      {isElectron() && <AIDrawer />}
     </div>
   );
 };

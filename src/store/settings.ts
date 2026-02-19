@@ -64,15 +64,15 @@ export class SettingsService {
     const all = await this.repo.getAll();
     const existing = all.find((s) => s.name === name);
     const id = existing ? existing.id : crypto.randomUUID();
+    const now = new Date();
     await this.repo.save({
-      ...existing,
       id,
       name,
       value: stringValue,
-      type: existing.type,
-      updatedAt: new Date(),
-      createdAt: existing ? existing.createdAt : new Date(),
-    });
+      type: existing?.type || "setting",
+      updatedAt: now,
+      createdAt: existing?.createdAt ? new Date(existing.createdAt) : now,
+    } as any);
   }
 
   static get(): AppSettings {

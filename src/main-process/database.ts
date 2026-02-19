@@ -4,7 +4,7 @@ import path from "node:path";
 
 class DatabaseManager {
   private static instance: DatabaseManager;
-  private db: Database.Database;
+  public db: Database.Database;
 
   private constructor() {
     const dbPath = path.join(app.getPath("userData"), "writeme.sqlite");
@@ -75,14 +75,59 @@ class DatabaseManager {
         id TEXT PRIMARY KEY,
         type TEXT,
         name TEXT UNIQUE,
-        value TEXT
+        value TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS aiConfigs (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        name TEXT,
+        commandTemplate TEXT,
+        systemPrompt TEXT,
+        isDefault INTEGER DEFAULT 0,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS aiChats (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        noteId TEXT,
+        title TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS aiMessages (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        chatId TEXT,
+        role TEXT,
+        content TEXT,
+        diffOriginal TEXT,
+        diffNew TEXT,
+        selectionSlice TEXT, -- JSON object
+        createdAt TEXT,
+        updatedAt TEXT
       );
     `);
 
     // Migration for missing 'type' column if tables existed without it
-    const tables = ["notes", "projects", "tabs", "hashtags", "settings"];
-    const commonColumns = ["type"];
+    const tables = [
+      "notes",
+      "projects",
+      "tabs",
+      "hashtags",
+      "settings",
+      "aiConfigs",
+      "aiChats",
+      "aiMessages",
+    ];
+    const commonColumns = ["type", "createdAt", "updatedAt"];
     const noteColumns = ["url", "description", "favicon", "metadata"];
+    const aiMessageColumns = ["selectionSlice"];
 
     for (const table of tables) {
       try {
@@ -101,6 +146,17 @@ class DatabaseManager {
 
         if (table === "notes") {
           for (const col of noteColumns) {
+            if (!columns.some((c: any) => c.name === col)) {
+              console.log(`Migrating table ${table}: adding '${col}' column`);
+              this.db
+                .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
+                .run();
+            }
+          }
+        }
+
+        if (table === "aiMessages") {
+          for (const col of aiMessageColumns) {
             if (!columns.some((c: any) => c.name === col)) {
               console.log(`Migrating table ${table}: adding '${col}' column`);
               this.db
@@ -139,35 +195,47 @@ class DatabaseManager {
     }
   }
 
+  public normalizeRow(row: any) {
+    if (!row) return row;
+    if (row.tags) {
+      try {
+        row.tags = JSON.parse(row.tags);
+      } catch (e) {}
+    }
+    if (row.metadata) {
+      try {
+        row.metadata = JSON.parse(row.metadata);
+      } catch (e) {}
+    }
+    if (row.selectionSlice) {
+      try {
+        row.selectionSlice = JSON.parse(row.selectionSlice);
+      } catch (e) {}
+    }
+    if ("isDefault" in row) {
+      row.isDefault = Boolean(row.isDefault);
+    }
+    return row;
+  }
+
   public get<T>(table: string, id: string): T | undefined {
     const stmt = this.db.prepare(`SELECT * FROM ${table} WHERE id = ?`);
     const result = stmt.get(id) as any;
-    if (result && result.tags) {
-      result.tags = JSON.parse(result.tags);
-    }
-    if (result && result.metadata) {
-      result.metadata = JSON.parse(result.metadata);
-    }
-    return result as T;
+    return this.normalizeRow(result) as T;
   }
 
   public getAll<T>(table: string): T[] {
     const stmt = this.db.prepare(`SELECT * FROM ${table}`);
     const results = stmt.all() as any[];
-    return results.map((row) => {
-      if (row.tags) {
-        row.tags = JSON.parse(row.tags);
-      }
-      if (row.metadata) {
-        row.metadata = JSON.parse(row.metadata);
-      }
-      return row;
-    });
+    return results.map((row) => this.normalizeRow(row));
   }
 
   public save<T extends { id: string }>(table: string, item: T): void {
     const keys = Object.keys(item);
     const values = Object.values(item).map((v: any) => {
+      if (typeof v === "boolean") {
+        return v ? 1 : 0;
+      }
       if (
         Array.isArray(v) ||
         (v !== null && typeof v === "object" && !(v instanceof Date))
@@ -204,13 +272,7 @@ class DatabaseManager {
       `SELECT * FROM notes WHERE noteType = 'quick' ORDER BY updatedAt DESC LIMIT 1`,
     );
     const result = stmt.get() as any;
-    if (result && result.tags) {
-      result.tags = JSON.parse(result.tags);
-    }
-    if (result && result.metadata) {
-      result.metadata = JSON.parse(result.metadata);
-    }
-    return result;
+    return this.normalizeRow(result);
   }
 
   public getQuicknoteByDate(start: string, end: string): any {
@@ -218,13 +280,7 @@ class DatabaseManager {
       `SELECT * FROM notes WHERE noteType = 'quick' AND updatedAt >= ? AND updatedAt <= ? LIMIT 1`,
     );
     const result = stmt.get(start, end) as any;
-    if (result && result.tags) {
-      result.tags = JSON.parse(result.tags);
-    }
-    if (result && result.metadata) {
-      result.metadata = JSON.parse(result.metadata);
-    }
-    return result;
+    return this.normalizeRow(result);
   }
 
   public getRecentNotes(limit: number): any[] {
@@ -232,15 +288,7 @@ class DatabaseManager {
       `SELECT * FROM notes ORDER BY updatedAt DESC LIMIT ?`,
     );
     const results = stmt.all(limit) as any[];
-    return results.map((row) => {
-      if (row.tags) {
-        row.tags = JSON.parse(row.tags);
-      }
-      if (row.metadata) {
-        row.metadata = JSON.parse(row.metadata);
-      }
-      return row;
-    });
+    return results.map((row) => this.normalizeRow(row));
   }
 
   public updateTabsOrder(tabs: { id: string; order: number }[]): void {

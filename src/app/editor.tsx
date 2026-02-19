@@ -6,31 +6,30 @@ import {
   useEditor,
   type Editor as TipTapEditor,
 } from "@tiptap/react";
-import { renderToMarkdown } from "@tiptap/static-renderer";
 import "katex/dist/katex.min.css";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import * as YAML from "yaml";
 import {
   COPY_EVENT_DISPATCHED,
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "../ipc/copy-event";
 import { tiptapToMarkdown } from "../lib/render-tiptap-to-markdown";
-import { identifyDomain } from "../lib/url-utils";
 import { CursorPositionStore } from "../store/cursor-position.store";
-import * as YAML from "yaml";
 import {
   globalDispatch,
   globalState,
-  repositories,
   useGlobalStore,
 } from "../store/global.store";
 
+import { BubbleMenu } from "@tiptap/react/menus";
+import { Sparkles } from "lucide-react";
 import { Note } from "../store/note";
+import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions } from "./extensions";
-import { Node, Fragment as ProsemirrorFragment } from "@tiptap/pm/model";
-import { BubbleMenu } from "@tiptap/react/menus";
+import { isElectron } from "@/lib/is-electron";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -94,13 +93,13 @@ const InnerEditor = (props: {
     shouldRerenderOnTransaction: false,
     parseOptions: { preserveWhitespace: "full" },
     onCreate: ({ editor: currentEditor }) => {
-      currentEditor.storage.note = props.note;
+      (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
       } catch (e) {}
     },
     onUpdate: ({ editor: currentEditor }) => {
-      currentEditor.storage.note = props.note;
+      (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
       handlePaste: (view, event) => {
@@ -176,40 +175,55 @@ const InnerEditor = (props: {
 
   useEffect(() => {
     if (editor) {
-      editor.storage.note = props.note;
+      (editor.storage as any).note = props.note;
     }
   }, [editor, props.note]);
 
+  const noteRef = useRef(props.note);
+
+  useEffect(() => {
+    noteRef.current = props.note;
+  }, [props.note]);
+
   useEffect(() => {
     if (editor === null) return;
-    if (!props.note) return;
     if (props.readonly) return;
+
     let saveTimeout: NodeJS.Timeout;
-    editor.on("update", () => {
+
+    const updateHandler = () => {
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {
           const html = (editor.storage as any).markdown.getMarkdown();
-          const note = Note.parse(props.note);
+          if (!noteRef.current) return;
+
+          const note = Note.parse(noteRef.current);
           note.setContent(html);
           await globalDispatch.note(note);
         } catch (error) {
           console.error("Failed to save document:", error);
         }
       }, 500);
-    });
+    };
+
+    editor.on("update", updateHandler);
+
     return () => {
+      editor.off("update", updateHandler);
       clearTimeout(saveTimeout);
       try {
         const html = (editor.storage as any).markdown.getMarkdown();
-        const note = Note.parse(props.note);
-        note.setContent(html);
-        globalDispatch.note(note);
+        if (noteRef.current) {
+          const note = Note.parse(noteRef.current);
+          note.setContent(html);
+          globalDispatch.note(note);
+        }
       } catch (error) {
         console.warn("Failed to perform final save on unmount:", error);
       }
     };
-  }, [editor, props.note, props.readonly]);
+  }, [editor, props.readonly]);
 
   useEffect(() => {
     if (editor) {
@@ -237,26 +251,27 @@ const InnerEditor = (props: {
       className="flex flex-col justify-start items-start py-4 mx-auto w-full h-full max-w-safe"
     >
       <EditorContext.Provider value={{ editor }}>
-        <BubbleMenu editor={editor}>
-          <ul className="flex overflow-y-auto flex-col gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48">
-            <li>
-              <button
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={editor.isActive("bold") ? "is-active" : ""}
-              >
-                Bold
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={editor.isActive("italic") ? "is-active" : ""}
-              >
-                Italic
-              </button>
-            </li>
+        <BubbleMenu className="z-navbar isolate" editor={editor}>
+          <ul className="flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48">
+            {isElectron() ? (
+              <li>
+                <AITooltip
+                  editor={editor}
+                  trigger={
+                    <button
+                      type="button"
+                      className="flex gap-2 items-center w-full"
+                    >
+                      <Sparkles size={14} className="text-primary" />
+                      Ask AI
+                    </button>
+                  }
+                />
+              </li>
+            ) : null}
           </ul>
         </BubbleMenu>
+
         <EditorContent
           key={props.id}
           editor={editor}

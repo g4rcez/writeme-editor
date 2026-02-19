@@ -1,4 +1,4 @@
-import { clsx } from "clsx";
+import { css } from "@g4rcez/components";
 import { FileText, XIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -10,12 +10,14 @@ export const TabsBar: React.FC = () => {
 
   const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
+    e.preventDefault();
+    console.log({ tabId });
     dispatch.removeTab(tabId);
   };
 
   const onMiddleClick = (e: React.MouseEvent, tabId: string) => {
-    e.preventDefault();
     e.stopPropagation();
+    e.preventDefault();
     if (e.button === 1) {
       onCloseTab(e, tabId);
     }
@@ -36,15 +38,13 @@ export const TabsBar: React.FC = () => {
     }
   }, [state.activeTabId]);
 
-  if (state.tabs.length === 0) return null;
-
   return (
     <div
       ref={scrollRef}
       className="flex overflow-x-auto sticky z-10 flex-row items-center mx-auto w-full h-10 select-none top-navbar max-w-safe bg-background isolate scrollbar-none"
     >
-      {state.tabs.map((tab) => {
-        const note = state.notes.find((n) => n.id === tab.noteId);
+      {state.tabs.map((tab: any) => {
+        const note = state.notes.find((n: any) => n.id === tab.noteId);
         const isActive = state.activeTabId === tab.id;
         const title = note?.title || "Untitled";
         return (
@@ -54,7 +54,7 @@ export const TabsBar: React.FC = () => {
             title={note?.filePath || title}
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
             onMouseDown={(e) => onMiddleClick(e, tab.id)}
-            className={clsx(
+            className={css(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
               isActive
                 ? "bg-background shadow-sm text-foreground"

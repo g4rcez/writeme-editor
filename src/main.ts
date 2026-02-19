@@ -6,6 +6,7 @@ import {
   nativeImage,
   shell,
   Tray,
+  ipcMain,
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
@@ -15,6 +16,124 @@ import { appIpcHandler } from "./ipc/app.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
+import { AIRunner } from "./main-process/ai-runner";
+import { dbManager } from "./main-process/database";
+
+function registerAIHandlers() {
+  console.log("Registering AI IPC handlers...");
+  ipcMain.on(
+    "ai:query",
+    async (
+      event,
+      { commandTemplate, prompt, selection, context, systemPrompt },
+    ) => {
+      console.log("AI Query received", { prompt });
+      AIRunner.run(
+        commandTemplate,
+        { prompt, selection, context, systemPrompt },
+        event.sender,
+      );
+    },
+  );
+
+  ipcMain.on("ai:stop", () => {
+    console.log("AI Stop received");
+    AIRunner.stop();
+  });
+
+  ipcMain.handle("ai:get-configs", () => {
+    console.log("Handling ai:get-configs");
+    try {
+      return dbManager().getAll("aiConfigs");
+    } catch (e) {
+      console.error("Error in ai:get-configs handler:", e);
+      return [];
+    }
+  });
+
+  ipcMain.handle("ai:test", () => {
+    return "ok";
+  });
+
+  ipcMain.handle("ai:save-config", (_, config) => {
+    try {
+      dbManager().save("aiConfigs", {
+        ...config,
+        type: "aiConfig",
+      });
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:save-config:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:delete-config", (_, id) => {
+    try {
+      dbManager().delete("aiConfigs", id);
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:delete-config:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:get-chats", (_, noteId) => {
+    try {
+      const db = dbManager();
+      const stmt = db.db.prepare(
+        "SELECT * FROM aiChats WHERE noteId = ? ORDER BY createdAt DESC",
+      );
+      const results = stmt.all(noteId);
+      // @ts-ignore
+      return results.map((r) => db.normalizeRow(r));
+    } catch (e: any) {
+      console.error("Error in ai:get-chats:", e);
+      return [];
+    }
+  });
+
+  ipcMain.handle("ai:save-chat", (_, chat) => {
+    try {
+      dbManager().save("aiChats", {
+        ...chat,
+        type: "aiChat",
+      });
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:save-chat:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:get-messages", (_, chatId) => {
+    try {
+      const db = dbManager();
+      const stmt = db.db.prepare(
+        "SELECT * FROM aiMessages WHERE chatId = ? ORDER BY createdAt ASC",
+      );
+      const results = stmt.all(chatId);
+      // @ts-ignore
+      return results.map((r) => db.normalizeRow(r));
+    } catch (e: any) {
+      console.error("Error in ai:get-messages:", e);
+      return [];
+    }
+  });
+
+  ipcMain.handle("ai:save-message", (_, message) => {
+    try {
+      dbManager().save("aiMessages", {
+        ...message,
+        type: "aiMessage",
+      });
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:save-message:", e);
+      throw e;
+    }
+  });
+}
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -25,6 +144,8 @@ async function main() {
     app.quit();
   }
   const preload = path.join(__dirname, "preload.js");
+  console.log("Main process starting, registering AI handlers...");
+  registerAIHandlers();
   await notesIpcHandler();
   databaseIpcHandler();
   appIpcHandler(preload);

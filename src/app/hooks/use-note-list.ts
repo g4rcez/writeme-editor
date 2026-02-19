@@ -1,33 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import { repositories } from "../../store/repositories";
 import { Note } from "../../store/note";
-import { globalDispatch, globalState } from "../../store/global.store";
+import {
+  globalDispatch,
+  globalState,
+  useGlobalStore,
+} from "../../store/global.store";
 import { Modal } from "@g4rcez/components";
 
-export interface NoteWithTags extends Note {
+export type NoteWithTags = Note & {
   tagsList: string[];
   tagCount: number;
-}
+};
 
-interface UseNoteListOptions {
+type UseNoteListOptions = {
   noteType?: Note["noteType"];
   onDelete?: (id: string) => void;
-}
+};
 
 export function useNoteList(options: UseNoteListOptions = {}) {
-  const [notes, setNotes] = useState<NoteWithTags[]>([]);
+  const [state] = useGlobalStore();
+  const [innerNotes, setInnerNotes] = useState(state.notes);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const loadData = async () => {
+  const loadData = async (newNotes: Note[]) => {
     setLoading(true);
     try {
-      const [allNotes, allHashtags] = await Promise.all([
-        repositories.notes.getAll(),
-        repositories.hashtags.getAll(),
-      ]);
-
+      const allHashtags = await repositories.hashtags.getAll();
       const tagsMap = new Map<string, string[]>();
       allHashtags.forEach((h) => {
         if (!tagsMap.has(h.filename)) {
@@ -37,10 +38,9 @@ export function useNoteList(options: UseNoteListOptions = {}) {
       });
 
       const filteredByProp = options.noteType
-        ? allNotes.filter((n) => n.noteType === options.noteType)
-        : allNotes;
-
-      const notesWithTags = filteredByProp.map((note): NoteWithTags => {
+        ? newNotes.filter((n: Note) => n.noteType === options.noteType)
+        : newNotes;
+      const notesWithTags = filteredByProp.map((note: Note): NoteWithTags => {
         const key = note.filePath || note.title;
         const tags = tagsMap.get(key) || [];
         return {
@@ -49,7 +49,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
           tagCount: tags.length,
         } as NoteWithTags;
       });
-      setNotes(notesWithTags);
+      setInnerNotes(notesWithTags);
     } catch (error) {
       console.error("Failed to load notes list:", error);
     } finally {
@@ -58,29 +58,28 @@ export function useNoteList(options: UseNoteListOptions = {}) {
   };
 
   useEffect(() => {
-    loadData();
-  }, [options.noteType]);
+    loadData(state.notes);
+  }, [state.notes, options.noteType]);
 
   const filteredNotes = useMemo(() => {
-    let result = notes;
+    let result = innerNotes;
     if (search) {
       const lower = search.toLowerCase();
       result = result.filter(
-        (n) =>
+        (n: NoteWithTags) =>
           n.title.toLowerCase().includes(lower) ||
           n.tagsList.some((t) => t.toLowerCase().includes(lower)) ||
           (n.url && n.url.toLowerCase().includes(lower)),
       );
     }
-
     if (options.noteType === "read-it-later") {
       return result.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+        (a: NoteWithTags, b: NoteWithTags) =>
+          b.createdAt.getTime() - a.createdAt.getTime(),
       );
     }
-
     return result;
-  }, [notes, search, options.noteType]);
+  }, [innerNotes, search, options.noteType]);
 
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) => {
@@ -95,7 +94,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
   };
 
   const selectAll = () =>
-    setSelectedIds(new Set(filteredNotes.map((n) => n.id)));
+    setSelectedIds(new Set(filteredNotes.map((n: NoteWithTags) => n.id)));
 
   const deselectAll = () => setSelectedIds(new Set());
 
@@ -112,7 +111,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
 
     if (confirmed) {
       await repositories.notes.delete(id);
-      setNotes((prev) => prev.filter((n) => n.id !== id));
+      setInnerNotes((prev: NoteWithTags[]) => prev.filter((n) => n.id !== id));
       const tabs = globalState().tabs;
       const tabToRemove = tabs.find((t: any) => t.noteId === id);
       if (tabToRemove) {
@@ -149,23 +148,25 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         }
         options.onDelete?.(id);
       }
-      setNotes((prev) => prev.filter((n) => !selectedIds.has(n.id)));
+      setInnerNotes((prev: NoteWithTags[]) =>
+        prev.filter((n) => !selectedIds.has(n.id)),
+      );
       setSelectedIds(new Set());
     }
   };
 
   return {
-    notes,
-    loading,
     search,
-    setSearch,
-    filteredNotes,
-    selectedIds,
-    toggleSelection,
+    loading,
     selectAll,
+    setSearch,
     deselectAll,
+    selectedIds,
     handleDelete,
+    filteredNotes,
+    toggleSelection,
     handleBatchDelete,
+    notes: innerNotes,
     refresh: loadData,
   };
 }
