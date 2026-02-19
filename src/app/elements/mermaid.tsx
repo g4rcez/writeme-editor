@@ -1,10 +1,12 @@
-import React, { useEffect } from "react";
 import mermaid from "mermaid";
+import { useEffect, useRef } from "react";
 
 mermaid.initialize({
-  startOnLoad: true,
   theme: "default",
+  startOnLoad: true,
+  markdownAutoWrap: true,
   securityLevel: "loose",
+  fontFamily: "Fira Code",
   themeCSS: `
     g.classGroup rect {
       fill: #282a36;
@@ -50,12 +52,20 @@ mermaid.initialize({
       stroke: #f8f8f2;
       stroke-width: 1;
     }`,
-  fontFamily: "Fira Code",
 });
 
 export const Mermaid = (props: { chart: string }) => {
+  const chartRef = useRef(null);
   useEffect(() => {
-    mermaid.contentLoaded();
-  });
-  return <div className="mermaid">{props.chart}</div>;
+    if (chartRef.current && props.chart) {
+      chartRef.current.removeAttribute("data-processed");
+      mermaid.contentLoaded();
+    }
+  }, [props.chart]);
+
+  return (
+    <div ref={chartRef} key={props.chart} className="mermaid">
+      {props.chart}
+    </div>
+  );
 };

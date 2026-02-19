@@ -763,7 +763,44 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   );
 };
 
+const PastePlugin = (name: string) => {
+  return new Plugin({
+    key: new PluginKey("codeBlockPaste"),
+    props: {
+      handlePaste(view, event) {
+        const { state } = view;
+        const { selection } = state;
+        const { $from, $to } = selection;
+
+        // Check if cursor is inside the code block
+        if ($from.parent.type.name !== name) {
+          return false;
+        }
+
+        // Prevent default paste behavior
+        event.preventDefault();
+
+        // Get plain text from clipboard
+        const text = event.clipboardData?.getData("text/plain");
+        if (text) {
+          // Normalize line endings
+          const normalizedText = text.replace(/\r\n/g, "\n");
+
+          // Insert text at current selection
+          view.dispatch(
+            state.tr.insertText(normalizedText, $from.pos, $to.pos),
+          );
+          return true;
+        }
+
+        return false;
+      },
+    },
+  });
+};
+
 export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
+  priority: 1000,
   addNodeView() {
     return ReactNodeViewRenderer(LanguageSelector);
   },
@@ -799,6 +836,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   },
   addProseMirrorPlugins() {
     return [
+      PastePlugin(this.name),
       ...(this.parent?.() || []),
       ShikiPlugin({
         name: this.name,
