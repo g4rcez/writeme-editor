@@ -73,15 +73,15 @@ export const darkTheme: typeof defaultDarkTheme = {
     floating: {
       foreground: "hsla(220, 20%, 96%)",
       background: "hsla(220, 10%, 12%)",
-      hover: "hsla(220, 10%, 18%)",
-      border: "hsla(220, 10%, 20%)",
+      hover: "hsla(220, 10%, 15%)",
+      border: "hsla(220, 10%, 14%)",
       overlay: "hsla(0, 0%, 0%)",
     },
     tooltip: {
       foreground: "hsla(220, 20%, 96%)",
       background: "hsla(220, 10%, 8%)",
       hover: "hsla(220, 10%, 15%)",
-      border: "hsla(220, 10%, 22%)",
+      border: "hsla(220, 10%, 12%)",
       overlay: "hsla(0, 0%, 0%)",
     },
     table: {

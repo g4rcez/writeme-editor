@@ -5,6 +5,7 @@ import { Note } from "./note";
 import { repositories } from "./repositories";
 import { Tab } from "./repositories/entities/tab";
 import { uiDispatch } from "./ui.store";
+import { SettingsService } from "./settings";
 
 type Toggle<T> = T | ((prev: T) => T);
 
@@ -161,11 +162,16 @@ export const useGlobalStore = createGlobalReducer(
       commander: (enabled: boolean, type?: CommanderType) => ({
         commander: { enabled, type: type || CommanderType.All },
       }),
-      init: (theme: Theme, notes: Note[], tabs: Tab[]) => ({
-        tabs,
-        theme,
-        notes: setNotes(notes).notes,
-      }),
+      init: (theme: Theme, notes: Note[], tabs: Tab[]) => {
+        if (theme === "dark") document.documentElement.classList.add("dark");
+        if (theme === "light")
+          document.documentElement.classList.remove("dark");
+        return {
+          tabs,
+          theme,
+          notes: setNotes(notes).notes,
+        };
+      },
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,
       }),
@@ -230,6 +236,7 @@ export const useGlobalStore = createGlobalReducer(
         if (result === "dark") document.documentElement.classList.add("dark");
         if (result === "light")
           document.documentElement.classList.remove("dark");
+        SettingsService.save({ theme: result as "light" | "dark" });
         return { theme: result as "light" | "dark" };
       },
       selectNoteById: async (noteId: string) => {
