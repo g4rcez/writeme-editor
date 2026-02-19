@@ -9,6 +9,7 @@ import {
 } from "./clipboard-listener.command";
 import { replacerRules } from "./replace-rules";
 import { ReplacerHandlerParams } from "./types";
+import { Dates } from "@/lib/dates";
 
 export type ReplacerCommand = {
   find: RegExp;
@@ -69,8 +70,26 @@ const EvalCommand: ReplacerCommand = {
   },
 };
 
+export const TimeCommand: ReplacerCommand = {
+  find: />>time $/,
+  replace: (capture) => {
+    const expr = (capture[0].trim() || "").replace(/^>>time /, "").trim();
+    if (expr === "") return "";
+    return Dates.time(new Date());
+  },
+};
+
+export const DateCommand: ReplacerCommand = {
+  find: />>date $/,
+  replace: (capture) => {
+    const expr = (capture[0].trim() || "").replace(/^>>date /, "").trim();
+    if (expr === "") return "";
+    return Dates.isoDate(new Date());
+  },
+};
+
 export const UuidCommand: ReplacerCommand = {
-  find: />>uuid $/,
+  find: />>date $/,
   replace: (capture) => {
     const expr = (capture[0].trim() || "").replace(/^>>uuid /, "").trim();
     if (expr === "") return "";
@@ -133,6 +152,8 @@ export const ReplacerCommands = Extension.create({
   name: "commands-replacer",
   addInputRules() {
     return [
+      replacerRules(this.editor, DateCommand),
+      replacerRules(this.editor, TimeCommand),
       replacerRules(this.editor, UuidCommand),
       replacerRules(this.editor, EvalCommand),
       replacerRules(this.editor, CurrencyCommand),

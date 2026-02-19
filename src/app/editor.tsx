@@ -96,7 +96,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) { }
+      } catch (e) {}
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
@@ -119,12 +119,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                      .map((t: any) => String(t).trim())
-                      .filter(Boolean)
+                        .map((t: any) => String(t).trim())
+                        .filter(Boolean)
                     : String(parsed.tags)
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean);
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean);
 
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
@@ -201,6 +201,12 @@ const InnerEditor = (props: {
           const note = Note.parse(noteRef.current);
           note.setContent(html);
           await globalDispatch.note(note);
+
+          CursorPositionStore.save(
+            note.id,
+            editor.state.selection.anchor,
+            window.scrollY,
+          );
         } catch (error) {
           console.error("Failed to save document:", error);
         }
@@ -218,6 +224,12 @@ const InnerEditor = (props: {
           const note = Note.parse(noteRef.current);
           note.setContent(html);
           globalDispatch.note(note);
+
+          CursorPositionStore.save(
+            note.id,
+            editor.state.selection.anchor,
+            window.scrollY,
+          );
         }
       } catch (error) {
         console.warn("Failed to perform final save on unmount:", error);
@@ -292,7 +304,7 @@ export const Editor = (props: {
 
   return (
     <Fragment key={props.note?.id}>
-      {props.note?.content ? (
+      {props.note !== null ? (
         <InnerEditor
           id={id}
           note={props.note}
@@ -307,4 +319,3 @@ export const Editor = (props: {
     </Fragment>
   );
 };
-

@@ -1,9 +1,3 @@
-/**
- * Currency conversion module
- * Barrel export for clean imports
- */
-
-// Main API
 export { convertCurrency, convertCurrencyBatch, getRate } from "./converter";
 export { parseCurrencyExpression } from "./parser";
 export {

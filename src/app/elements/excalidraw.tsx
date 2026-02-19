@@ -1,14 +1,36 @@
 import { Excalidraw, restoreElements } from "@excalidraw/excalidraw";
 import "@excalidraw/excalidraw/index.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGlobalStore } from "../../store/global.store";
+import { Button } from "@g4rcez/components";
+import {
+  ExpandIcon,
+  FullscreenIcon,
+  ShrinkIcon,
+  TrashIcon,
+} from "lucide-react";
+import { Editor } from "@tiptap/core";
 
 export const ExcalidrawCode = (props: {
   code: string;
+  autoDelete: () => void;
   onChange?: (s: string) => void;
 }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [global] = useGlobalStore();
   const [state, setState] = useState<any | null>(null);
+
+  const onRequestFullScreen = async () => {
+    const div = ref.current;
+    if (!div) return;
+    if (isFullScreen) {
+      await document.exitFullscreen();
+      return setIsFullScreen(false);
+    }
+    await div.requestFullscreen();
+    setIsFullScreen(true);
+  };
 
   useEffect(() => {
     try {
@@ -23,18 +45,32 @@ export const ExcalidrawCode = (props: {
 
   if (state === null) return null;
 
+  const Icon = isFullScreen ? ShrinkIcon : ExpandIcon;
+
   return (
-    <div className="w-full min-w-full h-[500px]">
+    <div ref={ref} className="relative p-6 w-full min-w-full bg-card h-[800px]">
       <Excalidraw
         gridModeEnabled
         initialData={state}
         theme={global.theme}
         isCollaborating={false}
-        onChange={(elements) => {
+        onChange={(elements: any) => {
           if (elements.length === 0) return;
           props.onChange?.(JSON.stringify(elements));
         }}
       />
+      <div className="flex absolute top-0 right-0 gap-2 bg-card items-center z-navbar">
+        <Button
+          size="small"
+          theme="ghost-primary"
+          onClick={onRequestFullScreen}
+        >
+          <Icon size={16} />
+        </Button>
+        <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
+          <TrashIcon size={16} />
+        </Button>
+      </div>
     </div>
   );
 };

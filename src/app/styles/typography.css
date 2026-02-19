@@ -200,7 +200,7 @@
 }
 
 .tiptap ol li {
-  @apply flex items-baseline;
+  @apply flex min-w-full items-baseline flex-wrap;
   counter-increment: section;
 }
 

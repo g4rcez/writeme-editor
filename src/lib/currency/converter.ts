@@ -1,8 +1,3 @@
-/**
- * Core currency conversion logic
- * Orchestrates caching, API calls, and conversion calculations
- */
-
 import type { ConversionResult } from "./types";
 import { fetchExchangeRates } from "./api-client";
 import {

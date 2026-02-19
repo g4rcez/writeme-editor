@@ -3,12 +3,7 @@ import { useUIStore } from "@/store/ui.store";
 import { Tag, Tooltip } from "@g4rcez/components";
 import { ChevronDownIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  PropsWithChildren,
-  useEffect,
-  useRef,
-  useState
-} from "react";
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Dates } from "../../lib/dates";
 import { getReadingTime } from "../../lib/file-utils";
@@ -95,15 +90,12 @@ export default function NotePage() {
   const isLoading = note === null;
 
   useEffect(() => {
-    repositories.notes.getOne(id).then((x) => {
-      if (x) setNote(x);
-      else setNote(null);
-    });
+    repositories.notes.getOne(id).then((x) => setNote(x || null));
   }, [id]);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-8">Loading...</div>
+      <div className="flex justify-center items-center p-8">Fetching note...</div>
     );
   }
 

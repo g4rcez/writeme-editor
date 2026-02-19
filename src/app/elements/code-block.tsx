@@ -93,7 +93,7 @@ export const CodeBlockFrame = ({
               <span key={i}>{i + 1}</span>
             ))}
           </div>
-          <div className="overflow-x-auto p-4 w-full font-mono whitespace-pre relative">
+          <div className="overflow-x-auto relative p-4 w-full font-mono whitespace-pre">
             {children}
           </div>
         </div>
@@ -636,6 +636,7 @@ const CodeBlockAddons = ({
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
+  console.log(props);
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
   const [isFormatting, setIsFormatting] = useState(false);
@@ -720,7 +721,11 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         as="div"
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
-        <ExcalidrawCode code={code} onChange={onChangeDraw} />
+        <ExcalidrawCode
+          code={code}
+          onChange={onChangeDraw}
+          autoDelete={props.deleteNode}
+        />
       </NodeViewWrapper>
     );
   }
