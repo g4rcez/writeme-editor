@@ -11,6 +11,7 @@ export type ActivityType =
   | "search"
   | "favorites"
   | "tags"
+  | "templates"
   | "settings";
 
 export type LayoutView =

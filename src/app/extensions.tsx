@@ -17,6 +17,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { ReplacerCommands } from "./commands/commands";
+import { uiDispatch } from "@/store/ui.store";
 import { editorGlobalRef } from "./editor-global-ref";
 import { Blockquote } from "./elements/blockquote";
 import { Callout } from "./elements/callout";
@@ -153,28 +154,40 @@ export const createExtensions = (
     BlockMath.configure({
       blockOptions: {
         onClick: (node, pos) => {
-          const latex = prompt("Math expression:", node.attrs.latex);
-          if (latex) {
-            editorGlobalRef.current
-              ?.chain()
-              .setNodeSelection(pos)
-              .updateBlockMath({ latex })
-              .focus()
-              .run();
-          }
+          uiDispatch.setPrompt({
+            open: true,
+            title: "Math expression:",
+            initialValue: node.attrs.latex,
+            onConfirm: (latex) => {
+              if (latex) {
+                editorGlobalRef.current
+                  ?.chain()
+                  .setNodeSelection(pos)
+                  .updateBlockMath({ latex })
+                  .focus()
+                  .run();
+              }
+            },
+          });
         },
       },
       inlineOptions: {
         onClick: (node) => {
-          const latex = prompt("Math expression:", node.attrs.latex);
-          if (latex) {
-            editorGlobalRef.current
-              ?.chain()
-              .setNodeSelection((node as any).pos)
-              .updateInlineMath({ latex })
-              .focus()
-              .run();
-          }
+          uiDispatch.setPrompt({
+            open: true,
+            title: "Math expression:",
+            initialValue: node.attrs.latex,
+            onConfirm: (latex) => {
+              if (latex) {
+                editorGlobalRef.current
+                  ?.chain()
+                  .setNodeSelection((node as any).pos)
+                  .updateInlineMath({ latex })
+                  .focus()
+                  .run();
+              }
+            },
+          });
         },
       },
     }),

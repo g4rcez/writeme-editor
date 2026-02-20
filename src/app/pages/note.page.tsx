@@ -11,7 +11,7 @@ import { TableOfContents } from "../components/table-of-contents";
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
-    <div className="flex relative flex-col gap-4 w-full">
+    <div className="flex px-8 relative flex-col gap-4 w-full">
       <TableOfContents />
       {props.children}
     </div>

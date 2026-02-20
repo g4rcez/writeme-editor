@@ -22,12 +22,14 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 import { useMemo } from "react";
-import { FileText, Sparkles, History } from "lucide-react";
+import { FileText, Sparkles, History, LayoutTemplate } from "lucide-react";
 import { isElectron } from "@/lib/is-electron";
+import { useTemplates } from "@/app/hooks/use-templates";
 
 export const Commander = () => {
   useShortcuts();
   const [state, dispatch] = useGlobalStore();
+  const { templates } = useTemplates();
   const commands = useWritemeShortcuts();
   const navigate = useNavigate();
 
@@ -176,8 +178,41 @@ export const Commander = () => {
       ],
     };
 
-    return [aiItem, notesItem, ...otherStuff];
-  }, [state.commander, state.notes, navigate, dispatch, commands]);
+    const templateItem: CommandItemTypes = {
+      title: "Templates",
+      type: "group",
+      items: [
+        {
+          title: "Manage templates",
+          type: "shortcut",
+          action: (args) => {
+            args.setOpen(false);
+            // We don't have a direct route for all templates, but we can set the activity
+            // Since this is in the commander, maybe we should just open the sidebar?
+            // Or navigate to a specific page if it existed.
+            // For now, let's just trigger the sidebar activity if possible.
+            // But usually commander is for quick actions.
+          },
+        },
+        ...templates.map(
+          (t): CommandItemTypes => ({
+            title: `Template: ${t.title}`,
+            type: "shortcut",
+            action: (args) => {
+              args.setOpen(false);
+              dispatch.setCreateNoteDialog({
+                isOpen: true,
+                type: "note",
+                templateId: t.id,
+              });
+            },
+          }),
+        ),
+      ],
+    };
+
+    return [aiItem, notesItem, templateItem, ...otherStuff];
+  }, [state.commander, state.notes, navigate, dispatch, commands, templates]);
 
   return (
     <CommandPalette

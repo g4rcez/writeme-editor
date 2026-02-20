@@ -2,12 +2,33 @@ import { createGlobalReducer } from "use-typed-reducer";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
 
+export type AlertType = "info" | "success" | "error";
+
+export type UIStateAlert = {
+  open: boolean;
+  title?: string;
+  message: string;
+  type?: AlertType;
+};
+
+export type UIStatePrompt = {
+  open: boolean;
+  title: string;
+  message?: string;
+  initialValue?: string;
+  placeholder?: string;
+  onConfirm: (value: string) => void;
+  onCancel?: () => void;
+};
+
 export type UISettings = {
   contentWidth: ContentWidth;
   focusMode: boolean;
   sidebarOpen: boolean;
   sidebarWidth: number;
   error: string | null;
+  alert: UIStateAlert | null;
+  prompt: UIStatePrompt | null;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -29,35 +50,47 @@ const initialState: UISettings = {
   sidebarOpen: persistedState.sidebarOpen ?? true,
   sidebarWidth: persistedState.sidebarWidth || 240,
   error: null,
+  alert: null,
+  prompt: null,
 };
 
 type Toggle<T> = T | ((prev: T) => T);
 
 export const useUIStore = createGlobalReducer(
   initialState,
-  (get) => ({
+  (get: { state: () => UISettings }) => ({
     setContentWidth: (width: ContentWidth) => ({ contentWidth: width }),
     toggleFocusMode: () => ({ focusMode: !get.state().focusMode }),
     setFocusMode: (focusMode: boolean) => ({ focusMode }),
     toggleSidebar: () => ({ sidebarOpen: !get.state().sidebarOpen }),
     setSidebarOpen: (open: Toggle<boolean>) => ({
-      sidebarOpen: typeof open === "function" ? open(get.state().sidebarOpen) : open,
+      sidebarOpen:
+        typeof open === "function" ? open(get.state().sidebarOpen) : open,
     }),
     setSidebarWidth: (width: number) => ({
       sidebarWidth: Math.max(180, Math.min(400, width)),
     }),
     setError: (error: string | null) => ({ error }),
     clearError: () => ({ error: null }),
+    setAlert: (alert: UIStateAlert | null) => ({ alert }),
+    clearAlert: () => ({ alert: null }),
+    setPrompt: (prompt: UIStatePrompt | null) => ({ prompt }),
+    clearPrompt: () => ({ prompt: null }),
   }),
   {
     interceptor: [
-      (state) => {
-        const { error, ...toPersist } = state;
+      (state: UISettings) => {
+        const {
+          error: _error,
+          alert: _alert,
+          prompt: _prompt,
+          ...toPersist
+        } = state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
         return state;
       },
     ],
-  }
+  },
 );
 
 export const uiState = useUIStore.getState;

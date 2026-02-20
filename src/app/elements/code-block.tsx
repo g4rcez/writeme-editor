@@ -633,7 +633,6 @@ const CodeBlockAddons = ({
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
-  console.log(props);
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
   const [isFormatting, setIsFormatting] = useState(false);

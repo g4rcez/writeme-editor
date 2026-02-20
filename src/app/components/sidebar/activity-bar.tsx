@@ -5,6 +5,7 @@ import {
   Hash,
   Settings,
   PanelLeft,
+  LayoutTemplate,
   LucideIcon,
 } from "lucide-react";
 import { useLayoutContext, ActivityType } from "@/app/contexts/layout-context";
@@ -96,6 +97,12 @@ export const ActivityBar = () => {
           icon={Hash}
           active={state.activeActivity === "tags"}
           onClick={() => onActivityClick("tags")}
+        />
+        <ActivityIcon
+          label="Templates"
+          icon={LayoutTemplate}
+          active={state.activeActivity === "templates"}
+          onClick={() => onActivityClick("templates")}
         />
       </div>
       <div className="flex flex-col gap-1 mt-auto w-full">

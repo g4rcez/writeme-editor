@@ -10,6 +10,7 @@ import {
 import { replacerRules } from "./replace-rules";
 import { ReplacerHandlerParams } from "./types";
 import { Dates } from "@/lib/dates";
+import { uiDispatch } from "@/store/ui.store";
 
 export type ReplacerCommand = {
   find: RegExp;
@@ -100,12 +101,17 @@ export const UuidCommand: ReplacerCommand = {
 export const LatexInlineCommand: ReplacerCommand = {
   find: />>expr $/,
   replace: (_, __, editor) => {
-    const latex = prompt("Inline math block:");
-    if (latex) {
-      setTimeout(() => {
-        editor.chain().focus().insertInlineMath({ latex }).run();
-      }, 100);
-    }
+    uiDispatch.setPrompt({
+      open: true,
+      title: "Inline math block:",
+      onConfirm: (latex) => {
+        if (latex) {
+          setTimeout(() => {
+            editor.chain().focus().insertInlineMath({ latex }).run();
+          }, 100);
+        }
+      },
+    });
     return "";
   },
 };

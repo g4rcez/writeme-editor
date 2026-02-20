@@ -39,6 +39,10 @@ export const databaseIpcHandler = () => {
     return db.getRecentNotes(limit);
   });
 
+  ipcMain.handle("db:notes:getTemplates", () => {
+    return db.getTemplates();
+  });
+
   ipcMain.handle("db:tabs:updateOrder", (_, tabs: any[]) => {
       db.updateTabsOrder(tabs);
       return true;

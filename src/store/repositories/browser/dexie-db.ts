@@ -4,6 +4,7 @@ import { Tab } from "../entities/tab";
 import { Hashtag } from "../entities/hashtag";
 import { Settings } from "../entities/settings";
 import { Project } from "../entities/project";
+import { Script } from "../entities/script";
 import { uuid } from "@g4rcez/components";
 
 export const db = new Dexie("writeme") as Dexie & {
@@ -12,6 +13,7 @@ export const db = new Dexie("writeme") as Dexie & {
   tabs: EntityTable<Tab, "id">;
   hashtags: EntityTable<Hashtag, "id">;
   settings: EntityTable<Settings, "id">;
+  scripts: EntityTable<Script, "id">;
 };
 
 // Version 1 (original schema)
@@ -177,4 +179,47 @@ db.version(11)
       await tx.table("notes").update(note.id, { favorite: false });
     }
     console.log("Schema migration to v11 complete");
+  });
+
+// Version 15 (Migrate templates to notes)
+db.version(15)
+  .stores({
+    notes:
+      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+    hashtags: "&id, hashtag, filename, project",
+    settings: "&id, &name, value",
+    scripts: "&id, name, createdAt, updatedAt",
+  })
+  .upgrade(async (tx) => {
+    console.log("Migrating to v15: moving templates to notes table...");
+    const templatesTable = tx.table("templates");
+    if (templatesTable) {
+      const templates = await templatesTable.toArray();
+      for (const template of templates) {
+        await tx.table("notes").add({
+          id: template.id,
+          title: template.name,
+          content: template.content,
+          filePath: template.filePath,
+          noteType: "template",
+          createdAt: template.createdAt,
+          updatedAt: template.updatedAt,
+          project: "",
+          tags: [],
+          createdBy: "system",
+          updatedBy: "system",
+          fileSize: template.content?.length || 0,
+          lastSynced: null,
+          url: null,
+          description: null,
+          favicon: null,
+          metadata: {},
+          favorite: false,
+        });
+      }
+      // Note: Dexie versioning handles the removal of the 'templates' table from the schema
+    }
+    console.log("Schema migration to v15 complete");
   });

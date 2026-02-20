@@ -48,15 +48,22 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
   }
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
-    let collection = db.notes.orderBy("updatedAt").reverse();
-    if (limit) {
-      collection = collection.limit(limit);
-    }
-    const metadataList = await collection.toArray();
+    const metadataList = await db.notes
+      .where("noteType")
+      .notEqual("template")
+      .toArray();
 
-    return metadataList.map((metadata) =>
-      Note.parse({ ...metadata, content: metadata.content || "" }),
-    );
+    const sorted = metadataList
+      .map((metadata) =>
+        Note.parse({ ...metadata, content: (metadata as any).content || "" }),
+      )
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+    if (limit) {
+      return sorted.slice(0, limit);
+    }
+
+    return sorted;
   }
 
   async getLatestQuicknote(): Promise<Note | null> {
@@ -87,5 +94,16 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     if (result.length === 0) return null;
     const metadata = result[0] as any;
     return Note.parse({ ...metadata, content: metadata.content || "" });
+  }
+
+  async getTemplates(): Promise<Note[]> {
+    const result = await db.notes
+      .where("noteType")
+      .equals("template")
+      .toArray();
+
+    return result.map((metadata) =>
+      Note.parse({ ...metadata, content: metadata.content || "" }),
+    );
   }
 }

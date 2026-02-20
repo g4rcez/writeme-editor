@@ -13,7 +13,11 @@ import { Note } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { Commander } from "@/app/commander";
+import { Alert } from "@/app/components/alert";
+import { Prompt } from "@/app/components/prompt";
 import { CreateNoteDialog } from "@/app/components/create-note-dialog";
+import { CreateVariableDialog } from "@/app/components/create-variable-dialog";
+import { CreateTemplateDialog } from "@/app/components/create-template-dialog";
 import { ReadItLaterDialog } from "@/app/components/read-it-later-dialog";
 import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { LayoutProvider } from "@/app/contexts/layout-context";
@@ -93,6 +97,8 @@ export const RootLayout = () => {
           <Fragment>
             <Commander />
             <CreateNoteDialog />
+            <CreateTemplateDialog />
+            <CreateVariableDialog />
             <RecentNotesDialog />
             <ReadItLaterDialog />
           </Fragment>
@@ -121,6 +127,32 @@ export const RootLayout = () => {
           </button>
         )}
         {isElectron() && <AIDrawer />}
+        {uiState.alert && (
+          <Alert
+            open={uiState.alert.open}
+            title={uiState.alert.title}
+            message={uiState.alert.message}
+            type={uiState.alert.type}
+            onClose={() => uiDispatch.clearAlert()}
+          />
+        )}
+        {uiState.prompt && (
+          <Prompt
+            open={uiState.prompt.open}
+            title={uiState.prompt.title}
+            message={uiState.prompt.message}
+            initialValue={uiState.prompt.initialValue}
+            placeholder={uiState.prompt.placeholder}
+            onConfirm={(val) => {
+              uiState.prompt?.onConfirm(val);
+              uiDispatch.clearPrompt();
+            }}
+            onCancel={() => {
+              uiState.prompt?.onCancel?.();
+              uiDispatch.clearPrompt();
+            }}
+          />
+        )}
       </div>
     </LayoutProvider>
   );

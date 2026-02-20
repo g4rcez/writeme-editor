@@ -5,12 +5,14 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
 import { Note } from "@/store/note";
 import { getThemeForMode } from "../elements/code-block";
 import { createExtensions } from "../extensions";
 
 export const ReadItLaterDialog = () => {
   const [state, dispatch] = useGlobalStore();
+  const [, uiDispatch] = useUIStore();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -48,9 +50,12 @@ export const ReadItLaterDialog = () => {
       setUrl("");
     } catch (error) {
       console.error("Failed to fetch or parse URL:", error);
-      alert(
-        "Failed to create note from URL. Please check the URL and try again.",
-      );
+      uiDispatch.setAlert({
+        open: true,
+        title: "Read it later",
+        message: "Failed to create note from URL. Please check the URL and try again.",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { ExplorerPane } from "./explorer-pane";
 import { QuickSettingsPane } from "./quick-settings-pane";
 import { SearchPane } from "./search-pane";
 import { TagsPane } from "./tags-pane";
+import { TemplatesPane } from "./templates-pane";
 
 export const SidebarContent = () => {
   const { state } = useLayoutContext();
@@ -19,6 +20,8 @@ export const SidebarContent = () => {
         return <NoteListSidebar />;
       }
       return <TagsPane />;
+    case "templates":
+      return <TemplatesPane />;
     case "settings":
       return <QuickSettingsPane />;
     default:

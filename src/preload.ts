@@ -74,6 +74,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.invoke("db:notes:getQuicknoteByDate", start, end),
       getRecentNotes: (limit: number) =>
         ipcRenderer.invoke("db:notes:getRecentNotes", limit),
+      getTemplates: () =>
+        ipcRenderer.invoke("db:notes:getTemplates"),
     },
     tabs: {
       updateOrder: (tabs: any[]) =>
@@ -165,6 +167,7 @@ declare global {
           getLatestQuicknote(): Promise<any>;
           getQuicknoteByDate(start: string, end: string): Promise<any>;
           getRecentNotes(limit: number): Promise<any[]>;
+          getTemplates(): Promise<any[]>;
         };
         tabs: {
           updateOrder(tabs: any[]): Promise<void>;

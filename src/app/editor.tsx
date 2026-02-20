@@ -93,12 +93,14 @@ const InnerEditor = (props: {
   note?: Note;
   content?: string;
   readonly?: boolean;
+  onSave?: (content: string) => Promise<void>;
   onPasteRawText?: (text: string) => string;
 }) => {
   const [state] = useGlobalStore();
 
-  const extensions = createExtensions(() =>
-    getThemeForMode(globalState().theme),
+  const extensions = useMemo(
+    () => createExtensions(() => getThemeForMode(globalState().theme)),
+    [state.theme],
   );
 
   const editor = useEditor({
@@ -115,7 +117,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) { }
+      } catch (e) {}
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
@@ -138,12 +140,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                      .map((t: any) => String(t).trim())
-                      .filter(Boolean)
+                        .map((t: any) => String(t).trim())
+                        .filter(Boolean)
                     : String(parsed.tags)
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean);
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean);
 
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
@@ -191,17 +193,32 @@ const InnerEditor = (props: {
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
 
+  const onSaveRef = useRef(props.onSave);
+  const noteRef = useRef(props.note);
+
+  useEffect(() => {
+    onSaveRef.current = props.onSave;
+    noteRef.current = props.note;
+  }, [props.onSave, props.note]);
+
+  // Sync content from props if it changes externally
+  useEffect(() => {
+    if (!editor || props.content === undefined) return;
+
+    const storage = (editor.storage as any).markdown;
+    if (!storage || typeof storage.getMarkdown !== "function") return;
+
+    const currentMarkdown = storage.getMarkdown();
+    if (props.content !== currentMarkdown) {
+      editor.commands.setContent(props.content, false);
+    }
+  }, [editor, props.content]);
+
   useEffect(() => {
     if (editor) {
       (editor.storage as any).note = props.note;
     }
   }, [editor, props.note]);
-
-  const noteRef = useRef(props.note);
-
-  useEffect(() => {
-    noteRef.current = props.note;
-  }, [props.note]);
 
   useEffect(() => {
     if (editor === null) return;
@@ -214,6 +231,10 @@ const InnerEditor = (props: {
       saveTimeout = setTimeout(async () => {
         try {
           const html = (editor.storage as any).markdown.getMarkdown();
+          if (onSaveRef.current) {
+            await onSaveRef.current(html);
+            return;
+          }
           if (!noteRef.current) return;
           const note = Note.parse(noteRef.current);
           note.setContent(html);
@@ -236,6 +257,10 @@ const InnerEditor = (props: {
       clearTimeout(saveTimeout);
       try {
         const html = (editor.storage as any).markdown.getMarkdown();
+        if (onSaveRef.current) {
+          onSaveRef.current(html);
+          return;
+        }
         if (noteRef.current) {
           const note = Note.parse(noteRef.current);
           note.setContent(html);
@@ -278,7 +303,7 @@ const InnerEditor = (props: {
   return (
     <div
       id="editor-container"
-      className="flex flex-col justify-start items-start p-4 mx-auto w-full bg-card-background max-w-safe"
+      className="flex flex-col justify-start items-start w-full bg-card-background max-w-safe"
       style={{ fontSize: `${settings.editorFontSize}px` }}
     >
       <EditorContext.Provider value={{ editor }}>
@@ -315,20 +340,26 @@ const InnerEditor = (props: {
 export const Editor = (props: {
   content: string;
   note?: Note;
+  id?: string;
   readonly?: boolean;
+  onSave?: (content: string) => Promise<void>;
   onPasteRawText?: (text: string) => string;
 }) => {
-  const id = useMemo(() => props.note?.id || uuid(), [props.note]);
+  const id = useMemo(
+    () => props.id || props.note?.id || uuid(),
+    [props.note, props.id],
+  );
 
   return (
-    <Fragment key={props.note?.id}>
-      {props.note !== null ? (
+    <Fragment key={props.note?.id || props.id}>
+      {props.content !== undefined ? (
         <InnerEditor
           id={id}
           note={props.note}
-          key={props.note?.id}
+          key={props.note?.id || props.id}
           content={props.content}
           readonly={props.readonly}
+          onSave={props.onSave}
           onPasteRawText={props.onPasteRawText}
         />
       ) : (

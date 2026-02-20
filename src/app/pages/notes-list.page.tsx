@@ -19,6 +19,7 @@ const tag: Record<
   "read-it-later": { theme: "info", title: "Read it later" },
   quick: { theme: "muted", title: "Quick note" },
   note: { theme: "primary", title: "Note" },
+  template: { theme: "secondary", title: "Template" },
 };
 
 export default function NotesListPage() {

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const SettingsSchema = z.object({
   directory: z.string().nullable().default(null),
+  templatesDirectory: z.string().nullable().default(null),
   defaultAuthor: z.string().default("user"),
   autoSyncInterval: z.number().default(5000),
   conflictResolution: z

@@ -114,7 +114,42 @@ class DatabaseManager {
         createdAt TEXT,
         updatedAt TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS scripts (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        name TEXT,
+        content TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
     `);
+
+    // Migration for templates to notes
+    try {
+      const templatesTable = this.db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='templates'",
+        )
+        .get();
+      if (templatesTable) {
+        console.log("Migrating templates to notes table...");
+        this.db.exec(`
+          INSERT OR IGNORE INTO notes (
+            id, type, title, content, filePath, createdAt, updatedAt, noteType, 
+            project, tags, createdBy, updatedBy, fileSize, favorite
+          ) 
+          SELECT 
+            id, type, name, content, filePath, createdAt, updatedAt, 'template',
+            '', '[]', 'system', 'system', length(content), 0
+          FROM templates;
+        `);
+        console.log("Dropping templates table...");
+        this.db.exec("DROP TABLE templates;");
+      }
+    } catch (e) {
+      console.error("Failed to migrate templates to notes:", e);
+    }
 
     // Migration for missing 'type' column if tables existed without it
     const tables = [
@@ -126,6 +161,7 @@ class DatabaseManager {
       "aiConfigs",
       "aiChats",
       "aiMessages",
+      "scripts",
     ];
     const commonColumns = ["type", "createdAt", "updatedAt"];
     const noteColumns = [
@@ -297,9 +333,17 @@ class DatabaseManager {
 
   public getRecentNotes(limit: number): any[] {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes ORDER BY updatedAt DESC LIMIT ?`,
+      `SELECT * FROM notes WHERE noteType != 'template' ORDER BY updatedAt DESC LIMIT ?`,
     );
     const results = stmt.all(limit) as any[];
+    return results.map((row) => this.normalizeRow(row));
+  }
+
+  public getTemplates(): any[] {
+    const stmt = this.db.prepare(
+      `SELECT * FROM notes WHERE noteType = 'template' ORDER BY updatedAt DESC`,
+    );
+    const results = stmt.all() as any[];
     return results.map((row) => this.normalizeRow(row));
   }
 

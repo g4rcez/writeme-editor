@@ -22,6 +22,13 @@ describe("Note", () => {
     expect(note.favicon).toBe("https://example.com/favicon.ico");
   });
 
+  it("should create a new template note", () => {
+    const note = Note.new("My Template", "Template Content", "template");
+    expect(note.title).toBe("My Template");
+    expect(note.content).toBe("Template Content");
+    expect(note.noteType).toBe("template");
+  });
+
   it("should parse a note object", () => {
     const data = {
       title: "Parsed Title",

@@ -34,7 +34,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
 
       const filteredByProp = options.noteType
         ? newNotes.filter((n: Note) => n.noteType === options.noteType)
-        : newNotes;
+        : newNotes.filter((n: Note) => n.noteType !== "template");
       const notesWithTags = filteredByProp.map((note: Note): NoteWithTags => {
         const key = note.filePath || note.title;
         const tags = tagsMap.get(key) || [];

@@ -47,9 +47,9 @@ export function useSidebarNotes() {
     let result = innerNotes;
     const { activeView, searchQuery, activeActivity } = layoutState;
     if (activeActivity === "favorites") {
-      result = result.filter((n) => n.favorite);
+      result = result.filter((n) => n.favorite && n.noteType !== "template");
     } else if (activeActivity === "tags" && activeView.type === "tag") {
-      result = result.filter((n) => n.tags.includes(activeView.id));
+      result = result.filter((n) => n.tags.includes(activeView.id) && n.noteType !== "template");
     } else {
       switch (activeView.type) {
         case "all":

@@ -221,6 +221,35 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
+  async getTemplates(): Promise<Note[]> {
+    const metadataList = await window.electronAPI.db.notes.getTemplates();
+    const notes = metadataList.map((metadata: any) =>
+      Note.parse({ ...metadata, content: "" }),
+    );
+
+    const mode = getStorageMode();
+    if (mode === "filesystem") {
+      return await Promise.all(
+        notes.map(async (n) => {
+          if (n.filePath) {
+            const result = await window.electronAPI.fs.readFile(n.filePath);
+            if (result.success) {
+              n.content = result.content;
+            }
+          }
+          return n;
+        }),
+      );
+    }
+
+    return await Promise.all(
+      notes.map(async (n) => {
+        const full = await this.getOne(n.id);
+        return full || n;
+      }),
+    );
+  }
+
   async delete(id: EntityBase["id"]): Promise<boolean> {
     const note: any = await this.adapter.get(this.collection, id);
     if (!note) {

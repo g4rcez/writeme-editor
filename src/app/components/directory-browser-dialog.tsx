@@ -3,6 +3,7 @@ import { Edit2, FilePlus, FolderPlus, FolderTree } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getDirname } from "@/lib/file-utils";
 import { globalState, useGlobalStore } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
@@ -11,6 +12,7 @@ import { TreeView } from "./tree-view";
 
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
+  const [, uiDispatch] = useUIStore();
   const [storageDir, setStorageDir] = useState<string | null>(null);
   const [focusedNode, setFocusedNode] = useState<TreeNode | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -120,21 +122,27 @@ export const DirectoryBrowserDialog = () => {
           : getDirname(focusedNode.path);
     }
 
-    const fileName = window.prompt("Enter new file name (e.g. note.md):");
-    if (!fileName) return;
-
-    try {
-      const newPath = `${parentPath}/${fileName.endsWith(".md") ? fileName : fileName + ".md"}`;
-      const result = await window.electronAPI.fs.writeFile(newPath, "");
-      if (result.success) {
-        refreshView();
-      } else {
-        console.error("Failed to create file:", result.error);
-      }
-    } catch (error) {
-      console.error("Error creating file:", error);
-    }
-  }, [storageDir, focusedNode, refreshView]);
+    uiDispatch.setPrompt({
+      open: true,
+      title: "New File",
+      message: "Enter new file name (e.g. note.md):",
+      placeholder: "note.md",
+      onConfirm: async (fileName) => {
+        if (!fileName) return;
+        try {
+          const newPath = `${parentPath}/${fileName.endsWith(".md") ? fileName : fileName + ".md"}`;
+          const result = await window.electronAPI.fs.writeFile(newPath, "");
+          if (result.success) {
+            refreshView();
+          } else {
+            console.error("Failed to create file:", result.error);
+          }
+        } catch (error) {
+          console.error("Error creating file:", error);
+        }
+      },
+    });
+  }, [storageDir, focusedNode, refreshView, uiDispatch]);
 
   const handleCreateFolder = useCallback(async () => {
     if (!storageDir) return;
@@ -147,102 +155,111 @@ export const DirectoryBrowserDialog = () => {
           : getDirname(focusedNode.path);
     }
 
-    const folderName = window.prompt("Enter new folder name:");
-    if (!folderName) return;
-
-    try {
-      const newPath = `${parentPath}/${folderName}`;
-      const result = await window.electronAPI.fs.mkdir(newPath);
-      if (result.success) {
-        refreshView();
-      } else {
-        console.error("Failed to create folder:", result.error);
-      }
-    } catch (error) {
-      console.error("Error creating folder:", error);
-    }
-  }, [storageDir, focusedNode, refreshView]);
+    uiDispatch.setPrompt({
+      open: true,
+      title: "New Folder",
+      message: "Enter new folder name:",
+      onConfirm: async (folderName) => {
+        if (!folderName) return;
+        try {
+          const newPath = `${parentPath}/${folderName}`;
+          const result = await window.electronAPI.fs.mkdir(newPath);
+          if (result.success) {
+            refreshView();
+          } else {
+            console.error("Failed to create folder:", result.error);
+          }
+        } catch (error) {
+          console.error("Error creating folder:", error);
+        }
+      },
+    });
+  }, [storageDir, focusedNode, refreshView, uiDispatch]);
 
   const handleMove = useCallback(async () => {
     if (!focusedNode) return;
 
-    const newPath = window.prompt(
-      `Move/Rename "${focusedNode.name}" to:`,
-      focusedNode.path,
-    );
-    if (!newPath || newPath === focusedNode.path) return;
+    uiDispatch.setPrompt({
+      open: true,
+      title: "Move/Rename",
+      message: `Move/Rename "${focusedNode.name}" to:`,
+      initialValue: focusedNode.path,
+      onConfirm: async (newPath) => {
+        if (!newPath || newPath === focusedNode.path) return;
 
-    try {
-      // If it's a markdown file, sync IndexedDB
-      if (focusedNode.extension === ".md") {
-        const allNotes = await repositories.notes.getAll();
-        const existingNote = allNotes.find(
-          (n) => n.filePath === focusedNode.path,
-        );
+        try {
+          // If it's a markdown file, sync IndexedDB
+          if (focusedNode.extension === ".md") {
+            const allNotes = await repositories.notes.getAll();
+            const existingNote = allNotes.find(
+              (n) => n.filePath === focusedNode.path,
+            );
 
-        if (existingNote) {
-          const fullNote = await repositories.notes.getOne(existingNote.id);
-          if (fullNote) {
-            const oldDir = getDirname(focusedNode.path);
-            const newDir = getDirname(newPath);
-            if (oldDir === newDir) {
-              const newTitle = newPath
-                .split(/[/\\]/)
-                .pop()
-                ?.replace(/\.md$/, "");
-              if (newTitle) fullNote.title = newTitle;
+            if (existingNote) {
+              const fullNote = await repositories.notes.getOne(existingNote.id);
+              if (fullNote) {
+                const oldDir = getDirname(focusedNode.path);
+                const newDir = getDirname(newPath);
+                if (oldDir === newDir) {
+                  const newTitle = newPath
+                    .split(/[/\\]/)
+                    .pop()
+                    ?.replace(/\.md$/, "");
+                  if (newTitle) fullNote.title = newTitle;
+                }
+                fullNote.filePath = newPath;
+                await repositories.notes.update(fullNote.id, fullNote);
+                refreshView();
+                return;
+              }
             }
-            fullNote.filePath = newPath;
-            await repositories.notes.update(fullNote.id, fullNote);
-            refreshView();
+          } else if (focusedNode.type === "directory") {
+            // If it's a directory, update all notes contained within it
+            const allNotes = await repositories.notes.getAll();
+            const notesInDir = allNotes.filter((n) =>
+              n.filePath?.startsWith(focusedNode.path + "/"),
+            );
+
+            // Physically move first
+            const result = await window.electronAPI.fs.moveFile(
+              focusedNode.path,
+              newPath,
+            );
+            if (result.success) {
+              // Update paths in DB
+              for (const note of notesInDir) {
+                const relativePart = note.filePath!.substring(
+                  focusedNode.path.length,
+                );
+                const updatedNote = await repositories.notes.getOne(note.id);
+                if (updatedNote) {
+                  updatedNote.filePath = newPath + relativePart;
+                  await repositories.notes.update(updatedNote.id, updatedNote);
+                }
+              }
+              refreshView();
+            } else {
+              console.error("Failed to move directory:", result.error);
+            }
             return;
           }
-        }
-      } else if (focusedNode.type === "directory") {
-        // If it's a directory, update all notes contained within it
-        const allNotes = await repositories.notes.getAll();
-        const notesInDir = allNotes.filter((n) =>
-          n.filePath?.startsWith(focusedNode.path + "/"),
-        );
 
-        // Physically move first
-        const result = await window.electronAPI.fs.moveFile(
-          focusedNode.path,
-          newPath,
-        );
-        if (result.success) {
-          // Update paths in DB
-          for (const note of notesInDir) {
-            const relativePart = note.filePath!.substring(
-              focusedNode.path.length,
-            );
-            const updatedNote = await repositories.notes.getOne(note.id);
-            if (updatedNote) {
-              updatedNote.filePath = newPath + relativePart;
-              await repositories.notes.update(updatedNote.id, updatedNote);
-            }
+          // Fallback for non-note files or if not in DB
+          const result = await window.electronAPI.fs.moveFile(
+            focusedNode.path,
+            newPath,
+          );
+          if (result.success) {
+            refreshView();
+          } else {
+            console.error("Failed to move:", result.error);
           }
-          refreshView();
-        } else {
-          console.error("Failed to move directory:", result.error);
+        } catch (error) {
+          console.error("Error moving:", error);
         }
-        return;
-      }
-
-      // Fallback for non-note files or if not in DB
-      const result = await window.electronAPI.fs.moveFile(
-        focusedNode.path,
-        newPath,
-      );
-      if (result.success) {
-        refreshView();
-      } else {
-        console.error("Failed to move:", result.error);
-      }
-    } catch (error) {
-      console.error("Error moving:", error);
-    }
-  }, [focusedNode, refreshView]);
+      },
+    });
+  }, [focusedNode, refreshView, uiDispatch]);
 
   // Keyboard shortcuts for modal-level actions
   useEffect(() => {

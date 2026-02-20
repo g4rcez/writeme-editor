@@ -8,6 +8,7 @@ import {
   Input,
   Textarea,
   uuid,
+  Modal,
 } from "@g4rcez/components";
 import {
   Save,
@@ -19,13 +20,16 @@ import {
 } from "lucide-react";
 import { useEffect, useState, Fragment } from "react";
 import { globalDispatch, repositories } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
 import { AppSettings, SettingsService } from "@/store/settings";
 import { AIConfig } from "@/store/repositories/electron/ai.repository";
+import { CustomVariables } from "@/app/components/settings/custom-variables";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
+  const [, uiDispatch] = useUIStore();
 
   useEffect(() => {
     setSettings(SettingsService.load());
@@ -51,10 +55,18 @@ export default function SettingsPage() {
         }
       }
 
-      alert("Settings saved successfully!");
+      uiDispatch.setAlert({
+        open: true,
+        message: "Settings saved successfully!",
+        type: "success",
+      });
     } catch (error) {
       console.error("Failed to save settings:", error);
-      alert("Failed to save settings.");
+      uiDispatch.setAlert({
+        open: true,
+        message: "Failed to save settings.",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -75,7 +87,16 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAIConfig = async (id: string) => {
-    if (confirm("Are you sure you want to delete this configuration?")) {
+    const confirmed = await Modal.confirm({
+      title: "Delete AI Configuration",
+      description: "Are you sure you want to delete this configuration?",
+      confirm: {
+        text: "Delete",
+        theme: "danger",
+      },
+    });
+
+    if (confirmed) {
       setAiConfigs(aiConfigs.filter((c) => c.id !== id));
       if (isElectron()) {
         await repositories.ai.deleteConfig(id);
@@ -179,6 +200,8 @@ export default function SettingsPage() {
             />
           </div>
         </Card>
+
+        <CustomVariables />
 
         {isElectron() ? (
           <Fragment>
@@ -304,12 +327,43 @@ export default function SettingsPage() {
             </Card>
 
             <Card title="Workspace">
-              <div className="flex flex-col gap-2">
-                <span className="font-medium">Current Directory</span>
-                <code className="block p-2 text-xs whitespace-pre-wrap break-all rounded bg-muted">
-                  {settings.directory ||
-                    "No directory selected (Local Storage)"}
-                </code>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <span className="font-medium text-sm">Notes Directory</span>
+                  <code className="block p-2 text-[10px] whitespace-pre-wrap break-all rounded bg-muted border border-border/40">
+                    {settings.directory ||
+                      "No directory selected (Local Storage)"}
+                  </code>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm">
+                      Templates Directory
+                    </span>
+                    <Button
+                      size="small"
+                      theme="ghost-primary"
+                      onClick={async () => {
+                        const dir =
+                          await window.electronAPI.fs.chooseDirectory();
+                        if (dir) {
+                          setSettings({ ...settings, templatesDirectory: dir });
+                        }
+                      }}
+                    >
+                      Change Folder
+                    </Button>
+                  </div>
+                  <code className="block p-2 text-[10px] whitespace-pre-wrap break-all rounded bg-muted border border-border/40">
+                    {settings.templatesDirectory ||
+                      "Default (.templates in workspace)"}
+                  </code>
+                  <p className="text-[10px] text-muted-foreground">
+                    Custom folder where your .md templates are stored. Each file
+                    can use {"{{VARIABLE}}"} syntax.
+                  </p>
+                </div>
               </div>
             </Card>
           </Fragment>

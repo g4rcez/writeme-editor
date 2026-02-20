@@ -42,8 +42,14 @@ type State = {
   recentNotesDialog: boolean;
   aiContext: AiContext | null;
   directoryBrowserDialog: boolean;
+  createVariableDialog: { isOpen: boolean };
+  createTemplateDialog: { isOpen: boolean };
   aiDrawer: { isOpen: boolean; chatId: string | null };
-  createNoteDialog: { isOpen: boolean; type: NoteCreationType };
+  createNoteDialog: {
+    isOpen: boolean;
+    type: NoteCreationType;
+    templateId?: string;
+  };
 };
 
 const initialState: State = {
@@ -63,6 +69,8 @@ const initialState: State = {
   activeTabId: null as string | null,
   aiDrawer: { isOpen: false, chatId: null },
   commander: { enabled: false, type: CommanderType.All } as Commander,
+  createTemplateDialog: { isOpen: false },
+  createVariableDialog: { isOpen: false },
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
 };
 
@@ -214,7 +222,14 @@ export const useGlobalStore = createGlobalReducer(
       setCreateNoteDialog: (createNoteDialog: {
         isOpen: boolean;
         type: NoteCreationType;
+        templateId?: string;
       }) => ({ createNoteDialog }),
+      setCreateTemplateDialog: (isOpen: boolean) => ({
+        createTemplateDialog: { isOpen },
+      }),
+      setCreateVariableDialog: (isOpen: boolean) => ({
+        createVariableDialog: { isOpen },
+      }),
       setAiDrawer: (
         aiDrawer: Toggle<{ isOpen: boolean; chatId: string | null }>,
       ) => {
