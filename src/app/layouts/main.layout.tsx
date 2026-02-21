@@ -52,7 +52,7 @@ export const MainLayout = () => {
           )}
         >
           <div
-            className="flex flex-col flex-1 min-h-full"
+            className="flex flex-col h-full flex-1 min-h-full"
             style={{ width: `${state.sidebarWidth}px` }}
           >
             <SidebarContent />

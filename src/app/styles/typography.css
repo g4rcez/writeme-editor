@@ -25,6 +25,15 @@
   @apply leading-snug text-pretty mt-10 mb-2 tracking-wide font-semibold text-primary;
 }
 
+.tiptap h1:first-child,
+.tiptap h2:first-child,
+.tiptap h3:first-child,
+.tiptap h4:first-child,
+.tiptap h5:first-child,
+.tiptap h6:first-child {
+  @apply mt-0;
+}
+
 .tiptap h1 {
   @apply text-4xl mt-10;
 }
@@ -35,6 +44,18 @@
 
 .tiptap h3 {
   @apply text-2xl mt-6;
+}
+
+.tiptap h4 {
+  @apply text-xl mt-4;
+}
+
+.tiptap h5 {
+  @apply text-lg mt-2;
+}
+
+.tiptap h6 {
+  @apply text-base mt-1;
 }
 
 .tiptap blockquote {
@@ -55,18 +76,6 @@
 
 .tiptap hr {
   @apply border-b border-border my-10;
-}
-
-.tiptap ul:not(:first-child) {
-  @apply list-outside ml-4 mb-2;
-}
-
-.tiptap ul:first {
-  @apply list-outside ml-8 my-12 space-y-2;
-}
-
-.tiptap ul {
-  @apply list-disc inline-flex;
 }
 
 .tiptap img {
@@ -90,12 +99,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li>label {
+.tiptap ul[data-type="taskList"] li > label {
   @apply select-none mr-3;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li>div {
+.tiptap ul[data-type="taskList"] li > div {
   @apply items-center;
   flex: 1 1 auto;
 }
@@ -132,8 +141,8 @@
   vertical-align: top;
 }
 
-.tiptap table td>*,
-.tiptap table th>* {
+.tiptap table td > *,
+.tiptap table th > * {
   margin-bottom: 0;
 }
 
@@ -172,16 +181,25 @@
   @apply px-1 py-0.5 text-primary-foreground bg-primary/70 rounded;
 }
 
+/* Lists */
 .tiptap ul,
 .tiptap ol {
-  @apply flex flex-col min-w-full;
-  margin-bottom: 1rem;
+  @apply min-w-full mb-4 ml-0;
+  padding-left: 1.5rem;
 }
 
-.tiptap li>ul,
-.tiptap li>ol {
-  margin-top: 0.25rem;
-  margin-bottom: 0.5rem;
+/* Unordered lists */
+.tiptap ul {
+  @apply list-disc list-outside;
+}
+
+.tiptap li > p {
+  @apply mb-0;
+}
+
+.tiptap li > ul,
+.tiptap li > ol {
+  @apply mt-2 mb-2 w-full;
 }
 
 .tiptap ul ul {
@@ -192,31 +210,38 @@
   list-style-type: square;
 }
 
+/* Ordered lists with hierarchical numbering */
 .tiptap ol {
-  @apply flex min-w-full flex-col min-w-full;
-  list-style-type: none;
+  @apply list-none pl-0;
   counter-reset: section;
-  padding-left: 0;
 }
 
 .tiptap ol li {
-  @apply flex min-w-full items-baseline flex-wrap;
+  @apply flex items-start flex-wrap min-w-full;
   counter-increment: section;
 }
 
-.tiptap ol li p {
-  @apply flex flex-wrap;
-  white-space-collapse: break-spaces;
-}
-
 .tiptap ol li::before {
-  @apply inline-flex;
+  @apply mt-1 mr-1 shrink-0 font-medium text-muted-foreground;
   content: counters(section, ".") ". ";
+  min-width: 1.25rem;
 }
 
-.tiptap ol li>ol {
-  @apply min-w-full ml-8;
+.tiptap ol li > p {
+  @apply flex-1 mb-0;
+}
+
+.tiptap ol li > ol {
+  @apply ml-6;
   counter-reset: section;
+}
+
+.tiptap ol li > ul {
+  @apply ml-6;
+}
+
+.tiptap ul li > ul {
+  @apply ml-4;
 }
 
 .tiptap .tiptap-mathematics-render[data-type="inline-math"] {

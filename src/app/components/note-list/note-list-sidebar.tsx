@@ -136,7 +136,7 @@ export const NoteListSidebar = () => {
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-background/50">
+    <div ref={containerRef} className="flex flex-col h-full bg-background">
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
         <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
           {getHeaderTitle()}
@@ -155,7 +155,7 @@ export const NoteListSidebar = () => {
         </div>
       </div>
       {notes.length === 0 ? (
-        <div className="flex flex-col flex-1 h-full gap-4 justify-center items-center h-full text-sm text-muted-foreground">
+        <div className="flex flex-col flex-1 py-4 gap-4 justify-center items-center h-full text-sm text-muted-foreground">
           <span>No notes found</span>
           <button
             onClick={createNewNote}
