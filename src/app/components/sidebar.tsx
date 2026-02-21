@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { FileText, Clock, GripVertical } from "lucide-react";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
+import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
 import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui.store";
 import { useGlobalStore, repositories } from "@/store/global.store";
@@ -124,7 +126,7 @@ export const Sidebar = () => {
             )}
             title="Recent notes"
           >
-            <Clock className="w-3.5 h-3.5" />
+            <ClockIcon className="w-3.5 h-3.5" />
             <span>Recent</span>
           </button>
           <button
@@ -137,7 +139,7 @@ export const Sidebar = () => {
             )}
             title="All notes"
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileTextIcon className="w-3.5 h-3.5" />
             <span>All</span>
           </button>
         </div>
@@ -164,7 +166,7 @@ export const Sidebar = () => {
 
           {state.notes.length === 0 && (
             <div className="flex flex-col justify-center items-center p-4 h-full text-center text-foreground/50">
-              <FileText className="mb-2 w-8 h-8 opacity-50" />
+              <FileTextIcon className="mb-2 w-8 h-8 opacity-50" />
               <p className="text-sm">No notes yet</p>
               <p className="text-xs">Create one with ⌘N</p>
             </div>
@@ -180,7 +182,7 @@ export const Sidebar = () => {
           )}
         >
           <div className="absolute right-0 top-1/2 opacity-0 transition-opacity -translate-y-1/2 group-hover:opacity-100">
-            <GripVertical className="w-3 h-3 text-foreground/30" />
+            <DotsSixVerticalIcon className="w-3 h-3 text-foreground/30" />
           </div>
         </div>
       </aside>

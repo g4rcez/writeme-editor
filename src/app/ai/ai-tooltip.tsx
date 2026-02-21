@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Tooltip, Input } from "@g4rcez/components";
-import { PanelRight, Send, X } from "lucide-react";
+import { SidebarSimpleIcon } from "@phosphor-icons/react/dist/csr/SidebarSimple";
+import { PaperPlaneRightIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneRight";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { globalDispatch } from "../../store/global.store";
 import { Editor } from "@tiptap/react";
 
@@ -73,14 +75,14 @@ export const AITooltip = ({
               className="p-1 rounded transition-colors hover:bg-muted"
               title="Open in Side Drawer"
             >
-              <PanelRight size={14} />
+              <SidebarSimpleIcon size={14} />
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="p-1 rounded transition-colors hover:bg-muted"
             >
-              <X size={14} />
+              <XIcon size={14} />
             </button>
           </div>
         </div>
@@ -102,7 +104,7 @@ export const AITooltip = ({
               onClick={onSubmit}
               className="p-1 transition-colors text-primary"
             >
-              <Send size={16} />
+              <PaperPlaneRightIcon size={16} />
             </button>
           }
         />

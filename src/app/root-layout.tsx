@@ -1,4 +1,4 @@
-import { Maximize2 } from "lucide-react";
+import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { Fragment, Suspense, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Dates } from "@/lib/dates";
@@ -122,7 +122,7 @@ export const RootLayout = () => {
             onClick={() => uiDispatch.toggleFocusMode()}
             className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-all hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
           >
-            <Maximize2 className="size-4" />
+            <CornersOutIcon className="size-4" />
             <span>Exit Focus</span>
           </button>
         )}

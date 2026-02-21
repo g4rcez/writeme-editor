@@ -3,7 +3,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { Search } from "lucide-react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
 import { useListSearch } from "@/app/hooks/use-list-search";
@@ -80,7 +80,7 @@ export const RecentNotesDialog = () => {
     >
       <div className="flex flex-col h-[60vh]">
         <div className="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <Search className="w-5 h-5 text-gray-400 mr-3" />
+          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 mr-3" />
           <input
             ref={inputRef}
             type="text"

@@ -1,5 +1,7 @@
 import { Modal, Button } from "@g4rcez/components";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
 import { useState, useEffect } from "react";
 
 type AlertType = "info" | "success" | "error";
@@ -22,11 +24,11 @@ export const Alert = ({
   const getIcon = () => {
     switch (type) {
       case "success":
-        return <CheckCircle2 className="text-green-500" size={24} />;
+        return <CheckCircleIcon className="text-green-500" size={24} />;
       case "error":
-        return <AlertCircle className="text-red-500" size={24} />;
+        return <WarningCircleIcon className="text-red-500" size={24} />;
       default:
-        return <Info className="text-blue-500" size={24} />;
+        return <InfoIcon className="text-blue-500" size={24} />;
     }
   };
 

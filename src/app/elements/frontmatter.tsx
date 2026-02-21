@@ -5,7 +5,10 @@ import {
   NodeViewContent,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { AlertCircle, ChevronDown, ChevronUp, Settings } from "lucide-react";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { CaretUpIcon } from "@phosphor-icons/react/dist/csr/CaretUp";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import markdownItFrontMatter from "markdown-it-front-matter";
 import { useEffect, useMemo, useState } from "react";
 import { BundledLanguage } from "shiki";
@@ -86,7 +89,7 @@ const FrontmatterView = (props: any) => {
           className="flex justify-between items-center py-2 px-4 w-full text-xs font-medium border-t transition-colors text-muted-foreground border-card-border bg-transparent hover:bg-muted/20 hover:text-foreground"
         >
           <div className="flex gap-2 items-center">
-            <Settings size={14} />
+            <GearIcon size={14} />
             <span>Metadata ({metadataCount} keys)</span>
             {error && (
               <span className="ml-1 font-bold text-destructive">!</span>
@@ -94,7 +97,7 @@ const FrontmatterView = (props: any) => {
           </div>
           <div className="flex gap-1 items-center">
             {isCollapsed ? <span>Expand</span> : <span>Collapse</span>}
-            {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {isCollapsed ? <CaretDownIcon size={14} /> : <CaretUpIcon size={14} />}
           </div>
         </button>
       }
@@ -102,7 +105,7 @@ const FrontmatterView = (props: any) => {
       <NodeViewContent className="font-mono whitespace-pre outline-none content is-editable code-content-renderer bg-transparent" />
       {error && (
         <div className="flex gap-2 items-center mt-2 text-xs text-destructive">
-          <AlertCircle size={14} />
+          <WarningCircleIcon size={14} />
           <span>{error}</span>
         </div>
       )}

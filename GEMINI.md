@@ -54,6 +54,13 @@ Writeme is a sophisticated, hybrid Electron and Web note-taking application. It'
 
 ## Development Conventions
 
+### Icon Library
+
+- **Library**: Use `@phosphor-icons/react` for all icons.
+- **Import Pattern**: Always import icons from the `dist/csr` directory to ensure Client-Side Rendering compatibility and smaller bundle sizes.
+  - **Example**: `import { IconNameIcon } from "@phosphor-icons/react/dist/csr/IconName"`
+- **Consistency**: Ensure all new icons follow this pattern and existing Lucide icons are replaced when modifying components.
+
 ### Code Structure
 
 - **Components**: Functional React components using TSX. Located in `src/app/components/` and `src/app/elements/`.

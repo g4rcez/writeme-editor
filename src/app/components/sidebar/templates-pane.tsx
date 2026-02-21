@@ -6,17 +6,14 @@ import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { Button, Modal, Tag, Input, Alert } from "@g4rcez/components";
-import {
-  Code,
-  FilePlus,
-  FileText,
-  Info,
-  LayoutTemplate,
-  Plus,
-  PlusIcon,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
+import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
+import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Editor } from "../../editor";
@@ -131,21 +128,21 @@ export const TemplatesPane = () => {
             className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
             title="Refresh templates"
           >
-            <RefreshCw className="size-3" />
+            <ArrowsCounterClockwiseIcon className="size-3" />
           </button>
           <button
             onClick={onCreateTemplate}
             className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
             title="New template"
           >
-            <Plus className="size-3" />
+            <PlusIcon className="size-3" />
           </button>
           <button
             onClick={onCreateVariable}
             className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
             title="New from Expression"
           >
-            <Code className="size-3" />
+            <CodeIcon className="size-3" />
           </button>
         </div>
       </div>
@@ -156,7 +153,7 @@ export const TemplatesPane = () => {
           </div>
         ) : templates.length === 0 ? (
           <div className="flex flex-col gap-2 justify-center items-center h-40 text-center">
-            <LayoutTemplate className="opacity-20 size-8" />
+            <LayoutIcon className="opacity-20 size-8" />
             <p className="text-xs text-muted-foreground">No templates found</p>
             <button
               onClick={onCreateTemplate}
@@ -173,7 +170,7 @@ export const TemplatesPane = () => {
                 onClick={() => navigate(`/templates/${template.id}`)}
                 className="flex gap-2 items-center py-1.5 px-2 w-full text-sm rounded-md transition-colors cursor-pointer group text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               >
-                <FileText className="opacity-60 size-3.5" />
+                <FileTextIcon className="opacity-60 size-3.5" />
                 <span className="flex-1 text-left truncate">
                   {template.title}
                 </span>
@@ -183,7 +180,7 @@ export const TemplatesPane = () => {
                     className="p-1 rounded transition-all text-primary hover:bg-primary/10"
                     title="Create note from template"
                   >
-                    <FilePlus className="size-3" />
+                    <FilePlusIcon className="size-3" />
                   </button>
                   <button
                     onClick={(e) => {
@@ -193,7 +190,7 @@ export const TemplatesPane = () => {
                     className="p-1 rounded transition-all text-destructive hover:bg-destructive/10"
                     title="Delete template"
                   >
-                    <Trash2 className="size-3" />
+                    <TrashIcon className="size-3" />
                   </button>
                 </div>
               </div>

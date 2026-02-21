@@ -22,7 +22,6 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 import { useMemo } from "react";
-import { FileText, Sparkles, History, LayoutTemplate } from "lucide-react";
 import { isElectron } from "@/lib/is-electron";
 import { useTemplates } from "@/app/hooks/use-templates";
 

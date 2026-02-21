@@ -1,5 +1,6 @@
 import { Button, css, Tooltip } from "@g4rcez/components";
-import { ListIcon, XIcon } from "lucide-react";
+import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 
@@ -73,7 +74,7 @@ export const TableOfContents = () => {
               isOpen ? "bg-muted text-foreground" : "text-muted-foreground",
             )}
           >
-            <ListIcon size={20} strokeWidth={1.5} />
+            <ListBulletsIcon size={20} />
           </span>
         }
       >

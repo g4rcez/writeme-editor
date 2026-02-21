@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Search, FileText, Type } from "lucide-react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { TextTIcon } from "@phosphor-icons/react/dist/csr/TextT";
 import { useLayoutContext } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +41,7 @@ export const SearchPane = () => {
             Global Search
           </label>
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search all notes..."
@@ -56,7 +58,7 @@ export const SearchPane = () => {
             In Current Note
           </label>
           <div className="relative">
-            <Type className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <TextTIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Find in note..."
@@ -80,7 +82,7 @@ export const SearchPane = () => {
                 onClick={() => navigate(`/note/${note.id}`)}
                 className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-muted/50 text-left transition-colors group"
               >
-                <FileText
+                <FileTextIcon
                   size={16}
                   className="text-muted-foreground group-hover:text-primary shrink-0"
                 />

@@ -3,7 +3,9 @@ import "@excalidraw/excalidraw/index.css";
 import { useEffect, useRef, useState } from "react";
 import { useGlobalStore } from "@/store/global.store";
 import { Button } from "@g4rcez/components";
-import { Expand, Maximize, Shrink, Trash } from "lucide-react";
+import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
+import { CornersInIcon } from "@phosphor-icons/react/dist/csr/CornersIn";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { Editor } from "@tiptap/core";
 
 export const ExcalidrawCode = (props: {
@@ -39,7 +41,7 @@ export const ExcalidrawCode = (props: {
   }, []);
 
   if (state === null) return null;
-  const Icon = isFullScreen ? Shrink : Expand;
+  const Icon = isFullScreen ? CornersInIcon : CornersOutIcon;
   return (
     <div ref={ref} className="relative p-6 w-full min-w-full bg-card h-[800px]">
       <Excalidraw
@@ -61,7 +63,7 @@ export const ExcalidrawCode = (props: {
           <Icon size={16} />
         </Button>
         <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
-          <Trash size={16} />
+          <TrashIcon size={16} />
         </Button>
       </div>
     </div>

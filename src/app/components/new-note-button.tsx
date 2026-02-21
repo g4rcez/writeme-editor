@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { useEffect } from "react";
 import { useGlobalStore } from "@/store/global.store";
 import { NavbarButton } from "./navbar-button";
@@ -21,6 +21,6 @@ export const NewNoteButton = () => {
   }, []);
 
   return (
-    <NavbarButton Icon={Plus} title="New note (⌘N)" onClick={createNewNote} />
+    <NavbarButton Icon={PlusIcon} title="New note (⌘N)" onClick={createNewNote} />
   );
 };

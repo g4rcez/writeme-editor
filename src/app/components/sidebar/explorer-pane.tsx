@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { TreeView } from "../tree-view";
 import { SettingsService } from "@/store/settings";
 import { Button } from "@g4rcez/components";
-import { FolderOpen, Plus, FolderPlus } from "lucide-react";
+import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
 import { repositories, globalDispatch } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { useNavigate } from "react-router-dom";
@@ -46,12 +48,12 @@ export const ExplorerPane = () => {
 
   if (!rootPath) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-4">
+      <div className="flex flex-col gap-4 justify-center items-center p-6 h-full text-center">
         <div className="p-4 rounded-full bg-primary/10 text-primary">
-          <FolderOpen size={32} />
+          <FolderOpenIcon size={32} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold mb-1">No folder opened</h3>
+          <h3 className="mb-1 text-sm font-semibold">No folder opened</h3>
           <p className="text-xs text-muted-foreground">
             Open a folder to start managing your local markdown notes.
           </p>
@@ -65,22 +67,22 @@ export const ExplorerPane = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/20">
+      <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
           Explorer
         </span>
         <div className="flex gap-1">
           <button
-            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
             title="New Note"
           >
-            <Plus size={14} />
+            <PlusIcon size={14} />
           </button>
           <button
-            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
             title="New Folder"
           >
-            <FolderPlus size={14} />
+            <FolderPlusIcon size={14} />
           </button>
         </div>
       </div>

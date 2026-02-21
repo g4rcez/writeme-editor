@@ -10,14 +10,12 @@ import {
   uuid,
   Modal,
 } from "@g4rcez/components";
-import {
-  Save,
-  Settings,
-  Plus,
-  Trash2,
-  Sparkles,
-  AlertCircle,
-} from "lucide-react";
+import { FloppyDiskIcon } from "@phosphor-icons/react/dist/csr/FloppyDisk";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { useEffect, useState, Fragment } from "react";
 import { globalDispatch, repositories } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
@@ -126,7 +124,7 @@ export default function SettingsPage() {
     <div className="py-4 pb-20 mx-auto space-y-6 w-full max-w-safe">
       <header className="flex justify-between items-center px-4">
         <h1 className="flex gap-2 items-center text-3xl font-bold">
-          <Settings className="size-8" />
+          <GearIcon className="size-8" />
           Settings
         </h1>
         <Button
@@ -135,7 +133,7 @@ export default function SettingsPage() {
           onClick={handleSave}
           className="flex gap-2 items-center"
         >
-          <Save size={16} />
+          <FloppyDiskIcon size={16} />
           {saving ? "Saving..." : "Save Changes"}
         </Button>
       </header>
@@ -220,13 +218,13 @@ export default function SettingsPage() {
                     onClick={handleAddAIConfig}
                     className="flex gap-1 items-center"
                   >
-                    <Plus size={14} />
+                    <PlusIcon size={14} />
                     Add Config
                   </Button>
                 </div>
                 {aiConfigs.length === 0 ? (
                   <div className="flex flex-col gap-2 items-center p-8 rounded-lg border-dashed opacity-50">
-                    <Sparkles size={24} />
+                    <SparkleIcon size={24} />
                     <p className="text-sm">No AI configurations yet.</p>
                   </div>
                 ) : (
@@ -271,7 +269,7 @@ export default function SettingsPage() {
                               theme="ghost-danger"
                               onClick={() => handleDeleteAIConfig(config.id)}
                             >
-                              <Trash2 size={14} />
+                              <TrashIcon size={14} />
                             </Button>
                           </div>
                         </div>
@@ -300,7 +298,7 @@ export default function SettingsPage() {
 
                         <div className="flex gap-4 mt-2 text-[10px] text-muted-foreground">
                           <div className="flex gap-1 items-center">
-                            <AlertCircle size={10} />
+                            <WarningCircleIcon size={10} />
                             <span>
                               {"{{selection}}"} and {"{{context}}"} are passed
                               via STDIN
@@ -319,7 +317,7 @@ export default function SettingsPage() {
                     onClick={handleSave}
                     className="flex gap-2 items-center"
                   >
-                    <Save size={16} />
+                    <FloppyDiskIcon size={16} />
                     {saving ? "Saving AI Configs..." : "Save AI Configurations"}
                   </Button>
                 </div>

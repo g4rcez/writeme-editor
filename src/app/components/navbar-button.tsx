@@ -1,9 +1,9 @@
 import { Button, Tooltip } from "@g4rcez/components";
-import { LucideIcon } from "lucide-react";
+import { type Icon } from "@phosphor-icons/react";
 import { ComponentProps } from "react";
 
 export const NavbarButton = (
-  props: ComponentProps<"button"> & { Icon: LucideIcon },
+  props: ComponentProps<"button"> & { Icon: Icon },
 ) => {
   return (
     <Tooltip

@@ -1,6 +1,9 @@
 import { createColumns, Input, Table } from "@g4rcez/components";
 import { format } from "date-fns";
-import { Bookmark, ExternalLink, Search, Trash2 } from "lucide-react";
+import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { Link } from "react-router-dom";
 import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
 
@@ -52,7 +55,7 @@ export default function ReadItLaterPage() {
             rel="noopener noreferrer"
             className="flex gap-1 items-center text-blue-500 hover:underline"
           >
-            <ExternalLink size={12} />
+            <ArrowSquareOutIcon size={12} />
             {origin}
           </a>
         );
@@ -70,7 +73,7 @@ export default function ReadItLaterPage() {
           onClick={(e) => handleDelete(e, props.row.id)}
           className="p-2 text-red-500 rounded transition-colors hover:bg-red-500/10"
         >
-          <Trash2 className="w-4 h-4" />
+          <TrashIcon className="w-4 h-4" />
         </button>
       ),
     });
@@ -88,7 +91,7 @@ export default function ReadItLaterPage() {
     <div className="flex-col py-6 mx-auto max-w-safe bg-background">
       <div className="flex justify-between items-center mb-6">
         <h1 className="flex gap-2 items-center text-2xl font-bold">
-          <Bookmark className="w-6 h-6" />
+          <BookmarkIcon className="w-6 h-6" />
           Read It Later
         </h1>
         <div className="flex justify-between items-center">
@@ -98,7 +101,7 @@ export default function ReadItLaterPage() {
             value={search}
             placeholder="Search..."
             onChange={(e) => setSearch(e.target.value)}
-            left={<Search size={16} className="text-muted-foreground" />}
+            left={<MagnifyingGlassIcon size={16} className="text-muted-foreground" />}
           />
         </div>
       </div>

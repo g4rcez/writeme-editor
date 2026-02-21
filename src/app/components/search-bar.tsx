@@ -1,4 +1,5 @@
-import { Search, X } from "lucide-react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGlobalStore, repositories } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -115,7 +116,7 @@ export const SearchBar = () => {
         }`}
         title="Search notes (⌘K)"
       >
-        <Search className="w-4 h-4" />
+        <MagnifyingGlassIcon className="w-4 h-4" />
         <span className="hidden md:inline text-foreground/50">Search...</span>
         <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded bg-muted/50 text-foreground/50">
           ⌘K
@@ -126,7 +127,7 @@ export const SearchBar = () => {
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 w-80 bg-background border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-fade-in-scale">
           <div className="flex items-center px-3 py-2 border-b border-border">
-            <Search className="w-4 h-4 text-foreground/50 mr-2 flex-shrink-0" />
+            <MagnifyingGlassIcon className="w-4 h-4 text-foreground/50 mr-2 flex-shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -140,7 +141,7 @@ export const SearchBar = () => {
                 onClick={() => setQuery("")}
                 className="p-1 rounded hover:bg-muted/50"
               >
-                <X className="w-3 h-3" />
+                <XIcon className="w-3 h-3" />
               </button>
             )}
           </div>

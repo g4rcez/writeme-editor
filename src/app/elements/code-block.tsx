@@ -10,7 +10,11 @@ import {
   type ReactNodeViewProps,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { Loader2, Wand2, Play, TerminalSquare, X } from "lucide-react";
+import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
+import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
+import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import mermaid from "mermaid";
 import {
   Fragment,
@@ -498,10 +502,10 @@ const CodeBlockHeader = ({
             disabled={isFormatting}
           >
             {isFormatting ? (
-              <Loader2 className="animate-spin size-4" />
+              <CircleNotchIcon className="animate-spin size-4" />
             ) : (
               <span className="flex gap-1 items-center text-xs">
-                <Wand2 className="size-4" />
+                <MagicWandIcon className="size-4" />
                 Format
               </span>
             )}
@@ -516,10 +520,10 @@ const CodeBlockHeader = ({
             title={`Run with ${EXECUTION_CONFIG[language as BundledLanguage]?.label}`}
           >
             {isRunning ? (
-              <Loader2 className="animate-spin size-4" />
+              <CircleNotchIcon className="animate-spin size-4" />
             ) : (
               <span className="flex gap-1 items-center text-sm">
-                <Play className="fill-current size-4" />
+                <PlayIcon className="fill-current size-4" />
                 Run
               </span>
             )}
@@ -577,7 +581,7 @@ const ExecutionOutput = ({
     <div className="border-t border-card-border bg-card-background">
       <div className="flex justify-between items-center py-1 px-3 border-b border-card-border bg-muted/30">
         <span className="flex gap-2 items-center text-xs font-medium text-muted-foreground">
-          <TerminalSquare className="size-3" />
+          <TerminalWindowIcon className="size-3" />
           Output
         </span>
         <button
@@ -585,7 +589,7 @@ const ExecutionOutput = ({
           className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
           title="Clear output"
         >
-          <X className="size-3" />
+          <XIcon className="size-3" />
         </button>
       </div>
       <div

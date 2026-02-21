@@ -1,14 +1,9 @@
-import {
-  Archive,
-  Book,
-  FileText,
-  Folder,
-  Hash,
-  LayoutGrid,
-  Settings,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
+import { SquaresFourIcon } from "@phosphor-icons/react/dist/csr/SquaresFour";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useGlobalStore } from "@/store/global.store";
 import { useLayoutContext } from "@/app/contexts/layout-context";
 import { repositories } from "@/store/repositories";
@@ -89,21 +84,21 @@ export const SidebarNavigation = () => {
     <div className="flex flex-col h-full w-full bg-sidebar/50 backdrop-blur-xl border-r border-border/40">
       <div className="p-3">
         <div className="flex items-center gap-2 px-2 py-2 text-foreground font-semibold">
-          <LayoutGrid className="size-4" />
+          <SquaresFourIcon className="size-4" />
           <span>Writeme</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-hide">
         <SidebarItem
-          icon={<FileText className="size-4" />}
+          icon={<FileTextIcon className="size-4" />}
           label="All Notes"
           count={allNotesCount}
           active={state.activeView.type === "all"}
           onClick={() => dispatch({ type: "SET_VIEW", view: { type: "all" } })}
         />
         <SidebarItem
-          icon={<Star className="size-4" />}
+          icon={<StarIcon className="size-4" />}
           label="Favorites"
           count={favoritesCount}
           active={state.activeView.type === "favorites"}
@@ -112,7 +107,7 @@ export const SidebarNavigation = () => {
           }
         />
         <SidebarItem
-          icon={<Trash2 className="size-4" />}
+          icon={<TrashIcon className="size-4" />}
           label="Trash"
           count={trashCount}
           active={state.activeView.type === "trash"}
@@ -125,7 +120,7 @@ export const SidebarNavigation = () => {
         {uniqueTags.map(({ tag, count }) => (
           <SidebarItem
             key={tag}
-            icon={<Hash className="size-3" />}
+            icon={<HashIcon className="size-3" />}
             label={tag}
             count={count}
             active={
@@ -145,7 +140,7 @@ export const SidebarNavigation = () => {
 
       <div className="p-2 border-t border-border/40">
         <SidebarItem
-          icon={<Settings className="size-4" />}
+          icon={<GearIcon className="size-4" />}
           label="Settings"
           active={false}
           onClick={() => {

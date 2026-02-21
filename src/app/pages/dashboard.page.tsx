@@ -3,14 +3,12 @@ import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { Tag } from "@g4rcez/components";
-import {
-  ArrowRight,
-  FilePlus,
-  FileText,
-  Search,
-  Star,
-  Tag as TagIcon
-} from "lucide-react";
+import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
+import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { TagIcon } from "@phosphor-icons/react/dist/csr/Tag";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -61,7 +59,7 @@ const RecentNoteCard = ({ note }: { note: Note }) => {
         className="flex gap-2 items-center p-4 rounded-xl border border-transparent transition-all duration-200 group hover:bg-muted/30 hover:border-border/50"
       >
         <div className="p-2 rounded-lg transition-colors bg-primary/5 text-disabled group-hover:bg-primary/10 group-hover:text-primary">
-          <FileText size={32} />
+          <FileTextIcon size={32} />
         </div>
         <div className="flex-1 mr-4 min-w-0">
           <h4 className="transition-colors truncate group-hover:text-primary">
@@ -79,7 +77,7 @@ const RecentNoteCard = ({ note }: { note: Note }) => {
             )}
           </div>
         </div>
-        <ArrowRight
+        <ArrowRightIcon
           size={16}
           className="opacity-0 transition-all -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-muted-foreground"
         />
@@ -156,13 +154,13 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <ActionCard
                   title="New Document"
-                  icon={FilePlus}
+                  icon={FilePlusIcon}
                   shortcut="⌘ N"
                   onClick={createNewNote}
                 />
                 <ActionCard
                   title="Quick Search"
-                  icon={Search}
+                  icon={MagnifyingGlassIcon}
                   shortcut="⌘ K"
                   onClick={onSearch}
                 />
@@ -181,7 +179,7 @@ export default function DashboardPage() {
                   className="flex gap-1 items-center text-xs hover:underline text-primary group"
                 >
                   View all
-                  <ArrowRight
+                  <ArrowRightIcon
                     size={12}
                     className="transition-transform group-hover:translate-x-0.5"
                   />
@@ -204,7 +202,7 @@ export default function DashboardPage() {
           <div className="space-y-10">
             <section className="p-6 rounded-3xl border bg-muted/20 border-border/50">
               <div className="flex gap-2 items-center mb-6">
-                <Star size={16} className="text-yellow-500 fill-current" />
+                <StarIcon size={16} className="text-yellow-500 fill-current" />
                 <h2 className="text-sm font-bold tracking-widest uppercase">
                   Favorites
                 </h2>
@@ -246,7 +244,7 @@ export default function DashboardPage() {
                 </Tag>
               </div>
               <div className="absolute -right-4 -bottom-4 opacity-10 transform rotate-12">
-                <FileText size={120} />
+                <FileTextIcon size={120} />
               </div>
             </section>
           </div>

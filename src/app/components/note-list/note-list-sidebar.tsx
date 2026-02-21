@@ -1,4 +1,7 @@
-import { Clock, Plus, Search, Star } from "lucide-react";
+import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { Fragment, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Dates } from "@/lib/dates";
@@ -53,7 +56,7 @@ const NoteItem = ({
             onClick={onToggleFavorite}
             className={`p-1 rounded-md hover:bg-background/80 ${note.favorite ? "text-yellow-500 opacity-100" : "text-muted-foreground"}`}
           >
-            <Star className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
+            <StarIcon className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
           </button>
         </div>
       </div>
@@ -64,7 +67,7 @@ const NoteItem = ({
       </p>
       <div className="flex gap-2 items-center text-[10px] text-muted-foreground/60">
         <span className="flex gap-1 items-center">
-          <Clock className="size-3" />
+          <ClockIcon className="size-3" />
           {Dates.yearMonthDay(note.createdAt)}
         </span>
         {note.tags.length > 0 && (
@@ -141,7 +144,7 @@ export const NoteListSidebar = () => {
       </div>
       <div className="p-3 border-b border-border/20">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search..."
@@ -158,7 +161,7 @@ export const NoteListSidebar = () => {
             onClick={createNewNote}
             className="flex gap-2 items-center py-1.5 px-3 rounded-md border transition-all border-border/40 hover:bg-muted/50 hover:text-foreground"
           >
-            <Plus className="size-4" />
+            <PlusIcon className="size-4" />
             <span>Create first note</span>
           </button>
         </div>
@@ -168,7 +171,7 @@ export const NoteListSidebar = () => {
             onClick={createNewNote}
             className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-all cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
           >
-            <Plus className="size-4" />
+            <PlusIcon className="size-4" />
             <span>New note</span>
           </li>
           {notes.map((note) => (

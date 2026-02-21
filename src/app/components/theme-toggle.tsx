@@ -1,4 +1,5 @@
-import { Moon, Sun } from "lucide-react";
+import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
+import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 import { useGlobalStore } from "@/store/global.store";
 import { SettingsService } from "@/store/settings";
 
@@ -20,14 +21,14 @@ export const ThemeToggle = () => {
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="flex relative justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
     >
-      <Sun
+      <SunIcon
         className={`absolute size-4 transition-all duration-300 ${
           isDark
             ? "rotate-90 scale-0 opacity-0"
             : "rotate-0 scale-100 opacity-100"
         }`}
       />
-      <Moon
+      <MoonIcon
         className={`absolute w-4 h-4 transition-all duration-300 ${
           isDark
             ? "rotate-0 scale-100 opacity-100"

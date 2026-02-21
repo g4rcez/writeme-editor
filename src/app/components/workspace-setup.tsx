@@ -1,5 +1,7 @@
 import { Modal } from "@g4rcez/components";
-import { Database, FolderSync, X } from "lucide-react";
+import { DatabaseIcon } from "@phosphor-icons/react/dist/csr/Database";
+import { ArrowsClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsClockwise";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useState } from "react";
 import { isElectron } from "@/lib/is-electron";
 import { SettingsService } from "@/store/settings";
@@ -70,9 +72,9 @@ export const StorageConfigDialog = ({
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
           {settings.directory ? (
-            <FolderSync className="w-5 h-5 text-green-500" />
+            <ArrowsClockwiseIcon className="w-5 h-5 text-green-500" />
           ) : (
-            <Database className="w-5 h-5 text-blue-500" />
+            <DatabaseIcon className="w-5 h-5 text-blue-500" />
           )}
           <div className="flex flex-col">
             <span className="text-sm font-medium">
@@ -110,7 +112,7 @@ export const StorageConfigDialog = ({
                     className="p-2 text-foreground/60 hover:text-foreground rounded border border-border hover:bg-muted/50 transition-colors"
                     title="Clear folder sync"
                   >
-                    <X className="w-4 h-4" />
+                    <XIcon className="w-4 h-4" />
                   </button>
                 )}
                 <button
@@ -156,7 +158,7 @@ export const StorageConfigDialog = ({
               className="flex-1 py-2.5 px-4 font-medium text-white bg-green-500 rounded transition-colors hover:bg-green-600"
             >
               <span className="flex items-center justify-center gap-2">
-                <FolderSync className="w-4 h-4" />
+                <ArrowsClockwiseIcon className="w-4 h-4" />
                 Enable Folder Sync
               </span>
             </button>
@@ -166,7 +168,7 @@ export const StorageConfigDialog = ({
             className={`${directory ? "" : "flex-1"} py-2.5 px-4 font-medium rounded transition-colors border border-border hover:bg-muted/50`}
           >
             <span className="flex items-center justify-center gap-2">
-              <Database className="w-4 h-4" />
+              <DatabaseIcon className="w-4 h-4" />
               {settings.directory ? "Switch to Local Only" : "Keep Local Only"}
             </span>
           </button>

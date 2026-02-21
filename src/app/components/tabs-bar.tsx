@@ -1,5 +1,6 @@
 import { css } from "@g4rcez/components";
-import { FileText, X } from "lucide-react";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import React, { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useGlobalStore } from "@/store/global.store";
@@ -58,23 +59,24 @@ export const TabsBar: React.FC = () => {
             onMouseDown={(e) => onMiddleClick(e, tab.id)}
             className={css(
               "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
-              isActive
-                ? "bg-background shadow-sm text-foreground"
-                : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
-            )}
-          >
-            <FileText className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
-            <span className="flex-1 text-xs truncate">{title}</span>
-            <button
-              onClick={(e) => onCloseTab(e, tab.id)}
-              className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
-            >
-              <X className="size-3" />
-            </button>
-            {isActive && (
-              <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />
-            )}
-          </Link>
+                              isActive
+                              ? "bg-background shadow-sm text-foreground"
+                              : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
+                          )}
+                        >
+                          <FileTextIcon className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
+                          <span className="flex-1 text-xs truncate">{title}</span>
+                          <button
+                            onClick={(e) => onCloseTab(e, tab.id)}
+                            className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
+                          >
+                            <XIcon className="size-3" />
+                          </button>
+                          {isActive && (
+                            <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />
+                          )}
+                        </Link>
+              
         );
       })}
     </div>

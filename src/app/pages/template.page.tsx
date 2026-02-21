@@ -5,7 +5,7 @@ import { Note } from "@/store/note";
 import { Editor } from "../editor";
 import { isElectron } from "@/lib/is-electron";
 import { Input } from "@g4rcez/components";
-import { ArrowLeft, Save } from "lucide-react";
+import { FloppyDiskIcon } from "@phosphor-icons/react/dist/csr/FloppyDisk";
 
 export default function TemplatePage() {
   const { templateId } = useParams();
@@ -108,12 +108,12 @@ export default function TemplatePage() {
                 </span>
                 {saving ? (
                   <span className="flex gap-1 items-center animate-pulse text-primary">
-                    <Save size={8} />
+                    <FloppyDiskIcon size={8} />
                     Saving...
                   </span>
                 ) : (
                   <span className="flex gap-1 items-center text-green-500/70">
-                    <Save size={8} />
+                    <FloppyDiskIcon size={8} />
                     Saved
                   </span>
                 )}
@@ -127,7 +127,7 @@ export default function TemplatePage() {
             title="Manual save"
             className="p-2 rounded-md transition-colors disabled:opacity-30 text-muted-foreground hover:bg-muted/50"
           >
-            <Save size={18} />
+            <FloppyDiskIcon size={18} />
           </button>
         </div>
       </header>

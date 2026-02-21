@@ -25,7 +25,7 @@ import { isElectron } from "@/lib/is-electron";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { Sparkles } from "lucide-react";
+import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
@@ -318,7 +318,7 @@ const InnerEditor = (props: {
                       type="button"
                       className="flex gap-2 items-center w-full"
                     >
-                      <Sparkles size={14} className="text-primary" />
+                      <SparkleIcon size={14} className="text-primary" />
                       Ask AI
                     </button>
                   }

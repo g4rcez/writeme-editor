@@ -1,6 +1,10 @@
 import { Button, Modal, Textarea, css } from "@g4rcez/components";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { AlertCircle, Check, RefreshCw, Send, StopCircle } from "lucide-react";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
+import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
+import { PaperPlaneRightIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneRight";
+import { StopCircleIcon } from "@phosphor-icons/react/dist/csr/StopCircle";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
@@ -86,7 +90,7 @@ export const AIDrawer = () => {
       <div className="flex overflow-hidden flex-col h-full min-w-[400px]">
         {!config && (
           <div className="flex flex-col gap-4 justify-center items-center p-8 text-center">
-            <AlertCircle size={48} className="text-warning" />
+            <WarningCircleIcon size={48} className="text-warning" />
             <h3 className="text-lg font-bold">AI Not Configured</h3>
             <p className="text-sm text-muted-foreground">
               Please configure your AI CLI command in settings to start using
@@ -152,7 +156,7 @@ export const AIDrawer = () => {
                               theme="primary"
                               onClick={() => onApply(msg)}
                             >
-                              <Check size={12} className="mr-1" />
+                              <CheckIcon size={12} className="mr-1" />
                               Apply
                             </Button>
                           )}
@@ -169,7 +173,7 @@ export const AIDrawer = () => {
           </div>
           {isStreaming && (
             <div className="flex gap-2 items-center text-xs animate-pulse text-muted-foreground">
-              <RefreshCw size={12} className="animate-spin" />
+              <ArrowsCounterClockwiseIcon size={12} className="animate-spin" />
               AI is thinking...
             </div>
           )}
@@ -194,7 +198,7 @@ export const AIDrawer = () => {
                     onClick={stop}
                     className="p-2 rounded-md transition-colors text-destructive hover:bg-destructive/10"
                   >
-                    <StopCircle size={20} />
+                    <StopCircleIcon size={20} />
                   </button>
                 ) : (
                   <button
@@ -203,7 +207,7 @@ export const AIDrawer = () => {
                     disabled={!input.trim()}
                     className="p-2 rounded-md transition-colors disabled:opacity-50 text-primary hover:bg-primary/10"
                   >
-                    <Send size={20} />
+                    <PaperPlaneRightIcon size={20} />
                   </button>
                 )}
               </div>

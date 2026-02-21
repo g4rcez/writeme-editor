@@ -1,20 +1,18 @@
-import {
-  Files,
-  Search,
-  Star,
-  Hash,
-  Settings,
-  PanelLeft,
-  LayoutTemplate,
-  LucideIcon,
-} from "lucide-react";
+import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
+import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
+import { type Icon } from "@phosphor-icons/react";
 import { useLayoutContext, ActivityType } from "@/app/contexts/layout-context";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { css, Tooltip } from "@g4rcez/components";
 import { Note } from "@/store/note";
 
 type ActivityIconProps = {
-  icon: LucideIcon;
+  icon: Icon;
   id?: string;
   label: string;
   badge?: number;
@@ -75,32 +73,32 @@ export const ActivityBar = () => {
       <div className="flex flex-col flex-1 gap-1 w-full">
         <ActivityIcon
           label="Explorer"
-          icon={Files}
+          icon={FilesIcon}
           active={state.activeActivity === "explorer"}
           onClick={() => onActivityClick("explorer")}
         />
         <ActivityIcon
           label="Search"
-          icon={Search}
+          icon={MagnifyingGlassIcon}
           active={state.activeActivity === "search"}
           onClick={() => onActivityClick("search")}
         />
         <ActivityIcon
           label="Favorites"
-          icon={Star}
+          icon={StarIcon}
           badge={favoritesCount}
           active={state.activeActivity === "favorites"}
           onClick={() => onActivityClick("favorites")}
         />
         <ActivityIcon
           label="Tags"
-          icon={Hash}
+          icon={HashIcon}
           active={state.activeActivity === "tags"}
           onClick={() => onActivityClick("tags")}
         />
         <ActivityIcon
           label="Templates"
-          icon={LayoutTemplate}
+          icon={LayoutIcon}
           active={state.activeActivity === "templates"}
           onClick={() => onActivityClick("templates")}
         />
@@ -112,12 +110,12 @@ export const ActivityBar = () => {
               ? "Expand Sidebar"
               : "Collapse Sidebar"
           }
-          icon={PanelLeft}
+          icon={SidebarIcon}
           onClick={() => globalDispatch.toggleSidebar()}
         />
         <ActivityIcon
           label="Settings"
-          icon={Settings}
+          icon={GearIcon}
           active={state.activeActivity === "settings"}
           onClick={() => onActivityClick("settings")}
         />

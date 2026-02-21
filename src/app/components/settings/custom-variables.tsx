@@ -1,5 +1,7 @@
 import { Button, Card, Input, Textarea, uuid } from "@g4rcez/components";
-import { Plus, Trash2, Code } from "lucide-react";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
 import { useEffect, useState } from "react";
 import { repositories } from "@/store/repositories";
 import { Script } from "@/store/repositories/entities/script";
@@ -69,14 +71,14 @@ export const CustomVariables = () => {
             onClick={handleAdd}
             className="flex gap-1 items-center"
           >
-            <Plus size={14} />
+            <PlusIcon size={14} />
             Add Variable
           </Button>
         </div>
 
         {localScripts.length === 0 ? (
           <div className="flex flex-col gap-2 items-center p-8 rounded-lg border border-dashed border-border/50 opacity-50">
-            <Code size={24} />
+            <CodeIcon size={24} />
             <p className="text-sm">No custom variables yet.</p>
           </div>
         ) : (
@@ -102,7 +104,7 @@ export const CustomVariables = () => {
                     onClick={() => setDeletingId(script.id)}
                     className="mt-6"
                   >
-                    <Trash2 size={14} />
+                    <TrashIcon size={14} />
                   </Button>
                 </div>
                 <div className="space-y-1">

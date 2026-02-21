@@ -5,16 +5,14 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import {
-  ChevronRight,
-  ChevronDown,
-  Folder,
-  FolderOpen,
-  FileText,
-  File,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
+import { FolderIcon } from "@phosphor-icons/react/dist/csr/Folder";
+import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
+import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { Tooltip, Button } from "@g4rcez/components";
 import type { TreeNode, FlattenedNode } from "@/types/tree";
 
@@ -83,25 +81,25 @@ const TreeNodeItem = ({
       {isDirectory ? (
         <>
           {isLoading ? (
-            <Loader2 className="animate-spin size-4 text-muted" />
+            <CircleNotchIcon className="animate-spin size-4 text-muted" />
           ) : isExpanded ? (
-            <ChevronDown className="size-4" />
+            <CaretDownIcon className="size-4" />
           ) : (
-            <ChevronRight className="size-4" />
+            <CaretRightIcon className="size-4" />
           )}
           {isExpanded ? (
-            <FolderOpen className="size-4 text-secondary" />
+            <FolderOpenIcon className="size-4 text-secondary" />
           ) : (
-            <Folder className="size-4 text-warn" />
+            <FolderIcon className="size-4 text-warn" />
           )}
         </>
       ) : (
         <>
           <span className="w-4" />
           {isMarkdown ? (
-            <FileText className="text-blue-500 size-4" />
+            <FileTextIcon className="text-blue-500 size-4" />
           ) : (
-            <File className="text-gray-400 size-4" />
+            <FileIcon className="text-gray-400 size-4" />
           )}
         </>
       )}
@@ -129,7 +127,7 @@ const TreeNodeItem = ({
               }}
               title="Delete"
             >
-              <Trash2 className="text-gray-400 transition-colors hover:text-red-500 size-4" />
+              <TrashIcon className="text-gray-400 transition-colors hover:text-red-500 size-4" />
             </button>
           }
         >

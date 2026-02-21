@@ -1,5 +1,8 @@
 import { Modal, Button } from "@g4rcez/components";
-import { Edit2, FilePlus, FolderPlus, FolderTree } from "lucide-react";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
+import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
+import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
+import { TreeStructureIcon } from "@phosphor-icons/react/dist/csr/TreeStructure";
 import { useCallback, useEffect, useState } from "react";
 import { getDirname } from "@/lib/file-utils";
 import { globalState, useGlobalStore } from "@/store/global.store";
@@ -304,7 +307,7 @@ export const DirectoryBrowserDialog = () => {
         <div className="flex justify-between items-center px-4 pb-2 mb-2 border-b border-gray-200 dark:border-gray-800">
           <div className="flex gap-4 items-center text-sm text-gray-500">
             <div className="flex gap-2 items-center">
-              <FolderTree className="w-4 h-4" />
+              <TreeStructureIcon className="w-4 h-4" />
               <span>Select a file to open</span>
             </div>
             <div className="flex gap-1 items-center pl-4 border-l border-gray-200 dark:border-gray-800">
@@ -321,7 +324,7 @@ export const DirectoryBrowserDialog = () => {
                 title="New File (T)"
                 theme="muted"
               >
-                <FilePlus className="w-4 h-4" />
+                <FilePlusIcon className="w-4 h-4" />
               </Button>
               <Button
                 onClick={handleCreateFolder}
@@ -329,7 +332,7 @@ export const DirectoryBrowserDialog = () => {
                 title="New Folder (N)"
                 theme="muted"
               >
-                <FolderPlus className="w-4 h-4" />
+                <FolderPlusIcon className="w-4 h-4" />
               </Button>
               <Button
                 onClick={handleMove}
@@ -338,7 +341,7 @@ export const DirectoryBrowserDialog = () => {
                 title="Move/Rename (M)"
                 theme="muted"
               >
-                <Edit2 className="w-4 h-4" />
+                <PencilSimpleIcon className="w-4 h-4" />
               </Button>
             </div>
           </div>

@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { SettingsService, AppSettings } from "@/store/settings";
 import { useGlobalStore, globalDispatch } from "@/store/global.store";
-import { Moon, Sun, Save, Type, Clock } from "lucide-react";
+import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
+import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
+import { FloppyDiskIcon } from "@phosphor-icons/react/dist/csr/FloppyDisk";
+import { TextTIcon } from "@phosphor-icons/react/dist/csr/TextT";
+import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
 import { clsx } from "clsx";
 
 export const QuickSettingsPane = () => {
@@ -56,9 +60,9 @@ export const QuickSettingsPane = () => {
           >
             <div className="flex items-center gap-2 text-sm">
               {globalState.theme === "light" ? (
-                <Sun size={16} />
+                <SunIcon size={16} />
               ) : (
-                <Moon size={16} />
+                <MoonIcon size={16} />
               )}
               <span>
                 {globalState.theme === "light" ? "Light Mode" : "Dark Mode"}
@@ -93,7 +97,7 @@ export const QuickSettingsPane = () => {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Type size={14} className="text-muted-foreground" />
+            <TextTIcon size={14} className="text-muted-foreground" />
             <input
               type="range"
               min="12"
@@ -115,7 +119,7 @@ export const QuickSettingsPane = () => {
             className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-muted/40 hover:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-2 text-sm">
-              <Save size={16} />
+              <FloppyDiskIcon size={16} />
               <span>Auto-save</span>
             </div>
             <div
@@ -145,7 +149,7 @@ export const QuickSettingsPane = () => {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock size={12} className="text-muted-foreground" />
+              <ClockIcon size={12} className="text-muted-foreground" />
               <input
                 type="number"
                 value={localSettings.autosaveDelay}

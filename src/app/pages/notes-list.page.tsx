@@ -7,7 +7,11 @@ import {
   Tag,
   TagProps,
 } from "@g4rcez/components";
-import { Link as LinkIcon, Logs, Search, Trash2, X } from "lucide-react";
+import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
+import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { Link } from "react-router-dom";
 import { Note } from "@/store/note";
 import { useNoteList, NoteWithTags } from "@/app/hooks/use-note-list";
@@ -87,7 +91,7 @@ export default function NotesListPage() {
           className="p-2 text-red-500 rounded transition-colors hover:bg-red-500/10"
           title="Delete note"
         >
-          <Trash2 className="w-4 h-4" />
+          <TrashIcon className="w-4 h-4" />
         </button>
       ),
     });
@@ -106,7 +110,7 @@ export default function NotesListPage() {
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-4 items-center">
           <h1 className="flex gap-2 items-center text-2xl font-bold">
-            <Logs className="w-6 h-6" />
+            <ListBulletsIcon className="w-6 h-6" />
             All Notes
           </h1>
         </div>
@@ -115,7 +119,7 @@ export default function NotesListPage() {
             hiddenLabel
             type="text"
             value={search}
-            left={<Search size={16} />}
+            left={<MagnifyingGlassIcon size={16} />}
             title="Search notes or tags..."
             placeholder="Search notes or tags..."
             onChange={(e) => setSearch(e.target.value)}
@@ -136,7 +140,7 @@ export default function NotesListPage() {
             <span className="font-medium">{selectedIds.size} selected</span>
             <div className="w-px h-4 bg-border" />
             <Button size="small" theme="ghost-danger" onClick={onBatchDelete}>
-              <Trash2 className="size-4" />
+              <TrashIcon className="size-4" />
               Delete
             </Button>
             <button
@@ -144,7 +148,7 @@ export default function NotesListPage() {
               className="p-1 ml-2 rounded-full transition-colors hover:bg-muted/50"
               title="Clear selection"
             >
-              <X className="w-4 h-4" />
+              <XIcon className="w-4 h-4" />
             </button>
           </div>
         </div>
