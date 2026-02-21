@@ -102,7 +102,7 @@ export default function NotesListPage() {
   }
 
   return (
-    <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe bg-background">
+    <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-4 items-center">
           <h1 className="flex gap-2 items-center text-2xl font-bold">

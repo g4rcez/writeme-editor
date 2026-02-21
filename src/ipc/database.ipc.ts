@@ -48,6 +48,11 @@ export const databaseIpcHandler = () => {
       return true;
   });
 
+  ipcMain.handle("db:tabs:deleteByNoteId", (_, noteId: string) => {
+      db.deleteTabsByNoteId(noteId);
+      return true;
+  });
+
   ipcMain.handle("db:hashtags:sync", (_, filename: string, tags: string[]) => {
       db.syncHashtags(filename, tags);
       return true;

@@ -4,26 +4,19 @@ import * as path from "path";
 import type { TreeNode } from "../types/tree";
 
 export const notesIpcHandler = async () => {
-  // Existing clipboard handler
-  ipcMain.handle("notes:clipboard", async (...args) => {
+  ipcMain.handle("notes:clipboard", async () => {
     const x = clipboard.readText("clipboard");
     return x;
   });
-
-  // File system handlers for hybrid storage
-
-  // Directory selection dialog
-  ipcMain.handle("fs:chooseDirectory", async (event) => {
+  ipcMain.handle("fs:chooseDirectory", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory", "createDirectory"],
       title: "Choose Notes Directory",
       message: "Select where to store your notes",
     });
-
     return result.canceled ? null : result.filePaths[0];
   });
 
-  // Open file or directory dialog (for "Open..." action)
   ipcMain.handle("fs:openFileOrDirectory", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile", "openDirectory"],
@@ -31,28 +24,21 @@ export const notesIpcHandler = async () => {
       title: "Open",
     });
     if (result.canceled || !result.filePaths[0]) return null;
-
     const selectedPath = result.filePaths[0];
     const stats = await fs.stat(selectedPath);
     return { path: selectedPath, isDirectory: stats.isDirectory() };
   });
 
-  // Write file with automatic directory creation
   ipcMain.handle(
     "fs:writeFile",
-    async (event, filePath: string, content: string) => {
+    async (_, filePath: string, content: string) => {
       try {
-        // Create parent directory if it doesn't exist
         await fs.mkdir(path.dirname(filePath), { recursive: true });
-
-        // Write file
         await fs.writeFile(filePath, content, "utf-8");
-
         let stats;
         try {
           stats = await fs.stat(filePath);
         } catch (e) {
-          // If stat fails right after write (e.g. file moved), return partial success
           return {
             success: true,
             filePath,
@@ -60,7 +46,6 @@ export const notesIpcHandler = async () => {
             lastModified: new Date(),
           };
         }
-
         return {
           success: true,
           filePath,
@@ -76,12 +61,10 @@ export const notesIpcHandler = async () => {
     },
   );
 
-  // Read file
-  ipcMain.handle("fs:readFile", async (event, filePath: string) => {
+  ipcMain.handle("fs:readFile", async (_, filePath: string) => {
     try {
       const content = await fs.readFile(filePath, "utf-8");
       const stats = await fs.stat(filePath);
-
       return {
         success: true,
         content,
@@ -96,8 +79,7 @@ export const notesIpcHandler = async () => {
     }
   });
 
-  // Check file exists and get stats
-  ipcMain.handle("fs:statFile", async (event, filePath: string) => {
+  ipcMain.handle("fs:statFile", async (_, filePath: string) => {
     try {
       const stats = await fs.stat(filePath);
       return {
@@ -115,8 +97,7 @@ export const notesIpcHandler = async () => {
     }
   });
 
-  // Create directory
-  ipcMain.handle("fs:mkdir", async (event, dirPath: string) => {
+  ipcMain.handle("fs:mkdir", async (_, dirPath: string) => {
     try {
       await fs.mkdir(dirPath, { recursive: true });
       return { success: true, path: dirPath };
@@ -124,9 +105,7 @@ export const notesIpcHandler = async () => {
       return { success: false, error: error.message };
     }
   });
-
-  // Delete file or directory
-  ipcMain.handle("fs:deleteFile", async (event, filePath: string) => {
+  ipcMain.handle("fs:deleteFile", async (_, filePath: string) => {
     try {
       await fs.rm(filePath, { recursive: true, force: true });
       return { success: true };
@@ -134,39 +113,28 @@ export const notesIpcHandler = async () => {
       return { success: false, error: error.message };
     }
   });
+  ipcMain.handle("fs:moveFile", async (_, oldPath: string, newPath: string) => {
+    try {
+      await fs.mkdir(path.dirname(newPath), { recursive: true });
+      await fs.rename(oldPath, newPath);
+      return { success: true, newPath };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
 
-  // Move/rename file
-  ipcMain.handle(
-    "fs:moveFile",
-    async (event, oldPath: string, newPath: string) => {
-      try {
-        // Create destination directory if needed
-        await fs.mkdir(path.dirname(newPath), { recursive: true });
-
-        // Rename/move the file
-        await fs.rename(oldPath, newPath);
-
-        return { success: true, newPath };
-      } catch (error: any) {
-        return { success: false, error: error.message };
-      }
-    },
-  );
-
-  // Recursive directory walk — collects .md files up to a depth limit
   ipcMain.handle(
     "fs:readDirRecursive",
     async (_event, dirPath: string, maxDepth = 10) => {
       type FileEntry = { name: string; path: string; relativePath: string };
       const results: FileEntry[] = [];
-
       const walk = async (currentDir: string, depth: number) => {
         if (depth > maxDepth) return;
         let entries;
         try {
           entries = await fs.readdir(currentDir, { withFileTypes: true });
         } catch {
-          return; // Skip unreadable directories
+          return;
         }
         for (const entry of entries) {
           if (entry.name.startsWith(".")) continue;
@@ -182,7 +150,6 @@ export const notesIpcHandler = async () => {
           }
         }
       };
-
       try {
         await walk(dirPath, 0);
         return { success: true, files: results };
@@ -192,36 +159,31 @@ export const notesIpcHandler = async () => {
     },
   );
 
-  // Read directory (single level for lazy loading)
-  ipcMain.handle("fs:readDir", async (event, dirPath: string) => {
+  ipcMain.handle("fs:readDir", async (_, dirPath: string) => {
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
       const nodes: TreeNode[] = entries
-        .filter((entry) => !entry.name.startsWith(".")) // Skip hidden files
+        .filter((entry) => !entry.name.startsWith("."))
         .map((entry): TreeNode => {
           const fullPath = path.join(dirPath, entry.name);
           const isDirectory = entry.isDirectory();
           const ext = isDirectory
             ? undefined
             : path.extname(entry.name).toLowerCase();
-
           return {
-            name: entry.name,
-            path: fullPath,
-            type: isDirectory ? "directory" : "file",
             extension: ext,
-            children: isDirectory ? undefined : undefined, // Directories: undefined means not loaded
+            path: fullPath,
+            name: entry.name,
+            type: isDirectory ? "directory" : "file",
+            children: isDirectory ? undefined : undefined,
           };
         })
         .sort((a, b) => {
-          // Folders first, then alphabetical
           if (a.type !== b.type) {
             return a.type === "directory" ? -1 : 1;
           }
           return a.name.localeCompare(b.name);
         });
-
       return { entries: nodes };
     } catch (error: any) {
       return { entries: [], error: error.message };

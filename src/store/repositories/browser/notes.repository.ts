@@ -5,10 +5,19 @@ import { SettingsService } from "../../settings";
 import { db } from "./dexie-db";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
+import { ITabRepository } from "../entities/tab";
 
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
-  constructor() {
+  constructor(private readonly tabsRepository: ITabRepository) {
     super(new DexieStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
+  }
+
+  async delete(id: EntityBase["id"]): Promise<boolean> {
+    const result = await super.delete(id);
+    if (result) {
+      await this.tabsRepository.deleteByNoteId(id);
+    }
+    return result;
   }
 
   async save(item: Note): Promise<Note> {

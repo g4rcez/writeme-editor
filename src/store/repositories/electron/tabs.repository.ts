@@ -19,4 +19,8 @@ export class TabsRepository extends BaseRepository<Tab> implements ITabRepositor
       tabs.map((t) => ({ id: t.id, order: t.order })),
     );
   }
+
+  async deleteByNoteId(noteId: string): Promise<void> {
+    await window.electronAPI.db.tabs.deleteByNoteId(noteId);
+  }
 }

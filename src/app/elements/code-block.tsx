@@ -458,7 +458,7 @@ const CodeBlockHeader = ({
   handleLanguageChange: onChangeLanguage,
   handleFormat,
   isFormatting,
-  executablePath,
+  canRun,
   handleRun,
   isRunning,
 }: {
@@ -467,7 +467,7 @@ const CodeBlockHeader = ({
   handleLanguageChange: (lang: string) => void;
   handleFormat: () => void;
   isFormatting: boolean;
-  executablePath: string | null;
+  canRun: boolean;
   handleRun: () => void;
   isRunning: boolean;
 }) => {
@@ -507,7 +507,7 @@ const CodeBlockHeader = ({
             )}
           </Button>
         )}
-        {executablePath && (
+        {canRun && (
           <Button
             size="small"
             onClick={handleRun}
@@ -536,10 +536,12 @@ const CodeBlockHeader = ({
 const ExecutionOutput = ({
   output,
   stderr,
+  html,
   onClose,
 }: {
   output: string;
   stderr: string;
+  html?: string;
   onClose: () => void;
 }) => {
   const converter = useMemo(
@@ -552,7 +554,7 @@ const ExecutionOutput = ({
     [],
   );
 
-  if (!output && !stderr) return null;
+  if (!output && !stderr && !html) return null;
 
   const sanitizeAnsi = (text: string) => {
     return (
@@ -593,6 +595,13 @@ const ExecutionOutput = ({
             "'Symbols Nerd Font', 'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
         }}
       >
+        {html && (
+          <iframe
+            srcDoc={html}
+            className="mb-2 w-full h-48 bg-white border border-card-border"
+            title="HTML Output"
+          />
+        )}
         {htmlOutput && (
           <div
             className="text-green-600 dark:text-green-400"
@@ -641,13 +650,14 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   const [output, setOutput] = useState<{
     stdout: string;
     stderr: string;
+    html?: string;
   } | null>(null);
 
   useEffect(() => {
     if (!isElectron()) return;
     const checkExecutable = async () => {
       const config = EXECUTION_CONFIG[language as BundledLanguage];
-      if (config) {
+      if (config && config.command !== "browser") {
         const path = await window.electronAPI.execution.resolve(config.command);
         setExecutablePath(path);
       } else {
@@ -685,19 +695,26 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     }
   };
 
+  const config = EXECUTION_CONFIG[language as BundledLanguage];
+  const canRun = !!(config?.browserRuntimeExec || (isElectron() && executablePath));
+
   const handleRun = async () => {
-    const config = EXECUTION_CONFIG[language as BundledLanguage];
-    if (!config || !executablePath) return;
+    if (!config) return;
 
     setIsRunning(true);
     setOutput(null);
     try {
-      const result = await window.electronAPI.execution.run(
-        config.command,
-        config.args,
-        code,
-      );
-      setOutput({ stdout: result.stdout, stderr: result.stderr });
+      if (config.browserRuntimeExec) {
+        const result = await config.browserRuntimeExec(code);
+        setOutput(result);
+      } else if (isElectron() && executablePath) {
+        const result = await window.electronAPI.execution.run(
+          config.command,
+          config.args,
+          code,
+        );
+        setOutput({ stdout: result.stdout, stderr: result.stderr });
+      }
     } catch (e) {
       setOutput({ stdout: "", stderr: `Error: ${e}` });
     } finally {
@@ -736,7 +753,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           handleLanguageChange={handleLanguageChange}
           handleFormat={handleFormat}
           isFormatting={isFormatting}
-          executablePath={executablePath}
+          canRun={canRun}
           handleRun={handleRun}
           isRunning={isRunning}
         />
@@ -748,6 +765,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
             <ExecutionOutput
               output={output.stdout}
               stderr={output.stderr}
+              html={output.html}
               onClose={() => setOutput(null)}
             />
           )}

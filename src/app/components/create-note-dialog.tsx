@@ -61,7 +61,8 @@ export const CreateNoteDialog = () => {
 
     let content = "";
     if (selectedTemplateId) {
-      const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
+      const latestTemplate =
+        await repositories.notes.getOne(selectedTemplateId);
       if (latestTemplate) {
         content = substituteVariables(
           latestTemplate.content,
@@ -105,7 +106,9 @@ export const CreateNoteDialog = () => {
         {type === "note" && templates.length > 0 && (
           <div className="flex flex-col gap-4">
             <Select
+              required={false}
               value={selectedTemplateId}
+              placeholder="Template 123"
               title="From Template (Optional)"
               onChange={(e) => setSelectedTemplateId(e.target.value)}
               options={[
@@ -115,8 +118,8 @@ export const CreateNoteDialog = () => {
             />
 
             {userVariables.length > 0 && (
-              <div className="p-4 rounded-lg bg-muted/30 border border-border/40 space-y-3">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-70">
+              <div className="p-4 space-y-3 rounded-lg border bg-muted/30 border-border/40">
+                <span className="font-bold tracking-widest uppercase opacity-70 text-[10px] text-muted-foreground">
                   Template Variables
                 </span>
                 <div className="grid grid-cols-1 gap-3">

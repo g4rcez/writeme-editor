@@ -81,7 +81,7 @@ ${expression}
           </p>
         </div>
 
-        <div className="flex gap-3 justify-end pt-4 border-t">
+        <div className="flex gap-2 justify-end">
           <Button theme="ghost-muted" onClick={handleClose}>
             Cancel
           </Button>

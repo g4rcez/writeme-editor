@@ -273,10 +273,29 @@ export const useGlobalStore = createGlobalReducer(
       },
       removeTab: async (id: string) => {
         const state = get.state();
+        await repositories.tabs.delete(id);
         const indexToDelete = state.tabs.findIndex((x) => x.id === id);
         const tabs = state.tabs.filter((x) => x.id !== id);
         const tab: Tab | null = tabs.at(indexToDelete - 1) || tabs[0];
         return { tabs, activeTabId: tab?.id ?? null };
+      },
+      removeTabByNoteId: async (noteId: string) => {
+        const state = get.state();
+        await repositories.tabs.deleteByNoteId(noteId);
+        const tabs = state.tabs.filter((x) => x.noteId !== noteId);
+        const activeTabId =
+          state.activeTabId === noteId ? tabs[0]?.id ?? null : state.activeTabId;
+        return { tabs, activeTabId };
+      },
+      deleteNote: async (id: string) => {
+        const state = get.state();
+        await repositories.notes.delete(id);
+        const tabs = state.tabs.filter((x) => x.noteId !== id);
+        const activeTabId =
+          state.activeTabId === id ? tabs[0]?.id ?? null : state.activeTabId;
+        const notes = state.notes.filter((n) => n.id !== id);
+        const note = state.note?.id === id ? null : state.note;
+        return { notes, tabs, activeTabId, note };
       },
       theme: (theme: Toggle<string>) => {
         const result =

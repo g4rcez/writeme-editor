@@ -1,7 +1,7 @@
 import { useLayoutContext } from "@/app/contexts/layout-context";
 import { repositories } from "@/store/repositories";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 export const TagsPane = () => {
   const { state, dispatch } = useLayoutContext();
@@ -42,7 +42,7 @@ export const TagsPane = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <Fragment>
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
         <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
           Tags
@@ -50,7 +50,7 @@ export const TagsPane = () => {
       </div>
       <div className="overflow-y-auto flex-1 p-2">
         {tags.length === 0 ? (
-          <div className="flex justify-center items-center h-40 text-sm text-muted-foreground">
+          <div className="flex justify-center items-center text-sm text-muted-foreground">
             No tags found
           </div>
         ) : (
@@ -74,6 +74,6 @@ export const TagsPane = () => {
           </div>
         )}
       </div>
-    </div>
+    </Fragment>
   );
 };

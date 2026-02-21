@@ -105,13 +105,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     });
 
     if (confirmed) {
-      await repositories.notes.delete(id);
-      setInnerNotes((prev: NoteWithTags[]) => prev.filter((n) => n.id !== id));
-      const tabs = state.tabs;
-      const tabToRemove = tabs.find((t: any) => t.noteId === id);
-      if (tabToRemove) {
-        dispatch.removeTab(tabToRemove.id);
-      }
+      await dispatch.deleteNote(id);
       if (selectedIds.has(id)) {
         setSelectedIds((prev) => {
           const next = new Set(prev);
@@ -134,18 +128,10 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     });
 
     if (confirmed) {
-      const tabs = state.tabs;
       for (const id of selectedIds) {
-        await repositories.notes.delete(id);
-        const tabToRemove = tabs.find((t: any) => t.noteId === id);
-        if (tabToRemove) {
-          await dispatch.removeTab(tabToRemove.id);
-        }
+        await dispatch.deleteNote(id);
         options.onDelete?.(id);
       }
-      setInnerNotes((prev: NoteWithTags[]) =>
-        prev.filter((n) => !selectedIds.has(n.id)),
-      );
       setSelectedIds(new Set());
     }
   };

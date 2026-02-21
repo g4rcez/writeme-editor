@@ -6,9 +6,10 @@ import { EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
+import { ITabRepository } from "../entities/tab";
 
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
-  constructor() {
+  constructor(private readonly tabsRepository: ITabRepository) {
     super(new ElectronStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
   }
 
@@ -269,6 +270,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     }
 
     await this.adapter.delete(this.collection, id);
+    await this.tabsRepository.deleteByNoteId(id);
 
     return true;
   }

@@ -33,10 +33,11 @@ type Result = {
 const getRepositories = (): Result => {
   if (isElectron()) {
     console.log("Using Electron (SQLite) repositories");
+    const tabs = new ElectronTabsRepository();
     return {
       ai: new ElectronAIRepository(),
-      tabs: new ElectronTabsRepository(),
-      notes: new ElectronNotesRepository(),
+      tabs,
+      notes: new ElectronNotesRepository(tabs),
       hashtags: new ElectronHashtagsRepository(),
       projects: new ElectronProjectsRepository(),
       settings: new ElectronSettingsRepository(),
@@ -44,9 +45,10 @@ const getRepositories = (): Result => {
     };
   } else {
     console.log("Using Browser (Dexie) repositories");
+    const tabs = new BrowserTabsRepository();
     return {
-      tabs: new BrowserTabsRepository(),
-      notes: new BrowserNotesRepository(),
+      tabs,
+      notes: new BrowserNotesRepository(tabs),
       hashtags: new BrowserHashtagsRepository(),
       projects: new BrowserProjectsRepository(),
       settings: new BrowserSettingsRepository(),

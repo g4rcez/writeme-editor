@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     tabs: {
       updateOrder: (tabs: any[]) =>
         ipcRenderer.invoke("db:tabs:updateOrder", tabs),
+      deleteByNoteId: (noteId: string) =>
+        ipcRenderer.invoke("db:tabs:deleteByNoteId", noteId),
     },
     hashtags: {
       sync: (filename: string, tags: string[]) =>
@@ -171,6 +173,7 @@ declare global {
         };
         tabs: {
           updateOrder(tabs: any[]): Promise<void>;
+          deleteByNoteId(noteId: string): Promise<void>;
         };
         hashtags: {
           sync(filename: string, tags: string[]): Promise<void>;

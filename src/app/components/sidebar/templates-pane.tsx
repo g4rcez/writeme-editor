@@ -1,54 +1,56 @@
+import { useScripts } from "@/app/hooks/use-scripts";
+import { useTemplates } from "@/app/hooks/use-templates";
+import { isElectron } from "@/lib/is-electron";
+import { SYSTEM_VARIABLES, SystemVariable } from "@/lib/template-utils";
+import { useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { Button, Modal, Tag, Input, Alert } from "@g4rcez/components";
 import {
+  Code,
+  FilePlus,
+  FileText,
+  Info,
   LayoutTemplate,
   Plus,
-  FileText,
-  Trash2,
+  PlusIcon,
   RefreshCw,
-  FilePlus,
-  Info,
-  Code,
+  Trash2,
 } from "lucide-react";
-import { useTemplates } from "@/app/hooks/use-templates";
-import { useScripts } from "@/app/hooks/use-scripts";
-import { useNavigate } from "react-router-dom";
-import { repositories } from "@/store/repositories";
-import { Note } from "@/store/note";
-import { globalDispatch } from "@/store/global.store";
-import { isElectron } from "@/lib/is-electron";
-import { SYSTEM_VARIABLES } from "@/lib/template-utils";
-import { Confirm } from "../confirm";
 import { useState } from "react";
-import { Tag, Modal, Button } from "@g4rcez/components";
+import { useNavigate } from "react-router-dom";
 import { Editor } from "../../editor";
-import { Script } from "@/store/repositories/entities/script";
-import { SystemVariable } from "@/lib/template-utils";
+import { Confirm } from "../confirm";
+import { parse as mdParser } from "marked";
 
 export const TemplatesPane = () => {
+  const [, dispatch] = useGlobalStore();
   const { templates, loading, refresh } = useTemplates();
   const { scripts, refresh: refreshScripts } = useScripts();
   const navigate = useNavigate();
   const [deletingTemplate, setDeletingTemplate] = useState<Note | null>(null);
   const [inspectingVariable, setInspectingVariable] = useState<{
+    id?: string;
     name: string;
     description?: string;
     content?: string;
     type: "system" | "script";
   } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   const onCreateTemplate = () => {
-    globalDispatch.setCreateTemplateDialog(true);
+    dispatch.setCreateTemplateDialog(true);
   };
 
   const onCreateVariable = () => {
-    globalDispatch.setCreateVariableDialog(true);
+    dispatch.setCreateVariableDialog(true);
   };
 
-  const onCreateNoteFromTemplate = (
-    e: React.MouseEvent,
-    template: Note,
-  ) => {
+  const onCreateNoteFromTemplate = (e: React.MouseEvent, template: Note) => {
     e.stopPropagation();
-    globalDispatch.setCreateNoteDialog({
+    dispatch.setCreateNoteDialog({
       isOpen: true,
       type: "note",
       templateId: template.id,
@@ -62,9 +64,59 @@ export const TemplatesPane = () => {
       await window.electronAPI.fs.deleteFile(deletingTemplate.filePath);
     }
 
-    await repositories.notes.delete(deletingTemplate.id);
+    await dispatch.deleteNote(deletingTemplate.id);
     setDeletingTemplate(null);
     refresh();
+  };
+
+  const unwrapExpression = (content: string) => {
+    const dom = new DOMParser().parseFromString(
+      mdParser(content, {
+        gfm: true,
+        breaks: false,
+        async: false,
+        silent: true,
+      }) as string,
+      "text/html",
+    );
+    const codeBlock = dom.querySelector("code");
+    return codeBlock ? codeBlock.innerText.trim().replace(/\n$/g, "") : content;
+  };
+
+  const handleUpdateVariable = async () => {
+    if (!inspectingVariable?.id || !editName) return;
+
+    const existing = await repositories.scripts.getOne(inspectingVariable.id);
+    if (!existing) return;
+
+    existing.name = editName.toUpperCase().replace(/\s+/g, "_");
+    existing.content = unwrapExpression(editContent);
+    existing.updatedAt = new Date();
+
+    await repositories.scripts.update(existing.id, existing);
+    setInspectingVariable({
+      ...inspectingVariable,
+      name: existing.name,
+      content: existing.content,
+    });
+    setIsEditing(false);
+    refreshScripts();
+  };
+
+  const onDeleteVariable = async () => {
+    if (!inspectingVariable?.id) return;
+
+    const confirmed = await Modal.confirm({
+      title: "Delete variable",
+      description: `Are you sure you want to delete variable {{${inspectingVariable.name}}}?`,
+      confirm: { text: "Delete", theme: "danger" },
+    });
+
+    if (confirmed) {
+      await repositories.scripts.delete(inspectingVariable.id);
+      setInspectingVariable(null);
+      refreshScripts();
+    }
   };
 
   return (
@@ -149,14 +201,22 @@ export const TemplatesPane = () => {
           </div>
         )}
       </div>
-      <div className="p-4 border-t border-border/20 bg-muted/10">
-        <div className="flex gap-1.5 items-center mb-2 opacity-50">
-          <Info size={10} />
-          <span className="font-bold tracking-widest uppercase text-[10px]">
+      <div className="border-t border-border/20">
+        <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
+          <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
             Variables
           </span>
+          <div className="flex gap-1">
+            <button
+              onClick={onCreateVariable}
+              title="New from Expression"
+              className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
+            >
+              <PlusIcon className="size-3" />
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex p-3 flex-wrap gap-2">
           {SYSTEM_VARIABLES.map((variable) => (
             <Tag
               as="button"
@@ -171,6 +231,7 @@ export const TemplatesPane = () => {
                   description: (variable as SystemVariable).description,
                   type: "system",
                 });
+                setIsEditing(false);
               }}
             >
               {`{{${variable.name}}}`}
@@ -186,10 +247,14 @@ export const TemplatesPane = () => {
               title="Click to view details"
               onClick={() => {
                 setInspectingVariable({
+                  id: script.id,
                   name: script.name,
                   content: script.content,
                   type: "script",
                 });
+                setEditName(script.name);
+                setEditContent(script.content || "");
+                setIsEditing(true);
               }}
             >
               {`{{${script.name}}}`}
@@ -197,53 +262,103 @@ export const TemplatesPane = () => {
           ))}
         </div>
       </div>
-
       <Modal
         open={!!inspectingVariable}
         onChange={() => setInspectingVariable(null)}
-        title={`Variable: {{${inspectingVariable?.name}}}`}
-        className="max-w-lg"
+        className={
+          inspectingVariable?.type === "system" ? "max-w-lg" : "max-w-3xl"
+        }
+        title={
+          isEditing
+            ? `Editing variable: {{${inspectingVariable?.name}}}`
+            : `Variable: {{${inspectingVariable?.name}}}`
+        }
       >
-        <div className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-4">
           {inspectingVariable?.type === "system" ? (
             <div className="space-y-2">
-              <p className="text-sm text-foreground">
-                {inspectingVariable.description}
-              </p>
-              <p className="text-xs text-muted-foreground italic">
+              <p>{inspectingVariable.description}</p>
+              <p className="text-sm italic font-light text-muted-foreground">
                 This is a system-provided variable and cannot be modified.
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-70">
-                JavaScript Expression
-              </span>
-              <div className="border rounded-md overflow-hidden bg-card-background max-h-[300px] overflow-y-auto">
-                <Editor
-                  id={`inspect-${inspectingVariable?.name}`}
-                  readonly
-                  content={`\`\`\`javascript\n${inspectingVariable?.content}\n\`\`\``}
-                />
+            <div className="space-y-4">
+              <Input
+                autoFocus
+                optionalText=" "
+                value={editName}
+                title="Variable name"
+                placeholder="VAR_NAME"
+                onChange={(e) => setEditName(e.target.value)}
+              />
+              <div className="space-y-2">
+                <span className="font-bold tracking-widest uppercase opacity-70 text-[10px] text-muted-foreground">
+                  JavaScript Expression
+                </span>
+                <div className="overflow-hidden overflow-y-auto rounded-md border bg-card-background border-border/20">
+                  <Editor
+                    id={`edit-${inspectingVariable?.id}`}
+                    content={`\`\`\`javascript\n${editContent}\n\`\`\``}
+                    onSave={async (content) => setEditContent(content)}
+                  />
+                </div>
               </div>
             </div>
           )}
-
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button
-              theme="ghost-muted"
-              onClick={() => {
-                if (inspectingVariable) {
-                  navigator.clipboard.writeText(`{{${inspectingVariable.name}}}`);
-                  setInspectingVariable(null);
-                }
-              }}
-            >
-              Copy Placeholder
-            </Button>
-            <Button theme="primary" onClick={() => setInspectingVariable(null)}>
-              Close
-            </Button>
+          <div className="flex gap-3 justify-end pt-4 border-t border-border/20">
+            {inspectingVariable?.type === "script" ? (
+              <>
+                <div className="flex flex-1">
+                  <Button theme="ghost-danger" onClick={onDeleteVariable}>
+                    Delete
+                  </Button>
+                </div>
+                <Button
+                  theme="ghost-muted"
+                  onClick={() => setInspectingVariable(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  theme="ghost-primary"
+                  onClick={() => {
+                    if (inspectingVariable) {
+                      navigator.clipboard.writeText(
+                        `{{${inspectingVariable.name}}}`,
+                      );
+                      setInspectingVariable(null);
+                    }
+                  }}
+                >
+                  Copy placeholder
+                </Button>
+                <Button theme="primary" onClick={handleUpdateVariable}>
+                  Save changes
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  theme="ghost-muted"
+                  onClick={() => setInspectingVariable(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (inspectingVariable) {
+                      navigator.clipboard.writeText(
+                        `{{${inspectingVariable.name}}}`,
+                      );
+                      setInspectingVariable(null);
+                    }
+                  }}
+                >
+                  Copy placeholder
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Modal>
@@ -251,11 +366,11 @@ export const TemplatesPane = () => {
       <Confirm
         open={!!deletingTemplate}
         title="Delete Template"
-        message={`Are you sure you want to delete "${deletingTemplate?.name}"? This will also delete the physical file if applicable.`}
         type="danger"
         confirmText="Delete"
         onConfirm={onDeleteTemplate}
         onCancel={() => setDeletingTemplate(null)}
+        message={`Are you sure you want to delete "${deletingTemplate?.title}"? This will also delete the physical file if applicable.`}
       />
     </div>
   );

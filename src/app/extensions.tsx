@@ -75,7 +75,9 @@ export const createExtensions = (
     Frontmatter,
     StarterKit.configure({
       heading: false,
+      codeBlock: false,
       blockquote: false,
+      inlineMath: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
     }),
@@ -151,46 +153,46 @@ export const createExtensions = (
       },
     }),
     InlineMath,
-    BlockMath.configure({
-      blockOptions: {
-        onClick: (node, pos) => {
-          uiDispatch.setPrompt({
-            open: true,
-            title: "Math expression:",
-            initialValue: node.attrs.latex,
-            onConfirm: (latex) => {
-              if (latex) {
-                editorGlobalRef.current
-                  ?.chain()
-                  .setNodeSelection(pos)
-                  .updateBlockMath({ latex })
-                  .focus()
-                  .run();
-              }
-            },
-          });
-        },
-      },
-      inlineOptions: {
-        onClick: (node) => {
-          uiDispatch.setPrompt({
-            open: true,
-            title: "Math expression:",
-            initialValue: node.attrs.latex,
-            onConfirm: (latex) => {
-              if (latex) {
-                editorGlobalRef.current
-                  ?.chain()
-                  .setNodeSelection((node as any).pos)
-                  .updateInlineMath({ latex })
-                  .focus()
-                  .run();
-              }
-            },
-          });
-        },
-      },
-    }),
+    // BlockMath.configure({
+    //   blockOptions: {
+    //     onClick: (node, pos) => {
+    //       uiDispatch.setPrompt({
+    //         open: true,
+    //         title: "Math expression:",
+    //         initialValue: node.attrs.latex,
+    //         onConfirm: (latex) => {
+    //           if (latex) {
+    //             editorGlobalRef.current
+    //               ?.chain()
+    //               .setNodeSelection(pos)
+    //               .updateBlockMath({ latex })
+    //               .focus()
+    //               .run();
+    //           }
+    //         },
+    //       });
+    //     },
+    //   },
+    //   inlineOptions: {
+    //     onClick: (node) => {
+    //       uiDispatch.setPrompt({
+    //         open: true,
+    //         title: "Math expression:",
+    //         initialValue: node.attrs.latex,
+    //         onConfirm: (latex) => {
+    //           if (latex) {
+    //             editorGlobalRef.current
+    //               ?.chain()
+    //               .setNodeSelection((node as any).pos)
+    //               .updateInlineMath({ latex })
+    //               .focus()
+    //               .run();
+    //           }
+    //         },
+    //       });
+    //     },
+    //   },
+    // }),
     TaskList,
     TaskListItem,
     YoutubeBlock,

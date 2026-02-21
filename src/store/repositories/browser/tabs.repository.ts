@@ -20,4 +20,8 @@ export class TabsRepository extends BaseRepository<Tab> implements ITabRepositor
       }
     });
   }
+
+  async deleteByNoteId(noteId: string): Promise<void> {
+    await db.tabs.where("noteId").equals(noteId).delete();
+  }
 }

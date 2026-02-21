@@ -1,31 +1,24 @@
-import { globalDispatch, useGlobalStore } from "@/store/global.store";
-import { useCallback, useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
 import { ActivityBar } from "@/app/components/sidebar/activity-bar";
 import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
 import { TabsBar } from "@/app/components/tabs-bar";
-import { Navbar } from "./navbar";
+import { useGlobalStore } from "@/store/global.store";
 import { css } from "@g4rcez/components";
+import { useCallback, useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
+import { Navbar } from "./navbar";
 
 export const MainLayout = () => {
-  const [state] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
   const [isResizing, setIsResizing] = useState(false);
-
-  const startResizing = useCallback(() => {
-    setIsResizing(true);
-  }, []);
-
-  const stopResizing = useCallback(() => {
-    setIsResizing(false);
-  }, []);
+  const startResizing = useCallback(() => setIsResizing(true), []);
+  const stopResizing = useCallback(() => setIsResizing(false), []);
 
   const resize = useCallback(
     (e: MouseEvent) => {
       if (isResizing) {
-        // 52 is the activity bar width
         const newWidth = e.clientX - 52;
         if (newWidth >= 150 && newWidth <= 600) {
-          globalDispatch.setSidebarWidth(newWidth);
+          dispatch.setSidebarWidth(newWidth);
         }
       }
     },
@@ -33,12 +26,11 @@ export const MainLayout = () => {
   );
 
   useEffect(() => {
-    window.addEventListener("mousemove", resize);
-    window.addEventListener("mouseup", stopResizing);
-    return () => {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    };
+    const controller = new AbortController();
+    const opts = { signal: controller.signal };
+    window.addEventListener("mousemove", resize, opts);
+    window.addEventListener("mouseup", stopResizing, opts);
+    return () => void controller.abort();
   }, [resize, stopResizing]);
 
   return (
@@ -49,17 +41,20 @@ export const MainLayout = () => {
           <ActivityBar />
         </div>
         <div
+          style={{
+            width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
+          }}
           className={css(
             "flex-shrink-0 bg-sidebar/30 backdrop-blur-sm transition-all duration-300 ease-in-out overflow-hidden",
             state.isSidebarCollapsed
               ? "w-0 border-r-0 opacity-0"
               : "border-r border-border/20 opacity-100",
           )}
-          style={{
-            width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
-          }}
         >
-          <div style={{ width: `${state.sidebarWidth}px` }}>
+          <div
+            className="flex flex-col flex-1 min-h-full"
+            style={{ width: `${state.sidebarWidth}px` }}
+          >
             <SidebarContent />
           </div>
         </div>
@@ -73,7 +68,7 @@ export const MainLayout = () => {
           <TabsBar />
           <div
             id="main-scroll-container"
-            className="overflow-y-auto bg-card-background flex-1 w-full"
+            className="overflow-y-auto flex-1 w-full bg-card-background"
           >
             <Outlet />
           </div>

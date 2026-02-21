@@ -359,6 +359,11 @@ class DatabaseManager {
     transaction(tabs);
   }
 
+  public deleteTabsByNoteId(noteId: string): void {
+    const stmt = this.db.prepare("DELETE FROM tabs WHERE noteId = ?");
+    stmt.run(noteId);
+  }
+
   public syncHashtags(filename: string, tags: string[]): void {
     const getExistingStmt = this.db.prepare(
       "SELECT * FROM hashtags WHERE filename = ?",

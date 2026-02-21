@@ -73,14 +73,9 @@ export const DirectoryBrowserDialog = () => {
         const existingNote = allNotes.find((n) => n.filePath === node.path);
 
         if (existingNote) {
-          const deleted = await repositories.notes.delete(existingNote.id);
-          if (deleted) {
-            const tabs = state.tabs;
-            const tab = tabs.find((t) => t.noteId === existingNote.id);
-            if (tab) await dispatch.removeTab(tab.id);
-            refreshView();
-          }
-          return deleted;
+          await dispatch.deleteNote(existingNote.id);
+          refreshView();
+          return true;
         }
       } else {
         const allNotes = await repositories.notes.getAll();
@@ -88,10 +83,7 @@ export const DirectoryBrowserDialog = () => {
           n.filePath?.startsWith(node.path + "/"),
         );
         for (const note of notesInDir) {
-          await repositories.notes.delete(note.id);
-          const tabs = globalState().tabs;
-          const tab = tabs.find((t) => t.noteId === note.id);
-          if (tab) await dispatch.removeTab(tab.id);
+          await dispatch.deleteNote(note.id);
         }
       }
       const result = await window.electronAPI.fs.deleteFile(node.path);
