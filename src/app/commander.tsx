@@ -1,19 +1,13 @@
-import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
-import { useNavigate } from "react-router-dom";
+import { GithubLogoIcon } from "@phosphor-icons/react/dist/csr/GithubLogo";
 import { version } from "@/../package.json";
+import { useTemplates } from "@/app/hooks/use-templates";
 import { utf8ToBase64 } from "@/lib/encoding";
-import {
-  createStandaloneNote,
-  generateNotePath,
-  getUniqueFilePath,
-} from "@/lib/file-utils";
-import {
-  CommanderType,
-  repositories,
-  useGlobalStore,
-} from "@/store/global.store";
+import { isElectron } from "@/lib/is-electron";
+import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
+import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,
@@ -21,9 +15,14 @@ import {
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
-import { useMemo } from "react";
-import { isElectron } from "@/lib/is-electron";
-import { useTemplates } from "@/app/hooks/use-templates";
+
+const CommanderPreview = (props: {
+  command: CommandItemTypes;
+  text: string;
+}) => {
+  if (props.command.type !== "shortcut") return null;
+  return null;
+};
 
 export const Commander = () => {
   useShortcuts();
@@ -228,9 +227,19 @@ export const Commander = () => {
       commands={options}
       open={state.commander.enabled}
       onChangeVisibility={dispatch.commander}
+      Preview={CommanderPreview}
       footer={
-        <div className="flex justify-center items-center min-w-full text-sm text-disabled">
+        <div className="flex justify-between items-center min-w-full text-sm text-disabled">
           Version: {version}
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex gap-1 items-center link"
+            href="https://github.com/g4rcez/writeme-editor"
+          >
+            <GithubLogoIcon />
+            writeme
+          </a>
         </div>
       }
     />

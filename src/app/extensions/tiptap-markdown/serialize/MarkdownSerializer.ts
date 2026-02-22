@@ -13,6 +13,7 @@ export class MarkdownSerializer {
 
   serialize(content) {
     const state = new MarkdownSerializerState(this.nodes, this.marks, {
+      ...this.editor.storage.markdown.options,
       hardBreakNodeName: HardBreak.name,
     });
     state.renderContent(content);

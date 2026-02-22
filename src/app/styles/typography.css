@@ -92,7 +92,7 @@
 }
 
 .tiptap ul[data-type="taskList"] {
-  @apply list-none ml-0 p-0;
+  @apply list-none ml-0 p-0 mb-1;
 }
 
 .tiptap ul[data-type="taskList"] li {
@@ -100,7 +100,7 @@
 }
 
 .tiptap ul[data-type="taskList"] li > label {
-  @apply select-none mr-3;
+  @apply select-none mr-0;
   flex: 0 0 auto;
 }
 
@@ -117,9 +117,14 @@
   margin: 0;
 }
 
+.tiptap li,
+.tiptap li p {
+  line-height: 2;
+}
+
 .tiptap input[type="checkbox"] {
   @apply rounded text-primary size-5;
-  margin-top: 0.55rem;
+  margin-top: -0.2rem;
 }
 
 [type="checkbox"]:checked {
@@ -181,7 +186,6 @@
   @apply px-1 py-0.5 text-primary-foreground bg-primary/70 rounded;
 }
 
-/* Lists */
 .tiptap ul,
 .tiptap ol {
   @apply min-w-full mb-4 ml-0;
@@ -194,6 +198,10 @@
 }
 
 .tiptap li > p {
+  @apply mb-0;
+}
+
+.tiptap ul[data-type="taskList"] li > div > p {
   @apply mb-0;
 }
 
@@ -210,7 +218,6 @@
   list-style-type: square;
 }
 
-/* Ordered lists with hierarchical numbering */
 .tiptap ol {
   @apply list-none pl-0;
   counter-reset: section;

@@ -563,13 +563,8 @@ const ExecutionOutput = ({
   const sanitizeAnsi = (text: string) => {
     return (
       text
-        // Strip OSC escape sequences (like hyperlinks: \x1B]8;;url\x07text\x1B]8;;\x07)
         .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
-        // Strip non-SGR CSI escape sequences (like cursor moves, clears, etc.)
-        // but keep the SGR (color/style) sequences (\x1B[...m) for the converter.
         .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
-        // Remove Null bytes and other weird control chars except \n, \r, \t
-        // eslint-disable-next-line no-control-regex
         .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
     );
   };
