@@ -213,7 +213,7 @@ export const TemplatesPane = () => {
             </button>
           </div>
         </div>
-        <div className="flex p-3 flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 p-3">
           {SYSTEM_VARIABLES.map((variable) => (
             <Tag
               as="button"
@@ -359,12 +359,11 @@ export const TemplatesPane = () => {
           </div>
         </div>
       </Modal>
-
       <Confirm
-        open={!!deletingTemplate}
-        title="Delete Template"
         type="danger"
         confirmText="Delete"
+        title="Delete template"
+        open={!!deletingTemplate}
         onConfirm={onDeleteTemplate}
         onCancel={() => setDeletingTemplate(null)}
         message={`Are you sure you want to delete "${deletingTemplate?.title}"? This will also delete the physical file if applicable.`}

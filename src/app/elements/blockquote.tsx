@@ -45,7 +45,6 @@ export const Blockquote = Node.create<BlockquoteOptions>({
       </blockquote>
     );
   },
-
   addCommands() {
     return {
       setBlockquote:
@@ -73,8 +72,8 @@ export const Blockquote = Node.create<BlockquoteOptions>({
   addInputRules() {
     return [
       wrappingInputRule({
-        find: inputRegex,
         type: this.type,
+        find: inputRegex,
         keepAttributes: true,
         getAttributes: (m) => ({ "data-theme": m.groups?.theme }),
       }),

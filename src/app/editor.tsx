@@ -5,11 +5,7 @@ import {
 } from "@/ipc/copy-event";
 import { tiptapToMarkdown } from "@/lib/render-tiptap-to-markdown";
 import { CursorPositionStore } from "@/store/cursor-position.store";
-import {
-  globalDispatch,
-  globalState,
-  useGlobalStore,
-} from "@/store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
@@ -96,10 +92,10 @@ const InnerEditor = (props: {
   onSave?: (content: string) => Promise<void>;
   onPasteRawText?: (text: string) => string;
 }) => {
-  const [state] = useGlobalStore();
+  const [state, dispatch] = useGlobalStore();
 
   const extensions = useMemo(
-    () => createExtensions(() => getThemeForMode(globalState().theme)),
+    () => createExtensions(() => getThemeForMode(state.theme)),
     [state.theme],
   );
 
@@ -155,7 +151,7 @@ const InnerEditor = (props: {
                   }
                 }
                 if (changed) {
-                  globalDispatch.syncNoteState(note);
+                  dispatch.syncNoteState(note);
                 }
               }
             } catch (e) {
@@ -173,7 +169,7 @@ const InnerEditor = (props: {
             type: "doc",
             content: selectedContent.content.toJSON(),
           };
-          const markdown = (editor.storage as any).markdown.getMarkdown();
+          const markdown = editor.getMarkdown();
           navigator.clipboard.write([
             new ClipboardItem({
               "text/html": new Blob(
@@ -201,16 +197,16 @@ const InnerEditor = (props: {
     noteRef.current = props.note;
   }, [props.onSave, props.note]);
 
-  // Sync content from props if it changes externally
   useEffect(() => {
     if (!editor || props.content === undefined) return;
-
-    const storage = (editor.storage as any).markdown;
-    if (!storage || typeof storage.getMarkdown !== "function") return;
-
-    const currentMarkdown = storage.getMarkdown();
+    const currentMarkdown = editor.getMarkdown();
     if (props.content !== currentMarkdown) {
-      editor.commands.setContent(props.content, false);
+      editor.commands.setContent(props.content, {
+        contentType: "markdown",
+        parseOptions: {
+          preserveWhitespace: "full",
+        },
+      });
     }
   }, [editor, props.content]);
 
@@ -230,13 +226,13 @@ const InnerEditor = (props: {
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {
-          const html = (editor.storage as any).markdown.getMarkdown();
+          const html = editor.getMarkdown();
           if (onSaveRef.current) {
             await onSaveRef.current(html);
             return;
           }
           if (!noteRef.current) return;
-          await globalDispatch.updateNoteContent(noteRef.current.id, html);
+          await dispatch.updateNoteContent(noteRef.current.id, html);
           CursorPositionStore.save(
             noteRef.current.id,
             editor.state.selection.anchor,
@@ -254,13 +250,13 @@ const InnerEditor = (props: {
       editor.off("update", updateHandler);
       clearTimeout(saveTimeout);
       try {
-        const html = (editor.storage as any).markdown.getMarkdown();
+        const html = editor.getMarkdown();
         if (onSaveRef.current) {
           onSaveRef.current(html);
           return;
         }
         if (noteRef.current) {
-          globalDispatch.updateNoteContent(noteRef.current.id, html);
+          dispatch.updateNoteContent(noteRef.current.id, html);
 
           CursorPositionStore.save(
             noteRef.current.id,

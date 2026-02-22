@@ -13,28 +13,26 @@ interface ConfirmProps {
 }
 
 export const Confirm = ({
-  title = "Confirm",
-  message,
   open,
-  onConfirm,
+  message,
   onCancel,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  onConfirm,
   type = "primary",
+  title = "Confirm",
+  cancelText = "Cancel",
+  confirmText = "Confirm",
 }: ConfirmProps) => {
   return (
     <Modal open={open} onChange={onCancel} title={title} className="max-w-sm">
-      <div className="flex flex-col gap-4 p-6 items-center text-center">
-        <QuestionIcon className="text-primary" size={24} />
+      <div className="flex flex-col gap-4 items-center">
         <p className="text-sm text-muted-foreground">{message}</p>
-        <div className="flex gap-2 w-full mt-4">
-          <Button theme="muted" onClick={onCancel} className="flex-1">
+        <div className="flex gap-2 mt-4 w-full justify-end">
+          <Button theme="ghost-muted" onClick={onCancel}>
             {cancelText}
           </Button>
           <Button
-            theme={type === "danger" ? "danger" : "primary"}
             onClick={onConfirm}
-            className="flex-1"
+            theme={type === "danger" ? "danger" : "primary"}
           >
             {confirmText}
           </Button>

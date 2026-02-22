@@ -95,6 +95,7 @@ export const Markdown = Extension.create({
       if (!this.storage.serializer || !this.editor.state.doc) return "";
       return this.storage.serializer.serialize(this.editor.state.doc);
     };
+    this.editor.getMarkdown = this.storage.getMarkdown;
     if (this.editor.options.content && this.storage.parser) {
       this.editor.options.initialContent = this.editor.options.content;
       this.editor.options.content = this.storage.parser.parse(
