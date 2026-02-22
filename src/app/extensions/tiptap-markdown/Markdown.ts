@@ -4,6 +4,7 @@ import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
 import { MarkdownParser } from "./parse/MarkdownParser";
 import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
 import { safeMarkdown } from "../../../lib/encoding";
+import { linkify } from "../../../lib/link-utils";
 import { elementFromString } from "./util/dom";
 
 export const Markdown = Extension.create({
@@ -21,7 +22,7 @@ export const Markdown = Extension.create({
       transformCopiedText: true,
       transformPastedText: true,
       onBeforePaste: (text: string) => {
-        return safeMarkdown(text);
+        return linkify(safeMarkdown(text));
       },
     };
   },

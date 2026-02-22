@@ -6,6 +6,7 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 import type { Root, Code } from "mdast";
+import { linkify } from "../link-utils";
 
 const LANGUAGE_ALIASES: Record<string, string> = {
   rb: "ruby",
@@ -30,7 +31,7 @@ function remarkCodeBlockLanguage() {
 
 export async function parseMarkdownToHtml(text: string): Promise<string> {
   console.log("[markdown-paste] Input length:", text.length);
-  console.log("[markdown-paste] First 200 chars:", text.slice(0, 200));
+  const linkified = linkify(text);
 
   try {
     const result = await unified()
@@ -40,7 +41,7 @@ export async function parseMarkdownToHtml(text: string): Promise<string> {
       .use(remarkRehype, { allowDangerousHtml: false })
       .use(rehypeSanitize)
       .use(rehypeStringify)
-      .process(text);
+      .process(linkified);
     return result.toString();
   } catch (error) {
     console.error("[markdown-paste] Parse error:", error);

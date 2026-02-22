@@ -13,6 +13,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
 import { UniqueID } from "@tiptap/extension-unique-id";
 import { Placeholder } from "@tiptap/extensions";
+import { Link } from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import { BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
@@ -198,6 +199,14 @@ export const createExtensions = (
     Hashtag,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
+    Link.configure({
+      autolink: true,
+      openOnClick: false,
+      HTMLAttributes: {
+        class: "text-primary hover:underline cursor-pointer",
+      },
+      validate: (url) => !!url, // Be flexible with URLs to allow relative paths
+    }),
     Mention.extend({
       renderText({ node }) {
         return `[[${node.attrs.label ?? node.attrs.id}]]`;

@@ -22,6 +22,7 @@ import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
+import { isRelativeLink } from "@/lib/link-utils";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
@@ -119,6 +120,26 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
+      handleClick: (view, pos, event) => {
+        const node = event.target as HTMLElement;
+        const linkNode = node.closest("a");
+        if (linkNode) {
+          const href = linkNode.getAttribute("href");
+          if (href && isRelativeLink(href)) {
+            const currentNote = props.note;
+            if (currentNote) {
+              const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
+              // Find note by title (simple match for now)
+              const target = state.notes.find((n) => n.title === fileName);
+              if (target) {
+                dispatch.selectNoteById(target.id);
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      },
       handlePaste: (_, event) => {
         const text = event.clipboardData?.getData("text/plain");
         if (text && text.startsWith("---") && props.note) {
@@ -169,7 +190,9 @@ const InnerEditor = (props: {
             type: "doc",
             content: selectedContent.content.toJSON(),
           };
-          const markdown = editor.getMarkdown();
+          const markdown = editor.storage.markdown.serializer.serialize(
+            selectedContent.content,
+          );
           navigator.clipboard.write([
             new ClipboardItem({
               "text/html": new Blob(
