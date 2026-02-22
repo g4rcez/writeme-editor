@@ -115,4 +115,14 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
       Note.parse({ ...metadata, content: metadata.content || "" }),
     );
   }
+
+  async updateContent(id: string, content: string): Promise<void> {
+    const settings = SettingsService.load();
+    await db.notes.update(id, {
+      content,
+      fileSize: content.length,
+      updatedAt: new Date(),
+      updatedBy: settings.defaultAuthor,
+    });
+  }
 }

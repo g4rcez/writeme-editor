@@ -274,4 +274,47 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     return true;
   }
+
+  async updateContent(id: string, content: string): Promise<void> {
+    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const existing = await this.getOne(id);
+
+    if (!existing) {
+      throw new Error(`Note ${id} not found`);
+    }
+
+    const updatedAt = new Date();
+    const updatedBy = settings.defaultAuthor;
+
+    if (mode === "filesystem" && existing.filePath) {
+      const writeResult = await window.electronAPI.fs.writeFile(
+        existing.filePath,
+        content,
+      );
+      if (!writeResult.success) {
+        throw new Error(`Failed to update file: ${writeResult.error}`);
+      }
+      const fileSize = writeResult.fileSize;
+      const lastSynced = new Date(writeResult.lastModified);
+      const metadata = {
+        ...existing,
+        id,
+        fileSize,
+        lastSynced,
+        updatedAt,
+        updatedBy,
+      } as any;
+      delete metadata.content;
+      await this.adapter.save(this.collection, metadata);
+    } else {
+      await window.electronAPI.db.notes.updateContent(
+        id,
+        content,
+        content.length,
+        updatedAt.toISOString(),
+        updatedBy,
+      );
+    }
+  }
 }

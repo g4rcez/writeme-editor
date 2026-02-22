@@ -1,7 +1,8 @@
-import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
-import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 import { useGlobalStore } from "@/store/global.store";
 import { SettingsService } from "@/store/settings";
+import { Button } from "@g4rcez/components";
+import { MoonIcon } from "@phosphor-icons/react/dist/csr/Moon";
+import { SunIcon } from "@phosphor-icons/react/dist/csr/Sun";
 
 export const ThemeToggle = () => {
   const [state, dispatch] = useGlobalStore();
@@ -14,12 +15,12 @@ export const ThemeToggle = () => {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      theme="ghost-muted"
       onClick={toggleTheme}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex relative justify-center items-center w-8 h-8 rounded-md transition-all text-foreground/70 hover:text-foreground hover:bg-muted/30"
     >
       <SunIcon
         className={`absolute size-4 transition-all duration-300 ${
@@ -35,6 +36,6 @@ export const ThemeToggle = () => {
             : "-rotate-90 scale-0 opacity-0"
         }`}
       />
-    </button>
+    </Button>
   );
 };

@@ -394,6 +394,19 @@ class DatabaseManager {
     });
     transaction();
   }
+
+  public updateNoteContent(
+    id: string,
+    content: string,
+    fileSize: number,
+    updatedAt: string,
+    updatedBy: string,
+  ): void {
+    const stmt = this.db.prepare(
+      "UPDATE notes SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ? WHERE id = ?",
+    );
+    stmt.run(content, fileSize, updatedAt, updatedBy, id);
+  }
 }
 
 export const dbManager = DatabaseManager.getInstance;

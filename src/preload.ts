@@ -76,6 +76,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.invoke("db:notes:getRecentNotes", limit),
       getTemplates: () =>
         ipcRenderer.invoke("db:notes:getTemplates"),
+      updateContent: (
+        id: string,
+        content: string,
+        fileSize: number,
+        updatedAt: string,
+        updatedBy: string,
+      ) =>
+        ipcRenderer.invoke(
+          "db:notes:updateContent",
+          id,
+          content,
+          fileSize,
+          updatedAt,
+          updatedBy,
+        ),
     },
     tabs: {
       updateOrder: (tabs: any[]) =>
@@ -170,6 +185,13 @@ declare global {
           getQuicknoteByDate(start: string, end: string): Promise<any>;
           getRecentNotes(limit: number): Promise<any[]>;
           getTemplates(): Promise<any[]>;
+          updateContent(
+            id: string,
+            content: string,
+            fileSize: number,
+            updatedAt: string,
+            updatedBy: string,
+          ): Promise<void>;
         };
         tabs: {
           updateOrder(tabs: any[]): Promise<void>;

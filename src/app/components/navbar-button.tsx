@@ -7,10 +7,10 @@ export const NavbarButton = (
 ) => {
   return (
     <Tooltip
-      placement="bottom-start"
       as={Button}
       size="small"
       theme="ghost-muted"
+      placement="bottom-start"
       title={
         <span {...props}>
           <props.Icon className="size-4" />

@@ -222,7 +222,7 @@
 }
 
 .tiptap ol li::before {
-  @apply mt-1 mr-1 shrink-0 font-medium text-muted-foreground;
+  @apply mt-1 mr-1 shrink-0;
   content: counters(section, ".") ". ";
   min-width: 1.25rem;
 }

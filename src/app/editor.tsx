@@ -236,11 +236,9 @@ const InnerEditor = (props: {
             return;
           }
           if (!noteRef.current) return;
-          const note = Note.parse(noteRef.current);
-          note.setContent(html);
-          await globalDispatch.note(note);
+          await globalDispatch.updateNoteContent(noteRef.current.id, html);
           CursorPositionStore.save(
-            note.id,
+            noteRef.current.id,
             editor.state.selection.anchor,
             getScrollY(),
           );
@@ -262,12 +260,10 @@ const InnerEditor = (props: {
           return;
         }
         if (noteRef.current) {
-          const note = Note.parse(noteRef.current);
-          note.setContent(html);
-          globalDispatch.note(note);
+          globalDispatch.updateNoteContent(noteRef.current.id, html);
 
           CursorPositionStore.save(
-            note.id,
+            noteRef.current.id,
             editor.state.selection.anchor,
             getScrollY(),
           );
@@ -303,8 +299,8 @@ const InnerEditor = (props: {
   return (
     <div
       id="editor-container"
-      className="flex flex-col justify-start items-start w-full bg-card-background max-w-safe"
       style={{ fontSize: `${settings.editorFontSize}px` }}
+      className="flex flex-col justify-start items-start mx-auto w-full bg-card-background max-w-safe"
     >
       <EditorContext.Provider value={{ editor }}>
         <BubbleMenu className="z-navbar isolate" editor={editor}>

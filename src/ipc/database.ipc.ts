@@ -43,6 +43,14 @@ export const databaseIpcHandler = () => {
     return db.getTemplates();
   });
 
+  ipcMain.handle(
+    "db:notes:updateContent",
+    (_, id: string, content: string, fileSize: number, updatedAt: string, updatedBy: string) => {
+      db.updateNoteContent(id, content, fileSize, updatedAt, updatedBy);
+      return true;
+    },
+  );
+
   ipcMain.handle("db:tabs:updateOrder", (_, tabs: any[]) => {
       db.updateTabsOrder(tabs);
       return true;

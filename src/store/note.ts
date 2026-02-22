@@ -120,4 +120,5 @@ export interface INoteRepository extends Repository<Note> {
   getLatestQuicknote: () => Promise<Note | null>;
   getQuicknoteByDate: (date: Date) => Promise<Note | null>;
   getTemplates: () => Promise<Note[]>;
+  updateContent: (id: string, content: string) => Promise<void>;
 }

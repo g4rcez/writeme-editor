@@ -297,6 +297,22 @@ export const useGlobalStore = createGlobalReducer(
         const note = state.note?.id === id ? null : state.note;
         return { notes, tabs, activeTabId, note };
       },
+      updateNoteContent: async (id: string, content: string) => {
+        try {
+          await repositories.notes.updateContent(id, content);
+          const state = get.state();
+          const updatedAt = new Date();
+          const notes = state.notes.map((n) =>
+            n.id === id ? { ...n, content, updatedAt } : n,
+          );
+          const note =
+            state.note?.id === id ? { ...state.note, content, updatedAt } : state.note;
+          return { notes, note };
+        } catch (error: any) {
+          uiDispatch.setError(error.message || "Failed to update note content");
+          return {};
+        }
+      },
       theme: (theme: Toggle<string>) => {
         const result =
           typeof theme === "function" ? theme(get.state().theme) : theme;

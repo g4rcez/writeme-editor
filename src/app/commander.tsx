@@ -56,7 +56,9 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+            setTimeout(() => {
+              dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+            }, 50);
           },
         },
         {
@@ -65,7 +67,9 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
+            setTimeout(() => {
+              dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
+            }, 50);
           },
         },
         {
@@ -73,7 +77,9 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            dispatch.readItLaterDialog(true);
+            setTimeout(() => {
+              dispatch.readItLaterDialog(true);
+            }, 50);
           },
         },
         {
@@ -171,7 +177,9 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            dispatch.setAiDrawer({ isOpen: true, chatId: null });
+            setTimeout(() => {
+              dispatch.setAiDrawer({ isOpen: true, chatId: null });
+            }, 50);
           },
         },
       ],
@@ -199,11 +207,13 @@ export const Commander = () => {
             type: "shortcut",
             action: (args) => {
               args.setOpen(false);
-              dispatch.setCreateNoteDialog({
-                isOpen: true,
-                type: "note",
-                templateId: t.id,
-              });
+              setTimeout(() => {
+                dispatch.setCreateNoteDialog({
+                  isOpen: true,
+                  type: "note",
+                  templateId: t.id,
+                });
+              }, 50);
             },
           }),
         ),
