@@ -15,7 +15,7 @@ export default TaskItem.extend({
         },
         parse: {
           updateDOM(element) {
-            [...element.querySelectorAll(".task-list-item")].forEach((item) => {
+            element.querySelectorAll(".task-list-item").forEach((item) => {
               const input = item.querySelector("input");
               item.setAttribute("data-type", "taskItem");
               if (input) {

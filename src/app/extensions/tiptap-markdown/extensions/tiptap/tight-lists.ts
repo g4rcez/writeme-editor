@@ -18,9 +18,6 @@ export const MarkdownTightLists = Extension.create({
               const dataTight = element.getAttribute("data-tight");
               if (dataTight === "true") return true;
               if (dataTight === "false") return false;
-              // Default to tight for task lists, or if options say so.
-              // We ignore presence of <p> tags because markdown-it sometimes adds them for indentation reasons
-              // which causes unwanted blank lines in serialization.
               return this.options.tight;
             },
             renderHTML: (attributes) => ({

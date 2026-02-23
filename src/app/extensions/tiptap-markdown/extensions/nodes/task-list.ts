@@ -5,12 +5,14 @@ const TaskList = Node.create({
   name: "taskList",
 });
 
+const SPACE = "  ";
+
 export default TaskList.extend({
   addStorage() {
     return {
       markdown: {
         serialize(state, node) {
-          console.log(state, node);
+          console.log("TASK", state, node);
           const tightNode =
             node.attrs.tight !== true
               ? node.type.create(
@@ -21,10 +23,10 @@ export default TaskList.extend({
               : node;
           state.renderList(
             tightNode,
-            " ",
+            SPACE,
             () =>
               (this.editor.storage.markdown.options.bulletListMarker || "-") +
-              " ",
+              SPACE,
           );
         },
         parse: {
@@ -32,7 +34,6 @@ export default TaskList.extend({
             markdownit.use(taskListPlugin);
           },
           updateDOM(element: HTMLElement) {
-            console.log(element);
             element.querySelectorAll(".contains-task-list").forEach((list) => {
               list.setAttribute("data-type", "taskList");
             });

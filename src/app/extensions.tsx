@@ -79,6 +79,8 @@ export const createExtensions = (
       inlineMath: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
+      bulletList: { keepMarks: true, keepAttributes: true },
+      orderedList: { keepAttributes: true, keepMarks: true },
     }),
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
     UniqueID.configure({ types: ["heading"] }),
@@ -199,14 +201,14 @@ export const createExtensions = (
     Hashtag,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
-    Link.configure({
-      autolink: true,
-      openOnClick: false,
-      HTMLAttributes: {
-        class: "text-primary hover:underline cursor-pointer",
-      },
-      validate: (url) => !!url, // Be flexible with URLs to allow relative paths
-    }),
+    // Link.configure({
+    //   autolink: true,
+    //   openOnClick: false,
+    //   HTMLAttributes: {
+    //     class: "text-primary hover:underline cursor-pointer",
+    //   },
+    //   validate: (url) => !!url, // Be flexible with URLs to allow relative paths
+    // }),
     Mention.extend({
       renderText({ node }) {
         return `[[${node.attrs.label ?? node.attrs.id}]]`;
@@ -265,7 +267,6 @@ export const createExtensions = (
                 return true;
               },
             );
-
             markdownit.renderer.rules.wikilink_mention = (
               tokens: any,
               idx: any,

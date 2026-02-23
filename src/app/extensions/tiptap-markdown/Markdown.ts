@@ -10,13 +10,14 @@ import { elementFromString } from "./util/dom";
 export const Markdown = Extension.create({
   name: "markdown",
   priority: 50,
+  markdownOptions: { indentsContent: true },
   addOptions() {
     return {
       html: true,
       breaks: true,
       linkify: true,
       tightLists: true,
-      inlineMath: false,
+      inlineMath: true,
       bulletListMarker: "-",
       tightListClass: "tight",
       transformCopiedText: true,
@@ -44,8 +45,9 @@ export const Markdown = Extension.create({
             return false;
           }
           try {
+            console.log({ content });
             const html = storage.parser.parse(content);
-            if (dispatch) {
+            if (dispatch && editor.view?.domParser?.parse) {
               const element = elementFromString(html);
               const doc = editor.view.domParser.parse(element);
               const transaction = tr
@@ -115,9 +117,9 @@ export const Markdown = Extension.create({
         tightClass: this.options.tightListClass,
       }),
       MarkdownClipboard.configure({
-        transformPastedText: this.options.transformPastedText,
-        transformCopiedText: this.options.transformCopiedText,
         onBeforePaste: this.options.onBeforePaste,
+        transformCopiedText: this.options.transformCopiedText,
+        transformPastedText: this.options.transformPastedText,
       }),
     ];
   },
