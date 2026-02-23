@@ -152,33 +152,34 @@ export const YoutubeBlock = Node.create({
           state.closeBlock(node);
         },
         parse: {
-          setup: (markdownit: any) => {
-            markdownit.inline.ruler.before(
-              "image",
-              "youtube_video",
-              (state: any, silent: any) => {
-                const regex = /^!\[youtube\]\((https?:\/\/\S+)\)/;
-                const match = state.src.slice(state.pos).match(regex);
-                if (!match) return false;
-
-                if (!silent) {
-                  const token = state.push("youtube_video", "div", 0);
-                  token.attrs = [["data-url", match[1]]];
-                }
-
-                state.pos += match[0].length;
-                return true;
-              },
-            );
-
-            markdownit.renderer.rules.youtube_video = (
-              tokens: any,
-              idx: any,
-            ) => {
-              const token = tokens[idx];
-              const url = token.attrs[0][1];
-              return `<div data-youtube-video data-url="${url}"></div>`;
-            };
+          setup: (marked: any) => {
+            marked.use({
+              extensions: [
+                {
+                  name: "youtube_video",
+                  level: "inline",
+                  start(src: string) {
+                    return src.indexOf("![youtube]");
+                  },
+                  tokenizer(src: string) {
+                    const match = src.match(
+                      /^!\[youtube\]\((https?:\/\/\S+)\)/,
+                    );
+                    if (match) {
+                      return {
+                        type: "youtube_video",
+                        raw: match[0],
+                        url: match[1],
+                      };
+                    }
+                    return undefined;
+                  },
+                  renderer(token: any) {
+                    return `<div data-youtube-video data-url="${token.url}"></div>`;
+                  },
+                },
+              ],
+            });
           },
         },
       },

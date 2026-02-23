@@ -250,32 +250,32 @@ export const createExtensions = (
       HTMLAttributes: { class: "mention" },
       markdown: {
         parse: {
-          setup(markdownit: any) {
-            markdownit.inline.ruler.push(
-              "wikilink_mention",
-              (state: any, silent: any) => {
-                if (!state.src) return false;
-                const match = state.src
-                  .slice(state.pos)
-                  .match(/^\[\[([^\]]+)\]\]/);
-                if (!match || !match[0]) return false;
-                if (!silent) {
-                  const token = state.push("wikilink_mention", "span", 0);
-                  token.attrs = [["id", match[1]]];
-                }
-                state.pos += match[0].length;
-                return true;
-              },
-            );
-            markdownit.renderer.rules.wikilink_mention = (
-              tokens: any,
-              idx: any,
-            ) => {
-              const token = tokens[idx];
-              if (!token || !token.attrs || !token.attrs[0]) return "";
-              const id = token.attrs[0][1];
-              return `<span data-type="mention" data-id="${id}" data-label="${id}" class="mention">[[${id}]]</span>`;
-            };
+          setup(marked: any) {
+            marked.use({
+              extensions: [
+                {
+                  name: "wikilink_mention",
+                  level: "inline",
+                  start(src: string) {
+                    return src.indexOf("[[");
+                  },
+                  tokenizer(src: string) {
+                    const match = src.match(/^\[\[([^\]]+)\]\]/);
+                    if (match) {
+                      return {
+                        type: "wikilink_mention",
+                        raw: match[0],
+                        id: match[1],
+                      };
+                    }
+                    return undefined;
+                  },
+                  renderer(token: any) {
+                    return `<span data-type="mention" data-id="${token.id}" data-label="${token.id}" class="mention">[[${token.id}]]</span>`;
+                  },
+                },
+              ],
+            });
           },
         },
         serialize(state: any, node: any) {

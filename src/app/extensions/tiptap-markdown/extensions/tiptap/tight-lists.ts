@@ -1,4 +1,4 @@
-import { Extension } from "@tiptap/core";
+import { Commands, Editor, Extension } from "@tiptap/core";
 
 export const MarkdownTightLists = Extension.create({
   name: "markdownTightLists",
@@ -32,9 +32,9 @@ export const MarkdownTightLists = Extension.create({
   addCommands() {
     return {
       toggleTight:
-        (tight = null) =>
-        ({ editor, commands }) => {
-          function toggleTight(name) {
+        (tight: boolean | null = null) =>
+        ({ editor, commands }: { editor: Editor; commands: Commands }) => {
+          function toggleTight(name: string) {
             if (!editor.isActive(name)) {
               return false;
             }

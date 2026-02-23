@@ -1,5 +1,4 @@
 import { Node } from "@tiptap/core";
-import taskListPlugin from "markdown-it-task-lists";
 
 const TaskList = Node.create({
   name: "taskList",
@@ -30,12 +29,14 @@ export default TaskList.extend({
           );
         },
         parse: {
-          setup(markdownit) {
-            markdownit.use(taskListPlugin);
-          },
           updateDOM(element: HTMLElement) {
-            element.querySelectorAll(".contains-task-list").forEach((list) => {
-              list.setAttribute("data-type", "taskList");
+            element.querySelectorAll("ul").forEach((ul) => {
+              if (ul.querySelector('li > input[type="checkbox"]')) {
+                ul.setAttribute("data-type", "taskList");
+                ul.querySelectorAll("li").forEach((li) =>
+                  li.classList.add("task-list-item"),
+                );
+              }
             });
           },
         },

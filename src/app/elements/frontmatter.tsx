@@ -9,7 +9,6 @@ import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle"
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/csr/CaretUp";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
-import markdownItFrontMatter from "markdown-it-front-matter";
 import { useEffect, useMemo, useState } from "react";
 import { BundledLanguage } from "shiki";
 import * as YAML from "yaml";
@@ -86,7 +85,7 @@ const FrontmatterView = (props: any) => {
       footer={
         <button
           onClick={toggleCollapse}
-          className="flex justify-between items-center py-2 px-4 w-full text-xs font-medium border-t transition-colors text-muted-foreground border-card-border bg-transparent hover:bg-muted/20 hover:text-foreground"
+          className="flex justify-between items-center py-2 px-4 w-full text-xs font-medium bg-transparent border-t transition-colors text-muted-foreground border-card-border hover:bg-muted/20 hover:text-foreground"
         >
           <div className="flex gap-2 items-center">
             <GearIcon size={14} />
@@ -97,12 +96,16 @@ const FrontmatterView = (props: any) => {
           </div>
           <div className="flex gap-1 items-center">
             {isCollapsed ? <span>Expand</span> : <span>Collapse</span>}
-            {isCollapsed ? <CaretDownIcon size={14} /> : <CaretUpIcon size={14} />}
+            {isCollapsed ? (
+              <CaretDownIcon size={14} />
+            ) : (
+              <CaretUpIcon size={14} />
+            )}
           </div>
         </button>
       }
     >
-      <NodeViewContent className="font-mono whitespace-pre outline-none content is-editable code-content-renderer bg-transparent" />
+      <NodeViewContent className="font-mono whitespace-pre bg-transparent outline-none content is-editable code-content-renderer" />
       {error && (
         <div className="flex gap-2 items-center mt-2 text-xs text-destructive">
           <WarningCircleIcon size={14} />
@@ -141,17 +144,32 @@ export const Frontmatter = Node.create({
           state.closeBlock(node);
         },
         parse: {
-          setup(markdownit: any) {
-            markdownit.use(markdownItFrontMatter, () => {});
-
-            markdownit.renderer.rules.front_matter = (
-              tokens: any,
-              idx: any,
-            ) => {
-              const token = tokens[idx];
-              const content = token.meta || token.content;
-              return `<pre data-type="frontmatter" data-language="yaml"><code>${content}</code></pre>`;
-            };
+          setup(marked: any) {
+            marked.use({
+              extensions: [
+                {
+                  name: "frontmatter",
+                  level: "block",
+                  start(src: string) {
+                    return src.indexOf("---");
+                  },
+                  tokenizer(src: string) {
+                    const match = src.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+                    if (match) {
+                      return {
+                        type: "frontmatter",
+                        raw: match[0],
+                        content: match[1],
+                      };
+                    }
+                    return undefined;
+                  },
+                  renderer(token: any) {
+                    return `<pre data-type="frontmatter" data-language="yaml"><code>${token.content}</code></pre>`;
+                  },
+                },
+              ],
+            });
           },
         },
       },

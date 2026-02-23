@@ -15,7 +15,6 @@ export const Markdown = Extension.create({
     return {
       html: true,
       breaks: true,
-      linkify: true,
       tightLists: true,
       inlineMath: true,
       bulletListMarker: "-",
