@@ -9,7 +9,9 @@ import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle"
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/csr/CaretUp";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { useEffect, useMemo, useState } from "react";
+import { FrontmatterBuilder } from "./frontmatter-builder";
 import { BundledLanguage } from "shiki";
 import * as YAML from "yaml";
 import { globalDispatch, globalState } from "@/store/global.store";
@@ -18,8 +20,9 @@ import { getThemeForMode, ShikiPlugin, CodeBlockFrame } from "./code-block";
 
 const FrontmatterView = (props: any) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [builderOpen, setBuilderOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { node, editor } = props;
+  const { node, editor, getPos } = props;
   const content = node.textContent;
 
   useEffect(() => {
@@ -69,6 +72,43 @@ const FrontmatterView = (props: any) => {
 
   const toggleCollapse = () => setIsCollapsed(negate);
 
+  const convertToText = () => {
+    const pos = getPos();
+    const lines = `---\n${node.textContent}\n---`.split("\n");
+    editor
+      .chain()
+      .focus()
+      .command(({ tr, dispatch }: any) => {
+        if (dispatch) {
+          const paragraphs = lines.map((line: string) =>
+            editor.schema.nodes.paragraph.create(
+              {},
+              line ? editor.schema.text(line) : undefined,
+            ),
+          );
+          tr.replaceWith(pos, pos + node.nodeSize, paragraphs);
+        }
+        return true;
+      })
+      .run();
+  };
+
+  const handleSave = (yaml: string) => {
+    const pos = getPos();
+    editor
+      .chain()
+      .focus()
+      .command(({ tr, dispatch }: any) => {
+        if (dispatch) {
+          const from = pos + 1;
+          const to = pos + node.nodeSize - 1;
+          tr.replaceWith(from, to, yaml ? editor.schema.text(yaml) : []);
+        }
+        return true;
+      })
+      .run();
+  };
+
   const metadataCount = useMemo(() => {
     try {
       return Object.keys(YAML.parse(content) || {}).length;
@@ -78,41 +118,65 @@ const FrontmatterView = (props: any) => {
   }, [content]);
 
   return (
-    <CodeBlockFrame
-      isTransparent
-      isBodyVisible={!isCollapsed}
-      lineCount={props.node.textContent.split("\n").length}
-      footer={
-        <button
-          onClick={toggleCollapse}
-          className="flex justify-between items-center py-2 px-4 w-full text-xs font-medium bg-transparent border-t transition-colors text-muted-foreground border-card-border hover:bg-muted/20 hover:text-foreground"
-        >
-          <div className="flex gap-2 items-center">
-            <GearIcon size={14} />
-            <span>Metadata ({metadataCount} keys)</span>
-            {error && (
-              <span className="ml-1 font-bold text-destructive">!</span>
-            )}
+    <>
+      <CodeBlockFrame
+        isTransparent
+        isBodyVisible={!isCollapsed}
+        lineCount={props.node.textContent.split("\n").length}
+        footer={
+          <div className="flex justify-between items-center w-full border-t border-card-border">
+            <div className="flex gap-2 items-center py-2 px-4 text-xs text-muted-foreground">
+              <GearIcon size={14} />
+              <span>Metadata ({metadataCount} keys)</span>
+              {error && (
+                <span className="ml-1 font-bold text-destructive">!</span>
+              )}
+            </div>
+            <div className="flex items-center">
+              <button
+                onClick={convertToText}
+                title="Convert frontmatter to plain text"
+                className="py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+              >
+                Convert to text
+              </button>
+              <button
+                onClick={() => setBuilderOpen(true)}
+                className="flex gap-1 items-center py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+              >
+                <PencilSimpleIcon size={14} />
+                Edit
+              </button>
+              <button
+                onClick={toggleCollapse}
+                className="flex gap-1 items-center py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+              >
+                {isCollapsed ? <span>Expand</span> : <span>Collapse</span>}
+                {isCollapsed ? (
+                  <CaretDownIcon size={14} />
+                ) : (
+                  <CaretUpIcon size={14} />
+                )}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1 items-center">
-            {isCollapsed ? <span>Expand</span> : <span>Collapse</span>}
-            {isCollapsed ? (
-              <CaretDownIcon size={14} />
-            ) : (
-              <CaretUpIcon size={14} />
-            )}
+        }
+      >
+        <NodeViewContent className="font-mono whitespace-pre bg-transparent outline-none content is-editable code-content-renderer" />
+        {error && (
+          <div className="flex gap-2 items-center mt-2 text-xs text-destructive">
+            <WarningCircleIcon size={14} />
+            <span>{error}</span>
           </div>
-        </button>
-      }
-    >
-      <NodeViewContent className="font-mono whitespace-pre bg-transparent outline-none content is-editable code-content-renderer" />
-      {error && (
-        <div className="flex gap-2 items-center mt-2 text-xs text-destructive">
-          <WarningCircleIcon size={14} />
-          <span>{error}</span>
-        </div>
-      )}
-    </CodeBlockFrame>
+        )}
+      </CodeBlockFrame>
+      <FrontmatterBuilder
+        open={builderOpen}
+        content={content}
+        onClose={() => setBuilderOpen(false)}
+        onSave={handleSave}
+      />
+    </>
   );
 };
 
