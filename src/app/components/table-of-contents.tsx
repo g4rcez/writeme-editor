@@ -22,7 +22,6 @@ export const TableOfContents = () => {
           ".ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6",
         ),
       );
-
       const container =
         document.getElementById("main-scroll-container") || document.body;
       const targetElements =
@@ -54,7 +53,6 @@ export const TableOfContents = () => {
       attributes: true,
       attributeFilter: ["id", "data-id"],
     });
-
     return () => observer.disconnect();
   }, []);
 
@@ -102,7 +100,7 @@ export const TableOfContents = () => {
               <XIcon size={14} />
             </button>
           </div>
-          <ul className="flex overflow-y-auto flex-col gap-1 pr-2 overscroll-contain custom-scrollbar">
+          <ul className="flex overflow-y-auto overscroll-contain flex-col gap-1 pr-2 custom-scrollbar">
             <AnimatePresence>
               {headings.map((heading) => (
                 <motion.li

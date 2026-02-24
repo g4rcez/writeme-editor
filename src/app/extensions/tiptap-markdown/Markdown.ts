@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import { DOMParser } from "@tiptap/pm/model";
 import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
 import { MarkdownParser } from "./parse/MarkdownParser";
@@ -39,6 +40,9 @@ export const Markdown = Extension.create({
       setContent:
         (content, options) =>
         ({ editor, tr, dispatch }) => {
+          if (typeof content !== "string") {
+            return false;
+          }
           const storage = (this as any).storage || editor.storage.markdown;
           if (!storage || !storage.parser) {
             return false;
@@ -46,9 +50,9 @@ export const Markdown = Extension.create({
           try {
             console.log({ content });
             const html = storage.parser.parse(content);
-            if (dispatch && editor.view?.domParser?.parse) {
+            if (dispatch) {
               const element = elementFromString(html);
-              const doc = editor.view.domParser.parse(element);
+              const doc = DOMParser.fromSchema(editor.schema).parse(element);
               const transaction = tr
                 .setMeta("preventUpdate", true)
                 .replaceWith(0, tr.doc.content.size, doc);
@@ -65,6 +69,9 @@ export const Markdown = Extension.create({
       insertContentAt:
         (position, content) =>
         ({ editor, tr, dispatch }) => {
+          if (typeof content !== "string") {
+            return false;
+          }
           const storage = (this as any).storage || editor.storage.markdown;
           if (!storage || !storage.parser) {
             return false;
@@ -75,7 +82,7 @@ export const Markdown = Extension.create({
             });
             if (dispatch) {
               const element = elementFromString(html);
-              const doc = editor.view.domParser.parse(element);
+              const doc = DOMParser.fromSchema(editor.schema).parse(element);
               const from =
                 typeof position === "number" ? position : position.from;
               const to = typeof position === "number" ? position : position.to;

@@ -61,6 +61,23 @@ export const notesIpcHandler = async () => {
     },
   );
 
+  ipcMain.handle(
+    "fs:writeImage",
+    async (_, filePath: string, base64Data: string) => {
+      try {
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        const base64Content = base64Data.split(",")[1];
+        if (!base64Content) {
+          throw new Error("Invalid base64 data");
+        }
+        await fs.writeFile(filePath, Buffer.from(base64Content, "base64"));
+        return { success: true, filePath };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    },
+  );
+
   ipcMain.handle("fs:readFile", async (_, filePath: string) => {
     try {
       const content = await fs.readFile(filePath, "utf-8");

@@ -1,6 +1,13 @@
 import mermaid from "mermaid";
 import { useEffect, useRef } from "react";
 
+mermaid.registerIconPacks([
+  {
+    name: "logos",
+    loader: () => import("@iconify-json/logos").then((module) => module.icons),
+  },
+]);
+
 mermaid.initialize({
   theme: "default",
   startOnLoad: true,

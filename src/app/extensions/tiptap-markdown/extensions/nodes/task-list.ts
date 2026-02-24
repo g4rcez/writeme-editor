@@ -11,7 +11,6 @@ export default TaskList.extend({
     return {
       markdown: {
         serialize(state, node) {
-          console.log("TASK", state, node);
           const tightNode =
             node.attrs.tight !== true
               ? node.type.create(
@@ -25,7 +24,7 @@ export default TaskList.extend({
             SPACE,
             () =>
               (this.editor.storage.markdown.options.bulletListMarker || "-") +
-              SPACE,
+              " ",
           );
         },
         parse: {

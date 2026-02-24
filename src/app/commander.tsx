@@ -6,7 +6,7 @@ import { isElectron } from "@/lib/is-electron";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
@@ -16,12 +16,12 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 
-const CommanderPreview = (props: {
+export const CommanderPreview = (props: {
   command: CommandItemTypes;
   text: string;
 }) => {
-  if (props.command.type !== "shortcut") return null;
-  return null;
+  if (props.command.type !== "shortcut") return <Fragment />;
+  return <Fragment />;
 };
 
 export const Commander = () => {
@@ -227,7 +227,6 @@ export const Commander = () => {
       commands={options}
       open={state.commander.enabled}
       onChangeVisibility={dispatch.commander}
-      Preview={CommanderPreview}
       footer={
         <div className="flex justify-between items-center min-w-full text-sm text-disabled">
           Version: {version}

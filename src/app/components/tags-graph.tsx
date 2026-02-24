@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { useGlobalStore } from "../../store/global.store";
 
@@ -37,7 +37,6 @@ const wrapText = (
     const testLine = line + words[n] + " ";
     const metrics = context.measureText(testLine);
     const testWidth = metrics.width;
-
     if (testWidth > maxWidth && n > 0) {
       context.fillText(line, x, y);
       line = words[n] + " ";
@@ -82,9 +81,9 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
         linkWidth={2}
         enableNodeDrag
         autoPauseRedraw
-        nodeRelSize={2000}
         nodeLabel="name"
         showPointerCursor
+        nodeRelSize={2000}
         cooldownTime={5000}
         cooldownTicks={5000}
         enablePanInteraction
@@ -92,6 +91,7 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
         enablePointerInteraction
         width={dimensions.width}
         backgroundColor={bgColor}
+        linkHoverPrecision={10000}
         linkColor={() => linkColor}
         graphData={{ nodes, links }}
         nodeCanvasObjectMode={() => "replace"}
@@ -113,7 +113,6 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
           if (globalScale > 1.5 || node.type === "tag") {
             ctx.fillStyle = textColor;
             const y = node.y + node.val + fontSize;
-            // ctx.fillText(label, node.x, y, 200);
             wrapText(ctx, label, node.x, y, 220, fontSize + 2.5);
           }
         }}

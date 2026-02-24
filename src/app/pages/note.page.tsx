@@ -1,17 +1,16 @@
-import { Note } from "@/store/note";
-import { useUIStore } from "@/store/ui.store";
-import { Tag } from "@g4rcez/components";
-import { PropsWithChildren, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
 import { Dates } from "@/lib/dates";
 import { getReadingTime } from "@/lib/file-utils";
-import { repositories } from "@/store/global.store";
-import { Editor } from "../editor";
+import { repositories, useGlobalStore } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
+import { Tag } from "@g4rcez/components";
+import { PropsWithChildren, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
 import { TableOfContents } from "../components/table-of-contents";
+import { Editor } from "../editor";
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
-    <div className="flex px-8 py-6 relative flex-col gap-4 w-full">
+    <div className="flex relative flex-col gap-4 py-6 px-8 w-full">
       <TableOfContents />
       {props.children}
     </div>
@@ -20,13 +19,17 @@ const Wrapper = (props: PropsWithChildren) => {
 
 export default function NotePage() {
   const [uiState] = useUIStore();
-  const [note, setNote] = useState<Note | null>(null);
+  const [state, dispatch] = useGlobalStore();
   const params = useParams<{ noteId: string }>();
   const id = params.noteId;
+  const note = state.note;
   const isLoading = note === null;
 
   useEffect(() => {
-    repositories.notes.getOne(id).then((x) => setNote(x || null));
+    repositories.notes.getOne(id).then((x) => {
+      const n = x || null;
+      dispatch.setNote(n);
+    });
   }, [id]);
 
   if (isLoading) {
@@ -49,7 +52,7 @@ export default function NotePage() {
   return (
     <Wrapper>
       {note.noteType === "read-it-later" ? (
-        <header className="bg-card-background flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border">
+        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b bg-card-background max-w-safe border-card-border">
           <h1 className="text-xl font-medium">{note.title}</h1>
           {note.url ? (
             <a

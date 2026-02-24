@@ -17,7 +17,11 @@ export const Navbar = () => {
   );
   const location = useLocation();
 
-  useEffect(() => setEditingTitle(null), [state.note?.id]);
+  useEffect(() => {
+    console.log("->", state.note);
+    if (state.note?.title) setEditingTitle(state.note.title);
+    else setEditingTitle(null);
+  }, [state.note?.id, state.note?.title]);
 
   const isEditor =
     location.pathname.startsWith("/note/") || location.pathname === "/";

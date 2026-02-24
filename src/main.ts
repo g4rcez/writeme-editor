@@ -7,6 +7,8 @@ import {
   shell,
   Tray,
   ipcMain,
+  protocol,
+  net,
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
@@ -230,13 +232,24 @@ async function main() {
   app.on("before-quit", () => void (isQuitting = true));
   app.on("will-quit", () => globalShortcut.unregisterAll());
   app.on("ready", () => {
+    protocol.handle("writeme", (request) => {
+      const url = request.url;
+      if (url.startsWith("writeme://action@image/")) {
+        const filePath = decodeURIComponent(
+          url.slice("writeme://action@image/".length),
+        );
+        return net.fetch("file://" + filePath);
+      }
+      return new Response("Not Found", { status: 404 });
+    });
+
     createWindow();
     createTray();
     globalShortcut.register("CommandOrControl+Alt+N", () =>
       createQuickNoteWindow(preload),
     );
   });
-  app.on("window-all-closed", () => { });
+  app.on("window-all-closed", () => {});
   app.on("activate", () => {
     if (mainWindow) {
       mainWindow.show();

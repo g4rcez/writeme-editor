@@ -2,7 +2,7 @@ import { css } from "@g4rcez/components";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { SettingsService } from "../../store/settings";
+import { Note } from "@/store/note";
 
 const MentionList = forwardRef((props: any, ref: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -10,7 +10,7 @@ const MentionList = forwardRef((props: any, ref: any) => {
     const item = props.items[index];
 
     if (item) {
-      props.command({ id: item });
+      props.command({ id: item.id, label: item.label, path: item.path });
     }
   };
 
@@ -54,21 +54,27 @@ const MentionList = forwardRef((props: any, ref: any) => {
   return (
     <ul className="flex relative flex-col p-1 rounded-xl shadow-xl border-floating-border bg-floating-background">
       {props.items.length ? (
-        props.items.map((item: string, index: number) => (
-          <li key={item}>
-            <button
-              onClick={() => selectItem(index)}
-              className={css(
-                "items-center flex gap-2 w-full text-left p-1 px-2 rounded",
-                index === selectedIndex
-                  ? "bg-primary text-primary-foreground"
-                  : "",
-              )}
-            >
-              {item}
-            </button>
-          </li>
-        ))
+        props.items.map(
+          (
+            item: { id: string; label: string; path: string },
+            index: number,
+          ) => (
+            <li key={item.id}>
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectItem(index)}
+                className={css(
+                  "items-center flex gap-2 w-full text-left p-1 px-2 rounded",
+                  index === selectedIndex
+                    ? "bg-primary text-primary-foreground"
+                    : "",
+                )}
+              >
+                {item.label}
+              </button>
+            </li>
+          ),
+        )
       ) : (
         <li className="flex p-1 px-2 w-full text-left rounded">No result</li>
       )}
@@ -98,14 +104,19 @@ const updatePosition = (editor: any, element: HTMLElement) => {
 };
 
 export const suggestion = {
-  items: async (args: { query: string }) => {
-    const { directory } = SettingsService.load();
-    if (!directory) return [];
-    const { entries } = await window.electronAPI.fs.readDir(directory);
-    const query = args.query.toLowerCase();
-    return entries
-      .map((entry) => entry.name)
-      .filter((name) => name.toLowerCase().startsWith(query));
+  items: async ({ query, editor }: { query: string; editor: any }) => {
+    try {
+      const notes: Note[] = (editor.storage as any).allNotes ?? [];
+      return notes
+        .filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
+        .map((n) => ({
+          id: n.id,
+          label: n.title,
+          path: n.filePath || `app://note/${n.id}`,
+        }));
+    } catch {
+      return [];
+    }
   },
   render: () => {
     let reactRenderer;

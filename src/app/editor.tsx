@@ -26,7 +26,7 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
-import { createExtensions } from "./extensions";
+import { createExtensions, handleImageFile } from "./extensions";
 
 const getScrollContainer = () =>
   document.getElementById("main-scroll-container") || window;
@@ -114,7 +114,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) {}
+      } catch (e) { }
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
@@ -141,7 +141,8 @@ const InnerEditor = (props: {
         return false;
       },
       handlePaste: (_, event) => {
-        const text = event.clipboardData?.getData("text/plain");
+        const cd = event.clipboardData;
+        const text = cd?.getData("text/plain");
         if (text && text.startsWith("---") && props.note) {
           const match = text.match(/^---\n([\s\S]*?)\n---/);
           if (match) {
@@ -157,12 +158,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                        .map((t: any) => String(t).trim())
-                        .filter(Boolean)
+                      .map((t: any) => String(t).trim())
+                      .filter(Boolean)
                     : String(parsed.tags)
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean);
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean);
 
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
@@ -238,6 +239,12 @@ const InnerEditor = (props: {
       (editor.storage as any).note = props.note;
     }
   }, [editor, props.note]);
+
+  useEffect(() => {
+    if (editor) {
+      (editor.storage as any).allNotes = state.notes;
+    }
+  }, [editor, state.notes]);
 
   useEffect(() => {
     if (editor === null) return;

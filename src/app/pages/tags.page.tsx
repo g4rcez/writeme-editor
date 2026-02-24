@@ -60,7 +60,7 @@ export default function TagsPage() {
     loadData();
   }, [state.notes]);
 
-  const handleNodeClick = (node: any) => {
+  const onNodeClick = (node: any) => {
     if (node.type === "note" && node.noteId) {
       navigate(`/note/${node.noteId}`);
     }
@@ -75,8 +75,8 @@ export default function TagsPage() {
   }
 
   return (
-    <div className="w-full overflow-y-hidden h-full relative">
-      <div className="absolute top-4 right-8 z-10 bg-card-background/80 backdrop-blur p-2 rounded border border-card-border">
+    <div className="overflow-y-hidden relative w-full h-full">
+      <div className="absolute top-4 right-8 z-10 p-2 rounded border bg-card-background/80 backdrop-blur border-card-border">
         <h1 className="text-lg font-bold">Tags Graph</h1>
         <p className="text-xs text-foreground/70">
           {graphData.nodes.filter((n) => n.type === "note").length} notes,
@@ -86,7 +86,7 @@ export default function TagsPage() {
       <TagsGraph
         nodes={graphData.nodes}
         links={graphData.links}
-        onNodeClick={handleNodeClick}
+        onNodeClick={onNodeClick}
       />
     </div>
   );

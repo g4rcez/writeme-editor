@@ -194,9 +194,8 @@ db.version(15)
   })
   .upgrade(async (tx) => {
     console.log("Migrating to v15: moving templates to notes table...");
-    const templatesTable = tx.table("templates");
-    if (templatesTable) {
-      const templates = await templatesTable.toArray();
+    try {
+      const templates = await tx.table("templates").toArray();
       for (const template of templates) {
         await tx.table("notes").add({
           id: template.id,
@@ -219,7 +218,8 @@ db.version(15)
           favorite: false,
         });
       }
-      // Note: Dexie versioning handles the removal of the 'templates' table from the schema
+    } catch {
+      // templates table never existed for this user (fresh install at v15+), skip migration
     }
     console.log("Schema migration to v15 complete");
   });

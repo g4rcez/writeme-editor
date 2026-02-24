@@ -17,6 +17,7 @@ const TableExamplePage = lazy(() => import("./pages/examples/table.page"));
 const CopyExamplePage = lazy(() => import("./pages/examples/copy.page"));
 const CodeRunExamplePage = lazy(() => import("./pages/examples/code-run.page"));
 const TagsPage = lazy(() => import("./pages/tags.page"));
+const TagPage = lazy(() => import("./pages/tag.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
 const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
@@ -65,6 +66,10 @@ export const router = createRouter([
       {
         path: "tags",
         element: <TagsPage />,
+      },
+      {
+        path: "tags/:id",
+        element: <TagPage />,
       },
       {
         path: "settings",

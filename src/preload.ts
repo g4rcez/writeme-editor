@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     writeFile: async (filePath: string, content: string) => {
       return ipcRenderer.invoke("fs:writeFile", filePath, content);
     },
+    writeImage: async (filePath: string, base64Data: string) => {
+      return ipcRenderer.invoke("fs:writeImage", filePath, base64Data);
+    },
     readFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:readFile", filePath);
     },
@@ -74,8 +77,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.invoke("db:notes:getQuicknoteByDate", start, end),
       getRecentNotes: (limit: number) =>
         ipcRenderer.invoke("db:notes:getRecentNotes", limit),
-      getTemplates: () =>
-        ipcRenderer.invoke("db:notes:getTemplates"),
+      getTemplates: () => ipcRenderer.invoke("db:notes:getTemplates"),
       updateContent: (
         id: string,
         content: string,
@@ -164,6 +166,10 @@ declare global {
         deleteFile(filePath: string): Promise<any>;
         moveFile(oldPath: string, newPath: string): Promise<any>;
         readDir(dirPath: string): Promise<ReadDirResult>;
+        writeImage(
+          filePath: string,
+          base64Data: string,
+        ): Promise<{ success: boolean; filePath?: string; error?: string }>;
         readDirRecursive(dirPath: string): Promise<{
           success: boolean;
           files: { name: string; path: string; relativePath: string }[];
