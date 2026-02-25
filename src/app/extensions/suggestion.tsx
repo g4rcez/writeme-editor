@@ -1,3 +1,4 @@
+import { innerUrl } from "@/lib/encoding";
 import { Note } from "@/store/note";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
@@ -112,7 +113,7 @@ export const suggestion = {
         .map((n) => ({
           id: n.id,
           label: n.title,
-          path: n.filePath || `app://note/${n.id}`,
+          path: n.filePath || innerUrl(`/note/${n.id}`),
         }));
     } catch {
       return [];

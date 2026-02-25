@@ -88,3 +88,19 @@ export function base64ToUtf8(str: string): string {
 export const SAFE_MARKDOWN = /^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/;
 
 export const safeMarkdown = (s: string = "") => s.replace(SAFE_MARKDOWN, "");
+
+const regex = { init: /^\/+/, end: /\/+$/ };
+
+const trailingPath = (str: string) =>
+  str === "/" ? str : str.replace(regex.init, "/").replace(regex.end, "");
+
+const join = (baseURL: string, ...urls: string[]) =>
+  trailingPath(
+    urls.reduce(
+      (acc, el) =>
+        acc.replace(regex.end, "") + "/" + el.replace(regex.init, ""),
+      baseURL,
+    ),
+  );
+
+export const innerUrl = (path: string) => join("https://writeme.dev", path);

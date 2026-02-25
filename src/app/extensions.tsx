@@ -27,8 +27,10 @@ import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
+import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
+import { innerUrl } from "@/lib/encoding";
 
 function removeEmptyWrappers(element: Element): void {
   const children = Array.from(element.children);
@@ -250,6 +252,7 @@ export const createExtensions = (
     YoutubeBlock,
     Callout,
     Hashtag,
+    SlashCommand,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
     Mention.extend({
@@ -288,12 +291,15 @@ export const createExtensions = (
           },
         };
       },
+      parseHTML() {
+        return [{ tag: 'span[data-type="mention"]' }, { tag: 'a[data-type="mention"]' }];
+      },
       renderText({ node }) {
         return node.attrs.label ?? node.attrs.id;
       },
       renderHTML({ node }) {
         const label = node.attrs.label ?? node.attrs.id;
-        const path = node.attrs.path ?? `app://note/${node.attrs.id}`;
+        const path = node.attrs.path ?? innerUrl(node.attrs.id);
         return [
           "a",
           {
@@ -320,7 +326,7 @@ export const createExtensions = (
                     attrs: {
                       id: match[1],
                       label: match[1],
-                      path: `app://note/${match[1]}`,
+                      path: innerUrl(match[1]),
                     },
                   })
                   .run();
@@ -351,7 +357,7 @@ export const createExtensions = (
               return {
                 id: match[1],
                 label: match[1],
-                path: `app://note/${match[1]}`,
+                path: innerUrl(match[1]),
               };
             },
           }),
@@ -425,7 +431,7 @@ export const createExtensions = (
         serialize(state: any, node: any) {
           if (node && node.attrs) {
             const label = node.attrs.label ?? node.attrs.id;
-            const path = node.attrs.path ?? `app://note/${node.attrs.id}`;
+            const path = node.attrs.path ?? innerUrl(node.attrs.id);
             const id = node.attrs.id;
             state.write(`[${label}](${path} "writeme-mention:${id}")`);
           }

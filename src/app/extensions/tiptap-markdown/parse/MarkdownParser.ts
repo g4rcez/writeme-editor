@@ -3,6 +3,28 @@ import { Marked } from "marked";
 import { elementFromString, extractElement, unwrapElement } from "../util/dom";
 import { getMarkdownSpec } from "../util/extensions";
 
+const appNoteUrlExtension = {
+  extensions: [
+    {
+      name: "app_note_url",
+      level: "inline" as const,
+      start(src: string) {
+        return src.indexOf("app://note/");
+      },
+      tokenizer(src: string) {
+        const match = src.match(/^app:\/\/note\/([^\s<>"')\]]+)/);
+        if (match) {
+          return { type: "app_note_url", raw: match[0], href: match[0], id: match[1] };
+        }
+        return undefined;
+      },
+      renderer(token: { href: string; id: string }) {
+        return `<a href="${token.href}" data-type="mention" data-id="${token.id}" data-label="${token.id}" data-path="${token.href}" class="mention" title="writeme-mention:${token.id}">${token.id}</a>`;
+      },
+    },
+  ],
+};
+
 export class MarkdownParser {
   editor: Editor | null = null;
   md: Marked | null = null;
@@ -13,6 +35,7 @@ export class MarkdownParser {
   ) {
     this.editor = editor;
     this.md = new Marked({ gfm: true, breaks: breaks ?? true });
+    this.md.use(appNoteUrlExtension);
     editor.extensionManager.extensions.forEach((extension) =>
       getMarkdownSpec(extension)?.parse?.setup?.call(
         { editor: this.editor, options: extension.options },
