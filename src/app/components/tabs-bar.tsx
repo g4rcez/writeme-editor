@@ -44,7 +44,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex overflow-x-auto sticky flex-row items-center mx-auto w-full h-10 select-none z-navbar top-0 bg-background isolate scrollbar-none"
+      className="flex overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-10 select-none print:hidden z-navbar bg-background isolate scrollbar-none"
     >
       {state.tabs.map((tab: Tab) => {
         const note = state.notes.find((n: Note) => n.id === tab.noteId);
@@ -58,25 +58,24 @@ export const TabsBar: React.FC = () => {
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
             onMouseDown={(e) => onMiddleClick(e, tab.id)}
             className={css(
-              "group flex items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
-                              isActive
-                              ? "bg-background shadow-sm text-foreground"
-                              : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
-                          )}
-                        >
-                          <FileTextIcon className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
-                          <span className="flex-1 text-xs truncate">{title}</span>
-                          <button
-                            onClick={(e) => onCloseTab(e, tab.id)}
-                            className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
-                          >
-                            <XIcon className="size-3" />
-                          </button>
-                          {isActive && (
-                            <div className="absolute bottom-0 right-2 left-2 h-0.5 rounded-full bg-primary" />
-                          )}
-                        </Link>
-              
+              "group border-b flex border-r border-card-border items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
+              isActive
+                ? "bg-background shadow-sm text-foreground"
+                : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
+            )}
+          >
+            <FileTextIcon className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
+            <span className="flex-1 text-xs truncate">{title}</span>
+            <button
+              onClick={(e) => onCloseTab(e, tab.id)}
+              className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
+            >
+              <XIcon className="size-3" />
+            </button>
+            {isActive && (
+              <div className="absolute bottom-0 right-0 left-0 h-0.5 bg-primary" />
+            )}
+          </Link>
         );
       })}
     </div>

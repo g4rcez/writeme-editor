@@ -37,7 +37,7 @@ export const MainLayout = () => {
     <div className="flex flex-col w-screen h-screen bg-background">
       <Navbar />
       <div className="flex overflow-hidden flex-1 w-screen bg-floating-background">
-        <div className="flex-shrink-0 w-fit">
+        <div className="print:hidden flex-shrink-0 w-fit">
           <ActivityBar />
         </div>
         <div
@@ -45,14 +45,14 @@ export const MainLayout = () => {
             width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
           }}
           className={css(
-            "flex-shrink-0 bg-sidebar/30 backdrop-blur-sm transition-all duration-300 ease-in-out overflow-hidden",
+            "flex-shrink-0 print:hidden bg-sidebar/30 backdrop-blur-sm transition-all duration-300 ease-in-out overflow-hidden",
             state.isSidebarCollapsed
               ? "w-0 border-r-0 opacity-0"
               : "border-r border-border/20 opacity-100",
           )}
         >
           <div
-            className="flex flex-col h-full flex-1 min-h-full"
+            className="flex print:hidden flex-col h-full flex-1 min-h-full"
             style={{ width: `${state.sidebarWidth}px` }}
           >
             <SidebarContent />

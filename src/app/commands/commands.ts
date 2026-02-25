@@ -104,7 +104,7 @@ export const LatexInlineCommand: ReplacerCommand = {
     uiDispatch.setPrompt({
       open: true,
       title: "Inline math block:",
-      onConfirm: (latex) => {
+      onConfirm: (latex: string) => {
         if (latex) {
           setTimeout(() => {
             editor.chain().focus().insertInlineMath({ latex }).run();

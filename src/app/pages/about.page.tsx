@@ -109,35 +109,35 @@ export default function AboutPage() {
     <div className="h-full w-full overflow-y-auto">
       <section className="mx-auto max-w-2xl px-6 py-10">
         <h1 className="mb-4 font-outfit text-3xl font-bold">About the project</h1>
-        <p className="mb-8 text-neutral-600 dark:text-neutral-400">
+        <p className="mb-8 text-muted-foreground">
           A distraction-free writing environment that respects your privacy and keeps things beautifully simple.
         </p>
 
         <h3 className="mb-2 font-outfit text-xl font-semibold">Simplicity</h3>
-        <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+        <p className="mb-6 text-muted-foreground">
           No accounts, no menus, no distractions. Just open and start writing. The clean interface keeps your focus on
           what matters most—your words.
         </p>
 
         <h3 className="mb-2 font-outfit text-xl font-semibold">Markdown</h3>
-        <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+        <p className="mb-6 text-muted-foreground">
           Write in plain text with Markdown support. Headers, lists, and links format automatically as you type.
         </p>
 
         <h3 className="mb-2 font-outfit text-xl font-semibold">Privacy first</h3>
-        <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+        <p className="mb-6 text-muted-foreground">
           Your writing never leaves your device. Everything saves locally in your browser—no servers, no tracking, no
           data collection. Just you and your thoughts.
         </p>
 
         <h3 className="mb-2 font-outfit text-xl font-semibold">Source code</h3>
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-muted-foreground">
           For now, the code is closed and you can only have access if you talk with the author:{" "}
           <a
             href="https://github.com/g4rcez/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 underline dark:text-blue-400"
+            className="text-primary underline"
           >
             https://github.com/g4rcez/
           </a>
@@ -148,23 +148,23 @@ export default function AboutPage() {
         <h2 className="mb-6 font-outfit text-2xl font-bold">Open source dependencies</h2>
         <ul className="space-y-3">
           {DEPS.map(({ name, description }) => (
-            <li key={name} className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800/50">
+            <li key={name} className="rounded-lg border border-card-border bg-card-background px-4 py-3">
               <div className="flex items-center gap-3">
                 <a
                   href={`https://www.npmjs.com/package/${name}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                  className="font-mono text-sm font-medium text-primary hover:underline"
                 >
                   {name}
                 </a>
                 {deps[name] && (
-                  <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-xs text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                  <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                     {deps[name]}
                   </span>
                 )}
               </div>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{description}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
             </li>
           ))}
         </ul>

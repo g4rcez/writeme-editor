@@ -59,7 +59,7 @@ export const TableOfContents = () => {
   if (headings.length === 0) return null;
 
   return (
-    <div className="fixed right-6 top-24 z-50">
+    <div className="fixed right-6 top-24 z-50 print:hidden">
       <Tooltip
         placement="bottom-end"
         className="p-0 bg-transparent border-none shadow-none"

@@ -18,7 +18,6 @@ export const Navbar = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.log("->", state.note);
     if (state.note?.title) setEditingTitle(state.note.title);
     else setEditingTitle(null);
   }, [state.note?.id, state.note?.title]);
@@ -27,7 +26,7 @@ export const Navbar = () => {
     location.pathname.startsWith("/note/") || location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b h-navbar bg-background border-border/20">
+    <header className="sticky top-0 z-50 w-full border-b print:hidden h-navbar bg-background border-border/20">
       <div className="flex gap-8 justify-between items-center px-3.5 w-full h-full">
         <div className="flex flex-1 gap-x-6 items-center">
           <Link to="/" className="transition-opacity hover:opacity-80">

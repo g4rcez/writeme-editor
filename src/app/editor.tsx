@@ -114,13 +114,13 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
       try {
         return void migrateMathStrings(currentEditor);
-      } catch (e) { }
+      } catch (e) {}
     },
     onUpdate: ({ editor: currentEditor }) => {
       (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
-      handleClick: (view, pos, event) => {
+      handleClick: (_, pos, event) => {
         const node = event.target as HTMLElement;
         const linkNode = node.closest("a");
         if (linkNode) {
@@ -129,8 +129,9 @@ const InnerEditor = (props: {
             const currentNote = props.note;
             if (currentNote) {
               const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
-              // Find note by title (simple match for now)
-              const target = state.notes.find((n) => n.title === fileName);
+              const target = state.notes.find(
+                (n: Note) => n.title === fileName,
+              );
               if (target) {
                 dispatch.selectNoteById(target.id);
                 return true;
@@ -158,13 +159,12 @@ const InnerEditor = (props: {
                 if (parsed.tags) {
                   const newTags = Array.isArray(parsed.tags)
                     ? parsed.tags
-                      .map((t: any) => String(t).trim())
-                      .filter(Boolean)
+                        .map((t: any) => String(t).trim())
+                        .filter(Boolean)
                     : String(parsed.tags)
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean);
-
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean);
                   if (
                     newTags.sort().join(",") !== [...note.tags].sort().join(",")
                   ) {

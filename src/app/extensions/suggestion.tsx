@@ -1,86 +1,86 @@
-import { css } from "@g4rcez/components";
+import { Note } from "@/store/note";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { Note } from "@/store/note";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-const MentionList = forwardRef((props: any, ref: any) => {
+const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const itemsRef = useRef(props.items);
+  const editorRef = useRef(props.editor);
+  const rangeRef = useRef(props.range);
+  const selectedIndexRef = useRef(selectedIndex);
+
+  itemsRef.current = props.items;
+  editorRef.current = props.editor;
+  rangeRef.current = props.range;
+  selectedIndexRef.current = selectedIndex;
+
   const selectItem = (index: number) => {
-    const item = props.items[index];
-
-    if (item) {
-      props.command({ id: item.id, label: item.label, path: item.path });
-    }
-  };
-
-  const upHandler = () => {
-    setSelectedIndex(
-      (selectedIndex + props.items.length - 1) % props.items.length,
-    );
-  };
-
-  const downHandler = () => {
-    setSelectedIndex((selectedIndex + 1) % props.items.length);
-  };
-
-  const enterHandler = () => {
-    selectItem(selectedIndex);
+    const item = itemsRef.current[index];
+    if (!item) return;
+    const { from, to } = rangeRef.current;
+    editorRef.current
+      .chain()
+      .focus()
+      .command(({ tr, state }: { tr: any; state: any }) => {
+        const node = state.schema.nodes.mention.create({
+          id: item.id,
+          label: item.label,
+          path: item.path,
+        });
+        tr.replaceWith(from, to, node);
+        return true;
+      })
+      .run();
   };
 
   useEffect(() => setSelectedIndex(0), [props.items]);
 
-  useImperativeHandle(ref, () => ({
-    onKeyDown: ({ event }) => {
+  useLayoutEffect(() => {
+    const handler = ({ event }: { event: KeyboardEvent }) => {
       if (event.key === "ArrowUp") {
-        upHandler();
+        setSelectedIndex(
+          (prev) =>
+            (prev + itemsRef.current.length - 1) % itemsRef.current.length,
+        );
         return true;
       }
-
       if (event.key === "ArrowDown") {
-        downHandler();
+        setSelectedIndex((prev) => (prev + 1) % itemsRef.current.length);
         return true;
       }
-
       if (event.key === "Enter") {
-        enterHandler();
+        selectItem(selectedIndexRef.current);
         return true;
       }
-
       return false;
-    },
-  }));
+    };
+    props.registerKeyDown(handler);
+  }, []);
 
   return (
-    <ul className="flex relative flex-col p-1 rounded-xl shadow-xl border-floating-border bg-floating-background">
+    <ul className="flex overflow-y-auto relative flex-col gap-4 p-2 border shadow border-floating-border max-w-72 bg-floating-background">
       {props.items.length ? (
-        props.items.map(
-          (
-            item: { id: string; label: string; path: string },
-            index: number,
-          ) => (
-            <li key={item.id}>
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selectItem(index)}
-                className={css(
-                  "items-center flex gap-2 w-full text-left p-1 px-2 rounded",
-                  index === selectedIndex
-                    ? "bg-primary text-primary-foreground"
-                    : "",
-                )}
-              >
-                {item.label}
-              </button>
-            </li>
-          ),
-        )
+        props.items.map((item: any, index: number) => (
+          <li key={item.id}>
+            <button
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectItem(index);
+              }}
+              className={`flex text-left w-full items-center ${index === selectedIndex ? "bg-primary text-primary-floating" : "bg-transparent"}`}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))
       ) : (
-        <li className="flex p-1 px-2 w-full text-left rounded">No result</li>
+        <li className="item">No result</li>
       )}
     </ul>
   );
-});
+};
 
 const updatePosition = (editor: any, element: HTMLElement) => {
   const virtualElement = {
@@ -119,14 +119,21 @@ export const suggestion = {
     }
   },
   render: () => {
-    let reactRenderer;
+    let reactRenderer: ReactRenderer | undefined;
+    let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null =
+      null;
+    const registerKeyDown = (
+      fn: (props: { event: KeyboardEvent }) => boolean,
+    ) => {
+      keyDownHandler = fn;
+    };
     return {
-      onStart: (props) => {
+      onStart: (props: any) => {
         if (!props.clientRect) {
           return;
         }
         reactRenderer = new ReactRenderer(MentionList, {
-          props,
+          props: { ...props, registerKeyDown },
           editor: props.editor,
         });
         reactRenderer.element.style.position = "absolute";
@@ -134,23 +141,24 @@ export const suggestion = {
         updatePosition(props.editor, reactRenderer.element);
       },
       onUpdate(props: any) {
-        reactRenderer.updateProps(props);
+        reactRenderer?.updateProps({ ...props, registerKeyDown });
         if (!props.clientRect) {
           return;
         }
-        updatePosition(props.editor, reactRenderer.element);
+        updatePosition(props.editor, reactRenderer!.element);
       },
-      onKeyDown(props) {
+      onKeyDown(props: { event: KeyboardEvent }) {
         if (props.event.key === "Escape") {
-          reactRenderer.destroy();
-          reactRenderer.element.remove();
+          reactRenderer?.destroy();
+          reactRenderer?.element.remove();
           return true;
         }
-        return reactRenderer.ref?.onKeyDown(props);
+        return keyDownHandler?.(props) ?? false;
       },
       onExit() {
-        reactRenderer.destroy();
-        reactRenderer.element.remove();
+        keyDownHandler = null;
+        reactRenderer?.destroy();
+        reactRenderer?.element.remove();
       },
     };
   },

@@ -331,7 +331,6 @@ export const createExtensions = (
             find: /\[([^\]]+)\]\(([^)"]+)(?: "writeme-mention:([^"]+)")?\)/g,
             handler: ({ match, chain, range }: any) => {
               if (match[3]) {
-                // We have a match for our specific markdown syntax
                 chain()
                   .insertContentAt(range, {
                     type: this.type.name,
@@ -432,7 +431,7 @@ export const createExtensions = (
           }
         },
       },
-    } as any),
+    }),
     Markdown,
   ];
 };
