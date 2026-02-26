@@ -1,19 +1,17 @@
 import {
-  ArrowRight,
-  Code,
-  CodeBlock,
-  Columns,
-  ListBullets,
-  ListChecks,
-  ListNumbers,
-  MathOperations,
-  Minus,
-  Quotes,
-  Table,
-  TextH,
-  TextHOne,
-  TextHThree,
-  TextHTwo,
+  ArrowRightIcon,
+  CodeBlockIcon,
+  ColumnsIcon,
+  ListBulletsIcon,
+  ListChecksIcon,
+  ListNumbersIcon,
+  MathOperationsIcon,
+  MinusIcon,
+  QuotesIcon,
+  TableIcon,
+  TextHOneIcon,
+  TextHThreeIcon,
+  TextHTwoIcon,
 } from "@phosphor-icons/react";
 import { Button, Input, Modal } from "@g4rcez/components";
 import { Extension } from "@tiptap/core";
@@ -36,31 +34,46 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Heading 1",
     description: "Large section heading",
-    icon: TextHOne,
+    icon: TextHOneIcon,
     group: "Headings",
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 1 })
+        .run(),
   },
   {
     label: "Heading 2",
     description: "Medium section heading",
-    icon: TextHTwo,
+    icon: TextHTwoIcon,
     group: "Headings",
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 2 })
+        .run(),
   },
   {
     label: "Heading 3",
     description: "Small section heading",
-    icon: TextHThree,
+    icon: TextHThreeIcon,
     group: "Headings",
     command: (editor, range) =>
-      editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleHeading({ level: 3 })
+        .run(),
   },
   {
     label: "Bullet List",
     description: "Create an unordered list",
-    icon: ListBullets,
+    icon: ListBulletsIcon,
     group: "Lists",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleBulletList().run(),
@@ -68,7 +81,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Ordered List",
     description: "Create a numbered list",
-    icon: ListNumbers,
+    icon: ListNumbersIcon,
     group: "Lists",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
@@ -76,7 +89,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Task List",
     description: "Track tasks with checkboxes",
-    icon: ListChecks,
+    icon: ListChecksIcon,
     group: "Lists",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleTaskList().run(),
@@ -84,7 +97,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Blockquote",
     description: "Capture a quote",
-    icon: Quotes,
+    icon: QuotesIcon,
     group: "Blocks",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
@@ -92,7 +105,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Callout",
     description: "Highlight important information",
-    icon: ArrowRight,
+    icon: ArrowRightIcon,
     group: "Blocks",
     command: (editor, range) =>
       editor
@@ -105,7 +118,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Code Block",
     description: "Capture a code snippet",
-    icon: CodeBlock,
+    icon: CodeBlockIcon,
     group: "Blocks",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
@@ -113,7 +126,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Table",
     description: "Insert a table",
-    icon: Table,
+    icon: TableIcon,
     group: "Inserts",
     needsModal: "table",
     command: (editor, range) =>
@@ -127,7 +140,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Horizontal Rule",
     description: "Insert a divider",
-    icon: Minus,
+    icon: MinusIcon,
     group: "Inserts",
     command: (editor, range) =>
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
@@ -135,7 +148,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Frontmatter",
     description: "Add YAML frontmatter",
-    icon: Columns,
+    icon: ColumnsIcon,
     group: "Inserts",
     command: (editor, range) =>
       editor
@@ -148,7 +161,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   {
     label: "Inline Math",
     description: "Insert a math expression",
-    icon: MathOperations,
+    icon: MathOperationsIcon,
     group: "Inserts",
     needsModal: "math",
     command: (editor, range) =>
@@ -161,29 +174,55 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
   },
 ];
 
-const TableInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void }) => {
+const TableInsertModal = ({
+  editor,
+  onClose,
+}: {
+  editor: any;
+  onClose: () => void;
+}) => {
   const [rows, setRows] = useState("3");
   const [cols, setCols] = useState("3");
   const confirm = (e: React.FormEvent) => {
     e.preventDefault();
-    editor.chain().focus().insertTable({ rows: parseInt(rows) || 3, cols: parseInt(cols) || 3, withHeaderRow: true }).run();
+    editor
+      .chain()
+      .focus()
+      .insertTable({
+        rows: parseInt(rows) || 3,
+        cols: parseInt(cols) || 3,
+        withHeaderRow: true,
+      })
+      .run();
     onClose();
   };
   return (
     <Modal open onChange={onClose} title="Insert Table" className="max-w-xs">
       <form onSubmit={confirm} className="flex flex-col gap-4">
         <div className="flex gap-3">
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="flex flex-col flex-1 gap-1">
             <label className="text-xs font-medium opacity-60">Rows</label>
-            <Input type="number" min="1" value={rows} onChange={(e) => setRows(e.target.value)} />
+            <Input
+              type="number"
+              min="1"
+              value={rows}
+              onChange={(e) => setRows(e.target.value)}
+            />
           </div>
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="flex flex-col flex-1 gap-1">
             <label className="text-xs font-medium opacity-60">Columns</label>
-            <Input type="number" min="1" value={cols} onChange={(e) => setCols(e.target.value)} />
+            <Input
+              type="number"
+              min="1"
+              value={cols}
+              onChange={(e) => setCols(e.target.value)}
+            />
           </div>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button type="button" onClick={onClose}>Cancel</Button>
+        <div className="flex gap-2 justify-end">
+          <Button type="button" onClick={onClose}>
+            Cancel
+          </Button>
           <Button type="submit">Insert</Button>
         </div>
       </form>
@@ -191,11 +230,21 @@ const TableInsertModal = ({ editor, onClose }: { editor: any; onClose: () => voi
   );
 };
 
-const MathInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void }) => {
+const MathInsertModal = ({
+  editor,
+  onClose,
+}: {
+  editor: any;
+  onClose: () => void;
+}) => {
   const [mathExpr, setMathExpr] = useState("");
   const confirm = (e: React.FormEvent) => {
     e.preventDefault();
-    editor.chain().focus().insertContent({ type: "inlineMath", attrs: { latex: mathExpr } }).run();
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: "inlineMath", attrs: { latex: mathExpr } })
+      .run();
     onClose();
   };
   const handleClose = () => {
@@ -203,11 +252,22 @@ const MathInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void
     onClose();
   };
   return (
-    <Modal open onChange={handleClose} title="Insert Math Expression" className="max-w-sm">
+    <Modal
+      open
+      onChange={handleClose}
+      title="Insert Math Expression"
+      className="max-w-sm"
+    >
       <form onSubmit={confirm} className="flex flex-col gap-4">
-        <Input value={mathExpr} onChange={(e) => setMathExpr(e.target.value)} placeholder="\frac{1}{2}" />
-        <div className="flex justify-end gap-2">
-          <Button type="button" onClick={handleClose}>Cancel</Button>
+        <Input
+          value={mathExpr}
+          onChange={(e) => setMathExpr(e.target.value)}
+          placeholder="\frac{1}{2}"
+        />
+        <div className="flex gap-2 justify-end">
+          <Button type="button" onClick={handleClose}>
+            Cancel
+          </Button>
           <Button type="submit">Insert</Button>
         </div>
       </form>
@@ -224,9 +284,11 @@ const openSlashModal = (type: "table" | "math", editor: any) => {
     container.remove();
   };
   root.render(
-    type === "table"
-      ? <TableInsertModal editor={editor} onClose={close} />
-      : <MathInsertModal editor={editor} onClose={close} />,
+    type === "table" ? (
+      <TableInsertModal editor={editor} onClose={close} />
+    ) : (
+      <MathInsertModal editor={editor} onClose={close} />
+    ),
   );
 };
 
@@ -258,7 +320,9 @@ const SlashList = (props: any) => {
   useEffect(() => setSelectedIndex(0), [props.items]);
 
   useEffect(() => {
-    listRef.current?.querySelector(`[data-index="${selectedIndex}"]`)?.scrollIntoView({ block: "nearest" });
+    listRef.current
+      ?.querySelector(`[data-index="${selectedIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
   useLayoutEffect(() => {
@@ -284,9 +348,13 @@ const SlashList = (props: any) => {
   }, []);
 
   const grouped = props.items.reduce(
-    (acc: Record<string, { item: SlashCommandItem; index: number }[]>, item: SlashCommandItem, index: number) => {
+    (
+      acc: Record<string, { item: SlashCommandItem; index: number }[]>,
+      item: SlashCommandItem,
+      index: number,
+    ) => {
       if (!acc[item.group]) acc[item.group] = [];
-      acc[item.group].push({ item, index });
+      acc[item.group]!.push({ item, index });
       return acc;
     },
     {} as Record<string, { item: SlashCommandItem; index: number }[]>,
@@ -295,37 +363,45 @@ const SlashList = (props: any) => {
   if (!props.items.length) return null;
 
   return (
-    <ul ref={listRef} className="flex overflow-y-auto relative flex-col gap-1 p-1 border shadow border-floating-border w-72 max-h-80 bg-floating-background rounded-md">
+    <ul
+      ref={listRef}
+      className="flex overflow-y-auto relative z-50 flex-col p-1 w-80 max-h-64 rounded-lg border shadow-lg border-border bg-background animate-fade-in-scale"
+    >
       {Object.entries(grouped).map(([groupName, entries]) => (
         <Fragment key={groupName}>
-          <li className="px-2 pt-2 pb-0.5 text-xs font-semibold uppercase tracking-wider opacity-40 select-none pointer-events-none">
+          <li className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wider uppercase pointer-events-none select-none text-foreground/50">
             {groupName}
           </li>
-          {(entries as { item: SlashCommandItem; index: number }[]).map(({ item, index }) => {
-            const Icon = item.icon;
-            const isSelected = index === selectedIndex;
-            return (
-              <li key={item.label} data-index={index}>
-                <button
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    selectItem(index);
-                  }}
-                  className={`flex text-left w-full items-center gap-3 px-2 py-1.5 rounded ${isSelected ? "bg-primary text-primary-floating" : "bg-transparent hover:bg-primary/10"}`}
-                >
-                  <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded border border-current/20">
-                    <Icon size={16} />
-                  </span>
-                  <span className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium leading-tight">{item.label}</span>
-                    <span className={`text-xs leading-tight truncate ${isSelected ? "opacity-80" : "opacity-50"}`}>
-                      {item.description}
+          {(entries as { item: SlashCommandItem; index: number }[]).map(
+            ({ item, index }) => {
+              const Icon = item.icon;
+              const isSelected = index === selectedIndex;
+              return (
+                <li key={item.label} data-index={index}>
+                  <button
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      selectItem(index);
+                    }}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className={`flex text-left w-full items-center gap-3 px-3 py-2 rounded-md transition-colors ${isSelected ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-foreground"}`}
+                  >
+                    <span className="flex flex-shrink-0 justify-center items-center w-8 h-8 rounded">
+                      <Icon size={16} />
                     </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium leading-tight">
+                        {item.label}
+                      </span>
+                      <span className="text-xs leading-tight truncate text-foreground/50">
+                        {item.description}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            },
+          )}
         </Fragment>
       ))}
     </ul>
@@ -362,8 +438,8 @@ const slashSuggestion = {
       const q = query.toLowerCase();
       return SLASH_COMMANDS.filter(
         (item) =>
-          item.label.toLowerCase().includes(q) ||
-          item.description.toLowerCase().includes(q),
+          item.label?.toLowerCase().includes(q) ||
+          item.description?.toLowerCase().includes(q),
       );
     } catch {
       return [];

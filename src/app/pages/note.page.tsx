@@ -26,11 +26,14 @@ export default function NotePage() {
   const isLoading = note === null;
 
   useEffect(() => {
-    repositories.notes.getOne(id).then((x) => {
+    if (id === state.note?.id) return;
+    repositories.notes.getOne(id!).then((x) => {
       const n = x || null;
       dispatch.setNote(n);
     });
-  }, [id]);
+    const hasTab = state.tabs.some((x) => x.noteId === id);
+    if (!hasTab) dispatch.addTab(id!);
+  }, [id, state.tabs.length, state.note?.id]);
 
   if (isLoading) {
     return (

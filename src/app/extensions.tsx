@@ -30,7 +30,7 @@ import { Hashtag } from "./extensions/hashtag";
 import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
-import { innerUrl } from "@/lib/encoding";
+import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 
 function removeEmptyWrappers(element: Element): void {
   const children = Array.from(element.children);
@@ -299,17 +299,19 @@ export const createExtensions = (
       },
       renderHTML({ node }) {
         const label = node.attrs.label ?? node.attrs.id;
-        const path = node.attrs.path ?? innerUrl(node.attrs.id, "mention");
+        const path =
+          (node.attrs.path as string) ?? innerUrl(node.attrs.id, "mention");
         return [
           "a",
           {
-            href: path,
-            title: "writeme-mention:" + node.attrs.id,
             class: "mention",
+            target: "_parent",
+            "data-label": label,
             "data-type": "mention",
             "data-id": node.attrs.id,
-            "data-label": label,
-            "data-path": path,
+            title: "writeme-mention:" + node.attrs.id,
+            href: path.replace(getUrlNamespace("mention"), ""),
+            "data-path": path.replace(getUrlNamespace("mention"), ""),
           },
           label,
         ];

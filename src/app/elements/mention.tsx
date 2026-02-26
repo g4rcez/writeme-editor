@@ -1,6 +1,6 @@
 import { innerUrl } from "@/lib/encoding";
-import { NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { ComponentType, ReactNode } from "react";
+import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
+import { type ComponentType, type ReactNode } from "react";
 
 export type LinkRendererProps = {
   href: string;
@@ -17,7 +17,12 @@ const DefaultLink = ({
   className,
   children,
 }: LinkRendererProps) => (
-  <a href={href} title={title} className={className}>
+  <a
+    data-component="default-link"
+    href={href}
+    title={title}
+    className={className}
+  >
     {children}
   </a>
 );
@@ -30,12 +35,12 @@ export const MentionNodeView = (props: NodeViewProps) => {
   return (
     <NodeViewWrapper
       as="span"
-      contentEditable={false}
-      data-type="mention"
       data-id={id}
-      data-label={label}
       data-path={href}
+      data-label={label}
       className="mention"
+      data-type="mention"
+      contentEditable={false}
     >
       <LinkComp href={href} title={`writeme-mention:${id}`} className="mention">
         {label ?? id}

@@ -1,8 +1,10 @@
 import { innerUrl } from "@/lib/encoding";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -40,7 +42,9 @@ const MentionList = (props: any) => {
   useEffect(() => setSelectedIndex(0), [props.items]);
 
   useEffect(() => {
-    listRef.current?.children[selectedIndex]?.scrollIntoView({ block: "nearest" });
+    listRef.current?.children[selectedIndex]?.scrollIntoView({
+      block: "nearest",
+    });
   }, [selectedIndex]);
 
   useLayoutEffect(() => {
@@ -65,24 +69,57 @@ const MentionList = (props: any) => {
     props.registerKeyDown(handler);
   }, []);
 
+  const storageDir = useMemo(() => {
+    const settings = SettingsService.load();
+    return settings.directory || "";
+  }, []);
+
   return (
-    <ul ref={listRef} className="flex overflow-y-auto relative flex-col gap-4 p-2 border shadow border-floating-border w-72 max-h-80 bg-floating-background rounded-md">
+    <ul
+      ref={listRef}
+      className="flex overflow-y-auto relative flex-col p-1 w-80 max-h-64 rounded-lg border shadow-lg border-border bg-background z-50 animate-fade-in-scale"
+    >
       {props.items.length ? (
-        props.items.map((item: any, index: number) => (
-          <li key={item.id}>
-            <button
-              onMouseDown={(e) => {
-                e.preventDefault();
-                selectItem(index);
-              }}
-              className={`flex text-left w-full items-center ${index === selectedIndex ? "bg-primary text-primary-floating" : "bg-transparent"}`}
-            >
-              {item.label}
-            </button>
-          </li>
-        ))
+        props.items.map((item: any, index: number) => {
+          const relativePath =
+            item.filePath && storageDir
+              ? getRelativePath(storageDir, item.filePath)
+              : "";
+          const folderPath = relativePath.includes("/")
+            ? relativePath.substring(0, relativePath.lastIndexOf("/"))
+            : "";
+          const displayPath = formatSimplifiedPath(folderPath);
+
+          return (
+            <li key={item.id}>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  selectItem(index);
+                }}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={`flex flex-col px-3 py-2 rounded-md w-full text-left transition-colors ${
+                  index === selectedIndex
+                    ? "bg-primary/10 text-foreground"
+                    : "hover:bg-muted/50 text-foreground"
+                }`}
+              >
+                <span className="text-sm font-medium truncate">
+                  {item.label || "Untitled"}
+                </span>
+                {displayPath && (
+                  <span className="text-xs text-foreground/50 truncate">
+                    {displayPath}
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })
       ) : (
-        <li className="item">No result</li>
+        <li className="p-4 text-center text-sm text-foreground/50">
+          No notes found
+        </li>
       )}
     </ul>
   );
@@ -118,7 +155,8 @@ export const suggestion = {
         .map((n) => ({
           id: n.id,
           label: n.title,
-          path: n.filePath || innerUrl(`/note/${n.id}`),
+          path: n.filePath || innerUrl(`/note/${n.id}`, "mention"),
+          filePath: n.filePath,
         }));
     } catch {
       return [];

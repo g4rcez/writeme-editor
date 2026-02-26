@@ -1,4 +1,5 @@
 import { parse, stringify } from "yaml";
+import { isElectron } from "./is-electron";
 
 export const YAML = { parse, stringify };
 
@@ -107,5 +108,8 @@ const join = (baseURL: string, ...urls: string[]) =>
     ),
   );
 
+export const getUrlNamespace = (namespace: string) =>
+  join(window.location.origin, `@${namespace}`);
+
 export const innerUrl = (path: string, namespace: string) =>
-  join("https://writeme.dev", `@${namespace}`, path);
+  join(getUrlNamespace(namespace), path);

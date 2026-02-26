@@ -224,9 +224,10 @@ export const Frontmatter = Node.create({
                   name: "frontmatter",
                   level: "block",
                   start(src: string) {
-                    return src.indexOf("---");
+                    return src.startsWith("---") ? 0 : undefined;
                   },
-                  tokenizer(src: string) {
+                  tokenizer(src: string, tokens: any[]) {
+                    if (tokens.some((t: any) => t.type !== "space")) return undefined;
                     const match = src.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
                     if (match) {
                       return {

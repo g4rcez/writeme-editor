@@ -95,7 +95,7 @@ export function parseNotePath(
 } {
   const relativePath = getRelativePath(rootDir, filePath);
   const parts = relativePath.split(/[/\\]/);
-  const filename = parts[parts.length - 1];
+  const filename = parts[parts.length - 1] || "";
   return { filename };
 }
 
