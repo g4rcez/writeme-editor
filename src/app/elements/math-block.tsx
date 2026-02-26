@@ -1,6 +1,7 @@
 import { create, all, format } from "mathjs";
 import { useId, useMemo, useState, useEffect } from "react";
 import { fetchExchangeRates, type ExchangeRateData } from "../../lib/currency";
+import { Dates } from "../../lib/dates";
 
 const expressionImprovements = (expr: string): string =>
   expr
@@ -27,28 +28,33 @@ const MathEvaluate = (props: { code: string }) => {
   }, []);
 
   const expressions = useMemo(() => {
-    try {
-      const math = create(all);
-      if (ratesData) {
-        try {
-          math.createUnit("EUR");
-        } catch (e) {}
-        Object.entries(ratesData.rates).forEach(([code, rate]) => {
-          if (code !== "EUR") {
-            try {
-              math.createUnit(code, math.unit(1 / rate, "EUR"));
-            } catch (e) {}
-          }
-        });
-      }
-      const lines = props.code.split("\n");
-      const parser = math.parser();
-      return lines.map((x) => {
-        const expr = x.trim();
-        if (x.startsWith("//")) {
-          return [];
+    const math = create(all);
+    if (ratesData) {
+      try {
+        math.createUnit("EUR");
+      } catch (e) { }
+      Object.entries(ratesData.rates).forEach(([code, rate]) => {
+        if (code !== "EUR") {
+          try {
+            math.createUnit(code, math.unit(1 / rate, "EUR"));
+          } catch (e) { }
         }
-        if (expr === "") return [];
+      });
+    }
+    const lines = props.code.split("\n");
+    const parser = math.parser();
+    return lines.map((x) => {
+      const expr = x.trim();
+      if (x.startsWith("//") || expr === "") {
+        return [];
+      }
+      try {
+        const timezoneResult = Dates.evaluateTimezone(expr);
+        if (timezoneResult) {
+          return [x, timezoneResult];
+        }
+      } catch (e) { }
+      try {
         const translated = expressionImprovements(expr);
         const result = parser.evaluate(translated);
         return [
@@ -59,19 +65,19 @@ const MathEvaluate = (props: { code: string }) => {
             fraction: "ratio",
           }),
         ];
-      });
-    } catch (e) {
-      return [];
-    }
+      } catch (e) {
+        return [];
+      }
+    });
   }, [props.code, ratesData]);
 
   return (
-    <ul className="list-none !list-outside !mx-0 flex flex-col gap-1">
+    <ul className="list-none !list-outside !mx-0 flex flex-col gap-0">
       {expressions.map(([expr, value], index) =>
         !expr ? null : (
           <li
             key={`${id}-${expr}-${index}`}
-            className="flex gap-4 font-mono list-none"
+            className="flex gap-2 font-mono list-none"
           >
             {expr}
             <span className="text-primary">= {value}</span>
@@ -84,11 +90,8 @@ const MathEvaluate = (props: { code: string }) => {
 
 export const MathBlock = (props: { code: string }) => {
   return (
-    <div className="px-4 pb-4">
-      <div className="pt-4 font-mono border-t border-gray-200 dark:border-gray-700">
-        <MathEvaluate code={props.code} />
-      </div>
+    <div className="pt-4 font-mono border-t border-card-border">
+      <MathEvaluate code={props.code} />
     </div>
   );
 };
-

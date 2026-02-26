@@ -89,7 +89,7 @@ export const CodeBlockFrame = ({
         <div className="flex">
           <div
             className={clsx(
-              "flex flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
+              "flex leading-6 flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
               isTransparent ? "bg-transparent" : "bg-card-background",
             )}
             aria-hidden="true"
@@ -98,7 +98,7 @@ export const CodeBlockFrame = ({
               <span key={i}>{i + 1}</span>
             ))}
           </div>
-          <div className="overflow-x-auto relative p-4 w-full font-mono whitespace-pre">
+          <div className="overflow-x-auto relative p-4 w-full font-mono leading-6 whitespace-pre">
             {children}
           </div>
         </div>
@@ -564,14 +564,11 @@ const ExecutionOutput = ({
 
   if (!output && !stderr && !html) return null;
 
-  const sanitizeAnsi = (text: string) => {
-    return (
-      text
-        .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
-        .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
-    );
-  };
+  const sanitizeAnsi = (text: string) =>
+    text
+      .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
+      .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
   const htmlOutput = output ? converter.toHtml(sanitizeAnsi(output)) : "";
   const htmlStderr = stderr ? converter.toHtml(sanitizeAnsi(stderr)) : "";
@@ -700,11 +697,13 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   };
 
   const config = EXECUTION_CONFIG[language as BundledLanguage];
-  const canRun = !!(config?.browserRuntimeExec || (isElectron() && executablePath));
+  const canRun = !!(
+    config?.browserRuntimeExec ||
+    (isElectron() && executablePath)
+  );
 
   const handleRun = async () => {
     if (!config) return;
-
     setIsRunning(true);
     setOutput(null);
     try {

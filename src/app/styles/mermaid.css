@@ -1,0 +1,15 @@
+.mermaid svg {
+  max-width: 100%;
+}
+
+.dark .mermaid svg text {
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.mermaid svg .cluster rect {
+  stroke: hsl(220, 8%, 72%);
+}
+
+.dark .mermaid svg .cluster rect {
+  stroke: hsl(220, 10%, 24%);
+}

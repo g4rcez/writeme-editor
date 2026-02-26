@@ -1,6 +1,7 @@
 @import "./app/styles/code.css";
 @import "./app/styles/typography.css";
 @import "./app/styles/callout.css";
+@import "./app/styles/mermaid.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
