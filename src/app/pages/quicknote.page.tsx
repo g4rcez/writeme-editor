@@ -26,7 +26,7 @@ export default function QuickNotePage() {
     request();
   }, []);
 
-  if (loading) {
+  if (loading || !state.note) {
     return (
       <div className="flex justify-center items-center h-full text-gray-500">
         Loading Quick Note...
@@ -34,7 +34,7 @@ export default function QuickNotePage() {
     );
   }
   return (
-    <div className="mx-auto w-full h-full max-w-safe">
+    <div className="mx-auto w-full h-full print:block print:h-auto print:overflow-visible max-w-safe">
       <h1 className="py-2 mb-4 text-lg font-semibold border-b border-card-border">
         {state.note.title}
       </h1>

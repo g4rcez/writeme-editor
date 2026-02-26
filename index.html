@@ -1,33 +1,42 @@
 <!doctype html>
-<html lang="en-US" class="w-screen h-screen text-foreground bg-background overflow-x-clip">
+<html
+  lang="en-US"
+  class="w-screen h-screen text-foreground bg-background overflow-x-clip"
+>
+  <head>
+    <title>Writeme</title>
+    <meta charset="UTF-8" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#14161A" />
+    <meta name="application-name" content="Writeme" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#14161A" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Writeme" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#14161A" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="A powerful rich text editor with TipTap, syntax highlighting, and math support"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
+    />
+  </head>
 
-<head>
-  <title>Writeme</title>
-  <meta charset="UTF-8" />
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#14161A" />
-  <meta name="application-name" content="Writeme" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="msapplication-TileColor" content="#14161A" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-title" content="Writeme" />
-  <link rel="mask-icon" href="/mask-icon.svg" color="#14161A" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="description" content="A powerful rich text editor with TipTap, syntax highlighting, and math support" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" />
-</head>
-
-<body class="w-screen h-full">
-  <div id="root" class="h-full"></div>
-  <script type="module" src="/src/renderer.ts"></script>
-</body>
-
+  <body class="w-screen h-full">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
 </html>

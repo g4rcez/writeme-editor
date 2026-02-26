@@ -92,7 +92,7 @@ export const RootLayout = () => {
 
   return (
     <LayoutProvider>
-      <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate">
+      <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
         {!isQuickNote ? (
           <Fragment>
             <Commander />

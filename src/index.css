@@ -102,7 +102,7 @@ code {
 }
 
 .tiptap {
-  @apply h-full outline-none;
+  @apply h-full outline-none print:h-auto print:block print:overflow-visible;
 }
 
 [cmdk-group-heading] {

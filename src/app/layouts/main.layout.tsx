@@ -34,9 +34,9 @@ export const MainLayout = () => {
   }, [resize, stopResizing]);
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-background">
+    <div className="flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background">
       <Navbar />
-      <div className="flex overflow-hidden flex-1 w-screen bg-floating-background">
+      <div className="flex overflow-hidden print:block print:overflow-visible print:h-auto print:w-auto flex-1 w-screen bg-floating-background">
         <div className="print:hidden flex-shrink-0 w-fit">
           <ActivityBar />
         </div>
@@ -61,14 +61,14 @@ export const MainLayout = () => {
         {!state.isSidebarCollapsed && (
           <div
             onMouseDown={startResizing}
-            className="z-10 flex-shrink-0 -ml-0.5 w-1 transition-colors cursor-col-resize hover:bg-primary/50"
+            className="z-10 flex-shrink-0 -ml-0.5 w-1 transition-colors cursor-col-resize hover:bg-primary/50 print:hidden"
           />
         )}
-        <div className="flex relative flex-col flex-1 min-w-0 bg-background">
+        <div className="flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible">
           <TabsBar />
           <div
             id="main-scroll-container"
-            className="overflow-y-auto h-full flex-1 w-full bg-card-background"
+            className="overflow-y-auto print:block print:overflow-visible print:h-auto h-full flex-1 w-full bg-card-background"
           >
             <Outlet />
           </div>

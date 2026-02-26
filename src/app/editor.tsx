@@ -326,10 +326,10 @@ const InnerEditor = (props: {
     <div
       id="editor-container"
       style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="flex flex-col justify-start items-start mx-auto w-full h-full bg-card-background max-w-safe"
+      className="flex flex-col justify-start items-start mx-auto w-full h-full print:block print:h-auto print:overflow-visible bg-card-background max-w-safe"
     >
       <EditorContext.Provider value={{ editor }}>
-        <BubbleMenu className="z-navbar isolate" editor={editor}>
+        <BubbleMenu className="z-navbar isolate print:hidden" editor={editor}>
           <ul className="flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48">
             {isElectron() ? (
               <li>
@@ -352,7 +352,7 @@ const InnerEditor = (props: {
         <EditorContent
           key={props.id}
           editor={editor}
-          className="w-full h-full text-lg"
+          className="w-full h-full print:block print:h-auto print:overflow-visible text-lg"
         />
       </EditorContext.Provider>
     </div>
