@@ -3,14 +3,14 @@ import { getReadingTime } from "@/lib/file-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
-import { PropsWithChildren, useEffect } from "react";
+import { type PropsWithChildren, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
-    <div className="flex relative flex-col gap-4 py-6 px-8 w-full">
+    <div className="flex relative flex-col gap-4 py-6 px-8 w-full h-full">
       <TableOfContents />
       {props.children}
     </div>

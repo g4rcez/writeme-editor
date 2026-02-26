@@ -1,5 +1,5 @@
-import { Extension } from "@tiptap/core";
-import { DOMParser } from "@tiptap/pm/model";
+import { Extension, createNodeFromContent } from "@tiptap/core";
+import { DOMParser, Fragment } from "@tiptap/pm/model";
 import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
 import { MarkdownParser } from "./parse/MarkdownParser";
@@ -70,7 +70,31 @@ export const Markdown = Extension.create({
         (position, content) =>
         ({ editor, tr, dispatch }) => {
           if (typeof content !== "string") {
-            return false;
+            try {
+              const node = createNodeFromContent(content, editor.schema, {
+                parseOptions: { preserveWhitespace: "full", ...editor.options.parseOptions },
+              });
+              if (dispatch) {
+                let from = typeof position === "number" ? position : position.from;
+                let to = typeof position === "number" ? position : position.to;
+                const nodes = node instanceof Fragment
+                  ? Array.from({ length: node.childCount }, (_, i) => node.child(i))
+                  : [node];
+                const isOnlyBlockContent = nodes.every((n) => n.isBlock);
+                if (from === to && isOnlyBlockContent) {
+                  const { parent } = tr.doc.resolve(from);
+                  if (parent.isTextblock && !parent.type.spec.code && !parent.childCount) {
+                    from -= 1;
+                    to += 1;
+                  }
+                }
+                tr.replaceWith(from, to, node);
+              }
+              return true;
+            } catch (e) {
+              console.error("Markdown insertContentAt error:", e);
+              return false;
+            }
           }
           const storage = (this as any).storage || editor.storage.markdown;
           if (!storage || !storage.parser) {

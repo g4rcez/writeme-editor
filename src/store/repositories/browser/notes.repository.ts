@@ -1,18 +1,25 @@
 import { endOfDay, startOfDay } from "date-fns";
-import { INoteRepository, Note } from "../../note";
-import { EntityBase } from "../../repository";
+import { type INoteRepository, Note } from "../../note";
+import { type EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { db } from "./dexie-db";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
-import { ITabRepository } from "../entities/tab";
+import { type ITabRepository } from "../entities/tab";
 
-export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+export class NotesRepository
+  extends BaseRepository<Note>
+  implements INoteRepository
+{
   constructor(private readonly tabsRepository: ITabRepository) {
-    super(new DexieStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
+    super(
+      new DexieStorageAdapter(),
+      "notes",
+      (a, b) => +b.updatedAt - +a.updatedAt,
+    );
   }
 
-  async delete(id: EntityBase["id"]): Promise<boolean> {
+  override async delete(id: EntityBase["id"]): Promise<boolean> {
     const result = await super.delete(id);
     if (result) {
       await this.tabsRepository.deleteByNoteId(id);
@@ -20,7 +27,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return result;
   }
 
-  async save(item: Note): Promise<Note> {
+  override async save(item: Note): Promise<Note> {
     const settings = SettingsService.load();
     item.createdBy = settings.defaultAuthor;
     item.updatedBy = settings.defaultAuthor;
@@ -28,7 +35,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return await super.save(item);
   }
 
-  async update(id: EntityBase["id"], item: Note): Promise<Note> {
+  override async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const settings = SettingsService.load();
     const existing = await this.getOne(id);
     if (!existing) {
@@ -41,7 +48,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return await super.update(id, item);
   }
 
-  async getOne(id: EntityBase["id"]): Promise<Note | null> {
+  override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await super.getOne(id);
     if (!metadata) {
       return null;
@@ -49,7 +56,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  async getAll(query?: { limit?: number }): Promise<Note[]> {
+  override async getAll(query?: { limit?: number }): Promise<Note[]> {
     const items = await super.getAll(query);
     return items.map((metadata) =>
       Note.parse({ ...metadata, content: metadata.content || "" }),

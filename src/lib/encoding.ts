@@ -1,3 +1,7 @@
+import { parse, stringify } from "yaml";
+
+export const YAML = { parse, stringify };
+
 const B64_CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const B64_LOOKUP = new Uint8Array(256);
@@ -103,4 +107,5 @@ const join = (baseURL: string, ...urls: string[]) =>
     ),
   );
 
-export const innerUrl = (path: string) => join("https://writeme.dev", path);
+export const innerUrl = (path: string, namespace: string) =>
+  join("https://writeme.dev", `@${namespace}`, path);

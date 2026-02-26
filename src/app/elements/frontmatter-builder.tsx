@@ -10,8 +10,10 @@ import {
 } from "@g4rcez/components";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { ChangeEvent, useEffect, useState } from "react";
-import * as YAML from "yaml";
+import { type ChangeEvent, useEffect, useState } from "react";
+import { parse, stringify } from "yaml";
+
+const YAML = { parse, stringify };
 
 type PropertyType =
   | "text"
@@ -100,6 +102,74 @@ interface FrontmatterBuilderProps {
   onSave: (yaml: string) => void;
 }
 
+const ValueInput = ({
+  property,
+  onChange,
+}: {
+  property: FrontmatterProperty;
+  onChange: (value: string) => void;
+}) => {
+  switch (property.type) {
+    case "boolean":
+      return (
+        <Checkbox
+          required
+          checked={property.value === "true"}
+          className="rounded cursor-pointer size-4 border-border accent-primary"
+          onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+        >
+          Checked?
+        </Checkbox>
+      );
+    case "multiline":
+      return (
+        <Textarea
+          required
+          value={property.value}
+          placeholder="Multiline text..."
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+            onChange(e.target.value)
+          }
+        />
+      );
+    case "number":
+      return (
+        <Input
+          required
+          type="number"
+          value={property.value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      );
+    case "date":
+      return (
+        <DatePicker
+          required
+          type="datetime"
+          value={property.value}
+          onChange={(e: any) => onChange((e as Date).toISOString())}
+        />
+      );
+    case "list":
+      return (
+        <Input
+          required
+          value={property.value}
+          placeholder="item1, item2, item3"
+          onChange={(e) => onChange(e.target.value)}
+        />
+      );
+    default:
+      return (
+        <Input
+          required
+          value={property.value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      );
+  }
+};
+
 export const FrontmatterBuilder = ({
   open,
   content,
@@ -107,7 +177,6 @@ export const FrontmatterBuilder = ({
   onSave,
 }: FrontmatterBuilderProps) => {
   const [properties, setProperties] = useState<FrontmatterProperty[]>([]);
-
   useEffect(() => {
     if (open) setProperties(parseFrontMatter(content));
   }, [open]);
@@ -161,6 +230,16 @@ export const FrontmatterBuilder = ({
                   value={p.type}
                   container="w-full"
                   options={TYPE_OPTIONS}
+                  right={
+                    <button
+                      type="button"
+                      title="Delete property"
+                      className="text-danger size-5"
+                      onClick={() => removeProperty(p.id)}
+                    >
+                      <TrashIcon size={14} />
+                    </button>
+                  }
                   onChange={(e) =>
                     updateProperty(p.id, {
                       type: e.target.value as PropertyType,
@@ -172,17 +251,11 @@ export const FrontmatterBuilder = ({
                 property={p}
                 onChange={(value) => updateProperty(p.id, { value })}
               />
-              <button
-                onClick={() => removeProperty(p.id)}
-                className="flex justify-center items-center w-8 h-9 rounded transition-colors text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                title="Delete property"
-              >
-                <TrashIcon size={14} />
-              </button>
             </div>
           ))}
         </div>
         <button
+          type="button"
           onClick={addProperty}
           className="flex gap-1 items-center py-1 text-xs transition-colors text-muted-foreground w-fit hover:text-foreground"
         >
@@ -190,80 +263,12 @@ export const FrontmatterBuilder = ({
           Add property
         </button>
         <div className="flex gap-2 justify-end pt-2 border-t border-card-border">
-          <Button theme="ghost" onClick={onClose}>
+          <Button theme="ghost-muted" onClick={onClose}>
             Cancel
           </Button>
-          <Button theme="primary" onClick={handleSave}>
-            Save
-          </Button>
+          <Button onClick={handleSave}>Save</Button>
         </div>
       </div>
     </Modal>
   );
-};
-
-const ValueInput = ({
-  property,
-  onChange,
-}: {
-  property: FrontmatterProperty;
-  onChange: (value: string) => void;
-}) => {
-  switch (property.type) {
-    case "boolean":
-      return (
-        <Checkbox
-          required
-          checked={property.value === "true"}
-          className="w-4 h-4 rounded cursor-pointer border-border accent-primary"
-          onChange={(e) => onChange(e.target.checked ? "true" : "false")}
-        />
-      );
-    case "multiline":
-      return (
-        <Textarea
-          required
-          value={property.value}
-          placeholder="Multiline text..."
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-            onChange(e.target.value)
-          }
-        />
-      );
-    case "number":
-      return (
-        <Input
-          required
-          type="number"
-          value={property.value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-    case "date":
-      return (
-        <DatePicker
-          required
-          type="datetime"
-          value={property.value}
-          onChange={(e: Date) => onChange(e.toISOString())}
-        />
-      );
-    case "list":
-      return (
-        <Input
-          required
-          value={property.value}
-          placeholder="item1, item2, item3"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-    default:
-      return (
-        <Input
-          required
-          value={property.value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-  }
 };

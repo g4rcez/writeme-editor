@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const itemsRef = useRef(props.items);
   const editorRef = useRef(props.editor);
@@ -38,6 +39,10 @@ const MentionList = (props: any) => {
 
   useEffect(() => setSelectedIndex(0), [props.items]);
 
+  useEffect(() => {
+    listRef.current?.children[selectedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
   useLayoutEffect(() => {
     const handler = ({ event }: { event: KeyboardEvent }) => {
       if (event.key === "ArrowUp") {
@@ -61,7 +66,7 @@ const MentionList = (props: any) => {
   }, []);
 
   return (
-    <ul className="flex overflow-y-auto relative flex-col gap-4 p-2 border shadow border-floating-border max-w-72 bg-floating-background">
+    <ul ref={listRef} className="flex overflow-y-auto relative flex-col gap-4 p-2 border shadow border-floating-border w-72 max-h-80 bg-floating-background rounded-md">
       {props.items.length ? (
         props.items.map((item: any, index: number) => (
           <li key={item.id}>

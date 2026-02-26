@@ -1,8 +1,11 @@
-import { ITabRepository, Tab } from "../entities/tab";
+import { type ITabRepository, type Tab } from "../entities/tab";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 
-export class TabsRepository extends BaseRepository<Tab> implements ITabRepository {
+export class TabsRepository
+  extends BaseRepository<Tab>
+  implements ITabRepository
+{
   constructor() {
     super(new ElectronStorageAdapter(), "tabs", (a, b) => a.order - b.order);
   }

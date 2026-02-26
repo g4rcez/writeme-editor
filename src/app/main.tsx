@@ -1,9 +1,8 @@
 import {
   ComponentsProvider,
   createTokenStyles,
-  TokenRemap,
-  Modal,
-  Tweaks,
+  type TokenRemap,
+  type Tweaks,
 } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -42,20 +41,6 @@ const tokenRemap: TokenRemap = {
     return t;
   },
 };
-
-async function initializePWA() {
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("beforeinstallprompt", (e) => {
-      (window as any).deferredPrompt = e;
-      console.log(
-        "PWA can be installed! Look for the install icon in your browser address bar.",
-      );
-    });
-    window.addEventListener("appinstalled", () => {
-      (window as any).deferredPrompt = null;
-    });
-  }
-}
 
 const themeConfiguration = () => {
   const head = document.getElementsByTagName("head")[0]!;
@@ -100,8 +85,8 @@ export async function main() {
     const tab = sortByNewest(tabs)[0];
     const find = notes.find((x) => x.id === tab?.id);
     if (find) {
-      const note = await repositories.notes.getOne(notes[0].id);
-      globalDispatch.note(note);
+      const note = await repositories.notes.getOne(find.id);
+      globalDispatch.note(note!);
     }
   } catch (error) {
     console.error("Failed to load notes:", error);

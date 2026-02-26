@@ -1,4 +1,4 @@
-import { EntityBase, Repository } from "@/store/repository";
+import { type EntityBase, type Repository } from "@/store/repository";
 
 export class Hashtag implements EntityBase {
   public constructor(

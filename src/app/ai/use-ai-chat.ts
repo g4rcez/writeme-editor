@@ -1,11 +1,10 @@
-import { useChat } from "@tanstack/ai-react";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { repositories } from "../../store/global.store";
 import {
-  AIMessage,
-  AIChat,
+  type AIChat,
+  type AIMessage,
 } from "../../store/repositories/electron/ai.repository";
-import { v4 as uuidv4 } from "uuid";
 
 export function useAIChat(noteId?: string) {
   const [chat, setChat] = useState<AIChat | null>(null);
@@ -18,8 +17,8 @@ export function useAIChat(noteId?: string) {
       if (!noteId) return;
       const chats = await repositories.ai.getChats(noteId);
       if (chats.length > 0) {
-        setChat(chats[0]);
-        const msgs = await repositories.ai.getMessages(chats[0].id);
+        setChat(chats[0]!);
+        const msgs = await repositories.ai.getMessages(chats[0]?.id!);
         setMessages(msgs);
       } else {
         const newChat: AIChat = {

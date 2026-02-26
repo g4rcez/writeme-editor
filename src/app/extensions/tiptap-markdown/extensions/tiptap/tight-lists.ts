@@ -1,4 +1,4 @@
-import { Commands, Editor, Extension } from "@tiptap/core";
+import { type Commands, Editor, Extension } from "@tiptap/core";
 
 export const MarkdownTightLists = Extension.create({
   name: "markdownTightLists",

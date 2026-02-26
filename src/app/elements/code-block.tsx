@@ -21,6 +21,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -46,26 +47,29 @@ import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
 
 export type CodeBlockFrameProps = {
-  children: ReactNode;
+  id: string;
   lineCount: number;
-  header?: ReactNode;
-  footer?: ReactNode;
-  isTransparent?: boolean;
-  isBodyVisible?: boolean;
   className?: string;
+  footer?: ReactNode;
+  header?: ReactNode;
+  children: ReactNode;
+  isBodyVisible?: boolean;
+  isTransparent?: boolean;
 };
 
 export const CodeBlockFrame = ({
-  children,
-  lineCount,
-  header,
+  id,
   footer,
-  isTransparent = false,
-  isBodyVisible = true,
+  header,
+  children,
   className,
+  lineCount,
+  isBodyVisible = true,
+  isTransparent = false,
 }: CodeBlockFrameProps) => {
   return (
     <NodeViewWrapper
+      id={id}
       as="div"
       className={clsx(
         "overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
@@ -641,6 +645,7 @@ const CodeBlockAddons = ({
 };
 
 const LanguageSelector = (props: ReactNodeViewProps) => {
+  const id = useId();
   const language = props.node.attrs.language || "plaintext";
   const code = props.node.textContent.trim();
   const [isFormatting, setIsFormatting] = useState(false);
@@ -744,6 +749,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
 
   return (
     <CodeBlockFrame
+      id={`code-block-${language}-${id}`}
       lineCount={props.node.textContent.split("\n").length}
       header={
         <CodeBlockHeader

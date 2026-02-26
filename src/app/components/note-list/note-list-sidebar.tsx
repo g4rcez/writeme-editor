@@ -1,17 +1,17 @@
-import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
-import { Fragment, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Dates } from "@/lib/dates";
-import { repositories } from "@/store/repositories";
 import { useLayoutContext } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
-import { NoteWithTags } from "@/app/hooks/use-note-list";
+import { type NoteWithTags } from "@/app/hooks/use-note-list";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
-import { Note } from "@/store/note";
+import { Dates } from "@/lib/dates";
 import { globalDispatch } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 type NoteItemProps = {
   note: NoteWithTags;
@@ -56,7 +56,9 @@ const NoteItem = ({
             onClick={onToggleFavorite}
             className={`p-1 rounded-md hover:bg-background/80 ${note.favorite ? "text-yellow-500 opacity-100" : "text-muted-foreground"}`}
           >
-            <StarIcon className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
+            <StarIcon
+              className={`size-3 ${note.favorite ? "fill-current" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -95,7 +97,7 @@ export const NoteListSidebar = () => {
   const params = useParams();
   const activeNoteId = params.noteId;
   const containerRef = useRef<HTMLDivElement>(null);
-  useKeyboardNavigation(notes, activeNoteId, containerRef);
+  useKeyboardNavigation(notes, activeNoteId, containerRef as any);
 
   const onSearch = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch({ type: "SET_SEARCH", query: e.target.value });
@@ -155,7 +157,7 @@ export const NoteListSidebar = () => {
         </div>
       </div>
       {notes.length === 0 ? (
-        <div className="flex flex-col flex-1 py-4 gap-4 justify-center items-center h-full text-sm text-muted-foreground">
+        <div className="flex flex-col flex-1 gap-4 justify-center items-center py-4 h-full text-sm text-muted-foreground">
           <span>No notes found</span>
           <button
             onClick={createNewNote}

@@ -1,4 +1,4 @@
-import Dexie, { EntityTable } from "dexie";
+import Dexie, { type EntityTable } from "dexie";
 import { Note } from "../../note";
 import { Tab } from "../entities/tab";
 import { Hashtag } from "../entities/hashtag";

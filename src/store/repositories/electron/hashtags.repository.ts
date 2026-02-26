@@ -1,8 +1,11 @@
-import { Hashtag, IHashtagRepository } from "../entities/hashtag";
+import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 
-export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
+export class HashtagsRepository
+  extends BaseRepository<Hashtag>
+  implements IHashtagRepository
+{
   constructor() {
     super(new ElectronStorageAdapter(), "hashtags");
   }

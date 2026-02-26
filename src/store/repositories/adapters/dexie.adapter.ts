@@ -1,4 +1,4 @@
-import { StorageAdapter } from "./types";
+import { type StorageAdapter } from "./types";
 import { db } from "../browser/dexie-db";
 
 export class DexieStorageAdapter implements StorageAdapter {
@@ -10,7 +10,10 @@ export class DexieStorageAdapter implements StorageAdapter {
     return (await db.table(collection).get(id)) || null;
   }
 
-  async getAll<T>(collection: string, query?: { limit?: number }): Promise<T[]> {
+  async getAll<T>(
+    collection: string,
+    query?: { limit?: number },
+  ): Promise<T[]> {
     let dexieCollection = db.table(collection).toCollection();
     if (query?.limit) {
       dexieCollection = dexieCollection.limit(query.limit);

@@ -1,4 +1,8 @@
-import { AIConfig, AIChat, AIMessage } from "../electron/ai.repository";
+import {
+  type AIConfig,
+  type AIChat,
+  type AIMessage,
+} from "../electron/ai.repository";
 
 export interface IAIRepository {
   getConfigs(): Promise<AIConfig[]>;

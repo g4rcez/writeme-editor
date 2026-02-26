@@ -6,7 +6,10 @@ import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
 import { type Icon } from "@phosphor-icons/react";
-import { useLayoutContext, ActivityType } from "@/app/contexts/layout-context";
+import {
+  useLayoutContext,
+  type ActivityType,
+} from "@/app/contexts/layout-context";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { css, Tooltip } from "@g4rcez/components";
 import { Note } from "@/store/note";
@@ -69,7 +72,7 @@ export const ActivityBar = () => {
   };
 
   return (
-    <div className="flex flex-col items-center bg-background py-2 h-full border-r w-[52px] bg-sidebar/50 backdrop-blur-xl border-border/40">
+    <div className="flex flex-col items-center py-2 h-full border-r bg-background w-[52px] bg-sidebar/50 backdrop-blur-xl border-border/40">
       <div className="flex flex-col flex-1 gap-1 w-full">
         <ActivityIcon
           label="Explorer"

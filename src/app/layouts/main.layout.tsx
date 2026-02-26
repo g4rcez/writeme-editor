@@ -68,7 +68,7 @@ export const MainLayout = () => {
           <TabsBar />
           <div
             id="main-scroll-container"
-            className="overflow-y-auto flex-1 w-full bg-card-background"
+            className="overflow-y-auto h-full flex-1 w-full bg-card-background"
           >
             <Outlet />
           </div>

@@ -1,10 +1,12 @@
-import { EntityBase } from "@/store/repository";
-import { ITabRepository, Tab } from "../entities/tab";
+import { type ITabRepository, Tab } from "../entities/tab";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { db } from "./dexie-db";
 
-export class TabsRepository extends BaseRepository<Tab> implements ITabRepository {
+export class TabsRepository
+  extends BaseRepository<Tab>
+  implements ITabRepository
+{
   constructor() {
     super(new DexieStorageAdapter(), "tabs", (a, b) => a.order - b.order);
   }

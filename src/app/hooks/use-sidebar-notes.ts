@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { repositories } from "@/store/repositories";
-import { Note } from "@/store/note";
-import { useGlobalStore } from "@/store/global.store";
 import { useLayoutContext } from "@/app/contexts/layout-context";
-import { NoteWithTags } from "./use-note-list";
+import { useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { useEffect, useMemo, useState } from "react";
+import { type NoteWithTags } from "./use-note-list";
 
 export function useSidebarNotes() {
   const [state] = useGlobalStore();
@@ -49,7 +49,9 @@ export function useSidebarNotes() {
     if (activeActivity === "favorites") {
       result = result.filter((n) => n.favorite && n.noteType !== "template");
     } else if (activeActivity === "tags" && activeView.type === "tag") {
-      result = result.filter((n) => n.tags.includes(activeView.id) && n.noteType !== "template");
+      result = result.filter(
+        (n) => n.tags.includes(activeView.id) && n.noteType !== "template",
+      );
     } else {
       switch (activeView.type) {
         case "all":

@@ -1,19 +1,26 @@
 import { endOfDay, startOfDay } from "date-fns";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
-import { INoteRepository, Note } from "../../note";
-import { EntityBase } from "../../repository";
+import { type INoteRepository, Note } from "../../note";
+import { type EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
-import { ITabRepository } from "../entities/tab";
+import { type ITabRepository } from "../entities/tab";
 
-export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+export class NotesRepository
+  extends BaseRepository<Note>
+  implements INoteRepository
+{
   constructor(private readonly tabsRepository: ITabRepository) {
-    super(new ElectronStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
+    super(
+      new ElectronStorageAdapter(),
+      "notes",
+      (a, b) => +b.updatedAt - +a.updatedAt,
+    );
   }
 
-  async save(item: Note): Promise<Note> {
+  override async save(item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsService.load();
 
@@ -46,7 +53,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return item;
   }
 
-  async update(id: EntityBase["id"], item: Note): Promise<Note> {
+  override async update(id: EntityBase["id"], item: Note): Promise<Note> {
     const mode = getStorageMode();
     const settings = SettingsService.load();
     if (
@@ -130,7 +137,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return item;
   }
 
-  async getOne(id: EntityBase["id"]): Promise<Note | null> {
+  override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await this.adapter.get(this.collection, id);
     if (!metadata) {
       return null;
@@ -160,7 +167,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  async getAll(query?: { limit?: number }): Promise<Note[]> {
+  override async getAll(query?: { limit?: number }): Promise<Note[]> {
     const all = await this.adapter.getAll<Note>(this.collection);
     const notes = all.map((metadata: any) =>
       Note.parse({ ...metadata, content: "" }),
@@ -251,7 +258,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     );
   }
 
-  async delete(id: EntityBase["id"]): Promise<boolean> {
+  override async delete(id: EntityBase["id"]): Promise<boolean> {
     const note: any = await this.adapter.get(this.collection, id);
     if (!note) {
       return false;

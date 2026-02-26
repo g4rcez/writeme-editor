@@ -183,7 +183,11 @@
 }
 
 .tiptap .mention {
-  @apply px-1 py-0.5 text-primary-foreground bg-primary/70 rounded;
+  @apply px-1 py-0.5 text-primary-foreground bg-primary rounded no-underline;
+}
+
+.tiptap .mention::before {
+  content: "@";
 }
 
 .tiptap ul,

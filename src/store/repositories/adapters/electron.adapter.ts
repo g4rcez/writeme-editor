@@ -1,4 +1,4 @@
-import { StorageAdapter } from "./types";
+import { type StorageAdapter } from "./types";
 
 export class ElectronStorageAdapter implements StorageAdapter {
   async count(collection: string): Promise<number> {
@@ -9,7 +9,10 @@ export class ElectronStorageAdapter implements StorageAdapter {
     return (await window.electronAPI.db.get<T>(collection, id)) || null;
   }
 
-  async getAll<T>(collection: string, query?: { limit?: number }): Promise<T[]> {
+  async getAll<T>(
+    collection: string,
+    query?: { limit?: number },
+  ): Promise<T[]> {
     const all = await window.electronAPI.db.getAll<T>(collection);
     if (query?.limit) {
       return all.slice(0, query.limit);

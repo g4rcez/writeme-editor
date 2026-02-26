@@ -1,24 +1,23 @@
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { isElectron } from "@/lib/is-electron";
-import { SYSTEM_VARIABLES, SystemVariable } from "@/lib/template-utils";
+import { SYSTEM_VARIABLES, type SystemVariable } from "@/lib/template-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
-import { Button, Modal, Tag, Input, Alert } from "@g4rcez/components";
+import { Button, Input, Modal, Tag } from "@g4rcez/components";
+import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
 import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
-import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { parse as mdParser } from "marked";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Editor } from "../../editor";
 import { Confirm } from "../confirm";
-import { parse as mdParser } from "marked";
 
 export const TemplatesPane = () => {
   const [, dispatch] = useGlobalStore();

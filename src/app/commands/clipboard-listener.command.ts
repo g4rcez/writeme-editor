@@ -3,7 +3,7 @@ import {
   COPY_EVENT_STARTED,
 } from "../../ipc/copy-event";
 import { controller } from "../controller";
-import { ReplacerCommand } from "./commands";
+import { type ReplacerCommand } from "./commands";
 
 let interval: null | NodeJS.Timeout = null;
 

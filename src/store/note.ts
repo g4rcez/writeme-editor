@@ -1,5 +1,5 @@
 import { uuid } from "@g4rcez/components";
-import { EntityBase, Repository } from "./repository";
+import { type EntityBase, type Repository } from "./repository";
 
 type NoteType = "note" | "quick" | "read-it-later" | "template";
 

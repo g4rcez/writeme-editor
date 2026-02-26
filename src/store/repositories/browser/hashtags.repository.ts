@@ -1,5 +1,5 @@
 import { db } from "./dexie-db";
-import { Hashtag, IHashtagRepository } from "../entities/hashtag";
+import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { uuid } from "@g4rcez/components";

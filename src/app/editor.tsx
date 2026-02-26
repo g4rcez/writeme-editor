@@ -16,7 +16,6 @@ import {
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
 import { Fragment, useEffect, useMemo, useRef } from "react";
-import * as YAML from "yaml";
 import { isElectron } from "@/lib/is-electron";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
@@ -26,7 +25,8 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
-import { createExtensions, handleImageFile } from "./extensions";
+import { createExtensions } from "./extensions";
+import { YAML } from "@/lib/encoding";
 
 const getScrollContainer = () =>
   document.getElementById("main-scroll-container") || window;
@@ -120,7 +120,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
-      handleClick: (_, pos, event) => {
+      handleClick: (_, __, event) => {
         const node = event.target as HTMLElement;
         const linkNode = node.closest("a");
         if (linkNode) {
@@ -148,7 +148,7 @@ const InnerEditor = (props: {
           const match = text.match(/^---\n([\s\S]*?)\n---/);
           if (match) {
             try {
-              const parsed = YAML.parse(match[1]);
+              const parsed = YAML.parse(match?.[1]!);
               if (parsed && typeof parsed === "object") {
                 const note = Note.parse(props.note);
                 let changed = false;
@@ -326,7 +326,7 @@ const InnerEditor = (props: {
     <div
       id="editor-container"
       style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="flex flex-col justify-start items-start mx-auto w-full bg-card-background max-w-safe"
+      className="flex flex-col justify-start items-start mx-auto w-full h-full bg-card-background max-w-safe"
     >
       <EditorContext.Provider value={{ editor }}>
         <BubbleMenu className="z-navbar isolate" editor={editor}>
@@ -352,7 +352,7 @@ const InnerEditor = (props: {
         <EditorContent
           key={props.id}
           editor={editor}
-          className="w-full text-lg"
+          className="w-full h-full text-lg"
         />
       </EditorContext.Provider>
     </div>

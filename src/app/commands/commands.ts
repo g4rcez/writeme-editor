@@ -8,7 +8,7 @@ import {
   ClipboardListenerCommand,
 } from "./clipboard-listener.command";
 import { replacerRules } from "./replace-rules";
-import { ReplacerHandlerParams } from "./types";
+import { type ReplacerHandlerParams } from "./types";
 import { Dates } from "@/lib/dates";
 import { uiDispatch } from "@/store/ui.store";
 

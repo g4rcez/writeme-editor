@@ -24,7 +24,7 @@ const DefaultLink = ({
 
 export const MentionNodeView = (props: NodeViewProps) => {
   const { id, label, path } = props.node.attrs;
-  const href = path ?? innerUrl(`/note/${id}`);
+  const href = (path as string) ?? innerUrl(`/note/${id}`, "mention");
   const LinkComp: LinkRenderer =
     props.extension.options.linkRenderer ?? DefaultLink;
   return (

@@ -1,4 +1,4 @@
-import { ISettingsRepository, Settings } from "../entities/settings";
+import { type ISettingsRepository, type Settings } from "../entities/settings";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 

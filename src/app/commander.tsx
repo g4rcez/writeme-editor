@@ -5,7 +5,7 @@ import { utf8ToBase64 } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { CommandItemTypes, CommandPalette } from "@g4rcez/components";
+import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { editorGlobalRef } from "./editor-global-ref";

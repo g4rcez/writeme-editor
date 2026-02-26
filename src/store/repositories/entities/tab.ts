@@ -1,4 +1,4 @@
-import { EntityBase, Repository } from "../../repository";
+import { type EntityBase, type Repository } from "../../repository";
 
 export class Tab implements EntityBase {
   public constructor(
@@ -9,7 +9,7 @@ export class Tab implements EntityBase {
     public createdAt: Date,
     public type: string,
     public updatedAt: Date,
-  ) { }
+  ) {}
 }
 
 export interface ITabRepository extends Repository<Tab> {

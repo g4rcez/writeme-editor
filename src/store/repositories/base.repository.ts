@@ -1,11 +1,13 @@
-import { EntityBase, Repository } from "../repository";
-import { StorageAdapter } from "./adapters/types";
+import { type EntityBase, type Repository } from "../repository";
+import { type StorageAdapter } from "./adapters/types";
 
-export abstract class BaseRepository<T extends EntityBase> implements Repository<T> {
+export abstract class BaseRepository<
+  T extends EntityBase,
+> implements Repository<T> {
   constructor(
     protected readonly adapter: StorageAdapter,
     protected readonly collection: string,
-    protected readonly defaultSort?: (a: T, b: T) => number
+    protected readonly defaultSort?: (a: T, b: T) => number,
   ) {}
 
   async count(): Promise<number> {

@@ -1,6 +1,6 @@
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
-import { AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
+import { type AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
@@ -16,7 +16,7 @@ import Typography from "@tiptap/extension-typography";
 import { UniqueID } from "@tiptap/extension-unique-id";
 import { Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
-import { BundledTheme } from "shiki";
+import { type BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { ReplacerCommands } from "./commands/commands";
 import { Blockquote } from "./elements/blockquote";
@@ -103,14 +103,11 @@ export const handleImageFile = async (
       const state = globalState();
       const projectDir = state.settings.directory;
       const noteTitle = state.note?.title || "untitled";
-
       if (projectDir) {
-        // Sanitize note title to be OS-safe
         const sanitizedTitle = noteTitle
           .replace(/[^a-z0-9]/gi, "_")
           .toLowerCase();
         const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
-
         try {
           console.log("[handleImageFile] mkdir", targetDir);
           await window.electronAPI.fs.mkdir(targetDir);
@@ -292,14 +289,17 @@ export const createExtensions = (
         };
       },
       parseHTML() {
-        return [{ tag: 'span[data-type="mention"]' }, { tag: 'a[data-type="mention"]' }];
+        return [
+          { tag: 'span[data-type="mention"]', priority: 51 },
+          { tag: 'a[data-type="mention"]', priority: 51 },
+        ];
       },
       renderText({ node }) {
         return node.attrs.label ?? node.attrs.id;
       },
       renderHTML({ node }) {
         const label = node.attrs.label ?? node.attrs.id;
-        const path = node.attrs.path ?? innerUrl(node.attrs.id);
+        const path = node.attrs.path ?? innerUrl(node.attrs.id, "mention");
         return [
           "a",
           {
@@ -326,7 +326,7 @@ export const createExtensions = (
                     attrs: {
                       id: match[1],
                       label: match[1],
-                      path: innerUrl(match[1]),
+                      path: innerUrl(match[1], "mention"),
                     },
                   })
                   .run();
@@ -357,7 +357,7 @@ export const createExtensions = (
               return {
                 id: match[1],
                 label: match[1],
-                path: innerUrl(match[1]),
+                path: innerUrl(match[1], "mention"),
               };
             },
           }),
@@ -431,7 +431,7 @@ export const createExtensions = (
         serialize(state: any, node: any) {
           if (node && node.attrs) {
             const label = node.attrs.label ?? node.attrs.id;
-            const path = node.attrs.path ?? innerUrl(node.attrs.id);
+            const path = node.attrs.path ?? innerUrl(node.attrs.id, "mention");
             const id = node.attrs.id;
             state.write(`[${label}](${path} "writeme-mention:${id}")`);
           }

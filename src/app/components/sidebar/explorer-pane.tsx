@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
-import { TreeView } from "../tree-view";
+import { isElectron } from "@/lib/is-electron";
+import { globalDispatch, repositories } from "@/store/global.store";
+import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
+import { type TreeNode } from "@/types/tree";
 import { Button } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
-import { repositories, globalDispatch } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TreeNode } from "@/types/tree";
-import { isElectron } from "@/lib/is-electron";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
+import { TreeView } from "../tree-view";
 
 export const ExplorerPane = () => {
   const [rootPath, setRootPath] = useState<string | null>(

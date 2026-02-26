@@ -276,7 +276,7 @@ export const useGlobalStore = createGlobalReducer(
         await repositories.tabs.delete(id);
         const indexToDelete = state.tabs.findIndex((x) => x.id === id);
         const tabs = state.tabs.filter((x) => x.id !== id);
-        const tab: Tab | null = tabs.at(indexToDelete - 1) || tabs[0];
+        const tab: Tab | null = tabs.at(indexToDelete - 1) ?? tabs[0] ?? null;
         return { tabs, activeTabId: tab?.id ?? null };
       },
       removeTabByNoteId: async (noteId: string) => {
@@ -284,7 +284,9 @@ export const useGlobalStore = createGlobalReducer(
         await repositories.tabs.deleteByNoteId(noteId);
         const tabs = state.tabs.filter((x) => x.noteId !== noteId);
         const activeTabId =
-          state.activeTabId === noteId ? tabs[0]?.id ?? null : state.activeTabId;
+          state.activeTabId === noteId
+            ? (tabs[0]?.id ?? null)
+            : state.activeTabId;
         return { tabs, activeTabId };
       },
       deleteNote: async (id: string) => {
@@ -292,7 +294,7 @@ export const useGlobalStore = createGlobalReducer(
         await repositories.notes.delete(id);
         const tabs = state.tabs.filter((x) => x.noteId !== id);
         const activeTabId =
-          state.activeTabId === id ? tabs[0]?.id ?? null : state.activeTabId;
+          state.activeTabId === id ? (tabs[0]?.id ?? null) : state.activeTabId;
         const notes = state.notes.filter((n) => n.id !== id);
         const note = state.note?.id === id ? null : state.note;
         return { notes, tabs, activeTabId, note };
@@ -303,14 +305,16 @@ export const useGlobalStore = createGlobalReducer(
           const state = get.state();
           const updatedAt = new Date();
           const notes = state.notes.map((n) =>
-            n.id === id ? { ...n, content, updatedAt } : n,
+            n.id === id ? Note.parse({ ...n, content, updatedAt }) : n,
           );
           const note =
-            state.note?.id === id ? { ...state.note, content, updatedAt } : state.note;
-          return { notes, note };
+            state.note?.id === id
+              ? Note.parse({ ...state.note, content, updatedAt })
+              : state.note;
+          return { notes: notes ?? [], note: note ?? null };
         } catch (error: any) {
           uiDispatch.setError(error.message || "Failed to update note content");
-          return {};
+          return get.state();
         }
       },
       theme: (theme: Toggle<string>) => {

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { NoteWithTags } from "./use-note-list";
+import { type NoteWithTags } from "./use-note-list";
 
 export function useKeyboardNavigation(
   notes: NoteWithTags[],
@@ -11,7 +11,6 @@ export function useKeyboardNavigation(
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if we have notes and focus is within the container
       if (
         notes.length === 0 ||
         !containerRef.current?.contains(e.target as Node)

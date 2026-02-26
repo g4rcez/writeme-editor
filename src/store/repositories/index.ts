@@ -1,5 +1,5 @@
 import { isElectron } from "../../lib/is-electron";
-import { INoteRepository } from "../note";
+import { type INoteRepository } from "../note";
 import { HashtagsRepository as BrowserHashtagsRepository } from "./browser/hashtags.repository";
 import { NotesRepository as BrowserNotesRepository } from "./browser/notes.repository";
 import { ProjectsRepository as BrowserProjectsRepository } from "./browser/projects.repository";
@@ -13,12 +13,12 @@ import { SettingsRepository as ElectronSettingsRepository } from "./electron/set
 import { TabsRepository as ElectronTabsRepository } from "./electron/tabs.repository";
 import { ScriptsRepository as ElectronScriptsRepository } from "./electron/scripts.repository";
 import { AIRepository as ElectronAIRepository } from "./electron/ai.repository";
-import { IHashtagRepository } from "./entities/hashtag";
-import { IProjectRepository } from "./entities/project";
-import { ISettingsRepository } from "./entities/settings";
-import { ITabRepository } from "./entities/tab";
-import { IScriptRepository } from "./entities/script";
-import { IAIRepository } from "./entities/ai";
+import { type IHashtagRepository } from "./entities/hashtag";
+import { type IProjectRepository } from "./entities/project";
+import { type ISettingsRepository } from "./entities/settings";
+import { type ITabRepository } from "./entities/tab";
+import { type IScriptRepository } from "./entities/script";
+import { type IAIRepository } from "./entities/ai";
 
 type Result = {
   ai: IAIRepository;

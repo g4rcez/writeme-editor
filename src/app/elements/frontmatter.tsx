@@ -12,11 +12,15 @@ import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { useEffect, useMemo, useState } from "react";
 import { FrontmatterBuilder } from "./frontmatter-builder";
-import { BundledLanguage } from "shiki";
+import { type BundledLanguage } from "shiki";
 import * as YAML from "yaml";
 import { globalDispatch, globalState } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { getThemeForMode, ShikiPlugin, CodeBlockFrame } from "./code-block";
+
+const FRONTMATTER_ID = "frontmatter-block";
+
+const FRONTMATTER_BUTTON_ID = `${FRONTMATTER_ID}-button`;
 
 const FrontmatterView = (props: any) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -121,6 +125,7 @@ const FrontmatterView = (props: any) => {
     <>
       <CodeBlockFrame
         isTransparent
+        id={FRONTMATTER_ID}
         isBodyVisible={!isCollapsed}
         lineCount={props.node.textContent.split("\n").length}
         footer={
@@ -134,6 +139,7 @@ const FrontmatterView = (props: any) => {
             </div>
             <div className="flex items-center">
               <button
+                type="button"
                 onClick={convertToText}
                 title="Convert frontmatter to plain text"
                 className="py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
@@ -141,6 +147,7 @@ const FrontmatterView = (props: any) => {
                 Convert to text
               </button>
               <button
+                type="button"
                 onClick={() => setBuilderOpen(true)}
                 className="flex gap-1 items-center py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
               >
@@ -148,7 +155,9 @@ const FrontmatterView = (props: any) => {
                 Edit
               </button>
               <button
+                type="button"
                 onClick={toggleCollapse}
+                id={FRONTMATTER_BUTTON_ID}
                 className="flex gap-1 items-center py-2 px-4 text-xs font-medium bg-transparent transition-colors text-muted-foreground hover:bg-muted/20 hover:text-foreground"
               >
                 {isCollapsed ? <span>Expand</span> : <span>Collapse</span>}
@@ -267,7 +276,17 @@ export const Frontmatter = Node.create({
 
   addKeyboardShortcuts() {
     return {
-      "Mod-Alt-f": () => this.editor.commands.insertContent("---\n\n---"),
+      "Mod-Alt-f": () => {
+        const frontMatterBlock = document.getElementById(FRONTMATTER_ID);
+        if (!frontMatterBlock) this.editor.commands.insertContent("---\n\n---");
+        const button = document.getElementById(FRONTMATTER_BUTTON_ID);
+        if (button) {
+          button?.click();
+          button?.scrollIntoView();
+          return true;
+        }
+        return false;
+      },
     };
   },
 

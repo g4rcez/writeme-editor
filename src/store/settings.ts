@@ -1,8 +1,8 @@
-import { AppSettings, SettingsSchema } from "./settings.schema";
+import { type AppSettings, SettingsSchema } from "./settings.schema";
 import { isElectron } from "../lib/is-electron";
 import { SettingsRepository as BrowserSettingsRepository } from "./repositories/browser/settings.repository";
 import { SettingsRepository as ElectronSettingsRepository } from "./repositories/electron/settings.repository";
-import { ISettingsRepository } from "./repositories/entities/settings";
+import { type ISettingsRepository } from "./repositories/entities/settings";
 import { uuid } from "@g4rcez/components";
 
 export type { AppSettings };
