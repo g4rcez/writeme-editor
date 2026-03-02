@@ -7,6 +7,7 @@ import { css } from "@g4rcez/components";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Navbar } from "./navbar";
+import { useJsonDrop } from "../hooks/use-json-drop";
 
 const Aside = () => {
   const [state, dispatch] = useGlobalStore();
@@ -66,20 +67,23 @@ const Aside = () => {
   );
 };
 
-export const MainLayout = () => (
-  <div className="flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background">
-    <Navbar />
-    <div className="flex overflow-hidden flex-1 w-screen print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background">
-      <Aside />
-      <div className="flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible">
-        <TabsBar />
-        <div
-          id="main-scroll-container"
-          className="overflow-y-auto flex-1 w-full h-full print:block print:overflow-visible print:h-auto bg-background"
-        >
-          <Outlet />
+export const MainLayout = () => {
+  useJsonDrop();
+  return (
+    <div className="flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background">
+      <Navbar />
+      <div className="flex overflow-hidden flex-1 w-screen print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background">
+        <Aside />
+        <div className="flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible">
+          <TabsBar />
+          <div
+            id="main-scroll-container"
+            className="overflow-y-auto flex-1 w-full h-full print:block print:overflow-visible print:h-auto bg-background"
+          >
+            <Outlet />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};

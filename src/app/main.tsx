@@ -29,7 +29,7 @@ window.EXCALIDRAW_ASSET_PATH = "/";
 
 const tweaks: Tweaks = {
   input: { iconFeedback: false },
-  table: { sticky: 87, filters: false, sorters: false, operations: false },
+  table: { sticky: 0, filters: false, sorters: false, operations: false },
 };
 
 const createStyle = (id: string, innerText: string) =>
@@ -67,7 +67,6 @@ export async function main() {
     throw new Error("Root element not found");
   }
   themeConfiguration();
-  // initializePWA();
   try {
     await SettingsService.init();
     const settings = SettingsService.load();

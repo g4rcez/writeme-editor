@@ -12,34 +12,33 @@ The integration follows a tiered interaction model to minimize friction while pr
 
 When text is selected within the editor, a `<BubbleMenu />` appears containing an **"Ask to AI"** item.
 
-* **Action:** Clicking this item opens the **Inline Tooltip**.
-* **Context:** The current selection is automatically captured as the primary context for the upcoming request.
+- **Action:** Clicking this item opens the **Inline Tooltip**.
+- **Context:** The current selection is automatically captured as the primary context for the upcoming request.
 
 ### 1.2 Interaction: Inline Tooltip
 
 The Tooltip serves as a lightweight, focused entry point for single-turn commands.
 
-* **Input:** A text field for the user’s prompt (e.g., "Summarize this," "Refactor to TypeScript").
-* **Drawer Button:** A dedicated button (icon: `PanelRight` or similar) located in the Tooltip's top-right corner.
-* **Function:** Promotes the current session to the **Side Drawer** for a multi-turn chat experience.
-* **Keyboard Shortcut:** `Cmd/Ctrl + Enter` to execute the prompt immediately.
+- **Input:** A text field for the user’s prompt (e.g., "Summarize this," "Refactor to TypeScript").
+- **Drawer Button:** A dedicated button (icon: `PanelRight` or similar) located in the Tooltip's top-right corner.
+- **Function:** Promotes the current session to the **Side Drawer** for a multi-turn chat experience.
+- **Keyboard Shortcut:** `Cmd/Ctrl + Enter` to execute the prompt immediately.
 
 ### 1.3 Persistence: Side Drawer (Chat Aside)
 
 A vertical panel on the right side of the editor window for complex reasoning and history.
 
-* **Behavior:** When opened via the Tooltip, it inherits the text already entered in the Tooltip's input.
-* **UI Components:**
-* Chat history (Markdown-rendered).
-* "Apply" buttons on AI-generated code blocks to overwrite the editor selection.
-* Toggle for "Context Awareness" (Document-wide vs. Selection-only).
+- **Behavior:** When opened via the Tooltip, it inherits the text already entered in the Tooltip's input.
+- **UI Components:**
+- Chat history (Markdown-rendered).
+- "Apply" buttons on AI-generated code blocks to overwrite the editor selection.
+- Toggle for "Context Awareness" (Document-wide vs. Selection-only).
 
 ---
 
 ## 2. Technical Architecture (Electron)
 
-To maintain a performant UI (essential for a text editor), heavy AI tasks and network requests are offloaded to the **Main Process**.
-This feature will be only available to Electron, since we will use the CLI tool.
+To maintain a performant UI (essential for a text editor), heavy AI tasks and network requests are offloaded to the **Main Process**.This feature will be only available to Electron, since we will use the CLI tool.
 
 ### 2.1 Process Responsibilities
 
@@ -60,9 +59,9 @@ This feature will be only available to Electron, since we will use the CLI tool.
 
 ## 3. Data & Context Strategy
 
-* **Prompt Engineering:** Automatically wrap user input in a system prompt that defines the editor's environment (e.g., "You are an expert frontend assistant. The following text is from a React project...").
-* **Diff Previews:** When the AI suggests a change, the UI should ideally show a diff before applying it to the editor.
-* **Security:** Since this is an Electron app, ensure that API keys are never stored in `localStorage`. Use the system keychain via Electron's `safeStorage`.
+- **Prompt Engineering:** Automatically wrap user input in a system prompt that defines the editor's environment (e.g., "You are an expert frontend assistant. The following text is from a React project...").
+- **Diff Previews:** When the AI suggests a change, the UI should ideally show a diff before applying it to the editor.
+- **Security:** Since this is an Electron app, ensure that API keys are never stored in `localStorage`. Use the system keychain via Electron's `safeStorage`.
 
 ## 4. Key points
 

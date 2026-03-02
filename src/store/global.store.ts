@@ -41,6 +41,7 @@ type State = {
   activeTabId: string | null;
   readItLaterDialog: boolean;
   recentNotesDialog: boolean;
+  inspectJsonDialog: boolean;
   aiContext: AiContext | null;
   directoryBrowserDialog: boolean;
   directory: string | null;
@@ -62,6 +63,7 @@ const initialState: State = {
   notes: [] as Note[],
   readItLaterDialog: false,
   recentNotesDialog: false,
+  inspectJsonDialog: false,
   note: null as Note | null,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
@@ -224,6 +226,9 @@ export const useGlobalStore = createGlobalReducer(
       },
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,
+      }),
+      setInspectJsonDialog: (inspectJsonDialog: boolean) => ({
+        inspectJsonDialog,
       }),
       readItLaterDialog: (readItLaterDialog: boolean) => ({
         readItLaterDialog,

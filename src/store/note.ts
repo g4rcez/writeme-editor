@@ -6,6 +6,7 @@ export enum NoteType {
   quick = "quick",
   "read-it-later" = "read-it-later",
   template = "template",
+  json = "json",
 }
 
 export class Note implements EntityBase {

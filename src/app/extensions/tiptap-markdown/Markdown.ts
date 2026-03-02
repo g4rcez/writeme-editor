@@ -48,7 +48,6 @@ export const Markdown = Extension.create({
             return false;
           }
           try {
-            console.log({ content });
             const html = storage.parser.parse(content);
             if (dispatch) {
               const element = elementFromString(html);

@@ -146,7 +146,7 @@ npm run pwa:dev
 ### 3. Offline Testing
 
 1. Load the app online first
-2. Open DevTools > Network > Toggle offline
+2. Open DevTools &gt; Network &gt; Toggle offline
 3. Refresh page - should still work
 4. Test editor functionality offline
 
@@ -160,16 +160,19 @@ npm run pwa:dev
 ## Browser Support
 
 ### ✅ Fully Supported
+
 - Chrome 67+
 - Edge 79+
 - Firefox 79+
 - Safari 13.1+
 
 ### ⚠️ Partial Support
+
 - Safari 11.1+ (basic PWA features)
 - Samsung Internet 8.2+
 
 ### ❌ Not Supported
+
 - Internet Explorer
 - Legacy browsers
 
@@ -229,7 +232,7 @@ Adjust Workbox configuration:
 
 ### Debug Tools
 
-- Chrome DevTools > Application tab
+- Chrome DevTools &gt; Application tab
 - Lighthouse PWA audit
 - PWA Builder validation
 - Service worker debug logs

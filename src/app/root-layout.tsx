@@ -1,15 +1,9 @@
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { Fragment, Suspense, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Dates } from "@/lib/dates";
 import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "@/store/cursor-position.store";
-import {
-  globalDispatch,
-  repositories,
-  useGlobalStore,
-} from "@/store/global.store";
-import { Note } from "@/store/note";
+import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { Commander } from "@/app/commander";
@@ -21,11 +15,10 @@ import { CreateTemplateDialog } from "@/app/components/create-template-dialog";
 import { ReadItLaterDialog } from "@/app/components/read-it-later-dialog";
 import { DirectoryBrowserDialog } from "@/app/components/directory-browser-dialog";
 import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
+import { InspectJsonDialog } from "@/app/components/inspect-json-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
-
-const noop = () => {};
 
 export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
@@ -58,30 +51,9 @@ export const RootLayout = () => {
       };
       const controller = new AbortController();
       const opts = { signal: controller.signal };
-      const cleanup = !window.electronAPI?.onQuicknoteOpen
-        ? noop
-        : window.electronAPI.onQuicknoteOpen(async () => {
-            const today = new Date();
-            const existing = await repositories.notes.getQuicknoteByDate(today);
-            if (existing) {
-              dispatch.selectNoteById(existing.id);
-              navigate(`/quicknote/${existing.id}`);
-            } else {
-              const quicknote = Note.new(
-                `${Dates.yearMonthDay(today)}_quick_note`,
-                "",
-                "quick",
-              );
-              await repositories.notes.save(quicknote);
-              globalDispatch.selectNoteById(quicknote.id);
-              navigate(`/quicknote/${quicknote.id}`);
-            }
-          });
-
       window.addEventListener("keydown", handleKeyDown, opts);
       window.addEventListener("beforeunload", handleBeforeUnload, opts);
       return () => {
-        cleanup();
         controller.abort();
       };
     },
@@ -101,6 +73,7 @@ export const RootLayout = () => {
           <RecentNotesDialog />
           <ReadItLaterDialog />
           <DirectoryBrowserDialog />
+          <InspectJsonDialog />
         </Fragment>
       ) : null}
 

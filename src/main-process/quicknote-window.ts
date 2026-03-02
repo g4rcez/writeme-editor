@@ -18,13 +18,12 @@ export const createQuickNoteWindow = (preloadPath: string) => {
   quickNoteWindow = new BrowserWindow({
     width: 600,
     frame: true,
-    height: 400,
+    height: 450,
     show: true,
     alwaysOnTop: true,
-    center: true,
     title: "Quick notes",
-    x: Math.round(width / 2 - 300),
-    y: Math.round(height / 2 - 200),
+    x: width - 620,
+    y: height - 470,
     webPreferences: {
       preload: preloadPath,
       nodeIntegration: true,
@@ -32,6 +31,8 @@ export const createQuickNoteWindow = (preloadPath: string) => {
       accessibleTitle: "Quick notes",
     },
   });
+  quickNoteWindow.setAlwaysOnTop(true, "floating");
+  quickNoteWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   const hash = "quicknote";
   const search = new URLSearchParams([
     ["date", startOfDay(new Date().toISOString()).toISOString()],
@@ -49,7 +50,6 @@ export const createQuickNoteWindow = (preloadPath: string) => {
   quickNoteWindow.once("ready-to-show", () => {
     quickNoteWindow?.show();
     quickNoteWindow?.focus();
-    quickNoteWindow?.webContents.send("quicknote:open");
   });
   quickNoteWindow.on("closed", () => {
     quickNoteWindow = null;

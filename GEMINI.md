@@ -1,4 +1,4 @@
-# GEMINI.md
+# [GEMINI.md](http://GEMINI.md)
 
 Instructional context for Gemini CLI when working with the Writeme repository.
 
@@ -28,7 +28,7 @@ Writeme is a sophisticated, hybrid Electron and Web note-taking application. It'
 - **Plan First**: Before starting any implementation, you MUST present a detailed plan and discuss it with the user. Proactively ask questions to clarify requirements and resolve any ambiguities before writing code.
 - **Avoid Browser Dialogs**: NEVER use `window.alert`, `window.prompt`, or `window.confirm`. These APIs are blocking and inconsistent across environments.
   - **Alerts**: Use the global `Alert` component managed by `uiState.alert`. Trigger it via `uiDispatch.setAlert({ title: "...", message: "...", type: "error" | "success" | "info" })` using the `useUIStore` hook.
-  - **Confirmations**: 
+  - **Confirmations**:
     - For simple confirmations in functional flows, use `await Modal.confirm({ title: "...", description: "...", confirm: { text: "...", theme: "danger" | "primary" } })` from `@g4rcez/components`.
     - For confirmations that need custom UI or complex state, use the `Confirm` component (`src/app/components/confirm.tsx`).
   - **Prompts**: Implement a custom dialog with form inputs using the `Modal` component. Never use `window.prompt`.

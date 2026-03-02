@@ -66,9 +66,13 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            setTimeout(() => {
-              dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
-            }, 50);
+            if (isElectron()) {
+              window.electronAPI.app.openQuickNote();
+            } else {
+              setTimeout(() => {
+                dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
+              }, 50);
+            }
           },
         },
         {
@@ -95,6 +99,16 @@ export const Commander = () => {
               navigator.clipboard.writeText(url);
             }
             args.setOpen(false);
+          },
+        },
+        {
+          title: "Inspect Json",
+          type: "shortcut",
+          action: (args) => {
+            args.setOpen(false);
+            setTimeout(() => {
+              dispatch.setInspectJsonDialog(true);
+            }, 50);
           },
         },
         ...noteGroup,

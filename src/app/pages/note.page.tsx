@@ -7,6 +7,7 @@ import { type PropsWithChildren, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
+import { JsonGraph } from "../elements/json-graph/json-graph";
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
@@ -52,6 +53,8 @@ export default function NotePage() {
     );
   }
 
+  const isJson = note.noteType === ("json" as any);
+
   return (
     <Wrapper>
       {note.noteType === "read-it-later" ? (
@@ -76,7 +79,27 @@ export default function NotePage() {
           </span>
         </header>
       ) : null}
-      <Editor note={note} key={note.id} content={note.content || ""} />
+
+      {isJson ? (
+        <div className="flex-1 h-[calc(100vh-160px)]">
+          <JsonGraph
+            json={(() => {
+              try {
+                return JSON.parse(note.content);
+              } catch {
+                return { error: "Failed to parse JSON", raw: note.content };
+              }
+            })()}
+            onChange={(newJson) => {
+              const content = JSON.stringify(newJson, null, 2);
+              repositories.notes.updateContent(note.id, content);
+              dispatch.updateNoteContent(note.id, content);
+            }}
+          />
+        </div>
+      ) : (
+        <Editor note={note} key={note.id} content={note.content || ""} />
+      )}
     </Wrapper>
   );
 }

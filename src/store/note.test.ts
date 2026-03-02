@@ -29,6 +29,13 @@ describe("Note", () => {
     expect(note.noteType).toBe("template");
   });
 
+  it("should create a new json note", () => {
+    const note = Note.new("My JSON", '{"a":1}', "json" as any);
+    expect(note.title).toBe("My JSON");
+    expect(note.content).toBe('{"a":1}');
+    expect(note.noteType).toBe("json");
+  });
+
   it("should parse a note object", () => {
     const data = {
       title: "Parsed Title",

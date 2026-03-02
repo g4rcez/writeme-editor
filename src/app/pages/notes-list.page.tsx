@@ -5,7 +5,7 @@ import {
   Input,
   Table,
   Tag,
-  TagProps,
+  type TagProps,
 } from "@g4rcez/components";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
@@ -14,16 +14,17 @@ import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { Link } from "react-router-dom";
 import { Note } from "@/store/note";
-import { useNoteList, NoteWithTags } from "@/app/hooks/use-note-list";
+import { useNoteList, type NoteWithTags } from "@/app/hooks/use-note-list";
 
 const tag: Record<
   Note["noteType"],
   { title: string; theme: TagProps["theme"] }
 > = {
-  "read-it-later": { theme: "info", title: "Read it later" },
-  quick: { theme: "muted", title: "Quick note" },
+  json: { theme: "warn", title: "Json" },
   note: { theme: "primary", title: "Note" },
+  quick: { theme: "muted", title: "Quick note" },
   template: { theme: "secondary", title: "Template" },
+  "read-it-later": { theme: "info", title: "Read it later" },
 };
 
 export default function NotesListPage() {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { createColumns, Table, Tag, TagProps } from "@g4rcez/components";
+import { createColumns, Table, Tag, type TagProps } from "@g4rcez/components";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { repositories, useGlobalStore } from "@/store/global.store";
@@ -12,10 +12,11 @@ const tagThemeMap: Record<
   Note["noteType"],
   { title: string; theme: TagProps["theme"] }
 > = {
-  "read-it-later": { theme: "info", title: "Read it later" },
-  quick: { theme: "muted", title: "Quick note" },
+  json: { theme: "warn", title: "Json" },
   note: { theme: "primary", title: "Note" },
+  quick: { theme: "muted", title: "Quick note" },
   template: { theme: "secondary", title: "Template" },
+  "read-it-later": { theme: "info", title: "Read it later" },
 };
 
 export default function TagPage() {
@@ -26,17 +27,12 @@ export default function TagPage() {
 
   useEffect(() => {
     if (!id) return;
-
     const loadData = async () => {
       setLoading(true);
       try {
         const [allNotes] = await Promise.all([repositories.notes.getAll()]);
-
         const matchedNotes: TagNoteResult[] = [];
-
-        // Regex to find word-bounded tag matches
         const regex = new RegExp(`#${id}\\b`, "gi");
-
         for (const note of allNotes) {
           const matches = note.content.match(regex);
           if (matches && matches.length > 0) {
@@ -48,8 +44,6 @@ export default function TagPage() {
             matchedNotes.push(copy);
           }
         }
-
-        // Sort by occurrences descending
         matchedNotes.sort((a, b) => b.occurrences - a.occurrences);
         setNotes(matchedNotes);
       } catch (error) {
@@ -58,7 +52,6 @@ export default function TagPage() {
         setLoading(false);
       }
     };
-
     loadData();
   }, [id, state.notes]);
 
@@ -76,11 +69,7 @@ export default function TagPage() {
     });
     col.add("noteType", "Type", {
       Element: (props) => (
-        <Tag
-          className="rounded-xl"
-          size="small"
-          theme={tagThemeMap[props.value].theme}
-        >
+        <Tag size="small" theme={tagThemeMap[props.value].theme}>
           {tagThemeMap[props.value].title}
         </Tag>
       ),
@@ -108,16 +97,16 @@ export default function TagPage() {
       </div>
 
       {notes.length === 0 ? (
-        <div className="p-8 text-center border border-dashed rounded-lg border-border text-muted-foreground">
+        <div className="p-8 text-center rounded-lg border border-dashed border-border text-muted-foreground">
           <p>No notes found containing the tag #{id}</p>
         </div>
       ) : (
         <Table
           cols={cols}
-          name="tag-notes"
-          reference="id"
-          useControl={false}
           rows={notes}
+          reference="id"
+          name="tag-notes"
+          useControl={false}
         />
       )}
     </div>

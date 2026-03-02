@@ -20,7 +20,11 @@ export const notesIpcHandler = async () => {
   ipcMain.handle("fs:openFileOrDirectory", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile", "openDirectory"],
-      filters: [{ name: "Markdown", extensions: ["md"] }],
+      filters: [
+        { name: "All Supported", extensions: ["md", "json"] },
+        { name: "Markdown", extensions: ["md"] },
+        { name: "JSON", extensions: ["json"] },
+      ],
       title: "Open",
     });
     if (result.canceled || !result.filePaths[0]) return null;

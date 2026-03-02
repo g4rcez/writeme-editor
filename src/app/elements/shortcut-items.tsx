@@ -11,6 +11,8 @@ import {
 } from "@/lib/file-utils";
 import { Note } from "@/store/note";
 
+import { useNavigate } from "react-router-dom";
+
 // Shortcuts that require filesystem access (Electron only)
 const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e"];
 
@@ -43,6 +45,7 @@ const zoom = (op: (a: number, b: number) => number) => {
 
 export const useWritemeShortcuts = () => {
   const [state, dispatch] = useGlobalStore();
+  const navigate = useNavigate();
   return useMemo(
     (): Shortcut[] =>
       [
@@ -149,6 +152,25 @@ export const useWritemeShortcuts = () => {
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);
               if (file.success) {
+                if (result.path.endsWith(".json")) {
+                  try {
+                    JSON.parse(file.content); // Validate
+                    const note = Note.new(
+                      result.path.split(/[/\\]/).pop()?.replace(".json", "") ||
+                        "JSON Inspection",
+                      file.content,
+                      "json" as any,
+                    );
+                    note.filePath = result.path;
+                    await repositories.notes.save(note);
+                    dispatch.notes(await repositories.notes.getAll());
+                    dispatch.setNote(note);
+                    navigate(`/note/${note.id}`);
+                  } catch (e) {
+                    console.error("Invalid JSON file:", e);
+                  }
+                  return;
+                }
                 const noteData = createStandaloneNote(
                   result.path,
                   file.content,
@@ -185,7 +207,7 @@ export const useWritemeShortcuts = () => {
         .toSorted((a, b) =>
           a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
         ),
-    [],
+    [state.theme, dispatch, navigate],
   );
 };
 

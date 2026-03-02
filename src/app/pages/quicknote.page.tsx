@@ -10,11 +10,13 @@ export default function QuickNotePage() {
   const [state, dispatch] = useGlobalStore();
 
   useEffect(() => {
+    let ignored = false;
     async function request() {
       setLoading(true);
-      const quickNote = state.notes.find((x) => x.noteType === "quick");
-      if (quickNote) {
-        dispatch.note(quickNote);
+      const existing = await repositories.notes.getQuicknoteByDate(startOfDay(new Date()));
+      if (ignored) return;
+      if (existing) {
+        dispatch.note(existing);
       } else {
         const title = Dates.yearMonthDay(startOfDay(new Date()));
         const note = Note.new(`${title}-QuickNote`, "", "quick");
@@ -24,6 +26,17 @@ export default function QuickNotePage() {
       setLoading(false);
     }
     request();
+    return () => { ignored = true; };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        window.close();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   if (loading || !state.note) {
@@ -35,9 +48,10 @@ export default function QuickNotePage() {
   }
   return (
     <div className="mx-auto w-full h-full print:block print:h-auto print:overflow-visible max-w-safe">
-      <h1 className="py-2 mb-4 text-lg font-semibold border-b border-card-border">
-        {state.note.title}
-      </h1>
+      <div className="flex justify-between items-center py-2 mb-4 border-b border-card-border">
+        <h1 className="text-lg font-semibold">{state.note.title}</h1>
+        <span className="text-xs text-disabled">Press Esc to close</span>
+      </div>
       <Editor content={state.note.content} note={state.note} />
     </div>
   );

@@ -13,7 +13,7 @@
 }
 
 .tiptap code.inline-code {
-  @apply font-mono bg-primary text-primary-foreground rounded text-info-foreground text-sm p-1;
+  @apply font-mono bg-muted text-foreground rounded text-sm p-1;
 }
 
 .tiptap h1,
