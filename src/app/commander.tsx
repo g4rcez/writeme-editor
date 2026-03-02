@@ -142,7 +142,7 @@ export const Commander = () => {
             type: "shortcut",
             title: "Close all tabs",
             action: (args) => {
-              navigate("/")
+              navigate("/");
               dispatch.clearTabs();
               args.setOpen(false);
             },

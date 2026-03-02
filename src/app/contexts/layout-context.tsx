@@ -1,26 +1,28 @@
 import { createGlobalReducer } from "use-typed-reducer";
 
 export type ActivityType =
-  | "explorer"
-  | "search"
-  | "favorites"
+  | "json"
   | "tags"
-  | "templates"
-  | "settings";
+  | "search"
+  | "explorer"
+  | "settings"
+  | "favorites"
+  | "templates";
 
 export type LayoutView =
   | { type: "all" }
-  | { type: "folder"; id: string }
-  | { type: "tag"; id: string }
   | { type: "quick" }
-  | { type: "read-it-later" }
   | { type: "trash" }
-  | { type: "favorites" };
+  | { type: "favorites" }
+  | { type: "read-it-later" }
+  | { type: "tag"; id: string }
+  | { type: "json"; id: string }
+  | { type: "folder"; id: string };
 
 type LayoutState = {
+  searchQuery: string;
   activeView: LayoutView;
   activeActivity: ActivityType;
-  searchQuery: string;
 };
 
 const initialState: LayoutState = {

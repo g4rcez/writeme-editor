@@ -5,7 +5,7 @@ import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
-import { type Icon } from "@phosphor-icons/react";
+import { BracketsCurlyIcon, type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
   type ActivityType,
@@ -61,12 +61,7 @@ const ActivityIcon = ({
 
 export const ActivityBar = () => {
   const [layout, dispatchLayout] = useLayoutStore();
-
-  const [state, dispatch] = useGlobalStore((s) => ({
-    notes: s.notes,
-    isSidebarCollapsed: s.isSidebarCollapsed,
-  }));
-
+  const [state, dispatch] = useGlobalStore();
   const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
 
   const onActivityClick = (activity: ActivityType) => {
@@ -107,6 +102,15 @@ export const ActivityBar = () => {
           icon={LayoutIcon}
           active={layout.activeActivity === "templates"}
           onClick={() => onActivityClick("templates")}
+        />
+        <ActivityIcon
+          label="Json"
+          icon={BracketsCurlyIcon}
+          active={layout.activeActivity === "json"}
+          onClick={() => {
+            onActivityClick("json");
+            dispatch.setInspectJsonDialog(true);
+          }}
         />
       </div>
       <div className="flex flex-col gap-1 mt-auto w-full">
