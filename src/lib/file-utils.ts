@@ -76,14 +76,12 @@ export async function getUniqueFilePath(
 ): Promise<string> {
   let counter = 1;
   let testPath = basePath;
-
   while (await checkExists(testPath)) {
     const ext = getExtension(basePath);
     const base = basePath.slice(0, -ext.length);
     testPath = `${base}-${counter}${ext}`;
     counter++;
   }
-
   return testPath;
 }
 
@@ -199,3 +197,6 @@ export const getReadingTime = (
     formatted: `${minutes} min read`,
   };
 };
+
+export const tildaDir = (home: string, path: string): string =>
+  home && path.startsWith(home) ? path.replace(home, "~") : path;

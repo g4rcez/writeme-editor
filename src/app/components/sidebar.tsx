@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
@@ -20,7 +20,7 @@ type NoteListProps = {
   getDisplayPath: (note: Note) => string;
 };
 
-const NoteList = ({
+const NoteList = React.memo(({
   notes,
   currentNoteId,
   onSelect,
@@ -52,11 +52,17 @@ const NoteList = ({
       );
     })}
   </ul>
-);
+));
+
+NoteList.displayName = "NoteList";
 
 export const Sidebar = () => {
   const [uiState, uiDispatch] = useUIStore();
-  const [state, dispatch] = useGlobalStore();
+  const [{ notes, recentNotes, noteId }, dispatch] = useGlobalStore((state) => ({
+    notes: state.notes,
+    recentNotes: state.recentNotes,
+    noteId: state.note?.id,
+  }));
   const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
   const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
@@ -66,8 +72,8 @@ export const Sidebar = () => {
 
   useEffect(() => {
     const loadNotes = async () => {
-      const notes = await repositories.notes.getAll();
-      dispatch.notes(notes);
+      const allNotes = await repositories.notes.getAll();
+      dispatch.notes(allNotes);
       dispatch.loadRecentNotes(10);
     };
     loadNotes();
@@ -148,8 +154,8 @@ export const Sidebar = () => {
         <div className="overflow-y-auto flex-1 p-2">
           {activeSection === "recent" && (
             <NoteList
-              notes={state.recentNotes}
-              currentNoteId={state.note?.id}
+              notes={recentNotes}
+              currentNoteId={noteId}
               onSelect={openNote}
               getDisplayPath={getDisplayPath}
             />
@@ -157,14 +163,14 @@ export const Sidebar = () => {
 
           {activeSection === "all" && (
             <NoteList
-              notes={state.notes}
-              currentNoteId={state.note?.id}
+              notes={notes}
+              currentNoteId={noteId}
               onSelect={openNote}
               getDisplayPath={getDisplayPath}
             />
           )}
 
-          {state.notes.length === 0 && (
+          {notes.length === 0 && (
             <div className="flex flex-col justify-center items-center p-4 h-full text-center text-foreground/50">
               <FileTextIcon className="mb-2 w-8 h-8 opacity-50" />
               <p className="text-sm">No notes yet</p>

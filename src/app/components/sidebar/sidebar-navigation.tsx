@@ -5,13 +5,11 @@ import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useGlobalStore } from "@/store/global.store";
-import { useLayoutContext } from "@/app/contexts/layout-context";
+import { layoutDispatch, useLayoutStore } from "@/app/contexts/layout-context";
 import { repositories } from "@/store/repositories";
 import { useEffect, useState } from "react";
 import { Hashtag } from "@/store/repositories/entities/hashtag";
-import { SettingsService } from "@/store/settings";
 import { Note } from "@/store/note";
-import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 
 type SidebarItemProps = {
   icon: React.ReactNode;
@@ -52,8 +50,8 @@ const SectionHeader = ({ label }: { label: string }) => (
 );
 
 export const SidebarNavigation = () => {
-  const { state, dispatch } = useLayoutContext();
-  const [globalState] = useGlobalStore();
+  const [{ activeView }] = useLayoutStore((s) => ({ activeView: s.activeView }));
+  const [{ notes }] = useGlobalStore((state) => ({ notes: state.notes }));
   const [tags, setTags] = useState<Hashtag[]>([]);
 
   // Load tags
@@ -62,10 +60,10 @@ export const SidebarNavigation = () => {
   }, []);
 
   // Calculate counts
-  const allNotesCount = globalState.notes.filter(
+  const allNotesCount = notes.filter(
     (n: Note) => n.noteType === "note",
   ).length;
-  const favoritesCount = globalState.notes.filter(
+  const favoritesCount = notes.filter(
     (n: Note) => n.favorite,
   ).length;
   const trashCount = 0; // TODO: Implement trash
@@ -94,25 +92,25 @@ export const SidebarNavigation = () => {
           icon={<FileTextIcon className="size-4" />}
           label="All Notes"
           count={allNotesCount}
-          active={state.activeView.type === "all"}
-          onClick={() => dispatch({ type: "SET_VIEW", view: { type: "all" } })}
+          active={activeView.type === "all"}
+          onClick={() => layoutDispatch.setView({ type: "all" })}
         />
         <SidebarItem
           icon={<StarIcon className="size-4" />}
           label="Favorites"
           count={favoritesCount}
-          active={state.activeView.type === "favorites"}
+          active={activeView.type === "favorites"}
           onClick={() =>
-            dispatch({ type: "SET_VIEW", view: { type: "favorites" } })
+            layoutDispatch.setView({ type: "favorites" })
           }
         />
         <SidebarItem
           icon={<TrashIcon className="size-4" />}
           label="Trash"
           count={trashCount}
-          active={state.activeView.type === "trash"}
+          active={activeView.type === "trash"}
           onClick={() =>
-            dispatch({ type: "SET_VIEW", view: { type: "trash" } })
+            layoutDispatch.setView({ type: "trash" })
           }
         />
 
@@ -124,10 +122,10 @@ export const SidebarNavigation = () => {
             label={tag}
             count={count}
             active={
-              state.activeView.type === "tag" && state.activeView.id === tag
+              activeView.type === "tag" && activeView.id === tag
             }
             onClick={() =>
-              dispatch({ type: "SET_VIEW", view: { type: "tag", id: tag } })
+              layoutDispatch.setView({ type: "tag", id: tag })
             }
           />
         ))}

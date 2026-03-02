@@ -7,7 +7,7 @@ import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
 import { type Icon } from "@phosphor-icons/react";
 import {
-  useLayoutContext,
+  useLayoutStore,
   type ActivityType,
 } from "@/app/contexts/layout-context";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
@@ -60,14 +60,17 @@ const ActivityIcon = ({
 );
 
 export const ActivityBar = () => {
-  const { state, dispatch } = useLayoutContext();
-  const [globalState] = useGlobalStore();
-  const favoritesCount = globalState.notes.filter(
-    (n: Note) => n.favorite,
-  ).length;
+  const [layout, dispatchLayout] = useLayoutStore();
+
+  const [state, dispatch] = useGlobalStore((s) => ({
+    notes: s.notes,
+    isSidebarCollapsed: s.isSidebarCollapsed,
+  }));
+
+  const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
 
   const onActivityClick = (activity: ActivityType) => {
-    dispatch({ type: "SET_ACTIVITY", activity });
+    dispatchLayout.setActivity(activity);
     globalDispatch.setSidebarCollapsed(false);
   };
 
@@ -77,49 +80,47 @@ export const ActivityBar = () => {
         <ActivityIcon
           label="Explorer"
           icon={FilesIcon}
-          active={state.activeActivity === "explorer"}
+          active={layout.activeActivity === "explorer"}
           onClick={() => onActivityClick("explorer")}
         />
         <ActivityIcon
           label="Search"
           icon={MagnifyingGlassIcon}
-          active={state.activeActivity === "search"}
+          active={layout.activeActivity === "search"}
           onClick={() => onActivityClick("search")}
         />
         <ActivityIcon
           label="Favorites"
           icon={StarIcon}
           badge={favoritesCount}
-          active={state.activeActivity === "favorites"}
+          active={layout.activeActivity === "favorites"}
           onClick={() => onActivityClick("favorites")}
         />
         <ActivityIcon
           label="Tags"
           icon={HashIcon}
-          active={state.activeActivity === "tags"}
+          active={layout.activeActivity === "tags"}
           onClick={() => onActivityClick("tags")}
         />
         <ActivityIcon
           label="Templates"
           icon={LayoutIcon}
-          active={state.activeActivity === "templates"}
+          active={layout.activeActivity === "templates"}
           onClick={() => onActivityClick("templates")}
         />
       </div>
       <div className="flex flex-col gap-1 mt-auto w-full">
         <ActivityIcon
-          label={
-            globalState.isSidebarCollapsed
-              ? "Expand Sidebar"
-              : "Collapse Sidebar"
-          }
           icon={SidebarIcon}
           onClick={() => globalDispatch.toggleSidebar()}
+          label={
+            state.isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
+          }
         />
         <ActivityIcon
           label="Settings"
           icon={GearIcon}
-          active={state.activeActivity === "settings"}
+          active={layout.activeActivity === "settings"}
           onClick={() => onActivityClick("settings")}
         />
       </div>

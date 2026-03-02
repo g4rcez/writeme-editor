@@ -19,8 +19,8 @@ import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle"
 import { useEffect, useState, Fragment } from "react";
 import { globalDispatch, repositories } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
-import { AppSettings, SettingsService } from "@/store/settings";
-import { AIConfig } from "@/store/repositories/electron/ai.repository";
+import { type AppSettings, SettingsService } from "@/store/settings";
+import { type AIConfig } from "@/store/repositories/electron/ai.repository";
 import { CustomVariables } from "@/app/components/settings/custom-variables";
 
 export default function SettingsPage() {
@@ -327,8 +327,8 @@ export default function SettingsPage() {
             <Card title="Workspace">
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
-                  <span className="font-medium text-sm">Notes Directory</span>
-                  <code className="block p-2 text-[10px] whitespace-pre-wrap break-all rounded bg-muted border border-border/40">
+                  <span className="text-sm font-medium">Notes Directory</span>
+                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
                     {settings.directory ||
                       "No directory selected (Local Storage)"}
                   </code>
@@ -336,7 +336,7 @@ export default function SettingsPage() {
 
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-sm">
+                    <span className="text-sm font-medium">
                       Templates Directory
                     </span>
                     <Button
@@ -353,7 +353,7 @@ export default function SettingsPage() {
                       Change Folder
                     </Button>
                   </div>
-                  <code className="block p-2 text-[10px] whitespace-pre-wrap break-all rounded bg-muted border border-border/40">
+                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
                     {settings.templatesDirectory ||
                       "Default (.templates in workspace)"}
                   </code>

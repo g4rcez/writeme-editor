@@ -1,4 +1,5 @@
 import { Dates } from "@/lib/dates";
+import { tildaDir } from "@/lib/file-utils";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
@@ -66,7 +67,7 @@ const RecentNoteCard = ({ note }: { note: Note }) => {
             {note.title || "Untitled"}
           </h4>
           <div className="flex gap-3 items-center mt-1 text-foreground/70">
-            <span className="flex gap-1 text-sm items-center">
+            <span className="flex gap-1 items-center text-sm">
               {Dates.yearMonthDay(new Date(note.updatedAt))}
             </span>
             {note.tags.length > 0 && (
@@ -93,8 +94,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const settings = SettingsService.get();
-    if (settings.directory) setCwd(settings.directory);
-    else if (window.electronAPI) window.electronAPI.env.getHome().then(setCwd);
+    if (settings.directory) {
+      window.electronAPI.env.getHome().then((home) => {
+        setCwd(tildaDir(home, settings.directory ?? home));
+      });
+    } else if (window.electronAPI)
+      window.electronAPI.env.getHome().then(setCwd);
     const hour = new Date().getHours();
     if (hour < 12) setGreeting("Good morning");
     else if (hour < 18) setGreeting("Good afternoon");
@@ -126,14 +131,11 @@ export default function DashboardPage() {
             </p>
           </div>
           {cwd && (
-            <div className="hidden flex-col gap-1 items-end md:flex">
-              <span className="font-bold tracking-widest uppercase opacity-50 text-[10px] text-muted-foreground">
+            <div>
+              <p className="text-xs font-bold text-right text-muted-foreground">
                 Workspace
-              </span>
-              <div className="flex gap-2 items-center py-1 px-3 font-mono rounded-full border bg-muted/50 border-border text-[11px] text-muted-foreground">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                {cwd}
-              </div>
+              </p>
+              <p className="text-xs text-right">{cwd}</p>
             </div>
           )}
         </motion.header>

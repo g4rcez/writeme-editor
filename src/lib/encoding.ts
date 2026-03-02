@@ -1,5 +1,4 @@
 import { parse, stringify } from "yaml";
-import { isElectron } from "./is-electron";
 
 export const YAML = { parse, stringify };
 
@@ -21,7 +20,7 @@ function encodeBytesToBase64(bytes: Uint8Array): string {
     const b1 = bytes[i];
     const b2 = i + 1 < len ? bytes[i + 1] : 0;
     const b3 = i + 2 < len ? bytes[i + 2] : 0;
-    const triplet = (b1 << 16) | (b2 << 8) | b3;
+    const triplet = (b1! << 16) | (b2! << 8) | b3!;
     base64 +=
       B64_CHARS.charAt((triplet >> 18) & 0x3f) +
       B64_CHARS.charAt((triplet >> 12) & 0x3f) +

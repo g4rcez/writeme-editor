@@ -1,4 +1,4 @@
-import { useLayoutContext } from "@/app/contexts/layout-context";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -7,7 +7,11 @@ import { type NoteWithTags } from "./use-note-list";
 
 export function useSidebarNotes() {
   const [state] = useGlobalStore();
-  const { state: layoutState } = useLayoutContext();
+  const [layoutState] = useLayoutStore((s) => ({
+    activeView: s.activeView,
+    searchQuery: s.searchQuery,
+    activeActivity: s.activeActivity,
+  }));
   const [innerNotes, setInnerNotes] = useState<NoteWithTags[]>([]);
   const [loading, setLoading] = useState(true);
 

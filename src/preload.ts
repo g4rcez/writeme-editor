@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { Note } from "./store/note";
 import type { ReadDirResult } from "./types/tree";
+import type { Note } from "./store/note";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   env: {
@@ -189,7 +189,7 @@ declare global {
         notes: {
           getLatestQuicknote(): Promise<any>;
           getQuicknoteByDate(start: string, end: string): Promise<any>;
-          getRecentNotes(limit: number): Promise<any[]>;
+          getRecentNotes(limit: number): Promise<Note[]>;
           getTemplates(): Promise<any[]>;
           updateContent(
             id: string,

@@ -9,6 +9,7 @@ class DatabaseManager {
 
   private constructor() {
     const dbPath = path.join(app.getPath("userData"), "writeme.sqlite");
+    console.log(dbPath);
     console.log("Initializing SQLite database at:", dbPath);
     this.db = new Database(dbPath);
     this.init();

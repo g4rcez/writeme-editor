@@ -1,10 +1,12 @@
-import { useLayoutContext } from "@/app/contexts/layout-context";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { repositories } from "@/store/repositories";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { Fragment, useEffect, useState } from "react";
 
 export const TagsPane = () => {
-  const { state, dispatch } = useLayoutContext();
+  const [{ activeView }, layoutDispatch] = useLayoutStore((s) => ({
+    activeView: s.activeView,
+  }));
   const [tags, setTags] = useState<{ tag: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +33,7 @@ export const TagsPane = () => {
   }, []);
 
   const onTagClick = (tag: string) =>
-    dispatch({ type: "SET_VIEW", view: { type: "tag", id: tag } });
+    layoutDispatch.setView({ type: "tag", id: tag });
 
   if (loading) {
     return (
@@ -59,7 +61,7 @@ export const TagsPane = () => {
               <button
                 key={tag}
                 onClick={() => onTagClick(tag)}
-                className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${state.activeView.type === "tag" && state.activeView.id === tag
+                className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${activeView.type === "tag" && activeView.id === tag
                     ? "bg-primary/10 text-primary font-medium"
                     : "hover:bg-muted/50 hover:text-foreground"
                   }`}

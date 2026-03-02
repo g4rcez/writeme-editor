@@ -1,5 +1,9 @@
 import { isElectron } from "@/lib/is-electron";
-import { globalDispatch, repositories } from "@/store/global.store";
+import {
+  globalDispatch,
+  repositories,
+  useGlobalStore,
+} from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { type TreeNode } from "@/types/tree";
@@ -13,6 +17,8 @@ import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView } from "../tree-view";
 
 export const ExplorerPane = () => {
+  const [state] = useGlobalStore();
+  const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const [rootPath, setRootPath] = useState<string | null>(
     SettingsService.load().explorerRoot,
   );
@@ -68,26 +74,26 @@ export const ExplorerPane = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
           Explorer
         </span>
         <div className="flex gap-1">
           <button
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
             title="New Note"
           >
             <PlusIcon size={14} />
           </button>
           <button
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
             title="New Folder"
           >
             <FolderPlusIcon size={14} />
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto scrollbar-hide">
-        <TreeView rootPath={rootPath} onFileSelect={onFileSelect} />
+      <div className="overflow-auto flex-1 scrollbar-hide">
+        <TreeView map={map} rootPath={rootPath} onFileSelect={onFileSelect} />
       </div>
     </div>
   );

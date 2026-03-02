@@ -14,6 +14,22 @@
   @apply bg-alert-danger-bg text-alert-danger-text;
 }
 
+.callout-note {
+  @apply bg-alert-info-bg text-alert-info-text border-l-alert-info-border;
+}
+
+.callout-tip {
+  @apply bg-alert-success-bg text-alert-success-text border-l-alert-success-border;
+}
+
+.callout-important {
+  @apply bg-alert-primary-bg text-alert-primary-text border-l-alert-primary-border;
+}
+
+.callout-caution {
+  @apply bg-alert-danger-bg text-alert-danger-text border-l-alert-danger-border;
+}
+
 .callout p:first-child {
   @apply mt-0;
 }

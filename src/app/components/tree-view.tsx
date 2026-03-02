@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
+import { LightningIcon } from "@phosphor-icons/react/dist/csr/Lightning";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { FolderIcon } from "@phosphor-icons/react/dist/csr/Folder";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
@@ -13,10 +14,13 @@ import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { Tooltip, Button } from "@g4rcez/components";
 import type { TreeNode, FlattenedNode } from "@/types/tree";
+import { NoteType, type Note } from "@/store/note";
 
 interface TreeNodeItemProps {
+  note: Note;
   depth: number;
   node: TreeNode;
   isFocused: boolean;
@@ -44,6 +48,7 @@ const TreeNodeItem = ({
   onConfirmRequest,
   onConfirmCancel,
   onConfirmDelete,
+  note,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
   const isMarkdown = node.extension === ".md";
@@ -66,6 +71,9 @@ const TreeNodeItem = ({
     <div
       ref={itemRef}
       role="treeitem"
+      onClick={onActivate}
+      onMouseEnter={onHover}
+      style={{ paddingLeft }}
       aria-selected={isFocused}
       tabIndex={isFocused ? 0 : -1}
       aria-expanded={isDirectory ? isExpanded : undefined}
@@ -74,9 +82,6 @@ const TreeNodeItem = ({
         ${isFocused ? "bg-primary-subtle/40" : "hover:bg-muted"}
         ${!isDirectory && !isMarkdown ? "opacity-50 cursor-default" : ""}
       `}
-      style={{ paddingLeft }}
-      onClick={onActivate}
-      onMouseEnter={onHover}
     >
       {isDirectory ? (
         <>
@@ -96,10 +101,12 @@ const TreeNodeItem = ({
       ) : (
         <>
           <span className="w-4" />
-          {isMarkdown ? (
-            <FileTextIcon className="text-blue-500 size-4" />
+          {note?.noteType === NoteType.quick ? (
+            <LightningIcon className="text-warn size-4" />
+          ) : isMarkdown ? (
+            <FileTextIcon className="text-primary size-4" />
           ) : (
-            <FileIcon className="text-gray-400 size-4" />
+            <FileIcon className="text-secondary size-4" />
           )}
         </>
       )}
@@ -112,7 +119,6 @@ const TreeNodeItem = ({
       >
         {node.name}
       </span>
-
       {onDelete && (
         <Tooltip
           open={isConfirming}
@@ -156,7 +162,6 @@ const TreeNodeItem = ({
   );
 };
 
-// Flatten visible nodes for keyboard navigation
 const flattenVisibleNodes = (
   nodes: TreeNode[],
   expandedPaths: Set<string>,
@@ -166,28 +171,18 @@ const flattenVisibleNodes = (
   parentPath: string | null = null,
 ): FlattenedNode[] => {
   const query = searchQuery.toLowerCase();
-
   return nodes.flatMap((node) => {
     const children =
       node.type === "directory" ? childrenCache.get(node.path) || [] : [];
-
-    // Check if this node or any of its children (recursively) match the search query
     const matchesSearch = !query || node.name.toLowerCase().includes(query);
     const hasMatchingChild =
       query &&
       node.type === "directory" &&
       (children.some((child) => child.name.toLowerCase().includes(query)) ||
-        // We might need recursive check here for deep matches
-        // but for simplicity let's check one level or use a pre-calculated map
         false);
 
-    // If searching, we auto-expand or show if it has matches
     const isExpanded = query ? true : expandedPaths.has(node.path);
-
-    // In search mode, we only show nodes that match or have matching children
-    // Actually, for a simple tree search, we often show matching items and their parents
     if (query && !matchesSearch && !hasMatchingChild) {
-      // Advanced: check children recursively
       const subResult = flattenVisibleNodes(
         children,
         expandedPaths,
@@ -197,13 +192,9 @@ const flattenVisibleNodes = (
         node.path,
       );
       if (subResult.length === 0) return [];
-
-      // If we found matches in subResult, we must show this parent node too
       return [{ node, depth, isExpanded, parentPath }, ...subResult];
     }
-
     const result: FlattenedNode[] = [{ node, depth, isExpanded, parentPath }];
-
     if (node.type === "directory" && isExpanded) {
       result.push(
         ...flattenVisibleNodes(
@@ -216,23 +207,24 @@ const flattenVisibleNodes = (
         ),
       );
     }
-
     return result;
   });
 };
 
 interface TreeViewProps {
   rootPath: string;
+  searchQuery?: string;
+  map: Map<string, Note>;
   onFileSelect: (node: TreeNode) => void;
   onDelete?: (node: TreeNode) => Promise<boolean>;
   onFocusChange?: (node: TreeNode | null) => void;
-  searchQuery?: string;
 }
 
 export const TreeView = ({
+  map,
+  onDelete,
   rootPath,
   onFileSelect,
-  onDelete,
   onFocusChange,
   searchQuery = "",
 }: TreeViewProps) => {
@@ -246,7 +238,6 @@ export const TreeView = ({
   );
   const [loadingPaths, setLoadingPaths] = useState(new Set<string>());
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
-
   const [focusedIndex, setFocusedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -281,7 +272,6 @@ export const TreeView = ({
     );
   }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
 
-  // Clamp focusedIndex when flattenedNodes changes
   useEffect(() => {
     if (flattenedNodes.length > 0 && focusedIndex >= flattenedNodes.length) {
       setFocusedIndex(flattenedNodes.length - 1);
@@ -294,7 +284,6 @@ export const TreeView = ({
     }
   }, [flattenedNodes, focusedIndex, onFocusChange]);
 
-  // Load children for a directory
   const loadChildren = useCallback(
     async (path: string): Promise<TreeNode[]> => {
       if (childrenCache.has(path)) {
@@ -303,7 +292,6 @@ export const TreeView = ({
         // For now, simple cache check.
         // To support force reload, we'd need a flag or manual cache invalidation before calling.
       }
-
       setLoadingPaths((prev) => new Set(prev).add(path));
       try {
         const result = await window.electronAPI.fs.readDir(path);
@@ -323,16 +311,10 @@ export const TreeView = ({
       }
     },
     [childrenCache],
-  ); // Careful with deps here
+  );
 
-  // Expand a directory
   const expandNode = useCallback(
     async (path: string) => {
-      // Always load fresh children when expanding?
-      // Or only if not in cache?
-      // For now, standard behavior: load if not cached or force via other means.
-      // The loadChildren above checks cache.
-      // If we want to refresh, we must clear cache first.
       if (!childrenCache.has(path)) {
         await loadChildren(path);
       }
@@ -341,7 +323,6 @@ export const TreeView = ({
     [loadChildren, childrenCache],
   );
 
-  // Collapse a directory
   const collapseNode = useCallback((path: string) => {
     setExpandedPaths((prev) => {
       const next = new Set(prev);
@@ -350,7 +331,6 @@ export const TreeView = ({
     });
   }, []);
 
-  // Toggle expand/collapse
   const toggleNode = useCallback(
     async (path: string) => {
       if (expandedPaths.has(path)) {
@@ -362,7 +342,6 @@ export const TreeView = ({
     [expandedPaths, expandNode, collapseNode],
   );
 
-  // Activate node (expand folder or open .md file)
   const activateNode = useCallback(
     async (flatNode: FlattenedNode) => {
       const { node } = flatNode;
@@ -533,7 +512,7 @@ export const TreeView = ({
   if (isLoading && !rootChildren) {
     return (
       <div className="flex justify-center items-center p-8">
-        <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+        <SpinnerIcon className="w-6 h-6 text-blue-500 animate-spin" />
         <span className="ml-2 text-gray-500">Loading...</span>
       </div>
     );
@@ -565,22 +544,23 @@ export const TreeView = ({
     >
       {flattenedNodes.map((flatNode, index) => (
         <TreeNodeItem
-          key={flatNode.node.path}
           node={flatNode.node}
           depth={flatNode.depth}
+          key={flatNode.node.path}
           isExpanded={flatNode.isExpanded}
           isFocused={index === focusedIndex}
+          note={map.get(flatNode.node.path)!}
+          onHover={() => setFocusedIndex(index)}
+          onConfirmCancel={() => setConfirmingPath(null)}
           isLoading={loadingPaths.has(flatNode.node.path)}
+          onDelete={onDelete ? handleNodeDelete : undefined}
+          isConfirming={confirmingPath === flatNode.node.path}
+          onConfirmDelete={() => handleNodeDelete(flatNode.node)}
+          onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
           onActivate={() => {
             setFocusedIndex(index);
             activateNode(flatNode);
           }}
-          onDelete={onDelete ? handleNodeDelete : undefined}
-          onHover={() => setFocusedIndex(index)}
-          isConfirming={confirmingPath === flatNode.node.path}
-          onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
-          onConfirmCancel={() => setConfirmingPath(null)}
-          onConfirmDelete={() => handleNodeDelete(flatNode.node)}
         />
       ))}
     </div>

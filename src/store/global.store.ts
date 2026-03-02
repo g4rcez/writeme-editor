@@ -249,6 +249,10 @@ export const useGlobalStore = createGlobalReducer(
         await repositories.tabs.updateOrder(updatedTabs);
         return { tabs: updatedTabs };
       },
+      clearTabs: async () => {
+        await repositories.tabs.clear();
+        return { tabs: [] as Tab[], activeTabId: null, note: null };
+      },
       directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
         directoryBrowserDialog,
       }),

@@ -326,7 +326,7 @@ const InnerEditor = (props: {
     <div
       id="editor-container"
       style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="flex flex-col justify-start items-start mx-auto w-full h-full print:block print:h-auto print:overflow-visible bg-card-background max-w-safe"
+      className="flex flex-col justify-start items-start mx-auto w-full h-full print:block print:h-auto print:overflow-visible bg-background max-w-safe"
     >
       <EditorContext.Provider value={{ editor }}>
         <BubbleMenu className="z-navbar isolate print:hidden" editor={editor}>

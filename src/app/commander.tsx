@@ -126,6 +126,15 @@ export const Commander = () => {
           },
           {
             type: "shortcut",
+            title: "Close all tabs",
+            action: (args) => {
+              navigate("/")
+              dispatch.clearTabs();
+              args.setOpen(false);
+            },
+          },
+          {
+            type: "shortcut",
             title: "Find notes",
             action: (args) => {
               dispatch.commander(true, CommanderType.Notes);

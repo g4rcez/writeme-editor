@@ -55,11 +55,9 @@ export const TemplatesPane = () => {
 
   const onDeleteTemplate = async () => {
     if (!deletingTemplate) return;
-
     if (isElectron() && deletingTemplate.filePath) {
       await window.electronAPI.fs.deleteFile(deletingTemplate.filePath);
     }
-
     await dispatch.deleteNote(deletingTemplate.id);
     setDeletingTemplate(null);
     refresh();
@@ -81,19 +79,16 @@ export const TemplatesPane = () => {
 
   const handleUpdateVariable = async () => {
     if (!inspectingVariable?.id || !editName) return;
-
-    const existing = await repositories.scripts.getOne(inspectingVariable.id);
-    if (!existing) return;
-
-    existing.name = editName.toUpperCase().replace(/\s+/g, "_");
-    existing.content = unwrapExpression(editContent);
-    existing.updatedAt = new Date();
-
-    await repositories.scripts.update(existing.id, existing);
+    const script = await repositories.scripts.getOne(inspectingVariable.id);
+    if (!script) return;
+    script.name = editName.toUpperCase().replace(/\s+/g, "_");
+    script.content = unwrapExpression(editContent);
+    script.updatedAt = new Date();
+    await repositories.scripts.update(script.id, script);
     setInspectingVariable({
       ...inspectingVariable,
-      name: existing.name,
-      content: existing.content,
+      name: script.name,
+      content: script.content,
     });
     setIsEditing(false);
     refreshScripts();
@@ -101,13 +96,11 @@ export const TemplatesPane = () => {
 
   const onDeleteVariable = async () => {
     if (!inspectingVariable?.id) return;
-
     const confirmed = await Modal.confirm({
       title: "Delete variable",
       description: `Are you sure you want to delete variable {{${inspectingVariable.name}}}?`,
       confirm: { text: "Delete", theme: "danger" },
     });
-
     if (confirmed) {
       await repositories.scripts.delete(inspectingVariable.id);
       setInspectingVariable(null);
@@ -145,7 +138,69 @@ export const TemplatesPane = () => {
           </button>
         </div>
       </div>
-      <div className="overflow-y-auto flex-1 p-2">
+      <div>
+        <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
+          <span className="font-bold tracking-wider uppercase text-xs text-muted-foreground">
+            Variables
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={onCreateVariable}
+              title="New from Expression"
+              className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
+            >
+              <PlusIcon className="size-3" />
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 p-3">
+          {SYSTEM_VARIABLES.map((variable) => (
+            <Tag
+              as="button"
+              size="small"
+              type="button"
+              theme="secondary"
+              className="text-xs"
+              key={variable.name}
+              title="Click to view details"
+              onClick={() => {
+                setInspectingVariable({
+                  name: variable.name,
+                  description: (variable as SystemVariable).description,
+                  type: "system",
+                });
+                setIsEditing(false);
+              }}
+            >
+              {`{{${variable.name}}}`}
+            </Tag>
+          ))}
+          {scripts.map((script) => (
+            <Tag
+              as="button"
+              size="small"
+              type="button"
+              key={script.id}
+              theme="primary"
+              title="Click to view details"
+              onClick={() => {
+                setInspectingVariable({
+                  id: script.id,
+                  name: script.name,
+                  content: script.content,
+                  type: "script",
+                });
+                setEditName(script.name);
+                setEditContent(script.content || "");
+                setIsEditing(true);
+              }}
+            >
+              {`{{${script.name}}}`}
+            </Tag>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-y-auto flex-1 p-2 border-t border-border/20">
         {loading ? (
           <div className="flex justify-center items-center h-20 text-xs text-muted-foreground">
             Loading...
@@ -196,67 +251,6 @@ export const TemplatesPane = () => {
             ))}
           </div>
         )}
-      </div>
-      <div className="border-t border-border/20">
-        <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-          <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-            Variables
-          </span>
-          <div className="flex gap-1">
-            <button
-              onClick={onCreateVariable}
-              title="New from Expression"
-              className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
-            >
-              <PlusIcon className="size-3" />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 p-3">
-          {SYSTEM_VARIABLES.map((variable) => (
-            <Tag
-              as="button"
-              size="small"
-              type="button"
-              theme="secondary"
-              key={variable.name}
-              title="Click to view details"
-              onClick={() => {
-                setInspectingVariable({
-                  name: variable.name,
-                  description: (variable as SystemVariable).description,
-                  type: "system",
-                });
-                setIsEditing(false);
-              }}
-            >
-              {`{{${variable.name}}}`}
-            </Tag>
-          ))}
-          {scripts.map((script) => (
-            <Tag
-              as="button"
-              size="small"
-              type="button"
-              key={script.id}
-              theme="primary"
-              title="Click to view details"
-              onClick={() => {
-                setInspectingVariable({
-                  id: script.id,
-                  name: script.name,
-                  content: script.content,
-                  type: "script",
-                });
-                setEditName(script.name);
-                setEditContent(script.content || "");
-                setIsEditing(true);
-              }}
-            >
-              {`{{${script.name}}}`}
-            </Tag>
-          ))}
-        </div>
       </div>
       <Modal
         open={!!inspectingVariable}

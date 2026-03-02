@@ -68,7 +68,7 @@ export const darkTheme: typeof defaultDarkTheme = {
     card: {
       muted: "hsla(220, 10%, 14%)",
       border: "hsla(220, 10%, 15%)",
-      background: "hsla(221, 7%, 10%)",
+      background: "hsla(221, 20%, 8%)",
     },
     floating: {
       foreground: "hsla(220, 20%, 96%)",

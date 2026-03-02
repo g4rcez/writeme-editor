@@ -1,7 +1,12 @@
 import { uuid } from "@g4rcez/components";
 import { type EntityBase, type Repository } from "./repository";
 
-type NoteType = "note" | "quick" | "read-it-later" | "template";
+export enum NoteType {
+  note = "note",
+  quick = "quick",
+  "read-it-later" = "read-it-later",
+  template = "template",
+}
 
 export class Note implements EntityBase {
   public readonly type = "__writeme_note";

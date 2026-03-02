@@ -15,6 +15,7 @@ import { TreeView } from "./tree-view";
 
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
+    const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const [, uiDispatch] = useUIStore();
   const [storageDir, setStorageDir] = useState<string | null>(null);
   const [focusedNode, setFocusedNode] = useState<TreeNode | null>(null);
@@ -357,12 +358,13 @@ export const DirectoryBrowserDialog = () => {
                 {storageDir}
               </div>
               <TreeView
-                key={`${storageDir}-${refreshKey}`}
+                map={map}
                 rootPath={storageDir}
-                onFileSelect={handleFileSelect}
                 onDelete={handleDelete}
-                onFocusChange={setFocusedNode}
                 searchQuery={searchQuery}
+                onFocusChange={setFocusedNode}
+                onFileSelect={handleFileSelect}
+                key={`${storageDir}-${refreshKey}`}
               />
             </>
           ) : (

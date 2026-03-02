@@ -1,14 +1,14 @@
-import { Button, Input, Modal, Select } from "@g4rcez/components";
-import { startOfDay } from "date-fns";
-import { FormEvent, useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useScripts } from "@/app/hooks/use-scripts";
+import { useTemplates } from "@/app/hooks/use-templates";
 import { Dates } from "@/lib/dates";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
+import { getUserVariables, substituteVariables } from "@/lib/template-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { useTemplates } from "@/app/hooks/use-templates";
-import { useScripts } from "@/app/hooks/use-scripts";
-import { getUserVariables, substituteVariables } from "@/lib/template-utils";
+import { Button, Input, Modal, Select } from "@g4rcez/components";
+import { startOfDay } from "date-fns";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const CreateNoteDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -93,7 +93,7 @@ export const CreateNoteDialog = () => {
       onChange={handleClose}
       title={type === "note" ? "Create new note" : "Create quick note"}
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-4 p-4">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <Input
           required
           autoFocus

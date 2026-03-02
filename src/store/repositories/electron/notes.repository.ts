@@ -12,7 +12,7 @@ export class NotesRepository
   extends BaseRepository<Note>
   implements INoteRepository
 {
-  constructor(private readonly tabsRepository: ITabRepository) {
+  public constructor(private readonly tabsRepository: ITabRepository) {
     super(
       new ElectronStorageAdapter(),
       "notes",
@@ -25,21 +25,26 @@ export class NotesRepository
     const settings = SettingsService.load();
 
     if (mode === "filesystem") {
-      const filePath = generateNotePath(settings.directory!, item.title);
-      const uniquePath = await getUniqueFilePath(filePath, async (path) => {
-        const result = await window.electronAPI.fs.statFile(path);
-        return result.exists;
-      });
-      const writeResult = await window.electronAPI.fs.writeFile(
-        uniquePath,
-        item.content,
-      );
-      if (!writeResult.success) {
-        throw new Error(`Failed to write file: ${writeResult.error}`);
+      if (!item.filePath) {
+        const filePath = generateNotePath(settings.directory!, item.title);
+        const uniquePath = await getUniqueFilePath(filePath, async (path) => {
+          const result = await window.electronAPI.fs.statFile(path);
+          return result.exists;
+        });
+        const writeResult = await window.electronAPI.fs.writeFile(
+          uniquePath,
+          typeof item.content === "string" ? item.content : "",
+        );
+        if (!writeResult.success) {
+          throw new Error(`Failed to write file: ${writeResult.error}`);
+        }
+        item.filePath = uniquePath;
+        item.fileSize = writeResult.fileSize;
+        item.lastSynced = new Date(writeResult.lastModified);
+      } else {
+        item.fileSize = item.fileSize || (typeof item.content === "string" ? item.content.length : 0);
+        item.lastSynced = item.lastSynced || new Date();
       }
-      item.filePath = uniquePath;
-      item.fileSize = writeResult.fileSize;
-      item.lastSynced = new Date(writeResult.lastModified);
       item.createdBy = settings.defaultAuthor;
       item.updatedBy = settings.defaultAuthor;
       const { content: _, ...metadata } = item as any;
@@ -138,7 +143,7 @@ export class NotesRepository
   }
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
-    const metadata: any = await this.adapter.get(this.collection, id);
+    const metadata = await this.adapter.get<Note>(this.collection, id);
     if (!metadata) {
       return null;
     }
@@ -153,7 +158,7 @@ export class NotesRepository
           metadata.lastSynced &&
           new Date(metadata.lastSynced) < fileModified
         ) {
-          metadata.lastSynced = fileModified.toISOString();
+          metadata.updatedAt = fileModified;
           metadata.fileSize = readResult.fileSize;
           await this.adapter.save(this.collection, { ...metadata, id });
         }
@@ -180,12 +185,10 @@ export class NotesRepository
   }
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
-    const metadataList = await window.electronAPI.db.notes.getRecentNotes(
-      limit || 20,
+    const notes = await window.electronAPI.db.notes.getRecentNotes(
+      limit || Number.MAX_SAFE_INTEGER,
     );
-    return metadataList.map((metadata: any) =>
-      Note.parse({ ...metadata, content: "" }),
-    );
+    return notes.map((note) => Note.parse({ ...note, content: "" }));
   }
 
   async getLatestQuicknote(): Promise<Note | null> {

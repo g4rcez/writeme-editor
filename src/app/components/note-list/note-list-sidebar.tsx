@@ -1,6 +1,5 @@
-import { useLayoutContext } from "@/app/contexts/layout-context";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
-import { type NoteWithTags } from "@/app/hooks/use-note-list";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { Dates } from "@/lib/dates";
 import { globalDispatch } from "@/store/global.store";
@@ -14,7 +13,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 type NoteItemProps = {
-  note: NoteWithTags;
+  note: Note;
   isActive: boolean;
   onClick: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
@@ -37,17 +36,15 @@ const NoteItem = ({
     <li
       ref={itemRef}
       onClick={onClick}
-      className={`group relative cursor-pointer p-4 transition-all hover:bg-muted/30 ${
-        isActive
+      className={`group relative cursor-pointer p-4 transition-all hover:bg-muted/30 ${isActive
           ? "bg-muted/50 border-l-2 border-primary"
           : "border-l-2 border-transparent"
-      }`}
+        }`}
     >
       <div className="flex gap-2 justify-between items-start mb-1">
         <h3
-          className={`font-medium text-sm line-clamp-1 ${
-            isActive ? "text-primary" : "text-foreground"
-          }`}
+          className={`font-medium text-sm line-clamp-1 ${isActive ? "text-primary" : "text-foreground"
+            }`}
         >
           {note.title || "Untitled"}
         </h3>
@@ -90,28 +87,55 @@ const NoteItem = ({
   );
 };
 
-export const NoteListSidebar = () => {
-  const { state, dispatch } = useLayoutContext();
-  const { notes, loading } = useSidebarNotes();
+const NoteListItems = (props: {
+  notes: Note[];
+  onCreateNewNote: () => void;
+  activeNoteId: string | undefined;
+}) => {
   const navigate = useNavigate();
-  const params = useParams();
-  const activeNoteId = params.noteId;
-  const containerRef = useRef<HTMLDivElement>(null);
-  useKeyboardNavigation(notes, activeNoteId, containerRef as any);
-
-  const onSearch = (e: React.ChangeEvent<HTMLInputElement>) =>
-    dispatch({ type: "SET_SEARCH", query: e.target.value });
-
-  const createNewNote = () =>
-    globalDispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
-
-  const toggleFavorite = async (e: React.MouseEvent, note: NoteWithTags) => {
+  const toggleFavorite = async (e: React.MouseEvent, note: Note) => {
     e.stopPropagation();
     const updatedNote = Note.parse(note);
     updatedNote.favorite = !note.favorite;
     await repositories.notes.update(note.id, updatedNote);
     globalDispatch.syncNoteState(updatedNote);
   };
+
+  return (
+    <ul className="flex overflow-y-auto flex-col h-full divide-y max-h- divide-border/20 scrollbar-hide">
+      <li
+        onClick={props.onCreateNewNote}
+        className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-all cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+      >
+        <PlusIcon className="size-4" />
+        <span>New note</span>
+      </li>
+      {props.notes.map((note) => (
+        <NoteItem
+          note={note}
+          key={note.id}
+          isActive={note.id === props.activeNoteId}
+          onClick={() => navigate(`/note/${note.id}`)}
+          onToggleFavorite={(e) => toggleFavorite(e, note)}
+        />
+      ))}
+    </ul>
+  );
+};
+
+export const NoteListSidebar = () => {
+  const [state, layoutDispatch] = useLayoutStore();
+  const { notes, loading } = useSidebarNotes();
+  const params = useParams();
+  const activeNoteId = params.noteId;
+  const containerRef = useRef<HTMLDivElement>(null);
+  useKeyboardNavigation(notes, activeNoteId, containerRef as any);
+
+  const onSearch = (e: React.ChangeEvent<HTMLInputElement>) =>
+    layoutDispatch.setSearch(e.target.value);
+
+  const createNewNote = () =>
+    globalDispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
 
   const getHeaderTitle = () => {
     switch (state.activeActivity) {
@@ -149,9 +173,9 @@ export const NoteListSidebar = () => {
           <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
             type="text"
+            onChange={onSearch}
             placeholder="Search..."
             value={state.searchQuery}
-            onChange={onSearch}
             className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-all outline-none bg-muted/40 placeholder:text-muted-foreground/60 focus:border-primary/50 focus:bg-background"
           />
         </div>
@@ -168,24 +192,11 @@ export const NoteListSidebar = () => {
           </button>
         </div>
       ) : (
-        <ul className="flex overflow-y-auto flex-col h-full divide-y max-h- divide-border/20 scrollbar-hide">
-          <li
-            onClick={createNewNote}
-            className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-all cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-          >
-            <PlusIcon className="size-4" />
-            <span>New note</span>
-          </li>
-          {notes.map((note) => (
-            <NoteItem
-              key={note.id}
-              note={note}
-              isActive={note.id === activeNoteId}
-              onClick={() => navigate(`/note/${note.id}`)}
-              onToggleFavorite={(e) => toggleFavorite(e, note)}
-            />
-          ))}
-        </ul>
+        <NoteListItems
+          notes={notes}
+          activeNoteId={activeNoteId}
+          onCreateNewNote={createNewNote}
+        />
       )}
     </div>
   );

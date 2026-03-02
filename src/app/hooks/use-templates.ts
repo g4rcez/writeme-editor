@@ -47,51 +47,29 @@ export const useTemplates = () => {
       let result = await window.electronAPI.fs.readDir(templatesDir);
 
       if (!result.error) {
-        // If empty, create a default template
-        if (result.entries.length === 0) {
-          const defaultTemplatePath = `${templatesDir}/Meeting Notes.md`;
-          const defaultContent = `# Meeting: {{Title}}\n\n**Date**: {{DATE}}\n**Participants**: {{Participants}}\n\n## Agenda\n- {{Agenda}}\n\n## Notes\n- \n\n## Action Items\n- [ ] `;
-          await window.electronAPI.fs.writeFile(
-            defaultTemplatePath,
-            defaultContent,
-          );
-          // Refresh entries
-          result = await window.electronAPI.fs.readDir(templatesDir);
-        }
-
-        if (!result.error) {
-          const files = result.entries.filter(
-            (f) => f.type === "file" && f.name.endsWith(".md"),
-          );
-          const currentTemplates = await repositories.notes.getTemplates();
-
-          for (const file of files) {
-            const filePath = file.path;
-
-            const fileContent = await window.electronAPI.fs.readFile(filePath);
-
-            if (fileContent.success) {
-              const name = file.name.replace(/\.md$/, "");
-              const existing = currentTemplates.find(
-                (t) => t.filePath === filePath,
-              );
-
-              if (existing) {
-                if (existing.content !== fileContent.content) {
-                  existing.content = fileContent.content;
-                  existing.title = name;
-                  existing.updatedAt = new Date();
-                  await repositories.notes.update(existing.id, existing);
-                }
-              } else {
-                const newTemplate = Note.new(
-                  name,
-                  fileContent.content,
-                  "template"
-                );
-                newTemplate.filePath = filePath;
-                await repositories.notes.save(newTemplate);
+        const files = result.entries.filter(
+          (f) => f.type === "file" && f.name.endsWith(".md"),
+        );
+        const currentTemplates = await repositories.notes.getTemplates();
+        for (const file of files) {
+          const filePath = file.path;
+          const fileContent = await window.electronAPI.fs.readFile(filePath);
+          if (fileContent.success) {
+            const name = file.name.replace(/\.md$/, "");
+            const note = currentTemplates.find(
+              (t) => t.filePath === filePath,
+            );
+            if (note) {
+              if (note.content !== fileContent.content) {
+                note.content = fileContent.content;
+                note.title = name;
+                note.updatedAt = new Date();
+                await repositories.notes.update(note.id, note);
               }
+            } else {
+              const newTemplate = Note.new(name, fileContent.content, "template");
+              newTemplate.filePath = filePath;
+              await repositories.notes.save(newTemplate);
             }
           }
         }
