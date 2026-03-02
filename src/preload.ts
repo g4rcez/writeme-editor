@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   app: {
     openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
+    chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
   },
   onQuicknoteOpen: (callback: () => void) => {
     ipcRenderer.on("quicknote:open", callback);
@@ -152,6 +153,7 @@ declare global {
       };
       app: {
         openQuickNote(): Promise<void>;
+        chdir(dir: string): Promise<{ success: boolean; error?: string }>;
       };
       onQuicknoteOpen(callback: () => void): () => void;
       notes: {

@@ -21,8 +21,8 @@ export class NotesRepository
   }
 
   override async save(item: Note): Promise<Note> {
-    const mode = getStorageMode();
     const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
 
     if (mode === "filesystem") {
       if (!item.filePath) {
@@ -59,8 +59,8 @@ export class NotesRepository
   }
 
   override async update(id: EntityBase["id"], item: Note): Promise<Note> {
-    const mode = getStorageMode();
     const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     if (
       item.filePath &&
       !item.filePath.startsWith(settings.directory!) &&
@@ -147,7 +147,8 @@ export class NotesRepository
     if (!metadata) {
       return null;
     }
-    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && metadata.filePath) {
       const readResult = await window.electronAPI.fs.readFile(
         metadata.filePath,
@@ -175,7 +176,7 @@ export class NotesRepository
   override async getAll(query?: { limit?: number }): Promise<Note[]> {
     const all = await this.adapter.getAll<Note>(this.collection);
     const settings = SettingsService.load();
-    const mode = getStorageMode();
+    const mode = getStorageMode(settings.directory);
 
     let filtered = all;
     if (mode === "filesystem" && settings.directory) {
@@ -199,7 +200,7 @@ export class NotesRepository
       Number.MAX_SAFE_INTEGER,
     );
     const settings = SettingsService.load();
-    const mode = getStorageMode();
+    const mode = getStorageMode(settings.directory);
 
     let filtered = notes;
     if (mode === "filesystem" && settings.directory) {
@@ -223,7 +224,8 @@ export class NotesRepository
     const metadata = await window.electronAPI.db.notes.getLatestQuicknote();
     if (!metadata) return null;
 
-    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
 
     if (mode === "filesystem" && metadata.filePath) {
       const readResult = await window.electronAPI.fs.readFile(
@@ -248,7 +250,8 @@ export class NotesRepository
     );
     if (!metadata) return null;
 
-    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && metadata.filePath) {
       const readResult = await window.electronAPI.fs.readFile(
         metadata.filePath,
@@ -266,7 +269,8 @@ export class NotesRepository
       Note.parse({ ...metadata, content: "" }),
     );
 
-    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     if (mode === "filesystem") {
       return await Promise.all(
         notes.map(async (n) => {
@@ -294,7 +298,8 @@ export class NotesRepository
     if (!note) {
       return false;
     }
-    const mode = getStorageMode();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && note.filePath) {
       const deleteResult = await window.electronAPI.fs.deleteFile(
         note.filePath,
@@ -314,8 +319,8 @@ export class NotesRepository
   }
 
   async updateContent(id: string, content: string): Promise<void> {
-    const mode = getStorageMode();
     const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
     const existing = await this.getOne(id);
 
     if (!existing) {

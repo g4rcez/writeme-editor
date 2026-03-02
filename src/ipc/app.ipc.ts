@@ -5,4 +5,13 @@ import * as path from "node:path";
 export const appIpcHandler = (preloadPath: string) => {
   ipcMain.handle("env:getHome", () => app.getPath("home"));
   ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preloadPath));
+  ipcMain.handle("app:chdir", (_, dir: string) => {
+    try {
+      process.chdir(dir);
+      return { success: true };
+    } catch (e: any) {
+      console.error(`Failed to change directory to ${dir}:`, e);
+      return { success: false, error: e.message };
+    }
+  });
 };

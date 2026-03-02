@@ -1,5 +1,6 @@
 import { createGlobalReducer } from "use-typed-reducer";
 import { editorGlobalRef } from "@/app/editor-global-ref";
+import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "./cursor-position.store";
 import { Note } from "./note";
 import { repositories } from "./repositories";
@@ -262,7 +263,7 @@ export const useGlobalStore = createGlobalReducer(
         return { tabs: [] as Tab[], activeTabId: null, note: null };
       },
       switchWorkspace: async (directory: string | null) => {
-        // 1. Clear tabs in repository and state
+        // 1. Clear tabs in repository
         await repositories.tabs.clear();
 
         // 2. Update settings (only persistence is handled by SettingsService.save)
@@ -271,19 +272,16 @@ export const useGlobalStore = createGlobalReducer(
           explorerRoot: directory,
         });
 
-        // 3. Reload notes from the new repository (the repository itself is dynamic)
-        const notes = await repositories.notes.getAll();
-        const recent = await repositories.notes.getAll({ limit: 10 });
+        // 3. If Electron, change CWD
+        if (isElectron() && directory) {
+          await window.electronAPI.app.chdir(directory);
+        }
 
-        return {
-          directory,
-          explorerRoot: directory,
-          tabs: [] as Tab[],
-          activeTabId: null,
-          note: null,
-          notes: setNotes(notes).notes,
-          recentNotes: recent,
-        };
+        // 4. Force reload to ensure all state is clean
+        window.location.reload();
+
+        // This return is effectively ignored due to reload, but keeps TS happy
+        return get.state();
       },
       directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
         directoryBrowserDialog,
