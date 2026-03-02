@@ -40,6 +40,7 @@ import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
 import { globalState } from "@/store/global.store";
 import { canFormat, formatCode } from "./code-block-formatting";
 import { ExcalidrawCode } from "./excalidraw";
+import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
@@ -457,6 +458,7 @@ const getAllLanguages = (): string[] => {
   const allLanguages = Object.keys(bundledLanguages);
   allLanguages.push("math");
   allLanguages.push("excalidraw");
+  allLanguages.push("graphviz");
   return allLanguages.sort();
 };
 
@@ -634,6 +636,15 @@ const CodeBlockAddons = ({
       <div className="px-4 pb-4">
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <Mermaid chart={code} />
+        </div>
+      </div>
+    );
+  }
+  if (language === "graphviz" && code) {
+    return (
+      <div className="px-4 pb-4">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Graphviz dot={code} />
         </div>
       </div>
     );
