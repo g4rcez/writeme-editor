@@ -376,60 +376,6 @@ export const createExtensions = (
       suggestion: suggestion,
       HTMLAttributes: { class: "mention" },
       markdown: {
-        parse: {
-          setup(marked: any) {
-            marked.use({
-              extensions: [
-                {
-                  name: "mention_link",
-                  level: "inline",
-                  start(src: string) {
-                    return src.indexOf("[");
-                  },
-                  tokenizer(src: string) {
-                    const match = src.match(
-                      /^\[([^\]]+)\]\(([^)"]+) "writeme-mention:([^"]+)"\)/,
-                    );
-                    if (match) {
-                      return {
-                        type: "mention_link",
-                        raw: match[0],
-                        label: match[1],
-                        path: match[2],
-                        id: match[3],
-                      };
-                    }
-                    return undefined;
-                  },
-                  renderer(token: any) {
-                    return `<a href="${token.path}" data-type="mention" data-id="${token.id}" data-label="${token.label}" data-path="${token.path}" class="mention" title="writeme-mention:${token.id}">${token.label}</a>`;
-                  },
-                },
-                {
-                  name: "wikilink_mention",
-                  level: "inline",
-                  start(src: string) {
-                    return src.indexOf("[[");
-                  },
-                  tokenizer(src: string) {
-                    const match = src.match(/^\[\[([^\]]+)\]\]/);
-                    if (match) {
-                      return {
-                        type: "wikilink_mention",
-                        raw: match[0],
-                        id: match[1],
-                      };
-                    }
-                    return undefined;
-                  },
-                  renderer(token: any) {
-                    return `<span data-type="mention" data-id="${token.id}" data-label="${token.id}" class="mention">[[${token.id}]]</span>`;
-                  },
-                },
-              ],
-            });
-          },
-        },
         serialize(state: any, node: any) {
           if (node && node.attrs) {
             const label = node.attrs.label ?? node.attrs.id;

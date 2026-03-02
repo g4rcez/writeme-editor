@@ -99,12 +99,12 @@
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li > label {
+.tiptap ul[data-type="taskList"] li>label {
   @apply select-none mr-0;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li > div {
+.tiptap ul[data-type="taskList"] li>div {
   @apply items-center;
   flex: 1 1 auto;
 }
@@ -146,8 +146,8 @@
   vertical-align: top;
 }
 
-.tiptap table td > *,
-.tiptap table th > * {
+.tiptap table td>*,
+.tiptap table th>* {
   margin-bottom: 0;
 }
 
@@ -183,7 +183,7 @@
 }
 
 .tiptap .mention {
-  @apply px-1 py-0.5 text-primary-foreground bg-primary rounded no-underline;
+  @apply px-1 py-0.5 text-primary-foreground bg-primary rounded no-underline hover:text-primary-foreground;
 }
 
 .tiptap .mention::before {
@@ -201,16 +201,16 @@
   @apply list-disc list-outside;
 }
 
-.tiptap li > p {
+.tiptap li>p {
   @apply mb-0;
 }
 
-.tiptap ul[data-type="taskList"] li > div > p {
+.tiptap ul[data-type="taskList"] li>div>p {
   @apply mb-0;
 }
 
-.tiptap li > ul,
-.tiptap li > ol {
+.tiptap li>ul,
+.tiptap li>ol {
   @apply mt-2 mb-2 w-full;
 }
 
@@ -238,20 +238,20 @@
   min-width: 1.25rem;
 }
 
-.tiptap ol li > p {
+.tiptap ol li>p {
   @apply flex-1 mb-0;
 }
 
-.tiptap ol li > ol {
+.tiptap ol li>ol {
   @apply ml-6;
   counter-reset: section;
 }
 
-.tiptap ol li > ul {
+.tiptap ol li>ul {
   @apply ml-6;
 }
 
-.tiptap ul li > ul {
+.tiptap ul li>ul {
   @apply ml-4;
 }
 

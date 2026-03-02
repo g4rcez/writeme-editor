@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { repositories } from "@/store/repositories";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { isElectron } from "@/lib/is-electron";
 
@@ -56,9 +56,7 @@ export const useTemplates = () => {
           const fileContent = await window.electronAPI.fs.readFile(filePath);
           if (fileContent.success) {
             const name = file.name.replace(/\.md$/, "");
-            const note = currentTemplates.find(
-              (t) => t.filePath === filePath,
-            );
+            const note = currentTemplates.find((t) => t.filePath === filePath);
             if (note) {
               if (note.content !== fileContent.content) {
                 note.content = fileContent.content;
@@ -67,7 +65,11 @@ export const useTemplates = () => {
                 await repositories.notes.update(note.id, note);
               }
             } else {
-              const newTemplate = Note.new(name, fileContent.content, "template");
+              const newTemplate = Note.new(
+                name,
+                fileContent.content,
+                NoteType.template,
+              );
               newTemplate.filePath = filePath;
               await repositories.notes.save(newTemplate);
             }

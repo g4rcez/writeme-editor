@@ -110,37 +110,9 @@ export const TemplatesPane = () => {
 
   return (
     <div className="flex flex-col h-full bg-background/50">
-      <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-          Templates
-        </span>
-        <div className="flex gap-1">
-          <button
-            onClick={refresh}
-            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
-            title="Refresh templates"
-          >
-            <ArrowsCounterClockwiseIcon className="size-3" />
-          </button>
-          <button
-            onClick={onCreateTemplate}
-            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
-            title="New template"
-          >
-            <PlusIcon className="size-3" />
-          </button>
-          <button
-            onClick={onCreateVariable}
-            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
-            title="New from Expression"
-          >
-            <CodeIcon className="size-3" />
-          </button>
-        </div>
-      </div>
       <div>
         <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-          <span className="font-bold tracking-wider uppercase text-xs text-muted-foreground">
+          <span className="text-xs tracking-wider text-muted-foreground">
             Variables
           </span>
           <div className="flex gap-1">
@@ -198,6 +170,34 @@ export const TemplatesPane = () => {
               {`{{${script.name}}}`}
             </Tag>
           ))}
+        </div>
+      </div>
+      <div className="flex border-t justify-between items-center py-2 px-4 border-b border-border/20">
+        <span className="font-bold tracking-wider uppercase text-xs text-muted-foreground">
+          Templates
+        </span>
+        <div className="flex gap-1">
+          <button
+            onClick={refresh}
+            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
+            title="Refresh templates"
+          >
+            <ArrowsCounterClockwiseIcon className="size-3" />
+          </button>
+          <button
+            onClick={onCreateTemplate}
+            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
+            title="New template"
+          >
+            <PlusIcon className="size-3" />
+          </button>
+          <button
+            onClick={onCreateVariable}
+            className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
+            title="New from Expression"
+          >
+            <CodeIcon className="size-3" />
+          </button>
         </div>
       </div>
       <div className="overflow-y-auto flex-1 p-2 border-t border-border/20">
