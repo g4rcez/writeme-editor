@@ -1,6 +1,6 @@
 import { Button, Tooltip } from "@g4rcez/components";
 import { type Icon } from "@phosphor-icons/react";
-import { ComponentProps } from "react";
+import { type ComponentProps } from "react";
 
 export const NavbarButton = (
   props: ComponentProps<"button"> & { Icon: Icon },

@@ -7,15 +7,16 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      "@": path.resolve(__dirname, "./src"),
       "use-sync-external-store/shim/with-selector": path.resolve(
         __dirname,
-        "node_modules/use-sync-external-store/shim/with-selector.js"
+        "node_modules/use-sync-external-store/shim/with-selector.js",
       ),
     },
   },
   test: {
-    environment: "jsdom",
     globals: true,
+    environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
   },
 });
