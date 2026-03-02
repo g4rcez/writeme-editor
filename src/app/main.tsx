@@ -81,6 +81,8 @@ export async function main() {
       settings.editorFontSize,
       settings.sidebarWidth,
       settings.isSidebarCollapsed,
+      settings.directory,
+      settings.explorerRoot,
     );
     const tab = sortByNewest(tabs)[0];
     const find = notes.find((x) => x.id === tab?.id);

@@ -6,7 +6,6 @@ import { clsx } from "clsx";
 import { useUIStore } from "@/store/ui.store";
 import { useGlobalStore, repositories } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
@@ -58,17 +57,19 @@ NoteList.displayName = "NoteList";
 
 export const Sidebar = () => {
   const [uiState, uiDispatch] = useUIStore();
-  const [{ notes, recentNotes, noteId }, dispatch] = useGlobalStore((state) => ({
-    notes: state.notes,
-    recentNotes: state.recentNotes,
-    noteId: state.note?.id,
-  }));
+  const [{ notes, recentNotes, noteId, directory }, dispatch] = useGlobalStore(
+    (state) => ({
+      notes: state.notes,
+      recentNotes: state.recentNotes,
+      noteId: state.note?.id,
+      directory: state.directory,
+    }),
+  );
   const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
   const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
 
-  const settings = SettingsService.load();
-  const storageDir = settings.directory || "";
+  const storageDir = directory || "";
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -77,7 +78,7 @@ export const Sidebar = () => {
       dispatch.loadRecentNotes(10);
     };
     loadNotes();
-  }, [dispatch]);
+  }, [dispatch, directory]);
 
   useEffect(() => {
     if (!isResizing) return;

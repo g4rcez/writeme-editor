@@ -2,7 +2,6 @@ import { Dates } from "@/lib/dates";
 import { tildaDir } from "@/lib/file-utils";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
 import { Tag } from "@g4rcez/components";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
@@ -93,10 +92,9 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
-    const settings = SettingsService.get();
-    if (settings.directory) {
+    if (state.directory) {
       window.electronAPI.env.getHome().then((home) => {
-        setCwd(tildaDir(home, settings.directory ?? home));
+        setCwd(tildaDir(home, state.directory ?? home));
       });
     } else if (window.electronAPI)
       window.electronAPI.env.getHome().then(setCwd);
@@ -104,7 +102,7 @@ export default function DashboardPage() {
     if (hour < 12) setGreeting("Good morning");
     else if (hour < 18) setGreeting("Good afternoon");
     else setGreeting("Good evening");
-  }, []);
+  }, [state.directory]);
 
   const onSearch = () => dispatch.commander(true, CommanderType.Notes);
 

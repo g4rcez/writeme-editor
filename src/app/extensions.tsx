@@ -101,7 +101,7 @@ export const handleImageFile = async (
 
     if (isElectron()) {
       const state = globalState();
-      const projectDir = state.settings.directory;
+      const projectDir = state.directory;
       const noteTitle = state.note?.title || "untitled";
       if (projectDir) {
         const sanitizedTitle = noteTitle

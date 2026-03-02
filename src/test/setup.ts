@@ -4,7 +4,7 @@ import { vi } from "vitest";
 vi.mock("use-typed-reducer", () => ({
   createGlobalReducer: vi.fn((initialState, reducer) => {
     const dispatchers = reducer({ state: () => initialState });
-    const mock: any = vi.fn();
+    const mock: any = vi.fn(() => [initialState, dispatchers]);
     mock.getState = vi.fn(() => initialState);
     mock.dispatchers = dispatchers;
     return mock;

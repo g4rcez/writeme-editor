@@ -5,6 +5,7 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useState } from "react";
 import { isElectron } from "@/lib/is-electron";
 import { SettingsService } from "@/store/settings";
+import { globalDispatch } from "@/store/global.store";
 
 interface StorageConfigDialogProps {
   open: boolean;
@@ -42,20 +43,18 @@ export const StorageConfigDialog = ({
   const handleSaveWithSync = async () => {
     if (!directory) return;
     await SettingsService.save({
-      directory: directory,
       defaultAuthor: author || "user",
     });
+    await globalDispatch.switchWorkspace(directory);
     onOpenChange(false);
-    window.location.reload();
   };
 
   const handleUseLocalOnly = async () => {
     await SettingsService.save({
-      directory: null,
       defaultAuthor: author || "user",
     });
+    await globalDispatch.switchWorkspace(null);
     onOpenChange(false);
-    window.location.reload();
   };
 
   const handleClearSync = async () => {

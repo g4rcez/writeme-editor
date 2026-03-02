@@ -9,7 +9,6 @@ import { globalState, useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
 import type { TreeNode } from "@/types/tree";
 import { TreeView } from "./tree-view";
 
@@ -28,11 +27,10 @@ export const DirectoryBrowserDialog = () => {
 
   useEffect(() => {
     if (state.directoryBrowserDialog) {
-      const settings = SettingsService.load();
-      if (settings.directory) return void setStorageDir(settings.directory);
+      if (state.directory) return void setStorageDir(state.directory);
       window.electronAPI.env.getHome().then(setStorageDir);
     }
-  }, [state.directoryBrowserDialog]);
+  }, [state.directoryBrowserDialog, state.directory]);
 
   const closeDialog = useCallback(() => {
     dispatch.directoryBrowserDialog(false);

@@ -1,7 +1,7 @@
 import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
+import { globalState } from "@/store/global.store";
 import { computePosition, flip, shift } from "@floating-ui/dom";
 import { posToDOMRect, ReactRenderer } from "@tiptap/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -70,8 +70,7 @@ const MentionList = (props: any) => {
   }, []);
 
   const storageDir = useMemo(() => {
-    const settings = SettingsService.load();
-    return settings.directory || "";
+    return globalState().directory || "";
   }, []);
 
   return (

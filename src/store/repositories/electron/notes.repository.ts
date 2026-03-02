@@ -174,7 +174,17 @@ export class NotesRepository
 
   override async getAll(query?: { limit?: number }): Promise<Note[]> {
     const all = await this.adapter.getAll<Note>(this.collection);
-    const notes = all.map((metadata: any) =>
+    const settings = SettingsService.load();
+    const mode = getStorageMode();
+
+    let filtered = all;
+    if (mode === "filesystem" && settings.directory) {
+      filtered = all.filter(
+        (n) => !n.filePath || n.filePath.startsWith(settings.directory!),
+      );
+    }
+
+    const notes = filtered.map((metadata: any) =>
       Note.parse({ ...metadata, content: "" }),
     );
     const sorted = notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
@@ -186,9 +196,27 @@ export class NotesRepository
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
     const notes = await window.electronAPI.db.notes.getRecentNotes(
-      limit || Number.MAX_SAFE_INTEGER,
+      Number.MAX_SAFE_INTEGER,
     );
-    return notes.map((note) => Note.parse({ ...note, content: "" }));
+    const settings = SettingsService.load();
+    const mode = getStorageMode();
+
+    let filtered = notes;
+    if (mode === "filesystem" && settings.directory) {
+      filtered = notes.filter(
+        (n) => !n.filePath || n.filePath.startsWith(settings.directory!),
+      );
+    }
+
+    const parsed = filtered.map((note) =>
+      Note.parse({ ...note, content: "" }),
+    );
+
+    if (limit) {
+      return parsed.slice(0, limit);
+    }
+
+    return parsed;
   }
 
   async getLatestQuicknote(): Promise<Note | null> {

@@ -10,6 +10,10 @@ vi.mock("../../store/global.store", () => ({
   },
 }));
 
+vi.mock("../../lib/is-electron", () => ({
+  isElectron: vi.fn(() => true),
+}));
+
 describe("shortcut-items", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -32,6 +36,6 @@ describe("shortcut-items", () => {
     expect(descriptions).toContain("Commander");
     expect(descriptions).toContain("Open Recent");
     expect(descriptions).toContain("Browse files");
-    expect(descriptions).toContain("Open project");
+    expect(descriptions).toContain("Open...");
   });
 });

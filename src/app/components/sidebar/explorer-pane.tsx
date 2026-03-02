@@ -5,13 +5,11 @@ import {
   useGlobalStore,
 } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
 import { type TreeNode } from "@/types/tree";
 import { Button } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView } from "../tree-view";
@@ -19,16 +17,12 @@ import { TreeView } from "../tree-view";
 export const ExplorerPane = () => {
   const [state] = useGlobalStore();
   const map = new Map(state.notes.map((x) => [x.filePath!, x]));
-  const [rootPath, setRootPath] = useState<string | null>(
-    SettingsService.load().explorerRoot,
-  );
   const navigate = useNavigate();
 
   const handleChooseDirectory = async () => {
     const path = await window.electronAPI.fs.chooseDirectory();
     if (path) {
-      await SettingsService.save({ explorerRoot: path });
-      setRootPath(path);
+      await globalDispatch.switchWorkspace(path);
     }
   };
 
@@ -52,7 +46,7 @@ export const ExplorerPane = () => {
     return <NoteListSidebar />;
   }
 
-  if (!rootPath) {
+  if (!state.explorerRoot) {
     return (
       <div className="flex flex-col gap-4 justify-center items-center p-6 h-full text-center">
         <div className="p-4 rounded-full bg-primary/10 text-primary">
@@ -93,7 +87,11 @@ export const ExplorerPane = () => {
         </div>
       </div>
       <div className="overflow-auto flex-1 scrollbar-hide">
-        <TreeView map={map} rootPath={rootPath} onFileSelect={onFileSelect} />
+        <TreeView
+          map={map}
+          rootPath={state.explorerRoot}
+          onFileSelect={onFileSelect}
+        />
       </div>
     </div>
   );

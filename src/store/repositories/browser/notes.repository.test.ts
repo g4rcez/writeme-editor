@@ -13,6 +13,8 @@ const mockCollection = {
 vi.mock("./dexie-db", () => ({
   db: {
     notes: {
+      where: vi.fn().mockReturnThis(),
+      notEqual: vi.fn().mockReturnThis(),
       toArray: vi.fn(),
       orderBy: vi.fn(),
     },
@@ -23,9 +25,13 @@ describe("NotesRepository", () => {
   let repository: NotesRepository;
 
   beforeEach(() => {
-    repository = new NotesRepository();
+    // @ts-ignore
+    repository = new NotesRepository({});
     vi.clearAllMocks();
-    (db.notes.orderBy as any).mockReturnValue(mockCollection);
+    (db.notes.where as any).mockReturnValue({
+      notEqual: vi.fn().mockReturnThis(),
+      toArray: vi.fn().mockImplementation(() => mockCollection.toArray()),
+    });
   });
 
   describe("getRecentNotes", () => {
@@ -44,25 +50,24 @@ describe("NotesRepository", () => {
 
       const result = await repository.getRecentNotes();
 
-      expect(db.notes.orderBy).toHaveBeenCalledWith("updatedAt");
-      expect(mockCollection.reverse).toHaveBeenCalled();
-      expect(mockCollection.toArray).toHaveBeenCalled();
+      expect(db.notes.where).toHaveBeenCalledWith("noteType");
       expect(result).toHaveLength(3);
       expect(result[0].title).toBe("New Note");
     });
 
     it("should limit the number of results if a limit is provided", async () => {
-       const notes = Array.from({ length: 5 }, (_, i) => ({
+       const notes = Array.from({ length: 10 }, (_, i) => ({
             id: `${i}`,
             title: `Note ${i}`,
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            noteType: "note"
         }));
 
         (mockCollection.toArray as any).mockResolvedValue(notes);
 
-        await repository.getRecentNotes(5);
+        const result = await repository.getRecentNotes(5);
 
-        expect(mockCollection.limit).toHaveBeenCalledWith(5);
+        expect(result).toHaveLength(5);
     });
   });
 });

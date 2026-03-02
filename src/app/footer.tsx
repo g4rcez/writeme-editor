@@ -1,24 +1,27 @@
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { useEffect, useState } from "react";
 import { useUIStore } from "../store/ui.store";
-import { SettingsService } from "../store/settings";
+import { useGlobalStore } from "../store/global.store";
 
 export const Footer = () => {
   const [, uiDispatch] = useUIStore();
+  const [state] = useGlobalStore();
   const [vaultPath, setVaultPath] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPath = async () => {
-      const settings = SettingsService.load();
-      if (!settings.directory) return;
+      if (!state.directory) {
+        setVaultPath(null);
+        return;
+      }
       const home = (await window.electronAPI?.env?.getHome()) || "";
-      const path = settings.directory;
+      const path = state.directory;
       setVaultPath(
         home && path.startsWith(home) ? path.replace(home, "~") : path,
       );
     };
     loadPath();
-  }, []);
+  }, [state.directory]);
 
   return (
     <footer className="flex fixed bottom-0 items-center w-full bg-background h-navbar">

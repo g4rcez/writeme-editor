@@ -42,6 +42,8 @@ type State = {
   recentNotesDialog: boolean;
   aiContext: AiContext | null;
   directoryBrowserDialog: boolean;
+  directory: string | null;
+  explorerRoot: string | null;
   createVariableDialog: { isOpen: boolean };
   createTemplateDialog: { isOpen: boolean };
   aiDrawer: { isOpen: boolean; chatId: string | null };
@@ -62,6 +64,8 @@ const initialState: State = {
   note: null as Note | null,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
+  directory: null,
+  explorerRoot: null,
   theme: "dark" as "light" | "dark",
   editorFontSize: 16,
   sidebarWidth: 208,
@@ -183,6 +187,8 @@ export const useGlobalStore = createGlobalReducer(
         editorFontSize: number,
         sidebarWidth: number,
         isSidebarCollapsed: boolean,
+        directory: string | null,
+        explorerRoot: string | null,
       ) => {
         if (theme === "dark") document.documentElement.classList.add("dark");
         if (theme === "light")
@@ -193,6 +199,8 @@ export const useGlobalStore = createGlobalReducer(
           editorFontSize,
           sidebarWidth,
           isSidebarCollapsed,
+          directory,
+          explorerRoot,
           notes: setNotes(notes).notes,
         };
       },
@@ -252,6 +260,30 @@ export const useGlobalStore = createGlobalReducer(
       clearTabs: async () => {
         await repositories.tabs.clear();
         return { tabs: [] as Tab[], activeTabId: null, note: null };
+      },
+      switchWorkspace: async (directory: string | null) => {
+        // 1. Clear tabs in repository and state
+        await repositories.tabs.clear();
+
+        // 2. Update settings (only persistence is handled by SettingsService.save)
+        await SettingsService.save({
+          directory,
+          explorerRoot: directory,
+        });
+
+        // 3. Reload notes from the new repository (the repository itself is dynamic)
+        const notes = await repositories.notes.getAll();
+        const recent = await repositories.notes.getAll({ limit: 10 });
+
+        return {
+          directory,
+          explorerRoot: directory,
+          tabs: [] as Tab[],
+          activeTabId: null,
+          note: null,
+          notes: setNotes(notes).notes,
+          recentNotes: recent,
+        };
       },
       directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
         directoryBrowserDialog,

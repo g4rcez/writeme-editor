@@ -145,8 +145,7 @@ export const useWritemeShortcuts = () => {
                   console.error("Failed to migrate note:", noteData.title, err);
                 }
               }
-              await SettingsService.save({ directory: result.path });
-              window.location.reload();
+              await dispatch.switchWorkspace(result.path);
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);
               if (file.success) {

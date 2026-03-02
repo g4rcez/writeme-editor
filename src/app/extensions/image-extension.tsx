@@ -31,7 +31,7 @@ const ImageView = (props: any) => {
 
   let displaySrc = src;
   if (isElectron() && src && src.startsWith("assets/")) {
-    const projectDir = globalState().settings.directory;
+    const projectDir = globalState().directory;
     if (projectDir) {
       displaySrc = `writeme://action@image${projectDir}/${src}`;
     }
