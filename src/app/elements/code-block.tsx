@@ -44,6 +44,7 @@ import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
+import { Flowchart } from "./flowchart";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
 
@@ -459,6 +460,7 @@ const getAllLanguages = (): string[] => {
   allLanguages.push("math");
   allLanguages.push("excalidraw");
   allLanguages.push("graphviz");
+  allLanguages.push("flowchart");
   return allLanguages.sort();
 };
 
@@ -645,6 +647,15 @@ const CodeBlockAddons = ({
       <div className="px-4 pb-4">
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <Graphviz dot={code} />
+        </div>
+      </div>
+    );
+  }
+  if (language === "flowchart" && code) {
+    return (
+      <div className="px-4 pb-4">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Flowchart code={code} />
         </div>
       </div>
     );
