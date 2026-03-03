@@ -1,6 +1,6 @@
 export interface ITerminalBackend {
   /** Starts the backend process */
-  start(): void;
+  start(cwd?: string | null): void;
   
   /** Writes data to the backend */
   write(data: string): void;

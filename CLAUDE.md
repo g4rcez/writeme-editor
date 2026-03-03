@@ -22,6 +22,7 @@ Writeme is an Electron-based note-taking application built with React, TypeScrip
 ## Architecture Overview
 
 ### Electron Process Separation
+
 - **Main Process** (`src/main.ts`): BrowserWindow, IPC handlers, tray icon, global shortcuts, SQLite database
 - **Preload Script** (`src/preload.ts`): `contextBridge.exposeInMainWorld("electronAPI", {...})` — typed API bridge
 - **Renderer Process** (`src/app/main.tsx`): React app with hash-based routing in Electron, browser routing in PWA
@@ -40,6 +41,7 @@ Repositories: `notes`, `tabs`, `hashtags`, `settings`, `scripts`, `ai`
 ### State Management
 
 Uses `use-typed-reducer` with `createGlobalReducer` pattern in `src/store/global.store.ts`. Access via:
+
 ```typescript
 const [state, dispatch] = useGlobalStore();
 dispatch.selectNoteById(noteId);
@@ -60,6 +62,7 @@ Core editor: `src/app/editor.tsx` using Tiptap (ProseMirror-based).
 - **Global editor ref**: `src/app/editor-global-ref.ts` — allows command palette and other UI to interact with the active editor
 
 **Editor pitfalls**:
+
 - Tiptap suggestion `items()` must never reject — a rejected promise silently kills the popup. Always try-catch and return `[]` on error.
 - tiptap-markdown `renderList` reads `node.attrs.tight` (falls back to `state.options.tightLists`). Setting `state.tight` is dead code. Extensions controlling list tightness must register a `tight` attribute on the node.
 - For inline atom nodes (e.g., Mention), override `renderText()` to control clipboard and markdown output.
@@ -68,6 +71,7 @@ Core editor: `src/app/editor.tsx` using Tiptap (ProseMirror-based).
 ### IPC Communication
 
 IPC handlers organized by domain in `src/ipc/`:
+
 - `notes.ipc.ts` — filesystem operations (`fs:*`), clipboard
 - `database.ipc.ts` — generic CRUD (`db:*`), note/tab/hashtag operations
 - `app.ipc.ts` — quick note window, environment info
@@ -78,6 +82,7 @@ AI IPC handlers are registered directly in `src/main.ts` (`ai:query`, `ai:stop`,
 Pattern: `ipcMain.handle("channel:name", handler)` in main process → `ipcRenderer.invoke("channel:name")` exposed via preload.
 
 **Electron sandbox rules**:
+
 - Renderer and preload cannot access `process.env` directly. Use `app.getPath()` in main process, expose via IPC.
 - `window.electronAPI.env.getHome()` is async — always `await` it.
 - All `window.electronAPI.*` calls must be guarded with `isElectron()`.
@@ -86,6 +91,7 @@ Pattern: `ipcMain.handle("channel:name", handler)` in main process → `ipcRende
 ### Routing
 
 Hash-based router for Electron, browser router for PWA (`src/app/router.tsx`). Key routes:
+
 - `/note/:noteId` — note editor
 - `/quicknote` — quick note creation
 - `/templates/:templateId` — template editor

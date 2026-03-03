@@ -5,7 +5,7 @@ export class ElectronTerminalBackend implements ITerminalBackend {
   private onDataCallback: ((data: string) => void) | null = null;
   private removeListener: (() => void) | null = null;
 
-  start(): void {
+  start(cwd?: string | null): void {
     this.ptyId = Math.random().toString(36).substring(2, 15);
     if (window.electronAPI && window.electronAPI.terminal) {
       this.removeListener = window.electronAPI.terminal.onData((data: { id: string; data: string }) => {
@@ -15,7 +15,7 @@ export class ElectronTerminalBackend implements ITerminalBackend {
       });
 
       // Spawn the pty
-      window.electronAPI.terminal.spawn(this.ptyId);
+      window.electronAPI.terminal.spawn(this.ptyId, cwd || undefined);
     } else {
       console.error("Electron API for terminal not available");
       if (this.onDataCallback) {

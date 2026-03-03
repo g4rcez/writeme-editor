@@ -1,5 +1,5 @@
-import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { useGlobalStore } from "@/store/global.store";
+import { CommandIcon } from "@phosphor-icons/react";
 import { NavbarButton } from "./navbar-button";
 
 export const SettingsMenu = () => {
@@ -7,7 +7,7 @@ export const SettingsMenu = () => {
   return (
     <NavbarButton
       title="Settings"
-      Icon={GearIcon}
+      Icon={CommandIcon}
       aria-label="Settings menu"
       onClick={() => dispatch.commander(true)}
     />

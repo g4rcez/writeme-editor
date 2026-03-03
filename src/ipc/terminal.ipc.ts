@@ -8,7 +8,7 @@ import * as path from "path";
 const activeSessions = new Map<string, pty.IPty>();
 
 export const terminalIpcHandler = () => {
-  ipcMain.on("terminal:spawn", (event: IpcMainEvent, id: string) => {
+  ipcMain.on("terminal:spawn", (event: IpcMainEvent, id: string, providedCwd?: string) => {
     try {
       if (activeSessions.has(id)) {
         return;
@@ -18,7 +18,7 @@ export const terminalIpcHandler = () => {
       const shell = os.platform() === "win32" ? "powershell.exe" : process.env.SHELL || "bash";
       
       // Get a safe working directory
-      const cwd = process.env.HOME || app.getPath('userData');
+      const cwd = providedCwd || process.env.HOME || app.getPath('userData');
 
       const ptyProcess = pty.spawn(shell, [], {
         name: "xterm-color",

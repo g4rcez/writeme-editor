@@ -7,8 +7,10 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { LigaturesAddon } from "@xterm/addon-ligatures";
 import "@xterm/xterm/css/xterm.css";
 import { createTerminalBackend } from "@/lib/terminal/factory";
+import { useGlobalStore } from "@/store/global.store";
 
 export const TerminalPanel = () => {
+  const [state] = useGlobalStore();
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const backendRef = useRef<ReturnType<typeof createTerminalBackend> | null>(
@@ -64,7 +66,7 @@ export const TerminalPanel = () => {
     });
 
     // Start Backend and fit
-    backend.start();
+    backend.start(state.directory);
 
     // Fit immediately, then slightly delayed to ensure DOM is ready
     try {

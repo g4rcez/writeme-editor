@@ -64,7 +64,10 @@ export class WebTerminalBackend implements ITerminalBackend {
     return this.registry;
   }
 
-  start(): void {
+  start(cwd?: string | null): void {
+    if (cwd) {
+      this.cwd = cwd;
+    }
     this.emit("\r\n\x1b[1;34mWriteme Web Terminal (Mock)\x1b[0m\r\n");
     this.prompt();
   }

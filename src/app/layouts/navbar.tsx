@@ -1,15 +1,19 @@
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { NetworkIcon } from "@phosphor-icons/react/dist/csr/Network";
-import { StackPlusIcon } from "@phosphor-icons/react/dist/csr/StackPlus";
-import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
-import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
+import { DotsThreeVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsThreeVertical";
+import { Menu, MenuItem } from "@g4rcez/components";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { NavbarButton } from "@/app/components/navbar-button";
-import { NewNoteButton } from "@/app/components/new-note-button";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SettingsMenu } from "@/app/components/settings-menu";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import {
+  BookBookmarkIcon,
+  GearFineIcon,
+  GraphIcon,
+  NotepadIcon,
+  NotePencilIcon,
+  TerminalWindowIcon,
+} from "@phosphor-icons/react";
 
 export const Navbar = () => {
   const [state, dispatch] = useGlobalStore();
@@ -17,11 +21,23 @@ export const Navbar = () => {
     state.note?.title || "",
   );
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (state.note?.title) setEditingTitle(state.note.title);
     else setEditingTitle(null);
   }, [state.note?.id, state.note?.title]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const isEditor =
     location.pathname.startsWith("/note/") || location.pathname === "/";
@@ -72,25 +88,58 @@ export const Navbar = () => {
             />
           )}
         </div>
-
         <nav className="flex gap-2 items-center">
-          <NavbarButton 
-            title="Terminal" 
-            Icon={TerminalWindowIcon} 
-            onClick={() => dispatch.toggleTerminal()} 
-          />
-          <Link to="/notes">
-            <NavbarButton title="All Notes" Icon={ListBulletsIcon} />
-          </Link>
-          <Link to="/read-it-later">
-            <NavbarButton title="Read It Later" Icon={StackPlusIcon} />
-          </Link>
-          <Link to="/tags">
-            <NavbarButton title="Graph View" Icon={NetworkIcon} />
-          </Link>
-          <NewNoteButton />
-          <ThemeToggle />
           <SettingsMenu />
+          <ThemeToggle />
+          <Menu label={<DotsThreeVerticalIcon size={20} />} title="Menu">
+            <MenuItem
+              title="New note"
+              onClick={() =>
+                dispatch.setCreateNoteDialog({ isOpen: true, type: "note" })
+              }
+            >
+              <span className="flex items-center gap-1">
+                <NotePencilIcon />
+                New note
+              </span>
+            </MenuItem>
+            <MenuItem title="Notes" onClick={() => navigate("/notes")}>
+              <span className="flex items-center gap-1">
+                <NotepadIcon />
+                Notes
+              </span>
+            </MenuItem>
+            <MenuItem
+              title="Read it later"
+              onClick={() => navigate("/read-it-later")}
+            >
+              <span className="flex items-center gap-1">
+                <BookBookmarkIcon />
+                Read it later
+              </span>
+            </MenuItem>
+            <MenuItem title="Graph view" onClick={() => navigate("/tags")}>
+              <span className="flex items-center gap-1">
+                <GraphIcon />
+                Graph view
+              </span>
+            </MenuItem>
+            <MenuItem
+              title="Terminal"
+              onClick={() => dispatch.toggleTerminal()}
+            >
+              <span className="flex items-center gap-1">
+                <TerminalWindowIcon />
+                Terminal
+              </span>
+            </MenuItem>
+            <MenuItem title="Settings" onClick={() => navigate("/settings")}>
+              <span className="flex items-center gap-1">
+                <GearFineIcon />
+                Settings
+              </span>
+            </MenuItem>
+          </Menu>
         </nav>
       </div>
     </header>

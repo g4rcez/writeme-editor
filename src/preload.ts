@@ -155,7 +155,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     test: () => ipcRenderer.invoke("ai:test"),
   },
   terminal: {
-    spawn: (id: string) => ipcRenderer.send("terminal:spawn", id),
+    spawn: (id: string, cwd?: string) => ipcRenderer.send("terminal:spawn", id, cwd),
     write: (id: string, data: string) => ipcRenderer.send("terminal:write", id, data),
     resize: (id: string, cols: number, rows: number) => ipcRenderer.send("terminal:resize", id, cols, rows),
     kill: (id: string) => ipcRenderer.send("terminal:kill", id),
@@ -263,7 +263,7 @@ declare global {
         saveMessage(message: any): Promise<void>;
       };
       terminal: {
-        spawn(id: string): void;
+        spawn(id: string, cwd?: string): void;
         write(id: string, data: string): void;
         resize(id: string, cols: number, rows: number): void;
         kill(id: string): void;
