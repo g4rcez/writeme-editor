@@ -132,13 +132,6 @@ export function parseReadItLaterHtml(
       pre.appendChild(code);
     }
     const original = pre.querySelector("code")!;
-    const code = doc.createElement("code");
-    const length = original.childElementCount;
-    original.childNodes.forEach((c, i) => {
-      code.appendChild(c);
-      if (length - 1 === i) return;
-      code.appendChild(doc.createElement("br"));
-    });
     const classes = [...pre.classList, ...original.classList];
     const langClass = classes.find((c) => {
       const lower = c.toLowerCase();
@@ -148,16 +141,23 @@ export function parseReadItLaterHtml(
         bundledLanguages.includes(lower)
       );
     });
+    const children = Array.from(original.childNodes);
+    original.innerHTML = "";
+    for (const child of children) {
+      if (child.nodeType === Node.ELEMENT_NODE && ["DIV", "P"].includes((child as Element).tagName)) {
+        original.appendChild(doc.createTextNode((child.textContent ?? "") + "\n"));
+      } else {
+        original.appendChild(child);
+      }
+    }
     if (langClass) {
       const lang = langClass
         .toLowerCase()
         .replace("language-", "")
         .replace("lang-", "");
-      code.classList.remove(...code.classList);
-      code.classList.add(`language-${lang}`);
+      original.className = `language-${lang}`;
       pre.removeAttribute("class");
     }
-    original.innerHTML = code.innerHTML;
   });
   const mainContent =
     doc.querySelector("article") || doc.querySelector("main") || doc.body;
