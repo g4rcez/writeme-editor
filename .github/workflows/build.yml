@@ -13,22 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
 
       - name: Install rpm (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y rpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm ci
 
-      - run: pnpm make
+      - run: npm run make
 
       - uses: actions/upload-artifact@v4
         with:
