@@ -4,7 +4,7 @@ import {
   repositories,
   useGlobalStore,
 } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { type TreeNode } from "@/types/tree";
 import { Button } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
@@ -31,8 +31,20 @@ export const ExplorerPane = () => {
       const allNotes = await repositories.notes.getAll();
       let note = allNotes.find((n) => n.filePath === node.path);
       if (!note) {
-        const content = await window.electronAPI.fs.readFile(node.path);
-        note = Note.new(node.name.replace(".md", ""), content || "");
+        const result = await window.electronAPI.fs.readFile(node.path);
+        note = Note.new(node.name.replace(".md", ""), result.content || "");
+        note.filePath = node.path;
+        await repositories.notes.save(note);
+        const updatedNotes = await repositories.notes.getAll();
+        globalDispatch.notes(updatedNotes);
+      }
+      navigate(`/note/${note.id}`);
+    } else if (node.type === "file" && node.extension === ".json") {
+      const allNotes = await repositories.notes.getAll();
+      let note = allNotes.find((n) => n.filePath === node.path);
+      if (!note) {
+        const result = await window.electronAPI.fs.readFile(node.path);
+        note = Note.new(node.name.replace(".json", ""), result.content || "", NoteType.json);
         note.filePath = node.path;
         await repositories.notes.save(note);
         const updatedNotes = await repositories.notes.getAll();

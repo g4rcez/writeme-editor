@@ -93,7 +93,9 @@ const JsonGraphInner = ({
   const [direction, setDirection] = useState<"LR" | "TB">("LR");
   const [isZenMode, setIsZenMode] = useState(false);
   const [view, setView] = useState<"graph" | "text">("graph");
-  const [textValue, setTextValue] = useState(() => JSON.stringify(json, null, 2));
+  const [textValue, setTextValue] = useState(() =>
+    JSON.stringify(json, null, 2),
+  );
   const { fitView } = useReactFlow();
   const [state] = useGlobalStore();
   const theme = state.theme === "dark" ? darkTheme : lightTheme;
@@ -209,10 +211,9 @@ const JsonGraphInner = ({
   const toggleView = useCallback(() => {
     if (view === "graph") {
       setTextValue(JSON.stringify(json, null, 2));
-      setView("text");
-    } else {
-      setView("graph");
+      return void setView("text");
     }
+    return setView("graph");
   }, [view, json]);
 
   const onTextChange = useCallback(
@@ -221,9 +222,7 @@ const JsonGraphInner = ({
       try {
         const parsed = JSON.parse(v);
         onChange?.(parsed);
-      } catch {
-        // ignore parse errors
-      }
+      } catch { }
     },
     [onChange],
   );
@@ -237,18 +236,16 @@ const JsonGraphInner = ({
           : "relative bg-background",
       )}
     >
-      <div className="flex gap-4 justify-between items-center p-3 border-b bg-background border-border/5">
+      <div className="flex gap-4 justify-between items-center border-b bg-background border-border/5">
         <div className="flex gap-1 items-center">
-          <div className="flex items-center">
-            <Input
-              hiddenLabel
-              value={searchQuery}
-              placeholder="Search keys or values..."
-              left={<MagnifyingGlassIcon size={16} className="text-primary" />}
-              className="w-64"
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <Input
+            hiddenLabel
+            className="w-64"
+            value={searchQuery}
+            placeholder="Search keys or values..."
+            onChange={(e) => setSearchQuery(e.target.value)}
+            left={<MagnifyingGlassIcon size={16} className="text-primary" />}
+          />
           <div className="mx-1 w-px h-6 bg-border/10" />
           <div className="flex gap-1">
             <Tooltip
@@ -279,7 +276,11 @@ const JsonGraphInner = ({
                 theme={view === "text" ? "primary" : "muted"}
                 onClick={toggleView}
               >
-                {view === "graph" ? <CodeIcon size={18} /> : <GraphIcon size={18} />}
+                {view === "graph" ? (
+                  <CodeIcon size={18} />
+                ) : (
+                  <GraphIcon size={18} />
+                )}
               </Button>
             }
           >
@@ -368,7 +369,11 @@ const JsonGraphInner = ({
             />
           </ReactFlow>
         ) : (
-          <JsonEditor value={textValue} onChange={onTextChange} className="h-full w-full" />
+          <JsonEditor
+            value={textValue}
+            onChange={onTextChange}
+            className="w-full h-full mt-4"
+          />
         )}
       </div>
     </div>

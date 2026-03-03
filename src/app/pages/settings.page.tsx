@@ -362,6 +362,38 @@ export default function SettingsPage() {
                     can use {"{{VARIABLE}}"} syntax.
                   </p>
                 </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">
+                      Quick Notes Directory
+                    </span>
+                    <Button
+                      size="small"
+                      theme="ghost-primary"
+                      onClick={async () => {
+                        const dir =
+                          await window.electronAPI.fs.chooseDirectory();
+                        if (dir) {
+                          setSettings({ ...settings, quicknotesDirectory: dir });
+                        }
+                      }}
+                    >
+                      Change Folder
+                    </Button>
+                  </div>
+                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                    {settings.quicknotesDirectory ||
+                      (settings.directory
+                        ? `${settings.directory}/quicknotes`
+                        : "Default (quicknotes in workspace)")}
+                  </code>
+                  <p className="text-[10px] text-muted-foreground">
+                    Folder where quick notes are saved. Defaults to a{" "}
+                    <code className="text-primary">quicknotes</code> subdirectory
+                    inside your workspace.
+                  </p>
+                </div>
               </div>
             </Card>
           </Fragment>

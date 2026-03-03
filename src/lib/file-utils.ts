@@ -163,11 +163,9 @@ export function getUniqueNoteTitle(
   existingNotes: { title: string }[],
 ): string {
   const existingTitles = new Set(existingNotes.map((n) => n.title));
-
   if (!existingTitles.has(baseTitle)) {
     return baseTitle;
   }
-
   let counter = 1;
   while (existingTitles.has(`${baseTitle}-${counter}`)) {
     counter++;

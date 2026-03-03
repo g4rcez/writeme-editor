@@ -5,11 +5,12 @@ import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOu
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { Link } from "react-router-dom";
-import { useNoteList, NoteWithTags } from "../hooks/use-note-list";
+import { useNoteList, type NoteWithTags } from "../hooks/use-note-list";
+import { NoteType } from "@/store/note";
 
 export default function ReadItLaterPage() {
   const { loading, search, setSearch, filteredNotes, handleDelete } =
-    useNoteList({ noteType: "read-it-later" });
+    useNoteList({ noteType: NoteType["read-it-later"] });
 
   const cols = createColumns<NoteWithTags>((col) => {
     col.add("title", "Title", {
@@ -51,7 +52,7 @@ export default function ReadItLaterPage() {
         return (
           <a
             target="_blank"
-            href={props.row.url}
+            href={props.row.url!}
             rel="noopener noreferrer"
             className="flex gap-1 items-center text-blue-500 hover:underline"
           >
@@ -101,7 +102,12 @@ export default function ReadItLaterPage() {
             value={search}
             placeholder="Search..."
             onChange={(e) => setSearch(e.target.value)}
-            left={<MagnifyingGlassIcon size={16} className="text-muted-foreground" />}
+            left={
+              <MagnifyingGlassIcon
+                size={16}
+                className="text-muted-foreground"
+              />
+            }
           />
         </div>
       </div>
@@ -110,7 +116,7 @@ export default function ReadItLaterPage() {
         reference="id"
         useControl={false}
         name="read-it-later"
-        rows={filteredNotes}
+        rows={filteredNotes as NoteWithTags[]}
       />
     </div>
   );

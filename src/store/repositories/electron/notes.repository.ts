@@ -26,7 +26,10 @@ export class NotesRepository
 
     if (mode === "filesystem") {
       if (!item.filePath) {
-        const filePath = generateNotePath(settings.directory!, item.title);
+        const rootDir = item.noteType === "quick"
+          ? (settings.quicknotesDirectory ?? `${settings.directory!}/quicknotes`)
+          : settings.directory!;
+        const filePath = generateNotePath(rootDir, item.title);
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
           const result = await window.electronAPI.fs.statFile(path);
           return result.exists;

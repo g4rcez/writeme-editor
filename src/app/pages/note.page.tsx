@@ -83,6 +83,7 @@ export default function NotePage() {
       {isJson ? (
         <div className="flex-1 h-[calc(100vh-160px)]">
           <JsonGraph
+            key={note.id}
             json={(() => {
               try {
                 return JSON.parse(note.content);

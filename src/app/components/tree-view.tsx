@@ -18,6 +18,18 @@ import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { Tooltip, Button } from "@g4rcez/components";
 import type { TreeNode, FlattenedNode } from "@/types/tree";
 import { NoteType, type Note } from "@/store/note";
+import { BracketsCurlyIcon } from "@phosphor-icons/react";
+
+interface FileExtensionConfig {
+  icon: React.ElementType;
+  iconClass: string;
+  selectable: boolean;
+}
+
+const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
+  ".md": { icon: FileTextIcon, iconClass: "text-primary size-4", selectable: true },
+  ".json": { icon: BracketsCurlyIcon, iconClass: "text-warn size-4", selectable: true },
+};
 
 interface TreeNodeItemProps {
   note: Note;
@@ -51,7 +63,7 @@ const TreeNodeItem = ({
   note,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
-  const isMarkdown = node.extension === ".md";
+  const extConfig = FILE_EXTENSION_CONFIGS[node.extension ?? ""];
   const itemRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,7 +92,7 @@ const TreeNodeItem = ({
       className={`
         group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition-colors
         ${isFocused ? "bg-primary-subtle/40" : "hover:bg-muted"}
-        ${!isDirectory && !isMarkdown ? "opacity-50 cursor-default" : ""}
+        ${!isDirectory && !extConfig ? "opacity-50 cursor-default" : ""}
       `}
     >
       {isDirectory ? (
@@ -103,8 +115,8 @@ const TreeNodeItem = ({
           <span className="w-4" />
           {note?.noteType === NoteType.quick ? (
             <LightningIcon className="text-warn size-4" />
-          ) : isMarkdown ? (
-            <FileTextIcon className="text-primary size-4" />
+          ) : extConfig ? (
+            <extConfig.icon className={extConfig.iconClass} />
           ) : (
             <FileIcon className="text-secondary size-4" />
           )}
@@ -114,7 +126,7 @@ const TreeNodeItem = ({
         className={`
           text-sm truncate flex-1
           ${isFocused ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-700 dark:text-gray-300"}
-          ${!isDirectory && !isMarkdown ? "text-gray-400 dark:text-gray-600" : ""}
+          ${!isDirectory && !extConfig ? "text-gray-400 dark:text-gray-600" : ""}
         `}
       >
         {node.name}
@@ -347,7 +359,7 @@ export const TreeView = ({
       const { node } = flatNode;
       if (node.type === "directory") {
         await toggleNode(node.path);
-      } else if (node.extension === ".md") {
+      } else if (FILE_EXTENSION_CONFIGS[node.extension ?? ""]?.selectable) {
         onFileSelect(node);
       }
     },
