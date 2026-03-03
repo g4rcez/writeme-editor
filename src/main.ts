@@ -20,6 +20,7 @@ import { handleWindowClose } from "./main-process/window-lifecycle";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
+import { FileWatcher } from "./main-process/file-watcher";
 
 function registerAIHandlers() {
   console.log("Registering AI IPC handlers...");
@@ -147,6 +148,9 @@ async function main() {
   databaseIpcHandler();
   appIpcHandler(preload);
   executionIpcHandler();
+  ipcMain.handle("fs:watcher:start", (_, directory: string) => {
+    if (mainWindow) FileWatcher.start(directory, mainWindow);
+  });
 
   const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -248,6 +252,21 @@ async function main() {
     globalShortcut.register("CommandOrControl+Alt+N", () =>
       createQuickNoteWindow(preload),
     );
+
+    if (mainWindow) {
+      try {
+        const settings = dbManager().getAll<{ name: string; value: string }>("settings");
+        const dirSetting = settings.find((s) => s.name === "directory");
+        if (dirSetting?.value) {
+          const directory = JSON.parse(dirSetting.value);
+          if (typeof directory === "string" && directory) {
+            FileWatcher.start(directory, mainWindow);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to start file watcher on ready:", e);
+      }
+    }
   });
   app.on("window-all-closed", () => {});
   app.on("activate", () => {

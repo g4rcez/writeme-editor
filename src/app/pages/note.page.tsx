@@ -1,6 +1,8 @@
 import { Dates } from "@/lib/dates";
 import { getReadingTime } from "@/lib/file-utils";
+import { isElectron } from "@/lib/is-electron";
 import { repositories, useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
 import { type PropsWithChildren, useEffect } from "react";
@@ -35,6 +37,19 @@ export default function NotePage() {
     const hasTab = state.tabs.some((x) => x.noteId === id);
     if (!hasTab) dispatch.addTab(id!);
   }, [id, state.tabs.length, state.note?.id]);
+
+  useEffect(() => {
+    if (!isElectron() || !note?.filePath) return;
+    const filePath = note.filePath;
+    return window.electronAPI.fs.onFileChanged(async ({ filePath: changedPath }) => {
+      if (changedPath !== filePath) return;
+      const result = await window.electronAPI.fs.readFile(changedPath);
+      if (!result.success) return;
+      if (result.content !== note.content) {
+        dispatch.setNote(Note.parse({ ...note, content: result.content }));
+      }
+    });
+  }, [note?.filePath, note?.id]);
 
   if (isLoading) {
     return (

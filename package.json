@@ -87,6 +87,7 @@
     "@xyflow/react": "^12.10.1",
     "ansi-to-html": "0.7.2",
     "better-sqlite3": "12.6.2",
+    "chokidar": "^5.0.0",
     "chrono-node": "2.9.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

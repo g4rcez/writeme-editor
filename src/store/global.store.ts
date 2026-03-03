@@ -280,9 +280,10 @@ export const useGlobalStore = createGlobalReducer(
           explorerRoot: directory,
         });
 
-        // 3. If Electron, change CWD
+        // 3. If Electron, change CWD and restart file watcher
         if (isElectron() && directory) {
           await window.electronAPI.app.chdir(directory);
+          await window.electronAPI.fs.startWatcher(directory);
         }
 
         // 4. Force reload to ensure all state is clean

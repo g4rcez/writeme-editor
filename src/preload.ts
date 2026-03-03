@@ -62,6 +62,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
     } | null> => {
       return ipcRenderer.invoke("fs:openFileOrDirectory");
     },
+    onFileChanged: (callback: (data: { filePath: string }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { filePath: string }) => callback(data);
+      ipcRenderer.on("fs:file-changed", handler);
+      return () => ipcRenderer.removeListener("fs:file-changed", handler);
+    },
+    onDirChanged: (callback: (data: { dirPath: string }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { dirPath: string }) => callback(data);
+      ipcRenderer.on("fs:dir-changed", handler);
+      return () => ipcRenderer.removeListener("fs:dir-changed", handler);
+    },
+    startWatcher: (directory: string) => ipcRenderer.invoke("fs:watcher:start", directory),
   },
   db: {
     get: (table: string, id: string) => ipcRenderer.invoke("db:get", table, id),
@@ -181,6 +192,9 @@ declare global {
           path: string;
           isDirectory: boolean;
         } | null>;
+        onFileChanged(callback: (data: { filePath: string }) => void): () => void;
+        onDirChanged(callback: (data: { dirPath: string }) => void): () => void;
+        startWatcher(directory: string): Promise<void>;
       };
       db: {
         get<T>(table: string, id: string): Promise<T | undefined>;

@@ -2,6 +2,7 @@ import { clipboard, dialog, ipcMain } from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
 import type { TreeNode } from "../types/tree";
+import { FileWatcher } from "../main-process/file-watcher";
 
 export const notesIpcHandler = async () => {
   ipcMain.handle("notes:clipboard", async () => {
@@ -38,6 +39,7 @@ export const notesIpcHandler = async () => {
     async (_, filePath: string, content: string) => {
       try {
         await fs.mkdir(path.dirname(filePath), { recursive: true });
+        FileWatcher.suppressNext(filePath);
         await fs.writeFile(filePath, content, "utf-8");
         let stats;
         try {

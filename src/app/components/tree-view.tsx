@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import { isElectron } from "@/lib/is-electron";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { LightningIcon } from "@phosphor-icons/react/dist/csr/Lightning";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
@@ -273,6 +274,19 @@ export const TreeView = ({
   useEffect(() => {
     loadRoot();
   }, [loadRoot]);
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    return window.electronAPI.fs.onDirChanged(({ dirPath }) => {
+      if (dirPath === rootPath) {
+        loadRoot();
+      } else if (childrenCache.has(dirPath)) {
+        window.electronAPI.fs.readDir(dirPath).then((result) => {
+          setChildrenCache((prev) => new Map(prev).set(dirPath, result.entries || []));
+        });
+      }
+    });
+  }, [rootPath, loadRoot, childrenCache]);
 
   const flattenedNodes = useMemo(() => {
     if (!rootChildren) return [];
