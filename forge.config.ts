@@ -6,13 +6,50 @@ import { MakerRpm } from '@electron-forge/maker-rpm';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { PublisherGithub } from '@electron-forge/publisher-github';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    name: "writeme",
+    executableName: "writeme",
+    appBundleId: "dev.writeme.app",
+    icon: "./public/icon",
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [
+    new MakerSquirrel({
+      name: "writeme",
+      setupExe: "writeme-setup.exe",
+      description: "Writeme - Markdown editor",
+    }),
+    new MakerZIP({}, ['darwin']),
+    new MakerDeb({
+      options: {
+        name: "writeme",
+        productName: "Writeme",
+        description: "Writeme - Markdown editor",
+        maintainer: "g4rcez",
+        homepage: "https://writeme.dev",
+        categories: ["Utility", "TextEditor"],
+      },
+    }),
+    new MakerRpm({
+      options: {
+        name: "writeme",
+        productName: "Writeme",
+        description: "Writeme - Markdown editor",
+        homepage: "https://writeme.dev",
+      },
+    }),
+  ],
+  publishers: [
+    new PublisherGithub({
+      repository: { owner: "g4rcez", name: "writeme-editor" },
+      prerelease: false,
+      generateReleaseNotes: true,
+    }),
+  ],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.

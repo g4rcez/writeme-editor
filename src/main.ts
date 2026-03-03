@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   globalShortcut,
   Menu,
   nativeImage,
@@ -10,6 +11,7 @@ import {
   protocol,
   net,
 } from "electron";
+import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { notesIpcHandler } from "./ipc/notes.ipc";
@@ -134,6 +136,32 @@ function registerAIHandlers() {
   });
 }
 
+async function checkLinuxUpdate() {
+  try {
+    const response = await net.fetch(
+      "https://api.github.com/repos/g4rcez/writeme-editor/releases/latest",
+    );
+    const release = await response.json() as { tag_name: string; html_url: string };
+    const latest = release.tag_name.replace(/^v/, "");
+    const current = app.getVersion();
+    if (latest !== current) {
+      const { response: btn } = await dialog.showMessageBox({
+        type: "info",
+        title: "Update available",
+        message: `A new version (${latest}) is available. You are running ${current}.`,
+        buttons: ["Download", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+      });
+      if (btn === 0) {
+        shell.openExternal(release.html_url);
+      }
+    }
+  } catch {
+    // no internet or API error — silently ignore
+  }
+}
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
@@ -251,6 +279,22 @@ async function main() {
 
     createWindow();
     createTray();
+
+    if (app.isPackaged) {
+      if (process.platform !== "linux") {
+        updateElectronApp({
+          updateSource: {
+            type: UpdateSourceType.ElectronPublicUpdateService,
+            repo: "g4rcez/writeme-editor",
+          },
+          updateInterval: "1 hour",
+          notifyUser: true,
+        });
+      } else {
+        checkLinuxUpdate();
+      }
+    }
+
     globalShortcut.register("CommandOrControl+Alt+N", () =>
       createQuickNoteWindow(preload),
     );
