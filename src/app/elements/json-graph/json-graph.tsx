@@ -1,8 +1,10 @@
 import { Button, Tooltip, css, Input } from "@g4rcez/components";
 import { ArrowCircleDownIcon } from "@phosphor-icons/react/dist/csr/ArrowCircleDown";
 import { ArrowCircleRightIcon } from "@phosphor-icons/react/dist/csr/ArrowCircleRight";
+import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { DownloadSimpleIcon } from "@phosphor-icons/react/dist/csr/DownloadSimple";
+import { GraphIcon } from "@phosphor-icons/react/dist/csr/Graph";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { MinusCircleIcon } from "@phosphor-icons/react/dist/csr/MinusCircle";
 import { PlusCircleIcon } from "@phosphor-icons/react/dist/csr/PlusCircle";
@@ -27,6 +29,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { darkTheme } from "@/app/styles/dark";
 import { lightTheme } from "@/app/styles/light";
 import { parseHslaToHex } from "@/lib/editor-utils";
+import { JsonEditor } from "@/app/components/json-editor";
 
 const ROOT_NAME = "$";
 
@@ -89,6 +92,8 @@ const JsonGraphInner = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [direction, setDirection] = useState<"LR" | "TB">("LR");
   const [isZenMode, setIsZenMode] = useState(false);
+  const [view, setView] = useState<"graph" | "text">("graph");
+  const [textValue, setTextValue] = useState(() => JSON.stringify(json, null, 2));
   const { fitView } = useReactFlow();
   const [state] = useGlobalStore();
   const theme = state.theme === "dark" ? darkTheme : lightTheme;
@@ -201,6 +206,28 @@ const JsonGraphInner = ({
 
   const collapseAll = () => setExpandedPaths(new Set([ROOT_NAME]));
 
+  const toggleView = useCallback(() => {
+    if (view === "graph") {
+      setTextValue(JSON.stringify(json, null, 2));
+      setView("text");
+    } else {
+      setView("graph");
+    }
+  }, [view, json]);
+
+  const onTextChange = useCallback(
+    (v: string) => {
+      setTextValue(v);
+      try {
+        const parsed = JSON.parse(v);
+        onChange?.(parsed);
+      } catch {
+        // ignore parse errors
+      }
+    },
+    [onChange],
+  );
+
   return (
     <div
       className={css(
@@ -249,6 +276,19 @@ const JsonGraphInner = ({
             title={
               <Button
                 size="small"
+                theme={view === "text" ? "primary" : "muted"}
+                onClick={toggleView}
+              >
+                {view === "graph" ? <CodeIcon size={18} /> : <GraphIcon size={18} />}
+              </Button>
+            }
+          >
+            {view === "graph" ? "Text view" : "Graph view"}
+          </Tooltip>
+          <Tooltip
+            title={
+              <Button
+                size="small"
                 theme="muted"
                 onClick={() => setDirection((d) => (d === "LR" ? "TB" : "LR"))}
               >
@@ -292,40 +332,44 @@ const JsonGraphInner = ({
       </div>
 
       <div className="relative flex-1">
-        <ReactFlow
-          fitView
-          maxZoom={2}
-          edges={edges}
-          nodes={nodes}
-          minZoom={0.05}
-          nodeTypes={nodeTypes}
-          onEdgesChange={onEdgesChange}
-          onNodesChange={onNodesChange}
-          defaultEdgeOptions={{
-            style: { stroke: colors.border, strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: colors.border },
-          }}
-        >
-          <Background
-            gap={24}
-            size={1}
-            variant={BackgroundVariant.Dots}
-            color={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
-          />
-          <Controls className="!bg-card-background !border-border/20 !fill-foreground" />
-          <MiniMap
-            className="!bg-card-background !border-border/20"
-            nodeStrokeColor={colors.primary}
-            nodeColor={(n: any) => {
-              if (n.data.type === "object") return colors.info;
-              if (n.data.type === "array") return colors.secondary;
-              return colors.success;
+        {view === "graph" ? (
+          <ReactFlow
+            fitView
+            maxZoom={2}
+            edges={edges}
+            nodes={nodes}
+            minZoom={0.05}
+            nodeTypes={nodeTypes}
+            onEdgesChange={onEdgesChange}
+            onNodesChange={onNodesChange}
+            defaultEdgeOptions={{
+              style: { stroke: colors.border, strokeWidth: 1.5 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: colors.border },
             }}
-            maskColor={
-              isDark ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.4)"
-            }
-          />
-        </ReactFlow>
+          >
+            <Background
+              gap={24}
+              size={1}
+              variant={BackgroundVariant.Dots}
+              color={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}
+            />
+            <Controls className="!bg-card-background !border-border/20 !fill-foreground" />
+            <MiniMap
+              className="!bg-card-background !border-border/20"
+              nodeStrokeColor={colors.primary}
+              nodeColor={(n: any) => {
+                if (n.data.type === "object") return colors.info;
+                if (n.data.type === "array") return colors.secondary;
+                return colors.success;
+              }}
+              maskColor={
+                isDark ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.4)"
+              }
+            />
+          </ReactFlow>
+        ) : (
+          <JsonEditor value={textValue} onChange={onTextChange} className="h-full w-full" />
+        )}
       </div>
     </div>
   );

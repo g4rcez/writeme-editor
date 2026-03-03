@@ -1,4 +1,5 @@
-import { Modal, Button, Textarea, Input } from "@g4rcez/components";
+import { Modal, Button, Input } from "@g4rcez/components";
+import { JsonEditor } from "@/app/components/json-editor";
 import { useState } from "react";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -46,14 +47,7 @@ export const InspectJsonDialog = () => {
       open={state.inspectJsonDialog}
     >
       <div className="flex flex-col gap-4">
-        <Textarea
-          required
-          rows={15}
-          value={json}
-          title="JSON Data"
-          onChange={(e: any) => setJson(e.target.value)}
-          placeholder='Paste your JSON here... e.g. { "name": "Writeme", "version": "1.0.0" }'
-        />
+        <JsonEditor value={json} onChange={setJson} className="min-h-[300px] rounded border border-neutral-200 dark:border-neutral-700 overflow-hidden" />
         {error && (
           <div className="p-2 text-xs text-red-500 bg-red-50 rounded dark:bg-red-950/30">
             Invalid JSON: {error}
