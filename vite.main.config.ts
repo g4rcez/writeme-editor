@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: {
     rollupOptions: {
-      external: ["better-sqlite3"],
+      external: ["better-sqlite3", "node-pty"],
     },
   },
 });

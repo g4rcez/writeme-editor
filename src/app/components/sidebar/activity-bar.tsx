@@ -5,6 +5,7 @@ import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
+import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
 import { BracketsCurlyIcon, type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
@@ -110,6 +111,14 @@ export const ActivityBar = () => {
           onClick={() => {
             onActivityClick("json");
             dispatch.setInspectJsonDialog(true);
+          }}
+        />
+        <ActivityIcon
+          label="Terminal"
+          icon={TerminalWindowIcon}
+          active={state.terminalVisible}
+          onClick={() => {
+            dispatch.toggleTerminal();
           }}
         />
       </div>

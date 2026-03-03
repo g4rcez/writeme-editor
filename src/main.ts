@@ -16,6 +16,7 @@ import { notesIpcHandler } from "./ipc/notes.ipc";
 import { databaseIpcHandler } from "./ipc/database.ipc";
 import { appIpcHandler } from "./ipc/app.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
+import { terminalIpcHandler } from "./ipc/terminal.ipc";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
 import { AIRunner } from "./main-process/ai-runner";
@@ -148,6 +149,7 @@ async function main() {
   databaseIpcHandler();
   appIpcHandler(preload);
   executionIpcHandler();
+  terminalIpcHandler();
   ipcMain.handle("fs:watcher:start", (_, directory: string) => {
     if (mainWindow) FileWatcher.start(directory, mainWindow);
   });

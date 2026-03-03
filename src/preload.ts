@@ -154,6 +154,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("ai:save-message", message),
     test: () => ipcRenderer.invoke("ai:test"),
   },
+  terminal: {
+    spawn: (id: string) => ipcRenderer.send("terminal:spawn", id),
+    write: (id: string, data: string) => ipcRenderer.send("terminal:write", id, data),
+    resize: (id: string, cols: number, rows: number) => ipcRenderer.send("terminal:resize", id, cols, rows),
+    kill: (id: string) => ipcRenderer.send("terminal:kill", id),
+    onData: (callback: (data: { id: string; data: string }) => void) => {
+      const handler = (_: any, data: { id: string; data: string }) => callback(data);
+      ipcRenderer.on("terminal:data", handler);
+      return () => ipcRenderer.removeListener("terminal:data", handler);
+    }
+  },
 });
 
 declare global {
@@ -250,6 +261,13 @@ declare global {
         saveChat(chat: any): Promise<void>;
         getMessages(chatId: string): Promise<any[]>;
         saveMessage(message: any): Promise<void>;
+      };
+      terminal: {
+        spawn(id: string): void;
+        write(id: string, data: string): void;
+        resize(id: string, cols: number, rows: number): void;
+        kill(id: string): void;
+        onData(callback: (data: { id: string; data: string }) => void): () => void;
       };
     };
   }

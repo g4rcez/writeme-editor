@@ -50,6 +50,7 @@ type State = {
   createVariableDialog: { isOpen: boolean };
   createTemplateDialog: { isOpen: boolean };
   aiDrawer: { isOpen: boolean; chatId: string | null };
+  terminalVisible: boolean;
   createNoteDialog: {
     isOpen: boolean;
     type: NoteCreationType;
@@ -77,6 +78,7 @@ const initialState: State = {
   isSidebarCollapsed: false,
   activeTabId: null as string | null,
   aiDrawer: { isOpen: false, chatId: null },
+  terminalVisible: false,
   commander: { enabled: false, type: CommanderType.All } as Commander,
   createTemplateDialog: { isOpen: false },
   createVariableDialog: { isOpen: false },
@@ -256,6 +258,10 @@ export const useGlobalStore = createGlobalReducer(
             : aiDrawer;
         return { aiDrawer: result };
       },
+      toggleTerminal: () => {
+        return { terminalVisible: !get.state().terminalVisible };
+      },
+      setTerminalVisible: (terminalVisible: boolean) => ({ terminalVisible }),
       setAiContext: (aiContext: AiContext) => ({ aiContext }),
       loadRecentNotes: async (limit = 20) => {
         const recent = await repositories.notes.getAll({ limit });

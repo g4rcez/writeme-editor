@@ -3,6 +3,7 @@ import { Note } from "@/store/note";
 import { NetworkIcon } from "@phosphor-icons/react/dist/csr/Network";
 import { StackPlusIcon } from "@phosphor-icons/react/dist/csr/StackPlus";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
+import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { NavbarButton } from "@/app/components/navbar-button";
@@ -73,6 +74,11 @@ export const Navbar = () => {
         </div>
 
         <nav className="flex gap-2 items-center">
+          <NavbarButton 
+            title="Terminal" 
+            Icon={TerminalWindowIcon} 
+            onClick={() => dispatch.toggleTerminal()} 
+          />
           <Link to="/notes">
             <NavbarButton title="All Notes" Icon={ListBulletsIcon} />
           </Link>

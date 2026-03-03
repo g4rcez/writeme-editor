@@ -9,6 +9,10 @@ import { Outlet } from "react-router-dom";
 import { Navbar } from "./navbar";
 import { useJsonDrop } from "../hooks/use-json-drop";
 
+import { Panel, Group, Separator } from "react-resizable-panels";
+import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
+import { X } from "@phosphor-icons/react";
+
 const Aside = () => {
   const [state, dispatch] = useGlobalStore();
   const [isResizing, setIsResizing] = useState(false);
@@ -68,6 +72,7 @@ const Aside = () => {
 };
 
 export const MainLayout = () => {
+  const [state, dispatch] = useGlobalStore();
   useJsonDrop();
   return (
     <div className="flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background">
@@ -76,12 +81,37 @@ export const MainLayout = () => {
         <Aside />
         <div className="flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible">
           <TabsBar />
-          <div
-            id="main-scroll-container"
-            className="overflow-y-auto flex-1 w-full h-full print:block print:overflow-visible print:h-auto bg-background"
-          >
-            <Outlet />
-          </div>
+          <Group orientation="vertical">
+            <Panel defaultSize={70} minSize={30}>
+              <div
+                id="main-scroll-container"
+                className="overflow-y-auto w-full h-full print:block print:overflow-visible print:h-auto bg-background"
+              >
+                <Outlet />
+              </div>
+            </Panel>
+            {state.terminalVisible && (
+              <>
+                <Separator className="h-1 bg-border/20 hover:bg-primary/50 transition-colors cursor-row-resize" />
+                <Panel defaultSize={30} minSize={10}>
+                  <div className="flex flex-col h-full bg-[#1e1e1e] border-t border-border/20">
+                    <div className="flex justify-between items-center px-3 py-1 bg-sidebar/50 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground uppercase font-semibold">Terminal</span>
+                      <button 
+                        onClick={() => dispatch.setTerminalVisible(false)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <TerminalPanel />
+                    </div>
+                  </div>
+                </Panel>
+              </>
+            )}
+          </Group>
         </div>
       </div>
     </div>

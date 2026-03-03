@@ -155,6 +155,14 @@ export const Commander = () => {
               args.setOpen(false);
             },
           },
+          {
+            type: "shortcut",
+            title: "Toggle Terminal",
+            action: (args) => {
+              dispatch.toggleTerminal();
+              args.setOpen(false);
+            },
+          },
           ...actions,
         ],
       },
