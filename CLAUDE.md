@@ -8,6 +8,8 @@ Writeme is an Electron-based note-taking application built with React, TypeScrip
 
 ## Common Development Commands
 
+**Package manager**: Use `npm` — not `pnpm` or `yarn`.
+
 - `npm run dev` - Start Electron app in development mode (alias for `native:dev`)
 - `npm run browser:dev` - Start as browser app with Vite dev server
 - `npm run lint` - Run ESLint on TypeScript/TSX files

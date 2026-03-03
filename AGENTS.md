@@ -3,6 +3,9 @@
 Agent guidelines for the Writeme Electron application.
 
 ## Build/Lint/Test Commands
+
+**Package manager**: Use `npm` — not `pnpm` or `yarn`.
+
 - `npm run dev` / `npm start` - Start Electron app in development mode  
 - `npm run browser:dev` - Start web version with Vite dev server
 - `npm run lint` - Run ESLint on TypeScript/TSX files
