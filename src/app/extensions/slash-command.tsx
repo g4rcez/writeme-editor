@@ -449,6 +449,9 @@ const slashSuggestion = {
     let reactRenderer: ReactRenderer | undefined;
     let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null =
       null;
+    let currentEditor: any = null;
+    let currentRange: any = null;
+    let currentItems: any[] = [];
     const registerKeyDown = (
       fn: (props: { event: KeyboardEvent }) => boolean,
     ) => {
@@ -456,6 +459,9 @@ const slashSuggestion = {
     };
     return {
       onStart: (props: any) => {
+        currentEditor = props.editor;
+        currentRange = props.range;
+        currentItems = props.items ?? [];
         if (!props.clientRect) return;
         reactRenderer = new ReactRenderer(SlashList, {
           props: { ...props, registerKeyDown },
@@ -467,12 +473,22 @@ const slashSuggestion = {
         updatePosition(props.editor, reactRenderer.element);
       },
       onUpdate(props: any) {
+        currentEditor = props.editor;
+        currentRange = props.range;
+        currentItems = props.items ?? [];
         reactRenderer?.updateProps({ ...props, registerKeyDown });
         if (!props.clientRect) return;
         updatePosition(props.editor, reactRenderer!.element);
       },
       onKeyDown(props: { event: KeyboardEvent }) {
         if (props.event.key === "Escape") {
+          currentEditor?.chain().focus().deleteRange(currentRange).run();
+          reactRenderer?.destroy();
+          reactRenderer?.element.remove();
+          return true;
+        }
+        if (props.event.key === "Enter" && currentItems.length === 0) {
+          currentEditor?.chain().focus().deleteRange(currentRange).run();
           reactRenderer?.destroy();
           reactRenderer?.element.remove();
           return true;

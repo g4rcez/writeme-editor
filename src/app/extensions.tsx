@@ -140,7 +140,6 @@ export const handleImageFile = async (
         }
       }
     }
-
     currentEditor
       .chain()
       .insertContentAt(insertPos, { type: "image", attrs: { src } })
