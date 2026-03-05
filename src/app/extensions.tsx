@@ -1,12 +1,12 @@
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
-import { type AnyExtension, nodeInputRule, PasteRule } from "@tiptap/core";
+import { type AnyExtension, mergeAttributes, nodeInputRule, PasteRule } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
 import Highlight from "@tiptap/extension-highlight";
 import { ImageExtension } from "@/app/extensions/image-extension";
-import { TaskList } from "@tiptap/extension-list";
+import { OrderedList, TaskList } from "@tiptap/extension-list";
 import { InlineMath } from "@tiptap/extension-mathematics";
 import Mention from "@tiptap/extension-mention";
 import { TableKit } from "@tiptap/extension-table";
@@ -162,7 +162,13 @@ export const createExtensions = (
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
       bulletList: { keepMarks: true, keepAttributes: true },
-      orderedList: { keepAttributes: true, keepMarks: true },
+      orderedList: false,
+    }),
+    OrderedList.configure({ keepMarks: true, keepAttributes: true }).extend({
+      renderHTML({ HTMLAttributes, node }) {
+        const start = node.attrs.start ?? 1;
+        return ["ol", mergeAttributes(HTMLAttributes, { style: `counter-reset: section ${start - 1}` }), 0];
+      },
     }),
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
     UniqueID.configure({ types: ["heading"] }),

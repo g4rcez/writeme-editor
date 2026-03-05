@@ -20,20 +20,22 @@ The project uses `npm` as the preferred package manager.
 1. **Clone the repository**
 2. **Install dependencies**
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
+
 3. **Start in development mode**
-   - For Electron:
 
-     ```bash
-     npm run dev
-     ```
-   - For Browser/Web version:
+- For Electron:
 
-     ```bash
-     npm run browser:dev
-     ```
+  ```bash
+  npm run dev
+  ```
+- For Browser/Web version:
+
+  ```bash
+  npm run browser:dev
+  ```
 
 ## How to build
 
