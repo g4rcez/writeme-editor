@@ -31,6 +31,26 @@ jobs:
 
       - run: npm ci
 
-      - run: npm publish
+      - name: Get commit message
+        id: commit
+        shell: bash
+        run: |
+          NOTES=$(git log -1 --pretty=format:%B)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - run: npm run make
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.commit.outputs.notes }}
+          files: out/make/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

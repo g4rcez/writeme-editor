@@ -169,6 +169,7 @@ let isQuitting = false;
 async function main() {
   if (started) {
     app.quit();
+    return;
   }
   const preload = path.join(__dirname, "preload.js");
   console.log("Main process starting, registering AI handlers...");
