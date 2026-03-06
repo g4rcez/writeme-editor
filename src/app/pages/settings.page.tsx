@@ -16,7 +16,8 @@ import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, Fragment, useRef } from "react";
+import { startMigration, importFromFile } from "@/lib/data-migration";
 import { globalDispatch, repositories } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { type AppSettings, SettingsService } from "@/store/settings";
@@ -26,8 +27,10 @@ import { CustomVariables } from "@/app/components/settings/custom-variables";
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
   const [, uiDispatch] = useUIStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSettings(SettingsService.load());
@@ -200,6 +203,75 @@ export default function SettingsPage() {
         </Card>
 
         <CustomVariables />
+
+        {!isElectron() ? (
+          <Card title="Domain Migration">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Moved from <strong>www.writeme.dev</strong>? Import your notes, tabs, hashtags, settings, and scripts from the old domain.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  size="small"
+                  disabled={migrating}
+                  onClick={async () => {
+                    setMigrating(true);
+                    try {
+                      const counts = await startMigration();
+                      uiDispatch.setAlert({
+                        open: true,
+                        message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                        type: "success",
+                      });
+                    } catch (err) {
+                      uiDispatch.setAlert({
+                        open: true,
+                        message: err instanceof Error ? err.message : "Migration failed.",
+                        type: "error",
+                      });
+                    } finally {
+                      setMigrating(false);
+                    }
+                  }}
+                >
+                  {migrating ? "Migrating..." : "Migrate from www.writeme.dev"}
+                </Button>
+                <Button
+                  size="small"
+                  theme="ghost-primary"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Import from file
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    e.target.value = "";
+                    try {
+                      const counts = await importFromFile(file);
+                      uiDispatch.setAlert({
+                        open: true,
+                        message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                        type: "success",
+                      });
+                    } catch (err) {
+                      uiDispatch.setAlert({
+                        open: true,
+                        message: err instanceof Error ? err.message : "Import failed.",
+                        type: "error",
+                      });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
         {isElectron() ? (
           <Fragment>
