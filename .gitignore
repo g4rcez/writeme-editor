@@ -93,3 +93,6 @@ out/
 erl_crash.dump
 dev-dist
 dist/
+
+# act local CI secrets
+.act.secrets

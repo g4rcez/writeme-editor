@@ -37,7 +37,8 @@
     "test": "vitest run",
     "pwa:assets": "node scripts/generate-pwa-assets.js",
     "pwa:dev": "npm run pwa:assets && npm run browser:dev",
-    "pwa:build": "npm run pwa:assets && npm run browser:build"
+    "pwa:build": "npm run pwa:assets && npm run browser:build",
+    "ci:local": "act push -W .github/workflows/build.yml --matrix os:ubuntu-latest"
   },
   "resolutions": {
     "react": "19.2.4",
