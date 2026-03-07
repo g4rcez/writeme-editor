@@ -1,19 +1,21 @@
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
+import { type NoteWithTags } from "@/app/hooks/use-note-list";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { Dates } from "@/lib/dates";
 import { globalDispatch } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
-import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
+import { CalendarIcon } from "@phosphor-icons/react/dist/csr/Calendar";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 type NoteItemProps = {
-  note: Note;
+  note: NoteWithTags;
   isActive: boolean;
   onClick: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
@@ -32,55 +34,62 @@ const NoteItem = ({
     }
   }, [isActive]);
 
+  const createdTime = note.createdAt.getTime();
+  const updatedTime = note.updatedAt.getTime();
+  const wasEdited = Math.abs(updatedTime - createdTime) > 60_000;
+
   return (
     <li
       ref={itemRef}
       onClick={onClick}
-      className={`group relative cursor-pointer p-4 transition-all hover:bg-muted/30 ${isActive
-          ? "bg-muted/50 border-l-2 border-primary"
+      className={`group relative cursor-pointer px-3 py-2.5 transition-all hover:bg-muted/20 ${
+        isActive
+          ? "bg-muted/40 border-l-2 border-primary"
           : "border-l-2 border-transparent"
-        }`}
+      }`}
     >
       <div className="flex gap-2 justify-between items-start mb-1">
         <h3
-          className={`font-medium text-sm line-clamp-1 ${isActive ? "text-primary" : "text-foreground"
-            }`}
+          className={`font-medium text-sm line-clamp-1 flex-1 ${
+            isActive ? "text-primary" : "text-foreground"
+          }`}
         >
           {note.title || "Untitled"}
         </h3>
-        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={onToggleFavorite}
-            className={`p-1 rounded-md hover:bg-background/80 ${note.favorite ? "text-yellow-500 opacity-100" : "text-muted-foreground"}`}
-          >
-            <StarIcon
-              className={`size-3 ${note.favorite ? "fill-current" : ""}`}
-            />
-          </button>
-        </div>
+        <button
+          onClick={onToggleFavorite}
+          className={`shrink-0 p-0.5 rounded hover:bg-background/80 transition-opacity ${
+            note.favorite
+              ? "text-yellow-500 opacity-100"
+              : "text-muted-foreground opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <StarIcon className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
+        </button>
       </div>
-      <p className="mb-2 h-8 text-xs text-muted-foreground line-clamp-2">
+      <p className="mb-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
         {note.description ||
           note.content.substring(0, 150).replace(/[#*`]/g, "") ||
           "No content"}
       </p>
-      <div className="flex gap-2 items-center text-[10px] text-muted-foreground/60">
-        <span className="flex gap-1 items-center">
-          <ClockIcon className="size-3" />
-          {Dates.yearMonthDay(note.createdAt)}
-        </span>
-        {note.tags.length > 0 && (
-          <div className="flex gap-1">
-            {note.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="px-1 rounded bg-primary/5 text-primary/70 truncate max-w-[60px]"
-              >
-                #{tag}
-              </span>
-            ))}
-            {note.tags.length > 2 && <span>+{note.tags.length - 2}</span>}
-          </div>
+      {note.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {note.tags.map((tag) => (
+            <span
+              key={tag}
+              className="px-1 rounded bg-primary/5 text-primary/70 text-[10px]"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2 justify-between items-center text-[10px] text-muted-foreground/60">
+        <span>{Dates.yearMonthDay(note.createdAt)}</span>
+        {wasEdited && (
+          <span className="text-muted-foreground/40">
+            edited {Dates.yearMonthDay(note.updatedAt)}
+          </span>
         )}
       </div>
     </li>
@@ -88,12 +97,12 @@ const NoteItem = ({
 };
 
 const NoteListItems = (props: {
-  notes: Note[];
+  notes: NoteWithTags[];
   onCreateNewNote: () => void;
   activeNoteId: string | undefined;
 }) => {
   const navigate = useNavigate();
-  const toggleFavorite = async (e: React.MouseEvent, note: Note) => {
+  const toggleFavorite = async (e: React.MouseEvent, note: NoteWithTags) => {
     e.stopPropagation();
     const updatedNote = Note.parse(note);
     updatedNote.favorite = !note.favorite;
@@ -123,9 +132,12 @@ const NoteListItems = (props: {
   );
 };
 
+type SortBy = "updatedAt" | "createdAt" | "alphabetical";
+
 export const NoteListSidebar = () => {
   const [state, layoutDispatch] = useLayoutStore();
-  const { notes, loading } = useSidebarNotes();
+  const [sortBy, setSortBy] = useState<SortBy>("updatedAt");
+  const { notes, loading } = useSidebarNotes({ sortBy });
   const params = useParams();
   const activeNoteId = params.noteId;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -167,6 +179,29 @@ export const NoteListSidebar = () => {
         <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
           {getHeaderTitle()}
         </span>
+        <div className="flex gap-0.5 items-center">
+          <button
+            title="Sort by last edited"
+            onClick={() => setSortBy("updatedAt")}
+            className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <ClockCounterClockwiseIcon className="size-3.5" />
+          </button>
+          <button
+            title="Sort by created date"
+            onClick={() => setSortBy("createdAt")}
+            className={`p-1 rounded transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <CalendarIcon className="size-3.5" />
+          </button>
+          <button
+            title="Sort alphabetically"
+            onClick={() => setSortBy("alphabetical")}
+            className={`p-1 rounded transition-colors text-[10px] font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            A-Z
+          </button>
+        </div>
       </div>
       <div className="p-3 border-b border-border/20">
         <div className="relative">

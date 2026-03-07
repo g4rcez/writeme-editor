@@ -5,7 +5,10 @@ import { repositories } from "@/store/repositories";
 import { useEffect, useMemo, useState } from "react";
 import { type NoteWithTags } from "./use-note-list";
 
-export function useSidebarNotes() {
+type SortBy = "updatedAt" | "createdAt" | "alphabetical";
+
+export function useSidebarNotes(options?: { sortBy?: SortBy }) {
+  const sortBy = options?.sortBy ?? "updatedAt";
   const [state] = useGlobalStore();
   const [layoutState] = useLayoutStore((s) => ({
     activeView: s.activeView,
@@ -15,8 +18,25 @@ export function useSidebarNotes() {
   const [innerNotes, setInnerNotes] = useState<NoteWithTags[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const noteMetaFingerprint = useMemo(
+    () =>
+      state.notes
+        .map(
+          (n) =>
+            n.id +
+            n.title +
+            n.updatedAt.getTime() +
+            String(n.favorite) +
+            n.noteType,
+        )
+        .join("|"),
+    [state.notes],
+  );
+
   const loadData = async (allNotes: Note[]) => {
-    setLoading(true);
+    if (innerNotes.length === 0) {
+      setLoading(true);
+    }
     try {
       const allHashtags = await repositories.hashtags.getAll();
       const tagsMap = new Map<string, string[]>();
@@ -45,7 +65,8 @@ export function useSidebarNotes() {
 
   useEffect(() => {
     loadData(state.notes);
-  }, [state.notes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteMetaFingerprint]);
 
   const filteredNotes = useMemo(() => {
     let result = innerNotes;
@@ -82,11 +103,7 @@ export function useSidebarNotes() {
           break;
         case "tag":
           if (activeView.id) {
-            result = result.filter(
-              (n) =>
-                n.tags.includes(activeView.id) ||
-                n.tags.includes(activeView.id),
-            );
+            result = result.filter((n) => n.tags.includes(activeView.id));
           }
           break;
       }
@@ -101,13 +118,23 @@ export function useSidebarNotes() {
       );
     }
 
-    // 3. Sort (Default: updated descending)
-    return result.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    if (sortBy === "alphabetical") {
+      return [...result].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (sortBy === "createdAt") {
+      return [...result].sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      );
+    }
+    return [...result].sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
   }, [
     innerNotes,
     layoutState.activeView,
     layoutState.searchQuery,
     layoutState.activeActivity,
+    sortBy,
   ]);
 
   return {
