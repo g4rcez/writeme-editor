@@ -352,7 +352,7 @@ const InnerEditor = (props: {
         <EditorContent
           key={props.id}
           editor={editor}
-          className="w-full h-full print:block print:h-auto print:overflow-visible text-lg"
+          className="w-full writeme-block h-full print:block print:h-auto print:overflow-visible text-lg"
         />
       </EditorContext.Provider>
     </div>

@@ -97,7 +97,7 @@ const FrontmatterView = (props: any) => {
       .run();
   };
 
-  const handleSave = (yaml: string) => {
+  const onSave = (yaml: string) => {
     const pos = getPos();
     editor
       .chain()
@@ -180,10 +180,10 @@ const FrontmatterView = (props: any) => {
         )}
       </CodeBlockFrame>
       <FrontmatterBuilder
-        open={builderOpen}
+        onSave={onSave}
         content={content}
+        open={builderOpen}
         onClose={() => setBuilderOpen(false)}
-        onSave={handleSave}
       />
     </>
   );

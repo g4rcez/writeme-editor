@@ -13,6 +13,45 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        typography: {
+          paragraph: {
+            DEFAULT: "hsla(var(--foreground))",
+            danger: "hsla(var(--danger-DEFAULT))",
+            warn: "hsla(var(--warn-DEFAULT))",
+            info: "hsla(var(--info-DEFAULT))",
+            success: "hsla(var(--success-DEFAULT))",
+          },
+          title: {
+            DEFAULT: "hsla(var(--primary-DEFAULT))",
+            danger: "hsla(var(--danger-DEFAULT))",
+            warn: "hsla(var(--warn-DEFAULT))",
+            info: "hsla(var(--info-DEFAULT))",
+            success: "hsla(var(--success-DEFAULT))",
+          },
+          callout: {
+            DEFAULT: "hsla(var(--secondary-DEFAULT))",
+            danger: "hsla(var(--danger-DEFAULT))",
+            warn: "hsla(var(--warn-DEFAULT))",
+            info: "hsla(var(--info-DEFAULT))",
+            success: "hsla(var(--success-DEFAULT))",
+          },
+          hashtag: {
+            DEFAULT: "hsla(var(--primary-DEFAULT))",
+            danger: "hsla(var(--danger-DEFAULT))",
+            warn: "hsla(var(--warn-DEFAULT))",
+            info: "hsla(var(--info-DEFAULT))",
+            success: "hsla(var(--success-DEFAULT))",
+          },
+          link: {
+            DEFAULT: "hsla(var(--primary-DEFAULT))",
+            danger: "hsla(var(--danger-DEFAULT))",
+            warn: "hsla(var(--warn-DEFAULT))",
+            info: "hsla(var(--info-DEFAULT))",
+            success: "hsla(var(--success-DEFAULT))",
+          },
+        },
+      },
       boxShadow: {
         soft: "0 2px 8px -2px hsla(0, 0%, 0%, 0.06)",
         medium: "0 4px 16px -4px hsla(0, 0%, 0%, 0.1)",
