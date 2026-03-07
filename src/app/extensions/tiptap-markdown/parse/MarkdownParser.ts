@@ -22,6 +22,40 @@ const appNoteUrlExtension = {
         return `<a href="${token.href}" data-type="mention" data-id="${token.id}" data-label="${token.id}" data-path="${token.href}" class="mention" title="writeme-mention:${token.id}">${token.id}</a>`;
       },
     },
+    {
+      name: "mention_link",
+      level: "inline" as const,
+      start(src: string) {
+        return src.indexOf("[");
+      },
+      tokenizer(src: string) {
+        const match = src.match(/^\[([^\]]+)\]\(([^)"]+)\s+"writeme-mention:([^"]+)"\)/);
+        if (match) {
+          return { type: "mention_link", raw: match[0], label: match[1], path: match[2], id: match[3] };
+        }
+        return undefined;
+      },
+      renderer(token: { label: string; path: string; id: string }) {
+        return `<a href="${token.path}" data-type="mention" data-id="${token.id}" data-label="${token.label}" data-path="${token.path}" class="mention" title="writeme-mention:${token.id}">${token.label}</a>`;
+      },
+    },
+    {
+      name: "wikilink_mention",
+      level: "inline" as const,
+      start(src: string) {
+        return src.indexOf("[[");
+      },
+      tokenizer(src: string) {
+        const match = src.match(/^\[\[([^\]]+)\]\]/);
+        if (match) {
+          return { type: "wikilink_mention", raw: match[0], id: match[1] };
+        }
+        return undefined;
+      },
+      renderer(token: { id: string }) {
+        return `<a href="" data-type="mention" data-id="${token.id}" data-label="${token.id}" data-path="" class="mention" title="writeme-mention:${token.id}">${token.id}</a>`;
+      },
+    },
   ],
 };
 
