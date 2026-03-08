@@ -6,6 +6,7 @@ import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { AIDrawer } from "@/app/ai/ai-drawer";
+import { FindReplaceBar } from "@/app/components/find-replace-bar";
 import { Commander } from "@/app/commander";
 import { Alert } from "@/app/components/alert";
 import { Prompt } from "@/app/components/prompt";
@@ -31,6 +32,10 @@ export const RootLayout = () => {
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
           e.preventDefault();
           uiDispatch.toggleFocusMode();
+        }
+        if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "f") {
+          e.preventDefault();
+          uiDispatch.toggleFindReplace();
         }
         if ((e.metaKey || e.ctrlKey) && e.key === "b") {
           e.preventDefault();
@@ -67,6 +72,7 @@ export const RootLayout = () => {
       {!isQuickNote ? (
         <Fragment>
           <Commander />
+          <FindReplaceBar />
           <CreateNoteDialog />
           <CreateTemplateDialog />
           <CreateVariableDialog />

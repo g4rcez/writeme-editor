@@ -27,6 +27,7 @@ import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
+import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
@@ -254,6 +255,7 @@ export const createExtensions = (
     YoutubeBlock,
     Callout,
     Hashtag,
+    SearchAndReplace.configure({ searchResultClass: "search-result", caseSensitive: false }),
     SlashCommand,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),

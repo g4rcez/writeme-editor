@@ -29,6 +29,7 @@ export type UISettings = {
   error: string | null;
   alert: UIStateAlert | null;
   prompt: UIStatePrompt | null;
+  findReplace: { isOpen: boolean };
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -52,6 +53,7 @@ const initialState: UISettings = {
   error: null,
   alert: null,
   prompt: null,
+  findReplace: { isOpen: false },
 };
 
 type Toggle<T> = T | ((prev: T) => T);
@@ -76,6 +78,9 @@ export const useUIStore = createGlobalReducer(
     clearAlert: () => ({ alert: null }),
     setPrompt: (prompt: UIStatePrompt | null) => ({ prompt }),
     clearPrompt: () => ({ prompt: null }),
+    openFindReplace: () => ({ findReplace: { isOpen: true } }),
+    closeFindReplace: () => ({ findReplace: { isOpen: false } }),
+    toggleFindReplace: () => ({ findReplace: { isOpen: !get.state().findReplace.isOpen } }),
   }),
   {
     interceptor: [
@@ -84,6 +89,7 @@ export const useUIStore = createGlobalReducer(
           error: _error,
           alert: _alert,
           prompt: _prompt,
+          findReplace: _findReplace,
           ...toPersist
         } = state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
