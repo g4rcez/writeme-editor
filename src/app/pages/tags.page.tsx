@@ -22,7 +22,8 @@ export default function TagsPage() {
         const nodes: any[] = [];
         const links: any[] = [];
         const tagSet = new Set<string>();
-        const noteMap = new Map<string, string>(); // filename/path -> noteId
+        const noteMap = new Map<string, string>(); // filename/path/title -> noteId
+        const noteIdSet = new Set<string>();
         allNotes.forEach((note) => {
           nodes.push({
             val: 5,
@@ -31,6 +32,7 @@ export default function TagsPage() {
             noteId: note.id,
             name: note.title || "Untitled",
           });
+          noteIdSet.add(note.id);
           if (note.filePath) noteMap.set(note.filePath, note.id);
           noteMap.set(note.title, note.id); // Fallback mapping
         });
@@ -46,9 +48,38 @@ export default function TagsPage() {
           }
           const noteId = noteMap.get(entry.filename);
           if (noteId) {
-            links.push({ source: noteId, target: `tag-${entry.hashtag}` });
+            links.push({ source: noteId, target: `tag-${entry.hashtag}`, type: "tag" });
           }
         });
+
+        // Extract mention links from note content
+        allNotes.forEach((note) => {
+          const content = note.content ?? "";
+          const mentionedIds = new Set<string>();
+
+          for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
+            const targetId = m[2];
+            if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
+          }
+
+          for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
+            const targetId = m[1];
+            if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
+          }
+
+          for (const m of content.matchAll(/\[\[([^\]]+)\]\]/g)) {
+            const raw = m[1];
+            const targetId = noteIdSet.has(raw) ? raw : (noteMap.get(raw) ?? null);
+            if (targetId && targetId !== note.id) mentionedIds.add(targetId);
+          }
+
+          mentionedIds.forEach((targetId) => {
+            if (targetId !== note.id) {
+              links.push({ source: note.id, target: targetId, type: "mention" });
+            }
+          });
+        });
+
         setGraphData({ nodes, links });
       } catch (error) {
         console.error("Failed to load graph data:", error);
@@ -79,8 +110,9 @@ export default function TagsPage() {
       <div className="absolute top-4 right-8 z-10 p-2 rounded border bg-card-background/80 backdrop-blur border-card-border">
         <h1 className="text-lg font-bold">Tags Graph</h1>
         <p className="text-xs text-foreground/70">
-          {graphData.nodes.filter((n) => n.type === "note").length} notes,
-          {graphData.nodes.filter((n) => n.type === "tag").length} tags
+          {graphData.nodes.filter((n) => n.type === "note").length} notes,{" "}
+          {graphData.nodes.filter((n) => n.type === "tag").length} tags,{" "}
+          {graphData.links.filter((l: any) => l.type === "mention").length} mentions
         </p>
       </div>
       <TagsGraph

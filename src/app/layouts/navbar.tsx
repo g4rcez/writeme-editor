@@ -91,7 +91,7 @@ export const Navbar = () => {
         <nav className="flex gap-2 items-center">
           <SettingsMenu />
           <ThemeToggle />
-          <Menu label={<DotsThreeVerticalIcon size={20} />} title="Menu">
+          <Menu label={<DotsThreeVerticalIcon size={20} />} title="Menu" className="!w-auto !min-w-0 !h-8 !px-1.5 !py-1.5 !rounded-md !justify-center">
             <MenuItem
               title="New note"
               onClick={() =>

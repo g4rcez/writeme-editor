@@ -5,11 +5,68 @@ import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
-import { type PropsWithChildren, useEffect } from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
+
+function useNoteReferences(content: string) {
+  const [refs, setRefs] = useState<Note[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    async function resolve() {
+      const ids = new Set<string>();
+
+      for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
+        ids.add(m![2]!);
+      }
+      for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
+        ids.add(m![1]!);
+      }
+
+      const wikiMatches = [...content.matchAll(/\[\[([^\]]+)\]\]/g)];
+      if (wikiMatches.length > 0) {
+        const allNotes = await repositories.notes.getAll();
+        const byTitle = new Map(allNotes.map((n) => [n.title, n.id]));
+        const byId = new Set(allNotes.map((n) => n.id));
+        for (const m of wikiMatches) {
+          const raw = m[1]!;
+          if (byId.has(raw)) ids.add(raw);
+          else if (byTitle.has(raw)) ids.add(byTitle.get(raw)!);
+        }
+      }
+      const settled = await Promise.all([...ids].map((id) => repositories.notes.getOne(id)));
+      if (!cancelled) setRefs(settled.filter((n): n is Note => n != null));
+    }
+    resolve();
+    return () => { cancelled = true; };
+  }, [content]);
+
+  return refs;
+}
+
+function NoteReferences({ note }: { note: Note }) {
+  const refs = useNoteReferences(note.content ?? "");
+  if (refs.length === 0) return null;
+  return (
+    <footer className="flex flex-col gap-2 my-4 py-4 border-t border-card-border">
+      <p className="text-sm font-medium text-muted-foreground">Linked notes</p>
+      <ul className="flex flex-wrap gap-2">
+        {refs.map((ref) => (
+          <li key={ref.id}>
+            <Link
+              to={`/note/${ref.id}`}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              {ref.title || ref.id}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </footer>
+  );
+}
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
@@ -116,6 +173,7 @@ export default function NotePage() {
       ) : (
         <Editor note={note} key={note.id} content={note.content || ""} />
       )}
+      <NoteReferences note={note} />
     </Wrapper>
   );
 }
