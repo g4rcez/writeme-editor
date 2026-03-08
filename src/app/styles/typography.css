@@ -1,128 +1,131 @@
-.tiptap {
+.writeme-editor-content {
   @apply whitespace-pre-wrap leading-relaxed;
 }
 
-.tiptap p {
+.writeme-editor-content p {
   @apply text-pretty proportional-nums text-typography-paragraph;
   line-height: 2.15;
 }
 
-.tiptap p.is-empty::before {
+.writeme-editor-content p.is-empty::before {
   @apply text-muted float-left h-0 pointer-events-none;
   content: attr(data-placeholder);
 }
 
-.tiptap code.inline-code {
+.writeme-editor-content code.inline-code {
   @apply font-mono bg-muted text-foreground rounded text-sm p-1;
 }
 
-.tiptap h1,
-.tiptap h2,
-.tiptap h3,
-.tiptap h4,
-.tiptap h5,
-.tiptap h6 {
+.writeme-editor-content h1,
+.writeme-editor-content h2,
+.writeme-editor-content h3,
+.writeme-editor-content h4,
+.writeme-editor-content h5,
+.writeme-editor-content h6 {
   @apply text-typography-title mb-2 leading-loose font-medium tracking-wide text-pretty;
 }
 
-.tiptap h1:first-child,
-.tiptap h2:first-child,
-.tiptap h3:first-child,
-.tiptap h4:first-child,
-.tiptap h5:first-child,
-.tiptap h6:first-child {
+.writeme-editor-content h1:first-child,
+.writeme-editor-content h2:first-child,
+.writeme-editor-content h3:first-child,
+.writeme-editor-content h4:first-child,
+.writeme-editor-content h5:first-child,
+.writeme-editor-content h6:first-child {
   @apply mt-0;
 }
 
-.tiptap h1 {
+.writeme-editor-content h1 {
   @apply text-4xl mt-10;
 }
 
-.tiptap h2 {
+.writeme-editor-content h2 {
   @apply text-3xl mt-8;
 }
 
-.tiptap h3 {
+.writeme-editor-content h3 {
   @apply text-2xl mt-6;
 }
 
-.tiptap h4 {
+.writeme-editor-content h4 {
   @apply text-xl mt-4;
 }
 
-.tiptap h5 {
+.writeme-editor-content h5 {
   @apply text-lg mt-2;
 }
 
-.tiptap h6 {
+.writeme-editor-content h6 {
   @apply text-base mt-1;
 }
 
-.tiptap blockquote {
-  @apply my-6 ml-0 pl-4 py-3 border-l-2 border-l-primary/40 rounded-r-lg;
+.writeme-editor-content blockquote {
+  @apply my-6 ml-0 pl-4 py-3 border-l-2 rounded-r-lg;
+  border-left-color: hsla(var(--primary-DEFAULT), 0.4);
 }
 
-.tiptap blockquote[data-callout="false"] {
-  @apply !border-l-2 !border-l-primary/40 border border-card-border italic;
+.writeme-editor-content blockquote[data-callout="false"] {
+  @apply border border-card-border italic;
+  border-left-width: 2px !important;
+  border-left-color: hsla(var(--primary-DEFAULT), 0.4) !important;
 }
 
-.tiptap blockquote[data-callout="true"][data-theme="danger"] {
+.writeme-editor-content blockquote[data-callout="true"][data-theme="danger"] {
   @apply border-l-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
 }
 
-.tiptap blockquote[data-callout="true"][data-theme="info"] {
+.writeme-editor-content blockquote[data-callout="true"][data-theme="info"] {
   @apply border-l-alert-info-border bg-alert-info-bg text-alert-info-text;
 }
 
-.tiptap hr {
+.writeme-editor-content hr {
   @apply border-b border-border my-10;
 }
 
-.tiptap img {
+.writeme-editor-content img {
   @apply block h-auto my-6 max-w-full rounded-xl;
 }
 
-.tiptap img.ProseMirror-selectednode {
+.writeme-editor-content img.ProseMirror-selectednode {
   outline: 3px solid var(--purple);
 }
 
-.tiptap mark {
+.writeme-editor-content mark {
   @apply bg-primary text-primary-foreground px-1 rounded underline;
   box-decoration-break: clone;
 }
 
-.tiptap ul[data-type="taskList"] {
+.writeme-editor-content ul[data-type="taskList"] {
   @apply list-none ml-0 p-0 mb-1;
 }
 
-.tiptap ul[data-type="taskList"] li {
+.writeme-editor-content ul[data-type="taskList"] li {
   @apply items-start flex;
 }
 
-.tiptap ul[data-type="taskList"] li > label {
+.writeme-editor-content ul[data-type="taskList"] li > label {
   @apply select-none mr-0;
   flex: 0 0 auto;
 }
 
-.tiptap ul[data-type="taskList"] li > div {
+.writeme-editor-content ul[data-type="taskList"] li > div {
   @apply items-center;
   flex: 1 1 auto;
 }
 
-.tiptap ul[data-type="taskList"] input[type="checkbox"] {
+.writeme-editor-content ul[data-type="taskList"] input[type="checkbox"] {
   cursor: pointer;
 }
 
-.tiptap ul[data-type="taskList"] ul[data-type="taskList"] {
+.writeme-editor-content ul[data-type="taskList"] ul[data-type="taskList"] {
   margin: 0;
 }
 
-.tiptap li,
-.tiptap li p {
+.writeme-editor-content li,
+.writeme-editor-content li p {
   line-height: 2;
 }
 
-.tiptap input[type="checkbox"] {
+.writeme-editor-content input[type="checkbox"] {
   @apply mr-2 rounded text-primary size-5;
   margin-top: -0.2rem;
 }
@@ -131,7 +134,7 @@
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
 }
 
-.tiptap table {
+.writeme-editor-content table {
   border-collapse: collapse;
   margin: 0;
   overflow: hidden;
@@ -139,123 +142,122 @@
   width: 100%;
 }
 
-.tiptap table td,
-.tiptap table th {
+.writeme-editor-content table td,
+.writeme-editor-content table th {
   @apply border relative border-card-border px-2 py-3;
   min-width: 1em;
   vertical-align: top;
 }
 
-.tiptap table td > *,
-.tiptap table th > * {
+.writeme-editor-content table td > *,
+.writeme-editor-content table th > * {
   margin-bottom: 0;
 }
 
-.tiptap table th {
+.writeme-editor-content table th {
   @apply bg-table-background text-left font-bold;
 }
 
-.tiptap table .selectedCell:after {
+.writeme-editor-content table .selectedCell:after {
   @apply pointer-events-none bg-background left-0 top-0 right-0 bottom-0 absolute;
   content: "";
   z-index: 2;
 }
 
-.tiptap table .column-resize-handle {
+.writeme-editor-content table .column-resize-handle {
   @apply w-1 bg-primary absolute top-0;
   bottom: -2px;
   pointer-events: none;
   right: -2px;
 }
 
-.tiptap .tableWrapper {
+.writeme-editor-content .tableWrapper {
   margin: 1.5rem 0;
   overflow-x: auto;
 }
 
-.tiptap.resize-cursor {
+.writeme-editor-content.resize-cursor {
   cursor: ew-resize;
   cursor: col-resize;
 }
 
-.tiptap a {
+.writeme-editor-content a {
   @apply cursor-pointer text-typography-link underline ease-linear duration-300 transition-colors hover:text-primary-hover;
 }
 
-.tiptap .mention {
+.writeme-editor-content .mention {
   @apply px-1 py-0.5 text-primary-foreground bg-typography-hashtag rounded no-underline hover:text-primary-foreground;
 }
 
-.tiptap .mention::before {
+.writeme-editor-content .mention::before {
   content: "@";
 }
 
-.tiptap ul,
-.tiptap ol {
+.writeme-editor-content ul,
+.writeme-editor-content ol {
   @apply min-w-full mb-4 ml-0;
   padding-left: 1.5rem;
 }
 
 /* Unordered lists */
-.tiptap ul {
+.writeme-editor-content ul {
   @apply list-disc list-outside;
 }
 
-.tiptap li > p {
+.writeme-editor-content li > p {
   @apply mb-0;
 }
 
-.tiptap ul[data-type="taskList"] li > div > p {
+.writeme-editor-content ul[data-type="taskList"] li > div > p {
   @apply mb-0;
 }
 
-.tiptap li > ul,
-.tiptap li > ol {
+.writeme-editor-content li > ul,
+.writeme-editor-content li > ol {
   @apply mt-2 mb-2 w-full;
 }
 
-.tiptap ul ul {
+.writeme-editor-content ul ul {
   list-style-type: circle;
 }
 
-.tiptap ul ul ul {
+.writeme-editor-content ul ul ul {
   list-style-type: square;
 }
 
-.tiptap ol {
+.writeme-editor-content ol {
   @apply list-none pl-0;
   counter-reset: section;
 }
 
-.tiptap ol li {
+.writeme-editor-content ol li {
   @apply flex items-start flex-wrap min-w-full;
   counter-increment: section;
 }
 
-.tiptap ol li::before {
+.writeme-editor-content ol li::before {
   @apply mt-0 mr-1 shrink-0;
   content: counters(section, ".") ". ";
   min-width: 1.25rem;
 }
 
-.tiptap ol li > p {
+.writeme-editor-content ol li > p {
   @apply flex-1 mb-0;
 }
 
-.tiptap ol li > ol {
+.writeme-editor-content ol li > ol {
   @apply ml-6;
   counter-reset: section;
 }
 
-.tiptap ol li > ul {
+.writeme-editor-content ol li > ul {
   @apply ml-6;
 }
 
-.tiptap ul li > ul {
+.writeme-editor-content ul li > ul {
   @apply ml-4;
 }
 
-.tiptap .tiptap-mathematics-render[data-type="inline-math"] {
+.writeme-editor-content .tiptap-mathematics-render[data-type="inline-math"] {
   @apply text-sm text-center rounded-lg p-1 px-2 mx-2;
 }
-

@@ -14,6 +14,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        writeme: {
+          "sidebar-30": "hsl(var(--sidebar) / 0.3)",
+          "sidebar-50": "hsl(var(--sidebar) / 0.5)",
+          "border-20": "hsl(var(--border) / 0.2)",
+          "border-40": "hsl(var(--border) / 0.4)",
+          "primary-10": "hsl(var(--primary) / 0.1)",
+          "primary-50": "hsl(var(--primary) / 0.5)",
+          "muted-fg-60": "hsl(var(--muted-foreground) / 0.6)",
+          "muted-50": "hsl(var(--muted) / 0.5)",
+        },
         typography: {
           paragraph: {
             DEFAULT: "hsla(var(--foreground))",

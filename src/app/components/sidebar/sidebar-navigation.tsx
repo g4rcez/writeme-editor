@@ -30,11 +30,7 @@ const SidebarItem = ({
 }: SidebarItemProps) => (
   <button
     onClick={onClick}
-    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-      active
-        ? "bg-primary/10 text-primary font-medium"
-        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-    }`}
+    className={`writeme-aside-nav-item ${active ? "writeme-aside-nav-item--active" : "writeme-aside-nav-item--inactive"}`}
     style={{ paddingLeft: `${8 + depth * 12}px` }}
   >
     <span className="shrink-0 opacity-70">{icon}</span>
@@ -44,7 +40,7 @@ const SidebarItem = ({
 );
 
 const SectionHeader = ({ label }: { label: string }) => (
-  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mt-4 mb-1">
+  <div className="writeme-aside-nav-section">
     {label}
   </div>
 );
@@ -79,15 +75,15 @@ export const SidebarNavigation = () => {
   );
 
   return (
-    <div className="flex flex-col h-full w-full bg-sidebar/50 backdrop-blur-xl border-r border-border/40">
-      <div className="p-3">
-        <div className="flex items-center gap-2 px-2 py-2 text-foreground font-semibold">
+    <div className="writeme-aside-nav">
+      <div className="writeme-aside-nav-header">
+        <div className="writeme-aside-nav-title">
           <SquaresFourIcon className="size-4" />
           <span>Writeme</span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-hide">
+      <div className="writeme-aside-nav-content">
         <SidebarItem
           icon={<FileTextIcon className="size-4" />}
           label="All Notes"
@@ -136,7 +132,7 @@ export const SidebarNavigation = () => {
         */}
       </div>
 
-      <div className="p-2 border-t border-border/40">
+      <div className="writeme-aside-nav-footer">
         <SidebarItem
           icon={<GearIcon className="size-4" />}
           label="Settings"

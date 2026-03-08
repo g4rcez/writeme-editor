@@ -120,6 +120,7 @@ const InnerEditor = (props: {
       (currentEditor.storage as any).note = props.note;
     },
     editorProps: {
+      attributes: { class: "writeme-editor-content" },
       handleClick: (_, __, event) => {
         const node = event.target as HTMLElement;
         const linkNode = node.closest("a");
@@ -326,11 +327,11 @@ const InnerEditor = (props: {
     <div
       id="editor-container"
       style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="flex flex-col justify-start items-start mx-auto w-full print:block print:h-auto print:overflow-visible bg-background max-w-safe"
+      className="writeme-editor"
     >
       <EditorContext.Provider value={{ editor }}>
-        <BubbleMenu className="z-navbar isolate print:hidden" editor={editor}>
-          <ul className="flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48">
+        <BubbleMenu className="writeme-editor-bubble" editor={editor}>
+          <ul className="writeme-editor-bubble-actions">
             {isElectron() ? (
               <li>
                 <AITooltip
@@ -352,7 +353,7 @@ const InnerEditor = (props: {
         <EditorContent
           key={props.id}
           editor={editor}
-          className="w-full writeme-block print:block print:h-auto print:overflow-visible xl:text-lg"
+          className="writeme-block"
         />
       </EditorContext.Provider>
     </div>

@@ -1,3 +1,4 @@
+@import "./app/styles/writeme.css";
 @import "./app/styles/code.css";
 @import "./app/styles/typography.css";
 @import "./app/styles/callout.css";
@@ -110,10 +111,6 @@ code {
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px -4px hsla(0, 0%, 0%, 0.1);
-}
-
-.tiptap {
-  @apply h-full outline-none print:h-auto print:block print:overflow-visible;
 }
 
 [cmdk-group-heading] {

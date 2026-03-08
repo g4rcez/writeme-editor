@@ -39,7 +39,7 @@ const Aside = () => {
 
   return (
     <Fragment>
-      <div className="flex-shrink-0 print:hidden w-fit">
+      <div className="writeme-aside-activity-wrapper">
         <ActivityBar />
       </div>
       <motion.div
@@ -47,15 +47,15 @@ const Aside = () => {
           width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
         }}
         className={css(
-          "flex-shrink-0 print:hidden bg-sidebar/30 backdrop-blur-sm transition-all duration-300 ease-in-out overflow-hidden",
+          "writeme-aside-panel",
           state.isSidebarCollapsed
-            ? "w-0 border-r-0 opacity-0"
-            : "border-r border-border/20 opacity-100",
+            ? "writeme-aside-panel--collapsed"
+            : "writeme-aside-panel--open",
         )}
       >
         <motion.div
           style={{ width: `${state.sidebarWidth}px` }}
-          className="flex flex-col flex-1 h-full min-h-full print:hidden"
+          className="writeme-aside-panel-inner"
         >
           <SidebarContent />
         </motion.div>
@@ -63,7 +63,7 @@ const Aside = () => {
       {!state.isSidebarCollapsed && (
         <div
           onMouseDown={startResizing}
-          className="z-10 flex-shrink-0 -ml-0.5 w-1 transition-colors cursor-col-resize print:hidden hover:bg-primary/50"
+          className="writeme-aside-resize"
         />
       )}
     </Fragment>
@@ -74,17 +74,17 @@ export const MainLayout = () => {
   const [state, dispatch] = useGlobalStore();
   useJsonDrop();
   return (
-    <div className="flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background">
+    <div className="writeme-layout">
       <Navbar />
-      <div className="flex overflow-hidden flex-1 w-screen print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background">
+      <div className="writeme-layout-body">
         <Aside />
-        <div className="flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible">
+        <div className="writeme-layout-main">
           <TabsBar />
           <Group orientation="vertical">
             <Panel defaultSize={70} minSize={30}>
               <div
                 id="main-scroll-container"
-                className="overflow-y-auto w-full h-full print:block print:overflow-visible print:h-auto bg-background"
+                className="writeme-layout-scroll"
               >
                 <Outlet />
               </div>

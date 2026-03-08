@@ -70,7 +70,7 @@ function NoteReferences({ note }: { note: Note }) {
 
 const Wrapper = (props: PropsWithChildren) => {
   return (
-    <div className="flex relative flex-col gap-4 py-6 px-8 w-full h-full print:block print:h-auto print:overflow-visible">
+    <div className="writeme-editor-page">
       <TableOfContents />
       {props.children}
     </div>

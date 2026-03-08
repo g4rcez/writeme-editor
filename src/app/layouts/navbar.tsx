@@ -43,16 +43,16 @@ export const Navbar = () => {
     location.pathname.startsWith("/note/") || location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b print:hidden h-navbar bg-background border-border/20">
-      <div className="flex gap-8 justify-between items-center px-3.5 w-full h-full">
-        <div className="flex flex-1 gap-x-6 items-center">
+    <header className="writeme-navbar">
+      <div className="writeme-navbar-inner">
+        <div className="writeme-navbar-left">
           <Link to="/" className="transition-opacity hover:opacity-80">
             <img width="28px" src="/logo.png" />
           </Link>
           {state.note && isEditor && (
             <input
               title="Untitled Note"
-              className="py-0 px-2 w-full h-8 text-sm bg-transparent border-b border-white"
+              className="writeme-navbar-title"
               style={{
                 borderBottom: "1px solid hsla(var(--card-border))",
                 width: `clamp(8rem, ${(editingTitle ?? state.note.title).length}ch, 16rem)`,
@@ -88,7 +88,7 @@ export const Navbar = () => {
             />
           )}
         </div>
-        <nav className="flex gap-2 items-center">
+        <nav className="writeme-navbar-nav">
           <SettingsMenu />
           <ThemeToggle />
           <Menu label={<DotsThreeVerticalIcon size={20} />} title="Menu" className="!w-auto !min-w-0 !h-8 !px-1.5 !py-1.5 !rounded-md !justify-center">

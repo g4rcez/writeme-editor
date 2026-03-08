@@ -38,18 +38,18 @@ const ActivityIcon = ({
         type="button"
         onClick={onClick}
         className={css(
-          "relative flex items-center justify-center w-12 h-12 transition-all duration-200 group",
+          "writeme-aside-activity-icon",
           active
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground",
+            ? "writeme-aside-activity-icon--active"
+            : "writeme-aside-activity-icon--inactive",
         )}
       >
         <Icon size={24} strokeWidth={1.5} />
         {active ? (
-          <div className="absolute left-0 w-0.5 h-8 bg-primary" />
+          <div className="writeme-aside-activity-indicator" />
         ) : null}
         {badge !== undefined && badge > 0 && (
-          <span className="flex absolute top-2 right-2 justify-center items-center px-1 h-4 font-bold rounded-full shadow-sm min-w-[16px] bg-primary text-[10px] text-primary-foreground">
+          <span className="writeme-aside-activity-badge">
             {badge > 99 ? "99+" : badge}
           </span>
         )}
@@ -71,8 +71,8 @@ export const ActivityBar = () => {
   };
 
   return (
-    <div className="flex flex-col items-center py-2 h-full border-r bg-background w-[52px] bg-sidebar/50 backdrop-blur-xl border-border/40">
-      <div className="flex flex-col flex-1 gap-1 w-full">
+    <div className="writeme-aside-activity-bar">
+      <div className="writeme-aside-activity-icons">
         <ActivityIcon
           label="Explorer"
           icon={FilesIcon}
@@ -122,7 +122,7 @@ export const ActivityBar = () => {
           }}
         />
       </div>
-      <div className="flex flex-col gap-1 mt-auto w-full">
+      <div className="writeme-aside-activity-bottom">
         <ActivityIcon
           icon={SidebarIcon}
           onClick={() => globalDispatch.toggleSidebar()}

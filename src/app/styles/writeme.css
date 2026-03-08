@@ -1,0 +1,175 @@
+/* writeme-navbar */
+.writeme-navbar {
+  @apply sticky top-0 z-50 w-full border-b print:hidden h-navbar bg-background;
+  border-color: hsla(var(--border), 0.2);
+}
+
+.writeme-navbar-inner {
+  @apply flex gap-8 justify-between items-center px-3.5 w-full h-full;
+}
+
+.writeme-navbar-left {
+  @apply flex flex-1 gap-x-6 items-center;
+}
+
+.writeme-navbar-title {
+  @apply py-0 px-2 w-full h-8 text-sm bg-transparent;
+}
+
+.writeme-navbar-nav {
+  @apply flex gap-2 items-center;
+}
+
+/* writeme-aside */
+.writeme-aside-activity-wrapper {
+  @apply flex-shrink-0 print:hidden w-fit;
+}
+
+.writeme-aside-panel {
+  @apply flex-shrink-0 print:hidden backdrop-blur-sm transition-all duration-300 ease-in-out overflow-hidden;
+}
+
+.writeme-aside-panel--open {
+  @apply border-r opacity-100;
+  border-color: hsla(var(--border), 0.2);
+}
+
+.writeme-aside-panel--collapsed {
+  @apply w-0 border-r-0 opacity-0;
+}
+
+.writeme-aside-panel-inner {
+  @apply flex flex-col flex-1 h-full min-h-full print:hidden;
+}
+
+.writeme-aside-resize {
+  @apply z-10 flex-shrink-0 -ml-0.5 w-1 transition-colors cursor-col-resize print:hidden;
+}
+
+.writeme-aside-resize:hover {
+  background-color: hsla(var(--primary-DEFAULT), 0.5);
+}
+
+.writeme-aside-activity-bar {
+  @apply flex flex-col items-center py-2 h-full border-r bg-background w-[52px] backdrop-blur-xl;
+  border-color: hsla(var(--border), 0.4);
+}
+
+.writeme-aside-activity-icons {
+  @apply flex flex-col flex-1 gap-1 w-full;
+}
+
+.writeme-aside-activity-icon {
+  @apply relative flex items-center justify-center w-12 h-12 transition-all duration-200;
+}
+
+.writeme-aside-activity-icon--active {
+  @apply text-primary;
+}
+
+.writeme-aside-activity-icon--inactive {
+  @apply text-muted-foreground hover:text-foreground;
+}
+
+.writeme-aside-activity-indicator {
+  @apply absolute left-0 w-0.5 h-8 bg-primary;
+}
+
+.writeme-aside-activity-badge {
+  @apply flex absolute top-2 right-2 justify-center items-center px-1 h-4 font-bold rounded-full shadow-sm min-w-[16px] bg-primary text-[10px] text-primary-foreground;
+}
+
+.writeme-aside-activity-bottom {
+  @apply flex flex-col gap-1 mt-auto w-full;
+}
+
+.writeme-aside-nav {
+  @apply flex flex-col h-full w-full backdrop-blur-xl border-r;
+  border-color: hsla(var(--border), 0.4);
+}
+
+.writeme-aside-nav-header {
+  @apply p-3;
+}
+
+.writeme-aside-nav-title {
+  @apply flex items-center gap-2 px-2 py-2 text-foreground font-semibold;
+}
+
+.writeme-aside-nav-content {
+  @apply flex-1 overflow-y-auto px-2 pb-4;
+  scrollbar-width: none;
+}
+
+.writeme-aside-nav-content::-webkit-scrollbar {
+  display: none;
+}
+
+.writeme-aside-nav-item {
+  @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
+}
+
+.writeme-aside-nav-item--active {
+  @apply text-primary font-medium;
+  background-color: hsla(var(--primary-DEFAULT), 0.1);
+}
+
+.writeme-aside-nav-item--inactive {
+  @apply text-muted-foreground hover:text-foreground;
+}
+
+.writeme-aside-nav-item--inactive:hover {
+  background-color: hsla(var(--muted-DEFAULT), 0.5);
+}
+
+.writeme-aside-nav-section {
+  @apply px-2 py-1.5 text-xs font-semibold uppercase tracking-wider mt-4 mb-1;
+  color: hsla(var(--muted-foreground), 0.6);
+}
+
+.writeme-aside-nav-footer {
+  @apply p-2 border-t;
+  border-color: hsla(var(--border), 0.4);
+}
+
+/* writeme-editor */
+.writeme-editor-page {
+  @apply flex relative flex-col gap-4 py-6 px-8 w-full h-full print:block print:h-auto print:overflow-visible;
+}
+
+.writeme-editor {
+  @apply flex flex-col justify-start items-start mx-auto w-full print:block print:h-auto print:overflow-visible bg-background max-w-safe;
+}
+
+.writeme-editor-content {
+  @apply h-full outline-none focus-visible:outline-none print:h-auto print:block print:overflow-visible;
+}
+
+.writeme-block {
+  @apply w-full print:block print:h-auto print:overflow-visible xl:text-lg;
+}
+
+.writeme-editor-bubble {
+  @apply z-navbar isolate print:hidden;
+}
+
+.writeme-editor-bubble-actions {
+  @apply flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48;
+}
+
+/* writeme-layout */
+.writeme-layout {
+  @apply flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background;
+}
+
+.writeme-layout-body {
+  @apply flex overflow-hidden flex-1 w-screen print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background;
+}
+
+.writeme-layout-main {
+  @apply flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible;
+}
+
+.writeme-layout-scroll {
+  @apply overflow-y-auto w-full h-full print:block print:overflow-visible print:h-auto bg-background;
+}
