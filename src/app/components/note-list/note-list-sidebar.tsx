@@ -1,3 +1,4 @@
+import { Tooltip } from "@g4rcez/components";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { type NoteWithTags } from "@/app/hooks/use-note-list";
@@ -13,6 +14,7 @@ import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { SortAscendingIcon } from "@phosphor-icons/react";
 
 type NoteItemProps = {
   note: NoteWithTags;
@@ -64,7 +66,9 @@ const NoteItem = ({
               : "text-muted-foreground opacity-0 group-hover:opacity-100"
           }`}
         >
-          <StarIcon className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
+          <StarIcon
+            className={`size-3 ${note.favorite ? "fill-current" : ""}`}
+          />
         </button>
       </div>
       <p className="mb-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
@@ -180,27 +184,45 @@ export const NoteListSidebar = () => {
           {getHeaderTitle()}
         </span>
         <div className="flex gap-0.5 items-center">
-          <button
-            title="Sort by last edited"
-            onClick={() => setSortBy("updatedAt")}
-            className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          <Tooltip
+            placement="bottom"
+            title={
+              <button
+                onClick={() => setSortBy("updatedAt")}
+                className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <ClockCounterClockwiseIcon className="size-3.5" />
+              </button>
+            }
           >
-            <ClockCounterClockwiseIcon className="size-3.5" />
-          </button>
-          <button
-            title="Sort by created date"
-            onClick={() => setSortBy("createdAt")}
-            className={`p-1 rounded transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            Last edited
+          </Tooltip>
+          <Tooltip
+            placement="bottom"
+            title={
+              <button
+                onClick={() => setSortBy("createdAt")}
+                className={`p-1 rounded transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <CalendarIcon className="size-3.5" />
+              </button>
+            }
           >
-            <CalendarIcon className="size-3.5" />
-          </button>
-          <button
-            title="Sort alphabetically"
-            onClick={() => setSortBy("alphabetical")}
-            className={`p-1 rounded transition-colors text-[10px] font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            Created date
+          </Tooltip>
+          <Tooltip
+            placement="bottom"
+            title={
+              <button
+                onClick={() => setSortBy("alphabetical")}
+                className={`p-1 rounded transition-colors font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <SortAscendingIcon />
+              </button>
+            }
           >
-            A-Z
-          </button>
+            Alphabetical
+          </Tooltip>
         </div>
       </div>
       <div className="p-3 border-b border-border/20">
@@ -236,3 +258,4 @@ export const NoteListSidebar = () => {
     </div>
   );
 };
+
