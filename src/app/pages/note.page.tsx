@@ -36,7 +36,7 @@ export default function NotePage() {
     });
     const hasTab = state.tabs.some((x) => x.noteId === id);
     if (!hasTab) dispatch.addTab(id!);
-  }, [id, state.tabs.length, state.note?.id]);
+  }, [id]);
 
   useEffect(() => {
     if (!isElectron() || !note?.filePath) return;

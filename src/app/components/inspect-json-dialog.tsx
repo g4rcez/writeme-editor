@@ -33,7 +33,7 @@ export const InspectJsonDialog = () => {
   const handleInspect = async () => {
     try {
       if (!json.trim()) return;
-      const __ = JSON.parse(json); 
+      const __ = JSON.parse(json);
       const finalTitle =
         title.trim() || getUniqueNoteTitle("JSON", state.notes);
       const note = Note.new(finalTitle, json, "json" as any);
@@ -58,7 +58,7 @@ export const InspectJsonDialog = () => {
         <JsonEditor
           value={json}
           onChange={setJson}
-          className="overflow-hidden rounded border min-h-[300px] border-neutral-200 dark:border-neutral-700"
+          className="overflow-hidden h-full rounded border min-h-96 border-floating-border"
         />
         {error && (
           <div className="p-2 text-xs text-red-500 bg-red-50 rounded dark:bg-red-950/30">

@@ -4,7 +4,7 @@ import {
   Card,
   Checkbox,
   Info,
-  Select,
+  Autocomplete,
   Input,
   Textarea,
   uuid,
@@ -188,7 +188,7 @@ export default function SettingsPage() {
                 Choose your preferred editor theme
               </p>
             </div>
-            <Select
+            <Autocomplete
               hiddenLabel
               value={settings.theme}
               onChange={(e) =>

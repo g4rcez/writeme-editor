@@ -8,7 +8,7 @@ import { type NoteWithTags } from "./use-note-list";
 type SortBy = "updatedAt" | "createdAt" | "alphabetical";
 
 export function useSidebarNotes(options?: { sortBy?: SortBy }) {
-  const sortBy = options?.sortBy ?? "updatedAt";
+  const sortBy = options?.sortBy ?? "createdAt";
   const [state] = useGlobalStore();
   const [layoutState] = useLayoutStore((s) => ({
     activeView: s.activeView,

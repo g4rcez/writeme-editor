@@ -5,7 +5,7 @@ import { getUniqueNoteTitle } from "@/lib/file-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { Button, Input, Modal, Select } from "@g4rcez/components";
+import { Autocomplete, Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -105,7 +105,7 @@ export const CreateNoteDialog = () => {
 
         {type === "note" && templates.length > 0 && (
           <div className="flex flex-col gap-4">
-            <Select
+            <Autocomplete
               required={false}
               value={selectedTemplateId}
               placeholder="Template 123"

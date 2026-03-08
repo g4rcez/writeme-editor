@@ -99,12 +99,6 @@ export const ActivityBar = () => {
           onClick={() => onActivityClick("tags")}
         />
         <ActivityIcon
-          label="Templates"
-          icon={LayoutIcon}
-          active={layout.activeActivity === "templates"}
-          onClick={() => onActivityClick("templates")}
-        />
-        <ActivityIcon
           label="Json"
           icon={BracketsCurlyIcon}
           active={layout.activeActivity === "json"}
@@ -112,6 +106,12 @@ export const ActivityBar = () => {
             onActivityClick("json");
             dispatch.setInspectJsonDialog(true);
           }}
+        />
+        <ActivityIcon
+          label="Templates"
+          icon={LayoutIcon}
+          active={layout.activeActivity === "templates"}
+          onClick={() => onActivityClick("templates")}
         />
         <ActivityIcon
           label="Terminal"

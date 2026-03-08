@@ -1,10 +1,10 @@
 import {
+  Autocomplete,
   Button,
   Checkbox,
   DatePicker,
   Input,
   Modal,
-  Select,
   Textarea,
   uuid,
 } from "@g4rcez/components";
@@ -225,7 +225,7 @@ export const FrontmatterBuilder = ({
                     updateProperty(p.id, { key: e.target.value })
                   }
                 />
-                <Select
+                <Autocomplete
                   title="Value"
                   value={p.type}
                   container="w-full"

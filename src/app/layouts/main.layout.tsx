@@ -1,17 +1,16 @@
-import { motion } from "motion/react";
 import { ActivityBar } from "@/app/components/sidebar/activity-bar";
 import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
 import { TabsBar } from "@/app/components/tabs-bar";
 import { useGlobalStore } from "@/store/global.store";
 import { css } from "@g4rcez/components";
+import { motion } from "motion/react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Navbar } from "./navbar";
 import { useJsonDrop } from "../hooks/use-json-drop";
-
-import { Panel, Group, Separator } from "react-resizable-panels";
+import { Navbar } from "./navbar";
 import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
-import { X } from "@phosphor-icons/react";
+import { XIcon } from "@phosphor-icons/react";
+import { Group, Panel, Separator } from "react-resizable-panels";
 
 const Aside = () => {
   const [state, dispatch] = useGlobalStore();
@@ -96,12 +95,14 @@ export const MainLayout = () => {
                 <Panel defaultSize={30} minSize={10}>
                   <div className="flex flex-col h-full bg-[#1e1e1e] border-t border-border/20">
                     <div className="flex justify-between items-center px-3 py-1 bg-sidebar/50 border-b border-border/20">
-                      <span className="text-xs text-muted-foreground uppercase font-semibold">Terminal</span>
-                      <button 
+                      <span className="text-xs text-muted-foreground uppercase font-semibold">
+                        Terminal
+                      </span>
+                      <button
                         onClick={() => dispatch.setTerminalVisible(false)}
                         className="text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        <X size={14} />
+                        <XIcon size={14} />
                       </button>
                     </div>
                     <div className="flex-1 overflow-hidden">

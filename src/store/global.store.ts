@@ -274,28 +274,19 @@ export const useGlobalStore = createGlobalReducer(
       },
       clearTabs: async () => {
         await repositories.tabs.clear();
-        return { tabs: [] as Tab[], activeTabId: null, note: null };
+        return { tabs: [], activeTabId: null, note: null };
       },
       switchWorkspace: async (directory: string | null) => {
-        // 1. Clear tabs in repository
         await repositories.tabs.clear();
-
-        // 2. Update settings (only persistence is handled by SettingsService.save)
         await SettingsService.save({
           directory,
           explorerRoot: directory,
         });
-
-        // 3. If Electron, change CWD and restart file watcher
         if (isElectron() && directory) {
           await window.electronAPI.app.chdir(directory);
           await window.electronAPI.fs.startWatcher(directory);
         }
-
-        // 4. Force reload to ensure all state is clean
         window.location.reload();
-
-        // This return is effectively ignored due to reload, but keeps TS happy
         return get.state();
       },
       directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({

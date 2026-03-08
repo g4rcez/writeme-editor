@@ -136,7 +136,7 @@ type SortBy = "updatedAt" | "createdAt" | "alphabetical";
 
 export const NoteListSidebar = () => {
   const [state, layoutDispatch] = useLayoutStore();
-  const [sortBy, setSortBy] = useState<SortBy>("updatedAt");
+  const [sortBy, setSortBy] = useState<SortBy>("createdAt");
   const { notes, loading } = useSidebarNotes({ sortBy });
   const params = useParams();
   const activeNoteId = params.noteId;

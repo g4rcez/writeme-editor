@@ -164,3 +164,29 @@ input:focus {
   border: transparent;
   outline: transparent;
 }
+
+@media print {
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+    width: auto !important;
+  }
+
+  [data-panel-group] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  [data-panel] {
+    display: block !important;
+    flex: unset !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  [data-resize-handle],
+  [data-panel-resize-handle-id] {
+    display: none !important;
+  }
+}

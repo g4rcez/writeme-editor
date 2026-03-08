@@ -1,4 +1,13 @@
-import { Button, Select, uuid } from "@g4rcez/components";
+import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
+import { EXECUTION_CONFIG } from "@/lib/execution-config";
+import { isElectron } from "@/lib/is-electron";
+import { globalState } from "@/store/global.store";
+import { Autocomplete, Button } from "@g4rcez/components";
+import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
+import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
+import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
+import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import { Node as ProsemirrorNode } from "@tiptap/pm/model";
@@ -10,12 +19,8 @@ import {
   type ReactNodeViewProps,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
-import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
-import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
-import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
-import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import mermaid from "mermaid";
+import Convert from "ansi-to-html";
+import { clsx } from "clsx";
 import {
   Fragment,
   type ReactNode,
@@ -23,7 +28,6 @@ import {
   useEffect,
   useId,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import {
@@ -34,19 +38,13 @@ import {
   bundledThemes,
   createHighlighter,
 } from "shiki";
-import { clsx } from "clsx";
-import Convert from "ansi-to-html";
-import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
-import { globalState } from "@/store/global.store";
 import { canFormat, formatCode } from "./code-block-formatting";
 import { ExcalidrawCode } from "./excalidraw";
+import { Flowchart } from "./flowchart";
 import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
-import { shikiMathGrammer } from "./shiki-math-grammar";
 import { Mermaid } from "./mermaid";
-import { Flowchart } from "./flowchart";
-import { EXECUTION_CONFIG } from "@/lib/execution-config";
-import { isElectron } from "@/lib/is-electron";
+import { shikiMathGrammer } from "./shiki-math-grammar";
 
 export type CodeBlockFrameProps = {
   id: string;
@@ -113,7 +111,7 @@ export const CodeBlockFrame = ({
 };
 
 let highlighter: Highlighter | undefined;
-let highlighterPromise: Promise<void> | undefined;
+let highlighterPromise: Promise<undefined> | undefined;
 const loadingLanguages = new Set<BundledLanguage>();
 const loadingThemes = new Set<BundledTheme>();
 
@@ -141,9 +139,7 @@ export function getShiki() {
   return highlighter;
 }
 
-export function loadHighlighter(
-  opts: HighlighterOptions,
-): Promise<void> | undefined {
+export function loadHighlighter(opts: HighlighterOptions): Promise<undefined> {
   if (!highlighter && !highlighterPromise) {
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
@@ -159,6 +155,7 @@ export function loadHighlighter(
   if (highlighterPromise) {
     return highlighterPromise;
   }
+  return undefined;
 }
 
 export async function loadTheme(theme: BundledTheme) {
@@ -208,8 +205,7 @@ export async function initHighlighter({
     .concat(defaultTheme);
   const languages = codeBlocks
     .map((block) => block.node.attrs.language as BundledLanguage)
-    .concat(defaultLanguage);
-
+    .concat(defaultLanguage!);
   if (!highlighter) {
     try {
       const loader = loadHighlighter({ languages, themes });
@@ -311,13 +307,12 @@ export function ShikiPlugin({
         }
         async initDecorations() {
           const doc = view.state.doc;
-          const currentTheme = getCurrentTheme();
+          const currentTheme = getCurrentTheme!();
           await initHighlighter({
             doc,
             name,
             defaultLanguage,
             defaultTheme: currentTheme,
-            // @ts-ignore
           });
           if (getCurrentTheme) {
             await Promise.all([
@@ -362,7 +357,7 @@ export function ShikiPlugin({
 
     state: {
       init: (_, { doc }) => {
-        const currentTheme = getCurrentTheme();
+        const currentTheme = getCurrentTheme!();
         return getDecorations({
           doc,
           name,
@@ -403,7 +398,7 @@ export function ShikiPlugin({
           transaction.getMeta("shikiPluginForceDecoration") ||
           didChangeSomeCodeBlock
         ) {
-          const currentTheme = getCurrentTheme();
+          const currentTheme = getCurrentTheme!();
           return getDecorations({
             doc: transaction.doc,
             name,
@@ -432,30 +427,6 @@ export interface CodeBlockShikiOptions extends CodeBlockOptions {
   themeAware?: boolean;
   getCurrentTheme?: () => BundledTheme;
 }
-
-const MermaidChart = ({ chart }: { chart: string }) => {
-  const id = useRef(`chart-${uuid()}`);
-  const chartRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    mermaid.initialize({
-      theme: "dark",
-      startOnLoad: true,
-      securityLevel: "loose",
-      c4: {},
-      darkMode: false,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (chartRef.current && chart) {
-      mermaid.render(id.current, chart).then(({ svg }) => {
-        if (chartRef.current) chartRef.current.innerHTML = svg;
-      });
-    }
-  }, [chart, id]);
-  return <div ref={chartRef} />;
-};
 
 const getAllLanguages = (): string[] => {
   const allLanguages = Object.keys(bundledLanguages);
@@ -488,7 +459,7 @@ const CodeBlockHeader = ({
   return (
     <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
       <div className="flex gap-2 items-center">
-        <Select
+        <Autocomplete
           hiddenLabel
           value={language}
           className="h-8 text-xs"
@@ -751,6 +722,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
 
   const onChangeDraw = useCallback((nextState: any) => {
     const pos = props.getPos();
+    if (!pos) return;
     const targetNode = props.editor.state.doc.nodeAt(pos);
     updateNodeContent(props.editor, targetNode, nextState);
   }, []);

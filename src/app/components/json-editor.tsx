@@ -38,7 +38,10 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
           }),
           EditorView.theme({
             "&": { height: "100%", fontSize: "13px" },
-            ".cm-scroller": { overflow: "auto", fontFamily: "JetBrains Mono, monospace" },
+            ".cm-scroller": {
+              overflow: "auto",
+              fontFamily: "JetBrains Mono, monospace",
+            },
           }),
         ],
       }),
@@ -57,7 +60,9 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
   useEffect(() => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
-      effects: themeCompartment.current.reconfigure(isDark ? tokyoNightStorm : []),
+      effects: themeCompartment.current.reconfigure(
+        isDark ? tokyoNightStorm : [],
+      ),
     });
   }, [isDark]);
 
@@ -77,20 +82,22 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
     try {
       const parsed = JSON.parse(view.state.doc.toString());
       const formatted = JSON.stringify(parsed, null, 2);
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: formatted },
-      });
+      const changes = { from: 0, to: view.state.doc.length, insert: formatted };
+      view.dispatch({ changes });
       onChange(formatted);
-    } catch {
-      // invalid JSON — no-op
-    }
+    } catch {}
   }, [onChange]);
 
   return (
     <div className={className} style={{ position: "relative" }}>
       <div ref={containerRef} className="h-full w-full" />
       <div className="absolute top-2 right-2 z-10">
-        <Button size="small" theme="ghost-primary" onClick={handleFormat} title="Format JSON">
+        <Button
+          size="small"
+          theme="ghost-primary"
+          onClick={handleFormat}
+          title="Format JSON"
+        >
           <BracketsCurlyIcon size={14} />
         </Button>
       </div>

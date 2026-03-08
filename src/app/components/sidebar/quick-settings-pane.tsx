@@ -1,5 +1,10 @@
 import { useGlobalStore } from "@/store/global.store";
-import { Select } from "@g4rcez/components";
+import { Autocomplete } from "@g4rcez/components";
+
+const themes = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
 
 export const QuickSettingsPane = () => {
   const [state, dispatch] = useGlobalStore();
@@ -18,14 +23,11 @@ export const QuickSettingsPane = () => {
           <label className="font-medium uppercase text-[10px] text-muted-foreground">
             Appearance
           </label>
-          <Select
+          <Autocomplete
             title="Theme"
+            options={themes}
             value={state.theme}
             onChange={onChangeTheme}
-            options={[
-              { value: "light", label: "Light" },
-              { value: "dark", label: "Dark" },
-            ]}
           />
         </div>
       </div>
