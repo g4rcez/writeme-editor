@@ -2,6 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import type { EditorState } from "@tiptap/pm/state";
+import { Fragment } from "@tiptap/pm/model";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 
@@ -206,11 +207,12 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           if (s.results.length === 0) return false;
           const current = s.results[s.resultIndex];
           if (!current) return false;
-          editor
-            .chain()
-            .setTextSelection({ from: current.from, to: current.to })
-            .insertContent(replaceTerm)
-            .run();
+          const tr = editor.state.tr.replaceWith(
+            current.from,
+            current.to,
+            replaceTerm ? editor.state.schema.text(replaceTerm) : Fragment.empty
+          );
+          editor.view.dispatch(tr);
           s.results = findMatches(editor.state.doc, s.searchTerm, s.caseSensitive);
           s.resultIndex = Math.min(s.resultIndex, Math.max(0, s.results.length - 1));
           editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
@@ -222,12 +224,12 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           const s = srStorage(editor);
           if (!s.searchTerm) return false;
           const results = findMatches(editor.state.doc, s.searchTerm, s.caseSensitive);
-          const chain = editor.chain();
+          let tr = editor.state.tr;
           for (let i = results.length - 1; i >= 0; i--) {
             const r = results[i]!;
-            chain.setTextSelection({ from: r.from, to: r.to }).insertContent(replaceTerm);
+            tr = tr.replaceWith(r.from, r.to, replaceTerm ? editor.state.schema.text(replaceTerm) : Fragment.empty);
           }
-          chain.run();
+          editor.view.dispatch(tr);
           s.results = [];
           s.resultIndex = 0;
           editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
