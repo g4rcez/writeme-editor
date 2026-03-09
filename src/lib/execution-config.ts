@@ -11,9 +11,10 @@ export const EXECUTION_CONFIG: Partial<
   Record<BundledLanguage, ExecutionConfig>
 > = {
   javascript: {
-    command: "node",
     label: "Node.js",
+    command: "node",
     browserRuntimeExec: async (code: string) => {
+      console.log({code});
       try {
         const result = eval(code);
         return { stdout: String(result), stderr: "" };
@@ -23,8 +24,8 @@ export const EXECUTION_CONFIG: Partial<
     },
   },
   html: {
-    command: "browser",
     label: "Browser",
+    command: "browser",
     browserRuntimeExec: async (code: string) => {
       return { stdout: "", stderr: "", html: code };
     },

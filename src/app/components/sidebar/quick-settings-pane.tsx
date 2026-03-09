@@ -1,15 +1,13 @@
+import { GLOBAL_THEMES } from "@/app/settings/theme";
 import { useGlobalStore } from "@/store/global.store";
 import { Autocomplete } from "@g4rcez/components";
 
-const themes = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
-
 export const QuickSettingsPane = () => {
   const [state, dispatch] = useGlobalStore();
-  const onChangeTheme = (e: React.ChangeEvent<HTMLSelectElement>) =>
+
+  const onChangeTheme = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch.theme(e.target.value);
+
   return (
     <div className="flex flex-col h-full bg-background/50">
       <div className="py-2 px-4 border-b border-border/20">
@@ -25,8 +23,9 @@ export const QuickSettingsPane = () => {
           </label>
           <Autocomplete
             title="Theme"
-            options={themes}
+            optionalText=" "
             value={state.theme}
+            options={GLOBAL_THEMES}
             onChange={onChangeTheme}
           />
         </div>

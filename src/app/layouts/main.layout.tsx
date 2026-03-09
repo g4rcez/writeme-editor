@@ -1,74 +1,12 @@
-import { ActivityBar } from "@/app/components/sidebar/activity-bar";
-import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
 import { TabsBar } from "@/app/components/tabs-bar";
+import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
 import { useGlobalStore } from "@/store/global.store";
-import { css } from "@g4rcez/components";
-import { motion } from "motion/react";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { XIcon } from "@phosphor-icons/react";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import { Outlet } from "react-router-dom";
 import { useJsonDrop } from "../hooks/use-json-drop";
 import { Navbar } from "./navbar";
-import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
-import { XIcon } from "@phosphor-icons/react";
-import { Group, Panel, Separator } from "react-resizable-panels";
-
-const Aside = () => {
-  const [state, dispatch] = useGlobalStore();
-  const [isResizing, setIsResizing] = useState(false);
-  const startResizing = useCallback(() => setIsResizing(true), []);
-  const stopResizing = useCallback(() => setIsResizing(false), []);
-  const resize = useCallback(
-    (e: MouseEvent) => {
-      if (isResizing) {
-        const newWidth = e.clientX - 52;
-        if (newWidth >= 150 && newWidth <= 600) {
-          dispatch.setSidebarWidth(newWidth);
-        }
-      }
-    },
-    [isResizing],
-  );
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const opts = { signal: controller.signal };
-    window.addEventListener("mousemove", resize, opts);
-    window.addEventListener("mouseup", stopResizing, opts);
-    return () => void controller.abort();
-  }, [resize, stopResizing]);
-
-  return (
-    <Fragment>
-      <div className="writeme-aside-activity-wrapper">
-        <ActivityBar />
-      </div>
-      <motion.div
-        style={{
-          width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
-        }}
-        className={css(
-          "writeme-aside-panel",
-          state.isSidebarCollapsed
-            ? "writeme-aside-panel--collapsed"
-            : "writeme-aside-panel--open",
-        )}
-      >
-        <motion.div
-          style={{ width: `${state.sidebarWidth}px` }}
-          className="writeme-aside-panel-inner"
-        >
-          <SidebarContent />
-        </motion.div>
-      </motion.div>
-      {!state.isSidebarCollapsed && (
-        <div
-          onMouseDown={startResizing}
-          className="writeme-aside-resize"
-        />
-      )}
-    </Fragment>
-  );
-};
+import { Sidebar } from "./sidebar";
 
 export const MainLayout = () => {
   const [state, dispatch] = useGlobalStore();
@@ -77,15 +15,12 @@ export const MainLayout = () => {
     <div className="writeme-layout">
       <Navbar />
       <div className="writeme-layout-body">
-        <Aside />
+        <Sidebar />
         <div className="writeme-layout-main">
           <TabsBar />
           <Group orientation="vertical">
             <Panel defaultSize={70} minSize={30}>
-              <div
-                id="main-scroll-container"
-                className="writeme-layout-scroll"
-              >
+              <div id="main-scroll-container" className="writeme-layout-scroll py-8">
                 <Outlet />
               </div>
             </Panel>

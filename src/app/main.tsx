@@ -15,6 +15,8 @@ import {
 import { router } from "./router";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
+import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
+import { tokyonightNightTheme } from "./styles/tokyonight-night";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
 import { sortByNewest } from "@/lib/array";
@@ -56,8 +58,26 @@ const themeConfiguration = () => {
       }),
     ),
   );
-  if (globalState().theme === "dark") {
-    document.documentElement.classList.add("dark");
+  head.append(
+    createStyle(
+      "catppuccin-mocha-theme",
+      createTokenStyles(catppuccinMochaTheme, {
+        ...tokenRemap,
+        name: "catppuccin-mocha",
+      }),
+    ),
+  );
+  head.append(
+    createStyle(
+      "tokyonight-night-theme",
+      createTokenStyles(tokyonightNightTheme, {
+        ...tokenRemap,
+        name: "tokyonight-night",
+      }),
+    ),
+  );
+  if (globalState().theme !== "light") {
+    document.documentElement.classList.add(globalState().theme);
   }
 };
 

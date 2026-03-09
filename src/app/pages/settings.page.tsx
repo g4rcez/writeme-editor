@@ -23,6 +23,7 @@ import { useUIStore } from "@/store/ui.store";
 import { type AppSettings, SettingsService } from "@/store/settings";
 import { type AIConfig } from "@/store/repositories/electron/ai.repository";
 import { CustomVariables } from "@/app/components/settings/custom-variables";
+import { GLOBAL_THEMES } from "../settings/theme";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -115,7 +116,7 @@ export default function SettingsPage() {
     );
   };
 
-  const handleThemeChange = (theme: "light" | "dark") => {
+  const handleThemeChange = (theme: "light" | "dark" | "catppuccin-mocha") => {
     if (!settings) return;
     setSettings({ ...settings, theme });
     globalDispatch.theme(theme);
@@ -179,7 +180,6 @@ export default function SettingsPage() {
             </Info>
           )}
         </Card>
-
         <Card title="Appearance">
           <div className="flex justify-between items-center py-2">
             <div className="flex flex-col gap-1">
@@ -191,24 +191,22 @@ export default function SettingsPage() {
             <Autocomplete
               hiddenLabel
               value={settings.theme}
+              options={GLOBAL_THEMES}
               onChange={(e) =>
-                handleThemeChange(e.target.value as "light" | "dark")
+                handleThemeChange(
+                  e.target.value as "light" | "dark" | "catppuccin-mocha",
+                )
               }
-              options={[
-                { value: "light", label: "Light" },
-                { value: "dark", label: "Dark" },
-              ]}
             />
           </div>
         </Card>
-
         <CustomVariables />
-
         {!isElectron() ? (
           <Card title="Domain Migration">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Moved from <strong>www.writeme.dev</strong>? Import your notes, tabs, hashtags, settings, and scripts from the old domain.
+                Moved from <strong>www.writeme.dev</strong>? Import your notes,
+                tabs, hashtags, settings, and scripts from the old domain.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -226,7 +224,10 @@ export default function SettingsPage() {
                     } catch (err) {
                       uiDispatch.setAlert({
                         open: true,
-                        message: err instanceof Error ? err.message : "Migration failed.",
+                        message:
+                          err instanceof Error
+                            ? err.message
+                            : "Migration failed.",
                         type: "error",
                       });
                     } finally {
@@ -262,7 +263,8 @@ export default function SettingsPage() {
                     } catch (err) {
                       uiDispatch.setAlert({
                         open: true,
-                        message: err instanceof Error ? err.message : "Import failed.",
+                        message:
+                          err instanceof Error ? err.message : "Import failed.",
                         type: "error",
                       });
                     }
@@ -272,7 +274,6 @@ export default function SettingsPage() {
             </div>
           </Card>
         ) : null}
-
         {isElectron() ? (
           <Fragment>
             <Card title="AI Features">
@@ -447,7 +448,10 @@ export default function SettingsPage() {
                         const dir =
                           await window.electronAPI.fs.chooseDirectory();
                         if (dir) {
-                          setSettings({ ...settings, quicknotesDirectory: dir });
+                          setSettings({
+                            ...settings,
+                            quicknotesDirectory: dir,
+                          });
                         }
                       }}
                     >
@@ -462,8 +466,8 @@ export default function SettingsPage() {
                   </code>
                   <p className="text-[10px] text-muted-foreground">
                     Folder where quick notes are saved. Defaults to a{" "}
-                    <code className="text-primary">quicknotes</code> subdirectory
-                    inside your workspace.
+                    <code className="text-primary">quicknotes</code>{" "}
+                    subdirectory inside your workspace.
                   </p>
                 </div>
               </div>

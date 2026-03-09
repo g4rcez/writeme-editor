@@ -702,7 +702,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     setIsRunning(true);
     setOutput(null);
     try {
-      if (config.browserRuntimeExec) {
+      if (config.browserRuntimeExec && !isElectron()) {
         const result = await config.browserRuntimeExec(code);
         setOutput(result);
       } else if (isElectron() && executablePath) {

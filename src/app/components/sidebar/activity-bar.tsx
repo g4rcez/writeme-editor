@@ -14,6 +14,7 @@ import {
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { css, Tooltip } from "@g4rcez/components";
 import { Note } from "@/store/note";
+import { useNavigate } from "react-router-dom";
 
 type ActivityIconProps = {
   icon: Icon;
@@ -45,9 +46,7 @@ const ActivityIcon = ({
         )}
       >
         <Icon size={24} strokeWidth={1.5} />
-        {active ? (
-          <div className="writeme-aside-activity-indicator" />
-        ) : null}
+        {active ? <div className="writeme-aside-activity-indicator" /> : null}
         {badge !== undefined && badge > 0 && (
           <span className="writeme-aside-activity-badge">
             {badge > 99 ? "99+" : badge}
@@ -61,6 +60,7 @@ const ActivityIcon = ({
 );
 
 export const ActivityBar = () => {
+  const navigate = useNavigate();
   const [layout, dispatchLayout] = useLayoutStore();
   const [state, dispatch] = useGlobalStore();
   const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
@@ -117,9 +117,7 @@ export const ActivityBar = () => {
           label="Terminal"
           icon={TerminalWindowIcon}
           active={state.terminalVisible}
-          onClick={() => {
-            dispatch.toggleTerminal();
-          }}
+          onClick={() => dispatch.toggleTerminal()}
         />
       </div>
       <div className="writeme-aside-activity-bottom">
@@ -134,7 +132,10 @@ export const ActivityBar = () => {
           label="Settings"
           icon={GearIcon}
           active={layout.activeActivity === "settings"}
-          onClick={() => onActivityClick("settings")}
+          onClick={() => {
+            onActivityClick("settings");
+            navigate("/settings");
+          }}
         />
       </div>
     </div>

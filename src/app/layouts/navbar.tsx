@@ -1,7 +1,7 @@
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { DotsThreeVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsThreeVertical";
-import { Menu, MenuItem } from "@g4rcez/components";
+import { Button, Menu, MenuItem } from "@g4rcez/components";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SettingsMenu } from "@/app/components/settings-menu";
@@ -17,11 +17,11 @@ import {
 
 export const Navbar = () => {
   const [state, dispatch] = useGlobalStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [editingTitle, setEditingTitle] = useState<string | null>(
     state.note?.title || "",
   );
-  const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (state.note?.title) setEditingTitle(state.note.title);
@@ -91,7 +91,15 @@ export const Navbar = () => {
         <nav className="writeme-navbar-nav">
           <SettingsMenu />
           <ThemeToggle />
-          <Menu label={<DotsThreeVerticalIcon size={20} />} title="Menu" className="!w-auto !min-w-0 !h-8 !px-1.5 !py-1.5 !rounded-md !justify-center">
+          <Menu
+            asChild
+            title="Menu"
+            label={
+              <Button theme="ghost-muted" size="small">
+                <DotsThreeVerticalIcon size={20} />
+              </Button>
+            }
+          >
             <MenuItem
               title="New note"
               onClick={() =>

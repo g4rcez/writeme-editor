@@ -25,7 +25,9 @@ export type AiContext = {
   selectionSlice: { from: number; to: number } | null;
 };
 
-export type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "catppuccin-mocha" | "tokyonight-night";
+
+const THEME_CLASSES = ["dark", "catppuccin-mocha", "tokyonight-night"] as const;
 
 type State = {
   tabs: Tab[];
@@ -197,9 +199,10 @@ export const useGlobalStore = createGlobalReducer(
         directory: string | null,
         explorerRoot: string | null,
       ) => {
-        if (theme === "dark") document.documentElement.classList.add("dark");
-        if (theme === "light")
-          document.documentElement.classList.remove("dark");
+        THEME_CLASSES.forEach((c) =>
+          document.documentElement.classList.remove(c),
+        );
+        if (theme !== "light") document.documentElement.classList.add(theme);
         return {
           tabs,
           theme,
@@ -360,11 +363,13 @@ export const useGlobalStore = createGlobalReducer(
       theme: (theme: Toggle<string>) => {
         const result =
           typeof theme === "function" ? theme(get.state().theme) : theme;
-        if (result === "dark") document.documentElement.classList.add("dark");
-        if (result === "light")
-          document.documentElement.classList.remove("dark");
-        SettingsService.save({ theme: result as "light" | "dark" });
-        return { theme: result as "light" | "dark" };
+        THEME_CLASSES.forEach((c) =>
+          document.documentElement.classList.remove(c),
+        );
+        if (result !== "light")
+          document.documentElement.classList.add(result);
+        SettingsService.save({ theme: result as Theme });
+        return { theme: result as Theme };
       },
       selectNoteById: async (noteId: string) => {
         const state = get.state();

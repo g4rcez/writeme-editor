@@ -46,7 +46,7 @@ const examples = [
 
 export default function AboutPage() {
   return (
-    <ul className="grid grid-cols-1 gap-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
+    <ul className="grid grid-cols-1 gap-8 py-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
       {examples.map((example) => (
         <li key={example.title}>
           <Link

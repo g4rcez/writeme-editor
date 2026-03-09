@@ -24,17 +24,17 @@ export const ThemeToggle = () => {
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       <SunIcon
-        className={`absolute size-4 transition-all duration-300 ${
+        className={`size-4 transition-all duration-300 ${
           isDark
-            ? "rotate-90 scale-0 opacity-0"
-            : "rotate-0 scale-100 opacity-100"
+            ? "hidden rotate-90 scale-0 opacity-0"
+            : "block rotate-0 scale-100 opacity-100"
         }`}
       />
       <MoonIcon
-        className={`absolute size-4 transition-all duration-300 ${
+        className={`size-4 transition-all duration-300 ${
           isDark
-            ? "rotate-0 scale-100 opacity-100"
-            : "-rotate-90 scale-0 opacity-0"
+            ? "block rotate-0 scale-100 opacity-100"
+            : "hidden -rotate-90 scale-0 opacity-0"
         }`}
       />
     </Button>
