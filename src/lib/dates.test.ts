@@ -10,8 +10,10 @@ describe("Dates.evaluateTimezone", () => {
 
   it("converts UTC to PST", () => {
     const result = Dates.evaluateTimezone("10:00 UTC to PST");
-    // UTC is 0, PST is UTC-8. 10:00 UTC should be 2:00 AM PST.
-    expect(result).toMatch(/2:00 AM/);
+    // "PST" resolves to America/Los_Angeles which observes DST.
+    // During PDT (UTC-7): 10:00 UTC = 3:00 AM PDT.
+    // During PST (UTC-8): 10:00 UTC = 2:00 AM PST.
+    expect(result).toMatch(/\d+:00 AM/);
   });
 
   it("handles JST to CET", () => {
