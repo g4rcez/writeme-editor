@@ -58,7 +58,7 @@ export const InspectJsonDialog = () => {
         <JsonEditor
           value={json}
           onChange={setJson}
-          className="overflow-hidden h-full rounded border min-h-96 border-floating-border"
+          className="overflow-hidden h-96 rounded border border-floating-border"
         />
         {error && (
           <div className="p-2 text-xs text-red-500 bg-red-50 rounded dark:bg-red-950/30">

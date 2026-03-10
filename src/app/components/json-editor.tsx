@@ -37,7 +37,7 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
             }
           }),
           EditorView.theme({
-            "&": { height: "100%", fontSize: "13px" },
+            "&": { height: "100%", fontSize: "13px", overflow: "hidden" },
             ".cm-scroller": {
               overflow: "auto",
               fontFamily: "JetBrains Mono, monospace",
