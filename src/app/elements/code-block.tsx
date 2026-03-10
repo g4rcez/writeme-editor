@@ -2,7 +2,7 @@ import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
-import { Autocomplete, Button } from "@g4rcez/components";
+import { Select, Button } from "@g4rcez/components";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
 import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
@@ -459,9 +459,9 @@ const CodeBlockHeader = ({
   isRunning: boolean;
 }) => {
   return (
-    <div className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
+    <div contentEditable={false} className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
       <div className="flex gap-2 items-center">
-        <Autocomplete
+        <Select
           hiddenLabel
           value={language}
           className="h-8 text-xs"
