@@ -42,6 +42,7 @@ jobs:
 
       - run: npm run make
         env:
+          NODE_OPTIONS: --max-old-space-size=4096
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
