@@ -6,6 +6,8 @@ import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
 import Highlight from "@tiptap/extension-highlight";
 import { ImageExtension } from "@/app/extensions/image-extension";
+import { VideoExtension } from "@/app/extensions/video-extension";
+import { PdfExtension } from "@/app/extensions/pdf-extension";
 import { OrderedList, TaskList } from "@tiptap/extension-list";
 import { InlineMath } from "@tiptap/extension-mathematics";
 import Mention from "@tiptap/extension-mention";
@@ -107,18 +109,18 @@ export const handlePasteImage = async (currentEditor: any) => {
   return false;
 };
 
-export const handleImageFile = async (
+export const handleMediaFile = async (
   currentEditor: any,
   file: File,
   pos: number | null = null,
   offset: number = 0,
 ) => {
   if (!currentEditor) {
-    console.error("[handleImageFile] no editor");
+    console.error("[handleMediaFile] no editor");
     return;
   }
   const insertPos = pos !== null ? pos : currentEditor.state.selection.anchor;
-  console.log("[handleImageFile] entry", {
+  console.log("[handleMediaFile] entry", {
     name: file.name,
     type: file.type,
     size: file.size,
@@ -129,7 +131,7 @@ export const handleImageFile = async (
   fileReader.readAsDataURL(file);
   fileReader.onload = async () => {
     console.log(
-      "[handleImageFile] onload fired, src length:",
+      "[handleMediaFile] onload fired, src length:",
       (fileReader.result as string).length,
       "insertPos:",
       insertPos,
@@ -146,7 +148,7 @@ export const handleImageFile = async (
           .toLowerCase();
         const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
         try {
-          console.log("[handleImageFile] mkdir", targetDir);
+          console.log("[handleMediaFile] mkdir", targetDir);
           await window.electronAPI.fs.mkdir(targetDir);
           const dirContents = await window.electronAPI.fs.readDir(targetDir);
           const index =
@@ -154,12 +156,12 @@ export const handleImageFile = async (
             1 +
             offset;
           console.log(
-            "[handleImageFile] readDir index",
+            "[handleMediaFile] readDir index",
             index,
             "entries",
             dirContents.entries.length,
           );
-          const ext = file.type.split("/")[1] || "png";
+          const ext = file.name.split(".").pop() || "png";
           const filename = `${Date.now()}_${index}.${ext}`;
           const absolutePath = `${targetDir}/${filename}`;
 
@@ -167,19 +169,27 @@ export const handleImageFile = async (
             absolutePath,
             src,
           );
-          console.log("[handleImageFile] writeImage result", result);
+          console.log("[handleMediaFile] writeImage result", result);
           if (result.success) {
             // Update src to be relative path for markdown
             src = `assets/${sanitizedTitle}/${filename}`;
           }
         } catch (e) {
-          console.error("Failed to save image to filesystem", e);
+          console.error("Failed to save media to filesystem", e);
         }
       }
     }
+
+    let type = "image";
+    if (file.type.startsWith("video/")) {
+      type = "video";
+    } else if (file.type === "application/pdf") {
+      type = "pdf";
+    }
+
     currentEditor
       .chain()
-      .insertContentAt(insertPos, { type: "image", attrs: { src } })
+      .insertContentAt(insertPos, { type, attrs: { src, title: file.name } })
       .focus()
       .run();
   };
@@ -221,50 +231,21 @@ export const createExtensions = (
     ColorReplacer,
     Color.configure({ types: [TextStyle.name] }),
     ImageExtension,
+    VideoExtension,
+    PdfExtension,
     FileHandler.configure({
-      allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
+      allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "video/mp4", "video/webm", "application/pdf"],
       onDrop: (currentEditor, files, pos) => {
-        files.forEach((file) => {
-          const fileReader = new FileReader();
-          fileReader.readAsDataURL(file);
-          fileReader.onload = () => {
-            console.log({ file });
-            currentEditor
-              .chain()
-              .insertContentAt(pos, {
-                type: "image",
-                attrs: {
-                  src: fileReader.result,
-                },
-              })
-              .focus()
-              .run();
-          };
+        files.forEach((file, index) => {
+          handleMediaFile(currentEditor, file, pos, index);
         });
       },
       onPaste: (currentEditor, files, htmlContent) => {
-        console.log(files);
-        files.forEach((file) => {
+        files.forEach((file, index) => {
           if (htmlContent) {
             return false;
           }
-          const fileReader = new FileReader();
-          fileReader.readAsDataURL(file);
-          fileReader.onload = () => {
-            const x = `![${file.name}](${fileReader.result} "${file.name}")`;
-            currentEditor
-              .chain()
-              .insertContent(x, {
-                applyPasteRules: true,
-                parseOptions: {
-                  preserveWhitespace: "full",
-                  to: currentEditor.state.selection.anchor,
-                  from: currentEditor.state.selection.anchor,
-                },
-              })
-              .focus()
-              .run();
-          };
+          handleMediaFile(currentEditor, file, null, index);
         });
       },
     }),
