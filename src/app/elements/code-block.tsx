@@ -40,6 +40,7 @@ import {
 } from "shiki";
 import { canFormat, formatCode } from "./code-block-formatting";
 import { ExcalidrawCode } from "./excalidraw";
+import { FreehandCode } from "./freehand";
 import { Flowchart } from "./flowchart";
 import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
@@ -139,7 +140,7 @@ export function getShiki() {
   return highlighter;
 }
 
-export function loadHighlighter(opts: HighlighterOptions): Promise<undefined> {
+export function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter | undefined> {
   if (!highlighter && !highlighterPromise) {
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
@@ -147,8 +148,8 @@ export function loadHighlighter(opts: HighlighterOptions): Promise<undefined> {
     highlighterPromise = createHighlighter({
       langs: [...langs, shikiMathGrammer],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
-    }).then((h: Highlighter): void => {
-      highlighter = h;
+    }).then((h: Highlighter) => {
+      return ((highlighter = h), h);
     });
     return highlighterPromise;
   }
@@ -432,6 +433,7 @@ const getAllLanguages = (): string[] => {
   const allLanguages = Object.keys(bundledLanguages);
   allLanguages.push("math");
   allLanguages.push("excalidraw");
+  allLanguages.push("freehand");
   allLanguages.push("graphviz");
   allLanguages.push("flowchart");
   return allLanguages.sort();
@@ -722,7 +724,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
 
   const onChangeDraw = useCallback((nextState: any) => {
     const pos = props.getPos();
-    if (!pos) return;
+    if (typeof pos !== "number") return;
     const targetNode = props.editor.state.doc.nodeAt(pos);
     updateNodeContent(props.editor, targetNode, nextState);
   }, []);
@@ -734,6 +736,21 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
         <ExcalidrawCode
+          code={code}
+          onChange={onChangeDraw}
+          autoDelete={props.deleteNode}
+        />
+      </NodeViewWrapper>
+    );
+  }
+
+  if (language === "freehand") {
+    return (
+      <NodeViewWrapper
+        as="div"
+        className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
+      >
+        <FreehandCode
           code={code}
           onChange={onChangeDraw}
           autoDelete={props.deleteNode}

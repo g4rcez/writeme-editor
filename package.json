@@ -124,6 +124,7 @@
     "motion": "12.35.2",
     "node-pty": "1.1.0",
     "npm": "11.11.0",
+    "perfect-freehand": "^1.2.3",
     "prettier": "3.8.1",
     "radix-ui": "1.4.3",
     "raphael": "2.3.0",

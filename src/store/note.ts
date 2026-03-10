@@ -7,6 +7,7 @@ export enum NoteType {
   "read-it-later" = "read-it-later",
   template = "template",
   json = "json",
+  freehand = "freehand",
 }
 
 export class Note implements EntityBase {

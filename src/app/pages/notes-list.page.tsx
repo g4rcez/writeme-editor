@@ -25,6 +25,7 @@ const tag: Record<
   quick: { theme: "muted", title: "Quick note" },
   template: { theme: "secondary", title: "Template" },
   "read-it-later": { theme: "info", title: "Read it later" },
+  freehand: { theme: "secondary", title: "Freehand" },
 };
 
 export default function NotesListPage() {
