@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     clipboard: async () => {
       return ipcRenderer.invoke("notes:clipboard");
     },
+    clipboardImage: async () => {
+      return ipcRenderer.invoke("notes:clipboardImage");
+    },
   },
   fs: {
     chooseDirectory: async (): Promise<string | null> => {
@@ -31,6 +34,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
     readFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:readFile", filePath);
+    },
+    readBinaryFile: async (filePath: string) => {
+      return ipcRenderer.invoke("fs:readBinaryFile", filePath);
     },
     statFile: async (filePath: string) => {
       return ipcRenderer.invoke("fs:statFile", filePath);
@@ -180,11 +186,15 @@ declare global {
       onQuicknoteOpen(callback: () => void): () => void;
       notes: {
         clipboard(): Promise<string>;
+        clipboardImage(): Promise<string | null>;
       };
       fs: {
         chooseDirectory(): Promise<string | null>;
         writeFile(filePath: string, content: string): Promise<any>;
         readFile(filePath: string): Promise<any>;
+        readBinaryFile(
+          filePath: string,
+        ): Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
         statFile(filePath: string): Promise<any>;
         mkdir(dirPath: string): Promise<any>;
         deleteFile(filePath: string): Promise<any>;

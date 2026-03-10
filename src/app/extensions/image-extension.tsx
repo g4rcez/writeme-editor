@@ -23,19 +23,76 @@ const ImageView = (props: any) => {
   const [error, setError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   const src: string = node.attrs.src ?? "";
   const alt: string = node.attrs.alt ?? "";
   const align: string = node.attrs.align ?? "center";
   const width: string | null = node.attrs.width ?? null;
 
-  let displaySrc = src;
-  if (isElectron() && src && src.startsWith("assets/")) {
-    const projectDir = globalState().directory;
-    if (projectDir) {
-      displaySrc = `writeme://action@image${projectDir}/${src}`;
+  useEffect(() => {
+    if (!isElectron() || !src || !src.startsWith("assets/")) {
+      setObjectUrl(null);
+      setLoading(false);
+      return;
     }
-  }
+
+    const projectDir = globalState().directory;
+    if (!projectDir) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    let currentUrl: string | null = null;
+
+    const loadAsset = async () => {
+      try {
+        setLoading(true);
+        // Normalize path joining
+        const cleanProjectDir = projectDir.replace(/\/$/, "");
+        const cleanSrc = src.replace(/^\//, "");
+        const fullPath = `${cleanProjectDir}/${cleanSrc}`;
+        
+        const result = await window.electronAPI.fs.readBinaryFile(fullPath);
+        
+        if (!isMounted) return;
+        
+        if (!result || result.success === false || !result.data) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+
+        const ext = src.split(".").pop()?.toLowerCase();
+        const mimeType = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/png";
+        
+        const blob = new Blob([result.data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        currentUrl = url;
+        setObjectUrl(url);
+        setError(false);
+      } catch (e) {
+        console.error("Failed to load local asset", e);
+        if (isMounted) setError(true);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadAsset();
+
+    return () => {
+      isMounted = false;
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [src]);
+
+  // For local assets in Electron, don't use the raw 'src' as it will fail to load
+  const isLocalAsset = isElectron() && src && src.startsWith("assets/");
+  const displaySrc = isLocalAsset ? objectUrl : src;
 
   useEffect(() => {
     if (!selected) return;
@@ -116,15 +173,18 @@ const ImageView = (props: any) => {
             <span className="text-sm">Failed to load image</span>
           </div>
         )}
-        {!error && (
+        {!error && displaySrc && (
           <img
             src={displaySrc}
             alt={alt}
             className={`block w-full rounded cursor-pointer ${loading ? "opacity-0" : "opacity-100"}`}
             onLoad={() => setLoading(false)}
             onError={() => {
-              setLoading(false);
-              setError(true);
+              // Only trigger error if we actually had a valid-looking source
+              if (displaySrc) {
+                setLoading(false);
+                setError(true);
+              }
             }}
             onClick={() => setFullscreen(true)}
           />

@@ -46,6 +46,7 @@ import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
 import { Mermaid } from "./mermaid";
 import { LatexBlock } from "./latex-block";
+import { handlePasteImage } from "../extensions";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 
 export type CodeBlockFrameProps = {
@@ -810,6 +811,19 @@ const PastePlugin = (name: string) => {
         // Check if cursor is inside the code block
         if ($from.parent.type.name !== name) {
           return false;
+        }
+
+        // Try to handle image paste first
+        if (isElectron()) {
+          const items = event.clipboardData?.items;
+          if (items) {
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].type.startsWith("image/")) {
+                handlePasteImage(view);
+                return true;
+              }
+            }
+          }
         }
 
         // Prevent default paste behavior

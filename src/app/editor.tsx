@@ -25,7 +25,7 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
-import { createExtensions } from "./extensions";
+import { createExtensions, handlePasteImage } from "./extensions";
 import { YAML } from "@/lib/encoding";
 
 const getScrollContainer = () =>
@@ -143,6 +143,19 @@ const InnerEditor = (props: {
         return false;
       },
       handlePaste: (_, event) => {
+        // Handle image paste in Electron
+        if (isElectron()) {
+          const items = event.clipboardData?.items;
+          if (items) {
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].type.startsWith("image/")) {
+                handlePasteImage(editor);
+                return true;
+              }
+            }
+          }
+        }
+
         const cd = event.clipboardData;
         const text = cd?.getData("text/plain");
         if (text && text.startsWith("---") && props.note) {

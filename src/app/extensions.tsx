@@ -71,6 +71,42 @@ export function cleanPastedHTML(html: string): string {
   }
 }
 
+export const handlePasteImage = async (currentEditor: any) => {
+  if (!isElectron()) return false;
+  
+  const imageData = await window.electronAPI.notes.clipboardImage();
+  if (!imageData) return false;
+
+  const state = globalState();
+  const projectDir = state.directory;
+  const noteTitle = state.note?.title || "untitled";
+  
+  if (!projectDir) return false;
+
+  const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+  const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
+  
+  try {
+    await window.electronAPI.fs.mkdir(targetDir);
+    const dirContents = await window.electronAPI.fs.readDir(targetDir);
+    const index = dirContents.entries.filter((e: any) => e.type === "file").length + 1;
+    
+    // Default to png for clipboard images
+    const filename = `${index}.png`;
+    const absolutePath = `${targetDir}/${filename}`;
+    
+    const result = await window.electronAPI.fs.writeImage(absolutePath, imageData);
+    if (result.success) {
+      const src = `assets/${sanitizedTitle}/${filename}`;
+      currentEditor.chain().insertContent({ type: "image", attrs: { src } }).focus().run();
+      return true;
+    }
+  } catch (e) {
+    console.error("Failed to save pasted image", e);
+  }
+  return false;
+};
+
 export const handleImageFile = async (
   currentEditor: any,
   file: File,

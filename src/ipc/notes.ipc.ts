@@ -9,6 +9,11 @@ export const notesIpcHandler = async () => {
     const x = clipboard.readText("clipboard");
     return x;
   });
+  ipcMain.handle("notes:clipboardImage", async () => {
+    const image = clipboard.readImage();
+    if (image.isEmpty()) return null;
+    return image.toDataURL();
+  });
   ipcMain.handle("fs:chooseDirectory", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory", "createDirectory"],
@@ -99,6 +104,15 @@ export const notesIpcHandler = async () => {
         success: false,
         error: error.message,
       };
+    }
+  });
+
+  ipcMain.handle("fs:readBinaryFile", async (_, filePath: string) => {
+    try {
+      const buffer = await fs.readFile(filePath);
+      return { success: true, data: buffer };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   });
 

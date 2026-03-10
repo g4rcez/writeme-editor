@@ -1,29 +1,28 @@
 import {
-  app,
-  BrowserWindow,
-  dialog,
-  globalShortcut,
-  Menu,
-  nativeImage,
-  shell,
-  Tray,
-  ipcMain,
-  protocol,
-  net,
+    app,
+    BrowserWindow,
+    dialog,
+    globalShortcut,
+    ipcMain,
+    Menu,
+    nativeImage,
+    net,
+    shell,
+    Tray
 } from "electron";
-import { updateElectronApp, UpdateSourceType } from "update-electron-app";
-import path from "node:path";
 import started from "electron-squirrel-startup";
-import { notesIpcHandler } from "./ipc/notes.ipc";
-import { databaseIpcHandler } from "./ipc/database.ipc";
+import path from "node:path";
+import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { appIpcHandler } from "./ipc/app.ipc";
+import { databaseIpcHandler } from "./ipc/database.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
+import { notesIpcHandler } from "./ipc/notes.ipc";
 import { terminalIpcHandler } from "./ipc/terminal.ipc";
-import { handleWindowClose } from "./main-process/window-lifecycle";
-import { createQuickNoteWindow } from "./main-process/quicknote-window";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
+import { createQuickNoteWindow } from "./main-process/quicknote-window";
+import { handleWindowClose } from "./main-process/window-lifecycle";
 
 function registerAIHandlers() {
   console.log("Registering AI IPC handlers...");
@@ -267,17 +266,6 @@ async function main() {
   app.on("before-quit", () => void (isQuitting = true));
   app.on("will-quit", () => globalShortcut.unregisterAll());
   app.on("ready", () => {
-    protocol.handle("writeme", (request) => {
-      const url = request.url;
-      if (url.startsWith("writeme://action@image/")) {
-        const filePath = decodeURIComponent(
-          url.slice("writeme://action@image/".length),
-        );
-        return net.fetch("file://" + filePath);
-      }
-      return new Response("Not Found", { status: 404 });
-    });
-
     createWindow();
     createTray();
 
