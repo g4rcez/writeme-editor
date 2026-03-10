@@ -45,6 +45,7 @@ import { Flowchart } from "./flowchart";
 import { Graphviz } from "./graphviz";
 import { MathBlock } from "./math-block";
 import { Mermaid } from "./mermaid";
+import { LatexBlock } from "./latex-block";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 
 export type CodeBlockFrameProps = {
@@ -607,6 +608,9 @@ const CodeBlockAddons = ({
 }) => {
   if (language === "math" && code) {
     return <MathBlock code={code} />;
+  }
+  if (language === "latex" && code) {
+    return <LatexBlock code={code} />;
   }
   if (language === "mermaid" && code) {
     return (

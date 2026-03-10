@@ -14,3 +14,13 @@ vi.mock("use-typed-reducer", () => ({
 
 // Mock scrollIntoView
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
+
+// Mock Worker for MathJax
+class MockWorker {
+  onmessage = () => {};
+  postMessage = () => {};
+  terminate = () => {};
+  addEventListener = () => {};
+  removeEventListener = () => {};
+}
+(global as any).Worker = MockWorker;
