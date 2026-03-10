@@ -4,6 +4,18 @@ export type ContentWidth = "narrow" | "medium" | "wide";
 
 export type AlertType = "info" | "success" | "error";
 
+export type MediaSource = {
+  src: string;
+  type: "image" | "video" | "pdf";
+  title?: string;
+};
+
+export type MediaPreviewState = {
+  open: boolean;
+  sources: MediaSource[];
+  index: number;
+};
+
 export type UIStateAlert = {
   open: boolean;
   title?: string;
@@ -30,6 +42,7 @@ export type UISettings = {
   alert: UIStateAlert | null;
   prompt: UIStatePrompt | null;
   findReplace: { isOpen: boolean };
+  mediaPreview: MediaPreviewState;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -51,9 +64,10 @@ const initialState: UISettings = {
   sidebarOpen: persistedState.sidebarOpen ?? true,
   sidebarWidth: persistedState.sidebarWidth || 240,
   error: null,
-  alert: null,
-  prompt: null,
-  findReplace: { isOpen: false },
+  alert: persistedState.alert || null,
+  prompt: persistedState.prompt || null,
+  findReplace: persistedState.findReplace || { isOpen: false },
+  mediaPreview: { open: false, sources: [], index: 0 },
 };
 
 type Toggle<T> = T | ((prev: T) => T);
@@ -81,6 +95,15 @@ export const useUIStore = createGlobalReducer(
     openFindReplace: () => ({ findReplace: { isOpen: true } }),
     closeFindReplace: () => ({ findReplace: { isOpen: false } }),
     toggleFindReplace: () => ({ findReplace: { isOpen: !get.state().findReplace.isOpen } }),
+    setMediaPreview: (state: Partial<MediaPreviewState>) => ({
+      mediaPreview: { ...get.state().mediaPreview, ...state },
+    }),
+    openMediaPreview: (sources: MediaSource[], index = 0) => ({
+      mediaPreview: { open: true, sources, index },
+    }),
+    closeMediaPreview: () => ({
+      mediaPreview: { ...get.state().mediaPreview, open: false },
+    }),
   }),
   {
     interceptor: [
@@ -90,6 +113,7 @@ export const useUIStore = createGlobalReducer(
           alert: _alert,
           prompt: _prompt,
           findReplace: _findReplace,
+          mediaPreview: _mediaPreview,
           ...toPersist
         } = state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));

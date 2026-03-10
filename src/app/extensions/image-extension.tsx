@@ -1,5 +1,6 @@
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
+import { uiDispatch } from "@/store/ui.store";
 import { mergeAttributes } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
@@ -15,13 +16,11 @@ import { TextAlignLeftIcon } from "@phosphor-icons/react/dist/csr/TextAlignLeft"
 import { TextAlignRightIcon } from "@phosphor-icons/react/dist/csr/TextAlignRight";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 
 const ImageView = (props: any) => {
   const { node, updateAttributes, deleteNode, selected } = props;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
@@ -112,14 +111,10 @@ const ImageView = (props: any) => {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [selected, width]);
 
-  useEffect(() => {
-    if (!fullscreen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
+  const handleOpenPreview = () => {
+    if (!displaySrc) return;
+    uiDispatch.openMediaPreview([{ src: displaySrc, type: "image", title: alt }]);
+  };
 
   const makeResizeHandler =
     (corner: "nw" | "ne" | "sw" | "se"): React.MouseEventHandler =>
@@ -186,7 +181,7 @@ const ImageView = (props: any) => {
                 setError(true);
               }
             }}
-            onClick={() => setFullscreen(true)}
+            onClick={handleOpenPreview}
           />
         )}
 
@@ -217,7 +212,7 @@ const ImageView = (props: any) => {
             <div className="mx-0.5 w-px bg-white/20" />
             <button
               className="p-1 text-white rounded hover:bg-white/20"
-              onClick={() => setFullscreen(true)}
+              onClick={handleOpenPreview}
               title="Expand"
             >
               <ArrowsOutIcon size={14} />
@@ -270,22 +265,6 @@ const ImageView = (props: any) => {
         placeholder="Add caption..."
         className="mt-2 w-full max-w-sm text-sm text-center bg-transparent border-none outline-none focus:border-b text-muted-foreground placeholder:text-muted-foreground/50 focus:border-muted-foreground/30"
       />
-
-      {fullscreen &&
-        createPortal(
-          <div
-            className="flex fixed inset-0 z-50 justify-center items-center bg-black/80"
-            onClick={() => setFullscreen(false)}
-          >
-            <img
-              src={displaySrc}
-              alt={alt}
-              className="rounded shadow-2xl max-h-[90vh] max-w-[90vw]"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>,
-          document.body,
-        )}
     </NodeViewWrapper>
   );
 };
