@@ -4,6 +4,17 @@ export const darkTheme: typeof defaultDarkTheme = {
   ...defaultDarkTheme,
   spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
   zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
+  custom: {
+    "json-bg": "hsla(233, 27%, 18%)",
+    "json-key": "hsla(213, 90%, 73%)",
+    "json-string": "hsla(94, 57%, 61%)",
+    "json-number": "hsla(25, 100%, 70%)",
+    "json-boolean": "hsla(233, 80%, 86%)",
+    "json-null": "hsla(233, 23%, 44%)",
+    "json-separator": "hsla(233, 80%, 86%)",
+    "json-hover": "hsla(233, 27%, 21%)",
+    "json-caret": "hsla(233, 23%, 44%)",
+  },
   colors: {
   ...defaultDarkTheme.colors,
     foreground: "hsla(220, 20%, 96%)",

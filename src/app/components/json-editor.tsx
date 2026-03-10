@@ -3,9 +3,33 @@ import { EditorView, basicSetup } from "codemirror";
 import { Compartment, EditorState } from "@codemirror/state";
 import { json } from "@codemirror/lang-json";
 import { tokyoNightStorm } from "@uiw/codemirror-theme-tokyo-night-storm";
+import { createTheme } from "@uiw/codemirror-themes";
+import { tags as t } from "@lezer/highlight";
 import { Button } from "@g4rcez/components";
 import { BracketsCurlyIcon } from "@phosphor-icons/react/dist/csr/BracketsCurly";
 import { useGlobalStore } from "@/store/global.store";
+
+const jsonLightTheme = createTheme({
+  theme: "light",
+  settings: {
+    background: "hsla(0, 0%, 100%)",
+    foreground: "hsla(220, 30%, 15%)",
+    caret: "hsla(213, 100%, 35%)",
+    selection: "hsla(220, 15%, 94%)",
+    selectionMatch: "hsla(220, 15%, 94%)",
+    lineHighlight: "hsla(220, 15%, 94%)",
+    gutterBackground: "hsla(0, 0%, 100%)",
+    gutterForeground: "hsla(220, 10%, 55%)",
+  },
+  styles: [
+    { tag: t.propertyName, color: "hsla(213, 100%, 35%)" },
+    { tag: t.string, color: "hsla(150, 70%, 28%)" },
+    { tag: t.number, color: "hsla(25, 90%, 45%)" },
+    { tag: [t.bool, t.keyword], color: "hsla(270, 55%, 40%)" },
+    { tag: t.null, color: "hsla(220, 10%, 55%)" },
+    { tag: [t.punctuation, t.bracket], color: "hsla(220, 10%, 35%)" },
+  ],
+});
 
 type Props = {
   value: string;
@@ -30,7 +54,7 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
         extensions: [
           basicSetup,
           json(),
-          themeCompartment.current.of(isDark ? tokyoNightStorm : []),
+          themeCompartment.current.of(isDark ? tokyoNightStorm : jsonLightTheme),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChange(update.state.doc.toString());
@@ -61,7 +85,7 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
       effects: themeCompartment.current.reconfigure(
-        isDark ? tokyoNightStorm : [],
+        isDark ? tokyoNightStorm : jsonLightTheme,
       ),
     });
   }, [isDark]);

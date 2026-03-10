@@ -24,6 +24,17 @@ export default {
           "muted-fg-60": "hsl(var(--muted-foreground) / 0.6)",
           "muted-50": "hsl(var(--muted) / 0.5)",
         },
+        json: {
+          bg: "var(--json-bg)",
+          key: "var(--json-key)",
+          string: "var(--json-string)",
+          number: "var(--json-number)",
+          boolean: "var(--json-boolean)",
+          null: "var(--json-null)",
+          separator: "var(--json-separator)",
+          hover: "var(--json-hover)",
+          caret: "var(--json-caret)",
+        },
         typography: {
           paragraph: {
             DEFAULT: "hsla(var(--foreground))",

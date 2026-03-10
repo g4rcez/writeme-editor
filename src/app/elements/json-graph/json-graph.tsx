@@ -29,7 +29,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { darkTheme } from "@/app/styles/dark";
 import { lightTheme } from "@/app/styles/light";
 import { parseHslaToHex } from "@/lib/editor-utils";
-import { JsonEditor } from "@/app/components/json-editor";
+import { JsonInspectorPanel } from "@/app/components/json-inspector-panel";
 
 const ROOT_NAME = "$";
 
@@ -369,10 +369,10 @@ const JsonGraphInner = ({
             />
           </ReactFlow>
         ) : (
-          <JsonEditor
+          <JsonInspectorPanel
             value={textValue}
             onChange={onTextChange}
-            className="w-full h-full mt-4"
+            className="w-full h-full"
           />
         )}
       </div>

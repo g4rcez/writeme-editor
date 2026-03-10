@@ -1,4 +1,4 @@
-import { JsonEditor } from "@/app/components/json-editor";
+import { JsonInspectorPanel } from "@/app/components/json-inspector-panel";
 import { Dates } from "@/lib/dates";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
 import { useGlobalStore } from "@/store/global.store";
@@ -55,7 +55,7 @@ export const InspectJsonDialog = () => {
       open={state.inspectJsonDialog}
     >
       <div className="flex flex-col gap-4">
-        <JsonEditor
+        <JsonInspectorPanel
           value={json}
           onChange={setJson}
           className="overflow-hidden h-96 rounded border border-floating-border"

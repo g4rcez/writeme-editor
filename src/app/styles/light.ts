@@ -8,6 +8,17 @@ export const lightTheme: typeof defaultLightTheme = {
     sm: "0.875rem",
     lg: "1.125rem",
   },
+  custom: {
+    "json-bg": "hsla(0, 0%, 100%)",
+    "json-key": "hsla(213, 100%, 35%)",
+    "json-string": "hsla(150, 70%, 28%)",
+    "json-number": "hsla(25, 90%, 45%)",
+    "json-boolean": "hsla(270, 55%, 40%)",
+    "json-null": "hsla(220, 10%, 55%)",
+    "json-separator": "hsla(220, 10%, 35%)",
+    "json-hover": "hsla(220, 15%, 94%)",
+    "json-caret": "hsla(220, 10%, 55%)",
+  },
   colors: {
     ...defaultLightTheme.colors,
     foreground: "hsla(220, 30%, 15%)",
