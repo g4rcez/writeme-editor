@@ -2,28 +2,29 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { LatexBlock } from "./latex-block";
 
-// Mock MathJax globally
-const mockTypesetPromise = vi.fn().mockResolvedValue(undefined);
+vi.mock("katex", () => ({
+  default: {
+    render: vi.fn(),
+  },
+}));
+
+vi.mock("katex/dist/katex.min.css", () => ({}));
 
 describe("LatexBlock", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (window as any).MathJax = {
-      typesetPromise: mockTypesetPromise,
-    };
+  beforeEach(() => vi.clearAllMocks());
+
+  it("renders the container with aria-label", () => {
+    render(<LatexBlock code="E = mc^2" />);
+    expect(screen.getByLabelText("LaTeX Formula")).toBeInTheDocument();
   });
 
-  it("renders the latex code in a display math block", () => {
-    const code = "E = mc^2";
-    render(<LatexBlock code={code} />);
-    
-    expect(screen.getByText(/E = mc\^2/)).toBeInTheDocument();
-  });
-
-  it("calls typesetPromise if MathJax is present", async () => {
-    const code = "\\int_0^1 x dx";
-    render(<LatexBlock code={code} />);
-
-    expect(mockTypesetPromise).toHaveBeenCalled();
+  it("calls katex.render with displayMode on mount", async () => {
+    const katex = await import("katex");
+    render(<LatexBlock code="x^2 + y^2 = z^2" />);
+    expect(katex.default.render).toHaveBeenCalledWith(
+      "x^2 + y^2 = z^2",
+      expect.any(HTMLElement),
+      expect.objectContaining({ displayMode: true }),
+    );
   });
 });

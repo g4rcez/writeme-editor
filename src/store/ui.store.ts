@@ -43,6 +43,7 @@ export type UISettings = {
   prompt: UIStatePrompt | null;
   findReplace: { isOpen: boolean };
   mediaPreview: MediaPreviewState;
+  tasksDialog: { isOpen: boolean };
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -59,15 +60,16 @@ const loadPersistedState = (): Partial<UISettings> => {
 const persistedState = loadPersistedState();
 
 const initialState: UISettings = {
-  contentWidth: persistedState.contentWidth || "medium",
-  focusMode: persistedState.focusMode || false,
-  sidebarOpen: persistedState.sidebarOpen ?? true,
-  sidebarWidth: persistedState.sidebarWidth || 240,
   error: null,
   alert: persistedState.alert || null,
   prompt: persistedState.prompt || null,
-  findReplace: persistedState.findReplace || { isOpen: false },
+  focusMode: persistedState.focusMode || false,
+  sidebarOpen: persistedState.sidebarOpen ?? true,
+  sidebarWidth: persistedState.sidebarWidth || 240,
   mediaPreview: { open: false, sources: [], index: 0 },
+  tasksDialog: { isOpen: false },
+  contentWidth: persistedState.contentWidth || "medium",
+  findReplace: persistedState.findReplace || { isOpen: false },
 };
 
 type Toggle<T> = T | ((prev: T) => T);
@@ -104,6 +106,8 @@ export const useUIStore = createGlobalReducer(
     closeMediaPreview: () => ({
       mediaPreview: { ...get.state().mediaPreview, open: false },
     }),
+    openTasksDialog: () => ({ tasksDialog: { isOpen: true } }),
+    closeTasksDialog: () => ({ tasksDialog: { isOpen: false } }),
   }),
   {
     interceptor: [
@@ -114,6 +118,7 @@ export const useUIStore = createGlobalReducer(
           prompt: _prompt,
           findReplace: _findReplace,
           mediaPreview: _mediaPreview,
+          tasksDialog: _tasksDialog,
           ...toPersist
         } = state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
@@ -123,7 +128,6 @@ export const useUIStore = createGlobalReducer(
   },
 );
 
-export const uiState = useUIStore.getState;
 export const uiDispatch = useUIStore.dispatchers;
 
 export const contentWidthClasses: Record<ContentWidth, string> = {

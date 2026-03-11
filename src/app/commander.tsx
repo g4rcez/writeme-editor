@@ -5,6 +5,7 @@ import { utf8ToBase64 } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
+import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -111,6 +112,18 @@ export const Commander = () => {
             }, 50);
           },
         },
+        ...(editorGlobalRef.current
+          ? [
+              {
+                title: "View Tasks",
+                type: "shortcut" as const,
+                action: (args: { setOpen: (v: boolean) => void }) => {
+                  uiDispatch.openTasksDialog();
+                  args.setOpen(false);
+                },
+              },
+            ]
+          : []),
         ...noteGroup,
       ],
     };

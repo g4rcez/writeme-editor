@@ -616,7 +616,7 @@ const CodeBlockAddons = ({
   if (language === "mermaid" && code) {
     return (
       <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="pt-4 border-t border-card-border">
           <Mermaid chart={code} />
         </div>
       </div>
@@ -625,7 +625,7 @@ const CodeBlockAddons = ({
   if (language === "graphviz" && code) {
     return (
       <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="pt-4 border-t border-card-border">
           <Graphviz dot={code} />
         </div>
       </div>
@@ -634,7 +634,7 @@ const CodeBlockAddons = ({
   if (language === "flowchart" && code) {
     return (
       <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="pt-4 border-t border-card-border">
           <Flowchart code={code} />
         </div>
       </div>

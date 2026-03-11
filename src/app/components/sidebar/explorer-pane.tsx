@@ -5,6 +5,7 @@ import {
   useGlobalStore,
 } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
+import { useUIStore, type MediaSource } from "@/store/ui.store";
 import { type TreeNode } from "@/types/tree";
 import { Button } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
@@ -14,8 +15,29 @@ import { useNavigate } from "react-router-dom";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView } from "../tree-view";
 
+const MEDIA_EXTENSION_MAP = {
+  ".bmp": { mediaType: "image", mimeType: "image/bmp" },
+  ".gif": { mediaType: "image", mimeType: "image/gif" },
+  ".mp4": { mediaType: "video", mimeType: "video/mp4" },
+  ".ogg": { mediaType: "video", mimeType: "video/ogg" },
+  ".png": { mediaType: "image", mimeType: "image/png" },
+  ".jpg": { mediaType: "image", mimeType: "image/jpeg" },
+  ".jpeg": { mediaType: "image", mimeType: "image/jpeg" },
+  ".webm": { mediaType: "video", mimeType: "video/webm" },
+  ".webp": { mediaType: "image", mimeType: "image/webp" },
+  ".pdf": { mediaType: "pdf", mimeType: "application/pdf" },
+  ".svg": { mediaType: "image", mimeType: "image/svg+xml" },
+  ".mov": { mediaType: "video", mimeType: "video/quicktime" },
+} satisfies Record<
+  string,
+  { mediaType: MediaSource["type"]; mimeType: string }
+>;
+
+type EXTENSION_TYPE = keyof typeof MEDIA_EXTENSION_MAP;
+
 export const ExplorerPane = () => {
   const [state] = useGlobalStore();
+  const [, uiDispatch] = useUIStore();
   const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const navigate = useNavigate();
 
@@ -44,13 +66,52 @@ export const ExplorerPane = () => {
       let note = allNotes.find((n) => n.filePath === node.path);
       if (!note) {
         const result = await window.electronAPI.fs.readFile(node.path);
-        note = Note.new(node.name.replace(".json", ""), result.content || "", NoteType.json);
+        note = Note.new(
+          node.name.replace(".json", ""),
+          result.content || "",
+          NoteType.json,
+        );
         note.filePath = node.path;
         await repositories.notes.save(note);
         const updatedNotes = await repositories.notes.getAll();
         globalDispatch.notes(updatedNotes);
       }
       navigate(`/note/${note.id}`);
+    } else if (
+      node.type === "file" &&
+      node.extension &&
+      MEDIA_EXTENSION_MAP[node.extension as EXTENSION_TYPE]
+    ) {
+      const parentDir = node.path.substring(0, node.path.lastIndexOf("/"));
+      const dirResult = await window.electronAPI.fs.readDir(parentDir);
+      const siblingMediaFiles = (dirResult?.entries ?? []).filter(
+        (entry) =>
+          entry.type === "file" &&
+          entry.extension &&
+          MEDIA_EXTENSION_MAP[entry.extension as EXTENSION_TYPE],
+      );
+      const sources = (
+        await Promise.all(
+          siblingMediaFiles.map(async (sibling) => {
+            const { mediaType, mimeType } =
+              MEDIA_EXTENSION_MAP[sibling.extension! as EXTENSION_TYPE];
+            const result = await window.electronAPI.fs.readBinaryFile(
+              sibling.path,
+            );
+            if (!result || result.success === false || !result.data)
+              return null;
+            const blobUrl = URL.createObjectURL(
+              new Blob([result.data as any as ArrayBuffer], { type: mimeType }),
+            );
+            return { src: blobUrl, type: mediaType, title: sibling.name };
+          }),
+        )
+      ).filter((s): s is NonNullable<typeof s> => s !== null);
+      if (sources.length === 0) return;
+      const clickedIndex = siblingMediaFiles.findIndex(
+        (entry) => entry.path === node.path,
+      );
+      uiDispatch.openMediaPreview(sources, Math.max(0, clickedIndex));
     }
   };
 

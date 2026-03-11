@@ -16,6 +16,9 @@ import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
+import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
+import { FilmStripIcon } from "@phosphor-icons/react/dist/csr/FilmStrip";
+import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { Tooltip, Button } from "@g4rcez/components";
 import type { TreeNode, FlattenedNode } from "@/types/tree";
 import { NoteType, type Note } from "@/store/note";
@@ -30,6 +33,18 @@ interface FileExtensionConfig {
 const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
   ".md": { icon: FileTextIcon, iconClass: "text-primary size-4", selectable: true },
   ".json": { icon: BracketsCurlyIcon, iconClass: "text-warn size-4", selectable: true },
+  ".png": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".jpg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".jpeg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".gif": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".webp": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".svg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".bmp": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
+  ".mp4": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
+  ".webm": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
+  ".ogg": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
+  ".mov": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
+  ".pdf": { icon: FilePdfIcon, iconClass: "text-red-400 size-4", selectable: true },
 };
 
 interface TreeNodeItemProps {

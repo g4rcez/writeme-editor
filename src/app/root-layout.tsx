@@ -18,6 +18,7 @@ import { DirectoryBrowserDialog } from "@/app/components/directory-browser-dialo
 import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { InspectJsonDialog } from "@/app/components/inspect-json-dialog";
 import { MediaPreview } from "@/app/components/media-preview";
+import { TasksDialog } from "@/app/components/tasks-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
@@ -81,6 +82,7 @@ export const RootLayout = () => {
           <ReadItLaterDialog />
           <DirectoryBrowserDialog />
           <InspectJsonDialog />
+          <TasksDialog />
           <MediaPreview />
         </Fragment>
       ) : null}
