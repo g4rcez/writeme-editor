@@ -1,4 +1,5 @@
-import { Checkbox, Modal, Input, Textarea, Button } from "@g4rcez/components";
+import { editorGlobalRef } from "@/app/editor-global-ref";
+import { useUIStore } from "@/store/ui.store";
 import {
   DndContext,
   type DragEndEvent,
@@ -6,10 +7,10 @@ import {
   DragOverlay,
   PointerSensor,
   closestCorners,
-  useSensor,
-  useSensors,
   defaultDropAnimationSideEffects,
   useDroppable,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -17,13 +18,17 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DotsSixVertical, Plus } from "@phosphor-icons/react";
-import { Fragment } from "prosemirror-model";
+import { Button, Checkbox, Input, Modal, Textarea } from "@g4rcez/components";
+import { DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "motion/react";
 import { type Node as ProseMirrorNode } from "prosemirror-model";
-import { type ReactNode, useEffect, useState, useCallback } from "react";
-import { motion } from "motion/react";
-import { editorGlobalRef } from "@/app/editor-global-ref";
-import { useUIStore } from "@/store/ui.store";
+import React, {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 export type Card = {
   id: string;
@@ -120,7 +125,9 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
     }
   });
 
-  const filtered = stacks.filter((s) => s.cards.length > 0 || (s.pos !== undefined && s.pos > 0));
+  const filtered = stacks.filter(
+    (s) => s.cards.length > 0 || (s.pos !== undefined && s.pos > 0),
+  );
 
   for (let si = 0; si < filtered.length; si++) {
     const stack = filtered[si]!;
@@ -139,17 +146,25 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
 
 // ---- ProseMirror reorder helpers ----
 
-function findInsertPosForStack(doc: ProseMirrorNode, stack: Stack, insertBeforeCard?: Card): number {
+function findInsertPosForStack(
+  doc: ProseMirrorNode,
+  stack: Stack,
+  insertBeforeCard?: Card,
+): number {
   if (insertBeforeCard?.pos !== undefined) {
     return insertBeforeCard.pos;
   }
 
   let lastRelevantPos = -1;
-  doc.nodesBetween(stack.pos ?? 0, stack.endPos ?? doc.content.size, (node, pos) => {
-    if (node.type.name === "taskItem") {
-      lastRelevantPos = pos + node.nodeSize;
-    }
-  });
+  doc.nodesBetween(
+    stack.pos ?? 0,
+    stack.endPos ?? doc.content.size,
+    (node, pos) => {
+      if (node.type.name === "taskItem") {
+        lastRelevantPos = pos + node.nodeSize;
+      }
+    },
+  );
 
   if (lastRelevantPos !== -1) return lastRelevantPos;
 
@@ -173,34 +188,46 @@ export function moveTaskItemBetweenStacks(
   insertBeforeCard?: Card,
 ) {
   if (card.pos === undefined || card.endPos === undefined) return;
-  
-  editor.chain().command(({ tr, state }) => {
-    // Re-verify positions in current transaction state
-    const slice = state.doc.slice(card.pos!, card.endPos!);
-    const insertPos = findInsertPosForStack(state.doc, targetStack, insertBeforeCard);
 
-    tr.delete(card.pos!, card.endPos!);
-    const mappedInsertPos = tr.mapping.map(insertPos);
-    
-    const $insertPos = tr.doc.resolve(mappedInsertPos);
-    const isInTaskList = $insertPos.parent.type.name === "taskList";
+  editor
+    .chain()
+    .command(({ tr, state }) => {
+      // Re-verify positions in current transaction state
+      const slice = state.doc.slice(card.pos!, card.endPos!);
+      const insertPos = findInsertPosForStack(
+        state.doc,
+        targetStack,
+        insertBeforeCard,
+      );
 
-    if (isInTaskList) {
-      tr.insert(mappedInsertPos, slice.content);
-    } else {
-      const firstNode = slice.content.firstChild;
-      if (firstNode && firstNode.type.name === "taskItem") {
-        const taskList = state.schema.nodes.taskList.create(null, [firstNode]);
-        tr.insert(mappedInsertPos, taskList);
-        if (slice.content.childCount > 1) {
-          tr.insert(mappedInsertPos + taskList.nodeSize, slice.content.cut(firstNode.nodeSize));
-        }
-      } else {
+      tr.delete(card.pos!, card.endPos!);
+      const mappedInsertPos = tr.mapping.map(insertPos);
+
+      const $insertPos = tr.doc.resolve(mappedInsertPos);
+      const isInTaskList = $insertPos.parent.type.name === "taskList";
+
+      if (isInTaskList) {
         tr.insert(mappedInsertPos, slice.content);
+      } else {
+        const firstNode = slice.content.firstChild;
+        if (firstNode && firstNode.type.name === "taskItem") {
+          const taskList = state.schema.nodes.taskList?.create(null, [
+            firstNode,
+          ]);
+          if (taskList) tr.insert(mappedInsertPos, taskList);
+          if (slice.content.childCount > 1) {
+            tr.insert(
+              mappedInsertPos + (taskList?.nodeSize ?? 0),
+              slice.content.cut(firstNode.nodeSize),
+            );
+          }
+        } else {
+          tr.insert(mappedInsertPos, slice.content);
+        }
       }
-    }
-    return true;
-  }).run();
+      return true;
+    })
+    .run();
 }
 
 export function updateTaskContent(
@@ -208,29 +235,44 @@ export function updateTaskContent(
   card: Card,
   updates: { title?: string; description?: string },
 ) {
-  editor.chain().command(({ tr, state }) => {
-    if (updates.title !== undefined && card.titlePos !== undefined) {
-      const node = state.doc.nodeAt(card.titlePos);
-      if (node && node.type.name === "paragraph") {
-        tr.insertText(updates.title, card.titlePos + 1, card.titlePos + node.nodeSize - 1);
-      }
-    }
-
-    if (updates.description !== undefined) {
-      if (card.descriptionPos !== undefined) {
-        const node = state.doc.nodeAt(card.descriptionPos);
+  editor
+    .chain()
+    .command(({ tr, state }) => {
+      if (updates.title !== undefined && card.titlePos !== undefined) {
+        const node = state.doc.nodeAt(card.titlePos);
         if (node && node.type.name === "paragraph") {
-          const mappedDescPos = tr.mapping.map(card.descriptionPos);
-          tr.insertText(updates.description, mappedDescPos + 1, mappedDescPos + node.nodeSize - 1);
+          tr.insertText(
+            updates.title,
+            card.titlePos + 1,
+            card.titlePos + node.nodeSize - 1,
+          );
         }
-      } else {
-        const descriptionNode = state.schema.nodes.paragraph.create(null, state.schema.text(updates.description));
-        const insertPos = card.endPos ?? (card.pos! + (card.nodeSize ?? 0));
-        tr.insert(tr.mapping.map(insertPos), descriptionNode);
       }
-    }
-    return true;
-  }).run();
+
+      if (updates.description !== undefined) {
+        if (card.descriptionPos !== undefined) {
+          const node = state.doc.nodeAt(card.descriptionPos);
+          if (node && node.type.name === "paragraph") {
+            const mappedDescPos = tr.mapping.map(card.descriptionPos);
+            tr.insertText(
+              updates.description,
+              mappedDescPos + 1,
+              mappedDescPos + node.nodeSize - 1,
+            );
+          }
+        } else {
+          const descriptionNode = state.schema.nodes.paragraph?.create(
+            null,
+            state.schema.text(updates.description),
+          );
+          const insertPos = card.endPos ?? card.pos! + (card.nodeSize ?? 0);
+          if (descriptionNode)
+            tr.insert(tr.mapping.map(insertPos), descriptionNode);
+        }
+      }
+      return true;
+    })
+    .run();
 }
 
 export function addTaskToStack(
@@ -238,33 +280,38 @@ export function addTaskToStack(
   stack: Stack,
   task: { title: string; description?: string },
 ) {
-  editor.chain().command(({ tr, state }) => {
-    const taskItem = state.schema.nodes.taskItem.create(
-      { checked: false },
-      state.schema.nodes.paragraph.create(null, state.schema.text(task.title)),
-    );
+  editor
+    .chain()
+    .command(({ tr, state }) => {
+      const taskItem = state.schema.nodes.taskItem?.create(
+        { checked: false },
+        state.schema.nodes.paragraph?.create(
+          null,
+          state.schema.text(task.title),
+        ),
+      );
+      const insertPos = findInsertPosForStack(state.doc, stack);
+      const $insertPos = state.doc.resolve(insertPos);
+      const isInTaskList = $insertPos.parent.type.name === "taskList";
+      if (isInTaskList && taskItem) {
+        tr.insert(insertPos, taskItem);
+      } else {
+        const taskList = state.schema.nodes.taskList?.create(null, taskItem);
+        if (taskList) tr.insert(insertPos, taskList);
+      }
 
-    const insertPos = findInsertPosForStack(state.doc, stack);
-    const $insertPos = state.doc.resolve(insertPos);
-    const isInTaskList = $insertPos.parent.type.name === "taskList";
-
-    if (isInTaskList) {
-      tr.insert(insertPos, taskItem);
-    } else {
-      const taskList = state.schema.nodes.taskList.create(null, taskItem);
-      tr.insert(insertPos, taskList);
-    }
-
-    if (task.description) {
-      const descPos = tr.mapping.map(insertPos) + taskItem.nodeSize;
-      const descriptionNode = state.schema.nodes.paragraph.create(null, state.schema.text(task.description));
-      tr.insert(descPos, descriptionNode);
-    }
-    return true;
-  }).run();
+      if (task.description) {
+        const descPos = tr.mapping.map(insertPos) + (taskItem?.nodeSize ?? 0);
+        const descriptionNode = state.schema.nodes.paragraph?.create(
+          null,
+          state.schema.text(task.description),
+        );
+        if (descriptionNode) tr.insert(descPos, descriptionNode);
+      }
+      return true;
+    })
+    .run();
 }
-
-// ---- New Task Modal ----
 
 type NewTaskModalProps = {
   isOpen: boolean;
@@ -273,7 +320,12 @@ type NewTaskModalProps = {
   stackTitle: string;
 };
 
-const NewTaskModal = ({ isOpen, onClose, onAdd, stackTitle }: NewTaskModalProps) => {
+const NewTaskModal = ({
+  isOpen,
+  onClose,
+  onAdd,
+  stackTitle,
+}: NewTaskModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -295,21 +347,17 @@ const NewTaskModal = ({ isOpen, onClose, onAdd, stackTitle }: NewTaskModalProps)
       <div className="flex flex-col gap-4">
         <Input
           autoFocus
+          hiddenLabel
           title="Title"
-          placeholder="What needs to be done?"
           value={title}
+          placeholder="What needs to be done?"
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
         />
-        <Textarea
-          title="Description (optional)"
-          placeholder="Add more details..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="min-h-[100px]"
-        />
         <div className="flex justify-end gap-2 mt-2">
-          <Button theme="ghost-muted" onClick={onClose}>Cancel</Button>
+          <Button theme="ghost-muted" onClick={onClose}>
+            Cancel
+          </Button>
           <Button theme="primary" onClick={handleAdd} disabled={!title.trim()}>
             Add Task
           </Button>
@@ -324,13 +372,24 @@ const NewTaskModal = ({ isOpen, onClose, onAdd, stackTitle }: NewTaskModalProps)
 type TaskCardProps = {
   card: Card;
   onToggle?: (card: Card) => void;
-  onUpdate?: (card: Card, updates: { title?: string; description?: string }) => void;
+  onUpdate?: (
+    card: Card,
+    updates: { title?: string; description?: string },
+  ) => void;
   isDragging?: boolean;
   isOverlay?: boolean;
 };
 
-const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardProps) => {
-  const [editingField, setEditingField] = useState<"title" | "description" | null>(null);
+const TaskCard = ({
+  card,
+  onToggle,
+  onUpdate,
+  isDragging,
+  isOverlay,
+}: TaskCardProps) => {
+  const [editingField, setEditingField] = useState<
+    "title" | "description" | null
+  >(null);
   const [tempTitle, setTitle] = useState(card.title);
   const [tempDesc, setDescription] = useState(card.description);
 
@@ -342,7 +401,10 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
   const handleSave = () => {
     if (editingField === "title" && tempTitle !== card.title) {
       onUpdate?.(card, { title: tempTitle });
-    } else if (editingField === "description" && tempDesc !== card.description) {
+    } else if (
+      editingField === "description" &&
+      tempDesc !== card.description
+    ) {
       onUpdate?.(card, { description: tempDesc });
     }
     setEditingField(null);
@@ -356,7 +418,7 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
     >
       <div className="flex gap-2 items-start">
         <div className="mt-1 shrink-0 opacity-40 group-hover:opacity-70 transition-opacity">
-          <DotsSixVertical className="size-4" />
+          <DotsSixVerticalIcon className="size-4" />
         </div>
         {!isOverlay && (
           <Checkbox
@@ -365,7 +427,10 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
             onChange={() => onToggle?.(card)}
           />
         )}
-        <div className="flex-1 min-w-0" onPointerDown={(e) => e.stopPropagation()}>
+        <div
+          className="flex-1 min-w-0"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           {editingField === "title" ? (
             <Input
               autoFocus
@@ -385,7 +450,9 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
             <span
               onClick={() => setEditingField("title")}
               className={`text-sm font-medium leading-snug break-words cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded px-1 -mx-1 transition-colors ${
-                card.checked ? "line-through text-foreground/50" : "text-foreground"
+                card.checked
+                  ? "line-through text-foreground/50"
+                  : "text-foreground"
               }`}
             >
               {card.title || "Untitled Task"}
@@ -398,10 +465,12 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
           <Textarea
             autoFocus
             value={tempDesc}
-            onChange={(e) => setDescription(e.target.value)}
             onBlur={handleSave}
             placeholder="Add description..."
-            onKeyDown={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setDescription(e.target.value)
+            }
+            onKeyDown={(e: any) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave();
               if (e.key === "Escape") {
                 setDescription(card.description);
@@ -425,12 +494,13 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
   );
 };
 
-// ---- SortableCard component ----
-
 type SortableCardProps = {
   card: Card;
   onToggle: (card: Card) => void;
-  onUpdate: (card: Card, updates: { title?: string; description?: string }) => void;
+  onUpdate: (
+    card: Card,
+    updates: { title?: string; description?: string },
+  ) => void;
 };
 
 function SortableCard({ card, onToggle, onUpdate }: SortableCardProps) {
@@ -449,13 +519,13 @@ function SortableCard({ card, onToggle, onUpdate }: SortableCardProps) {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-    >
-      <TaskCard card={card} onToggle={onToggle} onUpdate={onUpdate} isDragging={isDragging} />
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TaskCard
+        card={card}
+        onToggle={onToggle}
+        onUpdate={onUpdate}
+        isDragging={isDragging}
+      />
     </div>
   );
 }
@@ -472,15 +542,7 @@ type DroppableColumnProps = {
   children: ReactNode;
 };
 
-function DroppableColumn({
-  stack,
-  index,
-  activeId,
-  overColumnIndex,
-  activeColumnIndex,
-  onAddTask,
-  children,
-}: DroppableColumnProps) {
+function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `stack-${stack.pos}`,
   });
@@ -514,7 +576,7 @@ function DroppableColumn({
           className="p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 text-foreground/50 transition-colors"
           title="Add task"
         >
-          <Plus className="size-3.5" />
+          <PlusIcon className="size-3.5" />
         </button>
       </div>
       <SortableContext
@@ -524,38 +586,40 @@ function DroppableColumn({
       >
         <div className="flex flex-col gap-2 min-h-[150px]">
           {children}
-          {stack.cards.length === 0 && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 ${
-                isOver
-                  ? "border-primary bg-primary/10 text-primary scale-[0.98]"
-                  : "border-neutral-200 dark:border-neutral-700 text-foreground/20"
-              }`}
-            >
+          <AnimatePresence propagate>
+            {stack.cards.length === 0 && (
               <motion.div
-                animate={isOver ? { y: [0, -4, 0] } : {}}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                className={`p-2 rounded-full mb-2 transition-colors ${
-                  isOver ? "bg-primary/20" : "bg-neutral-100 dark:bg-neutral-800"
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 ${
+                  isOver
+                    ? "border-primary bg-primary/10 text-primary scale-[0.98]"
+                    : "border-neutral-200 dark:border-neutral-700 text-foreground/20"
                 }`}
               >
-                <DotsSixVertical className="size-5" />
+                <motion.div
+                  animate={isOver ? { y: [0, -4, 0] } : {}}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className={`p-2 rounded-full mb-2 transition-colors ${
+                    isOver
+                      ? "bg-primary/20"
+                      : "bg-neutral-100 dark:bg-neutral-800"
+                  }`}
+                >
+                  <DotsSixVerticalIcon className="size-5" />
+                </motion.div>
+                <span className="text-bold text-[10px] uppercase tracking-widest text-center px-4">
+                  {isOver ? "Release to drop" : "Empty Column"}
+                </span>
               </motion.div>
-              <span className="text-bold text-[10px] uppercase tracking-widest text-center px-4">
-                {isOver ? "Release to drop" : "Empty Column"}
-              </span>
-            </motion.div>
-          )}
+            )}
+          </AnimatePresence>
         </div>
       </SortableContext>
     </div>
   );
 }
-
-// ---- Main dialog ----
 
 export const TasksDialog = () => {
   const [uiState, uiDispatch] = useUIStore();
@@ -563,23 +627,27 @@ export const TasksDialog = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [newTaskStack, setNewTaskStack] = useState<Stack | null>(null);
+  const [x, setX] = useState(0);
 
-  const onClose = () => uiDispatch.closeTasksDialog();
+  const onClose = () => {
+    uiDispatch.closeTasksDialog();
+    setX((prev) => prev + 1);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  const findCardLocation = useCallback((
-    id: string,
-    currentStacks = stacks,
-  ): { si: number; ci: number } | null => {
-    for (let si = 0; si < currentStacks.length; si++) {
-      const ci = currentStacks[si]!.cards.findIndex((c) => c.id === id);
-      if (ci !== -1) return { si, ci };
-    }
-    return null;
-  }, [stacks]);
+  const findCardLocation = useCallback(
+    (id: string, currentStacks = stacks): { si: number; ci: number } | null => {
+      for (let si = 0; si < currentStacks.length; si++) {
+        const ci = currentStacks[si]!.cards.findIndex((c) => c.id === id);
+        if (ci !== -1) return { si, ci };
+      }
+      return null;
+    },
+    [stacks],
+  );
 
   useEffect(() => {
     const editor = editorGlobalRef.current;
@@ -607,13 +675,19 @@ export const TasksDialog = () => {
       .command(({ tr }) => {
         const node = tr.doc.nodeAt(pos);
         if (!node || node.type.name !== "taskItem") return false;
-        tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked: newChecked });
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          checked: newChecked,
+        });
         return true;
       })
       .run();
   };
 
-  const handleUpdateTask = (card: Card, updates: { title?: string; description?: string }) => {
+  const handleUpdateTask = (
+    card: Card,
+    updates: { title?: string; description?: string },
+  ) => {
     if (editorGlobalRef.current) {
       updateTaskContent(editorGlobalRef.current, card, updates);
     }
@@ -716,7 +790,10 @@ export const TasksDialog = () => {
       return;
     }
 
-    if (originalCardLoc.si === finalLocInUI.si && originalCardLoc.ci === finalLocInUI.ci) {
+    if (
+      originalCardLoc.si === finalLocInUI.si &&
+      originalCardLoc.ci === finalLocInUI.ci
+    ) {
       setStacks(docStacks);
       return;
     }
@@ -734,7 +811,12 @@ export const TasksDialog = () => {
     }
 
     const targetStackInDoc = docStacks[finalLocInUI.si]!;
-    moveTaskItemBetweenStacks(editor, srcCard, targetStackInDoc, insertBeforeCardInDoc);
+    moveTaskItemBetweenStacks(
+      editor,
+      srcCard,
+      targetStackInDoc,
+      insertBeforeCardInDoc,
+    );
   };
 
   const getActiveCard = () => {
@@ -754,78 +836,92 @@ export const TasksDialog = () => {
   const overColumnIndex = getOverColumnIndex(overId);
 
   return (
-    <Modal
-      onChange={onClose}
-      title="Note Tasks"
-      className="max-w-6xl min-h-[70vh]"
-      open={uiState.tasksDialog.isOpen}
-    >
-      {stacks.length === 0 ? (
-        <p className="py-8 text-sm text-center text-disabled">
-          No tasks found. Add headings or{" "}
-          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
-            {"[ ]"}
-          </code>{" "}
-          checkboxes to your note.
-        </p>
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={(e) => setActiveId(String(e.active.id))}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-          onDragCancel={() => {
-            setActiveId(null);
-            setOverId(null);
-            if (editorGlobalRef.current) {
-              setStacks(parseEditorTasks(editorGlobalRef.current.state.doc));
-            }
-          }}
-        >
-          <div className="flex overflow-x-auto gap-4 pb-4 items-start scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
-            {stacks.map((stack, si) => (
-              <motion.div
-                layout
-                key={`stack-${stack.pos}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <DroppableColumn
-                  stack={stack}
-                  index={si}
-                  activeId={activeId}
-                  overColumnIndex={overColumnIndex}
-                  activeColumnIndex={activeColumnIndex}
-                  onAddTask={setNewTaskStack}
-                >
-                  {stack.cards.map((card) => (
-                    <SortableCard
-                      key={card.id}
-                      card={card}
-                      onToggle={toggleTask}
-                      onUpdate={handleUpdateTask}
-                    />
+    <Fragment>
+      <Modal
+        onChange={onClose}
+        title="Note Tasks"
+        key={`tasks-dialog-${x}`}
+        open={uiState.tasksDialog.isOpen}
+        className="max-w-6xl min-h-[70vh]"
+      >
+        <AnimatePresence propagate>
+          {stacks.length === 0 ? (
+            <p className="py-8 text-sm text-center text-disabled">
+              No tasks found. Add headings or{" "}
+              <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+                {"[ ]"}
+              </code>{" "}
+              checkboxes to your note.
+            </p>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={(e) => setActiveId(String(e.active.id))}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDragCancel={() => {
+                setActiveId(null);
+                setOverId(null);
+                if (editorGlobalRef.current) {
+                  setStacks(
+                    parseEditorTasks(editorGlobalRef.current.state.doc),
+                  );
+                }
+              }}
+            >
+              <AnimatePresence propagate>
+                <div className="flex overflow-x-auto gap-4 pb-4 items-start scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
+                  {stacks.map((stack, si) => (
+                    <motion.div
+                      layout
+                      key={`stack-${stack.pos}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <DroppableColumn
+                        stack={stack}
+                        index={si}
+                        activeId={activeId}
+                        overColumnIndex={overColumnIndex}
+                        activeColumnIndex={activeColumnIndex}
+                        onAddTask={setNewTaskStack}
+                      >
+                        {stack.cards.map((card) => (
+                          <SortableCard
+                            key={card.id}
+                            card={card}
+                            onToggle={toggleTask}
+                            onUpdate={handleUpdateTask}
+                          />
+                        ))}
+                      </DroppableColumn>
+                    </motion.div>
                   ))}
-                </DroppableColumn>
-              </motion.div>
-            ))}
-          </div>
-          <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }) }}>
-            {activeId && getActiveCard() ? (
-              <TaskCard card={getActiveCard()!} isOverlay />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      )}
-      
+                </div>
+              </AnimatePresence>
+              <DragOverlay
+                dropAnimation={{
+                  sideEffects: defaultDropAnimationSideEffects({
+                    styles: { active: { opacity: "0.5" } },
+                  }),
+                }}
+              >
+                {activeId && getActiveCard() ? (
+                  <TaskCard card={getActiveCard()!} isOverlay />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </AnimatePresence>
+      </Modal>
       <NewTaskModal
         isOpen={!!newTaskStack}
         onClose={() => setNewTaskStack(null)}
         onAdd={handleAddNewTask}
         stackTitle={newTaskStack?.title ?? ""}
       />
-    </Modal>
+    </Fragment>
   );
 };
