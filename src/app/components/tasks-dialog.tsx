@@ -1,4 +1,4 @@
-import { Checkbox, Modal } from "@g4rcez/components";
+import { Checkbox, Modal, Input, Textarea, Button } from "@g4rcez/components";
 import {
   DndContext,
   type DragEndEvent,
@@ -17,15 +17,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DotsSixVertical } from "@phosphor-icons/react";
+import { DotsSixVertical, Plus } from "@phosphor-icons/react";
 import { Fragment } from "prosemirror-model";
 import { type Node as ProseMirrorNode } from "prosemirror-model";
-import { type ReactNode, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { type ReactNode, useEffect, useState, useCallback } from "react";
+import { motion } from "motion/react";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { useUIStore } from "@/store/ui.store";
 
-type Card = {
+export type Card = {
   id: string;
   title: string;
   description: string;
@@ -34,10 +34,12 @@ type Card = {
   endPos?: number;
   nodeSize?: number;
   parentTaskListPos?: number;
+  titlePos?: number;
+  descriptionPos?: number;
   source: "task";
 };
 
-type Stack = {
+export type Stack = {
   title: string;
   cards: Card[];
   pos?: number;
@@ -77,6 +79,8 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
     } else if (node.type.name === "paragraph") {
       if (awaitingDescription && currentCard) {
         currentCard.description = node.textContent;
+        currentCard.descriptionPos = pos;
+        currentCard.nodeSize = (currentCard.nodeSize ?? 0) + node.nodeSize;
         awaitingDescription = false;
       }
       return false;
@@ -89,9 +93,11 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
       const checked = node.attrs?.checked ?? false;
       const stack = getOrCreateImplicitStack(pos);
       let title = "";
-      node.forEach((child) => {
+      let titlePos = -1;
+      node.forEach((child, offset) => {
         if (child.type.name === "paragraph" && title === "") {
           title = child.textContent;
+          titlePos = pos + offset + 1; // +1 for the start of taskItem
         }
       });
       const card: Card = {
@@ -100,6 +106,7 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
         description: "",
         checked,
         pos,
+        titlePos,
         nodeSize: node.nodeSize,
         parentTaskListPos: currentTaskListPos,
         source: "task",
@@ -132,137 +139,288 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
 
 // ---- ProseMirror reorder helpers ----
 
-function reorderTasksInStack(
-  editor: NonNullable<typeof editorGlobalRef.current>,
-  cards: Card[],
-) {
-  if (cards.length === 0 || cards[0]?.pos === undefined) return;
-  const { state } = editor;
-  const resolved = state.doc.resolve(cards[0]!.pos!);
-  const taskListNode = resolved.parent;
-  const taskListStart = resolved.before();
-  const taskListEnd = taskListStart + taskListNode.nodeSize;
-
-  const newChildren: ProseMirrorNode[] = [];
-  for (const card of cards) {
-    if (card.pos === undefined) continue;
-    const node = state.doc.nodeAt(card.pos);
-    if (node) newChildren.push(node);
+function findInsertPosForStack(doc: ProseMirrorNode, stack: Stack, insertBeforeCard?: Card): number {
+  if (insertBeforeCard?.pos !== undefined) {
+    return insertBeforeCard.pos;
   }
 
-  const newFragment = Fragment.fromArray(newChildren);
-  const tr = state.tr.replaceWith(taskListStart + 1, taskListEnd - 1, newFragment);
-  editor.view.dispatch(tr);
+  let lastRelevantPos = -1;
+  doc.nodesBetween(stack.pos ?? 0, stack.endPos ?? doc.content.size, (node, pos) => {
+    if (node.type.name === "taskItem") {
+      lastRelevantPos = pos + node.nodeSize;
+    }
+  });
+
+  if (lastRelevantPos !== -1) return lastRelevantPos;
+
+  if (stack.pos !== undefined) {
+    const headingNode = doc.nodeAt(stack.pos);
+    let pos = stack.pos + (headingNode?.nodeSize ?? 0);
+    const nextNode = doc.nodeAt(pos);
+    if (nextNode && nextNode.type.name === "paragraph") {
+      pos += nextNode.nodeSize;
+    }
+    return pos;
+  }
+
+  return doc.content.size;
 }
 
-function moveTaskItemBetweenStacks(
+export function moveTaskItemBetweenStacks(
   editor: NonNullable<typeof editorGlobalRef.current>,
   card: Card,
   targetStack: Stack,
   insertBeforeCard?: Card,
 ) {
-  if (card.pos === undefined || card.nodeSize === undefined) return;
-  const { state } = editor;
-  const node = state.doc.nodeAt(card.pos);
-  if (!node || node.type.name !== "taskItem") return;
+  if (card.pos === undefined || card.endPos === undefined) return;
+  
+  editor.chain().command(({ tr, state }) => {
+    // Re-verify positions in current transaction state
+    const slice = state.doc.slice(card.pos!, card.endPos!);
+    const insertPos = findInsertPosForStack(state.doc, targetStack, insertBeforeCard);
 
-  const tr = state.tr;
-  let insertPos: number;
+    tr.delete(card.pos!, card.endPos!);
+    const mappedInsertPos = tr.mapping.map(insertPos);
+    
+    const $insertPos = tr.doc.resolve(mappedInsertPos);
+    const isInTaskList = $insertPos.parent.type.name === "taskList";
 
-  if (insertBeforeCard?.pos !== undefined) {
-    insertPos = insertBeforeCard.pos;
-  } else {
-    // Find last taskItem in this stack's range in the doc
-    let lastTaskItemEnd = -1;
-    state.doc.nodesBetween(targetStack.pos ?? 0, targetStack.endPos ?? state.doc.content.size, (node, pos) => {
-      if (node.type.name === "taskItem") {
-        lastTaskItemEnd = pos + node.nodeSize;
-      }
-    });
-
-    if (lastTaskItemEnd !== -1) {
-      insertPos = lastTaskItemEnd;
+    if (isInTaskList) {
+      tr.insert(mappedInsertPos, slice.content);
     } else {
-      let taskListPos = -1;
-      state.doc.nodesBetween(targetStack.pos ?? 0, targetStack.endPos ?? state.doc.content.size, (node, pos) => {
-        if (node.type.name === "taskList") {
-          taskListPos = pos;
-          return false;
+      const firstNode = slice.content.firstChild;
+      if (firstNode && firstNode.type.name === "taskItem") {
+        const taskList = state.schema.nodes.taskList.create(null, [firstNode]);
+        tr.insert(mappedInsertPos, taskList);
+        if (slice.content.childCount > 1) {
+          tr.insert(mappedInsertPos + taskList.nodeSize, slice.content.cut(firstNode.nodeSize));
         }
-      });
-
-      if (taskListPos !== -1) {
-        insertPos = taskListPos + 1;
       } else {
-        if (targetStack.pos !== undefined) {
-          const headingNode = state.doc.nodeAt(targetStack.pos);
-          insertPos = targetStack.pos + (headingNode?.nodeSize ?? 0);
-          const nextNode = state.doc.nodeAt(insertPos);
-          if (nextNode && nextNode.type.name === "paragraph") {
-            insertPos += nextNode.nodeSize;
-          }
-        } else {
-          insertPos = state.doc.content.size;
-        }
+        tr.insert(mappedInsertPos, slice.content);
       }
     }
-  }
-
-  const $insertPos = state.doc.resolve(insertPos);
-  const isInTaskList = $insertPos.parent.type.name === "taskList";
-
-  if (isInTaskList) {
-    tr.insert(insertPos, node);
-  } else {
-    const taskList = state.schema.nodes.taskList.create(null, node);
-    tr.insert(insertPos, taskList);
-  }
-
-  const cardPos = tr.mapping.map(card.pos);
-  const cardEnd = tr.mapping.map(card.pos + card.nodeSize);
-  tr.delete(cardPos, cardEnd);
-
-  editor.view.dispatch(tr);
+    return true;
+  }).run();
 }
+
+export function updateTaskContent(
+  editor: NonNullable<typeof editorGlobalRef.current>,
+  card: Card,
+  updates: { title?: string; description?: string },
+) {
+  editor.chain().command(({ tr, state }) => {
+    if (updates.title !== undefined && card.titlePos !== undefined) {
+      const node = state.doc.nodeAt(card.titlePos);
+      if (node && node.type.name === "paragraph") {
+        tr.insertText(updates.title, card.titlePos + 1, card.titlePos + node.nodeSize - 1);
+      }
+    }
+
+    if (updates.description !== undefined) {
+      if (card.descriptionPos !== undefined) {
+        const node = state.doc.nodeAt(card.descriptionPos);
+        if (node && node.type.name === "paragraph") {
+          const mappedDescPos = tr.mapping.map(card.descriptionPos);
+          tr.insertText(updates.description, mappedDescPos + 1, mappedDescPos + node.nodeSize - 1);
+        }
+      } else {
+        const descriptionNode = state.schema.nodes.paragraph.create(null, state.schema.text(updates.description));
+        const insertPos = card.endPos ?? (card.pos! + (card.nodeSize ?? 0));
+        tr.insert(tr.mapping.map(insertPos), descriptionNode);
+      }
+    }
+    return true;
+  }).run();
+}
+
+export function addTaskToStack(
+  editor: NonNullable<typeof editorGlobalRef.current>,
+  stack: Stack,
+  task: { title: string; description?: string },
+) {
+  editor.chain().command(({ tr, state }) => {
+    const taskItem = state.schema.nodes.taskItem.create(
+      { checked: false },
+      state.schema.nodes.paragraph.create(null, state.schema.text(task.title)),
+    );
+
+    const insertPos = findInsertPosForStack(state.doc, stack);
+    const $insertPos = state.doc.resolve(insertPos);
+    const isInTaskList = $insertPos.parent.type.name === "taskList";
+
+    if (isInTaskList) {
+      tr.insert(insertPos, taskItem);
+    } else {
+      const taskList = state.schema.nodes.taskList.create(null, taskItem);
+      tr.insert(insertPos, taskList);
+    }
+
+    if (task.description) {
+      const descPos = tr.mapping.map(insertPos) + taskItem.nodeSize;
+      const descriptionNode = state.schema.nodes.paragraph.create(null, state.schema.text(task.description));
+      tr.insert(descPos, descriptionNode);
+    }
+    return true;
+  }).run();
+}
+
+// ---- New Task Modal ----
+
+type NewTaskModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (task: { title: string; description: string }) => void;
+  stackTitle: string;
+};
+
+const NewTaskModal = ({ isOpen, onClose, onAdd, stackTitle }: NewTaskModalProps) => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const handleAdd = () => {
+    if (!title.trim()) return;
+    onAdd({ title, description });
+    setTitle("");
+    setDescription("");
+    onClose();
+  };
+
+  return (
+    <Modal
+      open={isOpen}
+      onChange={onClose}
+      title={`Add task to "${stackTitle}"`}
+      className="max-w-md"
+    >
+      <div className="flex flex-col gap-4">
+        <Input
+          autoFocus
+          title="Title"
+          placeholder="What needs to be done?"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        />
+        <Textarea
+          title="Description (optional)"
+          placeholder="Add more details..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="min-h-[100px]"
+        />
+        <div className="flex justify-end gap-2 mt-2">
+          <Button theme="ghost-muted" onClick={onClose}>Cancel</Button>
+          <Button theme="primary" onClick={handleAdd} disabled={!title.trim()}>
+            Add Task
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
 
 // ---- Presentational TaskCard ----
 
 type TaskCardProps = {
   card: Card;
   onToggle?: (card: Card) => void;
+  onUpdate?: (card: Card, updates: { title?: string; description?: string }) => void;
   isDragging?: boolean;
   isOverlay?: boolean;
 };
 
-const TaskCard = ({ card, onToggle, isDragging, isOverlay }: TaskCardProps) => {
+const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardProps) => {
+  const [editingField, setEditingField] = useState<"title" | "description" | null>(null);
+  const [tempTitle, setTitle] = useState(card.title);
+  const [tempDesc, setDescription] = useState(card.description);
+
+  useEffect(() => {
+    setTitle(card.title);
+    setDescription(card.description);
+  }, [card.title, card.description]);
+
+  const handleSave = () => {
+    if (editingField === "title" && tempTitle !== card.title) {
+      onUpdate?.(card, { title: tempTitle });
+    } else if (editingField === "description" && tempDesc !== card.description) {
+      onUpdate?.(card, { description: tempDesc });
+    }
+    setEditingField(null);
+  };
+
   return (
     <div
       className={`group flex flex-col gap-1 p-3 rounded-lg border border-floating-border bg-floating shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing touch-none ${
-        isDragging ? "opacity-20 border-dashed" : ""
+        isDragging ? "opacity-0" : ""
       } ${isOverlay ? "shadow-xl ring-2 ring-primary/20" : ""}`}
     >
       <div className="flex gap-2 items-start">
         <div className="mt-1 shrink-0 opacity-40 group-hover:opacity-70 transition-opacity">
           <DotsSixVertical className="size-4" />
         </div>
-        <Checkbox
-          checked={!!card.checked}
-          onPointerDown={(e) => e.stopPropagation()}
-          onChange={() => onToggle?.(card)}
-        />
-        <span
-          className={`text-sm font-medium leading-snug ${
-            card.checked ? "line-through text-foreground/50" : "text-foreground"
-          }`}
-        >
-          {card.title}
-        </span>
+        {!isOverlay && (
+          <Checkbox
+            checked={!!card.checked}
+            onPointerDown={(e) => e.stopPropagation()}
+            onChange={() => onToggle?.(card)}
+          />
+        )}
+        <div className="flex-1 min-w-0" onPointerDown={(e) => e.stopPropagation()}>
+          {editingField === "title" ? (
+            <Input
+              autoFocus
+              value={tempTitle}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave();
+                if (e.key === "Escape") {
+                  setTitle(card.title);
+                  setEditingField(null);
+                }
+              }}
+              className="h-7 text-sm py-0"
+            />
+          ) : (
+            <span
+              onClick={() => setEditingField("title")}
+              className={`text-sm font-medium leading-snug break-words cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded px-1 -mx-1 transition-colors ${
+                card.checked ? "line-through text-foreground/50" : "text-foreground"
+              }`}
+            >
+              {card.title || "Untitled Task"}
+            </span>
+          )}
+        </div>
       </div>
-      {card.description && (
-        <p className="ml-6 text-xs text-foreground/60 line-clamp-3">
-          {card.description}
-        </p>
-      )}
+      <div className="ml-6" onPointerDown={(e) => e.stopPropagation()}>
+        {editingField === "description" ? (
+          <Textarea
+            autoFocus
+            value={tempDesc}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={handleSave}
+            placeholder="Add description..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave();
+              if (e.key === "Escape") {
+                setDescription(card.description);
+                setEditingField(null);
+              }
+            }}
+            className="text-xs min-h-[60px]"
+          />
+        ) : (
+          <p
+            onClick={() => setEditingField("description")}
+            className={`text-xs text-foreground/60 line-clamp-3 cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded px-1 -mx-1 transition-colors ${
+              !card.description ? "italic opacity-40" : ""
+            }`}
+          >
+            {card.description || "Add description..."}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -272,9 +430,10 @@ const TaskCard = ({ card, onToggle, isDragging, isOverlay }: TaskCardProps) => {
 type SortableCardProps = {
   card: Card;
   onToggle: (card: Card) => void;
+  onUpdate: (card: Card, updates: { title?: string; description?: string }) => void;
 };
 
-function SortableCard({ card, onToggle }: SortableCardProps) {
+function SortableCard({ card, onToggle, onUpdate }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -296,7 +455,7 @@ function SortableCard({ card, onToggle }: SortableCardProps) {
       {...attributes}
       {...listeners}
     >
-      <TaskCard card={card} onToggle={onToggle} isDragging={isDragging} />
+      <TaskCard card={card} onToggle={onToggle} onUpdate={onUpdate} isDragging={isDragging} />
     </div>
   );
 }
@@ -309,6 +468,7 @@ type DroppableColumnProps = {
   activeId: string | null;
   overColumnIndex: number | null;
   activeColumnIndex: number | null;
+  onAddTask: (stack: Stack) => void;
   children: ReactNode;
 };
 
@@ -318,6 +478,7 @@ function DroppableColumn({
   activeId,
   overColumnIndex,
   activeColumnIndex,
+  onAddTask,
   children,
 }: DroppableColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -334,18 +495,27 @@ function DroppableColumn({
       }`}
     >
       <div className="flex items-center justify-between px-1 mb-1">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/70 truncate">
-          {stack.title}
-        </h3>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
-            isOver
-              ? "bg-primary text-primary-foreground"
-              : "bg-neutral-200/50 dark:bg-neutral-700/50 text-foreground/50"
-          }`}
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/70 truncate">
+            {stack.title}
+          </h3>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
+              isOver
+                ? "bg-primary text-primary-foreground"
+                : "bg-neutral-200/50 dark:bg-neutral-700/50 text-foreground/50"
+            }`}
+          >
+            {stack.cards.length}
+          </span>
+        </div>
+        <button
+          onClick={() => onAddTask(stack)}
+          className="p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 text-foreground/50 transition-colors"
+          title="Add task"
         >
-          {stack.cards.length}
-        </span>
+          <Plus className="size-3.5" />
+        </button>
       </div>
       <SortableContext
         id={`stack-${stack.pos}`}
@@ -353,15 +523,12 @@ function DroppableColumn({
         strategy={verticalListSortingStrategy}
       >
         <div className="flex flex-col gap-2 min-h-[150px]">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {children}
-          </AnimatePresence>
+          {children}
           {stack.cards.length === 0 && (
             <motion.div
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
               className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 ${
                 isOver
                   ? "border-primary bg-primary/10 text-primary scale-[0.98]"
@@ -395,6 +562,7 @@ export const TasksDialog = () => {
   const [stacks, setStacks] = useState<Stack[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [newTaskStack, setNewTaskStack] = useState<Stack | null>(null);
 
   const onClose = () => uiDispatch.closeTasksDialog();
 
@@ -402,10 +570,31 @@ export const TasksDialog = () => {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  useEffect(() => {
-    if (uiState.tasksDialog.isOpen && editorGlobalRef.current) {
-      setStacks(parseEditorTasks(editorGlobalRef.current.state.doc));
+  const findCardLocation = useCallback((
+    id: string,
+    currentStacks = stacks,
+  ): { si: number; ci: number } | null => {
+    for (let si = 0; si < currentStacks.length; si++) {
+      const ci = currentStacks[si]!.cards.findIndex((c) => c.id === id);
+      if (ci !== -1) return { si, ci };
     }
+    return null;
+  }, [stacks]);
+
+  useEffect(() => {
+    const editor = editorGlobalRef.current;
+    if (!editor || !uiState.tasksDialog.isOpen) return;
+
+    const handleSync = () => {
+      setStacks(parseEditorTasks(editor.state.doc));
+    };
+
+    editor.on("update", handleSync);
+    handleSync(); // Initial load
+
+    return () => {
+      editor.off("update", handleSync);
+    };
   }, [uiState.tasksDialog.isOpen]);
 
   const toggleTask = (card: Card) => {
@@ -422,18 +611,18 @@ export const TasksDialog = () => {
         return true;
       })
       .run();
-    setStacks(parseEditorTasks(editor.state.doc));
   };
 
-  const findCardLocation = (
-    id: string,
-    currentStacks = stacks,
-  ): { si: number; ci: number } | null => {
-    for (let si = 0; si < currentStacks.length; si++) {
-      const ci = currentStacks[si]!.cards.findIndex((c) => c.id === id);
-      if (ci !== -1) return { si, ci };
+  const handleUpdateTask = (card: Card, updates: { title?: string; description?: string }) => {
+    if (editorGlobalRef.current) {
+      updateTaskContent(editorGlobalRef.current, card, updates);
     }
-    return null;
+  };
+
+  const handleAddNewTask = (task: { title: string; description: string }) => {
+    if (editorGlobalRef.current && newTaskStack) {
+      addTaskToStack(editorGlobalRef.current, newTaskStack, task);
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -472,32 +661,14 @@ export const TasksDialog = () => {
       setStacks((prev) => {
         const currentActiveLoc = findCardLocation(activeId, prev);
         if (!currentActiveLoc) return prev;
-
-        const newStacks = [...prev];
+        const newStacks = Array.from(prev);
         const activeStack = { ...newStacks[currentActiveLoc.si]! };
         const overStack = { ...newStacks[overStackIndex]! };
-
         const [movedCard] = activeStack.cards.splice(currentActiveLoc.ci, 1);
         if (!movedCard) return prev;
-
         overStack.cards.push(movedCard);
-
         newStacks[currentActiveLoc.si] = activeStack;
         newStacks[overStackIndex] = overStack;
-        return newStacks;
-      });
-    } else if (overLoc && activeLoc.si === overLoc.si && activeLoc.ci !== overLoc.ci) {
-      setStacks((prev) => {
-        const currentActiveLoc = findCardLocation(activeId, prev);
-        const currentOverLoc = findCardLocation(overId, prev);
-        if (!currentActiveLoc || !currentOverLoc) return prev;
-
-        const newStacks = [...prev];
-        const stack = { ...newStacks[currentActiveLoc.si]! };
-        const [movedCard] = stack.cards.splice(currentActiveLoc.ci, 1);
-        if (!movedCard) return prev;
-        stack.cards.splice(currentOverLoc.ci, 0, movedCard);
-        newStacks[currentActiveLoc.si] = stack;
         return newStacks;
       });
     }
@@ -517,38 +688,53 @@ export const TasksDialog = () => {
     }
 
     const activeId = String(active.id);
-    const finalLocInUI = findCardLocation(activeId, stacks);
-    if (!finalLocInUI) return;
+    const overId = String(over.id);
 
-    const originalDocStacks = parseEditorTasks(editor.state.doc);
-    const originalCardLoc = findCardLocation(activeId, originalDocStacks);
+    const activeLoc = findCardLocation(activeId, stacks);
+    if (!activeLoc) return;
+
+    let finalLocInUI = { ...activeLoc };
+    let targetStackInUI = { ...stacks[activeLoc.si]! };
+
+    const overLoc = findCardLocation(overId, stacks);
+
+    if (overLoc && activeLoc.si === overLoc.si && activeLoc.ci !== overLoc.ci) {
+      const newCards = [...targetStackInUI.cards];
+      const [moved] = newCards.splice(activeLoc.ci, 1);
+      if (moved) {
+        newCards.splice(overLoc.ci, 0, moved);
+        targetStackInUI.cards = newCards;
+        finalLocInUI.ci = overLoc.ci;
+      }
+    }
+
+    // Use current document state for final commit
+    const docStacks = parseEditorTasks(editor.state.doc);
+    const originalCardLoc = findCardLocation(activeId, docStacks);
     if (!originalCardLoc) {
-      setStacks(parseEditorTasks(editor.state.doc));
+      setStacks(docStacks);
       return;
     }
 
-    const srcCard = originalDocStacks[originalCardLoc.si]?.cards[originalCardLoc.ci];
-    if (!srcCard) return;
+    if (originalCardLoc.si === finalLocInUI.si && originalCardLoc.ci === finalLocInUI.ci) {
+      setStacks(docStacks);
+      return;
+    }
 
-    const targetStackInUI = stacks[finalLocInUI.si]!;
+    const srcCard = docStacks[originalCardLoc.si]!.cards[originalCardLoc.ci]!;
 
     let insertBeforeCardInDoc: Card | undefined;
     for (let i = finalLocInUI.ci + 1; i < targetStackInUI.cards.length; i++) {
-      const uiCard = targetStackInUI.cards[i]!;
-      const docCardLoc = findCardLocation(uiCard.id, originalDocStacks);
-      if (docCardLoc) {
-        insertBeforeCardInDoc = originalDocStacks[docCardLoc.si]?.cards[docCardLoc.ci];
+      const cardId = targetStackInUI.cards[i]!.id;
+      const found = findCardLocation(cardId, docStacks);
+      if (found) {
+        insertBeforeCardInDoc = docStacks[found.si]!.cards[found.ci];
         break;
       }
     }
 
-    const targetStackInDoc = originalDocStacks[finalLocInUI.si];
-
-    if (targetStackInDoc) {
-      moveTaskItemBetweenStacks(editor, srcCard, targetStackInDoc, insertBeforeCardInDoc);
-    }
-
-    setStacks(parseEditorTasks(editor.state.doc));
+    const targetStackInDoc = docStacks[finalLocInUI.si]!;
+    moveTaskItemBetweenStacks(editor, srcCard, targetStackInDoc, insertBeforeCardInDoc);
   };
 
   const getActiveCard = () => {
@@ -598,34 +784,33 @@ export const TasksDialog = () => {
           }}
         >
           <div className="flex overflow-x-auto gap-4 pb-4 items-start scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
-            <AnimatePresence mode="popLayout" initial={false}>
-              {stacks.map((stack, si) => (
-                <motion.div
-                  layout
-                  key={`stack-${stack.pos}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
+            {stacks.map((stack, si) => (
+              <motion.div
+                layout
+                key={`stack-${stack.pos}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DroppableColumn
+                  stack={stack}
+                  index={si}
+                  activeId={activeId}
+                  overColumnIndex={overColumnIndex}
+                  activeColumnIndex={activeColumnIndex}
+                  onAddTask={setNewTaskStack}
                 >
-                  <DroppableColumn
-                    stack={stack}
-                    index={si}
-                    activeId={activeId}
-                    overColumnIndex={overColumnIndex}
-                    activeColumnIndex={activeColumnIndex}
-                  >
-                    {stack.cards.map((card) => (
-                      <SortableCard
-                        key={card.id}
-                        card={card}
-                        onToggle={toggleTask}
-                      />
-                    ))}
-                  </DroppableColumn>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  {stack.cards.map((card) => (
+                    <SortableCard
+                      key={card.id}
+                      card={card}
+                      onToggle={toggleTask}
+                      onUpdate={handleUpdateTask}
+                    />
+                  ))}
+                </DroppableColumn>
+              </motion.div>
+            ))}
           </div>
           <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: "0.5" } } }) }}>
             {activeId && getActiveCard() ? (
@@ -634,6 +819,13 @@ export const TasksDialog = () => {
           </DragOverlay>
         </DndContext>
       )}
+      
+      <NewTaskModal
+        isOpen={!!newTaskStack}
+        onClose={() => setNewTaskStack(null)}
+        onAdd={handleAddNewTask}
+        stackTitle={newTaskStack?.title ?? ""}
+      />
     </Modal>
   );
 };
