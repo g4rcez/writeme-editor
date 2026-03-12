@@ -33,7 +33,7 @@ export const InspectJsonDialog = () => {
   const handleInspect = async () => {
     try {
       if (!json.trim()) return;
-      const __ = JSON.parse(json);
+      JSON.parse(json);
       const finalTitle =
         title.trim() || getUniqueNoteTitle("JSON", state.notes);
       const note = Note.new(finalTitle, json, "json" as any);
@@ -49,9 +49,10 @@ export const InspectJsonDialog = () => {
 
   return (
     <Modal
+      animated={false}
       onChange={onClose}
       title="Inspect JSON"
-      className="max-w-4xl"
+      className="max-w-5xl"
       open={state.inspectJsonDialog}
     >
       <div className="flex flex-col gap-4">

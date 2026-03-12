@@ -47,7 +47,6 @@ export class WebTerminalBackend implements ITerminalBackend {
     });
 
     this.registry.register("clear", (_, term) => {
-      // CSI 2 J clears the screen, CSI H moves cursor to top left
       term.write("\x1b[2J\x1b[H");
     });
 
@@ -68,7 +67,6 @@ export class WebTerminalBackend implements ITerminalBackend {
     if (cwd) {
       this.cwd = cwd;
     }
-    this.emit("\r\n\x1b[1;34mWriteme Web Terminal (Mock)\x1b[0m\r\n");
     this.prompt();
   }
 
@@ -137,7 +135,6 @@ export class WebTerminalBackend implements ITerminalBackend {
   }
 
   resize(cols: number, rows: number): void {
-    // Web backend doesn't really need to do anything on resize
   }
 
   kill(): void {

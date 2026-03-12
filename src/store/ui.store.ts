@@ -135,3 +135,4 @@ export const contentWidthClasses: Record<ContentWidth, string> = {
   medium: "max-w-3xl",
   wide: "max-w-5xl",
 };
+
