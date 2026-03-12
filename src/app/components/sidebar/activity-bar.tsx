@@ -6,6 +6,7 @@ import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
 import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { BracketsCurlyIcon, type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
@@ -112,6 +113,12 @@ export const ActivityBar = () => {
           icon={LayoutIcon}
           active={layout.activeActivity === "templates"}
           onClick={() => onActivityClick("templates")}
+        />
+        <ActivityIcon
+          label="Groups"
+          icon={FolderSimpleIcon}
+          active={layout.activeActivity === "groups"}
+          onClick={() => onActivityClick("groups")}
         />
         <ActivityIcon
           label="Terminal"

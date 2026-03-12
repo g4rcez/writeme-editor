@@ -5,6 +5,8 @@ import { Hashtag } from "../entities/hashtag";
 import { Settings } from "../entities/settings";
 import { Project } from "../entities/project";
 import { Script } from "../entities/script";
+import { NoteGroup } from "../entities/note-group";
+import { NoteGroupMember } from "../entities/note-group-member";
 import { uuid } from "@g4rcez/components";
 
 export const db = new Dexie("writeme") as Dexie & {
@@ -14,6 +16,8 @@ export const db = new Dexie("writeme") as Dexie & {
   hashtags: EntityTable<Hashtag, "id">;
   settings: EntityTable<Settings, "id">;
   scripts: EntityTable<Script, "id">;
+  noteGroups: EntityTable<NoteGroup, "id">;
+  noteGroupMembers: EntityTable<NoteGroupMember, "id">;
 };
 
 // Version 1 (original schema)
@@ -180,6 +184,19 @@ db.version(11)
     }
     console.log("Schema migration to v11 complete");
   });
+
+// Version 16 (Note groups)
+db.version(16).stores({
+  notes:
+    "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, createdAt",
+  hashtags: "&id, hashtag, filename, project",
+  settings: "&id, &name, value",
+  scripts: "&id, name, createdAt, updatedAt",
+  noteGroups: "&id, title, createdAt, updatedAt",
+  noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+});
 
 // Version 15 (Migrate templates to notes)
 db.version(15)

@@ -1,6 +1,7 @@
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { ExplorerPane } from "./explorer-pane";
+import { GroupsPane } from "./groups-pane";
 import { QuickSettingsPane } from "./quick-settings-pane";
 import { SearchPane } from "./search-pane";
 import { TagsPane } from "./tags-pane";
@@ -22,6 +23,8 @@ export const SidebarContent = () => {
       return <TagsPane />;
     case "templates":
       return <TemplatesPane />;
+    case "groups":
+      return <GroupsPane />;
     case "settings":
       return <QuickSettingsPane />;
     default:

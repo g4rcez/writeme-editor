@@ -65,4 +65,27 @@ export const databaseIpcHandler = () => {
       db.syncHashtags(filename, tags);
       return true;
   });
+
+  ipcMain.handle("db:noteGroups:getByNoteId", (_, noteId: string) => {
+    return db.getNoteGroupsByNoteId(noteId);
+  });
+
+  ipcMain.handle("db:noteGroupMembers:getByGroupId", (_, groupId: string) => {
+    return db.getNoteGroupMembersByGroupId(groupId);
+  });
+
+  ipcMain.handle("db:noteGroupMembers:reorder", (_, members: { id: string; order: number }[]) => {
+    db.reorderNoteGroupMembers(members);
+    return true;
+  });
+
+  ipcMain.handle("db:noteGroupMembers:deleteByNoteId", (_, noteId: string) => {
+    db.deleteNoteGroupMembersByNoteId(noteId);
+    return true;
+  });
+
+  ipcMain.handle("db:noteGroupMembers:deleteByGroupId", (_, groupId: string) => {
+    db.deleteNoteGroupMembersByGroupId(groupId);
+    return true;
+  });
 };

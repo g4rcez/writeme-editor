@@ -3,6 +3,7 @@ import {
   Checkbox,
   createColumns,
   Input,
+  Modal,
   Table,
   Tag,
   type TagProps,
@@ -11,10 +12,14 @@ import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { FolderSimplePlusIcon } from "@phosphor-icons/react/dist/csr/FolderSimplePlus";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { Link } from "react-router-dom";
 import { Note } from "@/store/note";
 import { useNoteList, type NoteWithTags } from "@/app/hooks/use-note-list";
+import { useGlobalStore } from "@/store/global.store";
+import { useEffect, useState } from "react";
+import { NoteGroup } from "@/store/repositories/entities/note-group";
 
 const tag: Record<
   Note["noteType"],
@@ -27,6 +32,101 @@ const tag: Record<
   "read-it-later": { theme: "info", title: "Read it later" },
   freehand: { theme: "secondary", title: "Freehand" },
 };
+
+function AddToGroupModal({
+  noteIds,
+  open,
+  onClose,
+}: {
+  noteIds: string[];
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [state, dispatch] = useGlobalStore();
+  const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    dispatch.loadGroups();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const initial = new Set(
+      state.noteGroups
+        .filter((group) =>
+          noteIds.every((id) =>
+            state.noteGroupMembers.some((m) => m.noteId === id && m.groupId === group.id),
+          ),
+        )
+        .map((g) => g.id),
+    );
+    setPendingGroupIds(initial);
+  }, [open]);
+
+  const toggle = (group: NoteGroup) => {
+    setPendingGroupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(group.id)) next.delete(group.id);
+      else next.add(group.id);
+      return next;
+    });
+  };
+
+  const onConfirm = async () => {
+    for (const group of state.noteGroups) {
+      const wantsIn = pendingGroupIds.has(group.id);
+      const allCurrentlyIn = noteIds.every((id) =>
+        state.noteGroupMembers.some((m) => m.noteId === id && m.groupId === group.id),
+      );
+      if (wantsIn && !allCurrentlyIn) {
+        for (const id of noteIds) {
+          const alreadyIn = state.noteGroupMembers.some(
+            (m) => m.noteId === id && m.groupId === group.id,
+          );
+          if (!alreadyIn) await dispatch.addNoteToGroup(group.id, id);
+        }
+      } else if (!wantsIn && allCurrentlyIn) {
+        for (const id of noteIds) {
+          await dispatch.removeNoteFromGroup(group.id, id);
+        }
+      }
+    }
+    onClose();
+  };
+
+  return (
+    <Modal
+      open={open}
+      className="max-w-sm"
+      onChange={onClose}
+      title="Add to Group"
+    >
+      {state.noteGroups.length === 0 ? (
+        <p className="text-sm text-foreground/50 py-4 text-center">
+          No groups yet. Create one from the Groups page.
+        </p>
+      ) : (
+        <ul className="space-y-1 max-h-64 overflow-y-auto">
+          {state.noteGroups.map((group) => (
+            <li key={group.id}>
+              <label className="flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-muted/30">
+                <Checkbox
+                  checked={pendingGroupIds.has(group.id)}
+                  onChange={() => toggle(group)}
+                />
+                <span className="text-sm truncate">{group.title}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2 mt-4 w-full justify-end">
+        <Button theme="ghost-muted" onClick={onClose}>Cancel</Button>
+        <Button theme="primary" onClick={onConfirm}>Confirm</Button>
+      </div>
+    </Modal>
+  );
+}
 
 export default function NotesListPage() {
   const {
@@ -41,6 +141,9 @@ export default function NotesListPage() {
     handleDelete,
     handleBatchDelete: onBatchDelete,
   } = useNoteList();
+
+  const [groupPickerNoteIds, setGroupPickerNoteIds] = useState<string[]>([]);
+  const [batchGroupOpen, setBatchGroupOpen] = useState(false);
 
   const cols = createColumns<NoteWithTags>((col) => {
     col.add(
@@ -88,13 +191,25 @@ export default function NotesListPage() {
     });
     col.add("createdAt", "Actions", {
       Element: (props) => (
-        <button
-          onClick={(e) => handleDelete(e, props.row.id)}
-          className="p-2 text-red-500 rounded transition-colors hover:bg-red-500/10"
-          title="Delete note"
-        >
-          <TrashIcon className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setGroupPickerNoteIds([props.row.id]);
+            }}
+            className="p-2 rounded transition-colors text-foreground/50 hover:bg-muted/30 hover:text-foreground"
+            title="Add to group"
+          >
+            <FolderSimplePlusIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => handleDelete(e, props.row.id)}
+            className="p-2 text-red-500 rounded transition-colors hover:bg-red-500/10"
+            title="Delete note"
+          >
+            <TrashIcon className="w-4 h-4" />
+          </button>
+        </div>
       ),
     });
   });
@@ -141,6 +256,14 @@ export default function NotesListPage() {
           <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-floating-background text-card-foreground">
             <span className="font-medium">{selectedIds.size} selected</span>
             <div className="w-px h-4 bg-border" />
+            <Button
+              size="small"
+              theme="ghost"
+              onClick={() => setBatchGroupOpen(true)}
+            >
+              <FolderSimplePlusIcon className="size-4" />
+              Add to group
+            </Button>
             <Button size="small" theme="ghost-danger" onClick={onBatchDelete}>
               <TrashIcon className="size-4" />
               Delete
@@ -155,6 +278,17 @@ export default function NotesListPage() {
           </div>
         </div>
       )}
+
+      <AddToGroupModal
+        noteIds={groupPickerNoteIds}
+        open={groupPickerNoteIds.length > 0}
+        onClose={() => setGroupPickerNoteIds([])}
+      />
+      <AddToGroupModal
+        noteIds={Array.from(selectedIds)}
+        open={batchGroupOpen}
+        onClose={() => setBatchGroupOpen(false)}
+      />
     </div>
   );
 }

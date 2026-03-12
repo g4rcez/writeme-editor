@@ -6,6 +6,8 @@ import { ProjectsRepository as BrowserProjectsRepository } from "./browser/proje
 import { SettingsRepository as BrowserSettingsRepository } from "./browser/settings.repository";
 import { TabsRepository as BrowserTabsRepository } from "./browser/tabs.repository";
 import { ScriptsRepository as BrowserScriptsRepository } from "./browser/scripts.repository";
+import { NoteGroupsRepository as BrowserNoteGroupsRepository } from "./browser/note-groups.repository";
+import { NoteGroupMembersRepository as BrowserNoteGroupMembersRepository } from "./browser/note-group-members.repository";
 import { HashtagsRepository as ElectronHashtagsRepository } from "./electron/hashtags.repository";
 import { NotesRepository as ElectronNotesRepository } from "./electron/notes.repository";
 import { ProjectsRepository as ElectronProjectsRepository } from "./electron/projects.repository";
@@ -13,12 +15,16 @@ import { SettingsRepository as ElectronSettingsRepository } from "./electron/set
 import { TabsRepository as ElectronTabsRepository } from "./electron/tabs.repository";
 import { ScriptsRepository as ElectronScriptsRepository } from "./electron/scripts.repository";
 import { AIRepository as ElectronAIRepository } from "./electron/ai.repository";
+import { NoteGroupsRepository as ElectronNoteGroupsRepository } from "./electron/note-groups.repository";
+import { NoteGroupMembersRepository as ElectronNoteGroupMembersRepository } from "./electron/note-group-members.repository";
 import { type IHashtagRepository } from "./entities/hashtag";
 import { type IProjectRepository } from "./entities/project";
 import { type ISettingsRepository } from "./entities/settings";
 import { type ITabRepository } from "./entities/tab";
 import { type IScriptRepository } from "./entities/script";
 import { type IAIRepository } from "./entities/ai";
+import { type INoteGroupRepository } from "./entities/note-group";
+import { type INoteGroupMemberRepository } from "./entities/note-group-member";
 
 type Result = {
   ai: IAIRepository;
@@ -28,6 +34,8 @@ type Result = {
   projects: IProjectRepository;
   settings: ISettingsRepository;
   scripts: IScriptRepository;
+  noteGroups: INoteGroupRepository;
+  noteGroupMembers: INoteGroupMemberRepository;
 };
 
 const getRepositories = (): Result => {
@@ -42,6 +50,8 @@ const getRepositories = (): Result => {
       projects: new ElectronProjectsRepository(),
       settings: new ElectronSettingsRepository(),
       scripts: new ElectronScriptsRepository(),
+      noteGroups: new ElectronNoteGroupsRepository(),
+      noteGroupMembers: new ElectronNoteGroupMembersRepository(),
     };
   } else {
     console.log("Using Browser (Dexie) repositories");
@@ -53,6 +63,8 @@ const getRepositories = (): Result => {
       projects: new BrowserProjectsRepository(),
       settings: new BrowserSettingsRepository(),
       scripts: new BrowserScriptsRepository(),
+      noteGroups: new BrowserNoteGroupsRepository(),
+      noteGroupMembers: new BrowserNoteGroupMembersRepository(),
       ai: {
         getChats: async () => [],
         saveChat: async () => {},

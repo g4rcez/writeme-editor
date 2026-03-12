@@ -124,6 +124,25 @@ class DatabaseManager {
         createdAt TEXT,
         updatedAt TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS noteGroups (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        title TEXT,
+        description TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS noteGroupMembers (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        groupId TEXT,
+        noteId TEXT,
+        "order" REAL,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
     `);
 
     // Migration for templates to notes
@@ -163,6 +182,8 @@ class DatabaseManager {
       "aiChats",
       "aiMessages",
       "scripts",
+      "noteGroups",
+      "noteGroupMembers",
     ];
     const commonColumns = ["type", "createdAt", "updatedAt"];
     const noteColumns = [
@@ -407,6 +428,50 @@ class DatabaseManager {
       "UPDATE notes SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ? WHERE id = ?",
     );
     stmt.run(content, fileSize, updatedAt, updatedBy, id);
+  }
+
+  public getNoteGroupsByNoteId(noteId: string): any[] {
+    const stmt = this.db.prepare(
+      `SELECT g.* FROM noteGroups g
+       INNER JOIN noteGroupMembers m ON m.groupId = g.id
+       WHERE m.noteId = ?`,
+    );
+    return (stmt.all(noteId) as any[]).map((row) => this.normalizeRow(row));
+  }
+
+  public getNoteGroupMembersByGroupId(groupId: string): any[] {
+    const stmt = this.db.prepare(
+      `SELECT * FROM noteGroupMembers WHERE groupId = ? ORDER BY "order" ASC`,
+    );
+    return (stmt.all(groupId) as any[]).map((row) => this.normalizeRow(row));
+  }
+
+  public reorderNoteGroupMembers(
+    members: { id: string; order: number }[],
+  ): void {
+    const updateStmt = this.db.prepare(
+      `UPDATE noteGroupMembers SET "order" = ? WHERE id = ?`,
+    );
+    const transaction = this.db.transaction((ms) => {
+      for (const m of ms) {
+        updateStmt.run(m.order, m.id);
+      }
+    });
+    transaction(members);
+  }
+
+  public deleteNoteGroupMembersByNoteId(noteId: string): void {
+    const stmt = this.db.prepare(
+      "DELETE FROM noteGroupMembers WHERE noteId = ?",
+    );
+    stmt.run(noteId);
+  }
+
+  public deleteNoteGroupMembersByGroupId(groupId: string): void {
+    const stmt = this.db.prepare(
+      "DELETE FROM noteGroupMembers WHERE groupId = ?",
+    );
+    stmt.run(groupId);
   }
 }
 

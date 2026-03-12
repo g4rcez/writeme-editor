@@ -24,6 +24,8 @@ const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
 const SettingsPage = lazy(() => import("./pages/settings.page"));
 const TemplatePage = lazy(() => import("./pages/template.page"));
 const MigratePage = lazy(() => import("./pages/migrate.page"));
+const GroupsListPage = lazy(() => import("./pages/groups-list.page"));
+const GroupDetailPage = lazy(() => import("./pages/group-detail.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -83,6 +85,14 @@ export const router = createRouter([
       {
         path: "migrate",
         element: <MigratePage />,
+      },
+      {
+        path: "groups",
+        element: <GroupsListPage />,
+      },
+      {
+        path: "groups/:groupId",
+        element: <GroupDetailPage />,
       },
       {
         path: "examples",

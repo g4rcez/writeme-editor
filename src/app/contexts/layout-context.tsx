@@ -7,7 +7,8 @@ export type ActivityType =
   | "explorer"
   | "settings"
   | "favorites"
-  | "templates";
+  | "templates"
+  | "groups";
 
 export type LayoutView =
   | { type: "all" }

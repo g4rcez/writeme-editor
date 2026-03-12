@@ -122,6 +122,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
       sync: (filename: string, tags: string[]) =>
         ipcRenderer.invoke("db:hashtags:sync", filename, tags),
     },
+    noteGroups: {
+      getByNoteId: (noteId: string) =>
+        ipcRenderer.invoke("db:noteGroups:getByNoteId", noteId),
+    },
+    noteGroupMembers: {
+      getByGroupId: (groupId: string) =>
+        ipcRenderer.invoke("db:noteGroupMembers:getByGroupId", groupId),
+      reorder: (members: { id: string; order: number }[]) =>
+        ipcRenderer.invoke("db:noteGroupMembers:reorder", members),
+      deleteByNoteId: (noteId: string) =>
+        ipcRenderer.invoke("db:noteGroupMembers:deleteByNoteId", noteId),
+      deleteByGroupId: (groupId: string) =>
+        ipcRenderer.invoke("db:noteGroupMembers:deleteByGroupId", groupId),
+    },
   },
   execution: {
     resolve: (command: string) =>
@@ -242,6 +256,15 @@ declare global {
         };
         hashtags: {
           sync(filename: string, tags: string[]): Promise<void>;
+        };
+        noteGroups: {
+          getByNoteId(noteId: string): Promise<any[]>;
+        };
+        noteGroupMembers: {
+          getByGroupId(groupId: string): Promise<any[]>;
+          reorder(members: { id: string; order: number }[]): Promise<void>;
+          deleteByNoteId(noteId: string): Promise<void>;
+          deleteByGroupId(groupId: string): Promise<void>;
         };
       };
       execution: {

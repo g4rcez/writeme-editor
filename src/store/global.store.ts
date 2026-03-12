@@ -1,10 +1,13 @@
 import { createGlobalReducer } from "use-typed-reducer";
+import { uuid } from "@g4rcez/components";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "./cursor-position.store";
 import { Note } from "./note";
 import { repositories } from "./repositories";
 import { Tab } from "./repositories/entities/tab";
+import { NoteGroup } from "./repositories/entities/note-group";
+import { NoteGroupMember } from "./repositories/entities/note-group-member";
 import { uiDispatch } from "./ui.store";
 import { SettingsService } from "./settings";
 
@@ -31,6 +34,8 @@ const THEME_CLASSES = ["dark", "catppuccin-mocha", "tokyonight-night"] as const;
 
 type State = {
   tabs: Tab[];
+  noteGroups: NoteGroup[];
+  noteGroupMembers: NoteGroupMember[];
   theme: Theme;
   help: boolean;
   notes: Note[];
@@ -64,6 +69,8 @@ const initialState: State = {
   help: false,
   aiContext: null,
   tabs: [] as Tab[],
+  noteGroups: [] as NoteGroup[],
+  noteGroupMembers: [] as NoteGroupMember[],
   notes: [] as Note[],
   readItLaterDialog: false,
   recentNotesDialog: false,
@@ -335,12 +342,16 @@ export const useGlobalStore = createGlobalReducer(
       deleteNote: async (id: string) => {
         const state = get.state();
         await repositories.notes.delete(id);
+        await repositories.noteGroupMembers.deleteByNoteId(id);
         const tabs = state.tabs.filter((x) => x.noteId !== id);
         const activeTabId =
           state.activeTabId === id ? (tabs[0]?.id ?? null) : state.activeTabId;
         const notes = state.notes.filter((n) => n.id !== id);
         const note = state.note?.id === id ? null : state.note;
-        return { notes, tabs, activeTabId, note };
+        const noteGroupMembers = state.noteGroupMembers.filter(
+          (m) => m.noteId !== id,
+        );
+        return { notes, tabs, activeTabId, note, noteGroupMembers };
       },
       updateNoteContent: async (id: string, content: string) => {
         try {
@@ -382,6 +393,91 @@ export const useGlobalStore = createGlobalReducer(
           return state;
         }
         return selectOrAddTab(note);
+      },
+      loadGroups: async () => {
+        const [noteGroups, noteGroupMembers] = await Promise.all([
+          repositories.noteGroups.getAll(),
+          repositories.noteGroupMembers.getAll(),
+        ]);
+        return { noteGroups, noteGroupMembers };
+      },
+      createGroup: async (title: string, description?: string) => {
+        const now = new Date();
+        const group = new NoteGroup(uuid(), title, description ?? null, now, now);
+        await repositories.noteGroups.save(group);
+        const state = get.state();
+        return { noteGroups: state.noteGroups.concat(group) };
+      },
+      deleteGroup: async (id: string) => {
+        await repositories.noteGroupMembers.deleteByGroupId(id);
+        await repositories.noteGroups.delete(id);
+        const state = get.state();
+        return {
+          noteGroups: state.noteGroups.filter((g) => g.id !== id),
+          noteGroupMembers: state.noteGroupMembers.filter(
+            (m) => m.groupId !== id,
+          ),
+        };
+      },
+      updateGroup: async (id: string, partial: Partial<Pick<NoteGroup, "title" | "description">>) => {
+        const state = get.state();
+        const existing = state.noteGroups.find((g) => g.id === id);
+        if (!existing) return state;
+        const updated = { ...existing, ...partial, updatedAt: new Date() } as NoteGroup;
+        await repositories.noteGroups.save(updated);
+        return {
+          noteGroups: state.noteGroups.map((g) => (g.id === id ? updated : g)),
+        };
+      },
+      addNoteToGroup: async (groupId: string, noteId: string) => {
+        const state = get.state();
+        const alreadyMember = state.noteGroupMembers.some(
+          (m) => m.groupId === groupId && m.noteId === noteId,
+        );
+        if (alreadyMember) return state;
+        const existing = state.noteGroupMembers.filter(
+          (m) => m.groupId === groupId,
+        );
+        const maxOrder = existing.reduce(
+          (max, m) => Math.max(max, m.order),
+          -1,
+        );
+        const now = new Date();
+        const member = new NoteGroupMember(
+          uuid(),
+          groupId,
+          noteId,
+          maxOrder + 1,
+          now,
+          now,
+        );
+        await repositories.noteGroupMembers.save(member);
+        return { noteGroupMembers: state.noteGroupMembers.concat(member) };
+      },
+      removeNoteFromGroup: async (groupId: string, noteId: string) => {
+        const state = get.state();
+        const member = state.noteGroupMembers.find(
+          (m) => m.groupId === groupId && m.noteId === noteId,
+        );
+        if (!member) return state;
+        await repositories.noteGroupMembers.delete(member.id);
+        return {
+          noteGroupMembers: state.noteGroupMembers.filter(
+            (m) => !(m.groupId === groupId && m.noteId === noteId),
+          ),
+        };
+      },
+      reorderGroupMembers: async (
+        groupId: string,
+        members: NoteGroupMember[],
+      ) => {
+        const state = get.state();
+        await repositories.noteGroupMembers.reorder(groupId, members);
+        return {
+          noteGroupMembers: state.noteGroupMembers
+            .filter((m) => m.groupId !== groupId)
+            .concat(members),
+        };
       },
     } as const;
   },
