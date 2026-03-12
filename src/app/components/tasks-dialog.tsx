@@ -1,47 +1,47 @@
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { useUIStore } from "@/store/ui.store";
 import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-  defaultDropAnimationSideEffects,
-  useDroppable,
-  useSensor,
-  useSensors,
+    DndContext,
+    type DragEndEvent,
+    type DragOverEvent,
+    DragOverlay,
+    PointerSensor,
+    closestCorners,
+    defaultDropAnimationSideEffects,
+    useDroppable,
+    useSensor,
+    useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Button, Checkbox, Input, Modal, Textarea } from "@g4rcez/components";
+import { Button, Checkbox, Input, Modal } from "@g4rcez/components";
 import { DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { type Node as ProseMirrorNode } from "prosemirror-model";
-import React, {
-  Fragment,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useState,
+import {
+    Fragment,
+    type ReactNode,
+    useCallback,
+    useEffect,
+    useState,
 } from "react";
 
 export type Card = {
   id: string;
-  title: string;
-  description: string;
-  checked?: boolean;
   pos?: number;
-  endPos?: number;
-  nodeSize?: number;
-  parentTaskListPos?: number;
-  titlePos?: number;
-  descriptionPos?: number;
+  title: string;
   source: "task";
+  endPos?: number;
+  checked?: boolean;
+  nodeSize?: number;
+  titlePos?: number;
+  description: string;
+  descriptionPos?: number;
+  parentTaskListPos?: number;
 };
 
 export type Stack = {
@@ -200,7 +200,16 @@ export function moveTaskItemBetweenStacks(
         insertBeforeCard,
       );
 
-      tr.delete(card.pos!, card.endPos!);
+      let deleteFrom = card.pos!;
+      let deleteTo = card.endPos!;
+      if (card.parentTaskListPos !== undefined) {
+        const taskListNode = state.doc.nodeAt(card.parentTaskListPos);
+        if (taskListNode && taskListNode.childCount === 1) {
+          deleteFrom = card.parentTaskListPos;
+          deleteTo = card.parentTaskListPos + taskListNode.nodeSize;
+        }
+      }
+      tr.delete(deleteFrom, deleteTo);
       const mappedInsertPos = tr.mapping.map(insertPos);
 
       const $insertPos = tr.doc.resolve(mappedInsertPos);
@@ -367,8 +376,6 @@ const NewTaskModal = ({
   );
 };
 
-// ---- Presentational TaskCard ----
-
 type TaskCardProps = {
   card: Card;
   onToggle?: (card: Card) => void;
@@ -460,36 +467,6 @@ const TaskCard = ({
           )}
         </div>
       </div>
-      <div className="ml-6" onPointerDown={(e) => e.stopPropagation()}>
-        {editingField === "description" ? (
-          <Textarea
-            autoFocus
-            value={tempDesc}
-            onBlur={handleSave}
-            placeholder="Add description..."
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setDescription(e.target.value)
-            }
-            onKeyDown={(e: any) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave();
-              if (e.key === "Escape") {
-                setDescription(card.description);
-                setEditingField(null);
-              }
-            }}
-            className="text-xs min-h-[60px]"
-          />
-        ) : (
-          <p
-            onClick={() => setEditingField("description")}
-            className={`text-xs text-foreground/60 line-clamp-3 cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded px-1 -mx-1 transition-colors ${
-              !card.description ? "italic opacity-40" : ""
-            }`}
-          >
-            {card.description || "Add description..."}
-          </p>
-        )}
-      </div>
     </div>
   );
 };
@@ -529,8 +506,6 @@ function SortableCard({ card, onToggle, onUpdate }: SortableCardProps) {
     </div>
   );
 }
-
-// ---- Droppable Column component ----
 
 type DroppableColumnProps = {
   stack: Stack;
