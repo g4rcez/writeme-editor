@@ -238,6 +238,10 @@ export const useGlobalStore = createGlobalReducer(
         SettingsService.save({ isSidebarCollapsed });
         return { isSidebarCollapsed };
       },
+      hideSidebar: () => {
+        SettingsService.save({ isSidebarCollapsed: false });
+        return { isSidebarCollapsed: false };
+      },
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,
       }),

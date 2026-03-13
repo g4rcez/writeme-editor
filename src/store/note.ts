@@ -37,7 +37,7 @@ export class Note implements EntityBase {
   public static new(
     title: string,
     content: string,
-    noteType: NoteType = "note",
+    noteType: NoteType = NoteType.note,
     url: string | null = null,
     description: string | null = null,
     favicon: string | null = null,
@@ -112,7 +112,7 @@ export class Note implements EntityBase {
       a.tags || [],
       a.createdBy || "user",
       a.updatedBy || "user",
-      a.noteType || "note",
+      a.noteType || NoteType.note,
       a.url || null,
       a.description || null,
       a.favicon || null,

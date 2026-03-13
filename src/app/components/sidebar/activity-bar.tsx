@@ -7,7 +7,11 @@ import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
 import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
 import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
-import { BracketsCurlyIcon, type Icon } from "@phosphor-icons/react";
+import {
+  BracketsCurlyIcon,
+  CalendarDotsIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 import {
   useLayoutStore,
   type ActivityType,
@@ -66,9 +70,12 @@ export const ActivityBar = () => {
   const [state, dispatch] = useGlobalStore();
   const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
 
-  const onActivityClick = (activity: ActivityType) => {
+  const onActivityClick = (
+    activity: ActivityType,
+    isSidebarCollapsed = false,
+  ) => {
     dispatchLayout.setActivity(activity);
-    globalDispatch.setSidebarCollapsed(false);
+    globalDispatch.setSidebarCollapsed(isSidebarCollapsed);
   };
 
   return (
@@ -119,6 +126,15 @@ export const ActivityBar = () => {
           icon={FolderSimpleIcon}
           active={layout.activeActivity === "groups"}
           onClick={() => onActivityClick("groups")}
+        />
+        <ActivityIcon
+          label="Calendar"
+          icon={CalendarDotsIcon}
+          active={layout.activeActivity === "calendar"}
+          onClick={() => {
+            navigate("/calendar");
+            onActivityClick("calendar", true);
+          }}
         />
         <ActivityIcon
           label="Terminal"

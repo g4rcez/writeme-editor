@@ -3,12 +3,13 @@ import { createGlobalReducer } from "use-typed-reducer";
 export type ActivityType =
   | "json"
   | "tags"
+  | "groups"
   | "search"
+  | "calendar"
   | "explorer"
   | "settings"
   | "favorites"
-  | "templates"
-  | "groups";
+  | "templates";
 
 export type LayoutView =
   | { type: "all" }
@@ -18,7 +19,8 @@ export type LayoutView =
   | { type: "read-it-later" }
   | { type: "tag"; id: string }
   | { type: "json"; id: string }
-  | { type: "folder"; id: string };
+  | { type: "folder"; id: string }
+  | { type: "calendar"; id: string };
 
 type LayoutState = {
   searchQuery: string;
@@ -27,9 +29,9 @@ type LayoutState = {
 };
 
 const initialState: LayoutState = {
-  activeView: { type: "all" },
-  activeActivity: "explorer",
   searchQuery: "",
+  activeActivity: "explorer",
+  activeView: { type: "all" },
 };
 
 export const useLayoutStore = createGlobalReducer(initialState, () => ({

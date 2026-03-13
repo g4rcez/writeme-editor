@@ -26,6 +26,7 @@ const TemplatePage = lazy(() => import("./pages/template.page"));
 const MigratePage = lazy(() => import("./pages/migrate.page"));
 const GroupsListPage = lazy(() => import("./pages/groups-list.page"));
 const GroupDetailPage = lazy(() => import("./pages/group-detail.page"));
+const CalendarPage = lazy(() => import("./pages/calendar.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -93,6 +94,10 @@ export const router = createRouter([
       {
         path: "groups/:groupId",
         element: <GroupDetailPage />,
+      },
+      {
+        path: "calendar",
+        element: <CalendarPage />,
       },
       {
         path: "examples",
