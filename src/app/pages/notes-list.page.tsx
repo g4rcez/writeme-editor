@@ -6,7 +6,7 @@ import {
   Modal,
   Table,
   Tag,
-  type TagProps,
+  type TagProps
 } from "@g4rcez/components";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";

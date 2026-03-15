@@ -1,38 +1,27 @@
-import { CalendarHeader } from "@/app/components/calendar/calendar-header";
-import {
-  type CalendarEvent,
-  type CalendarFilter,
-  type ViewMode,
-} from "@/app/components/calendar/calendar.types";
-import {
-  formatFullDate,
-  formatTime,
-  getMonthDays,
-  getWeekDays,
-  groupEventsByDate,
-} from "@/app/components/calendar/calendar.utils";
-import { DayView } from "@/app/components/calendar/day-view";
-import { MonthView } from "@/app/components/calendar/month-view";
-import { WeekView } from "@/app/components/calendar/week-view";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import {
   Button,
+  type CalendarEvent,
+  type CalendarFilter,
+  formatFullDate,
+  formatTime,
   Input,
   Modal,
-  useLocale,
+  PageCalendar,
   type TagProps,
+  useLocale,
 } from "@g4rcez/components";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const NOTE_TYPE_COLORS: Record<NoteType, string> = {
-  "read-it-later": "bg-blue-500/20 text-blue-700 dark:text-blue-300",
-  [NoteType.quick]: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
-  [NoteType.note]: "bg-primary/20 text-primary",
-  [NoteType.json]: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
-  [NoteType.freehand]: "bg-green-500/20 text-green-700 dark:text-green-300",
-  [NoteType.template]: "bg-red-500/20 text-red-700 dark:text-red-300",
+  "read-it-later": "bg-tag-info-bg text-tag-info-text",
+  [NoteType.quick]: "bg-tag-warn-bg text-tag-warn-text",
+  [NoteType.note]: "bg-tag-primary-bg text-tag-primary-text",
+  [NoteType.json]: "bg-tag-secondary-bg text-tag-secondary-text",
+  [NoteType.freehand]: "bg-tag-success-bg text-tag-success-text",
+  [NoteType.template]: "bg-tag-danger-bg text-tag-danger-text",
 };
 
 const NOTE_TYPE_FILTER_THEMES: Record<NoteType, TagProps["theme"]> = {
@@ -58,6 +47,7 @@ const CALENDAR_FILTERS: CalendarFilter[] = Object.values(NoteType).map(
     id: type,
     label: NOTE_TYPE_LABELS[type],
     theme: NOTE_TYPE_FILTER_THEMES[type],
+    enabled: true,
   }),
 );
 
@@ -66,11 +56,7 @@ export default function CalendarPage() {
   const [state, dispatch] = useGlobalStore();
   const navigate = useNavigate();
 
-  const [currentView, setCurrentView] = useState<ViewMode>("month");
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-  const [activeFilters, setActiveFilters] = useState<string[]>(
-    CALENDAR_FILTERS.map((f) => f.id),
-  );
+  const [filters, setFilters] = useState<CalendarFilter[]>(CALENDAR_FILTERS);
   const [createEventDate, setCreateEventDate] = useState<Date | null>(null);
   const [newEventTitle, setNewEventTitle] = useState("");
   const [newEventType, setNewEventType] = useState<NoteType>(NoteType.note);
@@ -82,29 +68,24 @@ export default function CalendarPage() {
     }
   }, [createEventDate]);
 
-  const filteredNotes = useMemo(
-    () => state.notes.filter((n) => activeFilters.includes(n.noteType)),
-    [state.notes, activeFilters],
+  const activeFilterIds = useMemo(
+    () => filters.filter((f) => f.enabled).map((f) => f.id),
+    [filters],
   );
 
   const calendarEvents = useMemo<CalendarEvent[]>(
     () =>
-      filteredNotes.map((note) => ({
-        id: note.id,
-        title: note.title,
-        date: new Date(note.createdAt),
-        className: NOTE_TYPE_COLORS[note.noteType],
-      })),
-    [filteredNotes],
+      state.notes
+        .filter((n) => activeFilterIds.includes(n.noteType))
+        .map((note) => ({
+          id: note.id,
+          title: note.title,
+          date: new Date(note.createdAt),
+          filterId: note.noteType,
+          className: NOTE_TYPE_COLORS[note.noteType],
+        })),
+    [state.notes, activeFilterIds],
   );
-
-  const eventsByDate = useMemo(
-    () => groupEventsByDate(calendarEvents),
-    [calendarEvents],
-  );
-
-  const monthDays = useMemo(() => getMonthDays(currentDate), [currentDate]);
-  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
 
   const noteById = useMemo(
     () => new Map(state.notes.map((n) => [n.id, n])),
@@ -132,12 +113,7 @@ export default function CalendarPage() {
     navigate("/note/" + note.id);
   };
 
-  const onDayClick = (date: Date) => {
-    setCurrentDate(date);
-    setCurrentView("day");
-  };
-
-  const renderEventDetail = (event: CalendarEvent) => {
+  const renderEvent = (event: CalendarEvent) => {
     const note = noteById.get(event.id);
     const noteType = note?.noteType ?? "note";
     return (
@@ -158,46 +134,15 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden p-4 gap-3">
-      <CalendarHeader
+      <PageCalendar
+        events={calendarEvents}
+        filters={filters}
         onAddEvent={onAddEvent}
-        currentDate={currentDate}
-        currentView={currentView}
-        filters={CALENDAR_FILTERS}
-        activeFilters={activeFilters}
-        setCurrentDate={setCurrentDate}
-        setCurrentView={setCurrentView}
-        setActiveFilters={setActiveFilters}
+        onSlotClick={onSlotClick}
+        onEventClick={onEventClick}
+        onChangeFilters={setFilters}
+        renderEvent={renderEvent}
       />
-      {currentView === "month" && (
-        <MonthView
-          days={monthDays}
-          onDayClick={onDayClick}
-          currentDate={currentDate}
-          eventsByDate={eventsByDate}
-          onEventClick={onEventClick}
-        />
-      )}
-
-      {currentView === "week" && (
-        <WeekView
-          days={weekDays}
-          eventsByDate={eventsByDate}
-          currentDate={currentDate}
-          onEventClick={onEventClick}
-          onSlotClick={onSlotClick}
-        />
-      )}
-
-      {currentView === "day" && (
-        <DayView
-          currentDate={currentDate}
-          eventsByDate={eventsByDate}
-          onEventClick={onEventClick}
-          onDateChange={setCurrentDate}
-          renderEventDetail={renderEventDetail}
-          onSlotClick={onSlotClick}
-        />
-      )}
 
       <Modal
         open={createEventDate !== null}
@@ -231,7 +176,7 @@ export default function CalendarPage() {
                     : "border-border text-muted-foreground hover:bg-muted/30"
                 }`}
               >
-                -- {f.label}
+                {f.label}
               </button>
             ))}
           </div>
