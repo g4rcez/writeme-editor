@@ -3,6 +3,7 @@ import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
 
 export default {
+  blocklist: ["[-:\\s\\|]"],
   plugins: [typography, forms],
   darkMode: "class",
   presets: [Preset],
