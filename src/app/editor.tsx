@@ -229,6 +229,7 @@ const InnerEditor = (props: {
 
   const onSaveRef = useRef(props.onSave);
   const noteRef = useRef(props.note);
+  const isSettingContent = useRef(false);
 
   useEffect(() => {
     onSaveRef.current = props.onSave;
@@ -239,12 +240,14 @@ const InnerEditor = (props: {
     if (!editor || props.content === undefined) return;
     const currentMarkdown = editor.getMarkdown();
     if (props.content !== currentMarkdown) {
+      isSettingContent.current = true;
       editor.commands.setContent(props.content, {
         contentType: "markdown",
         parseOptions: {
           preserveWhitespace: "full",
         },
       });
+      isSettingContent.current = false;
     }
   }, [editor, props.content]);
 
@@ -267,6 +270,10 @@ const InnerEditor = (props: {
     let saveTimeout: NodeJS.Timeout;
 
     const updateHandler = () => {
+      if (isSettingContent.current) {
+        clearTimeout(saveTimeout);
+        return;
+      }
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
         try {

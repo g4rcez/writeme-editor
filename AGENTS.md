@@ -1,4 +1,4 @@
-# AGENTS.md
+# [AGENTS.md](http://AGENTS.md)
 
 Agent guidelines for the Writeme Electron application.
 
@@ -6,7 +6,7 @@ Agent guidelines for the Writeme Electron application.
 
 **Package manager**: Use `npm` — not `pnpm` or `yarn`.
 
-- `npm run dev` / `npm start` - Start Electron app in development mode  
+- `npm run dev` / `npm start` - Start Electron app in development mode
 - `npm run browser:dev` - Start web version with Vite dev server
 - `npm run lint` - Run ESLint on TypeScript/TSX files
 - `npm run package` - Package application for distribution
@@ -15,6 +15,7 @@ Agent guidelines for the Writeme Electron application.
 - No test framework configured - verify changes through manual testing
 
 ## Code Style Guidelines
+
 - **TypeScript**: Strict typing with `noImplicitAny` enabled
 - **Imports**: Use ESM imports, group by external/internal with blank lines
 - **Naming**: camelCase for variables/functions, PascalCase for components/types
