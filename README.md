@@ -1,8 +1,6 @@
 # writeme
 
-This is designed to be a text editor that help you to interact with AI and took notes with super powers, by using our awesome features.
-
-![thanks](assets/readme/3.png)
+This is designed to be a text editor that help you to interact with AI and took notes with super powers, by using our awesome 
 
 ## Features
 

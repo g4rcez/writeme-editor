@@ -97,9 +97,8 @@ export default function CalendarPage() {
     navigate("/note/" + event.id);
   };
 
-  const onAddEvent = () => {
+  const onAddEvent = () =>
     dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
-  };
 
   const onSlotClick = (date: Date) => setCreateEventDate(date);
 
@@ -135,20 +134,19 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden p-4 gap-3">
       <PageCalendar
-        events={calendarEvents}
         filters={filters}
+        events={calendarEvents}
         onAddEvent={onAddEvent}
         onSlotClick={onSlotClick}
+        renderEvent={renderEvent}
         onEventClick={onEventClick}
         onChangeFilters={setFilters}
-        renderEvent={renderEvent}
       />
-
       <Modal
-        open={createEventDate !== null}
-        className="max-w-md"
-        onChange={() => setCreateEventDate(null)}
         title="New note"
+        className="max-w-md"
+        open={createEventDate !== null}
+        onChange={() => setCreateEventDate(null)}
       >
         <form onSubmit={createEvent} className="flex flex-col gap-4">
           {createEventDate && (

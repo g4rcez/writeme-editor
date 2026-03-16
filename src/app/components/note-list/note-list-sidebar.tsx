@@ -16,18 +16,20 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SortAscendingIcon } from "@phosphor-icons/react";
 
-type NoteItemProps = {
+export type NoteItemProps = {
   note: NoteWithTags;
   isActive: boolean;
   onClick: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
+  extra?: React.ReactNode;
 };
 
-const NoteItem = ({
+export const NoteItem = ({
   note,
   isActive,
   onClick,
   onToggleFavorite,
+  extra,
 }: NoteItemProps) => {
   const itemRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
@@ -58,6 +60,7 @@ const NoteItem = ({
         >
           {note.title || "Untitled"}
         </h3>
+        {extra}
         <button
           onClick={onToggleFavorite}
           className={`shrink-0 p-0.5 rounded hover:bg-background/80 transition-opacity ${

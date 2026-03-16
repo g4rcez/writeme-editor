@@ -10,10 +10,13 @@ import { type TreeNode } from "@/types/tree";
 import { Button } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
+import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView } from "../tree-view";
+import { DbNotesTree } from "./db-notes-tree";
 
 const MEDIA_EXTENSION_MAP = {
   ".bmp": { mediaType: "image", mimeType: "image/bmp" },
@@ -40,6 +43,7 @@ export const ExplorerPane = () => {
   const [, uiDispatch] = useUIStore();
   const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const navigate = useNavigate();
+  const [showDbNotes, setShowDbNotes] = useState(false);
 
   const handleChooseDirectory = async () => {
     const path = await window.electronAPI.fs.chooseDirectory();
@@ -157,14 +161,25 @@ export const ExplorerPane = () => {
           >
             <FolderPlusIcon size={14} />
           </button>
+          <button
+            className={`p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground ${showDbNotes ? "bg-muted text-foreground" : ""}`}
+            title="Notes in database"
+            onClick={() => setShowDbNotes((v) => !v)}
+          >
+            <GlobeSimpleIcon size={14} />
+          </button>
         </div>
       </div>
       <div className="overflow-auto flex-1 scrollbar-hide">
-        <TreeView
-          map={map}
-          rootPath={state.explorerRoot}
-          onFileSelect={onFileSelect}
-        />
+        {showDbNotes ? (
+          <DbNotesTree notes={state.notes} rootPath={state.explorerRoot} />
+        ) : (
+          <TreeView
+            map={map}
+            rootPath={state.explorerRoot}
+            onFileSelect={onFileSelect}
+          />
+        )}
       </div>
     </div>
   );
