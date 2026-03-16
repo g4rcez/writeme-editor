@@ -20,9 +20,7 @@ import { isElectron } from "@/lib/is-electron";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { isRelativeLink } from "@/lib/link-utils";
-import { AITooltip } from "./ai/ai-tooltip";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
@@ -352,22 +350,6 @@ const InnerEditor = (props: {
       <EditorContext.Provider value={{ editor }}>
         <BubbleMenu className="writeme-editor-bubble" editor={editor}>
           <ul className="writeme-editor-bubble-actions">
-            {isElectron() ? (
-              <li>
-                <AITooltip
-                  editor={editor}
-                  trigger={
-                    <button
-                      type="button"
-                      className="flex gap-2 items-center w-full"
-                    >
-                      <SparkleIcon size={14} className="text-primary" />
-                      Ask AI
-                    </button>
-                  }
-                />
-              </li>
-            ) : null}
           </ul>
         </BubbleMenu>
         <EditorContent

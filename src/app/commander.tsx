@@ -210,24 +210,6 @@ export const Commander = () => {
         ],
       },
     ];
-    const aiItem: CommandItemTypes = {
-      title: "AI Assistant",
-      type: "group",
-      items: [
-        {
-          title: "Open AI Chat",
-          shortcut: mapShortcutOS("mod+alt+a"),
-          type: "shortcut",
-          action: (args) => {
-            args.setOpen(false);
-            setTimeout(() => {
-              dispatch.setAiDrawer({ isOpen: true, chatId: null });
-            }, 50);
-          },
-        },
-      ],
-    };
-
     const templateItem: CommandItemTypes = {
       title: "Templates",
       type: "group",
@@ -263,7 +245,7 @@ export const Commander = () => {
       ],
     };
 
-    return [aiItem, notesItem, templateItem, ...otherStuff];
+    return [notesItem, templateItem, ...otherStuff];
   }, [state.commander, state.notes, navigate, dispatch, commands, templates]);
 
   return (

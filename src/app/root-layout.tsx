@@ -5,7 +5,6 @@ import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
-import { AIDrawer } from "@/app/ai/ai-drawer";
 import { FindReplaceBar } from "@/app/components/find-replace-bar";
 import { Commander } from "@/app/commander";
 import { Alert } from "@/app/components/alert";
@@ -109,7 +108,6 @@ export const RootLayout = () => {
           <span>Exit Focus</span>
         </button>
       )}
-      {isElectron() && <AIDrawer />}
       {uiState.alert && (
         <Alert
           open={uiState.alert.open}

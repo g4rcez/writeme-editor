@@ -27,6 +27,7 @@ const MigratePage = lazy(() => import("./pages/migrate.page"));
 const GroupsListPage = lazy(() => import("./pages/groups-list.page"));
 const GroupDetailPage = lazy(() => import("./pages/group-detail.page"));
 const CalendarPage = lazy(() => import("./pages/calendar.page"));
+const OAuthCallbackPage = lazy(() => import("./pages/oauth-callback.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -98,6 +99,10 @@ export const router = createRouter([
       {
         path: "calendar",
         element: <CalendarPage />,
+      },
+      {
+        path: "oauth/callback",
+        element: <OAuthCallbackPage />,
       },
       {
         path: "examples",

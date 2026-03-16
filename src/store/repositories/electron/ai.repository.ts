@@ -1,9 +1,20 @@
+import type { AICredentials } from "../entities/ai";
+
+export type AttachedFile = {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+};
+
 export type AIConfig = {
   id: string;
   name: string;
-  commandTemplate: string;
+  commandTemplate?: string;
   systemPrompt: string;
   isDefault: boolean;
+  adapterId: string;
+  model?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -24,6 +35,7 @@ export type AIMessage = {
   diffOriginal?: string;
   diffNew?: string;
   selectionSlice?: { from: number; to: number };
+  files?: AttachedFile[];
   createdAt: string;
   updatedAt?: string;
 };
@@ -55,5 +67,17 @@ export class AIRepository {
 
   public async saveMessage(message: AIMessage): Promise<void> {
     return window.electronAPI.ai.saveMessage(message);
+  }
+
+  public async saveCredentials(creds: AICredentials): Promise<void> {
+    return window.electronAPI.ai.saveCredentials(creds);
+  }
+
+  public async loadCredentials(adapterId: string): Promise<AICredentials | null> {
+    return window.electronAPI.ai.loadCredentials(adapterId);
+  }
+
+  public async clearCredentials(adapterId: string): Promise<void> {
+    return window.electronAPI.ai.clearCredentials(adapterId);
   }
 }

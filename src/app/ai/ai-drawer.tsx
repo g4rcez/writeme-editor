@@ -12,14 +12,19 @@ import { editorGlobalRef } from "../editor-global-ref";
 import { AIDiffView } from "./ai-diff-view";
 import { useAIChat } from "./use-ai-chat";
 import { useNavigate } from "react-router-dom";
+import { AIFileAttachment } from "./ai-file-attachment";
+import { adapterRegistry } from "./adapters/registry";
+import type { AIFile } from "./adapters/types";
 
 export const AIDrawer = () => {
   const navigate = useNavigate();
   const [state] = useGlobalStore();
   const { note, aiDrawer, aiContext } = state;
-  const { messages, isStreaming, send, stop, config } = useAIChat(note?.id);
+  const { messages, isStreaming, send, cancel, config } = useAIChat(note?.id);
   const [input, setInput] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<AIFile[]>([]);
   const parentRef = useRef<HTMLDivElement>(null);
+  const adapter = config ? adapterRegistry.get(config.adapterId ?? "cli") : undefined;
 
   const virtualizer = useVirtualizer({
     count: messages.length,
@@ -62,8 +67,9 @@ export const AIDrawer = () => {
     const selectionSlice = editor
       ? { from: editor.state.selection.from, to: editor.state.selection.to }
       : undefined;
-    send(input, { selection, context, selectionSlice });
+    send(input, { selection, context, selectionSlice }, pendingFiles);
     setInput("");
+    setPendingFiles([]);
   };
 
   const onApply = (msg: any) => {
@@ -179,6 +185,13 @@ export const AIDrawer = () => {
           )}
         </div>
         <div className="py-4 border-t border-floating-border">
+          {adapter && adapter.supportsFiles && (
+            <AIFileAttachment
+              files={pendingFiles}
+              onFilesChange={setPendingFiles}
+              adapter={adapter}
+            />
+          )}
           <Textarea
             value={input}
             optionalText=" "
@@ -195,7 +208,7 @@ export const AIDrawer = () => {
                 {isStreaming ? (
                   <button
                     type="button"
-                    onClick={stop}
+                    onClick={cancel}
                     className="p-2 rounded-md transition-colors text-destructive hover:bg-destructive/10"
                   >
                     <StopCircleIcon size={20} />

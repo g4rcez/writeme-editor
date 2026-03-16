@@ -23,6 +23,7 @@ import { type ISettingsRepository } from "./entities/settings";
 import { type ITabRepository } from "./entities/tab";
 import { type IScriptRepository } from "./entities/script";
 import { type IAIRepository } from "./entities/ai";
+import { BrowserAIRepository } from "./browser/ai.repository";
 import { type INoteGroupRepository } from "./entities/note-group";
 import { type INoteGroupMemberRepository } from "./entities/note-group-member";
 
@@ -65,15 +66,7 @@ const getRepositories = (): Result => {
       scripts: new BrowserScriptsRepository(),
       noteGroups: new BrowserNoteGroupsRepository(),
       noteGroupMembers: new BrowserNoteGroupMembersRepository(),
-      ai: {
-        getChats: async () => [],
-        saveChat: async () => {},
-        getConfigs: async () => [],
-        getMessages: async () => [],
-        saveConfig: async () => {},
-        saveMessage: async () => {},
-        deleteConfig: async () => {},
-      },
+      ai: new BrowserAIRepository(),
     };
   }
 };

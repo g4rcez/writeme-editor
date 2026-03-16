@@ -20,6 +20,7 @@ import { tokyonightNightTheme } from "./styles/tokyonight-night";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
 import { sortByNewest } from "@/lib/array";
+import { setupAIAdapters } from "./ai/setup";
 
 declare global {
   interface Window {
@@ -86,6 +87,7 @@ export async function main() {
   if (!rootElement) {
     throw new Error("Root element not found");
   }
+  setupAIAdapters();
   themeConfiguration();
   try {
     await SettingsService.init();

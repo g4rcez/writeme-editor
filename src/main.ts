@@ -18,6 +18,7 @@ import { databaseIpcHandler } from "./ipc/database.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
 import { notesIpcHandler } from "./ipc/notes.ipc";
 import { terminalIpcHandler } from "./ipc/terminal.ipc";
+import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
@@ -130,6 +131,55 @@ function registerAIHandlers() {
       return { success: true };
     } catch (e: any) {
       console.error("Error in ai:save-message:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:save-credentials", (_, creds) => {
+    try {
+      const now = new Date().toISOString();
+      const db = dbManager().db;
+      db.prepare(`
+        INSERT OR REPLACE INTO aiCredentials
+          (adapterId, accessToken, refreshToken, expiresAt, apiKey, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, COALESCE((SELECT createdAt FROM aiCredentials WHERE adapterId = ?), ?), ?)
+      `).run(
+        creds.adapterId,
+        creds.accessToken ?? null,
+        creds.refreshToken ?? null,
+        creds.expiresAt ?? null,
+        creds.apiKey ?? null,
+        creds.adapterId,
+        now,
+        now,
+      );
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:save-credentials:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:load-credentials", (_, adapterId: string) => {
+    try {
+      const row = dbManager().db
+        .prepare("SELECT * FROM aiCredentials WHERE adapterId = ?")
+        .get(adapterId) as any;
+      return row ?? null;
+    } catch (e: any) {
+      console.error("Error in ai:load-credentials:", e);
+      return null;
+    }
+  });
+
+  ipcMain.handle("ai:clear-credentials", (_, adapterId: string) => {
+    try {
+      dbManager().db
+        .prepare("DELETE FROM aiCredentials WHERE adapterId = ?")
+        .run(adapterId);
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:clear-credentials:", e);
       throw e;
     }
   });
@@ -268,6 +318,7 @@ async function main() {
   app.on("ready", () => {
     createWindow();
     createTray();
+    if (mainWindow) registerAIOAuthHandlers(mainWindow);
 
     if (app.isPackaged) {
       if (process.platform !== "linux") {

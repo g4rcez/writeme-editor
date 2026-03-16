@@ -125,6 +125,16 @@ class DatabaseManager {
         updatedAt TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS aiCredentials (
+        adapterId TEXT PRIMARY KEY,
+        accessToken TEXT,
+        refreshToken TEXT,
+        expiresAt INTEGER,
+        apiKey TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS noteGroups (
         id TEXT PRIMARY KEY,
         type TEXT,
@@ -193,7 +203,8 @@ class DatabaseManager {
       "metadata",
       "favorite",
     ];
-    const aiMessageColumns = ["selectionSlice"];
+    const aiMessageColumns = ["selectionSlice", "files"];
+    const aiConfigColumns = ["adapterId", "model"];
 
     for (const table of tables) {
       try {
@@ -230,6 +241,25 @@ class DatabaseManager {
                 .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
                 .run();
             }
+          }
+        }
+
+        if (table === "aiConfigs") {
+          for (const col of aiConfigColumns) {
+            if (!columns.some((c: any) => c.name === col)) {
+              console.log(`Migrating table ${table}: adding '${col}' column`);
+              this.db
+                .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`)
+                .run();
+            }
+          }
+          // Ensure existing CLI configs keep working
+          try {
+            this.db
+              .prepare(`UPDATE aiConfigs SET adapterId = 'cli' WHERE adapterId IS NULL`)
+              .run();
+          } catch (e) {
+            // Column may not exist yet on first run — handled by migration above
           }
         }
 

@@ -173,6 +173,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     saveMessage: (message: any) =>
       ipcRenderer.invoke("ai:save-message", message),
     test: () => ipcRenderer.invoke("ai:test"),
+    saveCredentials: (creds: any) =>
+      ipcRenderer.invoke("ai:save-credentials", creds),
+    loadCredentials: (adapterId: string) =>
+      ipcRenderer.invoke("ai:load-credentials", adapterId),
+    clearCredentials: (adapterId: string) =>
+      ipcRenderer.invoke("ai:clear-credentials", adapterId),
+    startOAuth: (authUrl: string) =>
+      ipcRenderer.invoke("ai:oauth-start", authUrl),
   },
   terminal: {
     spawn: (id: string, cwd?: string) => ipcRenderer.send("terminal:spawn", id, cwd),
@@ -294,6 +302,10 @@ declare global {
         saveChat(chat: any): Promise<void>;
         getMessages(chatId: string): Promise<any[]>;
         saveMessage(message: any): Promise<void>;
+        saveCredentials(creds: any): Promise<void>;
+        loadCredentials(adapterId: string): Promise<any | null>;
+        clearCredentials(adapterId: string): Promise<void>;
+        startOAuth(authUrl: string): Promise<{ code: string }>;
       };
       terminal: {
         spawn(id: string, cwd?: string): void;
