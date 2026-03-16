@@ -10,10 +10,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          shiki: ["shiki"],
-          mermaid: ["mermaid"],
-          "react-vendor": ["react", "react-dom"],
+        manualChunks: (id) => {
+          if (id.includes("shiki")) return "shiki";
+          if (id.includes("mermaid")) return "mermaid";
+          if (id.includes("react-dom") || id.includes("node_modules/react/")) return "react-vendor";
         },
       },
     },
