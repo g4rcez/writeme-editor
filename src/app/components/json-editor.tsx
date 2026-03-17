@@ -8,6 +8,7 @@ import { tags as t } from "@lezer/highlight";
 import { Button } from "@g4rcez/components";
 import { BracketsCurlyIcon } from "@phosphor-icons/react/dist/csr/BracketsCurly";
 import { useGlobalStore } from "@/store/global.store";
+import { controller } from "@/app/controller";
 
 const jsonLightTheme = createTheme({
   theme: "light",
@@ -54,7 +55,9 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
         extensions: [
           basicSetup,
           json(),
-          themeCompartment.current.of(isDark ? tokyoNightStorm : jsonLightTheme),
+          themeCompartment.current.of(
+            isDark ? tokyoNightStorm : jsonLightTheme,
+          ),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChange(update.state.doc.toString());
@@ -73,6 +76,20 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
     });
 
     viewRef.current = view;
+
+    (async () => {
+      try {
+        const text = await controller.clipboard();
+        const parsed = JSON.parse(text);
+        const formatted = JSON.stringify(parsed, null, 2);
+        if (view.state.doc.length === 0) {
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: formatted },
+          });
+          onChange(formatted);
+        }
+      } catch {}
+    })();
 
     return () => {
       view.destroy();
