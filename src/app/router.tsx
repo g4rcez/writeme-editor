@@ -21,7 +21,7 @@ const TagPage = lazy(() => import("./pages/tag.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
 const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
-const SettingsPage = lazy(() => import("./pages/settings.page"));
+const SettingsPage = lazy(() => import("./pages/settings.page.tsx"));
 const TemplatePage = lazy(() => import("./pages/template.page"));
 const MigratePage = lazy(() => import("./pages/migrate.page"));
 const GroupsListPage = lazy(() => import("./pages/groups-list.page"));
