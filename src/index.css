@@ -173,7 +173,9 @@ input:focus {
 }
 
 @media print {
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: auto !important;
     overflow: visible !important;
     width: auto !important;
@@ -196,4 +198,32 @@ input:focus {
   [data-panel-resize-handle-id] {
     display: none !important;
   }
+}
+
+.tab-scrollbar {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.tab-scrollbar::-webkit-scrollbar {
+  height: 2px;
+}
+
+.tab-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+
+.tab-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: hsla(var(--primary-DEFAULT), 0.3);
+}
+
+.tab-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsla(var(--primary-DEFAULT), 0.6);
 }
