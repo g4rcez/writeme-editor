@@ -1,6 +1,11 @@
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
-import { type AnyExtension, mergeAttributes, nodeInputRule, PasteRule } from "@tiptap/core";
+import {
+  type AnyExtension,
+  mergeAttributes,
+  nodeInputRule,
+  PasteRule,
+} from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
@@ -34,6 +39,7 @@ import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
+import { DomainLink } from "./extensions/domain-link";
 
 function removeEmptyWrappers(element: Element): void {
   const children = Array.from(element.children);
@@ -75,32 +81,40 @@ export function cleanPastedHTML(html: string): string {
 
 export const handlePasteImage = async (currentEditor: any) => {
   if (!isElectron()) return false;
-  
+
   const imageData = await window.electronAPI.notes.clipboardImage();
   if (!imageData) return false;
 
   const state = globalState();
   const projectDir = state.directory;
   const noteTitle = state.note?.title || "untitled";
-  
+
   if (!projectDir) return false;
 
   const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
   const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
-  
+
   try {
     await window.electronAPI.fs.mkdir(targetDir);
     const dirContents = await window.electronAPI.fs.readDir(targetDir);
-    const index = dirContents.entries.filter((e: any) => e.type === "file").length + 1;
-    
+    const index =
+      dirContents.entries.filter((e: any) => e.type === "file").length + 1;
+
     // Default to png for clipboard images
     const filename = `${index}.png`;
     const absolutePath = `${targetDir}/${filename}`;
-    
-    const result = await window.electronAPI.fs.writeImage(absolutePath, imageData);
+
+    const result = await window.electronAPI.fs.writeImage(
+      absolutePath,
+      imageData,
+    );
     if (result.success) {
       const src = `assets/${sanitizedTitle}/${filename}`;
-      currentEditor.chain().insertContent({ type: "image", attrs: { src } }).focus().run();
+      currentEditor
+        .chain()
+        .insertContent({ type: "image", attrs: { src } })
+        .focus()
+        .run();
       return true;
     }
   } catch (e) {
@@ -214,7 +228,13 @@ export const createExtensions = (
     OrderedList.configure({ keepMarks: true, keepAttributes: true }).extend({
       renderHTML({ HTMLAttributes, node }) {
         const start = node.attrs.start ?? 1;
-        return ["ol", mergeAttributes(HTMLAttributes, { style: `counter-reset: section ${start - 1}` }), 0];
+        return [
+          "ol",
+          mergeAttributes(HTMLAttributes, {
+            style: `counter-reset: section ${start - 1}`,
+          }),
+          0,
+        ];
       },
     }),
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
@@ -232,9 +252,18 @@ export const createExtensions = (
     Color.configure({ types: [TextStyle.name] }),
     ImageExtension,
     VideoExtension,
+    DomainLink,
     PdfExtension,
     FileHandler.configure({
-      allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "video/mp4", "video/webm", "application/pdf"],
+      allowedMimeTypes: [
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "video/mp4",
+        "video/webm",
+        "application/pdf",
+      ],
       onDrop: (currentEditor, files, pos) => {
         files.forEach((file, index) => {
           handleMediaFile(currentEditor, file, pos, index);
@@ -272,7 +301,10 @@ export const createExtensions = (
     YoutubeBlock,
     Callout,
     Hashtag,
-    SearchAndReplace.configure({ searchResultClass: "search-result", caseSensitive: false }),
+    SearchAndReplace.configure({
+      searchResultClass: "search-result",
+      caseSensitive: false,
+    }),
     SlashCommand,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),

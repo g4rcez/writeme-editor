@@ -1,12 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { isValidUrl, isRelativeLink, convertToMarkdownLink, linkify } from "./link-utils";
+import {
+  isValidUrl,
+  isRelativeLink,
+  convertToMarkdownLink,
+  linkify,
+} from "./link-utils";
 
 describe("link-utils", () => {
   describe("isValidUrl", () => {
     it("should return true for valid absolute URLs", () => {
       expect(isValidUrl("https://google.com")).toBe(true);
       expect(isValidUrl("http://example.com/path?query=val#hash")).toBe(true);
-      expect(isValidUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(true);
+      expect(isValidUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(
+        true,
+      );
     });
 
     it("should return false for invalid absolute URLs", () => {
@@ -34,7 +41,9 @@ describe("link-utils", () => {
 
   describe("convertToMarkdownLink", () => {
     it("should convert plain URLs to markdown links", () => {
-      expect(convertToMarkdownLink("https://google.com")).toBe("[https://google.com](https://google.com)");
+      expect(convertToMarkdownLink("https://google.com")).toBe(
+        "[https://google.com](https://google.com)",
+      );
     });
 
     it("should convert relative paths to markdown links", () => {
@@ -42,12 +51,18 @@ describe("link-utils", () => {
     });
 
     it("should use the provided label", () => {
-      expect(convertToMarkdownLink("https://google.com", "Google")).toBe("[Google](https://google.com)");
+      expect(convertToMarkdownLink("https://google.com", "Google")).toBe(
+        "[Google](https://google.com)",
+      );
     });
 
     it("should not convert already formatted markdown links", () => {
-      expect(convertToMarkdownLink("[text](https://google.com)")).toBe("[text](https://google.com)");
-      expect(convertToMarkdownLink("![alt](./image.png)")).toBe("![alt](./image.png)");
+      expect(convertToMarkdownLink("[text](https://google.com)")).toBe(
+        "[text](https://google.com)",
+      );
+      expect(convertToMarkdownLink("![alt](./image.png)")).toBe(
+        "![alt](./image.png)",
+      );
     });
 
     it("should not convert random text", () => {
@@ -57,27 +72,64 @@ describe("link-utils", () => {
 
   describe("linkify", () => {
     it("should convert plain URLs in mixed text", () => {
-      const input = "Check this https://google.com and this http://example.com/path";
-      const expected = "Check this [https://google.com](https://google.com) and this [http://example.com/path](http://example.com/path)";
+      const input =
+        "Check this https://google.com and this http://example.com/path";
+      const expected =
+        "Check this [https://google.com](https://google.com) and this [http://example.com/path](http://example.com/path)";
       expect(linkify(input)).toBe(expected);
     });
 
     it("should convert relative paths in mixed text", () => {
       const input = "See ./note.md for details or ../folder/other.md";
-      const expected = "See [./note.md](./note.md) for details or [../folder/other.md](../folder/other.md)";
+      const expected =
+        "See [./note.md](./note.md) for details or [../folder/other.md](../folder/other.md)";
       expect(linkify(input)).toBe(expected);
     });
 
     it("should not double-convert existing markdown links", () => {
-      const input = "Check [Google](https://google.com) and https://example.com";
-      const expected = "Check [Google](https://google.com) and [https://example.com](https://example.com)";
+      const input =
+        "Check [Google](https://google.com) and https://example.com";
+      const expected =
+        "Check [Google](https://google.com) and [https://example.com](https://example.com)";
       expect(linkify(input)).toBe(expected);
     });
 
     it("should handle links with query parameters and fragments", () => {
       const input = "Visit https://google.com/search?q=test#top";
-      const expected = "Visit [https://google.com/search?q=test#top](https://google.com/search?q=test#top)";
+      const expected =
+        "Visit [https://google.com/search?q=test#top](https://google.com/search?q=test#top)";
       expect(linkify(input)).toBe(expected);
+    });
+
+    it("should strip wrapping angle brackets", () => {
+      expect(linkify("<https://google.com>")).toBe(
+        "[https://google.com](https://google.com)",
+      );
+      expect(linkify("<./note.md>")).toBe("[./note.md](./note.md)");
+    });
+
+    it("should separate trailing punctuation from links", () => {
+      expect(linkify("https://google.com.")).toBe(
+        "[https://google.com](https://google.com).",
+      );
+      expect(linkify("Check https://google.com,")).toBe(
+        "Check [https://google.com](https://google.com),",
+      );
+      expect(linkify("Visit https://google.com...")).toBe(
+        "Visit [https://google.com](https://google.com)...",
+      );
+    });
+
+    it("should handle wrapped links with punctuation", () => {
+      expect(linkify("<https://google.com>.")).toBe(
+        "[https://google.com](https://google.com).",
+      );
+      expect(linkify("Check <https://google.com>,")).toBe(
+        "Check [https://google.com](https://google.com),",
+      );
+      expect(linkify("<https://google.com...>")).toBe(
+        "[https://google.com](https://google.com)...",
+      );
     });
 
     it("should handle paths starting with / followed by .md", () => {

@@ -186,7 +186,11 @@
 }
 
 .writeme-editor-content .mention {
-  @apply px-1 py-0.5 text-primary-foreground bg-typography-hashtag rounded no-underline hover:text-primary-foreground;
+  @apply no-underline;
+}
+
+.writeme-editor-content .mention:hover {
+  @apply underline;
 }
 
 .writeme-editor-content .mention::before {
