@@ -1,4 +1,12 @@
-import { clipboard, dialog, ipcMain } from "electron";
+import {
+  BrowserWindow,
+  Menu,
+  MenuItem,
+  clipboard,
+  dialog,
+  ipcMain,
+  shell,
+} from "electron";
 import * as fs from "fs/promises";
 import * as path from "path";
 import type { TreeNode } from "../types/tree";
@@ -226,4 +234,53 @@ export const notesIpcHandler = async () => {
       return { entries: [], error: error.message };
     }
   });
+
+  ipcMain.handle(
+    "context-menu:explorer",
+    async (event, filePath: string, isDirectory: boolean) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (!win) return;
+
+      const revealLabel =
+        process.platform === "darwin"
+          ? "Reveal in Finder"
+          : process.platform === "win32"
+            ? "Show in Explorer"
+            : "Open in File Manager";
+
+      const menu = new Menu();
+      menu.append(
+        new MenuItem({
+          label: "Delete",
+          click: () => {
+            win.webContents.send("context-menu:action", {
+              action: "delete",
+              filePath,
+            });
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: "Rename",
+          click: () => {
+            win.webContents.send("context-menu:action", {
+              action: "rename",
+              filePath,
+            });
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(
+        new MenuItem({
+          label: revealLabel,
+          click: () => {
+            shell.showItemInFolder(filePath);
+          },
+        }),
+      );
+      menu.popup({ window: win });
+    },
+  );
 };

@@ -1,3 +1,4 @@
+import { Modal } from "@g4rcez/components";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { type Note, NoteType } from "@/store/note";
@@ -98,10 +99,7 @@ function flattenVisible(
 ): FlatNode[] {
   return nodes.flatMap((node) => {
     const result: FlatNode[] = [{ node, depth }];
-    if (
-      node.type === "directory" &&
-      expandedPaths.has(node.path)
-    ) {
+    if (node.type === "directory" && expandedPaths.has(node.path)) {
       result.push(...flattenVisible(node.children, expandedPaths, depth + 1));
     }
     return result;
@@ -145,6 +143,18 @@ export const DbNotesTree = ({ notes, rootPath }: DbNotesTreeProps) => {
     const updatedNote = { ...note, favorite: !note.favorite } as Note;
     await repositories.notes.update(note.id, updatedNote);
     globalDispatch.syncNoteState(updatedNote);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    const confirmed = await Modal.confirm({
+      title: "Delete note",
+      description: "Are you sure you want to delete this note?",
+      confirm: { text: "Delete", theme: "danger" },
+    });
+    if (confirmed) {
+      await globalDispatch.deleteNote(note.id);
+    }
   };
 
   if (flatNodes.length === 0) {
@@ -196,6 +206,7 @@ export const DbNotesTree = ({ notes, rootPath }: DbNotesTreeProps) => {
                 isActive={node.note.id === noteId}
                 onClick={() => navigate(`/note/${node.note.id}`)}
                 onToggleFavorite={(e) => toggleFavorite(e, node.note)}
+                onDelete={(e) => handleDelete(e, node.note)}
                 extra={
                   isJson ? (
                     <span className="px-1 rounded bg-warn/10 text-warn text-[10px] font-medium shrink-0">

@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { isElectron } from "@/lib/is-electron";
+import { Prompt } from "@/app/components/prompt";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { LightningIcon } from "@phosphor-icons/react/dist/csr/Lightning";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
@@ -31,20 +32,76 @@ interface FileExtensionConfig {
 }
 
 const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
-  ".md": { icon: FileTextIcon, iconClass: "text-primary size-4", selectable: true },
-  ".json": { icon: BracketsCurlyIcon, iconClass: "text-warn size-4", selectable: true },
-  ".png": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".jpg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".jpeg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".gif": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".webp": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".svg": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".bmp": { icon: ImageIcon, iconClass: "text-blue-400 size-4", selectable: true },
-  ".mp4": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
-  ".webm": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
-  ".ogg": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
-  ".mov": { icon: FilmStripIcon, iconClass: "text-purple-400 size-4", selectable: true },
-  ".pdf": { icon: FilePdfIcon, iconClass: "text-red-400 size-4", selectable: true },
+  ".md": {
+    icon: FileTextIcon,
+    iconClass: "text-primary size-4",
+    selectable: true,
+  },
+  ".json": {
+    icon: BracketsCurlyIcon,
+    iconClass: "text-warn size-4",
+    selectable: true,
+  },
+  ".png": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".jpg": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".jpeg": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".gif": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".webp": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".svg": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".bmp": {
+    icon: ImageIcon,
+    iconClass: "text-blue-400 size-4",
+    selectable: true,
+  },
+  ".mp4": {
+    icon: FilmStripIcon,
+    iconClass: "text-purple-400 size-4",
+    selectable: true,
+  },
+  ".webm": {
+    icon: FilmStripIcon,
+    iconClass: "text-purple-400 size-4",
+    selectable: true,
+  },
+  ".ogg": {
+    icon: FilmStripIcon,
+    iconClass: "text-purple-400 size-4",
+    selectable: true,
+  },
+  ".mov": {
+    icon: FilmStripIcon,
+    iconClass: "text-purple-400 size-4",
+    selectable: true,
+  },
+  ".pdf": {
+    icon: FilePdfIcon,
+    iconClass: "text-red-400 size-4",
+    selectable: true,
+  },
 };
 
 interface TreeNodeItemProps {
@@ -61,6 +118,7 @@ interface TreeNodeItemProps {
   onConfirmDelete: () => void;
   onConfirmRequest: () => void;
   onDelete?: (node: TreeNode) => void;
+  onContextMenu?: (e: React.MouseEvent, node: TreeNode) => void;
 }
 
 const TreeNodeItem = ({
@@ -76,6 +134,7 @@ const TreeNodeItem = ({
   onConfirmRequest,
   onConfirmCancel,
   onConfirmDelete,
+  onContextMenu,
   note,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
@@ -101,6 +160,7 @@ const TreeNodeItem = ({
       role="treeitem"
       onClick={onActivate}
       onMouseEnter={onHover}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, node) : undefined}
       style={{ paddingLeft }}
       aria-selected={isFocused}
       tabIndex={isFocused ? 0 : -1}
@@ -267,6 +327,7 @@ export const TreeView = ({
   const [loadingPaths, setLoadingPaths] = useState(new Set<string>());
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const loadRoot = useCallback(async () => {
@@ -297,11 +358,40 @@ export const TreeView = ({
         loadRoot();
       } else if (childrenCache.has(dirPath)) {
         window.electronAPI.fs.readDir(dirPath).then((result) => {
-          setChildrenCache((prev) => new Map(prev).set(dirPath, result.entries || []));
+          setChildrenCache((prev) =>
+            new Map(prev).set(dirPath, result.entries || []),
+          );
         });
       }
     });
   }, [rootPath, loadRoot, childrenCache]);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, node: TreeNode) => {
+      if (!isElectron()) return;
+      e.preventDefault();
+      window.electronAPI.contextMenu.showExplorer(
+        node.path,
+        node.type === "directory",
+      );
+    },
+    [],
+  );
+
+  const handleRenameConfirm = useCallback(
+    async (newName: string) => {
+      if (!renamingPath || !newName.trim()) {
+        setRenamingPath(null);
+        return;
+      }
+      const dir = renamingPath.substring(0, renamingPath.lastIndexOf("/"));
+      const newPath = dir + "/" + newName.trim();
+      await window.electronAPI.fs.moveFile(renamingPath, newPath);
+      setRenamingPath(null);
+      loadRoot();
+    },
+    [renamingPath, loadRoot],
+  );
 
   const flattenedNodes = useMemo(() => {
     if (!rootChildren) return [];
@@ -312,6 +402,19 @@ export const TreeView = ({
       searchQuery,
     );
   }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
+      const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
+      if (!flatNode) return;
+      if (action === "delete") {
+        setConfirmingPath(filePath);
+      } else if (action === "rename") {
+        setRenamingPath(filePath);
+      }
+    });
+  }, [flattenedNodes]);
 
   useEffect(() => {
     if (flattenedNodes.length > 0 && focusedIndex >= flattenedNodes.length) {
@@ -598,12 +701,25 @@ export const TreeView = ({
           isConfirming={confirmingPath === flatNode.node.path}
           onConfirmDelete={() => handleNodeDelete(flatNode.node)}
           onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
+          onContextMenu={isElectron() ? handleContextMenu : undefined}
           onActivate={() => {
             setFocusedIndex(index);
             activateNode(flatNode);
           }}
         />
       ))}
+      {renamingPath && (
+        <Prompt
+          open
+          title="Rename"
+          placeholder="New name"
+          initialValue={renamingPath.substring(
+            renamingPath.lastIndexOf("/") + 1,
+          )}
+          onConfirm={handleRenameConfirm}
+          onCancel={() => setRenamingPath(null)}
+        />
+      )}
     </div>
   );
 };

@@ -69,16 +69,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
       return ipcRenderer.invoke("fs:openFileOrDirectory");
     },
     onFileChanged: (callback: (data: { filePath: string }) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, data: { filePath: string }) => callback(data);
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        data: { filePath: string },
+      ) => callback(data);
       ipcRenderer.on("fs:file-changed", handler);
       return () => ipcRenderer.removeListener("fs:file-changed", handler);
     },
     onDirChanged: (callback: (data: { dirPath: string }) => void) => {
-      const handler = (_: Electron.IpcRendererEvent, data: { dirPath: string }) => callback(data);
+      const handler = (
+        _: Electron.IpcRendererEvent,
+        data: { dirPath: string },
+      ) => callback(data);
       ipcRenderer.on("fs:dir-changed", handler);
       return () => ipcRenderer.removeListener("fs:dir-changed", handler);
     },
-    startWatcher: (directory: string) => ipcRenderer.invoke("fs:watcher:start", directory),
+    startWatcher: (directory: string) =>
+      ipcRenderer.invoke("fs:watcher:start", directory),
   },
   db: {
     get: (table: string, id: string) => ipcRenderer.invoke("db:get", table, id),
@@ -183,15 +190,33 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("ai:oauth-start", authUrl),
   },
   terminal: {
-    spawn: (id: string, cwd?: string) => ipcRenderer.send("terminal:spawn", id, cwd),
-    write: (id: string, data: string) => ipcRenderer.send("terminal:write", id, data),
-    resize: (id: string, cols: number, rows: number) => ipcRenderer.send("terminal:resize", id, cols, rows),
+    spawn: (id: string, cwd?: string) =>
+      ipcRenderer.send("terminal:spawn", id, cwd),
+    write: (id: string, data: string) =>
+      ipcRenderer.send("terminal:write", id, data),
+    resize: (id: string, cols: number, rows: number) =>
+      ipcRenderer.send("terminal:resize", id, cols, rows),
     kill: (id: string) => ipcRenderer.send("terminal:kill", id),
     onData: (callback: (data: { id: string; data: string }) => void) => {
-      const handler = (_: any, data: { id: string; data: string }) => callback(data);
+      const handler = (_: any, data: { id: string; data: string }) =>
+        callback(data);
       ipcRenderer.on("terminal:data", handler);
       return () => ipcRenderer.removeListener("terminal:data", handler);
-    }
+    },
+  },
+  contextMenu: {
+    showExplorer: (filePath: string, isDirectory: boolean) =>
+      ipcRenderer.invoke("context-menu:explorer", filePath, isDirectory),
+  },
+  onContextMenuAction: (
+    callback: (data: { action: string; filePath: string }) => void,
+  ) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      data: { action: string; filePath: string },
+    ) => callback(data);
+    ipcRenderer.on("context-menu:action", handler);
+    return () => ipcRenderer.removeListener("context-menu:action", handler);
   },
 });
 
@@ -235,7 +260,9 @@ declare global {
           path: string;
           isDirectory: boolean;
         } | null>;
-        onFileChanged(callback: (data: { filePath: string }) => void): () => void;
+        onFileChanged(
+          callback: (data: { filePath: string }) => void,
+        ): () => void;
         onDirChanged(callback: (data: { dirPath: string }) => void): () => void;
         startWatcher(directory: string): Promise<void>;
       };
@@ -312,8 +339,16 @@ declare global {
         write(id: string, data: string): void;
         resize(id: string, cols: number, rows: number): void;
         kill(id: string): void;
-        onData(callback: (data: { id: string; data: string }) => void): () => void;
+        onData(
+          callback: (data: { id: string; data: string }) => void,
+        ): () => void;
       };
+      contextMenu: {
+        showExplorer(filePath: string, isDirectory: boolean): Promise<void>;
+      };
+      onContextMenuAction(
+        callback: (data: { action: string; filePath: string }) => void,
+      ): () => void;
     };
   }
 }

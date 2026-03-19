@@ -1,4 +1,4 @@
-import { Tooltip } from "@g4rcez/components";
+import { Modal, Tooltip } from "@g4rcez/components";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { type NoteWithTags } from "@/app/hooks/use-note-list";
@@ -12,6 +12,7 @@ import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockC
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SortAscendingIcon } from "@phosphor-icons/react";
@@ -21,6 +22,7 @@ export type NoteItemProps = {
   isActive: boolean;
   onClick: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
+  onDelete?: (e: React.MouseEvent) => void;
   extra?: React.ReactNode;
 };
 
@@ -29,6 +31,7 @@ export const NoteItem = ({
   isActive,
   onClick,
   onToggleFavorite,
+  onDelete,
   extra,
 }: NoteItemProps) => {
   const itemRef = useRef<HTMLLIElement>(null);
@@ -73,6 +76,14 @@ export const NoteItem = ({
             className={`size-3 ${note.favorite ? "fill-current" : ""}`}
           />
         </button>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-opacity text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-500"
+          >
+            <TrashIcon className="size-3" />
+          </button>
+        )}
       </div>
       <p className="mb-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
         {note.description ||
@@ -117,6 +128,18 @@ const NoteListItems = (props: {
     globalDispatch.syncNoteState(updatedNote);
   };
 
+  const handleDelete = async (e: React.MouseEvent, note: NoteWithTags) => {
+    e.stopPropagation();
+    const confirmed = await Modal.confirm({
+      title: "Delete note",
+      description: "Are you sure you want to delete this note?",
+      confirm: { text: "Delete", theme: "danger" },
+    });
+    if (confirmed) {
+      await globalDispatch.deleteNote(note.id);
+    }
+  };
+
   return (
     <ul className="flex overflow-y-auto flex-col h-full divide-y max-h- divide-border/20 scrollbar-hide">
       <li
@@ -133,6 +156,7 @@ const NoteListItems = (props: {
           isActive={note.id === props.activeNoteId}
           onClick={() => navigate(`/note/${note.id}`)}
           onToggleFavorite={(e) => toggleFavorite(e, note)}
+          onDelete={(e) => handleDelete(e, note)}
         />
       ))}
     </ul>
@@ -261,4 +285,3 @@ export const NoteListSidebar = () => {
     </div>
   );
 };
-
