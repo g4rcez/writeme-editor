@@ -10,8 +10,7 @@ import { NoteGroup } from "./repositories/entities/note-group";
 import { NoteGroupMember } from "./repositories/entities/note-group-member";
 import { uiDispatch } from "./ui.store";
 import { SettingsService } from "./settings";
-
-type Toggle<T> = T | ((prev: T) => T);
+import { type Toggle } from "./types";
 
 export type NoteCreationType = "note" | "quick";
 
@@ -245,7 +244,10 @@ export const useGlobalStore = createGlobalReducer(
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,
       }),
-      setInspectJsonDialog: (inspectJsonDialog: boolean, content?: string | null) => ({
+      setInspectJsonDialog: (
+        inspectJsonDialog: boolean,
+        content?: string | null,
+      ) => ({
         inspectJsonDialog,
         inspectJsonInitialContent: content ?? null,
       }),
@@ -381,8 +383,7 @@ export const useGlobalStore = createGlobalReducer(
         THEME_CLASSES.forEach((c) =>
           document.documentElement.classList.remove(c),
         );
-        if (result !== "light")
-          document.documentElement.classList.add(result);
+        if (result !== "light") document.documentElement.classList.add(result);
         SettingsService.save({ theme: result as Theme });
         return { theme: result as Theme };
       },
@@ -407,7 +408,13 @@ export const useGlobalStore = createGlobalReducer(
       },
       createGroup: async (title: string, description?: string) => {
         const now = new Date();
-        const group = new NoteGroup(uuid(), title, description ?? null, now, now);
+        const group = new NoteGroup(
+          uuid(),
+          title,
+          description ?? null,
+          now,
+          now,
+        );
         await repositories.noteGroups.save(group);
         const state = get.state();
         return { noteGroups: state.noteGroups.concat(group) };
@@ -423,11 +430,18 @@ export const useGlobalStore = createGlobalReducer(
           ),
         };
       },
-      updateGroup: async (id: string, partial: Partial<Pick<NoteGroup, "title" | "description">>) => {
+      updateGroup: async (
+        id: string,
+        partial: Partial<Pick<NoteGroup, "title" | "description">>,
+      ) => {
         const state = get.state();
         const existing = state.noteGroups.find((g) => g.id === id);
         if (!existing) return state;
-        const updated = { ...existing, ...partial, updatedAt: new Date() } as NoteGroup;
+        const updated = {
+          ...existing,
+          ...partial,
+          updatedAt: new Date(),
+        } as NoteGroup;
         await repositories.noteGroups.save(updated);
         return {
           noteGroups: state.noteGroups.map((g) => (g.id === id ? updated : g)),

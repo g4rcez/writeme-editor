@@ -1,12 +1,12 @@
 import { type ISettingsRepository, type Settings } from "../entities/settings";
 import { BaseRepository } from "../base.repository";
-import { DexieStorageAdapter } from "../adapters/dexie.adapter";
+import { type StorageAdapter } from "../adapters/types";
 
 export class SettingsRepository
   extends BaseRepository<Settings>
   implements ISettingsRepository
 {
-  constructor() {
-    super(new DexieStorageAdapter(), "settings");
+  constructor(adapter: StorageAdapter) {
+    super(adapter, "settings");
   }
 }

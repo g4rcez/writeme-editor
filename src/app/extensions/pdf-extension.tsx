@@ -1,67 +1,18 @@
-import { isElectron } from "@/lib/is-electron";
-import { globalState } from "@/store/global.store";
+import { useLocalAsset } from "@/app/hooks/use-local-asset";
 import { uiDispatch } from "@/store/ui.store";
 import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useState } from "react";
-
 const PdfView = (props: any) => {
   const { node, deleteNode } = props;
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   const src: string = node.attrs.src ?? "";
-  const title: string = node.attrs.title ?? src.split("/").pop() ?? "PDF Document";
+  const title: string =
+    node.attrs.title ?? src.split("/").pop() ?? "PDF Document";
 
-  useEffect(() => {
-    if (!isElectron() || !src || !src.startsWith("assets/")) {
-      setObjectUrl(null);
-      return;
-    }
-
-    const projectDir = globalState().directory;
-    if (!projectDir) return;
-
-    let isMounted = true;
-    let currentUrl: string | null = null;
-
-    const loadAsset = async () => {
-      try {
-        const cleanProjectDir = projectDir.replace(/\/$/, "");
-        const cleanSrc = src.replace(/^\//, "");
-        const fullPath = `${cleanProjectDir}/${cleanSrc}`;
-        
-        const result = await window.electronAPI.fs.readBinaryFile(fullPath);
-        
-        if (!isMounted) return;
-        
-        if (!result || result.success === false || !result.data) {
-          return;
-        }
-
-        const blob = new Blob([result.data as any], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        currentUrl = url;
-        setObjectUrl(url);
-      } catch (e) {
-        console.error("Failed to load local PDF asset", e);
-      }
-    };
-
-    loadAsset();
-
-    return () => {
-      isMounted = false;
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-    };
-  }, [src]);
-
-  const isLocalAsset = isElectron() && src && src.startsWith("assets/");
-  const displaySrc = isLocalAsset ? objectUrl : src;
+  const { displaySrc } = useLocalAsset(src, "application/pdf");
 
   const handleOpenPreview = () => {
     if (!displaySrc) return;
@@ -70,7 +21,7 @@ const PdfView = (props: any) => {
 
   return (
     <NodeViewWrapper className="flex relative flex-col items-center my-4 group">
-      <div 
+      <div
         className="flex items-center gap-3 p-4 w-full max-w-lg bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer group/card"
         onClick={handleOpenPreview}
       >
@@ -79,7 +30,9 @@ const PdfView = (props: any) => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium truncate">{title}</div>
-          <div className="text-xs text-muted-foreground truncate">PDF Document</div>
+          <div className="text-xs text-muted-foreground truncate">
+            PDF Document
+          </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
           <button

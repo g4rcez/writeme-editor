@@ -1,5 +1,4 @@
-import { isElectron } from "@/lib/is-electron";
-import { globalState } from "@/store/global.store";
+import { useLocalAsset } from "@/app/hooks/use-local-asset";
 import { uiDispatch } from "@/store/ui.store";
 import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
@@ -7,78 +6,20 @@ import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { VideoIcon } from "@phosphor-icons/react/dist/csr/Video";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useState } from "react";
+
+const VIDEO_MIME_MAP: Record<string, string> = {
+  mp4: "video/mp4",
+  webm: "video/webm",
+  ogg: "video/ogg",
+};
 
 const VideoView = (props: any) => {
   const { node, deleteNode } = props;
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   const src: string = node.attrs.src ?? "";
   const title: string = node.attrs.title ?? "";
 
-  useEffect(() => {
-    if (!isElectron() || !src || !src.startsWith("assets/")) {
-      setObjectUrl(null);
-      setLoading(false);
-      return;
-    }
-
-    const projectDir = globalState().directory;
-    if (!projectDir) {
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-    let currentUrl: string | null = null;
-
-    const loadAsset = async () => {
-      try {
-        setLoading(true);
-        const cleanProjectDir = projectDir.replace(/\/$/, "");
-        const cleanSrc = src.replace(/^\//, "");
-        const fullPath = `${cleanProjectDir}/${cleanSrc}`;
-        
-        const result = await window.electronAPI.fs.readBinaryFile(fullPath);
-        
-        if (!isMounted) return;
-        
-        if (!result || result.success === false || !result.data) {
-          setError(true);
-          setLoading(false);
-          return;
-        }
-
-        const ext = src.split(".").pop()?.toLowerCase();
-        const mimeType = ext === "mp4" ? "video/mp4" : ext === "webm" ? "video/webm" : ext === "ogg" ? "video/ogg" : "video/mp4";
-        
-        const blob = new Blob([result.data as any], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        currentUrl = url;
-        setObjectUrl(url);
-        setError(false);
-      } catch (e) {
-        console.error("Failed to load local video asset", e);
-        if (isMounted) setError(true);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadAsset();
-
-    return () => {
-      isMounted = false;
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-    };
-  }, [src]);
-
-  const isLocalAsset = isElectron() && src && src.startsWith("assets/");
-  const displaySrc = isLocalAsset ? objectUrl : src;
+  const { loading, error, displaySrc } = useLocalAsset(src, VIDEO_MIME_MAP);
 
   const handleOpenPreview = () => {
     if (!displaySrc) return;
@@ -90,7 +31,10 @@ const VideoView = (props: any) => {
       <div className="relative w-full max-w-2xl rounded-lg overflow-hidden bg-black aspect-video shadow-md">
         {loading && !error && (
           <div className="flex absolute inset-0 justify-center items-center bg-muted/30">
-            <CircleNotchIcon size={24} className="animate-spin text-muted-foreground" />
+            <CircleNotchIcon
+              size={24}
+              className="animate-spin text-muted-foreground"
+            />
           </div>
         )}
         {error && (

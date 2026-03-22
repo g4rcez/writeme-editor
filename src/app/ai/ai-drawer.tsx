@@ -8,6 +8,7 @@ import { StopCircleIcon } from "@phosphor-icons/react/dist/csr/StopCircle";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
+import { getEditorMarkdown } from "@/lib/editor-storage";
 import { editorGlobalRef } from "../editor-global-ref";
 import { AIDiffView } from "./ai-diff-view";
 import { useAIChat } from "./use-ai-chat";
@@ -24,7 +25,9 @@ export const AIDrawer = () => {
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<AIFile[]>([]);
   const parentRef = useRef<HTMLDivElement>(null);
-  const adapter = config ? adapterRegistry.get(config.adapterId ?? "cli") : undefined;
+  const adapter = config
+    ? adapterRegistry.get(config.adapterId ?? "cli")
+    : undefined;
 
   const virtualizer = useVirtualizer({
     count: messages.length,
@@ -61,9 +64,7 @@ export const AIDrawer = () => {
           " ",
         )
       : "";
-    const context = editor
-      ? (editor.storage as any).markdown.getMarkdown()
-      : "";
+    const context = editor ? getEditorMarkdown(editor) : "";
     const selectionSlice = editor
       ? { from: editor.state.selection.from, to: editor.state.selection.to }
       : undefined;

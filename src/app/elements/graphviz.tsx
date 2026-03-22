@@ -6,8 +6,9 @@ import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { MinusIcon } from "@phosphor-icons/react/dist/csr/Minus";
 import { type Viz, instance } from "@viz-js/viz";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useThemeChange } from "@/app/hooks/use-theme-change";
 import { darkTheme } from "../styles/dark";
-import { parseHslaToHex } from "@/lib/editor-utils";
+import { parseHslaToHex } from "@/lib/color-utils";
 import { motion, AnimatePresence } from "motion/react";
 import { Button, Tooltip, css } from "@g4rcez/components";
 
@@ -109,15 +110,9 @@ export const Graphviz = ({ dot }: { dot: string }) => {
 
   useEffect(() => {
     render(dot);
-    const observer = new MutationObserver(() => {
-      render(dot);
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
   }, [dot, render]);
+
+  useThemeChange(() => render(dot));
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!isZoomEnabled) return;

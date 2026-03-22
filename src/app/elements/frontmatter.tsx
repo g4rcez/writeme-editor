@@ -15,7 +15,7 @@ import { FrontmatterBuilder } from "./frontmatter-builder";
 import { type BundledLanguage } from "shiki";
 import * as YAML from "yaml";
 import { globalDispatch, globalState } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { getEditorNote } from "@/lib/editor-storage";
 import { getThemeForMode, ShikiPlugin, CodeBlockFrame } from "./code-block";
 
 const FRONTMATTER_ID = "frontmatter-block";
@@ -33,16 +33,14 @@ const FrontmatterView = (props: any) => {
     try {
       const parsed = YAML.parse(content) || {};
       setError(null);
-      const note = (editor.storage as any).note as Note;
+      const note = getEditorNote(editor);
       if (!note) return;
-      let changed = false;
       if (
         parsed.title &&
         typeof parsed.title === "string" &&
         parsed.title !== note.title
       ) {
         globalDispatch.syncNoteState({ ...note, title: parsed.title } as any);
-        changed = true;
       }
       if (parsed.tags) {
         let newTags: string[] = [];
@@ -60,14 +58,12 @@ const FrontmatterView = (props: any) => {
         const sortedNewTags = [...newTags].sort().join(",");
         if (sortedNewTags !== currentTags) {
           globalDispatch.syncNoteState({ ...note, tags: newTags } as any);
-          changed = true;
         }
       }
       const currentMetadataStr = JSON.stringify(note.metadata || {});
       const newMetadataStr = JSON.stringify(parsed);
       if (currentMetadataStr !== newMetadataStr) {
         globalDispatch.syncNoteState({ ...note, metadata: parsed } as any);
-        changed = true;
       }
     } catch (e: any) {
       setError(e.message);
@@ -227,7 +223,8 @@ export const Frontmatter = Node.create({
                     return src.startsWith("---") ? 0 : undefined;
                   },
                   tokenizer(src: string, tokens: any[]) {
-                    if (tokens.some((t: any) => t.type !== "space")) return undefined;
+                    if (tokens.some((t: any) => t.type !== "space"))
+                      return undefined;
                     const match = src.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
                     if (match) {
                       return {

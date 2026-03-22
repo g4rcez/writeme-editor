@@ -41,44 +41,6 @@ import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { DomainLink } from "./extensions/domain-link";
 
-function removeEmptyWrappers(element: Element): void {
-  const children = Array.from(element.children);
-  children.forEach((child) => removeEmptyWrappers(child));
-  children.forEach((child) => {
-    if (
-      (child.tagName === "SPAN" || child.tagName === "DIV") &&
-      !child.attributes.length
-    ) {
-      while (child.firstChild) {
-        element.insertBefore(child.firstChild, child);
-      }
-      element.removeChild(child);
-    }
-  });
-}
-
-export function cleanPastedHTML(html: string): string {
-  try {
-    const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = html;
-    const elementsWithStyle = tempContainer.querySelectorAll("*[style]");
-    elementsWithStyle.forEach((el) => el.removeAttribute("style"));
-    const elementsWithClass = tempContainer.querySelectorAll("*[class]");
-    elementsWithClass.forEach((el) => el.removeAttribute("class"));
-    const elementsWithDataAttrs = tempContainer.querySelectorAll("*");
-    elementsWithDataAttrs.forEach((el) => {
-      Array.from(el.attributes)
-        .filter((attr) => attr.name.startsWith("data-"))
-        .forEach((attr) => el.removeAttribute(attr.name));
-    });
-    removeEmptyWrappers(tempContainer);
-    return tempContainer.innerHTML;
-  } catch (error) {
-    console.error("Error cleaning pasted HTML:", error);
-    return html;
-  }
-}
-
 export const handlePasteImage = async (currentEditor: any) => {
   if (!isElectron()) return false;
 

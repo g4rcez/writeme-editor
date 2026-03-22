@@ -2,6 +2,7 @@ import { GithubLogoIcon } from "@phosphor-icons/react/dist/csr/GithubLogo";
 import { version } from "@/../package.json";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { utf8ToBase64 } from "@/lib/encoding";
+import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -92,7 +93,7 @@ export const Commander = () => {
           action: (args) => {
             const editor = editorGlobalRef.current;
             if (editor) {
-              const content = (editor.storage as any).markdown.getMarkdown();
+              const content = getEditorMarkdown(editor);
               const encoded = utf8ToBase64(content);
               const url = isElectron()
                 ? `${window.location.origin}/#/share?q=${encoded}`

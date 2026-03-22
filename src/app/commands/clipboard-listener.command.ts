@@ -1,7 +1,4 @@
-import {
-  COPY_EVENT_DISPATCHED,
-  COPY_EVENT_STARTED,
-} from "../../ipc/copy-event";
+import { COPY_EVENT_DISPATCHED, COPY_EVENT_STARTED } from "@/ipc/copy-event";
 import { controller } from "../controller";
 import { type ReplacerCommand } from "./commands";
 

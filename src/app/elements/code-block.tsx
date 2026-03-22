@@ -131,18 +131,13 @@ const THEME_MAP = {
 export const getThemeForMode = (mode: string): BundledTheme =>
   mode === "light" ? THEME_MAP.light : THEME_MAP.dark;
 
-export function resetHighlighter() {
-  highlighter = undefined;
-  highlighterPromise = undefined;
-  loadingLanguages.clear();
-  loadingThemes.clear();
-}
-
 export function getShiki() {
   return highlighter;
 }
 
-export function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter | undefined> {
+export function loadHighlighter(
+  opts: HighlighterOptions,
+): Promise<Highlighter | undefined> {
   if (!highlighter && !highlighterPromise) {
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
@@ -461,7 +456,10 @@ const CodeBlockHeader = ({
   isRunning: boolean;
 }) => {
   return (
-    <div contentEditable={false} className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background">
+    <div
+      contentEditable={false}
+      className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background"
+    >
       <div className="flex gap-2 items-center">
         <Select
           hiddenLabel

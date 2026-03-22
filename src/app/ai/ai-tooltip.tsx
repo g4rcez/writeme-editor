@@ -4,6 +4,7 @@ import { SidebarSimpleIcon } from "@phosphor-icons/react/dist/csr/SidebarSimple"
 import { PaperPlaneRightIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneRight";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { globalDispatch } from "../../store/global.store";
+import { getEditorMarkdown } from "@/lib/editor-storage";
 import { Editor } from "@tiptap/react";
 
 export const AITooltip = ({
@@ -39,7 +40,7 @@ export const AITooltip = ({
       editor.state.selection.to,
       " ",
     );
-    const context = (editor.storage as any).markdown.getMarkdown();
+    const context = getEditorMarkdown(editor);
     const selectionSlice = {
       from: editor.state.selection.from,
       to: editor.state.selection.to,

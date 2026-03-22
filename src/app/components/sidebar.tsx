@@ -19,57 +19,49 @@ type NoteListProps = {
   getDisplayPath: (note: Note) => string;
 };
 
-const NoteList = React.memo(({
-  notes,
-  currentNoteId,
-  onSelect,
-  getDisplayPath,
-}: NoteListProps) => (
-  <ul className="space-y-0.5">
-    {notes.map((note) => {
-      const isActive = note.id === currentNoteId;
-      const displayPath = getDisplayPath(note);
-      return (
-        <li key={note.id}>
-          <button
-            onClick={() => onSelect(note)}
-            className={clsx(
-              "w-full flex flex-col px-2 py-1.5 rounded-md text-left transition-colors",
-              isActive
-                ? "bg-primary/10 text-foreground"
-                : "text-foreground/70 hover:bg-muted/30 hover:text-foreground",
-            )}
-          >
-            <span className="text-sm truncate">{note.title || "Untitled"}</span>
-            {displayPath && (
-              <span className="text-xs text-foreground/40 truncate">
-                {displayPath}
+const NoteList = React.memo(
+  ({ notes, currentNoteId, onSelect, getDisplayPath }: NoteListProps) => (
+    <ul className="space-y-0.5">
+      {notes.map((note) => {
+        const isActive = note.id === currentNoteId;
+        const displayPath = getDisplayPath(note);
+        return (
+          <li key={note.id}>
+            <button
+              onClick={() => onSelect(note)}
+              className={clsx(
+                "w-full flex flex-col px-2 py-1.5 rounded-md text-left transition-colors",
+                isActive
+                  ? "bg-primary/10 text-foreground"
+                  : "text-foreground/70 hover:bg-muted/30 hover:text-foreground",
+              )}
+            >
+              <span className="text-sm truncate">
+                {note.title || "Untitled"}
               </span>
-            )}
-          </button>
-        </li>
-      );
-    })}
-  </ul>
-));
+              {displayPath && (
+                <span className="text-xs text-foreground/40 truncate">
+                  {displayPath}
+                </span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  ),
+);
 
 NoteList.displayName = "NoteList";
 
 export const Sidebar = () => {
   const [uiState, uiDispatch] = useUIStore();
-  const [{ notes, recentNotes, noteId, directory }, dispatch] = useGlobalStore(
-    (state) => ({
-      notes: state.notes,
-      recentNotes: state.recentNotes,
-      noteId: state.note?.id,
-      directory: state.directory,
-    }),
-  );
+  const [state, dispatch] = useGlobalStore();
   const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
   const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
 
-  const storageDir = directory || "";
+  const storageDir = state.directory || "";
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -78,14 +70,14 @@ export const Sidebar = () => {
       dispatch.loadRecentNotes(10);
     };
     loadNotes();
-  }, [dispatch, directory]);
+  }, [dispatch, state.directory]);
 
   useEffect(() => {
     if (!isResizing) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const newWidth = e.clientX;
-      uiDispatch.setSidebarWidth(newWidth);
+      dispatch.setSidebarWidth(newWidth);
     };
 
     const handleMouseUp = () => {
@@ -155,23 +147,22 @@ export const Sidebar = () => {
         <div className="overflow-y-auto flex-1 p-2">
           {activeSection === "recent" && (
             <NoteList
-              notes={recentNotes}
-              currentNoteId={noteId}
               onSelect={openNote}
+              notes={state.recentNotes}
+              currentNoteId={state.note?.id}
               getDisplayPath={getDisplayPath}
             />
           )}
 
           {activeSection === "all" && (
             <NoteList
-              notes={notes}
-              currentNoteId={noteId}
+              notes={state.notes}
               onSelect={openNote}
+              currentNoteId={state.note?.id}
               getDisplayPath={getDisplayPath}
             />
           )}
-
-          {notes.length === 0 && (
+          {state.notes.length === 0 && (
             <div className="flex flex-col justify-center items-center p-4 h-full text-center text-foreground/50">
               <FileTextIcon className="mb-2 w-8 h-8 opacity-50" />
               <p className="text-sm">No notes yet</p>
@@ -179,8 +170,6 @@ export const Sidebar = () => {
             </div>
           )}
         </div>
-
-        {/* Resize Handle */}
         <div
           onMouseDown={() => setIsResizing(true)}
           className={clsx(

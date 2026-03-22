@@ -1,12 +1,12 @@
 import { type IProjectRepository, type Project } from "../entities/project";
 import { BaseRepository } from "../base.repository";
-import { ElectronStorageAdapter } from "../adapters/electron.adapter";
+import { type StorageAdapter } from "../adapters/types";
 
 export class ProjectsRepository
   extends BaseRepository<Project>
   implements IProjectRepository
 {
-  constructor() {
-    super(new ElectronStorageAdapter(), "projects");
+  constructor(adapter: StorageAdapter) {
+    super(adapter, "projects");
   }
 }

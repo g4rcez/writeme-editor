@@ -57,20 +57,6 @@ const unwantedSelectors = [
   "#menu",
 ];
 
-const regex = { init: /^\/+/, end: /\/+$/ };
-
-const trailingPath = (str: string) =>
-  str === "/" ? str : str.replace(regex.init, "/").replace(regex.end, "");
-
-const join = (baseURL: string, ...urls: string[]) =>
-  trailingPath(
-    urls.reduce(
-      (acc, el) =>
-        acc.replace(regex.end, "") + "/" + el.replace(regex.init, ""),
-      baseURL,
-    ),
-  );
-
 export function parseReadItLaterHtml(
   html: string,
   url: string,
@@ -117,7 +103,7 @@ export function parseReadItLaterHtml(
   } else if (url) {
     try {
       favicon = new URL("/favicon.ico", url).href;
-    } catch (e) { }
+    } catch (e) {}
   }
 
   unwantedSelectors.forEach((selector) => {
@@ -144,8 +130,13 @@ export function parseReadItLaterHtml(
     const children = Array.from(original.childNodes);
     original.innerHTML = "";
     for (const child of children) {
-      if (child.nodeType === Node.ELEMENT_NODE && ["DIV", "P"].includes((child as Element).tagName)) {
-        original.appendChild(doc.createTextNode((child.textContent ?? "") + "\n"));
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        ["DIV", "P"].includes((child as Element).tagName)
+      ) {
+        original.appendChild(
+          doc.createTextNode((child.textContent ?? "") + "\n"),
+        );
       } else {
         original.appendChild(child);
       }

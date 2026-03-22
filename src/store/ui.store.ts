@@ -1,4 +1,5 @@
 import { createGlobalReducer } from "use-typed-reducer";
+import { type Toggle } from "./types";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
 
@@ -37,7 +38,6 @@ export type UISettings = {
   contentWidth: ContentWidth;
   focusMode: boolean;
   sidebarOpen: boolean;
-  sidebarWidth: number;
   error: string | null;
   alert: UIStateAlert | null;
   prompt: UIStatePrompt | null;
@@ -65,14 +65,11 @@ const initialState: UISettings = {
   prompt: persistedState.prompt || null,
   focusMode: persistedState.focusMode || false,
   sidebarOpen: persistedState.sidebarOpen ?? true,
-  sidebarWidth: persistedState.sidebarWidth || 240,
   mediaPreview: { open: false, sources: [], index: 0 },
   tasksDialog: { isOpen: false },
   contentWidth: persistedState.contentWidth || "medium",
   findReplace: persistedState.findReplace || { isOpen: false },
 };
-
-type Toggle<T> = T | ((prev: T) => T);
 
 export const useUIStore = createGlobalReducer(
   initialState,
@@ -85,9 +82,6 @@ export const useUIStore = createGlobalReducer(
       sidebarOpen:
         typeof open === "function" ? open(get.state().sidebarOpen) : open,
     }),
-    setSidebarWidth: (width: number) => ({
-      sidebarWidth: Math.max(180, Math.min(400, width)),
-    }),
     setError: (error: string | null) => ({ error }),
     clearError: () => ({ error: null }),
     setAlert: (alert: UIStateAlert | null) => ({ alert }),
@@ -96,7 +90,9 @@ export const useUIStore = createGlobalReducer(
     clearPrompt: () => ({ prompt: null }),
     openFindReplace: () => ({ findReplace: { isOpen: true } }),
     closeFindReplace: () => ({ findReplace: { isOpen: false } }),
-    toggleFindReplace: () => ({ findReplace: { isOpen: !get.state().findReplace.isOpen } }),
+    toggleFindReplace: () => ({
+      findReplace: { isOpen: !get.state().findReplace.isOpen },
+    }),
     setMediaPreview: (state: Partial<MediaPreviewState>) => ({
       mediaPreview: { ...get.state().mediaPreview, ...state },
     }),
@@ -135,4 +131,3 @@ export const contentWidthClasses: Record<ContentWidth, string> = {
   medium: "max-w-3xl",
   wide: "max-w-5xl",
 };
-

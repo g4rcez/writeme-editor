@@ -1,5 +1,6 @@
 import mermaid from "mermaid";
 import { useEffect, useRef } from "react";
+import { useThemeChange } from "@/app/hooks/use-theme-change";
 import { darkTheme } from "../styles/dark";
 import { lightTheme } from "../styles/light";
 
@@ -265,20 +266,13 @@ export const Mermaid = (props: { chart: string }) => {
     const isDark = document.documentElement.classList.contains("dark");
     mermaid.initialize(getMermaidConfig(isDark));
     renderChart();
-
-    const observer = new MutationObserver(() => {
-      const nowDark = document.documentElement.classList.contains("dark");
-      mermaid.initialize(getMermaidConfig(nowDark));
-      renderChart();
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
   }, []);
+
+  useThemeChange(() => {
+    const nowDark = document.documentElement.classList.contains("dark");
+    mermaid.initialize(getMermaidConfig(nowDark));
+    renderChart();
+  });
 
   useEffect(() => {
     renderChart();

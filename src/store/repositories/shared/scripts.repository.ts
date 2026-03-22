@@ -1,13 +1,13 @@
 import { BaseRepository } from "../base.repository";
-import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { type IScriptRepository, Script } from "../entities/script";
+import { type StorageAdapter } from "../adapters/types";
 
 export class ScriptsRepository
   extends BaseRepository<Script>
   implements IScriptRepository
 {
-  constructor() {
-    super(new DexieStorageAdapter(), "scripts");
+  constructor(adapter: StorageAdapter) {
+    super(adapter, "scripts");
   }
 
   override async getOne(id: string): Promise<Script | null> {

@@ -1,8 +1,9 @@
 import { type AppSettings, SettingsSchema } from "./settings.schema";
 import { isElectron } from "../lib/is-electron";
-import { SettingsRepository as BrowserSettingsRepository } from "./repositories/browser/settings.repository";
-import { SettingsRepository as ElectronSettingsRepository } from "./repositories/electron/settings.repository";
+import { SettingsRepository } from "./repositories/shared/settings.repository";
 import { type ISettingsRepository } from "./repositories/entities/settings";
+import { DexieStorageAdapter } from "./repositories/adapters/dexie.adapter";
+import { ElectronStorageAdapter } from "./repositories/adapters/electron.adapter";
 import { uuid } from "@g4rcez/components";
 
 export type { AppSettings };
@@ -14,9 +15,9 @@ export class SettingsService {
 
   private static get repo(): ISettingsRepository {
     if (!this._repo) {
-      this._repo = isElectron()
-        ? new ElectronSettingsRepository()
-        : new BrowserSettingsRepository();
+      this._repo = new SettingsRepository(
+        isElectron() ? new ElectronStorageAdapter() : new DexieStorageAdapter(),
+      );
     }
     return this._repo;
   }

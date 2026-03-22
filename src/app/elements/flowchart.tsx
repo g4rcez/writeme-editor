@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useThemeChange } from "@/app/hooks/use-theme-change";
 import flowchart from "flowchart.js";
 import Raphael from "raphael";
 import { darkTheme } from "../styles/dark";
 import { lightTheme } from "../styles/light";
-import { parseHslaToHex } from "@/lib/editor-utils";
+import { parseHslaToHex } from "@/lib/color-utils";
 
-// flowchart.js expects Raphael to be globally available
 if (typeof window !== "undefined") {
   (window as any).Raphael = Raphael;
 }
@@ -118,15 +118,9 @@ export const Flowchart = ({ code }: { code: string }) => {
 
   useEffect(() => {
     render();
-    const observer = new MutationObserver(() => {
-      render();
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
   }, [code]);
+
+  useThemeChange(() => render());
 
   if (error) {
     return (

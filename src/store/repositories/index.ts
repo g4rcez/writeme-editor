@@ -2,18 +2,12 @@ import { isElectron } from "../../lib/is-electron";
 import { type INoteRepository } from "../note";
 import { HashtagsRepository as BrowserHashtagsRepository } from "./browser/hashtags.repository";
 import { NotesRepository as BrowserNotesRepository } from "./browser/notes.repository";
-import { ProjectsRepository as BrowserProjectsRepository } from "./browser/projects.repository";
-import { SettingsRepository as BrowserSettingsRepository } from "./browser/settings.repository";
 import { TabsRepository as BrowserTabsRepository } from "./browser/tabs.repository";
-import { ScriptsRepository as BrowserScriptsRepository } from "./browser/scripts.repository";
 import { NoteGroupsRepository as BrowserNoteGroupsRepository } from "./browser/note-groups.repository";
 import { NoteGroupMembersRepository as BrowserNoteGroupMembersRepository } from "./browser/note-group-members.repository";
 import { HashtagsRepository as ElectronHashtagsRepository } from "./electron/hashtags.repository";
 import { NotesRepository as ElectronNotesRepository } from "./electron/notes.repository";
-import { ProjectsRepository as ElectronProjectsRepository } from "./electron/projects.repository";
-import { SettingsRepository as ElectronSettingsRepository } from "./electron/settings.repository";
 import { TabsRepository as ElectronTabsRepository } from "./electron/tabs.repository";
-import { ScriptsRepository as ElectronScriptsRepository } from "./electron/scripts.repository";
 import { AIRepository as ElectronAIRepository } from "./electron/ai.repository";
 import { NoteGroupsRepository as ElectronNoteGroupsRepository } from "./electron/note-groups.repository";
 import { NoteGroupMembersRepository as ElectronNoteGroupMembersRepository } from "./electron/note-group-members.repository";
@@ -26,6 +20,11 @@ import { type IAIRepository } from "./entities/ai";
 import { BrowserAIRepository } from "./browser/ai.repository";
 import { type INoteGroupRepository } from "./entities/note-group";
 import { type INoteGroupMemberRepository } from "./entities/note-group-member";
+import { DexieStorageAdapter } from "./adapters/dexie.adapter";
+import { ElectronStorageAdapter } from "./adapters/electron.adapter";
+import { SettingsRepository } from "./shared/settings.repository";
+import { ProjectsRepository } from "./shared/projects.repository";
+import { ScriptsRepository } from "./shared/scripts.repository";
 
 type Result = {
   ai: IAIRepository;
@@ -42,28 +41,30 @@ type Result = {
 const getRepositories = (): Result => {
   if (isElectron()) {
     console.log("Using Electron (SQLite) repositories");
+    const adapter = new ElectronStorageAdapter();
     const tabs = new ElectronTabsRepository();
     return {
       ai: new ElectronAIRepository(),
       tabs,
       notes: new ElectronNotesRepository(tabs),
       hashtags: new ElectronHashtagsRepository(),
-      projects: new ElectronProjectsRepository(),
-      settings: new ElectronSettingsRepository(),
-      scripts: new ElectronScriptsRepository(),
+      projects: new ProjectsRepository(adapter),
+      settings: new SettingsRepository(adapter),
+      scripts: new ScriptsRepository(adapter),
       noteGroups: new ElectronNoteGroupsRepository(),
       noteGroupMembers: new ElectronNoteGroupMembersRepository(),
     };
   } else {
     console.log("Using Browser (Dexie) repositories");
+    const adapter = new DexieStorageAdapter();
     const tabs = new BrowserTabsRepository();
     return {
       tabs,
       notes: new BrowserNotesRepository(tabs),
       hashtags: new BrowserHashtagsRepository(),
-      projects: new BrowserProjectsRepository(),
-      settings: new BrowserSettingsRepository(),
-      scripts: new BrowserScriptsRepository(),
+      projects: new ProjectsRepository(adapter),
+      settings: new SettingsRepository(adapter),
+      scripts: new ScriptsRepository(adapter),
       noteGroups: new BrowserNoteGroupsRepository(),
       noteGroupMembers: new BrowserNoteGroupMembersRepository(),
       ai: new BrowserAIRepository(),

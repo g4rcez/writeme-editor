@@ -2,8 +2,9 @@ import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { Note } from "@/store/note";
 import { globalState } from "@/store/global.store";
-import { computePosition, flip, shift } from "@floating-ui/dom";
-import { posToDOMRect, ReactRenderer } from "@tiptap/react";
+import { getEditorAllNotes } from "@/lib/editor-storage";
+import { ReactRenderer } from "@tiptap/react";
+import { updatePosition } from "@/app/extensions/update-position";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 const MentionList = (props: any) => {
@@ -124,31 +125,10 @@ const MentionList = (props: any) => {
   );
 };
 
-const updatePosition = (editor: any, element: HTMLElement) => {
-  const virtualElement = {
-    getBoundingClientRect: () =>
-      posToDOMRect(
-        editor.view,
-        editor.state.selection.from,
-        editor.state.selection.to,
-      ),
-  };
-  computePosition(virtualElement, element, {
-    placement: "bottom-start",
-    strategy: "absolute",
-    middleware: [shift(), flip()],
-  }).then(({ x, y, strategy }) => {
-    element.style.width = "max-content";
-    element.style.position = strategy;
-    element.style.left = `${x}px`;
-    element.style.top = `${y}px`;
-  });
-};
-
 export const suggestion = {
   items: async ({ query, editor }: { query: string; editor: any }) => {
     try {
-      const notes: Note[] = (editor.storage as any).allNotes ?? [];
+      const notes: Note[] = getEditorAllNotes(editor);
       return notes
         .filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
         .map((n) => ({

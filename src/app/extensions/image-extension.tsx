@@ -1,5 +1,4 @@
-import { isElectron } from "@/lib/is-electron";
-import { globalState } from "@/store/global.store";
+import { useLocalAsset } from "@/app/hooks/use-local-asset";
 import { uiDispatch } from "@/store/ui.store";
 import { mergeAttributes } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
@@ -15,83 +14,26 @@ import { TextAlignCenterIcon } from "@phosphor-icons/react/dist/csr/TextAlignCen
 import { TextAlignLeftIcon } from "@phosphor-icons/react/dist/csr/TextAlignLeft";
 import { TextAlignRightIcon } from "@phosphor-icons/react/dist/csr/TextAlignRight";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+
+const IMAGE_MIME_MAP: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+};
 
 const ImageView = (props: any) => {
   const { node, updateAttributes, deleteNode, selected } = props;
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   const src: string = node.attrs.src ?? "";
   const alt: string = node.attrs.alt ?? "";
   const align: string = node.attrs.align ?? "center";
   const width: string | null = node.attrs.width ?? null;
 
-  useEffect(() => {
-    if (!isElectron() || !src || !src.startsWith("assets/")) {
-      setObjectUrl(null);
-      setLoading(false);
-      return;
-    }
-
-    const projectDir = globalState().directory;
-    if (!projectDir) {
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-    let currentUrl: string | null = null;
-
-    const loadAsset = async () => {
-      try {
-        setLoading(true);
-        // Normalize path joining
-        const cleanProjectDir = projectDir.replace(/\/$/, "");
-        const cleanSrc = src.replace(/^\//, "");
-        const fullPath = `${cleanProjectDir}/${cleanSrc}`;
-        
-        const result = await window.electronAPI.fs.readBinaryFile(fullPath);
-        
-        if (!isMounted) return;
-        
-        if (!result || result.success === false || !result.data) {
-          setError(true);
-          setLoading(false);
-          return;
-        }
-
-        const ext = src.split(".").pop()?.toLowerCase();
-        const mimeType = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/png";
-        
-        const blob = new Blob([result.data], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        currentUrl = url;
-        setObjectUrl(url);
-        setError(false);
-      } catch (e) {
-        console.error("Failed to load local asset", e);
-        if (isMounted) setError(true);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadAsset();
-
-    return () => {
-      isMounted = false;
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-    };
-  }, [src]);
-
-  // For local assets in Electron, don't use the raw 'src' as it will fail to load
-  const isLocalAsset = isElectron() && src && src.startsWith("assets/");
-  const displaySrc = isLocalAsset ? objectUrl : src;
+  const { loading, error, displaySrc } = useLocalAsset(src, IMAGE_MIME_MAP);
 
   useEffect(() => {
     if (!selected) return;
@@ -113,7 +55,9 @@ const ImageView = (props: any) => {
 
   const handleOpenPreview = () => {
     if (!displaySrc) return;
-    uiDispatch.openMediaPreview([{ src: displaySrc, type: "image", title: alt }]);
+    uiDispatch.openMediaPreview([
+      { src: displaySrc, type: "image", title: alt },
+    ]);
   };
 
   const makeResizeHandler =

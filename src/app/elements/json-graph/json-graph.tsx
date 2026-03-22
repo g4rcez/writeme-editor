@@ -28,7 +28,7 @@ import { transformJsonToGraph } from "./layout-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { darkTheme } from "@/app/styles/dark";
 import { lightTheme } from "@/app/styles/light";
-import { parseHslaToHex } from "@/lib/editor-utils";
+import { parseHslaToHex } from "@/lib/color-utils";
 import { JsonInspectorPanel } from "@/app/components/json-inspector-panel";
 
 const ROOT_NAME = "$";
@@ -222,7 +222,7 @@ const JsonGraphInner = ({
       try {
         const parsed = JSON.parse(v);
         onChange?.(parsed);
-      } catch { }
+      } catch {}
     },
     [onChange],
   );

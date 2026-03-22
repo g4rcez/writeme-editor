@@ -15,9 +15,9 @@ import {
 } from "@phosphor-icons/react";
 import { Button, Input, Modal } from "@g4rcez/components";
 import { Extension } from "@tiptap/core";
-import { ReactRenderer, posToDOMRect } from "@tiptap/react";
+import { ReactRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
-import { computePosition, flip, shift } from "@floating-ui/dom";
+import { updatePosition } from "@/app/extensions/update-position";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -406,27 +406,6 @@ const SlashList = (props: any) => {
       ))}
     </ul>
   );
-};
-
-const updatePosition = (editor: any, element: HTMLElement) => {
-  const virtualElement = {
-    getBoundingClientRect: () =>
-      posToDOMRect(
-        editor.view,
-        editor.state.selection.from,
-        editor.state.selection.to,
-      ),
-  };
-  computePosition(virtualElement, element, {
-    placement: "bottom-start",
-    strategy: "absolute",
-    middleware: [shift(), flip()],
-  }).then(({ x, y, strategy }) => {
-    element.style.width = "max-content";
-    element.style.position = strategy;
-    element.style.left = `${x}px`;
-    element.style.top = `${y}px`;
-  });
 };
 
 const slashSuggestion = {

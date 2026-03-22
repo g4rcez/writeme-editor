@@ -1,21 +1,9 @@
 export { convertCurrency, convertCurrencyBatch, getRate } from "./converter";
 export { parseCurrencyExpression } from "./parser";
-export {
-  formatConversionResult,
-  formatLoadingPlaceholder,
-  formatErrorMessage,
-  formatConversionResultWithSymbols,
-  formatConversionResultWithRate,
-  formatCurrencyAmount,
-  getCurrencySymbol,
-} from "./formatter";
+export { formatConversionResult } from "./formatter";
 
 // Cache management
-export {
-  clearCurrencyCache,
-  getCachedRates,
-  getCacheStats,
-} from "./cache";
+export { clearCurrencyCache, getCachedRates, getCacheStats } from "./cache";
 
 // API client
 export { fetchExchangeRates } from "./api-client";

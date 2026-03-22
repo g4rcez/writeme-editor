@@ -3,7 +3,8 @@ import {
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "@/ipc/copy-event";
-import { tiptapToMarkdown } from "@/lib/render-tiptap-to-markdown";
+import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
+import { setEditorNote, setEditorAllNotes, getEditorMarkdown } from "@/lib/editor-storage";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { uuid } from "@g4rcez/components";
@@ -19,7 +20,7 @@ import { Fragment, useEffect, useMemo, useRef } from "react";
 import { isElectron } from "@/lib/is-electron";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
-import { BubbleMenu } from "@tiptap/react/menus";
+
 import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
@@ -89,7 +90,6 @@ const InnerEditor = (props: {
   content?: string;
   readonly?: boolean;
   onSave?: (content: string) => Promise<void>;
-  onPasteRawText?: (text: string) => string;
 }) => {
   const [state, dispatch] = useGlobalStore();
 
@@ -208,10 +208,9 @@ const InnerEditor = (props: {
           );
           navigator.clipboard.write([
             new ClipboardItem({
-              "text/html": new Blob(
-                [tiptapToMarkdown({ content, extensions })],
-                { type: "text/html" },
-              ),
+              "text/html": new Blob([tiptapToHtml({ content, extensions })], {
+                type: "text/html",
+              }),
               "text/plain": new Blob([markdown], { type: "text/plain" }),
             }),
           ]);
@@ -251,13 +250,13 @@ const InnerEditor = (props: {
 
   useEffect(() => {
     if (editor) {
-      (editor.storage as any).note = props.note;
+      setEditorNote(editor, props.note);
     }
   }, [editor, props.note]);
 
   useEffect(() => {
     if (editor) {
-      (editor.storage as any).allNotes = state.notes;
+      setEditorAllNotes(editor, state.notes);
     }
   }, [editor, state.notes]);
 
@@ -348,10 +347,6 @@ const InnerEditor = (props: {
       className="writeme-editor"
     >
       <EditorContext.Provider value={{ editor }}>
-        <BubbleMenu className="writeme-editor-bubble" editor={editor}>
-          <ul className="writeme-editor-bubble-actions">
-          </ul>
-        </BubbleMenu>
         <EditorContent
           key={props.id}
           editor={editor}
@@ -368,7 +363,6 @@ export const Editor = (props: {
   id?: string;
   readonly?: boolean;
   onSave?: (content: string) => Promise<void>;
-  onPasteRawText?: (text: string) => string;
 }) => {
   const id = useMemo(
     () => props.id || props.note?.id || uuid(),
@@ -385,7 +379,6 @@ export const Editor = (props: {
           content={props.content}
           readonly={props.readonly}
           onSave={props.onSave}
-          onPasteRawText={props.onPasteRawText}
         />
       ) : (
         <div className="flex justify-center items-center">Loading...</div>
