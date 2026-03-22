@@ -34,6 +34,7 @@ import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
+import { AssetCleanup } from "./extensions/asset-cleanup";
 import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
@@ -263,6 +264,7 @@ export const createExtensions = (
     YoutubeBlock,
     Callout,
     Hashtag,
+    AssetCleanup,
     SearchAndReplace.configure({
       searchResultClass: "search-result",
       caseSensitive: false,

@@ -1,6 +1,7 @@
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { Fragment, Suspense, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
@@ -19,12 +20,14 @@ import { InspectJsonDialog } from "@/app/components/inspect-json-dialog";
 import { MediaPreview } from "@/app/components/media-preview";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
+import { notificationRef } from "@/app/notification-ref";
 import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
 
 export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
+  notificationRef.current = useNotification();
   const navigate = useNavigate();
 
   useEffect(

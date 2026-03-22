@@ -1,5 +1,6 @@
 import {
   ComponentsProvider,
+  Notifications,
   createTokenStyles,
   type TokenRemap,
   type Tweaks,
@@ -117,7 +118,9 @@ export async function main() {
   createRoot(rootElement).render(
     <StrictMode>
       <ComponentsProvider tweaks={tweaks}>
-        <RouterProvider router={router} />
+        <Notifications timeout={10_000}>
+          <RouterProvider router={router} />
+        </Notifications>
       </ComponentsProvider>
     </StrictMode>,
   );

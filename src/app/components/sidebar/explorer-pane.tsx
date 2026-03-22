@@ -12,7 +12,7 @@ import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
 import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView } from "../tree-view";
@@ -44,6 +44,35 @@ export const ExplorerPane = () => {
   const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const navigate = useNavigate();
   const [showDbNotes, setShowDbNotes] = useState(false);
+
+  const handleDelete = useCallback(async (node: TreeNode): Promise<boolean> => {
+    const isDir = node.type === "directory";
+    try {
+      if (!isDir) {
+        const allNotes = await repositories.notes.getAll();
+        const existingNote = allNotes.find((n) => n.filePath === node.path);
+        if (existingNote) {
+          await globalDispatch.deleteNote(existingNote.id);
+          return true;
+        }
+      } else {
+        const allNotes = await repositories.notes.getAll();
+        const notesInDir = allNotes.filter((n) =>
+          n.filePath?.startsWith(node.path + "/"),
+        );
+        for (const note of notesInDir) {
+          await globalDispatch.deleteNote(note.id);
+        }
+      }
+      const result = await window.electronAPI.fs.deleteFile(node.path);
+      return typeof result === "object" && result !== null
+        ? result.success
+        : result === true;
+    } catch (error) {
+      console.error("Error deleting:", error);
+      return false;
+    }
+  }, []);
 
   const handleChooseDirectory = async () => {
     const path = await window.electronAPI.fs.chooseDirectory();
@@ -178,6 +207,7 @@ export const ExplorerPane = () => {
             map={map}
             rootPath={state.explorerRoot}
             onFileSelect={onFileSelect}
+            onDelete={handleDelete}
           />
         )}
       </div>

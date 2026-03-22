@@ -1,8 +1,7 @@
-import { Modal, Button } from "@g4rcez/components";
-import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { Button, Modal } from "@g4rcez/components";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
-import { useState, useEffect } from "react";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 
 type AlertType = "info" | "success" | "error";
 
@@ -24,11 +23,11 @@ export const Alert = ({
   const getIcon = () => {
     switch (type) {
       case "success":
-        return <CheckCircleIcon className="text-green-500" size={24} />;
+        return <CheckCircleIcon className="text-success" size={24} />;
       case "error":
-        return <WarningCircleIcon className="text-red-500" size={24} />;
+        return <WarningCircleIcon className="text-danger" size={24} />;
       default:
-        return <InfoIcon className="text-blue-500" size={24} />;
+        return <InfoIcon className="text-info" size={24} />;
     }
   };
 

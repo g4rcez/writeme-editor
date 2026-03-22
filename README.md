@@ -2,6 +2,8 @@
 
 This is designed to be a text editor that help you to interact with AI and took notes with super powers, by using our awesome
 
+![](assets/readme/5.png)
+
 ## Features
 
 - **AI-Powered Editing**: Native integration with AI for content generation, refinement, and intelligent note-taking.

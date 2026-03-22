@@ -113,7 +113,7 @@ Root layout (`src/app/layouts/root-layout.tsx`) handles keyboard bindings, dialo
 ### Key Dependencies
 
 - **@phosphor-icons/react** — icon library (only icon source — `lucide-react` was removed, never import it)
-- **@g4rcez/components** — custom component library with Tailwind preset and theme system
+- **@g4rcez/components** — custom component library with Tailwind preset and theme system. **Always search this library first before creating custom UI components** (buttons, modals, alerts, notifications, toasts, inputs, etc.). Use `node_modules/@g4rcez/components/dist/index.d.ts` to browse exports.
 - **use-typed-reducer** — typed state management
 - **react-hotkeys-hook** — keyboard shortcuts
 - **zod** — schema validation
