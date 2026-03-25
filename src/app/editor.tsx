@@ -3,10 +3,13 @@ import {
   COPY_EVENT_FINISHED,
   COPY_EVENT_STARTED,
 } from "@/ipc/copy-event";
+import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
+import { isElectron } from "@/lib/is-electron";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
-import { setEditorNote, setEditorAllNotes, getEditorMarkdown } from "@/lib/editor-storage";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
+import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 import { uuid } from "@g4rcez/components";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
@@ -17,15 +20,11 @@ import {
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
 import { Fragment, useEffect, useMemo, useRef } from "react";
-import { isElectron } from "@/lib/is-electron";
-import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
-
+import { YAML } from "@/lib/encoding";
 import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
-import { YAML } from "@/lib/encoding";
 
 const getScrollContainer = () =>
   document.getElementById("main-scroll-container") || window;
@@ -50,15 +49,16 @@ const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
+    const opts = { signal: controller.signal };
     window.addEventListener(
       COPY_EVENT_FINISHED,
       () => (monitoring.current = false),
-      { signal: controller.signal },
+      opts,
     );
     window.addEventListener(
       COPY_EVENT_STARTED,
       () => (monitoring.current = true),
-      { signal: controller.signal },
+      opts,
     );
     window.addEventListener(
       COPY_EVENT_DISPATCHED,
@@ -78,7 +78,7 @@ const useCopyEvents = (editor: TipTapEditor) => {
           })
           .run();
       },
-      { signal: controller.signal },
+      opts,
     );
     return () => controller.abort();
   }, [editor]);

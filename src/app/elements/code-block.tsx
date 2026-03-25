@@ -48,6 +48,7 @@ import { Mermaid } from "./mermaid";
 import { LatexBlock } from "./latex-block";
 import { handlePasteImage } from "../extensions";
 import { shikiMathGrammer } from "./shiki-math-grammar";
+import { sanitizeAnsi } from "@/lib/encoding";
 
 export type CodeBlockFrameProps = {
   id: string;
@@ -520,38 +521,21 @@ const CodeBlockHeader = ({
   );
 };
 
-const ExecutionOutput = ({
-  output,
-  stderr,
-  html,
-  onClose,
-}: {
+type ExecutionProos = {
   output: string;
   stderr: string;
   html?: string;
   onClose: () => void;
-}) => {
+};
+
+const ExecutionOutput = ({ output, stderr, html, onClose }: ExecutionProps) => {
   const converter = useMemo(
-    () =>
-      new Convert({
-        newline: true,
-        escapeXML: true,
-        stream: false,
-      }),
+    () => new Convert({ newline: true, escapeXML: true, stream: false }),
     [],
   );
-
   if (!output && !stderr && !html) return null;
-
-  const sanitizeAnsi = (text: string) =>
-    text
-      .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
-      .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-
   const htmlOutput = output ? converter.toHtml(sanitizeAnsi(output)) : "";
   const htmlStderr = stderr ? converter.toHtml(sanitizeAnsi(stderr)) : "";
-
   return (
     <div className="border-t border-card-border bg-card-background">
       <div className="flex justify-between items-center py-1 px-3 border-b border-card-border bg-muted/30">
@@ -560,9 +544,10 @@ const ExecutionOutput = ({
           Output
         </span>
         <button
+          type="button"
           onClick={onClose}
-          className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
           title="Clear output"
+          className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <XIcon className="size-3" />
         </button>
@@ -577,8 +562,8 @@ const ExecutionOutput = ({
         {html && (
           <iframe
             srcDoc={html}
-            className="mb-2 w-full h-48 bg-white border border-card-border"
             title="HTML Output"
+            className="mb-2 w-full h-48 bg-white border border-card-border"
           />
         )}
         {htmlOutput && (
@@ -641,6 +626,12 @@ const CodeBlockAddons = ({
   return null;
 };
 
+type OutputState = {
+  stdout: string;
+  stderr: string;
+  html?: string;
+};
+
 const LanguageSelector = (props: ReactNodeViewProps) => {
   const id = useId();
   const language = props.node.attrs.language || "plaintext";
@@ -648,11 +639,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   const [isFormatting, setIsFormatting] = useState(false);
   const [executablePath, setExecutablePath] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState<{
-    stdout: string;
-    stderr: string;
-    html?: string;
-  } | null>(null);
+  const [output, setOutput] = useState<OutputState | null>(null);
 
   useEffect(() => {
     if (!isElectron()) return;
@@ -783,9 +770,9 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
           <CodeBlockAddons language={language} code={code} />
           {output && (
             <ExecutionOutput
+              html={output.html}
               output={output.stdout}
               stderr={output.stderr}
-              html={output.html}
               onClose={() => setOutput(null)}
             />
           )}
@@ -816,30 +803,23 @@ const PastePlugin = (name: string) => {
           const items = event.clipboardData?.items;
           if (items) {
             for (let i = 0; i < items.length; i++) {
-              if (items[i].type.startsWith("image/")) {
+              const item = items[i];
+              if (item?.type.startsWith("image/")) {
                 handlePasteImage(view);
                 return true;
               }
             }
           }
         }
-
-        // Prevent default paste behavior
         event.preventDefault();
-
-        // Get plain text from clipboard
         const text = event.clipboardData?.getData("text/plain");
         if (text) {
-          // Normalize line endings
           const normalizedText = text.replace(/\r\n/g, "\n");
-
-          // Insert text at current selection
           view.dispatch(
             state.tr.insertText(normalizedText, $from.pos, $to.pos),
           );
           return true;
         }
-
         return false;
       },
     },

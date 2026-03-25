@@ -36,6 +36,7 @@ import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
 import { AssetCleanup } from "./extensions/asset-cleanup";
 import { SearchAndReplace } from "./extensions/search-replace";
+import { EmojiPicker } from "./extensions/emoji-picker";
 import { SlashCommand } from "./extensions/slash-command";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
@@ -44,29 +45,21 @@ import { DomainLink } from "./extensions/domain-link";
 
 export const handlePasteImage = async (currentEditor: any) => {
   if (!isElectron()) return false;
-
   const imageData = await window.electronAPI.notes.clipboardImage();
   if (!imageData) return false;
-
   const state = globalState();
   const projectDir = state.directory;
   const noteTitle = state.note?.title || "untitled";
-
   if (!projectDir) return false;
-
   const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
   const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
-
   try {
     await window.electronAPI.fs.mkdir(targetDir);
     const dirContents = await window.electronAPI.fs.readDir(targetDir);
     const index =
       dirContents.entries.filter((e: any) => e.type === "file").length + 1;
-
-    // Default to png for clipboard images
     const filename = `${index}.png`;
     const absolutePath = `${targetDir}/${filename}`;
-
     const result = await window.electronAPI.fs.writeImage(
       absolutePath,
       imageData,
@@ -97,24 +90,10 @@ export const handleMediaFile = async (
     return;
   }
   const insertPos = pos !== null ? pos : currentEditor.state.selection.anchor;
-  console.log("[handleMediaFile] entry", {
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    isElectron: isElectron(),
-    insertPos,
-  });
   const fileReader = new FileReader();
   fileReader.readAsDataURL(file);
   fileReader.onload = async () => {
-    console.log(
-      "[handleMediaFile] onload fired, src length:",
-      (fileReader.result as string).length,
-      "insertPos:",
-      insertPos,
-    );
     let src = fileReader.result as string;
-
     if (isElectron()) {
       const state = globalState();
       const projectDir = state.directory;
@@ -125,30 +104,20 @@ export const handleMediaFile = async (
           .toLowerCase();
         const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
         try {
-          console.log("[handleMediaFile] mkdir", targetDir);
           await window.electronAPI.fs.mkdir(targetDir);
           const dirContents = await window.electronAPI.fs.readDir(targetDir);
           const index =
             dirContents.entries.filter((e: any) => e.type === "file").length +
             1 +
             offset;
-          console.log(
-            "[handleMediaFile] readDir index",
-            index,
-            "entries",
-            dirContents.entries.length,
-          );
           const ext = file.name.split(".").pop() || "png";
           const filename = `${Date.now()}_${index}.${ext}`;
           const absolutePath = `${targetDir}/${filename}`;
-
           const result = await window.electronAPI.fs.writeImage(
             absolutePath,
             src,
           );
-          console.log("[handleMediaFile] writeImage result", result);
           if (result.success) {
-            // Update src to be relative path for markdown
             src = `assets/${sanitizedTitle}/${filename}`;
           }
         } catch (e) {
@@ -156,14 +125,12 @@ export const handleMediaFile = async (
         }
       }
     }
-
     let type = "image";
     if (file.type.startsWith("video/")) {
       type = "video";
     } else if (file.type === "application/pdf") {
       type = "pdf";
     }
-
     currentEditor
       .chain()
       .insertContentAt(insertPos, { type, attrs: { src, title: file.name } })
@@ -178,15 +145,15 @@ export const createExtensions = (
   return [
     Frontmatter,
     StarterKit.configure({
+      // @ts-ignore
+      inlineMath: false,
       heading: false,
       codeBlock: false,
       blockquote: false,
-      // @ts-ignore
-      inlineMath: false,
+      orderedList: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
       bulletList: { keepMarks: true, keepAttributes: true },
-      orderedList: false,
     }),
     OrderedList.configure({ keepMarks: true, keepAttributes: true }).extend({
       renderHTML({ HTMLAttributes, node }) {
@@ -205,8 +172,9 @@ export const createExtensions = (
     TableKit.configure({
       table: {
         resizable: true,
-        allowTableNodeSelection: true,
+        renderWrapper: true,
         lastColumnResizable: false,
+        allowTableNodeSelection: true,
       },
     }),
     Highlight,
@@ -270,6 +238,7 @@ export const createExtensions = (
       caseSensitive: false,
     }),
     SlashCommand,
+    EmojiPicker,
     ReplacerCommands,
     GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
     Mention.extend({

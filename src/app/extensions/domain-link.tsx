@@ -36,9 +36,9 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       <a
         href={url}
         target="_blank"
-        rel="noopener noreferrer"
-        className={commonClasses}
         contentEditable={false}
+        className={commonClasses}
+        rel="noopener noreferrer"
       >
         <GithubLogoIcon aria-hidden="true" />
         <span>
@@ -54,9 +54,9 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       <a
         href={url}
         target="_blank"
-        rel="noopener noreferrer"
-        className={commonClasses}
         contentEditable={false}
+        className={commonClasses}
+        rel="noopener noreferrer"
       >
         <YoutubeLogoIcon weight="fill" />
         <span>{match[1]}</span>
@@ -69,9 +69,9 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
       <a
         href={url}
         target="_blank"
-        rel="noopener noreferrer"
-        className={commonClasses}
         contentEditable={false}
+        className={commonClasses}
+        rel="noopener noreferrer"
       >
         <TwitterLogoIcon weight="fill" />
         <span>@{match[1]}</span>
@@ -119,18 +119,12 @@ export const DomainLink = Node.create({
   group: "inline",
   inline: true,
   atom: true,
-
   addAttributes() {
     return {
-      href: {
-        default: null,
-      },
-      text: {
-        default: null,
-      },
+      href: { default: null },
+      text: { default: null },
     };
   },
-
   parseHTML() {
     return [
       {
@@ -140,13 +134,9 @@ export const DomainLink = Node.create({
           if (typeof element === "string") return false;
           const href = element.getAttribute("href");
           if (!href) return false;
-
           for (const config of DOMAIN_CONFIGS) {
             if (config.regex.test(href)) {
-              return {
-                href,
-                text: element.textContent || href,
-              };
+              return { href, text: element.textContent || href };
             }
           }
           return false;
@@ -154,7 +144,6 @@ export const DomainLink = Node.create({
       },
     ];
   },
-
   renderHTML({ node, HTMLAttributes }) {
     return [
       "a",
@@ -186,7 +175,6 @@ export const DomainLink = Node.create({
     return DOMAIN_CONFIGS.map((config) => {
       const sourceStr = config.regex.source.replace(/^\^/, ""); // remove start anchor for global match
       const globalRegex = new RegExp(sourceStr, "gi");
-
       return new PasteRule({
         find: globalRegex,
         handler: ({ match, chain, range }: any) => {
@@ -194,10 +182,7 @@ export const DomainLink = Node.create({
             chain()
               .insertContentAt(range, {
                 type: this.name,
-                attrs: {
-                  href: match[0],
-                  text: match[0],
-                },
+                attrs: { href: match[0], text: match[0] },
               })
               .run();
           }
@@ -205,21 +190,16 @@ export const DomainLink = Node.create({
       });
     });
   },
-
   addInputRules() {
     return DOMAIN_CONFIGS.map((config) => {
       const sourceStr = config.regex.source.replace(/^\^/, ""); // remove start anchor
       const inputRegex = new RegExp(`(?:^|\\s)(${sourceStr})\\s$`, "i");
-
       return nodeInputRule({
         find: inputRegex,
         type: this.type,
         getAttributes: (match) => {
           const href = (match[1] || match[0]).trim();
-          return {
-            href,
-            text: href,
-          };
+          return { href, text: href };
         },
       });
     });

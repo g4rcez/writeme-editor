@@ -75,18 +75,15 @@ export const FreehandCode = (props: {
     [props.onChange],
   );
 
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<SVGSVGElement>) => {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const pressure = e.pressure || 0.5;
-      setIsDrawing(true);
-      setCurrentPoints([[x, y, pressure]]);
-    },
-    [],
-  );
+  const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const pressure = e.pressure || 0.5;
+    setIsDrawing(true);
+    setCurrentPoints([[x, y, pressure]]);
+  }, []);
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
@@ -95,7 +92,7 @@ export const FreehandCode = (props: {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const pressure = e.pressure || 0.5;
-      setCurrentPoints((prev) => [...prev, [x, y, pressure]]);
+      setCurrentPoints((prev) => prev.concat([x, y, pressure]));
     },
     [isDrawing],
   );
@@ -151,7 +148,6 @@ export const FreehandCode = (props: {
     const d = getSvgPathFromStroke(outlinePoints);
     return <path key={key} d={d} fill={stroke.color} />;
   };
-
   const currentOutline = getStroke(currentPoints, {
     size: sizeConfig.size,
     thinning: sizeConfig.thinning,
@@ -162,10 +158,8 @@ export const FreehandCode = (props: {
   const currentColor = tool === "eraser" ? "#ffffff" : color;
 
   return (
-    <div ref={ref} className="relative w-full bg-card">
-      {/* Toolbar */}
+    <div ref={ref} className="relative w-full bg-card" contentEditable={false}>
       <div className="flex items-center gap-2 px-3 py-2 border-b border-card-border bg-card-background flex-wrap">
-        {/* Color swatches */}
         <div className="flex gap-1 items-center">
           {COLORS.map((c) => (
             <button
@@ -178,13 +172,13 @@ export const FreehandCode = (props: {
               className="size-5 rounded-full border-2 transition-transform hover:scale-110"
               style={{
                 backgroundColor: c.value,
-                borderColor: color === c.value && tool === "pen" ? "#6366f1" : "#d1d5db",
+                borderColor:
+                  color === c.value && tool === "pen" ? "#6366f1" : "#d1d5db",
               }}
             />
           ))}
         </div>
         <div className="w-px h-5 bg-card-border" />
-        {/* Size selector */}
         <div className="flex gap-1 items-center">
           {SIZES.map((s, i) => (
             <button
@@ -202,7 +196,6 @@ export const FreehandCode = (props: {
           ))}
         </div>
         <div className="w-px h-5 bg-card-border" />
-        {/* Tool toggle */}
         <Button
           size="small"
           theme={tool === "pen" ? "primary" : "ghost-primary"}
@@ -220,15 +213,30 @@ export const FreehandCode = (props: {
           <EraserIcon size={14} />
         </Button>
         <div className="w-px h-5 bg-card-border" />
-        {/* Actions */}
-        <Button size="small" theme="ghost-primary" onClick={handleUndo} title="Undo" disabled={strokes.length === 0}>
+        <Button
+          size="small"
+          theme="ghost-primary"
+          onClick={handleUndo}
+          title="Undo"
+          disabled={strokes.length === 0}
+        >
           <ArrowCounterClockwiseIcon size={14} />
         </Button>
-        <Button size="small" theme="ghost-danger" onClick={handleClear} title="Clear all" disabled={strokes.length === 0}>
+        <Button
+          size="small"
+          theme="ghost-danger"
+          onClick={handleClear}
+          title="Clear all"
+          disabled={strokes.length === 0}
+        >
           Clear
         </Button>
         <div className="ml-auto flex gap-2">
-          <Button size="small" theme="ghost-primary" onClick={onRequestFullScreen}>
+          <Button
+            size="small"
+            theme="ghost-primary"
+            onClick={onRequestFullScreen}
+          >
             <FullScreenIcon size={14} />
           </Button>
           <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
@@ -236,11 +244,14 @@ export const FreehandCode = (props: {
           </Button>
         </div>
       </div>
-      {/* Canvas */}
       <svg
         ref={svgRef}
         className="w-full touch-none"
-        style={{ height: 480, background: "transparent", cursor: tool === "eraser" ? "cell" : "crosshair" }}
+        style={{
+          height: 480,
+          background: "transparent",
+          cursor: tool === "eraser" ? "cell" : "crosshair",
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

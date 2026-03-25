@@ -3,15 +3,15 @@
 }
 
 .callout-info {
-  @apply bg-info text-info-foreground;
+  @apply bg-alert-info-bg text-alert-info-text border-l-alert-info-border;
 }
 
 .callout-warning {
-  @apply bg-warn text-warn-foreground;
+  @apply bg-alert-warn-bg text-alert-warn-text border-l-alert-warn-border;
 }
 
 .callout-danger {
-  @apply bg-alert-danger-bg text-alert-danger-text;
+  @apply bg-alert-danger-bg text-alert-danger-text border-l-alert-danger-border;
 }
 
 .callout-note {
@@ -28,6 +28,18 @@
 
 .callout-caution {
   @apply bg-alert-danger-bg text-alert-danger-text border-l-alert-danger-border;
+}
+
+.callout-success {
+  @apply bg-alert-success-bg text-alert-success-text border-l-alert-success-border;
+}
+
+.callout-primary {
+  @apply bg-alert-primary-bg text-alert-primary-text border-l-alert-primary-border;
+}
+
+.callout-default {
+  @apply bg-alert-muted-bg text-alert-muted-text border-l-alert-muted-border;
 }
 
 .callout p:first-child {

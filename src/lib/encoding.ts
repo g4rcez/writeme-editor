@@ -112,3 +112,10 @@ export const getUrlNamespace = (namespace: string) =>
 
 export const innerUrl = (path: string, namespace: string) =>
   join(getUrlNamespace(namespace), path);
+
+    export const sanitizeAnsi = (text: string) =>
+    text
+      .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
+      .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+

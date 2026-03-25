@@ -6,7 +6,8 @@ export interface CalloutOptions {
   HTMLAttributes: Record<string, unknown>;
 }
 
-export const inputRegex = /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
+export const inputRegex =
+  /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
 
 export const Callout = Node.create<CalloutOptions>({
   name: "callout",
@@ -22,7 +23,8 @@ export const Callout = Node.create<CalloutOptions>({
     return {
       type: {
         default: "info",
-        parseHTML: (element) => element.getAttribute("data-callout-type") || "info",
+        parseHTML: (element) =>
+          element.getAttribute("data-callout-type") || "info",
         renderHTML: (attributes) => ({
           "data-callout-type": attributes.type,
         }),
@@ -45,7 +47,6 @@ export const Callout = Node.create<CalloutOptions>({
       0,
     ];
   },
-
   addStorage() {
     return {
       markdown: {
@@ -74,11 +75,21 @@ export const Callout = Node.create<CalloutOptions>({
               const firstP = blockquote.querySelector("p");
               if (!firstP) return;
               const textContent = firstP.textContent ?? "";
-              if (!/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i.test(textContent)) return;
-              const typeMatch = textContent.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+              if (
+                !/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i.test(textContent)
+              )
+                return;
+              const typeMatch = textContent.match(
+                /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i,
+              );
               if (!typeMatch) return;
               const type = typeMatch[1].toLowerCase();
-              firstP.innerHTML = firstP.innerHTML.replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](<br\s*\/?>\s*)?\n?/i, "").trim();
+              firstP.innerHTML = firstP.innerHTML
+                .replace(
+                  /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](<br\s*\/?>\s*)?\n?/i,
+                  "",
+                )
+                .trim();
               if (!firstP.innerHTML.trim()) {
                 firstP.remove();
               }
@@ -110,7 +121,11 @@ export const Callout = Node.create<CalloutOptions>({
           if (!transactions.some((tr) => tr.docChanged)) return null;
           if (transactions.some((tr) => tr.getMeta(pluginKey))) return null;
 
-          type Match = { pos: number; size: number; replacement: ProseMirrorNode };
+          type Match = {
+            pos: number;
+            size: number;
+            replacement: ProseMirrorNode;
+          };
           const matches: Match[] = [];
 
           newState.doc.descendants((node, pos) => {
@@ -159,7 +174,10 @@ export const Callout = Node.create<CalloutOptions>({
             matches.push({
               pos,
               size: node.nodeSize,
-              replacement: calloutNodeType.create({ type }, Fragment.from(paragraphs)),
+              replacement: calloutNodeType.create(
+                { type },
+                Fragment.from(paragraphs),
+              ),
             });
           });
 
@@ -167,7 +185,9 @@ export const Callout = Node.create<CalloutOptions>({
 
           // Track which match (if any) contained the cursor before conversion
           const { from: selFrom } = newState.selection;
-          const cursorMatch = matches.find(({ pos, size }) => selFrom >= pos && selFrom <= pos + size);
+          const cursorMatch = matches.find(
+            ({ pos, size }) => selFrom >= pos && selFrom <= pos + size,
+          );
 
           const tr = newState.tr;
           for (const { pos, size, replacement } of [...matches].reverse()) {
@@ -178,8 +198,12 @@ export const Callout = Node.create<CalloutOptions>({
           if (cursorMatch) {
             const mappedPos = tr.mapping.map(cursorMatch.pos);
             try {
-              tr.setSelection(TextSelection.near(tr.doc.resolve(mappedPos + 1)));
-            } catch (_) { /* ignore invalid positions */ }
+              tr.setSelection(
+                TextSelection.near(tr.doc.resolve(mappedPos + 1)),
+              );
+            } catch (_) {
+              /* ignore invalid positions */
+            }
           }
 
           tr.setMeta(pluginKey, true);

@@ -2,19 +2,23 @@ import {
   ArrowRightIcon,
   CodeBlockIcon,
   ColumnsIcon,
+  FlowArrowIcon,
   ListBulletsIcon,
   ListChecksIcon,
   ListNumbersIcon,
   MathOperationsIcon,
   MinusIcon,
+  PencilLineIcon,
   QuotesIcon,
+  ScribbleLoopIcon,
   TableIcon,
   TextHOneIcon,
   TextHThreeIcon,
   TextHTwoIcon,
+  TreeStructureIcon,
 } from "@phosphor-icons/react";
 import { Button, Input, Modal } from "@g4rcez/components";
-import { Extension } from "@tiptap/core";
+import { Editor, Extension } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
 import { updatePosition } from "@/app/extensions/update-position";
@@ -112,7 +116,7 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         .chain()
         .focus()
         .deleteRange(range)
-        .insertContent({ type: "callout", attrs: { type: "info" } })
+        .wrapIn("callout", { type: "note" })
         .run(),
   },
   {
@@ -172,13 +176,78 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         .insertContent({ type: "inlineMath", attrs: { latex: "" } })
         .run(),
   },
+  {
+    label: "Math Block",
+    description: "Insert a math code block",
+    icon: MathOperationsIcon,
+    group: "CodeBlock",
+    command: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: "math" })
+        .run(),
+  },
+  {
+    label: "Excalidraw",
+    description: "Insert a drawing canvas",
+    icon: PencilLineIcon,
+    group: "CodeBlock",
+    command: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: "excalidraw" })
+        .run(),
+  },
+  {
+    label: "Freehand",
+    description: "Insert a freehand drawing",
+    icon: ScribbleLoopIcon,
+    group: "CodeBlock",
+    command: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: "freehand" })
+        .run(),
+  },
+  {
+    label: "Flowchart",
+    description: "Insert a flowchart diagram",
+    icon: FlowArrowIcon,
+    group: "CodeBlock",
+    command: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: "flowchart" })
+        .run(),
+  },
+  {
+    label: "Mermaid",
+    description: "Insert a Mermaid diagram",
+    icon: TreeStructureIcon,
+    group: "CodeBlock",
+    command: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCodeBlock({ language: "mermaid" })
+        .run(),
+  },
 ];
 
 const TableInsertModal = ({
   editor,
   onClose,
 }: {
-  editor: any;
+  editor: Editor;
   onClose: () => void;
 }) => {
   const [rows, setRows] = useState("3");
@@ -189,9 +258,9 @@ const TableInsertModal = ({
       .chain()
       .focus()
       .insertTable({
+        withHeaderRow: true,
         rows: parseInt(rows) || 3,
         cols: parseInt(cols) || 3,
-        withHeaderRow: true,
       })
       .run();
     onClose();

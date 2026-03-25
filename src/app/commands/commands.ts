@@ -89,6 +89,16 @@ export const DateCommand: ReplacerCommand = {
   },
 };
 
+export const DateTimeCommand: ReplacerCommand = {
+  find: />>datetime $/,
+  replace: (capture) => {
+    const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
+    if (expr === "") return "";
+    return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`
+  },
+};
+
+
 export const UuidCommand: ReplacerCommand = {
   find: />>date $/,
   replace: (capture) => {
@@ -137,7 +147,7 @@ export const TableCommand: ReplacerCommand = {
 };
 
 export const LatexInlineTransformerCommand: ReplacerCommand = {
-  find: /\$[^$]+\$ $/,
+  find: /\$\$[^$]+\$\$ /,
   replace: (regex, _, editor) => {
     const latex = regex[0];
     if (!latex) return "";
@@ -159,6 +169,7 @@ export const ReplacerCommands = Extension.create({
   addInputRules() {
     return [
       replacerRules(this.editor, DateCommand),
+      replacerRules(this.editor, DateTimeCommand),
       replacerRules(this.editor, TimeCommand),
       replacerRules(this.editor, UuidCommand),
       replacerRules(this.editor, EvalCommand),
