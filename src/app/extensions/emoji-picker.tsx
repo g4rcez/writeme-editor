@@ -501,7 +501,7 @@ const emojiSuggestion = {
   startOfLine: false,
   items: ({ query }: { query: string }) => {
     try {
-      if (!query) return EMOJIS;
+      if (!query || !/^[a-zA-Z0-9]/.test(query)) return [];
       const q = query.toLowerCase();
       return EMOJIS.filter(
         (item) =>
