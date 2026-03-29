@@ -153,7 +153,36 @@ class DatabaseManager {
         createdAt TEXT,
         updatedAt TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS views (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        title TEXT,
+        query TEXT,
+        columns TEXT,
+        viewType TEXT,
+        sortField TEXT,
+        sortDirection TEXT,
+        viewConfig TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+      );
     `);
+
+    // Migration: rename bases table to views
+    try {
+      const basesTable = this.db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='bases'",
+        )
+        .get();
+      if (basesTable) {
+        console.log("Migrating: renaming bases table to views...");
+        this.db.prepare("ALTER TABLE bases RENAME TO views").run();
+      }
+    } catch (e) {
+      console.error("Failed to migrate bases to views:", e);
+    }
 
     // Migration for templates to notes
     try {
@@ -194,6 +223,7 @@ class DatabaseManager {
       "scripts",
       "noteGroups",
       "noteGroupMembers",
+      "views",
     ];
     const commonColumns = ["type", "createdAt", "updatedAt"];
     const noteColumns = [
@@ -256,7 +286,9 @@ class DatabaseManager {
           // Ensure existing CLI configs keep working
           try {
             this.db
-              .prepare(`UPDATE aiConfigs SET adapterId = 'cli' WHERE adapterId IS NULL`)
+              .prepare(
+                `UPDATE aiConfigs SET adapterId = 'cli' WHERE adapterId IS NULL`,
+              )
               .run();
           } catch (e) {
             // Column may not exist yet on first run — handled by migration above
@@ -302,6 +334,16 @@ class DatabaseManager {
     if (row.metadata) {
       try {
         row.metadata = JSON.parse(row.metadata);
+      } catch (e) {}
+    }
+    if (row.columns) {
+      try {
+        row.columns = JSON.parse(row.columns);
+      } catch (e) {}
+    }
+    if (row.viewConfig) {
+      try {
+        row.viewConfig = JSON.parse(row.viewConfig);
       } catch (e) {}
     }
     if (row.selectionSlice) {

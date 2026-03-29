@@ -9,7 +9,8 @@ export type ActivityType =
   | "explorer"
   | "settings"
   | "favorites"
-  | "templates";
+  | "templates"
+  | "views";
 
 export type LayoutView =
   | { type: "all" }

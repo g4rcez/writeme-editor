@@ -10,6 +10,7 @@ import { NoteGroupMember } from "../entities/note-group-member";
 import { uuid } from "@g4rcez/components";
 import type { AICredentials } from "../entities/ai";
 import type { AIChat, AIConfig, AIMessage } from "../electron/ai.repository";
+import type { View } from "../entities/view";
 
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
@@ -24,6 +25,7 @@ export const db = new Dexie("writeme") as Dexie & {
   aiChats: EntityTable<AIChat, "id">;
   aiMessages: EntityTable<AIMessage, "id">;
   aiCredentials: EntityTable<AICredentials, "adapterId">;
+  views: EntityTable<View, "id">;
 };
 
 // Version 1 (original schema)
@@ -263,3 +265,47 @@ db.version(17).stores({
   aiMessages: "&id, chatId, role, createdAt",
   aiCredentials: "&adapterId",
 });
+
+// Version 18 (Bases — query-driven note views)
+db.version(18).stores({
+  notes:
+    "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, createdAt",
+  hashtags: "&id, hashtag, filename, project",
+  settings: "&id, &name, value",
+  scripts: "&id, name, createdAt, updatedAt",
+  noteGroups: "&id, title, createdAt, updatedAt",
+  noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+  aiConfigs: "&id, adapterId, isDefault, createdAt",
+  aiChats: "&id, noteId, createdAt",
+  aiMessages: "&id, chatId, role, createdAt",
+  aiCredentials: "&adapterId",
+  bases: "&id, title, viewType, createdAt, updatedAt",
+});
+
+// Version 19 (Rename bases → views)
+db.version(19)
+  .stores({
+    notes:
+      "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+    hashtags: "&id, hashtag, filename, project",
+    settings: "&id, &name, value",
+    scripts: "&id, name, createdAt, updatedAt",
+    noteGroups: "&id, title, createdAt, updatedAt",
+    noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+    aiConfigs: "&id, adapterId, isDefault, createdAt",
+    aiChats: "&id, noteId, createdAt",
+    aiMessages: "&id, chatId, role, createdAt",
+    aiCredentials: "&adapterId",
+    bases: null,
+    views: "&id, title, viewType, createdAt, updatedAt",
+  })
+  .upgrade(async (tx) => {
+    const existing = await tx.table("bases").toArray();
+    if (existing.length > 0) {
+      await tx.table("views").bulkAdd(existing);
+    }
+  });

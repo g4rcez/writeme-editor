@@ -132,7 +132,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-4 gap-3">
+    <div className="flex flex-col h-full p-4 gap-3">
       <PageCalendar
         filters={filters}
         events={calendarEvents}

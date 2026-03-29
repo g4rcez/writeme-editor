@@ -1,0 +1,421 @@
+<h2>Base Detail Page — UI Mockup</h2>
+<p class="subtitle">The core screen where users query notes and view results</p>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">Base Detail: "Books I've Read"</div>
+    <div
+      class="mockup-body"
+      style="padding: 0; background: #1a1a2e; color: #e0e0e0"
+    >
+      <!-- Top bar -->
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid #333;
+          background: #16162a;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="color: #888">← Bases</span>
+          <input
+            value="Books I've Read"
+            style="
+              background: transparent;
+              border: none;
+              color: white;
+              font-size: 18px;
+              font-weight: 600;
+              outline: none;
+              width: 220px;
+            "
+          />
+        </div>
+        <div style="display: flex; gap: 8px">
+          <span
+            style="
+              padding: 4px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+              background: #3b82f6;
+              color: white;
+              cursor: pointer;
+            "
+            >Table</span
+          >
+          <span
+            style="
+              padding: 4px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+              background: #333;
+              color: #888;
+              cursor: pointer;
+            "
+            >Kanban</span
+          >
+          <span
+            style="
+              padding: 4px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+              background: #333;
+              color: #888;
+              cursor: pointer;
+            "
+            >Calendar</span
+          >
+        </div>
+      </div>
+
+      <!-- Mode tabs: SQL / Filters -->
+      <div style="display: flex; border-bottom: 1px solid #333">
+        <div
+          style="
+            padding: 8px 16px;
+            font-size: 13px;
+            border-bottom: 2px solid #6366f1;
+            color: #6366f1;
+            cursor: pointer;
+          "
+        >
+          SQL Query
+        </div>
+        <div
+          style="
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+          "
+        >
+          Visual Filters
+        </div>
+        <div
+          style="
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+            margin-left: auto;
+          "
+        >
+          Columns ▾
+        </div>
+      </div>
+
+      <!-- SQL Query Editor -->
+      <div
+        style="
+          padding: 12px 16px;
+          background: #12122a;
+          border-bottom: 1px solid #333;
+        "
+      >
+        <div
+          style="
+            font-family: &quot;JetBrains Mono&quot;, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #c8d6e5;
+          "
+        >
+          <span style="color: #c678dd">SELECT</span> title, tags,
+          metadata.author, metadata.rating<br />
+          <span style="color: #c678dd">WHERE</span> tags
+          <span style="color: #e5c07b">CONTAINS</span>
+          <span style="color: #98c379">'book'</span><br />
+          &nbsp;&nbsp;<span style="color: #c678dd">AND</span> metadata.rating
+          <span style="color: #e5c07b">>=</span>
+          <span style="color: #d19a66">4</span><br />
+          <span style="color: #c678dd">ORDER BY</span> metadata.rating
+          <span style="color: #c678dd">DESC</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 11px; color: #4ade80">
+          ✓ 12 notes matched · query ran in 3ms
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div style="padding: 0">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+          <thead>
+            <tr style="background: #1e1e3a; text-align: left; color: #888">
+              <th style="padding: 10px 16px; border-bottom: 1px solid #333">
+                Title ↑
+              </th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #333">
+                Tags
+              </th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #333">
+                Author
+              </th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #333">
+                Rating
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              style="border-bottom: 1px solid #2a2a4a; cursor: pointer"
+              onmouseover="this.style.background = '#252545'"
+              onmouseout="this.style.background = 'transparent'"
+            >
+              <td style="padding: 10px 16px; color: #60a5fa">
+                The Silmarillion
+              </td>
+              <td style="padding: 10px 16px">
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >book</span
+                >
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >fantasy</span
+                >
+              </td>
+              <td style="padding: 10px 16px">Tolkien</td>
+              <td style="padding: 10px 16px">⭐ 5</td>
+            </tr>
+            <tr
+              style="border-bottom: 1px solid #2a2a4a; cursor: pointer"
+              onmouseover="this.style.background = '#252545'"
+              onmouseout="this.style.background = 'transparent'"
+            >
+              <td style="padding: 10px 16px; color: #60a5fa">Dune</td>
+              <td style="padding: 10px 16px">
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >book</span
+                >
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >sci-fi</span
+                >
+              </td>
+              <td style="padding: 10px 16px">Herbert</td>
+              <td style="padding: 10px 16px">⭐ 5</td>
+            </tr>
+            <tr
+              style="border-bottom: 1px solid #2a2a4a; cursor: pointer"
+              onmouseover="this.style.background = '#252545'"
+              onmouseout="this.style.background = 'transparent'"
+            >
+              <td style="padding: 10px 16px; color: #60a5fa">Clean Code</td>
+              <td style="padding: 10px 16px">
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >book</span
+                >
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >programming</span
+                >
+              </td>
+              <td style="padding: 10px 16px">Martin</td>
+              <td style="padding: 10px 16px">⭐ 4</td>
+            </tr>
+            <tr
+              style="cursor: pointer"
+              onmouseover="this.style.background = '#252545'"
+              onmouseout="this.style.background = 'transparent'"
+            >
+              <td style="padding: 10px 16px; color: #60a5fa">
+                Designing Data-Intensive Apps
+              </td>
+              <td style="padding: 10px 16px">
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >book</span
+                >
+                <span
+                  style="
+                    background: #3b3b5c;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 11px;
+                  "
+                  >systems</span
+                >
+              </td>
+              <td style="padding: 10px 16px">Kleppmann</td>
+              <td style="padding: 10px 16px">⭐ 4</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px">
+  <h3>Visual Filters Mode (alternative to SQL)</h3>
+  <div class="mockup">
+    <div class="mockup-header">Filter Builder</div>
+    <div
+      class="mockup-body"
+      style="padding: 16px; background: #1a1a2e; color: #e0e0e0"
+    >
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+        "
+      >
+        <span style="font-size: 12px; color: #888">Match</span>
+        <span
+          style="
+            background: #6366f1;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+          "
+          >AND</span
+        >
+        <span
+          style="
+            background: #333;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #888;
+          "
+          >OR</span
+        >
+        <span style="font-size: 12px; color: #888">of the following:</span>
+      </div>
+      <!-- Filter rows -->
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; gap: 8px; align-items: center">
+          <select
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+            "
+          >
+            <option>tags</option>
+          </select>
+          <select
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+            "
+          >
+            <option>contains</option>
+          </select>
+          <input
+            value="book"
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+              flex: 1;
+            "
+          />
+          <span style="color: #ef4444; cursor: pointer; font-size: 16px"
+            >×</span
+          >
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <select
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+            "
+          >
+            <option>metadata.rating</option>
+          </select>
+          <select
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+            "
+          >
+            <option>>=</option>
+          </select>
+          <input
+            value="4"
+            style="
+              background: #2a2a4a;
+              border: 1px solid #444;
+              color: white;
+              padding: 6px 10px;
+              border-radius: 6px;
+              font-size: 12px;
+              flex: 1;
+            "
+          />
+          <span style="color: #ef4444; cursor: pointer; font-size: 16px"
+            >×</span
+          >
+        </div>
+      </div>
+      <div style="margin-top: 12px">
+        <span style="color: #6366f1; cursor: pointer; font-size: 13px"
+          >+ Add condition</span
+        >
+      </div>
+    </div>
+  </div>
+</div>

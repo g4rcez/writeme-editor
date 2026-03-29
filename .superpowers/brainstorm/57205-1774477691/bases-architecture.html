@@ -1,0 +1,244 @@
+<h2>Bases Architecture — Recommended Approach</h2>
+<p class="subtitle">
+  Query engine + visual builder + 3 view types on a dedicated page
+</p>
+
+<div class="section">
+  <h3>System Architecture</h3>
+  <div class="mockup">
+    <div class="mockup-header">Data Flow</div>
+    <div
+      class="mockup-body"
+      style="
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        padding: 20px;
+      "
+    >
+      <div style="text-align: center; margin-bottom: 16px">
+        <span
+          style="
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+          "
+          >User Input</span
+        >
+      </div>
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          gap: 40px;
+          margin-bottom: 16px;
+        "
+      >
+        <div
+          style="
+            border: 2px solid #6366f1;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            min-width: 180px;
+          "
+        >
+          <strong style="color: #6366f1">SQL-like Query Editor</strong><br />
+          <small>Monaco/CodeMirror with syntax highlighting</small><br />
+          <code style="font-size: 11px"
+            >SELECT title, tags<br />FROM notes<br />WHERE metadata.author =
+            'Tolkien'</code
+          >
+        </div>
+        <div
+          style="
+            border: 2px solid #8b5cf6;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            min-width: 180px;
+          "
+        >
+          <strong style="color: #8b5cf6">Visual Filter Builder</strong><br />
+          <small>Notion-style filter rows</small><br />
+          <div style="margin-top: 8px; text-align: left; font-size: 11px">
+            <div
+              style="
+                background: rgba(139, 92, 246, 0.1);
+                padding: 4px 8px;
+                border-radius: 4px;
+                margin-bottom: 4px;
+              "
+            >
+              tags <em>contains</em> "book"
+            </div>
+            <div
+              style="
+                background: rgba(139, 92, 246, 0.1);
+                padding: 4px 8px;
+                border-radius: 4px;
+              "
+            >
+              author <em>=</em> "Tolkien"
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-bottom: 16px">
+        <span>↓ both produce ↓</span>
+      </div>
+      <div style="text-align: center; margin-bottom: 16px">
+        <span
+          style="
+            background: #f59e0b;
+            color: black;
+            padding: 4px 12px;
+            border-radius: 4px;
+          "
+          >Query AST (Abstract Syntax Tree)</span
+        >
+      </div>
+      <div style="text-align: center; margin-bottom: 16px">
+        <span>↓ executes against ↓</span>
+      </div>
+      <div style="text-align: center; margin-bottom: 16px">
+        <span
+          style="
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+          "
+          >Query Engine (filters state.notes in memory)</span
+        >
+      </div>
+      <div style="text-align: center; margin-bottom: 16px">
+        <span>↓ results feed ↓</span>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 24px">
+        <div
+          style="
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 8px 16px;
+            text-align: center;
+          "
+        >
+          <strong style="color: #ef4444">Table View</strong><br />
+          <small>Sortable columns</small>
+        </div>
+        <div
+          style="
+            border: 2px solid #f97316;
+            border-radius: 8px;
+            padding: 8px 16px;
+            text-align: center;
+          "
+        >
+          <strong style="color: #f97316">Kanban View</strong><br />
+          <small>Group by property</small>
+        </div>
+        <div
+          style="
+            border: 2px solid #06b6d4;
+            border-radius: 8px;
+            padding: 8px 16px;
+            text-align: center;
+          "
+        >
+          <strong style="color: #06b6d4">Calendar View</strong><br />
+          <small>Group by date</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Key Design Decisions</h3>
+  <div class="options">
+    <div class="option" data-choice="approach-a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Phased Approach (Recommended)</h3>
+        <p>
+          <strong>Phase 1:</strong> Query parser + engine + Table view + filter
+          builder + bases entity<br />
+          <strong>Phase 2:</strong> Kanban view + Calendar view<br />
+          <strong>Phase 3:</strong> Autocomplete, syntax highlighting, saved
+          queries
+        </p>
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Testable increments</li>
+              <li>Core value delivered fast</li>
+              <li>Views share same engine</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Kanban/Calendar delayed</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option" data-choice="approach-b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>All Views at Once</h3>
+        <p>
+          Build all three view types in a single pass. Query engine feeds into a
+          view switcher component that renders table, kanban, or calendar.
+        </p>
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Complete feature on delivery</li>
+              <li>Views designed together</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Larger single PR</li>
+              <li>Harder to test incrementally</li>
+              <li>Longer time to first result</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option" data-choice="approach-c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Visual Builder First, Query Language Later</h3>
+        <p>
+          Start with the Notion-style filter UI only. The SQL-like query
+          language comes as a "power mode" in phase 2.
+        </p>
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Lower learning curve</li>
+              <li>Simpler initial parser</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Power users wait</li>
+              <li>May design filter UI that doesn't map well to SQL later</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

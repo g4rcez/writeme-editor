@@ -10,6 +10,7 @@ import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import {
   BracketsCurlyIcon,
   CalendarDotsIcon,
+  DatabaseIcon,
   type Icon,
 } from "@phosphor-icons/react";
 import {
@@ -134,6 +135,15 @@ export const ActivityBar = () => {
           onClick={() => {
             navigate("/calendar");
             onActivityClick("calendar", true);
+          }}
+        />
+        <ActivityIcon
+          label="Views"
+          icon={DatabaseIcon}
+          active={layout.activeActivity === "views"}
+          onClick={() => {
+            navigate("/views");
+            onActivityClick("views", true);
           }}
         />
         <ActivityIcon
