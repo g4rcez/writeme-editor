@@ -7,6 +7,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGl
 import { Modal } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
 import { useListSearch } from "@/app/hooks/use-list-search";
+import { Dates } from "@/lib/dates";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -132,7 +133,7 @@ export const RecentNotesDialog = () => {
                     {note.title || "Untitled"}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {new Date(note.updatedAt).toLocaleDateString()}
+                    {Dates.yearMonthDay(new Date(note.updatedAt))}
                   </span>
                 </div>
 

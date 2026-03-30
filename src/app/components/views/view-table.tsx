@@ -1,4 +1,5 @@
 import { Tag, type TagProps } from "@g4rcez/components";
+import { Dates } from "@/lib/dates";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { Link } from "react-router-dom";
@@ -19,7 +20,7 @@ function formatDate(value: unknown): string {
   if (!value) return "";
   const d = value instanceof Date ? value : new Date(value as string);
   if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString();
+  return Dates.yearMonthDay(d);
 }
 
 function getRowValue(row: Row, field: string): unknown {
