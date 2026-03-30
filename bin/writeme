@@ -1,0 +1,171 @@
+#!/usr/bin/env node
+"use strict";
+
+const net = require("net");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const { spawn } = require("child_process");
+const crypto = require("crypto");
+
+function getSocketPath() {
+  if (process.platform === "win32") {
+    return "\\\\.\\pipe\\writeme-cli";
+  }
+  if (process.platform === "darwin") {
+    return path.join(
+      os.homedir(),
+      "Library",
+      "Application Support",
+      "writeme",
+      "writeme.sock",
+    );
+  }
+  const configDir =
+    process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+  return path.join(configDir, "writeme", "writeme.sock");
+}
+
+function getAppBinary() {
+  if (process.platform === "darwin") {
+    return "/Applications/writeme.app/Contents/MacOS/writeme";
+  }
+  if (process.platform === "win32") {
+    return "writeme.exe";
+  }
+  return "writeme";
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let filePath = null;
+  let wait = false;
+  for (const arg of args) {
+    if (arg === "--wait" || arg === "-w") {
+      wait = true;
+    } else if (!arg.startsWith("-") && filePath === null) {
+      filePath = path.resolve(arg);
+    }
+  }
+  return { filePath, wait };
+}
+
+function connectAndSend(socketPath, filePath, wait, requestId) {
+  return new Promise((resolve, reject) => {
+    const client = net.createConnection(socketPath);
+
+    const timeout = setTimeout(() => {
+      client.destroy();
+      reject(new Error("Connection timed out"));
+    }, 5000);
+
+    client.on("connect", () => {
+      const msg = JSON.stringify({ filePath, wait, requestId }) + "\n";
+      client.write(msg);
+
+      if (!wait) {
+        clearTimeout(timeout);
+        resolve();
+        client.end();
+        return;
+      }
+
+      // Block until "closed" response
+      let buffer = "";
+      client.on("data", (data) => {
+        buffer += data.toString();
+        const nl = buffer.indexOf("\n");
+        if (nl === -1) return;
+        try {
+          const response = JSON.parse(buffer.slice(0, nl));
+          if (response.status === "closed" || response.status === "opened") {
+            clearTimeout(timeout);
+            resolve();
+            client.end();
+          }
+        } catch {
+          // Incomplete JSON
+        }
+      });
+
+      client.on("end", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+
+    client.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function launchApp() {
+  const binary = getAppBinary();
+
+  if (
+    process.platform !== "win32" &&
+    !binary.includes(" ") &&
+    !fs.existsSync(binary)
+  ) {
+    // On Linux/custom installs, the binary may be in PATH — don't fail on existence check
+    if (process.platform === "darwin") {
+      console.error(`writeme not found at ${binary}. Is it installed?`);
+      process.exit(1);
+    }
+  }
+
+  const child = spawn(binary, [], { detached: true, stdio: "ignore" });
+  child.unref();
+}
+
+async function waitForSocket(socketPath, retries = 30, delayMs = 300) {
+  for (let i = 0; i < retries; i++) {
+    await sleep(delayMs);
+    try {
+      await new Promise((resolve, reject) => {
+        const client = net.createConnection(socketPath);
+        client.on("connect", () => {
+          client.end();
+          resolve();
+        });
+        client.on("error", reject);
+      });
+      return; // socket is up
+    } catch {
+      // Not ready yet
+    }
+  }
+  throw new Error("Timed out waiting for writeme to start");
+}
+
+async function main() {
+  const { filePath, wait } = parseArgs();
+  const socketPath = getSocketPath();
+  const requestId = crypto.randomUUID();
+
+  try {
+    await connectAndSend(socketPath, filePath, wait, requestId);
+    process.exit(0);
+  } catch (err) {
+    if (err.code === "ECONNREFUSED" || err.code === "ENOENT") {
+      // App not running — launch it and wait for socket
+      await launchApp();
+      await waitForSocket(socketPath);
+      await connectAndSend(socketPath, filePath, wait, requestId);
+      process.exit(0);
+    }
+    console.error("Failed to connect to writeme:", err.message);
+    process.exit(1);
+  }
+}
+
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

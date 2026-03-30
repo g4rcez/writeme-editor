@@ -20,6 +20,7 @@ import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
 import { tokyonightNightTheme } from "./styles/tokyonight-night";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
+import { isElectron } from "@/lib/is-electron";
 import { sortByNewest } from "@/lib/array";
 import { setupAIAdapters } from "./ai/setup";
 
@@ -96,13 +97,15 @@ export async function main() {
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
     const tabs = await repositories.tabs.getAll();
+    const isMobileWeb =
+      !isElectron() && window.matchMedia("(max-width: 768px)").matches;
     globalDispatch.init(
       settings.theme,
       notes,
       tabs,
       settings.editorFontSize,
       settings.sidebarWidth,
-      settings.isSidebarCollapsed,
+      isMobileWeb ? true : settings.isSidebarCollapsed,
       settings.directory,
       settings.explorerRoot,
     );

@@ -5,6 +5,9 @@
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
+  "bin": {
+    "writeme": "./bin/writeme"
+  },
   "license": "MIT",
   "author": {
     "name": "g4rcez",

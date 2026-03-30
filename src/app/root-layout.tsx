@@ -1,10 +1,12 @@
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
-import { Fragment, Suspense, useEffect } from "react";
+import { Fragment, Suspense, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
+import { repositories } from "@/store/repositories";
+import { Note } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
 import { FindReplaceBar } from "@/app/components/find-replace-bar";
 import { Commander } from "@/app/commander";
@@ -24,11 +26,69 @@ import { notificationRef } from "@/app/notification-ref";
 import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
 
+// Maps noteId -> requestId for files opened with --wait
+const waitMap = new Map<string, string>();
+
 export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
   notificationRef.current = useNotification();
   const navigate = useNavigate();
+  const prevTabsRef = useRef(state.tabs);
+
+  // Handle files opened from CLI via app:open-file IPC
+  useEffect(() => {
+    if (!isElectron()) return;
+    return window.electronAPI.onOpenFile(
+      async ({ filePath, wait, requestId }) => {
+        try {
+          const existing =
+            await window.electronAPI.db.notes.getByFilePath(filePath);
+          let noteId: string;
+          if (existing) {
+            noteId = existing.id;
+          } else {
+            const content = await window.electronAPI.fs
+              .readFile(filePath)
+              .catch(() => "");
+            const basename = filePath.split(/[\\/]/).pop() ?? filePath;
+            const title = basename.replace(/\.[^.]+$/, "");
+            const note = Note.new(
+              title,
+              typeof content === "string" ? content : "",
+            );
+            note.setFilePath(filePath, new Date());
+            await repositories.notes.save(note);
+            noteId = note.id;
+          }
+          if (wait) {
+            waitMap.set(noteId, requestId);
+          }
+          await dispatch.selectNoteById(noteId);
+          navigate(`/note/${noteId}`);
+        } catch (err) {
+          console.error("Failed to open file from CLI:", err);
+        }
+      },
+    );
+  }, []);
+
+  // Detect tab removal and signal --wait callers
+  useEffect(() => {
+    if (!isElectron()) return;
+    const prevTabs = prevTabsRef.current;
+    const removedTabs = prevTabs.filter(
+      (pt) => !state.tabs.find((ct) => ct.id === pt.id),
+    );
+    for (const tab of removedTabs) {
+      const requestId = waitMap.get(tab.noteId);
+      if (requestId) {
+        window.electronAPI.app.notifyFileClosed(requestId);
+        waitMap.delete(tab.noteId);
+      }
+    }
+    prevTabsRef.current = state.tabs;
+  }, [state.tabs]);
 
   useEffect(
     function registerBindings() {

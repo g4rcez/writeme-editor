@@ -545,6 +545,14 @@ class DatabaseManager {
     );
     stmt.run(groupId);
   }
+
+  public getNoteByFilePath(filePath: string): any {
+    const stmt = this.db.prepare(
+      "SELECT * FROM notes WHERE filePath = ? LIMIT 1",
+    );
+    const result = stmt.get(filePath) as any;
+    return this.normalizeRow(result);
+  }
 }
 
 export const dbManager = DatabaseManager.getInstance;

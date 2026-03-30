@@ -9,10 +9,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
   app: {
     openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
     chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
+    notifyFileClosed: (requestId: string) =>
+      ipcRenderer.invoke("app:file-closed", requestId),
   },
   onQuicknoteOpen: (callback: () => void) => {
     ipcRenderer.on("quicknote:open", callback);
     return () => ipcRenderer.removeListener("quicknote:open", callback);
+  },
+  onOpenFile: (
+    callback: (data: {
+      filePath: string;
+      wait: boolean;
+      requestId: string;
+    }) => void,
+  ) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      data: { filePath: string; wait: boolean; requestId: string },
+    ) => callback(data);
+    ipcRenderer.on("app:open-file", handler);
+    return () => ipcRenderer.removeListener("app:open-file", handler);
   },
   notes: {
     clipboard: async () => {
@@ -103,6 +119,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       getRecentNotes: (limit: number) =>
         ipcRenderer.invoke("db:notes:getRecentNotes", limit),
       getTemplates: () => ipcRenderer.invoke("db:notes:getTemplates"),
+      getByFilePath: (filePath: string) =>
+        ipcRenderer.invoke("db:notes:getByFilePath", filePath),
       updateContent: (
         id: string,
         content: string,
@@ -229,8 +247,16 @@ declare global {
       app: {
         openQuickNote(): Promise<void>;
         chdir(dir: string): Promise<{ success: boolean; error?: string }>;
+        notifyFileClosed(requestId: string): Promise<boolean>;
       };
       onQuicknoteOpen(callback: () => void): () => void;
+      onOpenFile(
+        callback: (data: {
+          filePath: string;
+          wait: boolean;
+          requestId: string;
+        }) => void,
+      ): () => void;
       notes: {
         clipboard(): Promise<string>;
         clipboardImage(): Promise<string | null>;
@@ -277,6 +303,7 @@ declare global {
           getQuicknoteByDate(start: string, end: string): Promise<any>;
           getRecentNotes(limit: number): Promise<Note[]>;
           getTemplates(): Promise<any[]>;
+          getByFilePath(filePath: string): Promise<Note | null>;
           updateContent(
             id: string,
             content: string,

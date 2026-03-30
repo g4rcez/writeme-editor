@@ -25,15 +25,18 @@ export const databaseIpcHandler = () => {
   ipcMain.handle("db:count", (_, table: string) => {
     return db.count(table);
   });
-  
+
   // Specialized queries
   ipcMain.handle("db:notes:getLatestQuicknote", () => {
     return db.getLatestQuicknote();
   });
 
-  ipcMain.handle("db:notes:getQuicknoteByDate", (_, start: string, end: string) => {
-    return db.getQuicknoteByDate(start, end);
-  });
+  ipcMain.handle(
+    "db:notes:getQuicknoteByDate",
+    (_, start: string, end: string) => {
+      return db.getQuicknoteByDate(start, end);
+    },
+  );
 
   ipcMain.handle("db:notes:getRecentNotes", (_, limit: number) => {
     return db.getRecentNotes(limit);
@@ -45,25 +48,32 @@ export const databaseIpcHandler = () => {
 
   ipcMain.handle(
     "db:notes:updateContent",
-    (_, id: string, content: string, fileSize: number, updatedAt: string, updatedBy: string) => {
+    (
+      _,
+      id: string,
+      content: string,
+      fileSize: number,
+      updatedAt: string,
+      updatedBy: string,
+    ) => {
       db.updateNoteContent(id, content, fileSize, updatedAt, updatedBy);
       return true;
     },
   );
 
   ipcMain.handle("db:tabs:updateOrder", (_, tabs: any[]) => {
-      db.updateTabsOrder(tabs);
-      return true;
+    db.updateTabsOrder(tabs);
+    return true;
   });
 
   ipcMain.handle("db:tabs:deleteByNoteId", (_, noteId: string) => {
-      db.deleteTabsByNoteId(noteId);
-      return true;
+    db.deleteTabsByNoteId(noteId);
+    return true;
   });
 
   ipcMain.handle("db:hashtags:sync", (_, filename: string, tags: string[]) => {
-      db.syncHashtags(filename, tags);
-      return true;
+    db.syncHashtags(filename, tags);
+    return true;
   });
 
   ipcMain.handle("db:noteGroups:getByNoteId", (_, noteId: string) => {
@@ -74,18 +84,28 @@ export const databaseIpcHandler = () => {
     return db.getNoteGroupMembersByGroupId(groupId);
   });
 
-  ipcMain.handle("db:noteGroupMembers:reorder", (_, members: { id: string; order: number }[]) => {
-    db.reorderNoteGroupMembers(members);
-    return true;
-  });
+  ipcMain.handle(
+    "db:noteGroupMembers:reorder",
+    (_, members: { id: string; order: number }[]) => {
+      db.reorderNoteGroupMembers(members);
+      return true;
+    },
+  );
 
   ipcMain.handle("db:noteGroupMembers:deleteByNoteId", (_, noteId: string) => {
     db.deleteNoteGroupMembersByNoteId(noteId);
     return true;
   });
 
-  ipcMain.handle("db:noteGroupMembers:deleteByGroupId", (_, groupId: string) => {
-    db.deleteNoteGroupMembersByGroupId(groupId);
-    return true;
+  ipcMain.handle(
+    "db:noteGroupMembers:deleteByGroupId",
+    (_, groupId: string) => {
+      db.deleteNoteGroupMembersByGroupId(groupId);
+      return true;
+    },
+  );
+
+  ipcMain.handle("db:notes:getByFilePath", (_, filePath: string) => {
+    return db.getNoteByFilePath(filePath);
   });
 };

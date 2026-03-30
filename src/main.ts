@@ -1,14 +1,14 @@
 import {
-    app,
-    BrowserWindow,
-    dialog,
-    globalShortcut,
-    ipcMain,
-    Menu,
-    nativeImage,
-    net,
-    shell,
-    Tray
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  nativeImage,
+  net,
+  shell,
+  Tray,
 } from "electron";
 import started from "electron-squirrel-startup";
 import path from "node:path";
@@ -24,6 +24,11 @@ import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
 import { createQuickNoteWindow } from "./main-process/quicknote-window";
 import { handleWindowClose } from "./main-process/window-lifecycle";
+import {
+  notifyFileClosed,
+  startCliServer,
+  stopCliServer,
+} from "./main-process/cli-server";
 
 function registerAIHandlers() {
   console.log("Registering AI IPC handlers...");
@@ -139,11 +144,13 @@ function registerAIHandlers() {
     try {
       const now = new Date().toISOString();
       const db = dbManager().db;
-      db.prepare(`
+      db.prepare(
+        `
         INSERT OR REPLACE INTO aiCredentials
           (adapterId, accessToken, refreshToken, expiresAt, apiKey, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, COALESCE((SELECT createdAt FROM aiCredentials WHERE adapterId = ?), ?), ?)
-      `).run(
+      `,
+      ).run(
         creds.adapterId,
         creds.accessToken ?? null,
         creds.refreshToken ?? null,
@@ -162,8 +169,8 @@ function registerAIHandlers() {
 
   ipcMain.handle("ai:load-credentials", (_, adapterId: string) => {
     try {
-      const row = dbManager().db
-        .prepare("SELECT * FROM aiCredentials WHERE adapterId = ?")
+      const row = dbManager()
+        .db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?")
         .get(adapterId) as any;
       return row ?? null;
     } catch (e: any) {
@@ -174,8 +181,8 @@ function registerAIHandlers() {
 
   ipcMain.handle("ai:clear-credentials", (_, adapterId: string) => {
     try {
-      dbManager().db
-        .prepare("DELETE FROM aiCredentials WHERE adapterId = ?")
+      dbManager()
+        .db.prepare("DELETE FROM aiCredentials WHERE adapterId = ?")
         .run(adapterId);
       return { success: true };
     } catch (e: any) {
@@ -190,7 +197,10 @@ async function checkLinuxUpdate() {
     const response = await net.fetch(
       "https://api.github.com/repos/g4rcez/writeme-editor/releases/latest",
     );
-    const release = await response.json() as { tag_name: string; html_url: string };
+    const release = (await response.json()) as {
+      tag_name: string;
+      html_url: string;
+    };
     const latest = release.tag_name.replace(/^v/, "");
     const current = app.getVersion();
     if (latest !== current) {
@@ -214,12 +224,74 @@ async function checkLinuxUpdate() {
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let pendingFileOpen: string | null = null;
+
+function parseCliArgs(
+  argv: string[],
+  workingDir?: string,
+): { filePath: string | null } {
+  const startIdx = app.isPackaged ? 1 : 2;
+  const args = argv.slice(startIdx);
+  for (const arg of args) {
+    if (!arg.startsWith("-")) {
+      const resolved = workingDir
+        ? path.resolve(workingDir, arg)
+        : path.resolve(arg);
+      return { filePath: resolved };
+    }
+  }
+  return { filePath: null };
+}
+
+function sendOpenFile(
+  filePath: string,
+  wait: boolean,
+  requestId: string,
+): void {
+  if (mainWindow?.webContents) {
+    mainWindow.webContents.send("app:open-file", { filePath, wait, requestId });
+  }
+}
 
 async function main() {
   if (started) {
     app.quit();
     return;
   }
+
+  // Single-instance lock: second invocation forwards args to first instance
+  const gotLock = app.requestSingleInstanceLock();
+  if (!gotLock) {
+    app.quit();
+    return;
+  }
+
+  app.on("second-instance", (_, argv, workingDirectory) => {
+    const { filePath } = parseCliArgs(argv, workingDirectory);
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    if (filePath) {
+      sendOpenFile(filePath, false, crypto.randomUUID());
+    }
+  });
+
+  // macOS: handle files opened via Finder / drag onto dock icon
+  app.on("open-file", (event, filePath) => {
+    event.preventDefault();
+    if (mainWindow?.webContents && !mainWindow.webContents.isLoading()) {
+      sendOpenFile(filePath, false, crypto.randomUUID());
+    } else {
+      pendingFileOpen = filePath;
+    }
+  });
+
+  ipcMain.handle("app:file-closed", (_, requestId: string) => {
+    notifyFileClosed(requestId);
+    return true;
+  });
+
   const preload = path.join(__dirname, "preload.js");
   console.log("Main process starting, registering AI handlers...");
   registerAIHandlers();
@@ -313,12 +385,28 @@ async function main() {
       });
     }
   };
-  app.on("before-quit", () => void (isQuitting = true));
+  app.on("before-quit", () => {
+    isQuitting = true;
+    stopCliServer();
+  });
   app.on("will-quit", () => globalShortcut.unregisterAll());
   app.on("ready", () => {
     createWindow();
     createTray();
     if (mainWindow) registerAIOAuthHandlers(mainWindow);
+    if (mainWindow) startCliServer(mainWindow);
+
+    // Open file passed as CLI arg on fresh launch
+    if (mainWindow) {
+      const { filePath } = parseCliArgs(process.argv);
+      const fileToOpen = filePath ?? pendingFileOpen;
+      if (fileToOpen) {
+        pendingFileOpen = null;
+        mainWindow.webContents.once("did-finish-load", () => {
+          sendOpenFile(fileToOpen, false, crypto.randomUUID());
+        });
+      }
+    }
 
     if (app.isPackaged) {
       if (process.platform !== "linux") {
@@ -341,7 +429,9 @@ async function main() {
 
     if (mainWindow) {
       try {
-        const settings = dbManager().getAll<{ name: string; value: string }>("settings");
+        const settings = dbManager().getAll<{ name: string; value: string }>(
+          "settings",
+        );
         const dirSetting = settings.find((s) => s.name === "directory");
         if (dirSetting?.value) {
           const directory = JSON.parse(dirSetting.value);
