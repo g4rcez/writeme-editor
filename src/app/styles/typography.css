@@ -1,5 +1,5 @@
 .writeme-editor-content {
-  @apply whitespace-pre-wrap leading-relaxed;
+  @apply whitespace-pre-wrap leading-relaxed break-words;
 }
 
 .writeme-editor-content p {
@@ -199,7 +199,7 @@
 
 .writeme-editor-content ul,
 .writeme-editor-content ol {
-  @apply min-w-full mb-4 ml-0;
+  @apply mb-4 ml-0;
   padding-left: 1.5rem;
 }
 
@@ -219,6 +219,7 @@
 .writeme-editor-content li > ul,
 .writeme-editor-content li > ol {
   @apply mt-2 mb-2 w-full;
+  word-break: break-all;
 }
 
 .writeme-editor-content ul ul {
@@ -235,7 +236,7 @@
 }
 
 .writeme-editor-content ol li {
-  @apply flex items-start flex-wrap min-w-full;
+  @apply flex items-start flex-wrap;
   counter-increment: section;
 }
 

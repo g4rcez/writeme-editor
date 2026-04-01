@@ -227,3 +227,7 @@ input:focus {
 .tab-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsla(var(--primary-DEFAULT), 0.6);
 }
+
+.react-renderer.node-codeBlock { 
+  min-width: 100%;
+}

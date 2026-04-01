@@ -77,7 +77,7 @@ export const CodeBlockFrame = ({
       as="div"
       aria-hidden={!isBodyVisible}
       className={clsx(
-        "overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
+        "overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
         isTransparent ? "bg-transparent" : "bg-card-background",
         className,
       )}
