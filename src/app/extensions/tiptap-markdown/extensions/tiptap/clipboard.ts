@@ -1,7 +1,9 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { DOMParser, Slice, Fragment } from "@tiptap/pm/model";
+import { DOMParser, Fragment, Slice } from "@tiptap/pm/model";
 import { elementFromString } from "../../util/dom";
+
+const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
 
 function dedent(text: string): string {
   const lines = text.split("\n");
@@ -68,6 +70,38 @@ export const MarkdownClipboard = Extension.create({
             if (text) {
               text = this.options.onBeforePaste(text);
               const dedentedText = dedent(text);
+
+              const fmMatch = dedentedText.match(FRONTMATTER_RE);
+              if (fmMatch) {
+                const schema = this.editor.schema;
+                const fmType = schema.nodes.frontmatter;
+                if (fmType) {
+                  const yamlContent = fmMatch[1];
+                  const body = dedentedText.slice(fmMatch[0].length);
+                  const fmNode = fmType.create(
+                    { language: "yaml" },
+                    yamlContent ? schema.text(yamlContent) : undefined,
+                  );
+
+                  const nodes = [fmNode];
+                  if (body.trim()) {
+                    const bodyHtml = this.editor.storage.markdown.parser.parse(
+                      body,
+                      { inline: false },
+                    );
+                    const bodyDoc = DOMParser.fromSchema(schema).parse(
+                      elementFromString(bodyHtml),
+                      { preserveWhitespace: true },
+                    );
+                    bodyDoc.content.forEach((node) => nodes.push(node));
+                  }
+
+                  const slice = new Slice(Fragment.from(nodes), 0, 0);
+                  view.dispatch(view.state.tr.replaceSelection(slice));
+                  return true;
+                }
+              }
+
               const parsed = this.editor.storage.markdown.parser.parse(
                 dedentedText,
                 { inline: true },

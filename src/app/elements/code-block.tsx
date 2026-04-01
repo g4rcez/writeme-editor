@@ -79,7 +79,6 @@ export const CodeBlockFrame = ({
       className={clsx(
         "overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
         isTransparent ? "bg-transparent" : "bg-card-background",
-        isBodyVisible ? "" : "hidden",
         className,
       )}
     >
@@ -521,7 +520,7 @@ const CodeBlockHeader = ({
   );
 };
 
-type ExecutionProos = {
+type ExecutionProps = {
   output: string;
   stderr: string;
   html?: string;
@@ -755,14 +754,14 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
       lineCount={props.node.textContent.split("\n").length}
       header={
         <CodeBlockHeader
-          language={language}
           code={code}
-          handleLanguageChange={handleLanguageChange}
-          handleFormat={handleFormat}
-          isFormatting={isFormatting}
           canRun={canRun}
+          language={language}
           handleRun={handleRun}
           isRunning={isRunning}
+          handleFormat={handleFormat}
+          isFormatting={isFormatting}
+          handleLanguageChange={handleLanguageChange}
         />
       }
       footer={
@@ -792,13 +791,9 @@ const PastePlugin = (name: string) => {
         const { state } = view;
         const { selection } = state;
         const { $from, $to } = selection;
-
-        // Check if cursor is inside the code block
         if ($from.parent.type.name !== name) {
           return false;
         }
-
-        // Try to handle image paste first
         if (isElectron()) {
           const items = event.clipboardData?.items;
           if (items) {
@@ -834,12 +829,12 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   addOptions() {
     return {
       ...this.parent?.(),
-      defaultLanguage: null,
       themeAware: true,
+      defaultLanguage: null,
+      defaultTheme: getThemeForMode(globalState().theme),
       getCurrentTheme: () => {
         return getThemeForMode(globalState().theme);
       },
-      defaultTheme: getThemeForMode(globalState().theme),
     } as CodeBlockShikiOptions;
   },
   addKeyboardShortcuts() {
