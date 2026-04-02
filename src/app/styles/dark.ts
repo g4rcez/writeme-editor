@@ -21,6 +21,10 @@ export const darkTheme: typeof defaultDarkTheme = {
     background: "hsla(221, 12%, 9%)",
     border: "hsla(220, 10%, 25%)",
     disabled: "hsla(220, 5%, 40%)",
+    muted: {
+      ...defaultDarkTheme.colors.muted,
+      DEFAULT: "hsla(220, 10%, 39%)",
+    },
     emphasis: {
       foreground: "hsla(220, 30%, 10%)",
       DEFAULT: "hsla(35, 100%, 70%)",

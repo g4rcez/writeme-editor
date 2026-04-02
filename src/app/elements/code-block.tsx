@@ -521,9 +521,9 @@ const CodeBlockHeader = ({
 };
 
 type ExecutionProps = {
+  html?: string;
   output: string;
   stderr: string;
-  html?: string;
   onClose: () => void;
 };
 
@@ -783,8 +783,8 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
   );
 };
 
-const PastePlugin = (name: string) => {
-  return new Plugin({
+const PastePlugin = (name: string) =>
+  new Plugin({
     key: new PluginKey("codeBlockPaste"),
     props: {
       handlePaste(view, event) {
@@ -819,7 +819,6 @@ const PastePlugin = (name: string) => {
       },
     },
   });
-};
 
 export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   priority: 1000,

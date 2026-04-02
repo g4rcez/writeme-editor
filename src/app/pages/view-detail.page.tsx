@@ -21,27 +21,25 @@ import { useGlobalStore } from "@/store/global.store";
 
 type Tab = "sql" | "filters";
 
+const viewColumns = [{ field: "title", label: "Title" }];
+
 export default function ViewDetailPage() {
   const { viewId } = useParams<{ viewId: string }>();
   const navigate = useNavigate();
   const [state] = useGlobalStore();
-
   const [view, setView] = useState<View | null>(null);
-  const [title, setTitle] = useState("Untitled View");
-  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [title, setTitle] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [columns, setColumns] = useState<ViewColumn[]>([
-    { field: "title", label: "Title" },
-  ]);
+  const [columns, setColumns] = useState<ViewColumn[]>(viewColumns);
   const [activeTab, setActiveTab] = useState<Tab>("sql");
   const [filterGroup, setFilterGroup] = useState<FilterGroup>({
-    id: crypto.randomUUID(),
-    logic: "AND",
     filters: [],
+    logic: "AND",
+    id: crypto.randomUUID(),
   });
   const [isFilterComplex, setIsFilterComplex] = useState(false);
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const { results, error, timing, query: parsedQuery } = useViewQuery(query);
 
@@ -57,9 +55,7 @@ export default function ViewDetailPage() {
     }
   }, [parsedQuery]);
 
-  // Derive display columns from the SELECT clause or result row keys
   const displayColumns = useMemo<ViewColumn[]>(() => {
-    // SELECT with explicit columns → use them (with alias as label)
     if (parsedQuery?.select && parsedQuery.select.columns.length > 0) {
       return parsedQuery.select.columns.map((item) => {
         if (item.type === "Column") {
@@ -71,7 +67,6 @@ export default function ViewDetailPage() {
         return { field, label: item.alias ?? field };
       });
     }
-    // No SELECT or SELECT * → derive all columns from first result row
     if (results.length > 0) {
       return Object.keys(results[0]!).map((key) => ({
         field: key,
@@ -81,7 +76,6 @@ export default function ViewDetailPage() {
     return columns;
   }, [parsedQuery, results, columns]);
 
-  // Load view on mount
   useEffect(() => {
     if (!viewId) return;
     repositories.views.getOne(viewId).then((v) => {
@@ -95,7 +89,6 @@ export default function ViewDetailPage() {
     });
   }, [viewId]);
 
-  // Sync filter group from query when switching to filters tab
   useEffect(() => {
     if (activeTab !== "filters") return;
     try {
@@ -112,11 +105,10 @@ export default function ViewDetailPage() {
     }
   }, [activeTab]);
 
-  // Auto-save on changes
   const scheduleSave = useCallback(
     (patch: Partial<View>) => {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(async () => {
+      clearTimeout(timer.current);
+      timer.current = setTimeout(async () => {
         if (!view) return;
         const updated = { ...view, ...patch, updatedAt: new Date() };
         await repositories.views.update(view.id, updated);
@@ -126,11 +118,10 @@ export default function ViewDetailPage() {
     [view],
   );
 
-  const handleTitleSave = () => {
-    if (editingTitle === null) return;
-    const trimmed = editingTitle.trim() || "Untitled View";
+  const onChange = () => {
+    if (title === null) return;
+    const trimmed = title.trim();
     setTitle(trimmed);
-    setEditingTitle(null);
     scheduleSave({ title: trimmed });
   };
 
@@ -151,7 +142,6 @@ export default function ViewDetailPage() {
     scheduleSave({ query: newQuery });
   };
 
-  // Collect metadata keys from all notes
   const metadataKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const note of state.notes) {
@@ -164,52 +154,37 @@ export default function ViewDetailPage() {
 
   if (!view) {
     return (
-      <div className="flex items-center justify-center min-h-full text-foreground/40 text-sm">
+      <div className="flex items-center justify-center min-h-full text-foreground text-sm">
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
-      {/* Back button */}
+    <div className="relative flex-col py-6 gap-6 mx-auto max-w-safe">
       <button
         onClick={() => navigate("/views")}
-        className="flex items-center gap-1.5 mb-4 text-sm text-foreground/60 hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 mb-4 text-sm text-muted hover:underline"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         All Views
       </button>
-
-      {/* Title */}
       <div className="mb-6">
-        {editingTitle !== null ? (
-          <Input
-            hiddenLabel
-            title="View title"
-            autoFocus
-            value={editingTitle}
-            onChange={(e) => setEditingTitle(e.target.value)}
-            onBlur={handleTitleSave}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleTitleSave();
-              if (e.key === "Escape") setEditingTitle(null);
-            }}
-          />
-        ) : (
-          <h1
-            className="text-2xl font-bold cursor-text hover:underline decoration-dashed"
-            onClick={() => setEditingTitle(title)}
-            title="Click to edit"
-          >
-            {title}
-          </h1>
-        )}
+        <Input
+          autoFocus
+          hiddenLabel
+          title="View title"
+          onBlur={onChange}
+          placeholder="View title"
+          value={title ?? ""}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onChange();
+            if (e.key === "Escape") setTitle(null);
+          }}
+        />
       </div>
-
-      {/* Query area */}
       <div>
-        {/* Tab bar */}
         <div className="flex items-center gap-0 border-b border-border">
           <button
             onClick={() => setActiveTab("sql")}
@@ -242,8 +217,6 @@ export default function ViewDetailPage() {
             />
           </div>
         </div>
-
-        {/* Tab content */}
         <div className="py-4">
           {activeTab === "sql" ? (
             <QueryEditor
@@ -265,11 +238,7 @@ export default function ViewDetailPage() {
           )}
         </div>
       </div>
-
-      {/* Results */}
-      <div className="mt-2">
-        <ViewTable rows={results} columns={displayColumns} />
-      </div>
+      <ViewTable rows={results} columns={displayColumns} />
     </div>
   );
 }

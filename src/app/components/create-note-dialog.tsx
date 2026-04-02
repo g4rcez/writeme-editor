@@ -37,7 +37,7 @@ export const CreateNoteDialog = () => {
   useEffect(() => {
     if (isOpen) {
       if (type === "note") {
-        setTitle(getUniqueNoteTitle("Untitled", state.notes));
+        setTitle(getUniqueNoteTitle("", state.notes));
       } else {
         const dateTitle = Dates.yearMonthDay(startOfDay(new Date()));
         setTitle(`${dateTitle}-QuickNote`);
@@ -47,7 +47,7 @@ export const CreateNoteDialog = () => {
     }
   }, [isOpen, type, templateId, state.notes]);
 
-  const handleClose = () => {
+  const onClose = () => {
     dispatch.setCreateNoteDialog({ isOpen: false, type });
   };
 
@@ -78,7 +78,7 @@ export const CreateNoteDialog = () => {
     const note = Note.new(title, content, type);
     await repositories.notes.save(note);
     dispatch.note(note);
-    handleClose();
+    onClose();
     if (type === "note") {
       navigate(`/note/${note.id}`);
     } else {
@@ -89,8 +89,8 @@ export const CreateNoteDialog = () => {
   return (
     <Modal
       open={isOpen}
+      onChange={onClose}
       className="max-w-md"
-      onChange={handleClose}
       title={type === "note" ? "Create new note" : "Create quick note"}
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -139,7 +139,7 @@ export const CreateNoteDialog = () => {
         )}
 
         <div className="flex gap-2 justify-end pt-4">
-          <Button theme="muted" onClick={handleClose}>
+          <Button theme="muted" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit">

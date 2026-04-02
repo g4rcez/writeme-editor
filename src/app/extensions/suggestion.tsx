@@ -61,7 +61,7 @@ const MentionList = (props: any) => {
         setSelectedIndex((prev) => (prev + 1) % itemsRef.current.length);
         return true;
       }
-      if (event.key === "Enter") {
+      if (event.key === "Tab" || event.key === "Enter") {
         selectItem(selectedIndexRef.current);
         return true;
       }
@@ -70,9 +70,7 @@ const MentionList = (props: any) => {
     props.registerKeyDown(handler);
   }, []);
 
-  const storageDir = useMemo(() => {
-    return globalState().directory || "";
-  }, []);
+  const storageDir = useMemo(() => globalState().directory || "", []);
 
   return (
     <ul
@@ -134,8 +132,8 @@ export const suggestion = {
         .map((n) => ({
           id: n.id,
           label: n.title,
-          path: n.filePath || innerUrl(`/note/${n.id}`, "mention"),
           filePath: n.filePath,
+          path: n.filePath || innerUrl(`/note/${n.id}`, "mention"),
         }));
     } catch {
       return [];

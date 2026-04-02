@@ -292,7 +292,7 @@ export function QueryCodeEditor({
         ref={containerRef}
         className="overflow-hidden rounded-md border border-border bg-card-background"
       />
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex mt-2 items-center gap-2 text-xs">
         {error ? (
           <span className="text-danger">
             ✗ {error.message}

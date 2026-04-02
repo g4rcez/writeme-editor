@@ -40,11 +40,9 @@ export function filterGroupToQueryString(
   },
 ): string {
   const parts: string[] = [];
-
   if (options?.select && options.select.length > 0) {
     parts.push(`SELECT ${options.select.join(", ")}`);
   }
-
   if (group.filters.length > 0) {
     const conditions = group.filters
       .filter((f) => f.field && f.value !== "")
@@ -53,11 +51,9 @@ export function filterGroupToQueryString(
       parts.push(`WHERE ${conditions.join(` ${group.logic} `)}`);
     }
   }
-
   if (options?.orderBy) {
     parts.push(`ORDER BY ${options.orderBy.field} ${options.orderBy.dir}`);
   }
-
   return parts.join("\n");
 }
 

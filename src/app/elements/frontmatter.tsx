@@ -23,7 +23,7 @@ const FRONTMATTER_ID = "frontmatter-block";
 const FRONTMATTER_BUTTON_ID = `${FRONTMATTER_ID}-button`;
 
 const FrontmatterView = (props: any) => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { node, editor, getPos } = props;
@@ -124,7 +124,7 @@ const FrontmatterView = (props: any) => {
         id={FRONTMATTER_ID}
         isBodyVisible={!isCollapsed}
         lineCount={props.node.textContent.split("\n").length}
-        footer={
+        header={
           <div className="flex justify-between items-center w-full border-t border-card-border">
             <div className="flex gap-2 items-center py-2 px-4 text-xs text-muted-foreground">
               <GearIcon size={14} />

@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { parse as chronoParse } from "chrono-node";
 
 const timezoneMap: Record<string, string> = {
@@ -53,6 +53,7 @@ const timezoneMap: Record<string, string> = {
 };
 
 export const Dates = {
+  valid: isValid,
   isoDate: (d: Date) => format(d, "yyyy-MM-dd"),
   time: (d: Date) => format(d, "HH:mm"),
   yearMonthDay: (d: Date) => format(d, "yyyy-MM-dd"),

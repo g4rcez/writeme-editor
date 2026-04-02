@@ -1,19 +1,19 @@
-import { Tag, type TagProps } from "@g4rcez/components";
 import { Dates } from "@/lib/dates";
-import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
-import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
-import { Link } from "react-router-dom";
-import { useMemo } from "react";
-import type { ViewColumn } from "@/store/repositories/entities/view";
 import type { Row } from "@/lib/views/engine";
+import type { ViewColumn } from "@/store/repositories/entities/view";
+import { createColumns, Table, Tag, type TagProps } from "@g4rcez/components";
+import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { Fragment } from "react";
+import { Link } from "react-router-dom";
 
 const NOTE_TYPE_THEME: Record<string, TagProps["theme"]> = {
-  note: "primary",
-  quick: "muted",
-  "read-it-later": "info",
-  template: "secondary",
   json: "warn",
+  quick: "muted",
+  note: "primary",
   freehand: "secondary",
+  template: "secondary",
+  "read-it-later": "info",
 };
 
 function formatDate(value: unknown): string {
@@ -31,14 +31,12 @@ function getRowValue(row: Row, field: string): unknown {
   return undefined;
 }
 
-function isNoteField(field: string, name: string): boolean {
-  return field === name || field === `notes.${name}`;
-}
+const isNoteField = (field: string, name: string): boolean =>
+  field === name || field === `notes.${name}`;
 
-function CellValue({ row, column }: { row: Row; column: ViewColumn }) {
+const CellValue = ({ row, column }: { row: Row; column: ViewColumn }) => {
   const value = getRowValue(row, column.field);
   const field = column.field;
-
   if (isNoteField(field, "title")) {
     const noteId = row["notes.id"] as string | undefined;
     if (noteId) {
@@ -53,7 +51,6 @@ function CellValue({ row, column }: { row: Row; column: ViewColumn }) {
       );
     }
   }
-
   if (isNoteField(field, "noteType")) {
     const t = String(value ?? "note");
     return (
@@ -66,7 +63,6 @@ function CellValue({ row, column }: { row: Row; column: ViewColumn }) {
       </Tag>
     );
   }
-
   if (isNoteField(field, "tags")) {
     const tags = Array.isArray(value) ? (value as string[]) : [];
     if (tags.length === 0) return <span className="text-foreground/30">—</span>;
@@ -80,41 +76,36 @@ function CellValue({ row, column }: { row: Row; column: ViewColumn }) {
       </div>
     );
   }
-
   if (isNoteField(field, "favorite")) {
     return value ? (
       <StarIcon size={14} className="text-warn" weight="fill" />
     ) : null;
   }
-
   if (isNoteField(field, "createdAt") || isNoteField(field, "updatedAt")) {
     return <span>{formatDate(value)}</span>;
   }
-
   if (isNoteField(field, "content")) {
     const str = String(value ?? "");
     return (
-      <span className="text-foreground/60 text-xs truncate max-w-48 block">
+      <span className="text-foreground text-xs truncate max-w-48 block">
         {str.slice(0, 80)}
       </span>
     );
   }
-
-  if (value == null) return <span className="text-foreground/30">—</span>;
+  if (value == null) return <span className="text-foreground">—</span>;
   return <span>{String(value)}</span>;
-}
-
-type ViewTableProps = {
-  rows: Row[];
-  columns: ViewColumn[];
 };
 
-export function ViewTable({ rows, columns }: ViewTableProps) {
-  const displayColumns = useMemo(
-    () => (columns.length > 0 ? columns : [{ field: "title", label: "Title" }]),
-    [columns],
-  );
+type ViewTableProps = { rows: Row[]; columns: ViewColumn[] };
 
+export function ViewTable({ rows, columns }: ViewTableProps) {
+  const cols = createColumns((c) => {
+    columns.forEach((x) => {
+      c.add(x.field as never, x.label, {
+        Element: (props) => <CellValue row={props.row as any} column={x} />,
+      });
+    });
+  });
   if (rows.length === 0) {
     return (
       <div className="flex items-center justify-center py-16 text-foreground/40 text-sm">
@@ -122,37 +113,37 @@ export function ViewTable({ rows, columns }: ViewTableProps) {
       </div>
     );
   }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            {displayColumns.map((col) => (
-              <th
-                key={col.field}
-                className="px-4 py-2 text-left text-xs font-semibold text-foreground/50 uppercase tracking-wide"
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr
-              key={(row["notes.id"] as string) ?? `row-${i}`}
-              className="border-b border-border/50 hover:bg-card-hover transition-colors"
-            >
-              {displayColumns.map((col) => (
-                <td key={col.field} className="px-4 py-2.5">
-                  <CellValue row={row} column={col} />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Fragment>
+      <Table rows={rows} name="views" useControl={false} cols={cols as any[]} />
+      {/* <table className="w-full border-collapse text-sm"> */}
+      {/*   <thead> */}
+      {/*     <tr className="border-b border-border"> */}
+      {/*       {displayColumns.map((col) => ( */}
+      {/*         <th */}
+      {/*           key={col.field} */}
+      {/*           className="px-4 py-2 text-left text-xs font-semibold text-foreground/50 uppercase tracking-wide" */}
+      {/*         > */}
+      {/*           {col.label} */}
+      {/*         </th> */}
+      {/*       ))} */}
+      {/*     </tr> */}
+      {/*   </thead> */}
+      {/*   <tbody> */}
+      {/*     {rows.map((row, i) => ( */}
+      {/*       <tr */}
+      {/*         key={(row["notes.id"] as string) ?? `row-${i}`} */}
+      {/*         className="border-b border-border hover:bg-card-hover transition-colors" */}
+      {/*       > */}
+      {/*         {displayColumns.map((col) => ( */}
+      {/*           <td key={col.field} className="px-4 py-2.5"> */}
+      {/*             <CellValue row={row} column={col} /> */}
+      {/*           </td> */}
+      {/*         ))} */}
+      {/*       </tr> */}
+      {/*     ))} */}
+      {/*   </tbody> */}
+      {/* </table> */}
+    </Fragment>
   );
 }

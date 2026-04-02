@@ -1,3 +1,4 @@
+import { Dates } from "@/lib/dates";
 import {
   Autocomplete,
   Button,
@@ -146,8 +147,14 @@ const ValueInput = ({
         <DatePicker
           required
           type="datetime"
-          value={property.value}
           onChange={(e: any) => onChange((e as Date).toISOString())}
+          date={
+            property.value
+              ? Dates.valid(new Date(property.value))
+                ? new Date(property.value)
+                : undefined
+              : undefined
+          }
         />
       );
     case "list":
@@ -206,50 +213,52 @@ export const FrontmatterBuilder = ({
   return (
     <Modal
       open={open}
+      animate={false}
       onChange={onClose}
       title="Properties"
       className="max-w-2xl"
     >
-      <div className="flex flex-col gap-4 p-4">
-        <div className="flex flex-col gap-2">
-          {properties.map((p) => (
-            <div key={p.id} className="flex flex-col gap-2">
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-y-6">
+          {properties.map((item) => (
+            <div key={item.id} className="flex flex-col gap-2">
               <div className="flex flex-nowrap gap-2">
                 <Input
                   required
-                  value={p.key}
-                  container="w-full"
+                  value={item.key}
                   title="Key/Label"
+                  container="w-full"
                   placeholder="Property name"
                   onChange={(e) =>
-                    updateProperty(p.id, { key: e.target.value })
+                    updateProperty(item.id, { key: e.target.value })
                   }
                 />
                 <Autocomplete
                   title="Value"
-                  value={p.type}
+                  value={item.type}
                   container="w-full"
                   options={TYPE_OPTIONS}
+                  optionalText=" "
                   right={
                     <button
                       type="button"
                       title="Delete property"
                       className="text-danger size-5"
-                      onClick={() => removeProperty(p.id)}
+                      onClick={() => removeProperty(item.id)}
                     >
                       <TrashIcon size={14} />
                     </button>
                   }
                   onChange={(e) =>
-                    updateProperty(p.id, {
+                    updateProperty(item.id, {
                       type: e.target.value as PropertyType,
                     })
                   }
                 />
               </div>
               <ValueInput
-                property={p}
-                onChange={(value) => updateProperty(p.id, { value })}
+                property={item}
+                onChange={(value) => updateProperty(item.id, { value })}
               />
             </div>
           ))}
