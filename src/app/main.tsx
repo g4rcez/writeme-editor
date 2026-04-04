@@ -55,10 +55,7 @@ const themeConfiguration = () => {
   head.append(
     createStyle(
       "dark-theme",
-      createTokenStyles(darkTheme, {
-        ...tokenRemap,
-        name: "dark",
-      }),
+      createTokenStyles(darkTheme, { ...tokenRemap, name: "dark" }),
     ),
   );
   head.append(

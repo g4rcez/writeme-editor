@@ -29,6 +29,7 @@ import { ReplacerCommands } from "./commands/commands";
 import { Blockquote } from "./elements/blockquote";
 import { Callout } from "./elements/callout";
 import { ShikiBlock } from "./elements/code-block";
+import { ColorCode } from "./elements/color-code";
 import { ColorReplacer } from "./elements/color-replacer";
 import { Frontmatter } from "./elements/frontmatter";
 import { TaskListItem } from "./elements/task-list-item";
@@ -144,6 +145,7 @@ export const createExtensions = (
 ): AnyExtension[] => {
   return [
     Frontmatter,
+    ColorCode,
     StarterKit.configure({
       // @ts-ignore
       inlineMath: false,

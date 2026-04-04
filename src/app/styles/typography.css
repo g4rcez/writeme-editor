@@ -16,6 +16,15 @@
   @apply font-mono bg-muted text-foreground rounded text-sm p-1;
 }
 
+.writeme-editor-content code.inline-code.color-code {
+  @apply inline-flex items-center gap-1 bg-transparent;
+}
+
+.writeme-editor-content code.inline-code.color-code .color-code-swatch {
+  @apply inline-block size-3 rounded-sm border border-border shrink-0;
+  background-color: var(--inline-code-color);
+}
+
 .writeme-editor-content h1,
 .writeme-editor-content h2,
 .writeme-editor-content h3,

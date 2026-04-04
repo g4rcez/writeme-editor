@@ -552,7 +552,7 @@ const ExecutionOutput = ({ output, stderr, html, onClose }: ExecutionProps) => {
         </button>
       </div>
       <div
-        className="overflow-auto p-3 max-h-48 font-mono text-xs whitespace-pre-wrap"
+        className="overflow-auto p-3 min-h-48 font-mono text-xs whitespace-pre-wrap resize-y"
         style={{
           fontFamily:
             "'Symbols Nerd Font', 'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
@@ -562,7 +562,14 @@ const ExecutionOutput = ({ output, stderr, html, onClose }: ExecutionProps) => {
           <iframe
             srcDoc={html}
             title="HTML Output"
-            className="mb-2 w-full h-48 bg-white border border-card-border"
+            className="mb-2 w-full bg-transparent border border-card-border"
+            onLoad={(e) => {
+              const iframe = e.currentTarget;
+              const doc = iframe.contentDocument;
+              if (doc) {
+                iframe.style.height = `${doc.documentElement.scrollHeight}px`;
+              }
+            }}
           />
         )}
         {htmlOutput && (
@@ -693,7 +700,10 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     setIsRunning(true);
     setOutput(null);
     try {
-      if (config.browserRuntimeExec && !isElectron()) {
+      if (
+        config.browserRuntimeExec &&
+        (!isElectron() || config.command === "browser")
+      ) {
         const result = await config.browserRuntimeExec(code);
         setOutput(result);
       } else if (isElectron() && executablePath) {
