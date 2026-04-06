@@ -180,6 +180,11 @@ export const useGlobalStore = createGlobalReducer(
       tabs: (tabs: Tab[]) => ({ tabs }),
       help: (help: boolean) => ({ help }),
       setNote: (note: Note | null) => ({ note }),
+      recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
+      activeTabId: (activeTabId: string | null) => ({ activeTabId }),
+      commander: (enabled: boolean, type?: CommanderType) => ({
+        commander: { enabled, type: type || CommanderType.All },
+      }),
       syncNoteState: (note: Note) => {
         const state = get.state();
         const updatedNotes = state.notes.map((n) =>
@@ -190,11 +195,6 @@ export const useGlobalStore = createGlobalReducer(
           notes: updatedNotes,
         };
       },
-      recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
-      activeTabId: (activeTabId: string | null) => ({ activeTabId }),
-      commander: (enabled: boolean, type?: CommanderType) => ({
-        commander: { enabled, type: type || CommanderType.All },
-      }),
       init: (
         theme: Theme,
         notes: Note[],

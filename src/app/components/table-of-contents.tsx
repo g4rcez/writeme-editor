@@ -1,21 +1,21 @@
-import { Button, css, Tooltip } from "@g4rcez/components";
+import { css, Tooltip } from "@g4rcez/components";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
-interface Heading {
+type Heading = {
   id: string;
   text: string;
   level: number;
   element?: HTMLHeadingElement;
-}
+};
 
 export const TableOfContents = () => {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updateHeadings = () => {
       const elements = Array.from(
         document.querySelectorAll<HTMLHeadingElement>(
@@ -45,12 +45,12 @@ export const TableOfContents = () => {
     updateHeadings();
     const observer = new MutationObserver(updateHeadings);
     const editorElement =
-      document.querySelector(".ProseMirror") || document.body;
+      document.getElementById("main-scroll-container") || document.body;
     observer.observe(editorElement, {
-      childList: true,
       subtree: true,
-      characterData: true,
+      childList: true,
       attributes: true,
+      characterData: true,
       attributeFilter: ["id", "data-id"],
     });
     return () => observer.disconnect();
@@ -77,9 +77,9 @@ export const TableOfContents = () => {
         }
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           className={css(
             "flex flex-col gap-3 p-4 pr-2 mt-2 rounded-xl",
@@ -91,6 +91,7 @@ export const TableOfContents = () => {
               Table of Contents
             </span>
             <button
+              type="button"
               className="p-1 rounded-full transition-colors text-muted-foreground hover:bg-muted/50"
               onClick={(e) => {
                 e.stopPropagation();
@@ -105,11 +106,11 @@ export const TableOfContents = () => {
               {headings.map((heading) => (
                 <motion.li
                   key={heading.id}
-                  initial={{ opacity: 0, x: -5 }}
+                  className="relative group"
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, x: -5 }}
                   style={{ paddingLeft: `${(heading.level - 1) * 0.8}rem` }}
-                  className="relative group"
                 >
                   <a
                     href={`#${heading.id}`}
@@ -121,7 +122,6 @@ export const TableOfContents = () => {
                         (heading.element && heading.element.isConnected
                           ? heading.element
                           : null);
-
                       if (el) {
                         el.scrollIntoView({
                           behavior: "smooth",
@@ -131,7 +131,7 @@ export const TableOfContents = () => {
                     }}
                     className={css(
                       "block py-1 text-sm transition-all duration-200 line-clamp-2",
-                      "text-muted-foreground hover:text-primary hover:font-medium",
+                      "text-muted-foreground hover:text-primary",
                       "border-l-2 border-transparent hover:border-primary pl-3 -ml-3",
                     )}
                   >
