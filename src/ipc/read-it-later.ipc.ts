@@ -1,9 +1,54 @@
 import { ipcMain } from "electron";
-import puppeteer from "puppeteer-core";
+import puppeteer, { type Browser } from "puppeteer-core";
 import { findChromePath } from "@/lib/find-chrome";
+
+const LAUNCH_ARGS = [
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+];
+
+const IDLE_TIMEOUT = 30_000;
+let browserInstance: Browser | null = null;
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function getBrowser(executablePath: string): Promise<Browser> {
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+  if (!browserInstance || !browserInstance.connected) {
+    browserInstance = await puppeteer.launch({
+      executablePath,
+      headless: true,
+      args: LAUNCH_ARGS,
+    });
+  }
+  return browserInstance;
+}
+
+function scheduleBrowserClose() {
+  if (closeTimer) clearTimeout(closeTimer);
+  closeTimer = setTimeout(async () => {
+    if (browserInstance) {
+      await browserInstance.close().catch(() => {});
+      browserInstance = null;
+    }
+  }, IDLE_TIMEOUT);
+}
 
 export const readItLaterIpcHandler = () => {
   ipcMain.handle("read-it-later:fetch", async (_, url: string) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { success: false, error: "Only HTTP(S) URLs are supported" };
+      }
+    } catch {
+      return { success: false, error: "Invalid URL" };
+    }
+
     const executablePath = findChromePath();
     if (!executablePath) {
       return {
@@ -12,27 +57,16 @@ export const readItLaterIpcHandler = () => {
           "No Chrome/Chromium installation found. Please install Google Chrome.",
       };
     }
-    let browser;
+
+    let page: Awaited<ReturnType<Browser["newPage"]>> | null = null;
     try {
-      browser = await puppeteer.launch({
-        executablePath,
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-        ],
-      });
-      const page = await browser.newPage();
+      const browser = await getBrowser(executablePath);
+      page = await browser.newPage();
       await page.setUserAgent(
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       );
       await page.goto(url, { waitUntil: "networkidle2", timeout: 30_000 });
       const html = await page.evaluate((pageUrl: string) => {
-        const base = new URL(pageUrl);
-        const origin = base.origin;
-
         const resolve = (value: string) => {
           if (
             !value ||
@@ -42,7 +76,7 @@ export const readItLaterIpcHandler = () => {
           )
             return value;
           try {
-            return new URL(value, origin).href;
+            return new URL(value, pageUrl).href;
           } catch {
             return value;
           }
@@ -87,13 +121,13 @@ export const readItLaterIpcHandler = () => {
         return document.documentElement.outerHTML;
       }, url);
       return { success: true, html };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("read-it-later:fetch error:", error);
-      return { success: false, error: error.message };
+      const message = error instanceof Error ? error.message : String(error);
+      return { success: false, error: message };
     } finally {
-      if (browser) {
-        await browser.close().catch(() => {});
-      }
+      if (page) await page.close().catch(() => {});
+      scheduleBrowserClose();
     }
   });
 };

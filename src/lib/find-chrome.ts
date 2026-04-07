@@ -1,5 +1,5 @@
-import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import whichSync from "which";
 
 const MAC_PATHS = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -20,19 +20,15 @@ const WIN_PATHS = [
   `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
 ];
 
-function which(bin: string): string | null {
-  try {
-    const result = execFileSync("which", [bin], {
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-    return result || null;
-  } catch {
-    return null;
-  }
-}
+let cached: string | null | undefined;
 
 export function findChromePath(): string | null {
+  if (cached !== undefined) return cached;
+  cached = discover();
+  return cached;
+}
+
+function discover(): string | null {
   const platform = process.platform;
 
   if (platform === "darwin") {
@@ -41,7 +37,7 @@ export function findChromePath(): string | null {
     }
   } else if (platform === "linux") {
     for (const bin of LINUX_BINARIES) {
-      const path = which(bin);
+      const path = whichSync.sync(bin, { nothrow: true });
       if (path) return path;
     }
   } else if (platform === "win32") {
