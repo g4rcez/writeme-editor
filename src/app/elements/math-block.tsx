@@ -2,6 +2,7 @@ import { create, all, format } from "mathjs";
 import { useId, useMemo, useState, useEffect } from "react";
 import { fetchExchangeRates, type ExchangeRateData } from "../../lib/currency";
 import { Dates } from "../../lib/dates";
+import { preprocessRule3 } from "@/lib/rule-of-three";
 
 const expressionImprovements = (expr: string): string =>
   expr
@@ -32,12 +33,12 @@ const MathEvaluate = (props: { code: string }) => {
     if (ratesData) {
       try {
         math.createUnit("EUR");
-      } catch (e) { }
+      } catch (e) {}
       Object.entries(ratesData.rates).forEach(([code, rate]) => {
         if (code !== "EUR") {
           try {
             math.createUnit(code, math.unit(1 / rate, "EUR"));
-          } catch (e) { }
+          } catch (e) {}
         }
       });
     }
@@ -53,9 +54,9 @@ const MathEvaluate = (props: { code: string }) => {
         if (timezoneResult) {
           return [x, timezoneResult];
         }
-      } catch (e) { }
+      } catch (e) {}
       try {
-        const translated = expressionImprovements(expr);
+        const translated = expressionImprovements(preprocessRule3(expr));
         const result = parser.evaluate(translated);
         return [
           x,

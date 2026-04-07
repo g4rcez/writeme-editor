@@ -3,6 +3,7 @@ import { type Editor, Extension } from "@tiptap/core";
 import { type ExtendedRegExpMatchArray } from "@tiptap/react";
 import { evaluate } from "mathjs";
 import { convertCurrency, formatConversionResult } from "../../lib/currency";
+import { solveRule3 } from "@/lib/rule-of-three";
 import {
   ClipboardCloseListenerCommand,
   ClipboardListenerCommand,
@@ -94,10 +95,9 @@ export const DateTimeCommand: ReplacerCommand = {
   replace: (capture) => {
     const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
     if (expr === "") return "";
-    return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`
+    return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`;
   },
 };
-
 
 export const UuidCommand: ReplacerCommand = {
   find: />>date $/,
@@ -146,6 +146,18 @@ export const TableCommand: ReplacerCommand = {
   },
 };
 
+const Rule3Command: ReplacerCommand = {
+  find: />>rule3\s*\([^)]+\)$/,
+  replace: (capture) => {
+    const match = capture[0].trim();
+    const innerMatch = match.match(/rule3\s*\(\s*([^)]+)\)/);
+    if (!innerMatch) return match;
+    const result = solveRule3(innerMatch[1]!);
+    if (!result.ok) return match;
+    return `${result.variable} = ${result.value}`;
+  },
+};
+
 export const LatexInlineTransformerCommand: ReplacerCommand = {
   find: /\$\$[^$]+\$\$ /,
   replace: (regex, _, editor) => {
@@ -168,6 +180,7 @@ export const ReplacerCommands = Extension.create({
   name: "commands-replacer",
   addInputRules() {
     return [
+      replacerRules(this.editor, Rule3Command),
       replacerRules(this.editor, DateCommand),
       replacerRules(this.editor, DateTimeCommand),
       replacerRules(this.editor, TimeCommand),
