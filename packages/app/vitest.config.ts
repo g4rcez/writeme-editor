@@ -10,7 +10,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "use-sync-external-store/shim/with-selector": path.resolve(
         __dirname,
-        "node_modules/use-sync-external-store/shim/with-selector.js",
+        "../../node_modules/use-sync-external-store/shim/with-selector.js",
       ),
     },
   },
