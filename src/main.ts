@@ -18,6 +18,7 @@ import { databaseIpcHandler } from "./ipc/database.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
 import { notesIpcHandler } from "./ipc/notes.ipc";
 import { terminalIpcHandler } from "./ipc/terminal.ipc";
+import { readItLaterIpcHandler } from "./ipc/read-it-later.ipc";
 import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
@@ -29,6 +30,7 @@ import {
   startCliServer,
   stopCliServer,
 } from "./main-process/cli-server";
+import { startProxyServer } from "./server/proxy";
 
 function registerAIHandlers() {
   console.log("Registering AI IPC handlers...");
@@ -136,6 +138,18 @@ function registerAIHandlers() {
       return { success: true };
     } catch (e: any) {
       console.error("Error in ai:save-message:", e);
+      throw e;
+    }
+  });
+
+  ipcMain.handle("ai:clear-messages", (_, chatId: string) => {
+    try {
+      dbManager()
+        .db.prepare("DELETE FROM aiMessages WHERE chatId = ?")
+        .run(chatId);
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error in ai:clear-messages:", e);
       throw e;
     }
   });
@@ -292,6 +306,8 @@ async function main() {
     return true;
   });
 
+  startProxyServer();
+
   const preload = path.join(__dirname, "preload.js");
   console.log("Main process starting, registering AI handlers...");
   registerAIHandlers();
@@ -300,6 +316,7 @@ async function main() {
   appIpcHandler(preload);
   executionIpcHandler();
   terminalIpcHandler();
+  readItLaterIpcHandler();
   ipcMain.handle("fs:watcher:start", (_, directory: string) => {
     if (mainWindow) FileWatcher.start(directory, mainWindow);
   });

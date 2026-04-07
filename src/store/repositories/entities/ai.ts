@@ -20,6 +20,7 @@ export interface IAIRepository {
   saveChat(chat: AIChat): Promise<void>;
   getMessages(chatId: string): Promise<AIMessage[]>;
   saveMessage(message: AIMessage): Promise<void>;
+  clearMessages(chatId: string): Promise<void>;
   saveCredentials(creds: AICredentials): Promise<void>;
   loadCredentials(adapterId: string): Promise<AICredentials | null>;
   clearCredentials(adapterId: string): Promise<void>;

@@ -1,5 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { streamText } from "ai";
+import { proxyFetch } from "@/lib/proxy-fetch";
 import { v4 as uuidv4 } from "uuid";
 import type {
   AIAdapter,
@@ -10,6 +11,15 @@ import type {
   AuthCredentials,
   SendOptions,
 } from "./types";
+
+export const ANTHROPIC_OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
+
+export const ANTHROPIC_OAUTH_SCOPES =
+  "org:create_api_key user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload";
+
+const ANTHROPIC_BETA_HEADERS =
+  "oauth-2025-04-20,interleaved-thinking-2025-05-14";
+const ANTHROPIC_USER_AGENT = "claude-cli/2.1.2 (external, cli)";
 
 const SUPPORTED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -23,34 +33,53 @@ export class AnthropicAdapter implements AIAdapter {
   readonly id = "anthropic";
   readonly name = "Anthropic (Claude)";
   readonly supportsFiles = true;
-  readonly supportsOAuth = false;
-  readonly defaultModel = "claude-opus-4-5-20251001";
+  readonly supportsOAuth = true;
+  readonly defaultModel = "claude-sonnet-4-20250514";
 
-  async auth(method: "oauth" | "api-key", apiKey?: string): Promise<AuthCredentials> {
-    if (method === "oauth") {
-      throw new Error("Anthropic does not support third-party OAuth. Use an API key.");
+  async auth(
+    method: "oauth" | "api-key",
+    apiKey?: string,
+  ): Promise<AuthCredentials> {
+    if (method === "api-key") {
+      return { apiKey };
     }
-    return { apiKey };
+    // OAuth is a two-phase flow managed by the settings UI via authManager.
+    // startOAuthFlow() opens the browser; completeOAuthFlow() exchanges the code.
+    const { authManager } = await import("@/app/ai/auth/auth-manager");
+    await authManager.startOAuthFlow("anthropic");
+    return {};
   }
 
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
-    return credentials;
+    if (!credentials.refreshToken) return credentials;
+    const { authManager } = await import("@/app/ai/auth/auth-manager");
+    return authManager.refreshAnthropicToken(credentials);
   }
 
-  isExpired(_credentials: AuthCredentials): boolean {
-    return false;
+  isExpired(credentials: AuthCredentials): boolean {
+    if (credentials.apiKey) return false;
+    return credentials.expiresAt != null && Date.now() > credentials.expiresAt;
   }
 
   async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
     try {
-      const resp = await fetch("https://api.anthropic.com/v1/models", {
-        headers: {
-          "x-api-key": credentials.apiKey ?? "",
-          "anthropic-version": "2023-06-01",
-        },
+      const headers: Record<string, string> = {
+        "anthropic-version": "2023-06-01",
+        "user-agent": ANTHROPIC_USER_AGENT,
+      };
+      if (credentials.accessToken) {
+        headers["Authorization"] = `Bearer ${credentials.accessToken}`;
+        headers["anthropic-beta"] = ANTHROPIC_BETA_HEADERS;
+      } else if (credentials.apiKey) {
+        headers["x-api-key"] = credentials.apiKey;
+      }
+      const resp = await proxyFetch("https://api.anthropic.com/v1/models", {
+        headers,
       });
       if (!resp.ok) return [];
-      const data = await resp.json() as { data: { id: string; display_name?: string }[] };
+      const data = (await resp.json()) as {
+        data: { id: string; display_name?: string }[];
+      };
       return (data.data ?? []).map((m) => ({
         id: m.id,
         name: m.display_name ?? m.id,
@@ -80,8 +109,21 @@ export class AnthropicAdapter implements AIAdapter {
     options: SendOptions,
     signal?: AbortSignal,
   ): AsyncIterable<AIStreamEvent> {
+    const creds = options.credentials;
+    const useOAuth = !!creds.accessToken && !creds.apiKey;
+
     const anthropic = createAnthropic({
-      apiKey: options.credentials.apiKey ?? "",
+      apiKey: useOAuth ? "oauth" : (creds.apiKey ?? ""),
+      fetch: proxyFetch,
+      ...(useOAuth
+        ? {
+            headers: {
+              Authorization: `Bearer ${creds.accessToken}`,
+              "anthropic-beta": ANTHROPIC_BETA_HEADERS,
+              "user-agent": ANTHROPIC_USER_AGENT,
+            },
+          }
+        : {}),
     });
 
     const model = options.model ?? this.defaultModel;

@@ -23,6 +23,35 @@ class DatabaseManager {
   }
 
   private init() {
+    // Migration: rename bases table to views (must run BEFORE CREATE TABLE IF NOT EXISTS views)
+    try {
+      const basesTable = this.db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='bases'",
+        )
+        .get();
+      if (basesTable) {
+        const viewsTable = this.db
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='views'",
+          )
+          .get();
+        if (!viewsTable) {
+          console.log("Migrating: renaming bases table to views...");
+          this.db.prepare("ALTER TABLE bases RENAME TO views").run();
+        } else {
+          // Both tables exist — copy rows from bases not already in views, then drop
+          console.log("Migrating: merging bases into existing views table...");
+          this.db
+            .prepare("INSERT OR IGNORE INTO views SELECT * FROM bases")
+            .run();
+          this.db.prepare("DROP TABLE bases").run();
+        }
+      }
+    } catch (e) {
+      console.error("Failed to migrate bases to views:", e);
+    }
+
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS notes (
         id TEXT PRIMARY KEY,
@@ -168,21 +197,6 @@ class DatabaseManager {
         updatedAt TEXT
       );
     `);
-
-    // Migration: rename bases table to views
-    try {
-      const basesTable = this.db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='bases'",
-        )
-        .get();
-      if (basesTable) {
-        console.log("Migrating: renaming bases table to views...");
-        this.db.prepare("ALTER TABLE bases RENAME TO views").run();
-      }
-    } catch (e) {
-      console.error("Failed to migrate bases to views:", e);
-    }
 
     // Migration for templates to notes
     try {

@@ -5,6 +5,8 @@ import { Button, Menu, MenuItem } from "@g4rcez/components";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SettingsMenu } from "@/app/components/settings-menu";
+import { NavbarButton } from "@/app/components/navbar-button";
+import { ChatCircleDotsIcon } from "@phosphor-icons/react/dist/csr/ChatCircleDots";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import {
   BookBookmarkIcon,
@@ -89,6 +91,11 @@ export const Navbar = () => {
           )}
         </div>
         <nav className="writeme-navbar-nav">
+          <NavbarButton
+            title="AI Assistant"
+            Icon={ChatCircleDotsIcon}
+            onClick={() => dispatch.setAiDrawer({ isOpen: true, chatId: null })}
+          />
           <SettingsMenu />
           <ThemeToggle />
           <Menu

@@ -17,7 +17,11 @@ export class BrowserAIRepository implements IAIRepository {
 
   async getChats(noteId?: string): Promise<AIChat[]> {
     if (noteId) {
-      return db.aiChats.where("noteId").equals(noteId).reverse().sortBy("createdAt");
+      return db.aiChats
+        .where("noteId")
+        .equals(noteId)
+        .reverse()
+        .sortBy("createdAt");
     }
     return db.aiChats.toArray();
   }
@@ -32,6 +36,10 @@ export class BrowserAIRepository implements IAIRepository {
 
   async saveMessage(message: AIMessage): Promise<void> {
     await db.aiMessages.put(message);
+  }
+
+  async clearMessages(chatId: string): Promise<void> {
+    await db.aiMessages.where("chatId").equals(chatId).delete();
   }
 
   async saveCredentials(creds: AICredentials): Promise<void> {

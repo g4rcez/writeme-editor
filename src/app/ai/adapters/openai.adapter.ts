@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
+import { proxyFetch } from "@/lib/proxy-fetch";
 import { v4 as uuidv4 } from "uuid";
 import type {
   AIAdapter,
@@ -18,9 +19,14 @@ export class OpenAIAdapter implements AIAdapter {
   readonly supportsOAuth = false;
   readonly defaultModel = "gpt-4o";
 
-  async auth(method: "oauth" | "api-key", apiKey?: string): Promise<AuthCredentials> {
+  async auth(
+    method: "oauth" | "api-key",
+    apiKey?: string,
+  ): Promise<AuthCredentials> {
     if (method === "oauth") {
-      throw new Error("OpenAI does not support third-party OAuth. Use an API key.");
+      throw new Error(
+        "OpenAI does not support third-party OAuth. Use an API key.",
+      );
     }
     return { apiKey };
   }
@@ -35,11 +41,11 @@ export class OpenAIAdapter implements AIAdapter {
 
   async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
     try {
-      const resp = await fetch("https://api.openai.com/v1/models", {
+      const resp = await proxyFetch("https://api.openai.com/v1/models", {
         headers: { Authorization: `Bearer ${credentials.apiKey ?? ""}` },
       });
       if (!resp.ok) return [];
-      const data = await resp.json() as { data: { id: string }[] };
+      const data = (await resp.json()) as { data: { id: string }[] };
       return (data.data ?? [])
         .filter((m) => /gpt|o1|o3/.test(m.id))
         .map((m) => ({ id: m.id, name: m.id }));
@@ -67,6 +73,7 @@ export class OpenAIAdapter implements AIAdapter {
   ): AsyncIterable<AIStreamEvent> {
     const openai = createOpenAI({
       apiKey: options.credentials.apiKey ?? "",
+      fetch: proxyFetch,
     });
 
     const model = options.model ?? this.defaultModel;

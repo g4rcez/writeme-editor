@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { repositories } from "../../store/global.store";
-import type { AIChat, AIMessage, AttachedFile } from "../../store/repositories/electron/ai.repository";
+import type {
+  AIChat,
+  AIMessage,
+  AttachedFile,
+} from "../../store/repositories/electron/ai.repository";
 import { adapterRegistry } from "./adapters/registry";
 import { authManager } from "./auth/auth-manager";
 import type { AIConversationMessage, AIFile } from "./adapters/types";
@@ -10,10 +14,13 @@ export function useAIChat(noteId?: string) {
   const [chat, setChat] = useState<AIChat | null>(null);
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [config, setConfig] = useState<any>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    setIsLoading(true);
+
     const loadChat = async () => {
       if (!noteId) return;
       const chats = await repositories.ai.getChats(noteId);
@@ -41,8 +48,7 @@ export function useAIChat(noteId?: string) {
       setConfig(def);
     };
 
-    loadChat();
-    loadConfig();
+    Promise.all([loadChat(), loadConfig()]).finally(() => setIsLoading(false));
   }, [noteId]);
 
   const send = useCallback(
@@ -146,12 +152,26 @@ export function useAIChat(noteId?: string) {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
+      const systemPromptParts: string[] = [];
+      if (config.systemPrompt) systemPromptParts.push(config.systemPrompt);
+      if (options.context) {
+        systemPromptParts.push(
+          `\n\nThe user is currently editing a note. Here is the full content:\n\n---\n${options.context}\n---`,
+        );
+      }
+      if (options.selection) {
+        systemPromptParts.push(
+          `\n\nThe user has selected the following text:\n\n> ${options.selection}`,
+        );
+      }
+      const systemPrompt = systemPromptParts.join("") || undefined;
+
       try {
         const stream = adapter.sendMessage(
           history,
           {
             model: config.model,
-            systemPrompt: config.systemPrompt,
+            systemPrompt,
             credentials,
             commandTemplate: config.commandTemplate,
           } as any,
@@ -214,6 +234,26 @@ export function useAIChat(noteId?: string) {
     [chat, config, messages],
   );
 
+  const newChat = useCallback(async () => {
+    if (!noteId) return;
+    const freshChat: AIChat = {
+      id: uuidv4(),
+      noteId,
+      title: "New Chat",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await repositories.ai.saveChat(freshChat);
+    setChat(freshChat);
+    setMessages([]);
+  }, [noteId]);
+
+  const clearChat = useCallback(async () => {
+    if (!chat) return;
+    await repositories.ai.clearMessages(chat.id);
+    setMessages([]);
+  }, [chat]);
+
   const cancel = useCallback(() => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
@@ -235,8 +275,11 @@ export function useAIChat(noteId?: string) {
   return {
     messages,
     isStreaming,
+    isLoading,
     send,
     cancel,
+    newChat,
+    clearChat,
     config,
   };
 }

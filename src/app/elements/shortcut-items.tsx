@@ -189,6 +189,12 @@ export const useWritemeShortcuts = () => {
           action: () => dispatch.recentNotesDialog(true),
         },
         {
+          description: "AI Assistant",
+          bind: "mod+shift+a",
+          type: Type.Shortcut,
+          action: () => dispatch.setAiDrawer({ isOpen: true, chatId: null }),
+        },
+        {
           description: "Start copy watcher mode",
           bind: ">>copy",
           type: Type.Command,

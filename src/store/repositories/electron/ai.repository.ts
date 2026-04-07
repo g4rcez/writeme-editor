@@ -69,11 +69,17 @@ export class AIRepository {
     return window.electronAPI.ai.saveMessage(message);
   }
 
+  public async clearMessages(chatId: string): Promise<void> {
+    return window.electronAPI.ai.clearMessages(chatId);
+  }
+
   public async saveCredentials(creds: AICredentials): Promise<void> {
     return window.electronAPI.ai.saveCredentials(creds);
   }
 
-  public async loadCredentials(adapterId: string): Promise<AICredentials | null> {
+  public async loadCredentials(
+    adapterId: string,
+  ): Promise<AICredentials | null> {
     return window.electronAPI.ai.loadCredentials(adapterId);
   }
 

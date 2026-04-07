@@ -15,6 +15,7 @@ import { globalDispatch } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { type AppSettings, SettingsService } from "@/store/settings";
 import { CustomVariables } from "@/app/components/settings/custom-variables";
+import { AISettings } from "@/app/components/settings/ai-settings";
 import { GLOBAL_THEMES } from "../settings/theme";
 
 export default function SettingsPage() {
@@ -135,6 +136,7 @@ export default function SettingsPage() {
           </div>
         </Card>
         <CustomVariables />
+        <AISettings />
         {!isElectron() ? (
           <Card title="Domain Migration">
             <div className="space-y-4">
@@ -210,79 +212,77 @@ export default function SettingsPage() {
         ) : null}
         {isElectron() ? (
           <Card title="Workspace">
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium">Notes Directory</span>
-                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
-                    {settings.directory ||
-                      "No directory selected (Local Storage)"}
-                  </code>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Templates Directory
-                    </span>
-                    <Button
-                      size="small"
-                      theme="ghost-primary"
-                      onClick={async () => {
-                        const dir =
-                          await window.electronAPI.fs.chooseDirectory();
-                        if (dir) {
-                          setSettings({ ...settings, templatesDirectory: dir });
-                        }
-                      }}
-                    >
-                      Change Folder
-                    </Button>
-                  </div>
-                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
-                    {settings.templatesDirectory ||
-                      "Default (.templates in workspace)"}
-                  </code>
-                  <p className="text-[10px] text-muted-foreground">
-                    Custom folder where your .md templates are stored. Each file
-                    can use {"{{VARIABLE}}"} syntax.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Quick Notes Directory
-                    </span>
-                    <Button
-                      size="small"
-                      theme="ghost-primary"
-                      onClick={async () => {
-                        const dir =
-                          await window.electronAPI.fs.chooseDirectory();
-                        if (dir) {
-                          setSettings({
-                            ...settings,
-                            quicknotesDirectory: dir,
-                          });
-                        }
-                      }}
-                    >
-                      Change Folder
-                    </Button>
-                  </div>
-                  <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
-                    {settings.quicknotesDirectory ||
-                      (settings.directory
-                        ? `${settings.directory}/quicknotes`
-                        : "Default (quicknotes in workspace)")}
-                  </code>
-                  <p className="text-[10px] text-muted-foreground">
-                    Folder where quick notes are saved. Defaults to a{" "}
-                    <code className="text-primary">quicknotes</code>{" "}
-                    subdirectory inside your workspace.
-                  </p>
-                </div>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Notes Directory</span>
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                  {settings.directory ||
+                    "No directory selected (Local Storage)"}
+                </code>
               </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">
+                    Templates Directory
+                  </span>
+                  <Button
+                    size="small"
+                    theme="ghost-primary"
+                    onClick={async () => {
+                      const dir = await window.electronAPI.fs.chooseDirectory();
+                      if (dir) {
+                        setSettings({ ...settings, templatesDirectory: dir });
+                      }
+                    }}
+                  >
+                    Change Folder
+                  </Button>
+                </div>
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                  {settings.templatesDirectory ||
+                    "Default (.templates in workspace)"}
+                </code>
+                <p className="text-[10px] text-muted-foreground">
+                  Custom folder where your .md templates are stored. Each file
+                  can use {"{{VARIABLE}}"} syntax.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">
+                    Quick Notes Directory
+                  </span>
+                  <Button
+                    size="small"
+                    theme="ghost-primary"
+                    onClick={async () => {
+                      const dir = await window.electronAPI.fs.chooseDirectory();
+                      if (dir) {
+                        setSettings({
+                          ...settings,
+                          quicknotesDirectory: dir,
+                        });
+                      }
+                    }}
+                  >
+                    Change Folder
+                  </Button>
+                </div>
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                  {settings.quicknotesDirectory ||
+                    (settings.directory
+                      ? `${settings.directory}/quicknotes`
+                      : "Default (quicknotes in workspace)")}
+                </code>
+                <p className="text-[10px] text-muted-foreground">
+                  Folder where quick notes are saved. Defaults to a{" "}
+                  <code className="text-primary">quicknotes</code> subdirectory
+                  inside your workspace.
+                </p>
+              </div>
+            </div>
           </Card>
         ) : null}
       </div>

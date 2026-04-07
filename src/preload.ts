@@ -197,6 +197,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("ai:get-messages", chatId),
     saveMessage: (message: any) =>
       ipcRenderer.invoke("ai:save-message", message),
+    clearMessages: (chatId: string) =>
+      ipcRenderer.invoke("ai:clear-messages", chatId),
     test: () => ipcRenderer.invoke("ai:test"),
     saveCredentials: (creds: any) =>
       ipcRenderer.invoke("ai:save-credentials", creds),
@@ -205,7 +207,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     clearCredentials: (adapterId: string) =>
       ipcRenderer.invoke("ai:clear-credentials", adapterId),
     startOAuth: (authUrl: string) =>
-      ipcRenderer.invoke("ai:oauth-start", authUrl),
+      ipcRenderer.invoke("ai:oauth-start", authUrl) as Promise<void>,
   },
   terminal: {
     spawn: (id: string, cwd?: string) =>
@@ -225,6 +227,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   contextMenu: {
     showExplorer: (filePath: string, isDirectory: boolean) =>
       ipcRenderer.invoke("context-menu:explorer", filePath, isDirectory),
+  },
+  readItLater: {
+    fetchUrl: (url: string) =>
+      ipcRenderer.invoke("read-it-later:fetch", url) as Promise<{
+        success: boolean;
+        html?: string;
+        error?: string;
+      }>,
   },
   onContextMenuAction: (
     callback: (data: { action: string; filePath: string }) => void,
@@ -356,10 +366,11 @@ declare global {
         saveChat(chat: any): Promise<void>;
         getMessages(chatId: string): Promise<any[]>;
         saveMessage(message: any): Promise<void>;
+        clearMessages(chatId: string): Promise<void>;
         saveCredentials(creds: any): Promise<void>;
         loadCredentials(adapterId: string): Promise<any | null>;
         clearCredentials(adapterId: string): Promise<void>;
-        startOAuth(authUrl: string): Promise<{ code: string }>;
+        startOAuth(authUrl: string): Promise<void>;
       };
       terminal: {
         spawn(id: string, cwd?: string): void;
@@ -376,6 +387,13 @@ declare global {
       onContextMenuAction(
         callback: (data: { action: string; filePath: string }) => void,
       ): () => void;
+      readItLater: {
+        fetchUrl(url: string): Promise<{
+          success: boolean;
+          html?: string;
+          error?: string;
+        }>;
+      };
     };
   }
 }

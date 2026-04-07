@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
+import { proxyFetch } from "@/lib/proxy-fetch";
 import { v4 as uuidv4 } from "uuid";
 import type {
   AIAdapter,
@@ -18,7 +19,10 @@ export class GeminiAdapter implements AIAdapter {
   readonly supportsOAuth = true;
   readonly defaultModel = "gemini-2.0-flash";
 
-  async auth(method: "oauth" | "api-key", apiKey?: string): Promise<AuthCredentials> {
+  async auth(
+    method: "oauth" | "api-key",
+    apiKey?: string,
+  ): Promise<AuthCredentials> {
     if (method === "api-key") {
       return { apiKey };
     }
@@ -31,7 +35,7 @@ export class GeminiAdapter implements AIAdapter {
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
     if (!credentials.refreshToken) return credentials;
     try {
-      const resp = await fetch("https://oauth2.googleapis.com/token", {
+      const resp = await proxyFetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -41,7 +45,7 @@ export class GeminiAdapter implements AIAdapter {
         }),
       });
       if (!resp.ok) return credentials;
-      const data = await resp.json() as {
+      const data = (await resp.json()) as {
         access_token: string;
         expires_in: number;
         refresh_token?: string;
@@ -63,20 +67,28 @@ export class GeminiAdapter implements AIAdapter {
 
   async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
     try {
-      const url = new URL("https://generativelanguage.googleapis.com/v1beta/models");
+      const url = new URL(
+        "https://generativelanguage.googleapis.com/v1beta/models",
+      );
       const headers: Record<string, string> = {};
       if (credentials.accessToken) {
         headers["Authorization"] = `Bearer ${credentials.accessToken}`;
       } else if (credentials.apiKey) {
         url.searchParams.set("key", credentials.apiKey);
       }
-      const resp = await fetch(url.toString(), { headers });
+      const resp = await proxyFetch(url.toString(), { headers });
       if (!resp.ok) return [];
-      const data = await resp.json() as {
-        models: { name: string; displayName?: string; supportedGenerationMethods?: string[] }[];
+      const data = (await resp.json()) as {
+        models: {
+          name: string;
+          displayName?: string;
+          supportedGenerationMethods?: string[];
+        }[];
       };
       return (data.models ?? [])
-        .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+        .filter((m) =>
+          m.supportedGenerationMethods?.includes("generateContent"),
+        )
         .map((m) => ({
           id: m.name.replace("models/", ""),
           name: m.displayName ?? m.name,
@@ -106,6 +118,7 @@ export class GeminiAdapter implements AIAdapter {
     const creds = options.credentials;
     const google = createGoogleGenerativeAI({
       apiKey: creds.apiKey ?? undefined,
+      fetch: proxyFetch,
       headers: creds.accessToken
         ? { Authorization: `Bearer ${creds.accessToken}` }
         : undefined,

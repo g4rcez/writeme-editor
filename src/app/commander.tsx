@@ -177,6 +177,14 @@ export const Commander = () => {
               args.setOpen(false);
             },
           },
+          {
+            type: "shortcut",
+            title: "AI Assistant",
+            action: (args) => {
+              dispatch.setAiDrawer({ isOpen: true, chatId: null });
+              args.setOpen(false);
+            },
+          },
           ...actions,
         ],
       },

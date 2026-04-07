@@ -3,6 +3,8 @@ import { Editor } from "@tiptap/core";
 import DOMPurify from "dompurify";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isElectron } from "@/lib/is-electron";
+import { proxyFetch } from "@/lib/proxy-fetch";
 import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
@@ -22,8 +24,16 @@ export const ReadItLaterDialog = () => {
     if (!url) return;
     setLoading(true);
     try {
-      const response = await fetch(url);
-      const html = await response.text();
+      let html: string;
+      if (isElectron()) {
+        const result = await window.electronAPI.readItLater.fetchUrl(url);
+        if (!result.success)
+          throw new Error(result.error || "Failed to fetch URL");
+        html = result.html!;
+      } else {
+        const response = await proxyFetch(url);
+        html = await response.text();
+      }
       const article = parseReadItLaterHtml(
         DOMPurify.sanitize(html, { WHOLE_DOCUMENT: true }),
         url,
@@ -53,7 +63,8 @@ export const ReadItLaterDialog = () => {
       uiDispatch.setAlert({
         open: true,
         title: "Read it later",
-        message: "Failed to create note from URL. Please check the URL and try again.",
+        message:
+          "Failed to create note from URL. Please check the URL and try again.",
         type: "error",
       });
     } finally {

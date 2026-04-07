@@ -25,6 +25,7 @@ import { editorGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
 import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
+import { AIDrawer } from "@/app/ai/ai-drawer";
 
 // Maps noteId -> requestId for files opened with --wait
 const waitMap = new Map<string, string>();
@@ -146,6 +147,7 @@ export const RootLayout = () => {
           <InspectJsonDialog />
           <TasksDialog />
           <MediaPreview />
+          <AIDrawer />
         </Fragment>
       ) : null}
 
