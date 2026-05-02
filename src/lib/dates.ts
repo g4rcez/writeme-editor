@@ -667,6 +667,21 @@ export const Dates = {
   isoDate: (d: Date) => format(d, "yyyy-MM-dd"),
   time: (d: Date) => format(d, "HH:mm"),
   yearMonthDay: (d: Date) => format(d, "yyyy-MM-dd"),
+  evaluateEpoch: (expr: string): string | null => {
+    const match =
+      expr.match(/^(?:epoch|unix|timestamp)\s+(\d+)$/i) ||
+      expr.match(/^(\d+)\s+as\s+date$/i);
+    if (!match) return null;
+    const raw = Number(match[1]);
+    if (!Number.isFinite(raw) || raw < 0) return null;
+    const ms = raw > 1e12 ? raw : raw * 1000;
+    const date = new Date(ms);
+    if (!isValid(date)) return null;
+    return date
+      .toISOString()
+      .replace("T", " ")
+      .replace(/\.\d{3}Z$/, " UTC");
+  },
   evaluateTimezone: (expr: string): string | null => {
     const match = expr.match(/^(.+?)\s+(?:in|to)\s+(.+)$/i);
     if (!match) return null;

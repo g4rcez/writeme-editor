@@ -1,6 +1,50 @@
 import { describe, it, expect } from "vitest";
 import { Dates } from "./dates";
 
+describe("Dates.evaluateEpoch", () => {
+  it("converts seconds epoch with 'epoch' prefix", () => {
+    expect(Dates.evaluateEpoch("epoch 1234567890")).toBe(
+      "2009-02-13 23:31:30 UTC",
+    );
+  });
+
+  it("converts seconds epoch with 'unix' prefix", () => {
+    expect(Dates.evaluateEpoch("unix 1234567890")).toBe(
+      "2009-02-13 23:31:30 UTC",
+    );
+  });
+
+  it("converts seconds epoch with 'timestamp' prefix", () => {
+    expect(Dates.evaluateEpoch("timestamp 1234567890")).toBe(
+      "2009-02-13 23:31:30 UTC",
+    );
+  });
+
+  it("auto-detects milliseconds when value > 1e12", () => {
+    expect(Dates.evaluateEpoch("epoch 1234567890000")).toBe(
+      "2009-02-13 23:31:30 UTC",
+    );
+  });
+
+  it("converts with 'as date' suffix", () => {
+    expect(Dates.evaluateEpoch("1234567890 as date")).toBe(
+      "2009-02-13 23:31:30 UTC",
+    );
+  });
+
+  it("returns null for bare numbers", () => {
+    expect(Dates.evaluateEpoch("1234567890")).toBeNull();
+  });
+
+  it("returns null for non-numeric input", () => {
+    expect(Dates.evaluateEpoch("epoch abc")).toBeNull();
+  });
+
+  it("returns null for negative values", () => {
+    expect(Dates.evaluateEpoch("epoch -1")).toBeNull();
+  });
+});
+
 describe("Dates.evaluateTimezone", () => {
   it("converts EST to BRL (America/Sao_Paulo)", () => {
     const result = Dates.evaluateTimezone("1PM EST to BRL");

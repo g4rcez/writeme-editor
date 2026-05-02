@@ -50,6 +50,10 @@ const MathEvaluate = (props: { code: string }) => {
         return [];
       }
       try {
+        const epochResult = Dates.evaluateEpoch(expr);
+        if (epochResult) return [x, epochResult];
+      } catch (e) {}
+      try {
         const timezoneResult = Dates.evaluateTimezone(expr);
         if (timezoneResult) {
           return [x, timezoneResult];
