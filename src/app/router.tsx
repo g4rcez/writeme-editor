@@ -6,6 +6,7 @@ import { isElectron } from "../lib/is-electron";
 const DashboardPage = lazy(() => import("./pages/dashboard.page"));
 const NotePage = lazy(() => import("./pages/note.page"));
 const QuicknotePage = lazy(() => import("./pages/quicknote.page"));
+const MathnotePage = lazy(() => import("./pages/mathnote.page"));
 const AboutPage = lazy(() => import("./pages/about.page"));
 const ExamplesPage = lazy(() => import("./pages/examples.page"));
 const MathExamplePage = lazy(() => import("./pages/examples/math.page"));
@@ -61,6 +62,10 @@ export const router = createRouter([
       {
         path: "quicknote",
         element: <QuicknotePage />,
+      },
+      {
+        path: "mathnote",
+        element: <MathnotePage />,
       },
       {
         path: "quicknote/:noteId",

@@ -7,6 +7,7 @@ import {
   Autocomplete,
   Input,
 } from "@g4rcez/components";
+import { ShortcutRecorder } from "@/app/components/shortcut-recorder";
 import { FloppyDiskIcon } from "@phosphor-icons/react/dist/csr/FloppyDisk";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { useEffect, useState, useRef } from "react";
@@ -34,6 +35,22 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await SettingsService.save(settings);
+      if (isElectron()) {
+        const [qn, mn] = await Promise.all([
+          window.electronAPI.app.updateShortcut(settings.quickNoteShortcut),
+          window.electronAPI.app.updateMathShortcut(settings.mathNoteShortcut),
+        ]);
+        const failed = [qn, mn].find((r) => !r.success);
+        if (failed) {
+          uiDispatch.setAlert({
+            open: true,
+            message: `Settings saved, but shortcut registration failed: ${failed.error ?? "unknown error"}`,
+            type: "error",
+          });
+          setSaving(false);
+          return;
+        }
+      }
       uiDispatch.setAlert({
         open: true,
         message: "Settings saved successfully!",
@@ -211,16 +228,45 @@ export default function SettingsPage() {
           </Card>
         ) : null}
         {isElectron() ? (
+          <Card title="Global Shortcuts" className="space-y-2">
+            <div className="flex justify-between items-center py-2">
+              <Info label="Quick Note" className="flex flex-col gap-1">
+                <p className="text-sm text-muted-foreground">
+                  Open a new quick note from anywhere
+                </p>
+              </Info>
+              <ShortcutRecorder
+                value={settings.quickNoteShortcut}
+                onChange={(v) =>
+                  setSettings({ ...settings, quickNoteShortcut: v })
+                }
+              />
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <Info label="Math Note" className="flex flex-col gap-1">
+                <p className="text-sm text-muted-foreground">
+                  Open a new math note with a ready-to-use math block
+                </p>
+              </Info>
+              <ShortcutRecorder
+                value={settings.mathNoteShortcut}
+                onChange={(v) =>
+                  setSettings({ ...settings, mathNoteShortcut: v })
+                }
+              />
+            </div>
+          </Card>
+        ) : null}
+        {isElectron() ? (
           <Card title="Workspace">
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Notes Directory</span>
-                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
                   {settings.directory ||
                     "No directory selected (Local Storage)"}
                 </code>
               </div>
-
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">
@@ -239,7 +285,7 @@ export default function SettingsPage() {
                     Change Folder
                   </Button>
                 </div>
-                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
                   {settings.templatesDirectory ||
                     "Default (.templates in workspace)"}
                 </code>
@@ -248,7 +294,6 @@ export default function SettingsPage() {
                   can use {"{{VARIABLE}}"} syntax.
                 </p>
               </div>
-
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">
@@ -270,7 +315,7 @@ export default function SettingsPage() {
                     Change Folder
                   </Button>
                 </div>
-                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-[10px] bg-muted border-border/40">
+                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
                   {settings.quicknotesDirectory ||
                     (settings.directory
                       ? `${settings.directory}/quicknotes`

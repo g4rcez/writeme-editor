@@ -23,7 +23,10 @@ import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
-import { createQuickNoteWindow } from "./main-process/quicknote-window";
+import {
+  createMathNoteWindow,
+  createQuickNoteWindow,
+} from "./main-process/quicknote-window";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import {
   notifyFileClosed,
@@ -239,6 +242,8 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let pendingFileOpen: string | null = null;
+let activeQuickNoteShortcut = "CommandOrControl+Alt+N";
+let activeMathNoteShortcut = "CommandOrControl+Alt+M";
 
 function parseCliArgs(
   argv: string[],
@@ -319,6 +324,40 @@ async function main() {
   readItLaterIpcHandler();
   ipcMain.handle("fs:watcher:start", (_, directory: string) => {
     if (mainWindow) FileWatcher.start(directory, mainWindow);
+  });
+
+  ipcMain.handle("app:update-shortcut", (_, newShortcut: string) => {
+    const previous = activeQuickNoteShortcut;
+    globalShortcut.unregister(previous);
+    const success = globalShortcut.register(newShortcut, () =>
+      createQuickNoteWindow(preload),
+    );
+    if (!success) {
+      globalShortcut.register(previous, () => createQuickNoteWindow(preload));
+      return {
+        success: false,
+        error: `Failed to register shortcut: ${newShortcut}`,
+      };
+    }
+    activeQuickNoteShortcut = newShortcut;
+    return { success: true };
+  });
+
+  ipcMain.handle("app:update-math-shortcut", (_, newShortcut: string) => {
+    const previous = activeMathNoteShortcut;
+    globalShortcut.unregister(previous);
+    const success = globalShortcut.register(newShortcut, () =>
+      createMathNoteWindow(preload),
+    );
+    if (!success) {
+      globalShortcut.register(previous, () => createMathNoteWindow(preload));
+      return {
+        success: false,
+        error: `Failed to register shortcut: ${newShortcut}`,
+      };
+    }
+    activeMathNoteShortcut = newShortcut;
+    return { success: true };
   });
 
   const createWindow = () => {
@@ -440,10 +479,6 @@ async function main() {
       }
     }
 
-    globalShortcut.register("CommandOrControl+Alt+N", () =>
-      createQuickNoteWindow(preload),
-    );
-
     if (mainWindow) {
       try {
         const settings = dbManager().getAll<{ name: string; value: string }>(
@@ -456,9 +491,40 @@ async function main() {
             FileWatcher.start(directory, mainWindow);
           }
         }
+        const parseSetting = (name: string, fallback: string): string => {
+          const s = settings.find((x) => x.name === name);
+          return s?.value ? (JSON.parse(s.value) as string) : fallback;
+        };
+        activeQuickNoteShortcut = parseSetting(
+          "quickNoteShortcut",
+          "CommandOrControl+Alt+N",
+        );
+        activeMathNoteShortcut = parseSetting(
+          "mathNoteShortcut",
+          "CommandOrControl+Alt+M",
+        );
+        globalShortcut.register(activeQuickNoteShortcut, () =>
+          createQuickNoteWindow(preload),
+        );
+        globalShortcut.register(activeMathNoteShortcut, () =>
+          createMathNoteWindow(preload),
+        );
       } catch (e) {
         console.error("Failed to start file watcher on ready:", e);
+        globalShortcut.register("CommandOrControl+Alt+N", () =>
+          createQuickNoteWindow(preload),
+        );
+        globalShortcut.register("CommandOrControl+Alt+M", () =>
+          createMathNoteWindow(preload),
+        );
       }
+    } else {
+      globalShortcut.register("CommandOrControl+Alt+N", () =>
+        createQuickNoteWindow(preload),
+      );
+      globalShortcut.register("CommandOrControl+Alt+M", () =>
+        createMathNoteWindow(preload),
+      );
     }
   });
   app.on("window-all-closed", () => {});

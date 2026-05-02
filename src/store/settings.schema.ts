@@ -9,7 +9,9 @@ export const SettingsSchema = z.object({
   conflictResolution: z
     .enum(["ask", "file-wins", "editor-wins"])
     .default("ask"),
-  theme: z.enum(["light", "dark", "catppuccin-mocha", "tokyonight-night"]).default("dark"),
+  theme: z
+    .enum(["light", "dark", "catppuccin-mocha", "tokyonight-night"])
+    .default("dark"),
   autosave: z.boolean().default(true),
   autosaveDelay: z.number().default(5000),
   editorFontSize: z.number().min(12).max(96).default(16),
@@ -28,6 +30,9 @@ export const SettingsSchema = z.object({
       cacheDuration: 60 * 60 * 1000,
       preferredAPI: "frankfurter",
     }),
+  quickNoteShortcut: z.string().default("CommandOrControl+Alt+N"),
+  mathNoteShortcut: z.string().default("CommandOrControl+Alt+M"),
+  mathNoteId: z.string().nullable().default(null),
 });
 
 export type AppSettings = z.infer<typeof SettingsSchema>;

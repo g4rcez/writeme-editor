@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
     notifyFileClosed: (requestId: string) =>
       ipcRenderer.invoke("app:file-closed", requestId),
+    updateShortcut: (shortcut: string) =>
+      ipcRenderer.invoke("app:update-shortcut", shortcut),
+    updateMathShortcut: (shortcut: string) =>
+      ipcRenderer.invoke("app:update-math-shortcut", shortcut),
   },
   onQuicknoteOpen: (callback: () => void) => {
     ipcRenderer.on("quicknote:open", callback);
@@ -258,6 +262,12 @@ declare global {
         openQuickNote(): Promise<void>;
         chdir(dir: string): Promise<{ success: boolean; error?: string }>;
         notifyFileClosed(requestId: string): Promise<boolean>;
+        updateShortcut(
+          shortcut: string,
+        ): Promise<{ success: boolean; error?: string }>;
+        updateMathShortcut(
+          shortcut: string,
+        ): Promise<{ success: boolean; error?: string }>;
       };
       onQuicknoteOpen(callback: () => void): () => void;
       onOpenFile(

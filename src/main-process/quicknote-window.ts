@@ -6,6 +6,61 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 let quickNoteWindow: BrowserWindow | null = null;
+let mathNoteWindow: BrowserWindow | null = null;
+
+function createFloatingPanel(
+  preloadPath: string,
+  title: string,
+  hash: string,
+  onClosed: () => void,
+): BrowserWindow {
+  const { workAreaSize } = screen.getPrimaryDisplay();
+  const windowWidth = 620;
+  const windowHeight = 480;
+  const win = new BrowserWindow({
+    width: windowWidth,
+    height: windowHeight,
+    x: Math.round((workAreaSize.width - windowWidth) / 2),
+    y: Math.round((workAreaSize.height - windowHeight) / 2),
+    frame: false,
+    show: false,
+    transparent: true,
+    hasShadow: true,
+    roundedCorners: true,
+    vibrancy: "under-window",
+    visualEffectState: "active",
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    title,
+    type: "panel",
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: true,
+      contextIsolation: true,
+      accessibleTitle: title,
+    },
+  });
+  win.setAlwaysOnTop(true, "floating");
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  const url = hash;
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    win.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${url}`);
+  } else {
+    win.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+      { hash: url },
+    );
+  }
+
+  win.once("ready-to-show", () => {
+    win.show();
+    win.focus();
+  });
+  win.on("blur", () => win.hide());
+  win.on("closed", onClosed);
+  return win;
+}
 
 export const createQuickNoteWindow = (preloadPath: string) => {
   if (quickNoteWindow && !quickNoteWindow.isDestroyed()) {
@@ -13,45 +68,28 @@ export const createQuickNoteWindow = (preloadPath: string) => {
     quickNoteWindow.focus();
     return;
   }
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
-  quickNoteWindow = new BrowserWindow({
-    width: 600,
-    frame: true,
-    height: 450,
-    show: true,
-    alwaysOnTop: true,
-    title: "Quick notes",
-    x: width - 620,
-    y: height - 470,
-    webPreferences: {
-      preload: preloadPath,
-      nodeIntegration: true,
-      contextIsolation: true,
-      accessibleTitle: "Quick notes",
+  quickNoteWindow = createFloatingPanel(
+    preloadPath,
+    "Quick Note",
+    "quicknote",
+    () => {
+      quickNoteWindow = null;
     },
-  });
-  quickNoteWindow.setAlwaysOnTop(true, "floating");
-  quickNoteWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  const hash = "quicknote";
-  const search = new URLSearchParams([
-    ["date", startOfDay(new Date().toISOString()).toISOString()],
-  ]).toString();
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    quickNoteWindow.loadURL(
-      `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/${hash}?${search}`,
-    );
-  } else {
-    quickNoteWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-      { hash, search: search },
-    );
+  );
+};
+
+export const createMathNoteWindow = (preloadPath: string) => {
+  if (mathNoteWindow && !mathNoteWindow.isDestroyed()) {
+    mathNoteWindow.show();
+    mathNoteWindow.focus();
+    return;
   }
-  quickNoteWindow.once("ready-to-show", () => {
-    quickNoteWindow?.show();
-    quickNoteWindow?.focus();
-  });
-  quickNoteWindow.on("closed", () => {
-    quickNoteWindow = null;
-  });
+  mathNoteWindow = createFloatingPanel(
+    preloadPath,
+    "Math Note",
+    "mathnote",
+    () => {
+      mathNoteWindow = null;
+    },
+  );
 };

@@ -1,6 +1,6 @@
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { Fragment, Suspense, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { CursorPositionStore } from "@/store/cursor-position.store";
@@ -23,7 +23,6 @@ import { MediaPreview } from "@/app/components/media-preview";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
-import { PWAInstallButton } from "@/app/elements/pwa-install-button";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 
@@ -35,6 +34,7 @@ export const RootLayout = () => {
   const [uiState, uiDispatch] = useUIStore();
   notificationRef.current = useNotification();
   const navigate = useNavigate();
+  const location = useLocation();
   const prevTabsRef = useRef(state.tabs);
 
   // Handle files opened from CLI via app:open-file IPC
@@ -91,6 +91,12 @@ export const RootLayout = () => {
     prevTabsRef.current = state.tabs;
   }, [state.tabs]);
 
+  useEffect(() => {
+    if (location.pathname === "/" && state.activeTabId !== null) {
+      navigate(`/note/${state.activeTabId}`, { replace: true });
+    }
+  }, []);
+
   useEffect(
     function registerBindings() {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -130,39 +136,47 @@ export const RootLayout = () => {
     [navigate],
   );
 
-  const isQuickNote = window.location.hash.includes("quicknote");
+  const isFloatingPanel =
+    window.location.hash.includes("quicknote") ||
+    window.location.hash.includes("mathnote");
+
+  useEffect(() => {
+    if (!isFloatingPanel) return;
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+  }, [isFloatingPanel]);
+
+  if (isFloatingPanel) {
+    return (
+      <div className="flex overflow-hidden flex-col h-screen rounded-xl bg-background/[0.92] ring-1 ring-white/[0.06] p-4">
+        <Suspense fallback={null}>
+          <div className="flex flex-col flex-1 min-h-0 h-full">
+            <Outlet />
+          </div>
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
-      {!isQuickNote ? (
-        <Fragment>
-          <Commander />
-          <FindReplaceBar />
-          <CreateNoteDialog />
-          <CreateTemplateDialog />
-          <CreateVariableDialog />
-          <RecentNotesDialog />
-          <ReadItLaterDialog />
-          <DirectoryBrowserDialog />
-          <InspectJsonDialog />
-          <TasksDialog />
-          <MediaPreview />
-          <AIDrawer />
-        </Fragment>
-      ) : null}
+      <Fragment>
+        <Commander />
+        <FindReplaceBar />
+        <CreateNoteDialog />
+        <CreateTemplateDialog />
+        <CreateVariableDialog />
+        <RecentNotesDialog />
+        <ReadItLaterDialog />
+        <DirectoryBrowserDialog />
+        <InspectJsonDialog />
+        <TasksDialog />
+        <MediaPreview />
+        <AIDrawer />
+      </Fragment>
 
-      {/* Render 3-Pane Layout unless it's a QuickNote window (which usually stands alone) */}
-      {isQuickNote ? (
-        <div className="flex flex-col flex-1 py-8 w-full min-h-0">
-          <Suspense fallback={<div>Loading...</div>}>
-            <Outlet />
-          </Suspense>
-        </div>
-      ) : (
-        <MainLayout />
-      )}
+      <MainLayout />
 
-      {isQuickNote ? null : <PWAInstallButton />}
       {uiState.focusMode && (
         <button
           title="Exit focus mode (⌘⇧F)"
