@@ -19,16 +19,16 @@ const timezoneMap: Record<string, string> = {
   MT: "America/Denver",
   CT: "America/Chicago",
 
-  // Europe
+  // Europe — fixed offsets so the abbreviation always means its stated UTC offset
   GMT: "UTC",
   UTC: "UTC",
-  CET: "Europe/Paris",
-  CEST: "Europe/Paris",
-  EET: "Europe/Athens",
-  EEST: "Europe/Athens",
-  WET: "Europe/Lisbon",
-  WEST: "Europe/Lisbon",
-  BST: "Europe/London",
+  CET: "Etc/GMT-1",
+  CEST: "Etc/GMT-2",
+  EET: "Etc/GMT-2",
+  EEST: "Etc/GMT-3",
+  WET: "UTC",
+  WEST: "Etc/GMT-1",
+  BST: "Etc/GMT-1",
 
   // South America
   BRT: "America/Sao_Paulo",
