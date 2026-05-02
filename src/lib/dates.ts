@@ -236,9 +236,9 @@ export const Dates = {
       if (!date) return null;
       return new Intl.DateTimeFormat(undefined, {
         timeZone: targetIANA,
-        hour: "numeric",
+        hour: "2-digit",
         minute: "2-digit",
-        hour12: true,
+        hour12: false,
         timeZoneName: "short",
       }).format(date);
     } catch {
