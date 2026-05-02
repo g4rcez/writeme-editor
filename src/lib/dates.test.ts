@@ -31,4 +31,36 @@ describe("Dates.evaluateTimezone", () => {
     const result = Dates.evaluateTimezone("12:00 UTC to Europe/London");
     expect(result).not.toBeNull();
   });
+
+  it("resolves city name (Rio de Janeiro) with 'in'", () => {
+    const result = Dates.evaluateTimezone("12:00 UTC in Rio de Janeiro");
+    expect(result).toMatch(/9:00 AM/);
+  });
+
+  it("resolves city name case-insensitively (RIO DE JANEIRO)", () => {
+    const result = Dates.evaluateTimezone("12:00 UTC in RIO DE JANEIRO");
+    expect(result).toMatch(/9:00 AM/);
+  });
+
+  it("resolves Portuguese city alias (Luxemburgo)", () => {
+    const result = Dates.evaluateTimezone("15:00 UTC in Luxemburgo");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/\d+:\d+ (AM|PM)/);
+  });
+
+  it("resolves 'now in <city>' without throwing", () => {
+    const result = Dates.evaluateTimezone("now in Tokyo");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/\d+:\d+ (AM|PM)/);
+  });
+
+  it("supports 'in' conjunction with existing abbreviations", () => {
+    const result = Dates.evaluateTimezone("1PM EST in BRL");
+    expect(result).toMatch(/3:00 PM/);
+  });
+
+  it("returns null for garbage location", () => {
+    const result = Dates.evaluateTimezone("now in zzznowhere");
+    expect(result).toBeNull();
+  });
 });
