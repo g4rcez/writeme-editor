@@ -251,6 +251,7 @@ const InnerEditor = (props: {
 
     const recover = () => {
       if (generationRef.current !== myGen || editor.isDestroyed) return;
+      generationRef.current += 1;
       uiDispatch.setParsingContent(false);
       editor.setEditable(true);
     };
@@ -274,7 +275,10 @@ const InnerEditor = (props: {
       function handler(
         e: MessageEvent<{ html: string; gen: number; error?: string }>,
       ) {
-        if (e.data.gen !== myGen || generationRef.current !== myGen) return;
+        if (e.data.gen !== myGen || generationRef.current !== myGen) {
+          worker.removeEventListener("message", handler);
+          return;
+        }
         clearTimeout(watchdogId);
         worker.removeEventListener("message", handler);
         if (editor.isDestroyed) return;
@@ -415,6 +419,12 @@ const InnerEditor = (props: {
       setScrollY(position.scroll);
     });
   }, [editor, props.note?.id]);
+
+  useEffect(() => {
+    return () => {
+      uiDispatch.setParsingContent(false);
+    };
+  }, []);
 
   const settings = SettingsService.load();
 
