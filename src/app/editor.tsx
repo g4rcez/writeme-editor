@@ -25,6 +25,12 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
+import { CircleNotch } from "@phosphor-icons/react";
+import {
+  getMarkdownWorker,
+  LARGE_MARKDOWN_THRESHOLD,
+} from "@/lib/markdown-worker";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
 
 const getScrollContainer = () =>
   document.getElementById("main-scroll-container") || window;
@@ -156,6 +162,12 @@ const InnerEditor = (props: {
 
         const cd = event.clipboardData;
         const text = cd?.getData("text/plain");
+
+        if (text && text.length > LARGE_MARKDOWN_THRESHOLD) {
+          triggerWorkerParse(text);
+          return true;
+        }
+
         if (text && text.startsWith("---") && props.note) {
           const match = text.match(/^---\n([\s\S]*?)\n---/);
           if (match) {
@@ -224,9 +236,54 @@ const InnerEditor = (props: {
   editorGlobalRef.current = editor;
   useCopyEvents(editor);
 
+  const generationRef = useRef(0);
+  const [uiState] = useUIStore();
+  const isSettingContent = useRef(false);
+
+  const triggerWorkerParse = (text: string) => {
+    if (!editor) return;
+    generationRef.current += 1;
+    const myGen = generationRef.current;
+    uiDispatch.setParsingContent(true);
+    editor.setEditable(false);
+    const worker = getMarkdownWorker();
+
+    const recover = () => {
+      if (generationRef.current !== myGen) return;
+      uiDispatch.setParsingContent(false);
+      editor.setEditable(true);
+    };
+
+    worker.onerror = () => recover();
+
+    worker.onmessage = (e: MessageEvent<{ html: string; error?: string }>) => {
+      if (generationRef.current !== myGen) {
+        uiDispatch.setParsingContent(false);
+        editor.setEditable(true);
+        return;
+      }
+      if (e.data.error) {
+        recover();
+        isSettingContent.current = true;
+        (editor.commands as any).setContent(text, {
+          contentType: "markdown",
+          parseOptions: { preserveWhitespace: "full" },
+        });
+        isSettingContent.current = false;
+        return;
+      }
+      isSettingContent.current = true;
+      editor.commands.setContent(e.data.html);
+      isSettingContent.current = false;
+      uiDispatch.setParsingContent(false);
+      editor.setEditable(true);
+    };
+
+    worker.postMessage({ text });
+  };
+
   const onSaveRef = useRef(props.onSave);
   const noteRef = useRef(props.note);
-  const isSettingContent = useRef(false);
 
   useEffect(() => {
     onSaveRef.current = props.onSave;
@@ -344,8 +401,16 @@ const InnerEditor = (props: {
     <div
       id="editor-container"
       style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="writeme-editor"
+      className="writeme-editor relative"
     >
+      {uiState.parsingContent && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+          <CircleNotch size={32} className="animate-spin" />
+          <span className="mt-2 text-sm text-foreground">
+            Parsing large document…
+          </span>
+        </div>
+      )}
       <EditorContext.Provider value={{ editor }}>
         <EditorContent
           key={props.id}
