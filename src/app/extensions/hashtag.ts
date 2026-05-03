@@ -22,7 +22,7 @@ function findHashtags(doc: Node): {
     matches.forEach((match) => {
       const start = pos + match.index;
       const end = start + match[0].length;
-      const tag = match[1];
+      const tag = match[1] ?? "";
       tags.push(tag);
 
       const href = isElectron() ? `#/tags/${tag}` : `/tags/${tag}`;

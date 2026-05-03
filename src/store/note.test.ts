@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Note } from "./note";
+import { Note, NoteType } from "./note";
 
 describe("Note", () => {
   it("should create a new note with default values", () => {
@@ -16,7 +16,7 @@ describe("Note", () => {
     const note = Note.new(
       "Article",
       "Content",
-      "read-it-later",
+      NoteType["read-it-later"],
       "https://example.com",
       "A description",
       "https://example.com/favicon.ico",
@@ -30,7 +30,7 @@ describe("Note", () => {
   });
 
   it("should create a new template note", () => {
-    const note = Note.new("My Template", "Template Content", "template");
+    const note = Note.new("My Template", "Template Content", NoteType.template);
     expect(note.title).toBe("My Template");
     expect(note.content).toBe("Template Content");
     expect(note.noteType).toBe("template");
@@ -47,7 +47,7 @@ describe("Note", () => {
     const data = {
       title: "Parsed Title",
       content: "Parsed Content",
-      noteType: "read-it-later",
+      noteType: NoteType["read-it-later"],
       url: "https://parsed.com",
       description: "Parsed Desc",
       favicon: "https://parsed.com/icon.png",

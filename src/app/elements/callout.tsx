@@ -83,7 +83,7 @@ export const Callout = Node.create<CalloutOptions>({
                 /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i,
               );
               if (!typeMatch) return;
-              const type = typeMatch[1].toLowerCase();
+              const type = typeMatch[1]!.toLowerCase();
               firstP.innerHTML = firstP.innerHTML
                 .replace(
                   /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](<br\s*\/?>\s*)?\n?/i,
@@ -137,8 +137,8 @@ export const Callout = Node.create<CalloutOptions>({
             const calloutNodeType = newState.schema.nodes.callout;
             if (!calloutNodeType) return;
 
-            const prefixLen = m[0].length;
-            const type = m[1].toLowerCase();
+            const prefixLen = m[0]!.length;
+            const type = m[1]!.toLowerCase();
             const paragraphs: ProseMirrorNode[] = [];
 
             node.forEach((child, _, i) => {
@@ -152,7 +152,7 @@ export const Callout = Node.create<CalloutOptions>({
                       skip -= t.length;
                     } else {
                       const rest = t.slice(skip).replace(/^\s+/, "");
-                      if (rest) inlines.push(inline.withText(rest));
+                      if (rest) inlines.push((inline as any).withText(rest));
                       skip = 0;
                     }
                   } else if (skip === 0) {
@@ -168,7 +168,7 @@ export const Callout = Node.create<CalloutOptions>({
             });
 
             if (paragraphs.length === 0) {
-              paragraphs.push(newState.schema.nodes.paragraph.create());
+              paragraphs.push(newState.schema.nodes.paragraph!.create());
             }
 
             matches.push({

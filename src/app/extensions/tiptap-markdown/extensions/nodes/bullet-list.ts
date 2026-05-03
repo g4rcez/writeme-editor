@@ -1,4 +1,7 @@
 import { Node } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { SerializeContext } from "../../serialize/types";
 
 const BulletList = Node.create({
   name: "bulletList",
@@ -11,7 +14,11 @@ export default BulletList.extend({
   addStorage() {
     return {
       markdown: {
-        serialize(state, node) {
+        serialize(
+          this: SerializeContext,
+          state: MarkdownSerializerState,
+          node: ProseMirrorNode,
+        ) {
           const tightNode =
             node.attrs.tight !== true
               ? node.type.create(

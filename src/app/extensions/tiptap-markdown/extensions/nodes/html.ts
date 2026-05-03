@@ -1,13 +1,21 @@
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Fragment } from "@tiptap/pm/model";
 import { getHTMLFromFragment, Node } from "@tiptap/core";
 import { elementFromString } from "../../util/dom";
+import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { SerializeContext } from "../../serialize/types";
 
 export default Node.create({
   name: "markdownHTMLNode",
   addStorage() {
     return {
       markdown: {
-        serialize(state, node, parent) {
+        serialize(
+          this: SerializeContext,
+          state: MarkdownSerializerState,
+          node: ProseMirrorNode,
+          parent: ProseMirrorNode | Fragment,
+        ) {
           if (this.editor.storage.markdown.options.html) {
             state.write(serializeHTML(node, parent));
           } else {
@@ -28,7 +36,10 @@ export default Node.create({
   },
 });
 
-function serializeHTML(node, parent) {
+function serializeHTML(
+  node: ProseMirrorNode,
+  parent: ProseMirrorNode | Fragment,
+): string {
   const schema = node.type.schema;
   const html = getHTMLFromFragment(Fragment.from(node), schema);
 
@@ -45,13 +56,15 @@ function serializeHTML(node, parent) {
 /**
  * format html block as per the commonmark spec
  */
-function formatBlock(html) {
+function formatBlock(html: string): string {
   const dom = elementFromString(html);
   const element = dom.firstElementChild;
 
-  element.innerHTML = element.innerHTML.trim()
-    ? `\n${element.innerHTML}\n`
-    : `\n`;
+  if (!element) return html;
+
+  const inner = element.innerHTML.trim();
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: controlled prosemirror schema HTML
+  element.innerHTML = inner ? `\n${inner}\n` : `\n`;
 
   return element.outerHTML;
 }

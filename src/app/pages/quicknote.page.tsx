@@ -2,7 +2,7 @@ import { startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
 import { Dates } from "@/lib/dates";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { Editor } from "@/app/editor";
 
 export default function QuickNotePage() {
@@ -21,7 +21,7 @@ export default function QuickNotePage() {
         dispatch.note(existing);
       } else {
         const title = Dates.yearMonthDay(startOfDay(new Date()));
-        const note = Note.new(`${title}-QuickNote`, "", "quick");
+        const note = Note.new(`${title}-QuickNote`, "", NoteType.quick);
         await repositories.notes.save(note);
         dispatch.note(note, false);
       }

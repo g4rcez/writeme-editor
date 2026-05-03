@@ -46,10 +46,10 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
   for (let i = 0; i < len; i += 4) {
     const encoded1 = B64_LOOKUP[str.charCodeAt(i)];
     const encoded2 = B64_LOOKUP[str.charCodeAt(i + 1)];
-    const b1 = encoded1;
-    const b2 = encoded2;
-    const b3 = i + 2 < len ? B64_LOOKUP[str.charCodeAt(i + 2)] : 0;
-    const b4 = i + 3 < len ? B64_LOOKUP[str.charCodeAt(i + 3)] : 0;
+    const b1 = encoded1 ?? 0;
+    const b2 = encoded2 ?? 0;
+    const b3 = i + 2 < len ? (B64_LOOKUP[str.charCodeAt(i + 2)] ?? 0) : 0;
+    const b4 = i + 3 < len ? (B64_LOOKUP[str.charCodeAt(i + 3)] ?? 0) : 0;
     const triplet = (b1 << 18) | (b2 << 12) | (b3 << 6) | b4;
     bytes[p++] = (triplet >> 16) & 0xff;
     if (i + 2 < len) bytes[p++] = (triplet >> 8) & 0xff;

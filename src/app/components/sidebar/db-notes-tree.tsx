@@ -61,7 +61,7 @@ function buildVirtualTree(notes: Note[], rootPath: string): VirtualNode[] {
       }
     }
 
-    const fileName = segments[segments.length - 1];
+    const fileName = segments[segments.length - 1] ?? "";
     const displayName = fileName.endsWith(".md")
       ? fileName.slice(0, -3)
       : fileName;
@@ -202,7 +202,7 @@ export const DbNotesTree = ({ notes, rootPath }: DbNotesTreeProps) => {
           <div key={node.path} style={{ paddingLeft }}>
             <ul>
               <NoteItem
-                note={{ ...node.note, tagCount: node.note.tags.length }}
+                note={{ ...node.note, tagCount: node.note.tags.length } as any}
                 isActive={node.note.id === noteId}
                 onClick={() => navigate(`/note/${node.note.id}`)}
                 onToggleFavorite={(e) => toggleFavorite(e, node.note)}

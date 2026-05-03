@@ -14,7 +14,7 @@ export function solveRule3(inner: string): Rule3Result {
   const m = inner.match(RULE3_INNER_RE);
   if (!m) return { ok: false, error: "Invalid rule3 syntax" };
 
-  const tokens = [m[1], m[2], m[3], m[4]];
+  const tokens = [m[1] ?? "", m[2] ?? "", m[3] ?? "", m[4] ?? ""];
   const numeric = tokens.map((t) => (isNumeric(t) ? Number(t) : null));
   const unknownIndices = numeric.reduce<number[]>(
     (acc, v, i) => (v === null ? [...acc, i] : acc),
@@ -27,7 +27,7 @@ export function solveRule3(inner: string): Rule3Result {
     return { ok: false, error: "Multiple unknowns" };
 
   const [a, b, c, d] = numeric as (number | null)[];
-  const variable = tokens[unknownIndices[0]];
+  const variable = tokens[unknownIndices[0]!];
 
   // a/b = c/d  =>  a*d = b*c
   // solve for the unknown position
@@ -53,7 +53,7 @@ export function solveRule3(inner: string): Rule3Result {
       return { ok: false, error: "Unexpected error" };
   }
 
-  return { ok: true, value, variable };
+  return { ok: true, value, variable: variable ?? "" };
 }
 
 export function preprocessRule3(line: string): string {

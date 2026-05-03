@@ -4,7 +4,7 @@ import { Dates } from "@/lib/dates";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { Autocomplete, Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
@@ -75,7 +75,7 @@ export const CreateNoteDialog = () => {
       }
     }
 
-    const note = Note.new(title, content, type);
+    const note = Note.new(title, content, type as NoteType);
     await repositories.notes.save(note);
     dispatch.note(note);
     onClose();

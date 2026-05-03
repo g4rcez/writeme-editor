@@ -17,7 +17,7 @@ vi.mock("@excalidraw/excalidraw", () => ({
 describe("ExcalidrawCode", () => {
   it("initializes with provided code", async () => {
     const code = JSON.stringify([{ type: "rectangle", id: "initial" }]);
-    render(<ExcalidrawCode code={code} />);
+    render(<ExcalidrawCode code={code} autoDelete={() => {}} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe("ExcalidrawCode", () => {
     // Mock console.error to avoid noise
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    render(<ExcalidrawCode code="invalid-json" />);
+    render(<ExcalidrawCode code="invalid-json" autoDelete={() => {}} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
@@ -42,7 +42,9 @@ describe("ExcalidrawCode", () => {
   it("propagates changes via onChange", async () => {
     const onChange = vi.fn();
     const code = JSON.stringify([]);
-    render(<ExcalidrawCode code={code} onChange={onChange} />);
+    render(
+      <ExcalidrawCode code={code} onChange={onChange} autoDelete={() => {}} />,
+    );
     await waitFor(() => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
     });

@@ -5,7 +5,7 @@ import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useGlobalStore } from "@/store/global.store";
-import { layoutDispatch, useLayoutStore } from "@/app/contexts/layout-context";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { repositories } from "@/store/repositories";
 import { useEffect, useState } from "react";
 import { Hashtag } from "@/store/repositories/entities/hashtag";
@@ -44,7 +44,7 @@ const SectionHeader = ({ label }: { label: string }) => (
 );
 
 export const SidebarNavigation = () => {
-  const [{ activeView }] = useLayoutStore((s) => ({
+  const [{ activeView }, layoutDispatch] = useLayoutStore((s) => ({
     activeView: s.activeView,
   }));
   const [{ notes }] = useGlobalStore((state) => ({ notes: state.notes }));

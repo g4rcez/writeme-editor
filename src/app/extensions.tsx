@@ -347,9 +347,9 @@ export const createExtensions = (
             type: this.type,
             getAttributes: (match) => {
               return {
-                id: match[1],
-                label: match[1],
-                path: innerUrl(match[1], "mention"),
+                id: match[1] ?? "",
+                label: match[1] ?? "",
+                path: innerUrl(match[1] ?? "", "mention"),
               };
             },
           }),
@@ -365,16 +365,19 @@ export const createExtensions = (
     }).configure({
       suggestion: suggestion,
       HTMLAttributes: { class: "mention" },
-      markdown: {
-        serialize(state: any, node: any) {
-          if (node && node.attrs) {
-            const label = node.attrs.label ?? node.attrs.id;
-            const path = node.attrs.path ?? innerUrl(node.attrs.id, "mention");
-            const id = node.attrs.id;
-            state.write(`[${label}](${path} "writeme-mention:${id}")`);
-          }
+      ...({
+        markdown: {
+          serialize(state: any, node: any) {
+            if (node && node.attrs) {
+              const label = node.attrs.label ?? node.attrs.id;
+              const path =
+                node.attrs.path ?? innerUrl(node.attrs.id, "mention");
+              const id = node.attrs.id;
+              state.write(`[${label}](${path} "writeme-mention:${id}")`);
+            }
+          },
         },
-      },
+      } as any),
     }),
     Markdown,
   ];

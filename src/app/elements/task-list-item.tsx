@@ -209,11 +209,6 @@ export const TaskListItem = Node.create<TaskItemOptions>({
           checked: match[match.length - 1] === "x",
         }),
       }),
-    ];
-  },
-
-  addPasteRules() {
-    return [
       wrappingInputRule({
         find: /^\s*([-*+])?\s*(\[([( |x])?\])\s/,
         type: this.type,

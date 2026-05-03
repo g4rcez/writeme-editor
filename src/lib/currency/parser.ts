@@ -142,6 +142,7 @@ export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
   }
 
   const [, amountStr, from, , to] = match;
+  if (!amountStr || !from || !to) return null;
 
   // Parse amount (remove commas, convert to number)
   const amount = parseFloat(amountStr.replace(/,/g, ""));

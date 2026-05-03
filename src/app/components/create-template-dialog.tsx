@@ -6,7 +6,7 @@ import {
   useGlobalStore,
   globalDispatch,
 } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { isElectron } from "@/lib/is-electron";
 import { SettingsService } from "@/store/settings";
 
@@ -34,7 +34,7 @@ export const CreateTemplateDialog = () => {
     const newTemplate = Note.new(
       name,
       "# " + name + "\n\n{{content}}",
-      "template",
+      NoteType.template,
     );
 
     if (isElectron()) {

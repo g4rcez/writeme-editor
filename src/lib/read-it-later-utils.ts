@@ -67,8 +67,9 @@ export function parseReadItLaterHtml(
 } {
   const origin = new URL(url).origin;
   const doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll("a[href]").forEach((anchor: HTMLAnchorElement) => {
-    anchor.href = anchor.href.replace(hostOrigin, origin);
+  doc.querySelectorAll("a[href]").forEach((anchor) => {
+    const a = anchor as HTMLAnchorElement;
+    a.href = a.href.replace(hostOrigin, origin);
   });
   const title =
     doc.title || doc.querySelector("title")?.innerText || "Read It Later Note";

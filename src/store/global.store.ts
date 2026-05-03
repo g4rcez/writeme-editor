@@ -278,7 +278,7 @@ export const useGlobalStore = createGlobalReducer(
         return { terminalVisible: !get.state().terminalVisible };
       },
       setTerminalVisible: (terminalVisible: boolean) => ({ terminalVisible }),
-      setAiContext: (aiContext: AiContext) => ({ aiContext }),
+      setAiContext: (aiContext: AiContext | null) => ({ aiContext }),
       loadRecentNotes: async (limit = 20) => {
         const recent = await repositories.notes.getAll({ limit });
         return { recentNotes: recent };

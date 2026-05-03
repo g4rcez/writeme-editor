@@ -188,6 +188,7 @@ export const AIDrawer = () => {
             >
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const msg = messages[virtualRow.index];
+                if (!msg) return null;
                 return (
                   <div
                     key={virtualRow.key}

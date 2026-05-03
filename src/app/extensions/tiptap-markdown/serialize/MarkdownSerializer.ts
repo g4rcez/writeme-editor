@@ -1,3 +1,5 @@
+import type { Editor, AnyExtension } from "@tiptap/core";
+import type { Node } from "@tiptap/pm/model";
 import { MarkdownSerializerState } from "./state";
 import HTMLMark from "../extensions/marks/html";
 import HTMLNode from "../extensions/nodes/html";
@@ -5,13 +7,13 @@ import { getMarkdownSpec } from "../util/extensions";
 import HardBreak from "../extensions/nodes/hard-break";
 
 export class MarkdownSerializer {
-  editor = null;
+  editor!: Editor;
 
-  public constructor(editor) {
+  public constructor(editor: Editor) {
     this.editor = editor;
   }
 
-  serialize(content) {
+  serialize(content: Node) {
     const state = new MarkdownSerializerState(this.nodes, this.marks, {
       ...this.editor.storage.markdown.options,
       hardBreakNodeName: HardBreak.name,
@@ -31,10 +33,10 @@ export class MarkdownSerializer {
       ...Object.fromEntries(
         this.editor.extensionManager.extensions
           .filter(
-            (extension) =>
+            (extension: AnyExtension) =>
               extension.type === "node" && this.serializeNode(extension),
           )
-          .map((extension) => [
+          .map((extension: AnyExtension) => [
             extension.name,
             this.serializeNode(extension),
           ]) ?? [],
@@ -53,10 +55,10 @@ export class MarkdownSerializer {
       ...Object.fromEntries(
         this.editor.extensionManager.extensions
           .filter(
-            (extension) =>
+            (extension: AnyExtension) =>
               extension.type === "mark" && this.serializeMark(extension),
           )
-          .map((extension) => [
+          .map((extension: AnyExtension) => [
             extension.name,
             this.serializeMark(extension),
           ]) ?? [],
@@ -64,14 +66,14 @@ export class MarkdownSerializer {
     };
   }
 
-  serializeNode(node) {
+  serializeNode(node: AnyExtension) {
     return getMarkdownSpec(node)?.serialize?.bind({
       editor: this.editor,
       options: node.options,
     });
   }
 
-  serializeMark(mark) {
+  serializeMark(mark: AnyExtension) {
     const serialize = getMarkdownSpec(mark)?.serialize;
     return serialize
       ? {

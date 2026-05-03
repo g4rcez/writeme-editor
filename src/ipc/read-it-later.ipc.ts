@@ -106,7 +106,7 @@ export const readItLaterIpcHandler = () => {
                     .split(",")
                     .map((entry) => {
                       const parts = entry.trim().split(/\s+/);
-                      parts[0] = resolve(parts[0]);
+                      parts[0] = resolve(parts[0] ?? "");
                       return parts.join(" ");
                     })
                     .join(", "),

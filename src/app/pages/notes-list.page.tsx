@@ -268,7 +268,7 @@ export default function NotesListPage() {
             <div className="w-px h-4 bg-border" />
             <Button
               size="small"
-              theme="ghost"
+              theme="ghost-danger"
               onClick={() => setBatchGroupOpen(true)}
             >
               <FolderSimplePlusIcon className="size-4" />

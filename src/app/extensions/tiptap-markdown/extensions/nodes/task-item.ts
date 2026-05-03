@@ -1,4 +1,6 @@
 import { Node } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
 
 const TaskItem = Node.create({
   name: "taskItem",
@@ -8,13 +10,13 @@ export default TaskItem.extend({
   addStorage() {
     return {
       markdown: {
-        serialize(state, node) {
+        serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
           const check = node.attrs.checked ? "[x]" : "[ ]";
           state.write(`${check} `);
           state.renderContent(node);
         },
         parse: {
-          updateDOM(element) {
+          updateDOM(element: HTMLElement) {
             element.querySelectorAll(".task-list-item").forEach((item) => {
               const input = item.querySelector("input");
               item.setAttribute("data-type", "taskItem");
@@ -25,7 +27,7 @@ export default TaskItem.extend({
               while (
                 item.firstChild &&
                 item.firstChild.nodeType === 3 &&
-                !item.firstChild.textContent.trim()
+                !(item.firstChild.textContent ?? "").trim()
               ) {
                 item.firstChild.remove();
               }
@@ -34,7 +36,10 @@ export default TaskItem.extend({
                 textNode = textNode.firstChild;
               }
               if (textNode && textNode.nodeType === 3) {
-                textNode.textContent = textNode.textContent.replace(/^\s+/, "");
+                textNode.textContent = (textNode.textContent ?? "").replace(
+                  /^\s+/,
+                  "",
+                );
               }
             });
           },

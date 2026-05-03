@@ -46,7 +46,7 @@ export const ExcalidrawCode = (props: {
       <Excalidraw
         gridModeEnabled
         initialData={state}
-        theme={global.theme}
+        theme={global.theme as any}
         isCollaborating={false}
         onChange={(elements: any) => {
           if (elements.length === 0) return;

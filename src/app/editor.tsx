@@ -62,7 +62,7 @@ const useCopyEvents = (editor: TipTapEditor) => {
     );
     window.addEventListener(
       COPY_EVENT_DISPATCHED,
-      (data: CustomEvent) => {
+      ((data: CustomEvent) => {
         if (!monitoring.current) return;
         const text = data.detail;
         editor
@@ -77,7 +77,7 @@ const useCopyEvents = (editor: TipTapEditor) => {
             content: [{ type: "text", text }],
           })
           .run();
-      },
+      }) as EventListener,
       opts,
     );
     return () => controller.abort();
@@ -146,7 +146,7 @@ const InnerEditor = (props: {
           const items = event.clipboardData?.items;
           if (items) {
             for (let i = 0; i < items.length; i++) {
-              if (items[i].type.startsWith("image/")) {
+              if (items[i]!.type.startsWith("image/")) {
                 handlePasteImage(editor);
                 return true;
               }
@@ -203,8 +203,8 @@ const InnerEditor = (props: {
             type: "doc",
             content: selectedContent.content.toJSON(),
           };
-          const markdown = editor.storage.markdown.serializer.serialize(
-            selectedContent.content,
+          const markdown = editor.storage.markdown.serializer!.serialize(
+            selectedContent.content as unknown as import("@tiptap/pm/model").Node,
           );
           navigator.clipboard.write([
             new ClipboardItem({
@@ -238,7 +238,7 @@ const InnerEditor = (props: {
     const currentMarkdown = editor.getMarkdown();
     if (props.content !== currentMarkdown) {
       isSettingContent.current = true;
-      editor.commands.setContent(props.content, {
+      (editor.commands as any).setContent(props.content, {
         contentType: "markdown",
         parseOptions: {
           preserveWhitespace: "full",

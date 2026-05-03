@@ -166,7 +166,6 @@ export const lightTheme: typeof defaultLightTheme = {
       neutral: {
         text: "hsla(200,98%,60%)",
         bg: "hsla(200,28%,19%)",
-        border: "hsla(200,90%,89%)",
       },
       secondary: {
         text: "hsla(195, 100%, 30%)",

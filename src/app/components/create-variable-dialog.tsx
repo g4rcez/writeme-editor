@@ -72,7 +72,7 @@ ${expression}
                 }),
                 "text/html",
               );
-              const codeBlock = dom.querySelector("code").innerText;
+              const codeBlock = dom.querySelector("code")!.innerText;
               setExpression(codeBlock.trim().replace(/\n$/g, ""));
             }}
           />

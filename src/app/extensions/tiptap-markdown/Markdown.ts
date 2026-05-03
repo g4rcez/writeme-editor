@@ -1,4 +1,4 @@
-import { Extension, createNodeFromContent } from "@tiptap/core";
+import { type Content, Extension, createNodeFromContent } from "@tiptap/core";
 import { DOMParser, Fragment } from "@tiptap/pm/model";
 import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
@@ -7,6 +7,23 @@ import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
 import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
 import { elementFromString } from "./util/dom";
+
+declare module "@tiptap/core" {
+  interface Storage {
+    markdown: {
+      options: Record<string, unknown>;
+      parser: MarkdownParser | null;
+      serializer: MarkdownSerializer | null;
+      getMarkdown: (() => string) | null;
+    };
+  }
+  interface Editor {
+    getMarkdown(): string;
+  }
+  interface EditorOptions {
+    initialContent?: Content;
+  }
+}
 
 export const Markdown = Extension.create({
   name: "markdown",
@@ -147,7 +164,7 @@ export const Markdown = Extension.create({
     }
   },
   onCreate() {
-    this.editor.options.content = this.editor.options.initialContent;
+    this.editor.options.content = this.editor.options.initialContent ?? null;
     delete this.editor.options.initialContent;
   },
   addExtensions() {

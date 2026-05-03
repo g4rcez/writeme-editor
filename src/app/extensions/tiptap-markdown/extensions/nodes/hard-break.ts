@@ -1,4 +1,7 @@
 import { Node } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { SerializeContext } from "../../serialize/types";
 import HTMLNode from "./html";
 
 const HardBreak = Node.create({
@@ -12,7 +15,13 @@ export default HardBreak.extend({
   addStorage() {
     return {
       markdown: {
-        serialize(state, node, parent, index) {
+        serialize(
+          this: SerializeContext,
+          state: MarkdownSerializerState,
+          node: ProseMirrorNode,
+          parent: ProseMirrorNode,
+          index: number,
+        ) {
           for (let i = index + 1; i < parent.childCount; i++)
             if (parent.child(i).type != node.type) {
               state.write(

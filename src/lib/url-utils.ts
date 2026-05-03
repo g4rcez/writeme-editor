@@ -36,13 +36,13 @@ export function identifyDomain(url: string): DomainIdentification | null {
       if (host === "youtu.be") {
         id = pathname.slice(1);
       } else if (pathname.startsWith("/live/")) {
-        id = pathname.split("/")[2];
+        id = pathname.split("/")[2] ?? null;
       } else if (pathname.startsWith("/embed/")) {
-        id = pathname.split("/")[2];
+        id = pathname.split("/")[2] ?? null;
       } else if (pathname.startsWith("/v/")) {
-        id = pathname.split("/")[2];
+        id = pathname.split("/")[2] ?? null;
       } else if (pathname.startsWith("/shorts/")) {
-        id = pathname.split("/")[2];
+        id = pathname.split("/")[2] ?? null;
       } else if (pathname === "/watch") {
         id = parsed.searchParams.get("v");
       } else if (parsed.searchParams.has("v")) {
@@ -51,7 +51,7 @@ export function identifyDomain(url: string): DomainIdentification | null {
 
       // Check for any extra path segments or query params in ID (sometimes happens with splitting)
       if (id) {
-        id = id.split(/[?&#]/)[0];
+        id = id.split(/[?&#]/)[0] ?? null;
       }
 
       if (id && id.length >= 10) {

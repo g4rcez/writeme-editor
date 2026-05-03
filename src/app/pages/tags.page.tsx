@@ -64,17 +64,17 @@ export default function TagsPage() {
           for (const m of content.matchAll(
             /\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g,
           )) {
-            const targetId = m[2];
+            const targetId = m[2]!;
             if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
           }
 
           for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
-            const targetId = m[1];
+            const targetId = m[1]!;
             if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
           }
 
           for (const m of content.matchAll(/\[\[([^\]]+)\]\]/g)) {
-            const raw = m[1];
+            const raw = m[1]!;
             const targetId = noteIdSet.has(raw)
               ? raw
               : (noteMap.get(raw) ?? null);

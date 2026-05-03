@@ -25,7 +25,16 @@ Object.defineProperty(document.documentElement, "classList", {
 describe("Tab Management Logic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useGlobalStore.dispatchers.init([], []);
+    useGlobalStore.dispatchers.init(
+      "light" as any,
+      [],
+      [],
+      16,
+      256,
+      false,
+      null,
+      null,
+    );
   });
 
   it("should create a tab using noteId as id", async () => {

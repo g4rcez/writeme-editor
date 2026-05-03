@@ -34,7 +34,7 @@ export const MarkdownClipboard = Extension.create({
         props: {
           clipboardTextParser: (text, context) => {
             const dedentedText = dedent(this.options.onBeforePaste(text));
-            const parsed = this.editor.storage.markdown.parser.parse(
+            const parsed = this.editor.storage.markdown.parser!.parse(
               dedentedText,
               { inline: true },
             );
@@ -46,15 +46,12 @@ export const MarkdownClipboard = Extension.create({
               },
             );
           },
-          /**
-           * @param {import('prosemirror-model').Slice} slice
-           */
           clipboardTextSerializer: (slice) => {
             if (!this.options.transformCopiedText) {
-              return null;
+              return "";
             }
-            return this.editor.storage.markdown.serializer.serialize(
-              slice.content,
+            return this.editor.storage.markdown.serializer!.serialize(
+              slice.content as unknown as import("@tiptap/pm/model").Node,
             );
           },
           handlePaste: (view, event) => {
@@ -85,7 +82,7 @@ export const MarkdownClipboard = Extension.create({
 
                   const nodes = [fmNode];
                   if (body.trim()) {
-                    const bodyHtml = this.editor.storage.markdown.parser.parse(
+                    const bodyHtml = this.editor.storage.markdown.parser!.parse(
                       body,
                       { inline: false },
                     );
@@ -102,7 +99,7 @@ export const MarkdownClipboard = Extension.create({
                 }
               }
 
-              const parsed = this.editor.storage.markdown.parser.parse(
+              const parsed = this.editor.storage.markdown.parser!.parse(
                 dedentedText,
                 { inline: true },
               );

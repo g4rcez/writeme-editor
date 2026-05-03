@@ -65,7 +65,7 @@ export const extractVariables = (content: string): string[] => {
   const matches = new Set<string>();
   let match;
   while ((match = regex.exec(content)) !== null) {
-    matches.add(match[1].trim());
+    matches.add(match[1]!.trim());
   }
   return Array.from(matches);
 };
@@ -113,10 +113,10 @@ export const substituteVariables = (
     const name = variableName.trim();
     const upperName = name.toUpperCase();
     if (name in userValues) {
-      return userValues[name];
+      return userValues[name] ?? "";
     }
     if (upperName in userValues) {
-      return userValues[upperName];
+      return userValues[upperName] ?? "";
     }
     const systemVar = SYSTEM_VARIABLES.find((sv) => sv.name === upperName);
     if (systemVar) {

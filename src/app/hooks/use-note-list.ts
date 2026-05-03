@@ -15,7 +15,7 @@ type UseNoteListOptions = {
 
 export function useNoteList(options: UseNoteListOptions = {}) {
   const [state, dispatch] = useGlobalStore();
-  const [innerNotes, setInnerNotes] = useState(state.notes);
+  const [innerNotes, setInnerNotes] = useState<NoteWithTags[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

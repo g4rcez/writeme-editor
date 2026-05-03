@@ -40,7 +40,7 @@ export const AIDiffView = ({
       <DiffView
         diffFile={diffFile}
         diffViewMode={DiffModeEnum.Split}
-        diffViewTheme={theme}
+        diffViewTheme={theme === "light" ? "light" : "dark"}
       />
     </div>
   );

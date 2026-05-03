@@ -1,4 +1,12 @@
-import { type Commands, Editor, Extension } from "@tiptap/core";
+import { type SingleCommands, Editor, Extension } from "@tiptap/core";
+
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    markdownTightLists: {
+      toggleTight: (tight?: boolean | null) => ReturnType;
+    };
+  }
+}
 
 export const MarkdownTightLists = Extension.create({
   name: "markdownTightLists",
@@ -33,7 +41,13 @@ export const MarkdownTightLists = Extension.create({
     return {
       toggleTight:
         (tight: boolean | null = null) =>
-        ({ editor, commands }: { editor: Editor; commands: Commands }) => {
+        ({
+          editor,
+          commands,
+        }: {
+          editor: Editor;
+          commands: SingleCommands;
+        }) => {
           function toggleTight(name: string) {
             if (!editor.isActive(name)) {
               return false;

@@ -114,7 +114,7 @@ export const CodeBlockFrame = ({
 };
 
 let highlighter: Highlighter | undefined;
-let highlighterPromise: Promise<undefined> | undefined;
+let highlighterPromise: Promise<Highlighter | undefined> | undefined;
 const loadingLanguages = new Set<BundledLanguage>();
 const loadingThemes = new Set<BundledTheme>();
 
@@ -137,7 +137,7 @@ export function getShiki() {
 
 export function loadHighlighter(
   opts: HighlighterOptions,
-): Promise<Highlighter | undefined> {
+): Promise<Highlighter | undefined> | undefined {
   if (!highlighter && !highlighterPromise) {
     const langs = opts.languages.filter(
       (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
@@ -146,7 +146,7 @@ export function loadHighlighter(
       langs: [...langs, shikiMathGrammer],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
     }).then((h: Highlighter) => {
-      return ((highlighter = h), h);
+      return ((highlighter = h), h) as Highlighter | undefined;
     });
     return highlighterPromise;
   }

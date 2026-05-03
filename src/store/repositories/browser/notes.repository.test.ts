@@ -52,7 +52,7 @@ describe("NotesRepository", () => {
 
       expect(db.notes.where).toHaveBeenCalledWith("noteType");
       expect(result).toHaveLength(3);
-      expect(result[0].title).toBe("New Note");
+      expect(result[0]!.title).toBe("New Note");
     });
 
     it("should limit the number of results if a limit is provided", async () => {

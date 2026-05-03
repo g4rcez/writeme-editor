@@ -94,7 +94,7 @@ export const YoutubeBlock = Node.create({
             const info = identifyDomain(text);
             if (info && info.domain === "youtube") {
               const { state, dispatch } = view;
-              const node = state.schema.nodes.youtubeBlock.create({
+              const node = state.schema.nodes.youtubeBlock!.create({
                 url: info.url,
                 videoId: info.id,
               });
@@ -134,9 +134,9 @@ export const YoutubeBlock = Node.create({
         find: /!\[youtube\]\((https?:\/\/\S+)\)\s$/,
         type: this.type,
         getAttributes: (match) => {
-          const info = identifyDomain(match[1]);
+          const info = identifyDomain(match[1] ?? "");
           return {
-            url: match[1],
+            url: match[1] ?? "",
             videoId: info?.id,
           };
         },

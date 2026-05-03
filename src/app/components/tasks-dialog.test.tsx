@@ -59,14 +59,14 @@ describe("parseEditorTasks", () => {
     const stacks = parseEditorTasks(mockDoc);
 
     expect(stacks).toHaveLength(2);
-    expect(stacks[0].title).toBe("H1 title");
-    expect(stacks[0].cards).toHaveLength(1);
-    expect(stacks[0].cards[0].title).toBe("Task 1");
-    expect(stacks[0].cards[0].titlePos).toBe(12); // 11 + 0 + 1
+    expect(stacks[0]!.title).toBe("H1 title");
+    expect(stacks[0]!.cards).toHaveLength(1);
+    expect(stacks[0]!.cards[0]!.title).toBe("Task 1");
+    expect(stacks[0]!.cards[0]!.titlePos).toBe(12); // 11 + 0 + 1
 
-    expect(stacks[1].title).toBe("H2 title");
-    expect(stacks[1].cards).toHaveLength(1);
-    expect(stacks[1].cards[0].title).toBe("Task 2");
+    expect(stacks[1]!.title).toBe("H2 title");
+    expect(stacks[1]!.cards).toHaveLength(1);
+    expect(stacks[1]!.cards[0]!.title).toBe("Task 2");
   });
 });
 

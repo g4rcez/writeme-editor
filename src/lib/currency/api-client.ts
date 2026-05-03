@@ -162,9 +162,10 @@ function transformExchangeRateAPIResponse(
 ): ExchangeRateData {
   return {
     base: response.base_code,
-    date: new Date(response.time_last_update_unix * 1000)
-      .toISOString()
-      .split("T")[0],
+    date:
+      new Date(response.time_last_update_unix * 1000)
+        .toISOString()
+        .split("T")[0] ?? "",
     rates: response.rates,
     timestamp: response.time_last_update_unix,
   };

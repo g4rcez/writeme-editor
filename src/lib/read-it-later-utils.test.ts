@@ -52,7 +52,7 @@ describe("parseReadItLaterHtml", () => {
       </html>
     `;
     const baseUrl = "https://example.com";
-    const result = parseReadItLaterHtml(html, baseUrl);
+    const result = parseReadItLaterHtml(html, baseUrl, baseUrl);
     expect(result.description).toBe("Test Description");
     expect(result.favicon).toBe("https://example.com/favicon.ico");
   });

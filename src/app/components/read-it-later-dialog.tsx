@@ -8,7 +8,7 @@ import { proxyFetch } from "@/lib/proxy-fetch";
 import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { getThemeForMode } from "../elements/code-block";
 import { createExtensions } from "../extensions";
 
@@ -48,7 +48,7 @@ export const ReadItLaterDialog = () => {
       const note = Note.new(
         article.title,
         markdown,
-        "read-it-later",
+        NoteType["read-it-later"],
         url,
         article.description,
         article.favicon,

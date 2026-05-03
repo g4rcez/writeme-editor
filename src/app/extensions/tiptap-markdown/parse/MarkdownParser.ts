@@ -95,13 +95,13 @@ export class MarkdownParser {
     if (typeof content === "string") {
       const renderedHTML = this.md?.parse(content) as string;
       const element = elementFromString(renderedHTML);
-      this.editor.extensionManager.extensions.forEach((extension) =>
+      this.editor!.extensionManager.extensions.forEach((extension) =>
         getMarkdownSpec(extension)?.parse?.updateDOM?.call(
           { editor: this.editor, options: extension.options },
           element,
         ),
       );
-      this.normalizeDOM(element, { inline, content });
+      this.normalizeDOM(element, { inline: inline ?? false, content });
       return element.innerHTML;
     }
     return content;
@@ -114,7 +114,7 @@ export class MarkdownParser {
     this.normalizeBlocks(node);
     node.querySelectorAll("*").forEach((el) => {
       if (el.nextSibling?.nodeType === Node.TEXT_NODE && !el.closest("pre")) {
-        el.nextSibling.textContent = el.nextSibling.textContent.replace(
+        el.nextSibling.textContent = (el.nextSibling.textContent ?? "").replace(
           /^\n/,
           "",
         );
@@ -127,7 +127,7 @@ export class MarkdownParser {
   }
 
   normalizeBlocks(node: HTMLElement) {
-    const blocks = Object.values(this.editor.schema.nodes).filter(
+    const blocks = Object.values(this.editor!.schema.nodes).filter(
       (node) => node.isBlock,
     );
     const selector = blocks
@@ -141,7 +141,7 @@ export class MarkdownParser {
     }
 
     node.querySelectorAll(selector).forEach((el) => {
-      if (el.parentElement.matches("p")) {
+      if (el.parentElement?.matches("p")) {
         extractElement(el);
       }
     });

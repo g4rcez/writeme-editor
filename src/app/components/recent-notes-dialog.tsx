@@ -39,7 +39,7 @@ export const RecentNotesDialog = () => {
   }, [state.recentNotesDialog, dispatch]);
 
   const settings = SettingsService.load();
-  const storageDir = settings.storageDirectory || "";
+  const storageDir = settings.directory || "";
 
   // Filter notes
   const filteredNotes = state.recentNotes.filter((note) => {

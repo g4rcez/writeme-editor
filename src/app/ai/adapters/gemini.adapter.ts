@@ -29,7 +29,9 @@ export class GeminiAdapter implements AIAdapter {
     // OAuth flow delegated to AuthManager.startOAuthFlow("gemini")
     // This is called by the AuthManager, not directly
     const { authManager } = await import("@/app/ai/auth/auth-manager");
-    return authManager.startOAuthFlow("gemini");
+    return authManager.startOAuthFlow(
+      "gemini",
+    ) as unknown as Promise<AuthCredentials>;
   }
 
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
