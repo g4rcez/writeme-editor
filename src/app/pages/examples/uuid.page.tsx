@@ -19,7 +19,7 @@ UUIDs are useful for:
 - Generating session tokens
 - Creating temporary file names
 - Database primary keys
-`
+`;
 
 export default function UuidPage() {
   return <Editor content={content} />;

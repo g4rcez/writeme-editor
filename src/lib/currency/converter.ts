@@ -1,10 +1,6 @@
 import type { ConversionResult } from "./types";
 import { fetchExchangeRates } from "./api-client";
-import {
-  getCachedRates,
-  setCachedRates,
-  getStaleCachedRates,
-} from "./cache";
+import { getCachedRates, setCachedRates, getStaleCachedRates } from "./cache";
 import { validateCurrencyCode } from "./parser";
 
 /**
@@ -109,9 +105,7 @@ async function getExchangeRate(
     if (staleCache) {
       const rate = staleCache.data.rates[to];
       if (rate !== undefined) {
-        console.log(
-          `Using stale cached rate for ${from} to ${to}: ${rate}`,
-        );
+        console.log(`Using stale cached rate for ${from} to ${to}: ${rate}`);
         return { rate, source: "stale-cache" };
       }
     }

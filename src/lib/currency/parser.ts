@@ -128,9 +128,7 @@ const VALID_CURRENCY_CODES = new Set([
  * @param expr - The expression to parse (e.g., "100 USD to EUR")
  * @returns Parsed currency data or null if invalid format
  */
-export function parseCurrencyExpression(
-  expr: string,
-): ParsedCurrency | null {
+export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
   // Normalize: trim, collapse multiple spaces
   const normalized = expr.trim().replace(/\s+/g, " ");
 

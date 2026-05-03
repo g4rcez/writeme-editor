@@ -22,7 +22,10 @@ export class CLIAdapter implements AIAdapter {
     }
   }
 
-  async auth(_method: "oauth" | "api-key", _apiKey?: string): Promise<AuthCredentials> {
+  async auth(
+    _method: "oauth" | "api-key",
+    _apiKey?: string,
+  ): Promise<AuthCredentials> {
     return {};
   }
 

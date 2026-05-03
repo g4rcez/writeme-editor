@@ -48,7 +48,11 @@ export default function TagsPage() {
           }
           const noteId = noteMap.get(entry.filename);
           if (noteId) {
-            links.push({ source: noteId, target: `tag-${entry.hashtag}`, type: "tag" });
+            links.push({
+              source: noteId,
+              target: `tag-${entry.hashtag}`,
+              type: "tag",
+            });
           }
         });
 
@@ -57,7 +61,9 @@ export default function TagsPage() {
           const content = note.content ?? "";
           const mentionedIds = new Set<string>();
 
-          for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
+          for (const m of content.matchAll(
+            /\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g,
+          )) {
             const targetId = m[2];
             if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
           }
@@ -69,13 +75,19 @@ export default function TagsPage() {
 
           for (const m of content.matchAll(/\[\[([^\]]+)\]\]/g)) {
             const raw = m[1];
-            const targetId = noteIdSet.has(raw) ? raw : (noteMap.get(raw) ?? null);
+            const targetId = noteIdSet.has(raw)
+              ? raw
+              : (noteMap.get(raw) ?? null);
             if (targetId && targetId !== note.id) mentionedIds.add(targetId);
           }
 
           mentionedIds.forEach((targetId) => {
             if (targetId !== note.id) {
-              links.push({ source: note.id, target: targetId, type: "mention" });
+              links.push({
+                source: note.id,
+                target: targetId,
+                type: "mention",
+              });
             }
           });
         });
@@ -112,7 +124,8 @@ export default function TagsPage() {
         <p className="text-xs text-foreground/70">
           {graphData.nodes.filter((n) => n.type === "note").length} notes,{" "}
           {graphData.nodes.filter((n) => n.type === "tag").length} tags,{" "}
-          {graphData.links.filter((l: any) => l.type === "mention").length} mentions
+          {graphData.links.filter((l: any) => l.type === "mention").length}{" "}
+          mentions
         </p>
       </div>
       <TagsGraph

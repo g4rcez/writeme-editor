@@ -29,10 +29,7 @@ export type ShortcutValue = {
   nativeOptions: BrowserOptions;
 };
 
-export const shortcutKeys = (
-  element: HTMLElement | Window,
-  mod = "Meta",
-) => {
+export const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
   const shortcutMap = new Map<string, ShortcutValue>();
   const incrementUserAction = (
     e: KeyboardEvent,

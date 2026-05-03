@@ -127,7 +127,7 @@ export default function GroupDetailPage() {
     const oldIndex = localMembers.findIndex((m) => m.id === active.id);
     const newIndex = localMembers.findIndex((m) => m.id === over.id);
     const reordered = arrayMove(localMembers, oldIndex, newIndex).map(
-      (m, i) => ({ ...m, order: i } as NoteGroupMember),
+      (m, i) => ({ ...m, order: i }) as NoteGroupMember,
     );
     setLocalMembers(reordered);
     await dispatch.reorderGroupMembers(groupId!, reordered);
@@ -135,7 +135,10 @@ export default function GroupDetailPage() {
 
   const handleOrderChange = async (member: NoteGroupMember, value: number) => {
     const updated = localMembers
-      .map((m) => (m.id === member.id ? { ...m, order: value } : m) as NoteGroupMember)
+      .map(
+        (m) =>
+          (m.id === member.id ? { ...m, order: value } : m) as NoteGroupMember,
+      )
       .sort((a, b) => a.order - b.order);
     setLocalMembers(updated);
     await dispatch.reorderGroupMembers(groupId!, updated);

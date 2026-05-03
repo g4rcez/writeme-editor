@@ -1,11 +1,8 @@
 import { createChatAdapter } from "@tanstack/ai-react";
-import { AIMessage } from "../../store/repositories/electron/ai.repository";
-import { v4 as uuidv4 } from "uuid";
 
 export const aiAdapter = createChatAdapter({
   // This is a simplified version, we will handle the actual streaming via IPC
-  async onSend({ messages, options }: any) {
-    const lastMessage = messages[messages.length - 1];
+  async onSend({ messages: _messages, options }: any) {
     const { prompt, selection, context, commandTemplate } = options;
 
     // Send the query to the main process

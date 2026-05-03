@@ -36,8 +36,6 @@ const bundledLanguages = [
   "c",
 ];
 
-const mustBeParsed = bundledLanguages.filter((x) => x.length >= 3);
-
 const unwantedSelectors = [
   "script",
   "style",

@@ -15,6 +15,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("app:update-shortcut", shortcut),
     updateMathShortcut: (shortcut: string) =>
       ipcRenderer.invoke("app:update-math-shortcut", shortcut),
+    openFolder: (folderPath: string) =>
+      ipcRenderer.invoke("app:open-folder", { folderPath }),
+  },
+  onOpenFolder: (callback: (data: { folderPath: string }) => void) => {
+    const handler = (
+      _: Electron.IpcRendererEvent,
+      data: { folderPath: string },
+    ) => callback(data);
+    ipcRenderer.on("app:open-folder", handler);
+    return () => ipcRenderer.removeListener("app:open-folder", handler);
   },
   onQuicknoteOpen: (callback: () => void) => {
     ipcRenderer.on("quicknote:open", callback);
@@ -268,6 +278,7 @@ declare global {
         updateMathShortcut(
           shortcut: string,
         ): Promise<{ success: boolean; error?: string }>;
+        openFolder(folderPath: string): Promise<boolean>;
       };
       onQuicknoteOpen(callback: () => void): () => void;
       onOpenFile(
@@ -276,6 +287,9 @@ declare global {
           wait: boolean;
           requestId: string;
         }) => void,
+      ): () => void;
+      onOpenFolder(
+        callback: (data: { folderPath: string }) => void,
       ): () => void;
       notes: {
         clipboard(): Promise<string>;

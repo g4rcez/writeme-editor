@@ -1,21 +1,21 @@
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { useUIStore } from "@/store/ui.store";
 import {
-    DndContext,
-    type DragEndEvent,
-    type DragOverEvent,
-    DragOverlay,
-    PointerSensor,
-    closestCorners,
-    defaultDropAnimationSideEffects,
-    useDroppable,
-    useSensor,
-    useSensors,
+  DndContext,
+  type DragEndEvent,
+  type DragOverEvent,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  defaultDropAnimationSideEffects,
+  useDroppable,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
-    SortableContext,
-    useSortable,
-    verticalListSortingStrategy,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button, Checkbox, Input, Modal } from "@g4rcez/components";
@@ -23,11 +23,11 @@ import { DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { type Node as ProseMirrorNode } from "prosemirror-model";
 import {
-    Fragment,
-    type ReactNode,
-    useCallback,
-    useEffect,
-    useState,
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
 } from "react";
 
 export type Card = {

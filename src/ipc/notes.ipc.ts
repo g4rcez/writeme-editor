@@ -237,7 +237,7 @@ export const notesIpcHandler = async () => {
 
   ipcMain.handle(
     "context-menu:explorer",
-    async (event, filePath: string, isDirectory: boolean) => {
+    async (event, filePath: string, _isDirectory: boolean) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (!win) return;
 

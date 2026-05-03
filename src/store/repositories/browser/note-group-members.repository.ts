@@ -26,10 +26,7 @@ export class NoteGroupMembersRepository
     return items.sort((a, b) => a.order - b.order);
   }
 
-  async reorder(
-    _groupId: string,
-    members: NoteGroupMember[],
-  ): Promise<void> {
+  async reorder(_groupId: string, members: NoteGroupMember[]): Promise<void> {
     await db.transaction("rw", db.noteGroupMembers, async () => {
       for (const member of members) {
         await db.noteGroupMembers.update(member.id, { order: member.order });

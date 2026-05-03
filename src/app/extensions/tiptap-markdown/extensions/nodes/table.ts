@@ -19,9 +19,9 @@ export default Table.extend({
             return;
           }
           state.inTable = true;
-          node.forEach((row, p, i) => {
+          node.forEach((row, _p, i) => {
             state.write("| ");
-            row.forEach((col, p, j) => {
+            row.forEach((col, _p, j) => {
               if (j) {
                 state.write(" | ");
               }

@@ -40,13 +40,13 @@ const SidebarItem = ({
 );
 
 const SectionHeader = ({ label }: { label: string }) => (
-  <div className="writeme-aside-nav-section">
-    {label}
-  </div>
+  <div className="writeme-aside-nav-section">{label}</div>
 );
 
 export const SidebarNavigation = () => {
-  const [{ activeView }] = useLayoutStore((s) => ({ activeView: s.activeView }));
+  const [{ activeView }] = useLayoutStore((s) => ({
+    activeView: s.activeView,
+  }));
   const [{ notes }] = useGlobalStore((state) => ({ notes: state.notes }));
   const [tags, setTags] = useState<Hashtag[]>([]);
 
@@ -56,12 +56,8 @@ export const SidebarNavigation = () => {
   }, []);
 
   // Calculate counts
-  const allNotesCount = notes.filter(
-    (n: Note) => n.noteType === "note",
-  ).length;
-  const favoritesCount = notes.filter(
-    (n: Note) => n.favorite,
-  ).length;
+  const allNotesCount = notes.filter((n: Note) => n.noteType === "note").length;
+  const favoritesCount = notes.filter((n: Note) => n.favorite).length;
   const trashCount = 0; // TODO: Implement trash
 
   // Unique tags with counts
@@ -96,18 +92,14 @@ export const SidebarNavigation = () => {
           label="Favorites"
           count={favoritesCount}
           active={activeView.type === "favorites"}
-          onClick={() =>
-            layoutDispatch.setView({ type: "favorites" })
-          }
+          onClick={() => layoutDispatch.setView({ type: "favorites" })}
         />
         <SidebarItem
           icon={<TrashIcon className="size-4" />}
           label="Trash"
           count={trashCount}
           active={activeView.type === "trash"}
-          onClick={() =>
-            layoutDispatch.setView({ type: "trash" })
-          }
+          onClick={() => layoutDispatch.setView({ type: "trash" })}
         />
 
         <SectionHeader label="Tags" />
@@ -117,12 +109,8 @@ export const SidebarNavigation = () => {
             icon={<HashIcon className="size-3" />}
             label={tag}
             count={count}
-            active={
-              activeView.type === "tag" && activeView.id === tag
-            }
-            onClick={() =>
-              layoutDispatch.setView({ type: "tag", id: tag })
-            }
+            active={activeView.type === "tag" && activeView.id === tag}
+            onClick={() => layoutDispatch.setView({ type: "tag", id: tag })}
           />
         ))}
 

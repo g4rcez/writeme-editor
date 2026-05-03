@@ -6,7 +6,6 @@ import { Button } from "@g4rcez/components";
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { CornersInIcon } from "@phosphor-icons/react/dist/csr/CornersIn";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { Editor } from "@tiptap/core";
 
 export const ExcalidrawCode = (props: {
   code: string;

@@ -21,6 +21,10 @@ export const NewNoteButton = () => {
   }, []);
 
   return (
-    <NavbarButton Icon={PlusIcon} title="New note (⌘N)" onClick={createNewNote} />
+    <NavbarButton
+      Icon={PlusIcon}
+      title="New note (⌘N)"
+      onClick={createNewNote}
+    />
   );
 };

@@ -1,5 +1,5 @@
 import { Button, Input, Modal } from "@g4rcez/components";
-import { FormEvent, useState, useEffect } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   repositories,
@@ -34,7 +34,7 @@ export const CreateTemplateDialog = () => {
     const newTemplate = Note.new(
       name,
       "# " + name + "\n\n{{content}}",
-      "template"
+      "template",
     );
 
     if (isElectron()) {

@@ -14,7 +14,12 @@ const appNoteUrlExtension = {
       tokenizer(src: string) {
         const match = src.match(/^app:\/\/note\/([^\s<>"')\]]+)/);
         if (match) {
-          return { type: "app_note_url", raw: match[0], href: match[0], id: match[1] };
+          return {
+            type: "app_note_url",
+            raw: match[0],
+            href: match[0],
+            id: match[1],
+          };
         }
         return undefined;
       },
@@ -29,9 +34,17 @@ const appNoteUrlExtension = {
         return src.indexOf("[");
       },
       tokenizer(src: string) {
-        const match = src.match(/^\[([^\]]+)\]\(([^)"]+)\s+"writeme-mention:([^"]+)"\)/);
+        const match = src.match(
+          /^\[([^\]]+)\]\(([^)"]+)\s+"writeme-mention:([^"]+)"\)/,
+        );
         if (match) {
-          return { type: "mention_link", raw: match[0], label: match[1], path: match[2], id: match[3] };
+          return {
+            type: "mention_link",
+            raw: match[0],
+            label: match[1],
+            path: match[2],
+            id: match[3],
+          };
         }
         return undefined;
       },

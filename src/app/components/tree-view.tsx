@@ -634,6 +634,7 @@ export const TreeView = ({
       container.addEventListener("keydown", handleKeyDown);
       return () => container.removeEventListener("keydown", handleKeyDown);
     }
+    return undefined;
   }, [
     flattenedNodes,
     focusedIndex,

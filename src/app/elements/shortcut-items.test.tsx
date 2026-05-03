@@ -22,18 +22,24 @@ describe("shortcut-items", () => {
   });
 
   it("should include the 'Open Recent' shortcut", () => {
-    const { result } = renderHook(() => useWritemeShortcuts(), { wrapper: MemoryRouter });
-    const openRecent = result.current.find(s => s.description === "Open Recent");
-    
+    const { result } = renderHook(() => useWritemeShortcuts(), {
+      wrapper: MemoryRouter,
+    });
+    const openRecent = result.current.find(
+      (s) => s.description === "Open Recent",
+    );
+
     expect(openRecent).toBeDefined();
     expect(openRecent?.bind).toBe("mod+e");
     expect(openRecent?.type).toBe(Type.Shortcut);
   });
 
   it("should have all required shortcuts", () => {
-    const { result } = renderHook(() => useWritemeShortcuts(), { wrapper: MemoryRouter });
-    const descriptions = result.current.map(s => s.description);
-    
+    const { result } = renderHook(() => useWritemeShortcuts(), {
+      wrapper: MemoryRouter,
+    });
+    const descriptions = result.current.map((s) => s.description);
+
     expect(descriptions).toContain("Commander");
     expect(descriptions).toContain("Open Recent");
     expect(descriptions).toContain("Browse files");

@@ -31,6 +31,7 @@ export const AITooltip = ({
       const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [open, editor]);
 
   const onSubmit = useCallback(() => {

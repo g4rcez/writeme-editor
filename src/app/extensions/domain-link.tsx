@@ -80,20 +80,20 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
     ),
   },
   {
-      regex: /^https?:\/\/(?:www\.)?linkedin\.com\/in\/([^\/?#\s]+)/,
-      component: (url, match) => (
-        <a
-          href={url}
-          target="_blank"
-          contentEditable={false}
-          className={commonClasses}
-          rel="noopener noreferrer"
-        >
-          <LinkedinLogoIcon aria-hidden="true" />
-          <span>{match[1]}</span>
-        </a>
-      ),
-    }
+    regex: /^https?:\/\/(?:www\.)?linkedin\.com\/in\/([^\/?#\s]+)/,
+    component: (url, match) => (
+      <a
+        href={url}
+        target="_blank"
+        contentEditable={false}
+        className={commonClasses}
+        rel="noopener noreferrer"
+      >
+        <LinkedinLogoIcon aria-hidden="true" />
+        <span>{match[1]}</span>
+      </a>
+    ),
+  },
 ];
 
 const DomainLinkView = (props: any) => {

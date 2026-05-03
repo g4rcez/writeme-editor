@@ -29,7 +29,10 @@ function scrollToPos(view: EditorView, pos: number): void {
     const coords = view.coordsAtPos(pos);
     const containerRect = container.getBoundingClientRect();
     const targetScrollTop =
-      container.scrollTop + coords.top - containerRect.top - containerRect.height / 3;
+      container.scrollTop +
+      coords.top -
+      containerRect.top -
+      containerRect.height / 3;
     container.scrollTop = Math.max(0, targetScrollTop);
   } catch {}
 }
@@ -57,7 +60,10 @@ function findMatches(
     let match: RegExpExecArray | null;
     regex.lastIndex = 0;
     while ((match = regex.exec(node.text)) !== null) {
-      results.push({ from: pos + match.index, to: pos + match.index + match[0].length });
+      results.push({
+        from: pos + match.index,
+        to: pos + match.index + match[0].length,
+      });
     }
   });
   return results;
@@ -84,7 +90,9 @@ function buildDecorations(
 
 // Helper to access typed storage without conflicting with the global Storage type
 function srStorage(editor: { storage: unknown }): SearchReplaceStorage {
-  return (editor.storage as Record<string, SearchReplaceStorage>)["searchReplace"]!;
+  return (editor.storage as Record<string, SearchReplaceStorage>)[
+    "searchReplace"
+  ]!;
 }
 
 declare module "@tiptap/core" {
@@ -101,7 +109,10 @@ declare module "@tiptap/core" {
   }
 }
 
-export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchReplaceStorage>({
+export const SearchAndReplace = Extension.create<
+  SearchReplaceOptions,
+  SearchReplaceStorage
+>({
   name: "searchReplace",
 
   addOptions() {
@@ -130,12 +141,18 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           const s = srStorage(editor);
           s.searchTerm = searchTerm;
           s.resultIndex = 0;
-          s.results = findMatches(editor.state.doc, searchTerm, s.caseSensitive);
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          s.results = findMatches(
+            editor.state.doc,
+            searchTerm,
+            s.caseSensitive,
+          );
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           const first = s.results[0];
           if (first) {
             const selTr = editor.state.tr.setSelection(
-              TextSelection.create(editor.state.doc, first.from, first.to)
+              TextSelection.create(editor.state.doc, first.from, first.to),
             );
             editor.view.dispatch(selTr);
             requestAnimationFrame(() => scrollToPos(editor.view, first.from));
@@ -154,12 +171,18 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           const s = srStorage(editor);
           s.caseSensitive = caseSensitive;
           s.resultIndex = 0;
-          s.results = findMatches(editor.state.doc, s.searchTerm, caseSensitive);
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          s.results = findMatches(
+            editor.state.doc,
+            s.searchTerm,
+            caseSensitive,
+          );
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           const first = s.results[0];
           if (first) {
             const selTr = editor.state.tr.setSelection(
-              TextSelection.create(editor.state.doc, first.from, first.to)
+              TextSelection.create(editor.state.doc, first.from, first.to),
             );
             editor.view.dispatch(selTr);
             requestAnimationFrame(() => scrollToPos(editor.view, first.from));
@@ -172,11 +195,13 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           const s = srStorage(editor);
           if (s.results.length === 0) return false;
           s.resultIndex = (s.resultIndex + 1) % s.results.length;
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           const current = s.results[s.resultIndex];
           if (current) {
             const selTr = editor.state.tr.setSelection(
-              TextSelection.create(editor.state.doc, current.from, current.to)
+              TextSelection.create(editor.state.doc, current.from, current.to),
             );
             editor.view.dispatch(selTr);
             requestAnimationFrame(() => scrollToPos(editor.view, current.from));
@@ -188,12 +213,15 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
         ({ editor }) => {
           const s = srStorage(editor);
           if (s.results.length === 0) return false;
-          s.resultIndex = (s.resultIndex - 1 + s.results.length) % s.results.length;
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          s.resultIndex =
+            (s.resultIndex - 1 + s.results.length) % s.results.length;
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           const current = s.results[s.resultIndex];
           if (current) {
             const selTr = editor.state.tr.setSelection(
-              TextSelection.create(editor.state.doc, current.from, current.to)
+              TextSelection.create(editor.state.doc, current.from, current.to),
             );
             editor.view.dispatch(selTr);
             requestAnimationFrame(() => scrollToPos(editor.view, current.from));
@@ -210,12 +238,23 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
           const tr = editor.state.tr.replaceWith(
             current.from,
             current.to,
-            replaceTerm ? editor.state.schema.text(replaceTerm) : Fragment.empty
+            replaceTerm
+              ? editor.state.schema.text(replaceTerm)
+              : Fragment.empty,
           );
           editor.view.dispatch(tr);
-          s.results = findMatches(editor.state.doc, s.searchTerm, s.caseSensitive);
-          s.resultIndex = Math.min(s.resultIndex, Math.max(0, s.results.length - 1));
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          s.results = findMatches(
+            editor.state.doc,
+            s.searchTerm,
+            s.caseSensitive,
+          );
+          s.resultIndex = Math.min(
+            s.resultIndex,
+            Math.max(0, s.results.length - 1),
+          );
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           return true;
         },
       replaceAll:
@@ -223,16 +262,28 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
         ({ editor }) => {
           const s = srStorage(editor);
           if (!s.searchTerm) return false;
-          const results = findMatches(editor.state.doc, s.searchTerm, s.caseSensitive);
+          const results = findMatches(
+            editor.state.doc,
+            s.searchTerm,
+            s.caseSensitive,
+          );
           let tr = editor.state.tr;
           for (let i = results.length - 1; i >= 0; i--) {
             const r = results[i]!;
-            tr = tr.replaceWith(r.from, r.to, replaceTerm ? editor.state.schema.text(replaceTerm) : Fragment.empty);
+            tr = tr.replaceWith(
+              r.from,
+              r.to,
+              replaceTerm
+                ? editor.state.schema.text(replaceTerm)
+                : Fragment.empty,
+            );
           }
           editor.view.dispatch(tr);
           s.results = [];
           s.resultIndex = 0;
-          editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
+          editor.view.dispatch(
+            editor.state.tr.setMeta(pluginKey, { forceUpdate: true }),
+          );
           return true;
         },
     };

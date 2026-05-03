@@ -4,7 +4,9 @@ export interface ExecutionConfig {
   command: string;
   args?: string[];
   label: string;
-  browserRuntimeExec?: (code: string) => Promise<{ stdout: string; stderr: string; html?: string }>;
+  browserRuntimeExec?: (
+    code: string,
+  ) => Promise<{ stdout: string; stderr: string; html?: string }>;
 }
 
 export const EXECUTION_CONFIG: Partial<
@@ -14,7 +16,7 @@ export const EXECUTION_CONFIG: Partial<
     label: "Node.js",
     command: "node",
     browserRuntimeExec: async (code: string) => {
-      console.log({code});
+      console.log({ code });
       try {
         const result = eval(code);
         return { stdout: String(result), stderr: "" };

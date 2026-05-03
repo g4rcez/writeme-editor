@@ -12,7 +12,11 @@ type Props = {
 export const JsonInspectorPanel = ({ value, onChange, className }: Props) => (
   <Group direction="horizontal" className={css("overflow-hidden", className)}>
     <Panel defaultSize={50} minSize={20}>
-      <JsonEditor value={value} onChange={onChange ?? (() => {})} className="h-full" />
+      <JsonEditor
+        value={value}
+        onChange={onChange ?? (() => {})}
+        className="h-full"
+      />
     </Panel>
     <Separator className="w-px bg-border/20 cursor-col-resize" />
     <Panel defaultSize={50} minSize={20}>

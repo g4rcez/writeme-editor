@@ -2,7 +2,7 @@ import { type ITerminalBackend } from "./types";
 
 export type CommandHandler = (
   args: string[],
-  terminal: { write: (data: string) => void; writeln: (data: string) => void }
+  terminal: { write: (data: string) => void; writeln: (data: string) => void },
 ) => Promise<void> | void;
 
 export class CommandRegistry {
@@ -15,7 +15,7 @@ export class CommandRegistry {
   get(name: string): CommandHandler | undefined {
     return this.commands.get(name);
   }
-  
+
   getAllNames(): string[] {
     return Array.from(this.commands.keys());
   }
@@ -38,9 +38,9 @@ export class WebTerminalBackend implements ITerminalBackend {
       term.writeln("  clear     - Clear the terminal");
       term.writeln("  echo      - Echo the arguments");
       term.writeln("  date      - Show current date and time");
-      const customs = this.registry.getAllNames().filter(
-        c => !["help", "clear", "echo", "date"].includes(c)
-      );
+      const customs = this.registry
+        .getAllNames()
+        .filter((c) => !["help", "clear", "echo", "date"].includes(c));
       if (customs.length > 0) {
         term.writeln("  " + customs.join(", "));
       }
@@ -71,7 +71,9 @@ export class WebTerminalBackend implements ITerminalBackend {
   }
 
   private prompt() {
-    this.emit(`\r\n\x1b[1;32muser@writeme\x1b[0m:\x1b[1;34m${this.cwd}\x1b[0m$ `);
+    this.emit(
+      `\r\n\x1b[1;32muser@writeme\x1b[0m:\x1b[1;34m${this.cwd}\x1b[0m$ `,
+    );
   }
 
   private emit(data: string) {
@@ -115,12 +117,12 @@ export class WebTerminalBackend implements ITerminalBackend {
     const parts = input.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
     if (parts.length === 0) return;
     const command = parts[0];
-    const args = parts.slice(1).map(p => p.replace(/^"|"$/g, '')); // Strip surrounding quotes
+    const args = parts.slice(1).map((p) => p.replace(/^"|"$/g, "")); // Strip surrounding quotes
     const handler = this.registry.get(command!);
-    
+
     const termInterface = {
       write: (d: string) => this.emit(d),
-      writeln: (d: string) => this.emit(d + "\r\n")
+      writeln: (d: string) => this.emit(d + "\r\n"),
     };
 
     if (handler) {
@@ -130,12 +132,13 @@ export class WebTerminalBackend implements ITerminalBackend {
         termInterface.writeln(`\x1b[31mError: ${err.message}\x1b[0m`);
       }
     } else {
-      termInterface.writeln(`\x1b[31mCommand not found: ${command}\x1b[0m. Type 'help' for a list of commands.`);
+      termInterface.writeln(
+        `\x1b[31mCommand not found: ${command}\x1b[0m. Type 'help' for a list of commands.`,
+      );
     }
   }
 
-  resize(cols: number, rows: number): void {
-  }
+  resize(_cols: number, _rows: number): void {}
 
   kill(): void {
     this.dataListeners = [];

@@ -56,18 +56,18 @@ describe("NotesRepository", () => {
     });
 
     it("should limit the number of results if a limit is provided", async () => {
-       const notes = Array.from({ length: 10 }, (_, i) => ({
-            id: `${i}`,
-            title: `Note ${i}`,
-            updatedAt: new Date(),
-            noteType: "note"
-        }));
+      const notes = Array.from({ length: 10 }, (_, i) => ({
+        id: `${i}`,
+        title: `Note ${i}`,
+        updatedAt: new Date(),
+        noteType: "note",
+      }));
 
-        (mockCollection.toArray as any).mockResolvedValue(notes);
+      (mockCollection.toArray as any).mockResolvedValue(notes);
 
-        const result = await repository.getRecentNotes(5);
+      const result = await repository.getRecentNotes(5);
 
-        expect(result).toHaveLength(5);
+      expect(result).toHaveLength(5);
     });
   });
 });

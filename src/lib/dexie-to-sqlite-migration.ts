@@ -9,7 +9,7 @@ export async function migrateDexieToSqlite() {
 
   try {
     console.log("Starting Dexie to SQLite migration...");
-    
+
     // Migrate Notes
     const notes = await db.notes.toArray();
     console.log(`Migrating ${notes.length} notes...`);

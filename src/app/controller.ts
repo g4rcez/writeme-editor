@@ -5,7 +5,7 @@ interface IController {
 }
 
 class BrowserController implements IController {
-  public constructor() { }
+  public constructor() {}
 
   public async clipboard() {
     const text = await navigator.clipboard.readText();

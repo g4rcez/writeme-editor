@@ -18,7 +18,9 @@ function useNoteReferences(content: string) {
     async function resolve() {
       const ids = new Set<string>();
 
-      for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
+      for (const m of content.matchAll(
+        /\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g,
+      )) {
         ids.add(m![2]!);
       }
       for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
@@ -36,11 +38,15 @@ function useNoteReferences(content: string) {
           else if (byTitle.has(raw)) ids.add(byTitle.get(raw)!);
         }
       }
-      const settled = await Promise.all([...ids].map((id) => repositories.notes.getOne(id)));
+      const settled = await Promise.all(
+        [...ids].map((id) => repositories.notes.getOne(id)),
+      );
       if (!cancelled) setRefs(settled.filter((n): n is Note => n != null));
     }
     resolve();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [content]);
 
   return refs;
@@ -98,14 +104,16 @@ export default function NotePage() {
   useEffect(() => {
     if (!isElectron() || !note?.filePath) return;
     const filePath = note.filePath;
-    return window.electronAPI.fs.onFileChanged(async ({ filePath: changedPath }) => {
-      if (changedPath !== filePath) return;
-      const result = await window.electronAPI.fs.readFile(changedPath);
-      if (!result.success) return;
-      if (result.content !== note.content) {
-        dispatch.setNote(Note.parse({ ...note, content: result.content }));
-      }
-    });
+    return window.electronAPI.fs.onFileChanged(
+      async ({ filePath: changedPath }) => {
+        if (changedPath !== filePath) return;
+        const result = await window.electronAPI.fs.readFile(changedPath);
+        if (!result.success) return;
+        if (result.content !== note.content) {
+          dispatch.setNote(Note.parse({ ...note, content: result.content }));
+        }
+      },
+    );
   }, [note?.filePath, note?.id]);
 
   if (isLoading) {

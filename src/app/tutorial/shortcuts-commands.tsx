@@ -1,7 +1,7 @@
 import { Modal } from "@g4rcez/components";
 import { useGlobalStore } from "../../store/global.store";
 import {
-  Shortcut,
+  type Shortcut,
   ShortcutItem,
   Type,
   useWritemeShortcuts,
@@ -15,7 +15,9 @@ const ShortcutTutorial = (props: {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h2 className="text-xl font-medium leading-relaxed mb-2">{props.title}</h2>
+        <h2 className="text-xl font-medium leading-relaxed mb-2">
+          {props.title}
+        </h2>
         <p className="text-foreground/70">{props.description}</p>
       </header>
       <ul className="flex flex-col gap-4">

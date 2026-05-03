@@ -85,9 +85,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
         </span>
       ) : null;
     const colon =
-      key !== null ? (
-        <span className="text-json-separator">: </span>
-      ) : null;
+      key !== null ? <span className="text-json-separator">: </span> : null;
 
     if (val === null) {
       return (
@@ -104,9 +102,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
         <div key={path} style={{ paddingLeft: depth * 16 }}>
           {keySpan}
           {colon}
-          <span className="text-json-string">
-            &quot;{val}&quot;
-          </span>
+          <span className="text-json-string">&quot;{val}&quot;</span>
         </div>
       );
     }
@@ -126,9 +122,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
         <div key={path} style={{ paddingLeft: depth * 16 }}>
           {keySpan}
           {colon}
-          <span className="text-json-boolean">
-            {String(val)}
-          </span>
+          <span className="text-json-boolean">{String(val)}</span>
         </div>
       );
     }
@@ -152,10 +146,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
           className="flex items-center gap-0.5 cursor-pointer hover:bg-json-hover rounded select-none"
           onClick={() => toggle(path)}
         >
-          <CaretRightIcon
-            size={12}
-            className="text-json-caret shrink-0"
-          />
+          <CaretRightIcon size={12} className="text-json-caret shrink-0" />
           {keySpan}
           {colon}
           <span className="text-json-caret">
@@ -180,10 +171,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
           className="flex items-center gap-0.5 cursor-pointer hover:bg-json-hover rounded select-none"
           onClick={() => toggle(path)}
         >
-          <CaretDownIcon
-            size={12}
-            className="text-json-caret shrink-0"
-          />
+          <CaretDownIcon size={12} className="text-json-caret shrink-0" />
           {keySpan}
           {colon}
           <span className="text-json-separator">{open}</span>
@@ -214,7 +202,10 @@ export const JsonDevTools = ({ value, className }: Props) => {
 
   return (
     <div
-      className={css("overflow-auto font-mono text-[13px] p-3 rounded bg-json-bg", className)}
+      className={css(
+        "overflow-auto font-mono text-[13px] p-3 rounded bg-json-bg",
+        className,
+      )}
     >
       {renderNode(parsed, "root", null, 0)}
     </div>

@@ -25,9 +25,15 @@ async function importAllData(data: MigrationPayload): Promise<MigrationCounts> {
   await Promise.all([
     db.notes.bulkPut(data.notes as Parameters<typeof db.notes.bulkPut>[0]),
     db.tabs.bulkPut(data.tabs as Parameters<typeof db.tabs.bulkPut>[0]),
-    db.hashtags.bulkPut(data.hashtags as Parameters<typeof db.hashtags.bulkPut>[0]),
-    db.settings.bulkPut(data.settings as Parameters<typeof db.settings.bulkPut>[0]),
-    db.scripts.bulkPut(data.scripts as Parameters<typeof db.scripts.bulkPut>[0]),
+    db.hashtags.bulkPut(
+      data.hashtags as Parameters<typeof db.hashtags.bulkPut>[0],
+    ),
+    db.settings.bulkPut(
+      data.settings as Parameters<typeof db.settings.bulkPut>[0],
+    ),
+    db.scripts.bulkPut(
+      data.scripts as Parameters<typeof db.scripts.bulkPut>[0],
+    ),
   ]);
   return {
     notes: data.notes.length,
@@ -40,9 +46,15 @@ async function importAllData(data: MigrationPayload): Promise<MigrationCounts> {
 
 export function startMigration(): Promise<MigrationCounts> {
   return new Promise((resolve, reject) => {
-    const popup = window.open(`${WWW_ORIGIN}/#/migrate`, "_blank", "width=480,height=320");
+    const popup = window.open(
+      `${WWW_ORIGIN}/#/migrate`,
+      "_blank",
+      "width=480,height=320",
+    );
     if (!popup) {
-      reject(new Error("Popup was blocked. Please allow popups for this site."));
+      reject(
+        new Error("Popup was blocked. Please allow popups for this site."),
+      );
       return;
     }
 
@@ -77,7 +89,9 @@ export async function exportToFile(): Promise<void> {
     scripts,
   };
 
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

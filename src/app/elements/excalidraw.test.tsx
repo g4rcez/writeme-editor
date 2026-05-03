@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { ExcalidrawCode } from "./excalidraw";
-import * as ExcalidrawPkg from "@excalidraw/excalidraw";
 
 vi.mock("@excalidraw/excalidraw", () => ({
   Excalidraw: ({ onChange, initialData }: any) => (
@@ -29,7 +28,7 @@ describe("ExcalidrawCode", () => {
 
   it("handles empty/invalid code gracefully", async () => {
     // Mock console.error to avoid noise
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(<ExcalidrawCode code="invalid-json" />);
 
@@ -48,6 +47,8 @@ describe("ExcalidrawCode", () => {
       expect(screen.getByTestId("excalidraw-mock")).toBeInTheDocument();
     });
     screen.getByText("Change").click();
-    expect(onChange).toHaveBeenCalledWith(JSON.stringify([{ type: "rectangle", id: "1" }]));
+    expect(onChange).toHaveBeenCalledWith(
+      JSON.stringify([{ type: "rectangle", id: "1" }]),
+    );
   });
 });

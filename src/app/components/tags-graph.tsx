@@ -50,7 +50,9 @@ const wrapText = (
 };
 
 const resolveVar = (v: string) => {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(v)
+    .trim();
   return `hsl(${raw})`;
 };
 
@@ -102,10 +104,14 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
           height={dimensions.height}
           backgroundColor={bgColor}
           linkHoverPrecision={10000}
-          linkColor={(link: any) => link.type === "mention" ? mentionLinkColor : linkColor}
-          linkWidth={(link: any) => link.type === "mention" ? 1 : 2}
-          linkLineDash={(link: any) => link.type === "mention" ? [4, 2] : []}
-          linkDirectionalArrowLength={(link: any) => link.type === "mention" ? 4 : 0}
+          linkColor={(link: any) =>
+            link.type === "mention" ? mentionLinkColor : linkColor
+          }
+          linkWidth={(link: any) => (link.type === "mention" ? 1 : 2)}
+          linkLineDash={(link: any) => (link.type === "mention" ? [4, 2] : [])}
+          linkDirectionalArrowLength={(link: any) =>
+            link.type === "mention" ? 4 : 0
+          }
           linkDirectionalArrowRelPos={1}
           graphData={{ nodes, links }}
           nodeCanvasObjectMode={() => "replace"}

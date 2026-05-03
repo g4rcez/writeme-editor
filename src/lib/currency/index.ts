@@ -3,7 +3,12 @@ export { parseCurrencyExpression } from "./parser";
 export { formatConversionResult } from "./formatter";
 
 // Cache management
-export { clearCurrencyCache, getCachedRates, getCacheStats } from "./cache";
+export {
+  clearCurrencyCache,
+  getCachedRates,
+  getCacheStats,
+  setCachedRates,
+} from "./cache";
 
 // API client
 export { fetchExchangeRates } from "./api-client";

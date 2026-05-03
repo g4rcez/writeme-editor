@@ -5,7 +5,9 @@ import { authManager } from "@/app/ai/auth/auth-manager";
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

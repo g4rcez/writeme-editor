@@ -1,7 +1,6 @@
 import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
 import { type ExtendedRegExpMatchArray } from "@tiptap/react";
-import { evaluate } from "mathjs";
 import { convertCurrency, formatConversionResult } from "../../lib/currency";
 import { solveRule3 } from "@/lib/rule-of-three";
 import {
@@ -11,6 +10,7 @@ import {
 import { replacerRules } from "./replace-rules";
 import { type ReplacerHandlerParams } from "./types";
 import { Dates } from "@/lib/dates";
+import { INLINE_MATH_PATTERN, runInlineMath } from "@/lib/math-block";
 import { uiDispatch } from "@/store/ui.store";
 
 export type ReplacerCommand = {
@@ -21,13 +21,6 @@ export type ReplacerCommand = {
     editor: Editor,
   ) => string;
 };
-
-const sanitizeExpr = (expr = "") =>
-  expr
-    .replace(/>>math/, "")
-    .trim()
-    .replace(/\*\*/g, "^")
-    .replace(/=$/g, "");
 
 export const CurrencyCommand: ReplacerCommand = {
   find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
@@ -52,14 +45,8 @@ export const CurrencyCommand: ReplacerCommand = {
 };
 
 const MathCommand: ReplacerCommand = {
-  find: />>math [^=]+ ?=$/,
-  replace: (capture) => {
-    const expr = capture[0].trim() || "";
-    if (expr === "") return "";
-    const clean = sanitizeExpr(expr);
-    const result = `${evaluate(clean)}`;
-    return `${clean} = ${result}`;
-  },
+  find: INLINE_MATH_PATTERN,
+  replace: (capture) => runInlineMath(capture[0]),
 };
 
 const EvalCommand: ReplacerCommand = {

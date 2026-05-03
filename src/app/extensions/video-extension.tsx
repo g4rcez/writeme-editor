@@ -1,6 +1,7 @@
 import { useLocalAsset } from "@/app/hooks/use-local-asset";
 import { uiDispatch } from "@/store/ui.store";
 import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core";
+import { useEffect, useState } from "react";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
@@ -21,6 +22,17 @@ const VideoView = (props: any) => {
 
   const { loading, error, displaySrc } = useLocalAsset(src, VIDEO_MIME_MAP);
 
+  const [imgLoading, setImgLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgLoading(true);
+    setImgError(false);
+  }, [displaySrc]);
+
+  const isLoading = loading || imgLoading;
+  const isError = error || imgError;
+
   const handleOpenPreview = () => {
     if (!displaySrc) return;
     uiDispatch.openMediaPreview([{ src: displaySrc, type: "video", title }]);
@@ -29,7 +41,7 @@ const VideoView = (props: any) => {
   return (
     <NodeViewWrapper className="flex relative flex-col items-center my-4 group">
       <div className="relative w-full max-w-2xl rounded-lg overflow-hidden bg-black aspect-video shadow-md">
-        {loading && !error && (
+        {isLoading && !isError && (
           <div className="flex absolute inset-0 justify-center items-center bg-muted/30">
             <CircleNotchIcon
               size={24}
@@ -37,26 +49,26 @@ const VideoView = (props: any) => {
             />
           </div>
         )}
-        {error && (
+        {isError && (
           <div className="flex flex-col gap-2 justify-center items-center p-8 h-full text-muted-foreground">
             <VideoIcon size={32} />
             <span className="text-sm">Failed to load video</span>
           </div>
         )}
-        {!error && displaySrc && (
+        {!isError && displaySrc && (
           <video
             src={displaySrc}
-            className={`w-full h-full ${loading ? "opacity-0" : "opacity-100"}`}
-            onLoadedData={() => setLoading(false)}
+            className={`w-full h-full ${isLoading ? "opacity-0" : "opacity-100"}`}
+            onLoadedData={() => setImgLoading(false)}
             onError={() => {
-              setLoading(false);
-              setError(true);
+              setImgLoading(false);
+              setImgError(true);
             }}
             controls
           />
         )}
 
-        {!error && !loading && (
+        {!isError && !isLoading && (
           <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex bg-black/50">
             <button
               className="p-1 text-white rounded hover:bg-white/20"

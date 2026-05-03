@@ -217,6 +217,7 @@ export function updateNodeContent(
       updated = true;
       return false; // Stop traversal
     }
+    return;
   });
 
   if (updated) {

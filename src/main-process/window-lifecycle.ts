@@ -1,6 +1,10 @@
-import { BrowserWindow, Event } from "electron";
+import { BrowserWindow, type Event } from "electron";
 
-export function handleWindowClose(event: Event, window: BrowserWindow, isQuitting: boolean) {
+export function handleWindowClose(
+  event: Event,
+  window: BrowserWindow,
+  isQuitting: boolean,
+) {
   if (!isQuitting) {
     event.preventDefault();
     window.hide();

@@ -1,9 +1,9 @@
 /*
-  * # Tasks\n\n- A\n  - B\n    - C\n      - D\n        - E\n      - F\n    - G\n  - H\n- I
-  * # Tasks\n\n- A\n  \n  - B\n    \n    - C\n      \n      - D\n        \n        - E\n      - F\n    - G\n  - H\n- I
-  * # Tasks\n\n- A\n  - B\n    - C\n      - D\n        - E\n      - F\n    - G\n  - H\n- I
-  * # Tasks\n\n- A\n  \n  - B\n    \n    - C\n      \n      - D\n        \n        - E\n      - F\n    - G\n  - H\n- I
-  */
+ * # Tasks\n\n- A\n  - B\n    - C\n      - D\n        - E\n      - F\n    - G\n  - H\n- I
+ * # Tasks\n\n- A\n  \n  - B\n    \n    - C\n      \n      - D\n        \n        - E\n      - F\n    - G\n  - H\n- I
+ * # Tasks\n\n- A\n  - B\n    - C\n      - D\n        - E\n      - F\n    - G\n  - H\n- I
+ * # Tasks\n\n- A\n  \n  - B\n    \n    - C\n      \n      - D\n        \n        - E\n      - F\n    - G\n  - H\n- I
+ */
 export function elementFromString(value) {
   const wrappedValue = `<div>${value}</div>`;
   return new DOMParser().parseFromString(wrappedValue, "text/html").body;

@@ -17,9 +17,19 @@ class FileWatcherClass {
       depth: 10,
       ignoreInitial: true,
       awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
-      ignored: [/(^|[/\\])\.\./, /node_modules/, /\.git/, /dist/, /build/, /\.next/, /\.vite/],
+      ignored: [
+        /(^|[/\\])\.\./,
+        /node_modules/,
+        /\.git/,
+        /dist/,
+        /build/,
+        /\.next/,
+        /\.vite/,
+      ],
     });
-    this.watcher.on("error", (err) => console.error("[FileWatcher] error:", err));
+    this.watcher.on("error", (err) =>
+      console.error("[FileWatcher] error:", err),
+    );
 
     this.watcher.on("change", (filePath) => {
       const lastWrite = this.lastWrittenByApp.get(filePath);
@@ -29,16 +39,20 @@ class FileWatcherClass {
 
     const sendDirChanged = (filePath: string, rootDir: string) => {
       const dirPath =
-        path.dirname(filePath) === rootDir
-          ? rootDir
-          : path.dirname(filePath);
+        path.dirname(filePath) === rootDir ? rootDir : path.dirname(filePath);
       this.scheduleDirChanged(dirPath);
     };
 
     this.watcher.on("add", (filePath) => sendDirChanged(filePath, directory));
-    this.watcher.on("unlink", (filePath) => sendDirChanged(filePath, directory));
-    this.watcher.on("addDir", (filePath) => sendDirChanged(filePath, directory));
-    this.watcher.on("unlinkDir", (filePath) => sendDirChanged(filePath, directory));
+    this.watcher.on("unlink", (filePath) =>
+      sendDirChanged(filePath, directory),
+    );
+    this.watcher.on("addDir", (filePath) =>
+      sendDirChanged(filePath, directory),
+    );
+    this.watcher.on("unlinkDir", (filePath) =>
+      sendDirChanged(filePath, directory),
+    );
   }
 
   stop() {

@@ -13,9 +13,9 @@ describe("file-utils", () => {
       expect(formatSimplifiedPath("A/B/C/D")).toBe("A / ... / C / D");
       expect(formatSimplifiedPath("A/B/C/D/E")).toBe("A / ... / D / E");
     });
-    
+
     it("should handle empty strings", () => {
-        expect(formatSimplifiedPath("")).toBe("");
+      expect(formatSimplifiedPath("")).toBe("");
     });
   });
 });

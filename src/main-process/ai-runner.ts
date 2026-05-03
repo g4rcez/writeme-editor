@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from "node:child_process";
-import { webContents } from "electron";
 
 export class AIRunner {
   private static activeProcess: ChildProcess | null = null;

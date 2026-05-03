@@ -14,7 +14,7 @@ import { TextAlignCenterIcon } from "@phosphor-icons/react/dist/csr/TextAlignCen
 import { TextAlignLeftIcon } from "@phosphor-icons/react/dist/csr/TextAlignLeft";
 import { TextAlignRightIcon } from "@phosphor-icons/react/dist/csr/TextAlignRight";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const IMAGE_MIME_MAP: Record<string, string> = {
   png: "image/png",
@@ -34,6 +34,17 @@ const ImageView = (props: any) => {
   const width: string | null = node.attrs.width ?? null;
 
   const { loading, error, displaySrc } = useLocalAsset(src, IMAGE_MIME_MAP);
+
+  const [imgLoading, setImgLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgLoading(true);
+    setImgError(false);
+  }, [displaySrc]);
+
+  const isLoading = loading || imgLoading;
+  const isError = error || imgError;
 
   useEffect(() => {
     if (!selected) return;
@@ -98,7 +109,7 @@ const ImageView = (props: any) => {
         className="inline-block relative mx-auto"
         style={width ? { width } : undefined}
       >
-        {loading && !error && (
+        {isLoading && !isError && (
           <div className="flex absolute inset-0 justify-center items-center rounded bg-muted/30">
             <CircleNotchIcon
               size={24}
@@ -106,23 +117,22 @@ const ImageView = (props: any) => {
             />
           </div>
         )}
-        {error && (
+        {isError && (
           <div className="flex flex-col gap-2 justify-center items-center p-8 rounded bg-muted/30 text-muted-foreground">
             <ImageBrokenIcon size={32} />
             <span className="text-sm">Failed to load image</span>
           </div>
         )}
-        {!error && displaySrc && (
+        {!isError && displaySrc && (
           <img
             src={displaySrc}
             alt={alt}
-            className={`block w-full rounded cursor-pointer ${loading ? "opacity-0" : "opacity-100"}`}
-            onLoad={() => setLoading(false)}
+            className={`block w-full rounded cursor-pointer ${isLoading ? "opacity-0" : "opacity-100"}`}
+            onLoad={() => setImgLoading(false)}
             onError={() => {
-              // Only trigger error if we actually had a valid-looking source
               if (displaySrc) {
-                setLoading(false);
-                setError(true);
+                setImgLoading(false);
+                setImgError(true);
               }
             }}
             onClick={handleOpenPreview}
@@ -130,7 +140,7 @@ const ImageView = (props: any) => {
         )}
 
         {/* Unified toolbar — top right */}
-        {!error && !loading && (
+        {!isError && !isLoading && (
           <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex bg-black/50">
             <button
               title="Align left"
@@ -172,7 +182,7 @@ const ImageView = (props: any) => {
         )}
 
         {/* Corner resize handles */}
-        {!error && !loading && (
+        {!isError && !isLoading && (
           <>
             <div
               className="flex absolute -top-1 -left-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 border-black/30 cursor-nwse-resize"

@@ -3,6 +3,15 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
+type CliMessage =
+  | {
+      action: "open-file";
+      filePath: string | null;
+      wait: boolean;
+      requestId: string;
+    }
+  | { action: "open-folder"; folderPath: string; requestId: string };
+
 type WaitEntry = { socket: net.Socket };
 
 const waitConnections = new Map<string, WaitEntry>();
@@ -38,12 +47,8 @@ export function startCliServer(mainWindow: BrowserWindow): void {
       const line = buffer.slice(0, nl);
       buffer = buffer.slice(nl + 1);
       try {
-        const msg = JSON.parse(line) as {
-          filePath: string | null;
-          wait: boolean;
-          requestId: string;
-        };
-        handleMessage(socket, msg);
+        const msg = JSON.parse(line) as CliMessage;
+        handleCliMessage(socket, msg);
       } catch {
         socket.end();
       }
@@ -61,27 +66,43 @@ export function startCliServer(mainWindow: BrowserWindow): void {
   });
 }
 
-function handleMessage(
-  socket: net.Socket,
-  msg: { filePath: string | null; wait: boolean; requestId: string },
-): void {
-  const { filePath, wait, requestId } = msg;
+function handleCliMessage(socket: net.Socket, msg: CliMessage): void {
+  if (msg.action === "open-file") {
+    const { filePath, wait, requestId } = msg;
 
-  if (!windowRef) {
-    socket.end();
-    return;
-  }
+    if (!windowRef) {
+      socket.end();
+      return;
+    }
 
-  windowRef.show();
-  windowRef.focus();
+    windowRef.show();
+    windowRef.focus();
 
-  if (filePath) {
-    windowRef.webContents.send("app:open-file", { filePath, wait, requestId });
-  }
+    if (filePath) {
+      windowRef.webContents.send("app:open-file", {
+        filePath,
+        wait,
+        requestId,
+      });
+    }
 
-  if (wait && filePath) {
-    waitConnections.set(requestId, { socket });
-  } else {
+    if (wait && filePath) {
+      waitConnections.set(requestId, { socket });
+    } else {
+      socket.write(JSON.stringify({ status: "opened" }) + "\n");
+      socket.end();
+    }
+  } else if (msg.action === "open-folder") {
+    if (!windowRef) {
+      socket.write(
+        JSON.stringify({ status: "error", message: "no window" }) + "\n",
+      );
+      socket.end();
+      return;
+    }
+    windowRef.webContents.send("app:open-folder", {
+      folderPath: msg.folderPath,
+    });
     socket.write(JSON.stringify({ status: "opened" }) + "\n");
     socket.end();
   }

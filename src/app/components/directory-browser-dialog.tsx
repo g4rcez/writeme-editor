@@ -5,7 +5,7 @@ import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
 import { TreeStructureIcon } from "@phosphor-icons/react/dist/csr/TreeStructure";
 import { useCallback, useEffect, useState } from "react";
 import { getDirname } from "@/lib/file-utils";
-import { globalState, useGlobalStore } from "@/store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
@@ -14,7 +14,7 @@ import { TreeView } from "./tree-view";
 
 export const DirectoryBrowserDialog = () => {
   const [state, dispatch] = useGlobalStore();
-    const map = new Map(state.notes.map((x) => [x.filePath!, x]));
+  const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const [, uiDispatch] = useUIStore();
   const [storageDir, setStorageDir] = useState<string | null>(null);
   const [focusedNode, setFocusedNode] = useState<TreeNode | null>(null);

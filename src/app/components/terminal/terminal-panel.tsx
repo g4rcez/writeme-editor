@@ -37,9 +37,9 @@ export const TerminalPanel = () => {
     term.loadAddon(fitAddon);
     term.loadAddon(searchAddon);
     term.loadAddon(new WebLinksAddon());
-    
+
     term.open(terminalRef.current);
-    
+
     try {
       term.loadAddon(new WebglAddon());
     } catch (e) {

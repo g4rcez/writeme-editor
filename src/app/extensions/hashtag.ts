@@ -69,7 +69,7 @@ export const Hashtag = Extension.create({
           init(_, { doc }) {
             return findHashtags(doc).decorations;
           },
-          apply(tr, old, oldState, newState) {
+          apply(tr, old, _oldState, newState) {
             if (tr.docChanged) {
               const { decorations, tags } = findHashtags(newState.doc);
 

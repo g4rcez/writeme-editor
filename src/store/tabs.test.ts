@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useGlobalStore } from "./global.store";
-import { repositories } from "./repositories";
 
 // Mock repositories
 vi.mock("./repositories", () => ({
@@ -24,44 +23,23 @@ Object.defineProperty(document.documentElement, "classList", {
 });
 
 describe("Tab Management Logic", () => {
-  let state: any;
-  let dispatch: any;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset store state
-    const store = useGlobalStore.dispatchers.init([], []);
-    state = store;
-    dispatch = useGlobalStore.dispatchers;
-  });
-
-  const mockNote = (id: string) => ({
-    id,
-    title: `Note ${id}`,
-    content: "",
-    updatedAt: new Date(),
-    createdAt: new Date(),
-    tags: [],
-    noteType: "note",
+    useGlobalStore.dispatchers.init([], []);
   });
 
   it("should create a tab using noteId as id", async () => {
-    const note = mockNote("note-1");
     // Manually set initial state for test context if needed,
     // but here we rely on the reducer's return value
-
     // We need to simulate the state that 'addTab' reads from 'get.state()'
     // Since we can't easily mock the internal 'get' of use-typed-reducer in this setup without a render loop,
     // we will test the logic by invoking the dispatcher and checking the result object it returns.
-
     // Note: The actual implementation of useGlobalStore uses `get.state()` inside.
     // In a unit test without a component, `useGlobalStore.dispatchers` might not have access to the updated state
     // unless we mock the hook mechanism or the state getter.
     // However, for the purpose of verifying the logic structure we refactored:
-
     // Let's verify the `createTab` logic indirectly via `selectOrAddTab` if possible,
     // or acknowledge that integration tests might be better for this hook-based store.
-
     // Ideally, we should unit test the pure functions if they were extracted.
     // Given the constraints, we will verify the `activeTabId` behavior which we normalized.
   });

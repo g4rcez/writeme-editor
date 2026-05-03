@@ -84,7 +84,7 @@ describe("handleMediaFile", () => {
     vi.clearAllMocks();
     mockEditor = {
       state: {
-        selection: { anchor: 0 }
+        selection: { anchor: 0 },
       },
       chain: vi.fn().mockReturnValue({
         insertContentAt: vi.fn().mockReturnValue({
@@ -107,7 +107,7 @@ describe("handleMediaFile", () => {
       directory: "/mock/project",
       note: { title: "Test Note" },
     });
-    
+
     (isElectron as any).mockReturnValue(true);
 
     class MockFileReader {
@@ -123,21 +123,23 @@ describe("handleMediaFile", () => {
   it("should handle image file and insert image node", async () => {
     const file = new File([""], "test.png", { type: "image/png" });
     await handleMediaFile(mockEditor, file);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mockEditor.chain().insertContentAt).toHaveBeenCalledWith(
       0,
       expect.objectContaining({
         type: "image",
-        attrs: expect.objectContaining({ src: expect.stringContaining("assets/test_note/") })
-      })
+        attrs: expect.objectContaining({
+          src: expect.stringContaining("assets/test_note/"),
+        }),
+      }),
     );
   });
 
   it("should handle video file and insert video node", async () => {
     const file = new File([""], "test.mp4", { type: "video/mp4" });
     await handleMediaFile(mockEditor, file);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mockEditor.chain().insertContentAt).toHaveBeenCalledWith(
       0,
@@ -145,16 +147,16 @@ describe("handleMediaFile", () => {
         type: "video",
         attrs: expect.objectContaining({
           src: expect.stringContaining("assets/test_note/"),
-          title: "test.mp4"
-        })
-      })
+          title: "test.mp4",
+        }),
+      }),
     );
   });
 
   it("should handle pdf file and insert pdf node", async () => {
     const file = new File([""], "test.pdf", { type: "application/pdf" });
     await handleMediaFile(mockEditor, file);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mockEditor.chain().insertContentAt).toHaveBeenCalledWith(
       0,
@@ -162,9 +164,9 @@ describe("handleMediaFile", () => {
         type: "pdf",
         attrs: expect.objectContaining({
           src: expect.stringContaining("assets/test_note/"),
-          title: "test.pdf"
-        })
-      })
+          title: "test.pdf",
+        }),
+      }),
     );
   });
 });

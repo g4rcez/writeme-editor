@@ -21,7 +21,8 @@ const MARKDOWN_PATTERNS = {
   // Bold: **text** or __text__
   bold: /\*\*[^*]+\*\*|__[^_]+__/,
   // Italic: *text* or _text_ (but not inside words)
-  italic: /(?:^|[^*])\*[^*\s][^*]*\*(?:[^*]|$)|(?:^|[^_])_[^_\s][^_]*_(?:[^_]|$)/,
+  italic:
+    /(?:^|[^*])\*[^*\s][^*]*\*(?:[^*]|$)|(?:^|[^_])_[^_\s][^_]*_(?:[^_]|$)/,
   // Strikethrough: ~~text~~
   strikethrough: /~~[^~]+~~/,
   // Blockquotes: > text
@@ -89,12 +90,19 @@ export function detectMarkdown(text: string): boolean {
       matchCount++;
       // Return early if we have enough matches
       if (matchCount >= 2) {
-        console.log("[markdown-detect] Match count threshold reached:", matchCount);
+        console.log(
+          "[markdown-detect] Match count threshold reached:",
+          matchCount,
+        );
         return true;
       }
     }
   }
 
-  console.log("[markdown-detect] Final match count:", matchCount, "- not markdown");
+  console.log(
+    "[markdown-detect] Final match count:",
+    matchCount,
+    "- not markdown",
+  );
   return false;
 }

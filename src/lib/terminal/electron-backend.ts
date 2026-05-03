@@ -8,18 +8,22 @@ export class ElectronTerminalBackend implements ITerminalBackend {
   start(cwd?: string | null): void {
     this.ptyId = Math.random().toString(36).substring(2, 15);
     if (window.electronAPI && window.electronAPI.terminal) {
-      this.removeListener = window.electronAPI.terminal.onData((data: { id: string; data: string }) => {
-        if (data.id === this.ptyId && this.onDataCallback) {
-          this.onDataCallback(data.data);
-        }
-      });
+      this.removeListener = window.electronAPI.terminal.onData(
+        (data: { id: string; data: string }) => {
+          if (data.id === this.ptyId && this.onDataCallback) {
+            this.onDataCallback(data.data);
+          }
+        },
+      );
 
       // Spawn the pty
       window.electronAPI.terminal.spawn(this.ptyId, cwd || undefined);
     } else {
       console.error("Electron API for terminal not available");
       if (this.onDataCallback) {
-        this.onDataCallback("\r\n\x1b[31mError: Terminal IPC not available\x1b[0m\r\n");
+        this.onDataCallback(
+          "\r\n\x1b[31mError: Terminal IPC not available\x1b[0m\r\n",
+        );
       }
     }
   }

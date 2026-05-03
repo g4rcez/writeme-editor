@@ -74,6 +74,13 @@ export const RootLayout = () => {
     );
   }, []);
 
+  useEffect(() => {
+    if (!isElectron()) return;
+    return window.electronAPI.onOpenFolder(({ folderPath }) => {
+      window.electronAPI.app.openFolder(folderPath);
+    });
+  }, []);
+
   // Detect tab removal and signal --wait callers
   useEffect(() => {
     if (!isElectron()) return;

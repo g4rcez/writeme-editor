@@ -8,7 +8,10 @@ export const LatexBlock = ({ code }: { code: string }) => {
   useEffect(() => {
     if (!containerRef.current) return;
     try {
-      katex.render(code, containerRef.current, { displayMode: true, throwOnError: false });
+      katex.render(code, containerRef.current, {
+        displayMode: true,
+        throwOnError: false,
+      });
     } catch (err) {
       console.error("KaTeX render error:", err);
     }

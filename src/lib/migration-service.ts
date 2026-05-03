@@ -73,10 +73,7 @@ export class MigrationService {
    */
   static async migrateNote(note: any, directory: string): Promise<void> {
     // Generate file path
-    const filePath = generateNotePath(
-      directory,
-      note.title,
-    );
+    const filePath = generateNotePath(directory, note.title);
 
     // Get unique path (handle duplicates)
     const uniquePath = await getUniqueFilePath(filePath, async (path) => {
@@ -100,7 +97,7 @@ export class MigrationService {
       filePath: uniquePath,
       fileSize: writeResult.fileSize,
       lastSynced: new Date(writeResult.lastModified),
-      content: undefined
+      content: undefined,
     };
     // @ts-ignore
     await repositories.notes.update(note.id, updatedNote);

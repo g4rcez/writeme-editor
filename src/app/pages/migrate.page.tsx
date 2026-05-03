@@ -26,20 +26,25 @@ export default function MigratePage() {
       {status === "sending" && (
         <div className="space-y-2">
           <p className="text-lg font-medium">Sending your data...</p>
-          <p className="text-sm text-muted-foreground">Please wait while your notes are transferred.</p>
+          <p className="text-sm text-muted-foreground">
+            Please wait while your notes are transferred.
+          </p>
         </div>
       )}
       {status === "done" && (
         <div className="space-y-2">
           <p className="text-lg font-medium text-green-600">Done!</p>
-          <p className="text-sm text-muted-foreground">Your data has been sent. You can close this window.</p>
+          <p className="text-sm text-muted-foreground">
+            Your data has been sent. You can close this window.
+          </p>
         </div>
       )}
       {status === "no-opener" && (
         <div className="space-y-2">
           <p className="text-lg font-medium text-red-600">Migration Error</p>
           <p className="text-sm text-muted-foreground">
-            This page must be opened from <strong>app.writeme.dev</strong> using the migration button, not visited directly.
+            This page must be opened from <strong>app.writeme.dev</strong> using
+            the migration button, not visited directly.
           </p>
         </div>
       )}

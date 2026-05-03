@@ -1,5 +1,4 @@
 import { Modal, Button } from "@g4rcez/components";
-import { QuestionIcon } from "@phosphor-icons/react/dist/csr/Question";
 
 interface ConfirmProps {
   title?: string;

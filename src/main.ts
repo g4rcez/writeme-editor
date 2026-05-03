@@ -27,6 +27,7 @@ import {
   createMathNoteWindow,
   createQuickNoteWindow,
 } from "./main-process/quicknote-window";
+import { createFolderWindow } from "./main-process/folder-window";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import {
   notifyFileClosed,
@@ -311,6 +312,14 @@ async function main() {
     return true;
   });
 
+  ipcMain.handle(
+    "app:open-folder",
+    (_, { folderPath }: { folderPath: string }) => {
+      createFolderWindow(preload, folderPath);
+      return true;
+    },
+  );
+
   startProxyServer();
 
   const preload = path.join(__dirname, "preload.js");
@@ -386,6 +395,20 @@ async function main() {
     if (process.env.NODE_ENV === "development") {
       mainWindow.webContents.openDevTools();
     }
+    mainWindow.webContents.on(
+      "console-message",
+      (_, level, message, line, sourceId) => {
+        if (level >= 2)
+          console.error(`[renderer] ${sourceId}:${line} ${message}`);
+      },
+    );
+    mainWindow.webContents.on("render-process-gone", (_, details) => {
+      console.error(
+        "[renderer] process gone:",
+        details.reason,
+        details.exitCode,
+      );
+    });
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
       if (url.startsWith("http:") || url.startsWith("https:")) {
         shell.openExternal(url);

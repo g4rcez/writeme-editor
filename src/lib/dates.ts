@@ -1,4 +1,4 @@
-import { format, isValid } from "date-fns";
+import { add, differenceInCalendarDays, format, isValid, sub } from "date-fns";
 import { parse as chronoParse } from "chrono-node";
 
 const timezoneMap: Record<string, string> = {
@@ -662,6 +662,121 @@ const resolveLocation = (location: string): string | null => {
   return location;
 };
 
+type DurationKey =
+  | "years"
+  | "months"
+  | "weeks"
+  | "days"
+  | "hours"
+  | "minutes"
+  | "seconds";
+
+const normalizeUnit = (
+  raw: string,
+): { unit: DurationKey; multiplier: number } => {
+  const u = raw.toLowerCase();
+  if (/decades?/.test(u)) return { unit: "years", multiplier: 10 };
+  if (/centur(y|ies)/.test(u)) return { unit: "years", multiplier: 100 };
+  if (/quarters?/.test(u)) return { unit: "months", multiplier: 3 };
+  if (/^days?$/.test(u)) return { unit: "days", multiplier: 1 };
+  if (/^weeks?$/.test(u)) return { unit: "weeks", multiplier: 1 };
+  if (/^months?$/.test(u)) return { unit: "months", multiplier: 1 };
+  if (/^years?$/.test(u)) return { unit: "years", multiplier: 1 };
+  if (/^hours?$/.test(u)) return { unit: "hours", multiplier: 1 };
+  if (/^minutes?$/.test(u)) return { unit: "minutes", multiplier: 1 };
+  if (/^seconds?$/.test(u)) return { unit: "seconds", multiplier: 1 };
+  return { unit: "days", multiplier: 1 };
+};
+
+const UNIT_PATTERN =
+  "milliseconds?|seconds?|minutes?|hours?|days?|weeks?|months?|quarters?|years?|decades?|centur(?:y|ies)";
+
+const DATE_BASE_RE = new RegExp(
+  `^(today|tomorrow|yesterday|now)((?:\\s*[+-]\\s*\\d+\\s*(?:${UNIT_PATTERN}))+)?$`,
+  "i",
+);
+
+const DATE_OP_RE = new RegExp(`([+-])\\s*(\\d+)\\s*(${UNIT_PATTERN})`, "gi");
+
+const DATE_AGO_RE = new RegExp(`^(\\d+)\\s+(${UNIT_PATTERN})\\s+ago$`, "i");
+
+const DATE_REL_RE = new RegExp(
+  `^(\\d+)\\s+(${UNIT_PATTERN})((?:\\s*[+-]\\s*\\d+(?:\\s+(?:${UNIT_PATTERN}))?)+)$`,
+  "i",
+);
+
+const DATE_REL_OP_RE = new RegExp(
+  `([+-])\\s*(\\d+)(?:\\s+(${UNIT_PATTERN}))?`,
+  "gi",
+);
+
+const EPOCH_MS_THRESHOLD = 1e12;
+
+type UnitInfo = { unit: DurationKey; multiplier: number };
+
+const applyOps = (
+  date: Date,
+  source: string,
+  re: RegExp,
+  defaultUnit?: UnitInfo,
+): Date => {
+  let result = date;
+  for (const op of source.matchAll(re)) {
+    const sign = op[1];
+    const amount = parseInt(op[2]!, 10);
+    const u = op[3] ? normalizeUnit(op[3]!) : defaultUnit;
+    if (!u) continue;
+    const duration = { [u.unit]: amount * u.multiplier };
+    result = sign === "+" ? add(result, duration) : sub(result, duration);
+  }
+  return result;
+};
+
+const tryAgo = (trimmed: string): string | null => {
+  const m = trimmed.match(DATE_AGO_RE);
+  if (!m) return null;
+  const amount = parseInt(m[1]!, 10);
+  const { unit, multiplier } = normalizeUnit(m[2]!);
+  return format(sub(new Date(), { [unit]: amount * multiplier }), "yyyy-MM-dd");
+};
+
+const tryRelative = (trimmed: string): string | null => {
+  const m = trimmed.match(DATE_REL_RE);
+  if (!m) return null;
+  const baseAmount = parseInt(m[1]!, 10);
+  const baseUnit = normalizeUnit(m[2]!);
+  const seed = add(new Date(), {
+    [baseUnit.unit]: baseAmount * baseUnit.multiplier,
+  });
+  return format(applyOps(seed, m[3]!, DATE_REL_OP_RE, baseUnit), "yyyy-MM-dd");
+};
+
+const tryAnchored = (trimmed: string): string | null => {
+  if (!DATE_BASE_RE.test(trimmed)) return null;
+  const baseMatch = trimmed.match(/^(today|tomorrow|yesterday|now)/i);
+  if (!baseMatch) return null;
+  const baseWord = baseMatch[1]!.toLowerCase();
+  let seed = new Date();
+  if (baseWord === "tomorrow") seed = add(seed, { days: 1 });
+  else if (baseWord === "yesterday") seed = sub(seed, { days: 1 });
+  return format(
+    applyOps(seed, trimmed.slice(baseWord.length), DATE_OP_RE),
+    "yyyy-MM-dd",
+  );
+};
+
+const parseTimePart = (timePart: string): Date | null => {
+  if (/^now$/i.test(timePart)) return new Date();
+  const results = chronoParse(timePart);
+  if (results.length === 0) return null;
+  const result = results[0]!;
+  const knownHour = (
+    result.start as unknown as { knownValues: { hour?: number } }
+  ).knownValues.hour;
+  if (knownHour === undefined) return null;
+  return result.start.date();
+};
+
 export const Dates = {
   valid: isValid,
   isoDate: (d: Date) => format(d, "yyyy-MM-dd"),
@@ -674,7 +789,7 @@ export const Dates = {
     if (!match) return null;
     const raw = Number(match[1]);
     if (!Number.isFinite(raw) || raw < 0) return null;
-    const ms = raw > 1e12 ? raw : raw * 1000;
+    const ms = raw > EPOCH_MS_THRESHOLD ? raw : raw * 1000;
     const date = new Date(ms);
     if (!isValid(date)) return null;
     return date
@@ -686,20 +801,10 @@ export const Dates = {
     const match = expr.match(/^(.+?)\s+(?:in|to)\s+(.+)$/i);
     if (!match) return null;
     const timePart = match[1]!.trim();
-    const locationRaw = match[2]!.trim();
-    const targetIANA = resolveLocation(locationRaw);
+    const targetIANA = resolveLocation(match[2]!.trim());
     if (!targetIANA) return null;
     try {
-      const date = /^now$/i.test(timePart)
-        ? new Date()
-        : (() => {
-            const results = chronoParse(timePart);
-            if (results.length === 0) return null;
-            const result = results[0]!;
-            if ((result.start as any).knownValues.hour === undefined)
-              return null;
-            return result.start.date();
-          })();
+      const date = parseTimePart(timePart);
       if (!date) return null;
       return new Intl.DateTimeFormat(undefined, {
         timeZone: targetIANA,
@@ -711,5 +816,37 @@ export const Dates = {
     } catch {
       return null;
     }
+  },
+  evaluateDaysUntil: (expr: string): string | null => {
+    const match = expr
+      .trim()
+      .match(/^days?\s+(until|till|before|since|after)\s+(.+)$/i);
+    if (!match) return null;
+    const direction = match[1]!.toLowerCase();
+    const dateStr = match[2]!.trim();
+    const parsed = chronoParse(dateStr);
+    if (parsed.length === 0) return null;
+    const result = parsed[0]!;
+    let target = result.start.date();
+    if (!isValid(target)) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isFuture = /until|till|before/.test(direction);
+    if (isFuture && target < today && !result.start.isCertain("year")) {
+      target = add(target, { years: 1 });
+    }
+    const diff = isFuture
+      ? differenceInCalendarDays(target, today)
+      : differenceInCalendarDays(today, target);
+    return diff === 1 || diff === -1 ? `${diff} day` : `${diff} days`;
+  },
+  evaluateNatural: (expr: string): string | null =>
+    Dates.evaluateDaysUntil(expr) ??
+    Dates.evaluateDateArithmetic(expr) ??
+    Dates.evaluateEpoch(expr) ??
+    Dates.evaluateTimezone(expr),
+  evaluateDateArithmetic: (expr: string): string | null => {
+    const trimmed = expr.trim();
+    return tryAgo(trimmed) ?? tryRelative(trimmed) ?? tryAnchored(trimmed);
   },
 };

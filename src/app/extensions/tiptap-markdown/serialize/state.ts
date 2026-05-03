@@ -13,7 +13,7 @@ export class MarkdownSerializerState extends BaseMarkdownSerializerState {
     this.inlines = [];
   }
 
-  render(node, parent, index) {
+  override render(node, parent, index) {
     super.render(node, parent, index);
     const top = this.inlines[this.inlines.length - 1];
     if (top?.start && top?.end) {
@@ -23,7 +23,7 @@ export class MarkdownSerializerState extends BaseMarkdownSerializerState {
     }
   }
 
-  markString(mark, open, parent, index) {
+  override markString(mark, open, parent, index) {
     const info = this.marks[mark.type.name];
     if (info.expelEnclosingWhitespace) {
       if (open) {
@@ -43,7 +43,7 @@ export class MarkdownSerializerState extends BaseMarkdownSerializerState {
   }
 
   normalizeInline(inline) {
-    let { start, end } = inline;
+    let { start } = inline;
     while (this.out.charAt(start).match(/\s/)) {
       start++;
     }

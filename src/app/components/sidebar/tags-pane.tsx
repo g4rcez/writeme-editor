@@ -61,10 +61,11 @@ export const TagsPane = () => {
               <button
                 key={tag}
                 onClick={() => onTagClick(tag)}
-                className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${activeView.type === "tag" && activeView.id === tag
+                className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
+                  activeView.type === "tag" && activeView.id === tag
                     ? "bg-primary/10 text-primary font-medium"
                     : "hover:bg-muted/50 hover:text-foreground"
-                  }`}
+                }`}
               >
                 <HashIcon className="opacity-60 size-3.5" />
                 <span className="flex-1 text-left truncate">{tag}</span>

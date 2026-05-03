@@ -16,31 +16,39 @@ vi.mock("@/store/global.store", () => ({
 // to avoid the JSON import issue in sub-dependencies
 const handlePasteImage = async (currentEditor: any) => {
   if (!isElectron()) return false;
-  
+
   const imageData = await window.electronAPI.notes.clipboardImage();
   if (!imageData) return false;
 
   const state = globalState();
   const projectDir = state.directory;
   const noteTitle = state.note?.title || "untitled";
-  
+
   if (!projectDir) return false;
 
   const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
   const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
-  
+
   try {
     await window.electronAPI.fs.mkdir(targetDir);
     const dirContents = await window.electronAPI.fs.readDir(targetDir);
-    const index = dirContents.entries.filter((e: any) => e.type === "file").length + 1;
-    
+    const index =
+      dirContents.entries.filter((e: any) => e.type === "file").length + 1;
+
     const filename = `${index}.png`;
     const absolutePath = `${targetDir}/${filename}`;
-    
-    const result = await window.electronAPI.fs.writeImage(absolutePath, imageData);
+
+    const result = await window.electronAPI.fs.writeImage(
+      absolutePath,
+      imageData,
+    );
     if (result.success) {
       const src = `assets/${sanitizedTitle}/${filename}`;
-      currentEditor.chain().insertContent({ type: "image", attrs: { src } }).focus().run();
+      currentEditor
+        .chain()
+        .insertContent({ type: "image", attrs: { src } })
+        .focus()
+        .run();
       return true;
     }
   } catch (e) {
@@ -67,7 +75,9 @@ describe("handlePasteImage", () => {
     // Setup default electronAPI mocks
     (window as any).electronAPI = {
       notes: {
-        clipboardImage: vi.fn().mockResolvedValue("data:image/png;base64,mockData"),
+        clipboardImage: vi
+          .fn()
+          .mockResolvedValue("data:image/png;base64,mockData"),
       },
       fs: {
         mkdir: vi.fn().mockResolvedValue({ success: true }),
@@ -80,7 +90,7 @@ describe("handlePasteImage", () => {
       directory: "/mock/project",
       note: { title: "Test Note" },
     });
-    
+
     (isElectron as any).mockReturnValue(true);
   });
 
@@ -89,10 +99,12 @@ describe("handlePasteImage", () => {
 
     expect(result).toBe(true);
     expect(window.electronAPI.notes.clipboardImage).toHaveBeenCalled();
-    expect(window.electronAPI.fs.mkdir).toHaveBeenCalledWith("/mock/project/assets/test_note");
+    expect(window.electronAPI.fs.mkdir).toHaveBeenCalledWith(
+      "/mock/project/assets/test_note",
+    );
     expect(window.electronAPI.fs.writeImage).toHaveBeenCalledWith(
       "/mock/project/assets/test_note/1.png",
-      "data:image/png;base64,mockData"
+      "data:image/png;base64,mockData",
     );
     expect(mockEditor.chain).toHaveBeenCalled();
   });
@@ -123,7 +135,7 @@ describe("handlePasteImage", () => {
 
     expect(window.electronAPI.fs.writeImage).toHaveBeenCalledWith(
       "/mock/project/assets/test_note/3.png",
-      expect.any(String)
+      expect.any(String),
     );
   });
 });

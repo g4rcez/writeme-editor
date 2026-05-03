@@ -46,7 +46,6 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
   for (let i = 0; i < len; i += 4) {
     const encoded1 = B64_LOOKUP[str.charCodeAt(i)];
     const encoded2 = B64_LOOKUP[str.charCodeAt(i + 1)];
-    const encoded3 = i + 2 < len ? B64_LOOKUP[str.charCodeAt(i + 2)] : 64; // 64 is sentinel, effectively 0 but handled by logic?
     const b1 = encoded1;
     const b2 = encoded2;
     const b3 = i + 2 < len ? B64_LOOKUP[str.charCodeAt(i + 2)] : 0;
@@ -113,9 +112,8 @@ export const getUrlNamespace = (namespace: string) =>
 export const innerUrl = (path: string, namespace: string) =>
   join(getUrlNamespace(namespace), path);
 
-    export const sanitizeAnsi = (text: string) =>
-    text
-      .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
-      .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-
+export const sanitizeAnsi = (text: string) =>
+  text
+    .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
+    .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");

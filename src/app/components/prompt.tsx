@@ -45,7 +45,12 @@ export const Prompt = ({
           className="w-full"
         />
         <div className="flex gap-2 w-full mt-4">
-          <Button theme="muted" type="button" onClick={onCancel} className="flex-1">
+          <Button
+            theme="muted"
+            type="button"
+            onClick={onCancel}
+            className="flex-1"
+          >
             Cancel
           </Button>
           <Button theme="primary" type="submit" className="flex-1">

@@ -1,102 +1,153 @@
-import { create, all, format } from "mathjs";
-import { useId, useMemo, useState, useEffect } from "react";
-import { fetchExchangeRates, type ExchangeRateData } from "../../lib/currency";
-import { Dates } from "../../lib/dates";
-import { preprocessRule3 } from "@/lib/rule-of-three";
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchExchangeRates,
+  getCachedRates,
+  setCachedRates,
+  type ExchangeRateData,
+} from "@/lib/currency";
+import { evaluateCode, type EvaluatedResult } from "@/lib/math-block";
 
-const expressionImprovements = (expr: string): string =>
-  expr
-    .replace(/^\/\/.*/, "")
-    .replace(/\*\*/g, "^")
-    .replace(/(fatorial)/g, "! ")
-    .replace(/([\d., ]+)" /g, "$1inches ")
-    .replace(/([\d., ]+)(C|°C|°c) /g, "$1celsius ")
-    .replace(/([\d., ]+)(F|°F|°f) /g, "$1fahrenheit ")
-    .replace(/([\d., ]+)(K|°K|°k) /g, "$1kelvin ")
-    .replace(/([\d.,]+) ?percent of /g, "$1% ")
-    .replace(/to (F|°F|°f)/g, "to fahrenheit ")
-    .replace(/to (K|°K|°k)/g, "to kelvin ")
-    .replace(/to (C|°C|°c)/g, "to celsius ");
+const ResultCell = ({
+  result,
+  prefix = "",
+  bold,
+}: {
+  result: EvaluatedResult;
+  prefix?: string;
+  bold?: boolean;
+}) => {
+  if (!result.ok) {
+    return <span className="text-destructive text-xs">{result.message}</span>;
+  }
+  return (
+    <span className={bold ? "text-primary font-bold" : "text-primary"}>
+      {prefix}
+      {result.value}
+    </span>
+  );
+};
 
-const MathEvaluate = (props: { code: string }) => {
-  const id = useId();
-  const [ratesData, setRatesData] = useState<ExchangeRateData | null>(null);
+const EmptyLine = () => <li className="h-6 list-none" />;
+
+const HeaderLine = ({ text }: { text: string }) => (
+  <li className="list-none items-center font-mono pt-2 text-xs uppercase tracking-wider text-muted-foreground">
+    {text}
+  </li>
+);
+
+const CommentLine = ({ text }: { text: string }) => (
+  <li className="list-none items-center font-mono italic opacity-50 text-muted-foreground">
+    {text}
+  </li>
+);
+
+const VariableLine = ({
+  name,
+  result,
+}: {
+  name: string;
+  result: EvaluatedResult;
+}) => (
+  <li className="flex gap-2 font-mono list-none items-center text-muted-foreground">
+    <span className="opacity-70">{name} =</span>
+    <ResultCell result={result} />
+  </li>
+);
+
+const LabelLine = ({
+  label,
+  result,
+}: {
+  label: string;
+  result: EvaluatedResult;
+}) => (
+  <li className="flex items-center gap-2 font-mono list-none">
+    <span>{label}</span>
+    <ResultCell result={result} />
+  </li>
+);
+
+const BareLine = ({
+  raw,
+  result,
+}: {
+  raw: string;
+  result: EvaluatedResult;
+}) => (
+  <li className="flex items-center gap-2 font-mono list-none">
+    <span>{raw}</span>
+    <ResultCell result={result} prefix="= " />
+  </li>
+);
+
+const TotalLine = ({
+  kind,
+  result,
+}: {
+  kind: "sum" | "avg";
+  result: EvaluatedResult;
+}) => (
+  <li className="flex gap-2 items-center font-mono list-none border-t border-card-border pt-1 mt-1">
+    <span className="text-xs uppercase tracking-wider text-muted-foreground">
+      {kind}
+    </span>
+    <ResultCell result={result} bold />
+  </li>
+);
+
+async function loadExchangeRates(base: string): Promise<ExchangeRateData> {
+  const cached = getCachedRates(base);
+  if (cached) return cached.data;
+  const data = await fetchExchangeRates(base);
+  setCachedRates(base, data);
+  return data;
+}
+
+export const MathBlock = (props: { code: string }) => {
+  const [ratesData, setRatesData] = useState<ExchangeRateData | null>(
+    () => getCachedRates("EUR")?.data ?? null,
+  );
 
   useEffect(() => {
-    fetchExchangeRates("EUR")
+    loadExchangeRates("EUR")
       .then(setRatesData)
       .catch((e) => console.error("Failed to fetch rates for MathBlock", e));
   }, []);
 
-  const expressions = useMemo(() => {
-    const math = create(all);
-    if (ratesData) {
-      try {
-        math.createUnit("EUR");
-      } catch (e) {}
-      Object.entries(ratesData.rates).forEach(([code, rate]) => {
-        if (code !== "EUR") {
-          try {
-            math.createUnit(code, math.unit(1 / rate, "EUR"));
-          } catch (e) {}
-        }
-      });
-    }
-    const lines = props.code.split("\n");
-    const parser = math.parser();
-    return lines.map((x) => {
-      const expr = x.trim();
-      if (x.startsWith("//") || expr === "") {
-        return [];
-      }
-      try {
-        const epochResult = Dates.evaluateEpoch(expr);
-        if (epochResult) return [x, epochResult];
-      } catch (e) {}
-      try {
-        const timezoneResult = Dates.evaluateTimezone(expr);
-        if (timezoneResult) {
-          return [x, timezoneResult];
-        }
-      } catch (e) {}
-      try {
-        const translated = expressionImprovements(preprocessRule3(expr));
-        const result = parser.evaluate(translated);
-        return [
-          x,
-          format(result, {
-            precision: 5,
-            notation: "auto",
-            fraction: "ratio",
-          }),
-        ];
-      } catch (e) {
-        return [];
-      }
-    });
-  }, [props.code, ratesData]);
-
-  return (
-    <ul className="list-none !list-outside !mx-0 flex flex-col gap-0">
-      {expressions.map(([expr, value], index) =>
-        !expr ? null : (
-          <li
-            key={`${id}-${expr}-${index}`}
-            className="flex gap-2 font-mono list-none"
-          >
-            {expr}
-            <span className="text-primary">= {value}</span>
-          </li>
-        ),
-      )}
-    </ul>
+  const evaluated = useMemo(
+    () => evaluateCode(props.code, ratesData),
+    [props.code, ratesData],
   );
-};
 
-export const MathBlock = (props: { code: string }) => {
   return (
     <div className="pt-4 font-mono border-t border-card-border">
-      <MathEvaluate code={props.code} />
+      <ul className="list-none list-outside mx-0 flex flex-col gap-0">
+        {evaluated.map((line, i) => {
+          switch (line.kind) {
+            case "empty":
+              return <EmptyLine key={i} />;
+            case "header":
+              return <HeaderLine key={i} text={line.text} />;
+            case "comment":
+              return <CommentLine key={i} text={line.text} />;
+            case "variable":
+              return (
+                <VariableLine key={i} name={line.name} result={line.result} />
+              );
+            case "label":
+              return (
+                <LabelLine key={i} label={line.label} result={line.result} />
+              );
+            case "bare":
+              return <BareLine key={i} raw={line.raw} result={line.result} />;
+            case "sum":
+            case "avg":
+              return (
+                <TotalLine key={i} kind={line.kind} result={line.result} />
+              );
+          }
+        })}
+      </ul>
     </div>
   );
 };

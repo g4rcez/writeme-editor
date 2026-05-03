@@ -1,7 +1,7 @@
 import { Button, Input, Modal } from "@g4rcez/components";
 import { Editor } from "@tiptap/core";
 import DOMPurify from "dompurify";
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isElectron } from "@/lib/is-electron";
 import { proxyFetch } from "@/lib/proxy-fetch";

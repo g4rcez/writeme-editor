@@ -20,7 +20,10 @@ export const MainLayout = () => {
           <TabsBar />
           <Group orientation="vertical">
             <Panel defaultSize={70} minSize={30}>
-              <div id="main-scroll-container" className="writeme-layout-scroll py-8">
+              <div
+                id="main-scroll-container"
+                className="writeme-layout-scroll py-8"
+              >
                 <Outlet />
               </div>
             </Panel>

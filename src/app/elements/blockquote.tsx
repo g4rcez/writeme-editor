@@ -49,19 +49,19 @@ export const Blockquote = Node.create<BlockquoteOptions>({
     return {
       setBlockquote:
         () =>
-          ({ commands }) => {
-            return commands.wrapIn(this.name);
-          },
+        ({ commands }) => {
+          return commands.wrapIn(this.name);
+        },
       toggleBlockquote:
         () =>
-          ({ commands }) => {
-            return commands.toggleWrap(this.name);
-          },
+        ({ commands }) => {
+          return commands.toggleWrap(this.name);
+        },
       unsetBlockquote:
         () =>
-          ({ commands }) => {
-            return commands.lift(this.name);
-          },
+        ({ commands }) => {
+          return commands.lift(this.name);
+        },
     };
   },
   addKeyboardShortcuts() {

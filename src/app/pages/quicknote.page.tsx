@@ -13,7 +13,9 @@ export default function QuickNotePage() {
     let ignored = false;
     async function request() {
       setLoading(true);
-      const existing = await repositories.notes.getQuicknoteByDate(startOfDay(new Date()));
+      const existing = await repositories.notes.getQuicknoteByDate(
+        startOfDay(new Date()),
+      );
       if (ignored) return;
       if (existing) {
         dispatch.note(existing);
@@ -26,7 +28,9 @@ export default function QuickNotePage() {
       setLoading(false);
     }
     request();
-    return () => { ignored = true; };
+    return () => {
+      ignored = true;
+    };
   }, []);
 
   useEffect(() => {

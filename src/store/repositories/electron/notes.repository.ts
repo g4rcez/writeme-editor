@@ -26,9 +26,11 @@ export class NotesRepository
 
     if (mode === "filesystem") {
       if (!item.filePath) {
-        const rootDir = item.noteType === "quick"
-          ? (settings.quicknotesDirectory ?? `${settings.directory!}/quicknotes`)
-          : settings.directory!;
+        const rootDir =
+          item.noteType === "quick"
+            ? (settings.quicknotesDirectory ??
+              `${settings.directory!}/quicknotes`)
+            : settings.directory!;
         const filePath = generateNotePath(rootDir, item.title);
         const uniquePath = await getUniqueFilePath(filePath, async (path) => {
           const result = await window.electronAPI.fs.statFile(path);
@@ -45,7 +47,9 @@ export class NotesRepository
         item.fileSize = writeResult.fileSize;
         item.lastSynced = new Date(writeResult.lastModified);
       } else {
-        item.fileSize = item.fileSize || (typeof item.content === "string" ? item.content.length : 0);
+        item.fileSize =
+          item.fileSize ||
+          (typeof item.content === "string" ? item.content.length : 0);
         item.lastSynced = item.lastSynced || new Date();
       }
       item.createdBy = settings.defaultAuthor;
@@ -212,9 +216,7 @@ export class NotesRepository
       );
     }
 
-    const parsed = filtered.map((note) =>
-      Note.parse({ ...note, content: "" }),
-    );
+    const parsed = filtered.map((note) => Note.parse({ ...note, content: "" }));
 
     if (limit) {
       return parsed.slice(0, limit);

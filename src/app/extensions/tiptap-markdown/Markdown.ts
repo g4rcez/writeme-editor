@@ -71,18 +71,29 @@ export const Markdown = Extension.create({
           if (typeof content !== "string") {
             try {
               const node = createNodeFromContent(content, editor.schema, {
-                parseOptions: { preserveWhitespace: "full", ...editor.options.parseOptions },
+                parseOptions: {
+                  preserveWhitespace: "full",
+                  ...editor.options.parseOptions,
+                },
               });
               if (dispatch) {
-                let from = typeof position === "number" ? position : position.from;
+                let from =
+                  typeof position === "number" ? position : position.from;
                 let to = typeof position === "number" ? position : position.to;
-                const nodes = node instanceof Fragment
-                  ? Array.from({ length: node.childCount }, (_, i) => node.child(i))
-                  : [node];
+                const nodes =
+                  node instanceof Fragment
+                    ? Array.from({ length: node.childCount }, (_, i) =>
+                        node.child(i),
+                      )
+                    : [node];
                 const isOnlyBlockContent = nodes.every((n) => n.isBlock);
                 if (from === to && isOnlyBlockContent) {
                   const { parent } = tr.doc.resolve(from);
-                  if (parent.isTextblock && !parent.type.spec.code && !parent.childCount) {
+                  if (
+                    parent.isTextblock &&
+                    !parent.type.spec.code &&
+                    !parent.childCount
+                  ) {
                     from -= 1;
                     to += 1;
                   }

@@ -16,7 +16,7 @@ export const darkTheme: typeof defaultDarkTheme = {
     "json-caret": "hsla(233, 23%, 44%)",
   },
   colors: {
-  ...defaultDarkTheme.colors,
+    ...defaultDarkTheme.colors,
     foreground: "hsla(220, 20%, 96%)",
     background: "hsla(221, 12%, 9%)",
     border: "hsla(220, 10%, 25%)",

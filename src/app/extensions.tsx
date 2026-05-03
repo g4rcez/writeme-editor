@@ -204,10 +204,9 @@ export const createExtensions = (
       },
       onPaste: (currentEditor, files, htmlContent) => {
         files.forEach((file, index) => {
-          if (htmlContent) {
-            return false;
+          if (!htmlContent) {
+            handleMediaFile(currentEditor, file, null, index);
           }
-          handleMediaFile(currentEditor, file, null, index);
         });
       },
     }),

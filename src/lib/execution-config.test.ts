@@ -19,7 +19,9 @@ describe("EXECUTION_CONFIG browser runtime", () => {
   it("should handle javascript errors in browser runtime", async () => {
     const config = EXECUTION_CONFIG.javascript;
     if (config?.browserRuntimeExec) {
-      const result = await config.browserRuntimeExec("throw new Error('test error')");
+      const result = await config.browserRuntimeExec(
+        "throw new Error('test error')",
+      );
       expect(result.stdout).toBe("");
       expect(result.stderr).toContain("Error: test error");
     }

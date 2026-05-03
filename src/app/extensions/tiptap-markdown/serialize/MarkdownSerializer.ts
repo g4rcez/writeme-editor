@@ -75,22 +75,22 @@ export class MarkdownSerializer {
     const serialize = getMarkdownSpec(mark)?.serialize;
     return serialize
       ? {
-        ...serialize,
-        open:
-          typeof serialize.open === "function"
-            ? serialize.open.bind({
-              editor: this.editor,
-              options: mark.options,
-            })
-            : serialize.open,
-        close:
-          typeof serialize.close === "function"
-            ? serialize.close.bind({
-              editor: this.editor,
-              options: mark.options,
-            })
-            : serialize.close,
-      }
+          ...serialize,
+          open:
+            typeof serialize.open === "function"
+              ? serialize.open.bind({
+                  editor: this.editor,
+                  options: mark.options,
+                })
+              : serialize.open,
+          close:
+            typeof serialize.close === "function"
+              ? serialize.close.bind({
+                  editor: this.editor,
+                  options: mark.options,
+                })
+              : serialize.close,
+        }
       : null;
   }
 }

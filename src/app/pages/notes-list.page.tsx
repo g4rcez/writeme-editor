@@ -6,7 +6,7 @@ import {
   Modal,
   Table,
   Tag,
-  type TagProps
+  type TagProps,
 } from "@g4rcez/components";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
@@ -43,7 +43,9 @@ function AddToGroupModal({
   onClose: () => void;
 }) {
   const [state, dispatch] = useGlobalStore();
-  const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(new Set());
+  const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     dispatch.loadGroups();
@@ -55,7 +57,9 @@ function AddToGroupModal({
       state.noteGroups
         .filter((group) =>
           noteIds.every((id) =>
-            state.noteGroupMembers.some((m) => m.noteId === id && m.groupId === group.id),
+            state.noteGroupMembers.some(
+              (m) => m.noteId === id && m.groupId === group.id,
+            ),
           ),
         )
         .map((g) => g.id),
@@ -76,7 +80,9 @@ function AddToGroupModal({
     for (const group of state.noteGroups) {
       const wantsIn = pendingGroupIds.has(group.id);
       const allCurrentlyIn = noteIds.every((id) =>
-        state.noteGroupMembers.some((m) => m.noteId === id && m.groupId === group.id),
+        state.noteGroupMembers.some(
+          (m) => m.noteId === id && m.groupId === group.id,
+        ),
       );
       if (wantsIn && !allCurrentlyIn) {
         for (const id of noteIds) {
@@ -121,8 +127,12 @@ function AddToGroupModal({
         </ul>
       )}
       <div className="flex gap-2 mt-4 w-full justify-end">
-        <Button theme="ghost-muted" onClick={onClose}>Cancel</Button>
-        <Button theme="primary" onClick={onConfirm}>Confirm</Button>
+        <Button theme="ghost-muted" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button theme="primary" onClick={onConfirm}>
+          Confirm
+        </Button>
       </div>
     </Modal>
   );

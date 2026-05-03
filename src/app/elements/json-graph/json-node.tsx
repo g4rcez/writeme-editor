@@ -50,7 +50,8 @@ export const JsonNode = ({ data }: any) => {
           ? "border-primary ring-2 ring-primary/20 z-50 shadow-lg scale-105"
           : isPathToMatch
             ? "border-primary/60 shadow-md shadow-primary/5"
-            : (typeBorderColors[type as keyof typeof typeBorderColors] || "border-card-border"),
+            : typeBorderColors[type as keyof typeof typeBorderColors] ||
+              "border-card-border",
         "hover:shadow-md group",
       )}
     >

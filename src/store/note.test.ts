@@ -13,7 +13,14 @@ describe("Note", () => {
   });
 
   it("should create a new read-it-later note", () => {
-    const note = Note.new("Article", "Content", "read-it-later", "https://example.com", "A description", "https://example.com/favicon.ico");
+    const note = Note.new(
+      "Article",
+      "Content",
+      "read-it-later",
+      "https://example.com",
+      "A description",
+      "https://example.com/favicon.ico",
+    );
     expect(note.title).toBe("Article");
     expect(note.content).toBe("Content");
     expect(note.noteType).toBe("read-it-later");

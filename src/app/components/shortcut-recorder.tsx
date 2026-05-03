@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { negate } from "@g4rcez/components";
 
 const KEY_DISPLAY_MAP: Record<string, string> = {
   " ": "Space",
@@ -109,7 +108,7 @@ export function ShortcutRecorder({ value, onChange }: Props) {
     <button
       ref={buttonRef}
       type="button"
-      onClick={() => setRecording(negate)}
+      onClick={() => setRecording((v) => !v)}
       onBlur={() => setRecording(false)}
       className={[
         "min-w-[120px] rounded border px-3 py-2 text-sm font-mono transition-all",

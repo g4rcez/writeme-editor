@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BaseRepository } from "../../../store/repositories/base.repository";
-import { StorageAdapter } from "../../../store/repositories/adapters/types";
-import { EntityBase } from "../../../store/repository";
+import type { StorageAdapter } from "../../../store/repositories/adapters/types";
+import type { EntityBase } from "../../../store/repository";
 
 interface MockEntity extends EntityBase {
   name: string;
@@ -36,7 +36,13 @@ describe("BaseRepository", () => {
   });
 
   it("should get one item", async () => {
-    const mockItem: MockEntity = { id: "1", name: "Test", type: "mock", createdAt: new Date(), updatedAt: new Date() };
+    const mockItem: MockEntity = {
+      id: "1",
+      name: "Test",
+      type: "mock",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     vi.mocked(adapter.get).mockResolvedValue(mockItem);
     const item = await repository.getOne("1");
     expect(item).toEqual(mockItem);
@@ -50,7 +56,15 @@ describe("BaseRepository", () => {
   });
 
   it("should get all items", async () => {
-    const mockItems: MockEntity[] = [{ id: "1", name: "Test", type: "mock", createdAt: new Date(), updatedAt: new Date() }];
+    const mockItems: MockEntity[] = [
+      {
+        id: "1",
+        name: "Test",
+        type: "mock",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
     vi.mocked(adapter.getAll).mockResolvedValue(mockItems);
     const items = await repository.getAll();
     expect(items).toEqual(mockItems);
@@ -58,7 +72,13 @@ describe("BaseRepository", () => {
   });
 
   it("should save an item", async () => {
-    const mockItem: MockEntity = { id: "1", name: "Test", type: "mock", createdAt: new Date(), updatedAt: new Date() };
+    const mockItem: MockEntity = {
+      id: "1",
+      name: "Test",
+      type: "mock",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     vi.mocked(adapter.save).mockResolvedValue(mockItem);
     const item = await repository.save(mockItem);
     expect(item).toEqual(mockItem);
@@ -66,18 +86,29 @@ describe("BaseRepository", () => {
   });
 
   it("should update an existing item", async () => {
-    const mockItem: MockEntity = { id: "1", name: "Updated", type: "mock", createdAt: new Date(), updatedAt: new Date() };
+    const mockItem: MockEntity = {
+      id: "1",
+      name: "Updated",
+      type: "mock",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     vi.mocked(adapter.get).mockResolvedValue(mockItem);
     vi.mocked(adapter.save).mockResolvedValue(mockItem);
-    
+
     const item = await repository.update("1", mockItem);
     expect(item).toEqual(mockItem);
-    expect(adapter.save).toHaveBeenCalledWith("test-collection", { ...mockItem, id: "1" });
+    expect(adapter.save).toHaveBeenCalledWith("test-collection", {
+      ...mockItem,
+      id: "1",
+    });
   });
 
   it("should throw error when updating non-existent item", async () => {
     vi.mocked(adapter.get).mockResolvedValue(null);
-    await expect(repository.update("1", {} as any)).rejects.toThrow("test-collection with id 1 not found");
+    await expect(repository.update("1", {} as any)).rejects.toThrow(
+      "test-collection with id 1 not found",
+    );
   });
 
   it("should delete an item", async () => {

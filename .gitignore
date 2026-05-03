@@ -96,3 +96,9 @@ dist/
 
 # act local CI secrets
 .act.secrets
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

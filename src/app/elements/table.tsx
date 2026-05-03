@@ -8,7 +8,7 @@ export const MarkdownTableInputRule = Extension.create({
       new InputRule({
         find: /\|(.+)\|\n\|[-:\s\|]+\|\n((?:\|.+\|\n?)*)/,
         handler: ({ state, range, match }) => {
-          const [fullMatch, headerRow, bodyRows] = match;
+          const [, headerRow, bodyRows] = match;
           const headers = headerRow
             .split("|")
             .map((h) => h.trim())

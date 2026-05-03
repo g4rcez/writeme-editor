@@ -130,18 +130,6 @@ export const AISettings = () => {
     await checkCredentials(id);
   };
 
-  const handleSaveApiKey = async () => {
-    if (!apiKey.trim()) return;
-    await repositories.ai.saveCredentials({ adapterId, apiKey: apiKey.trim() });
-    setApiKey("");
-    setCredentialStatus("connected");
-    uiDispatch.setAlert({
-      open: true,
-      message: "API key saved.",
-      type: "success",
-    });
-  };
-
   const handleTestConnection = async () => {
     if (!adapter) return;
     setTestStatus("testing");

@@ -31,6 +31,7 @@ const CalendarPage = lazy(() => import("./pages/calendar.page"));
 const ViewsListPage = lazy(() => import("./pages/views-list.page"));
 const ViewDetailPage = lazy(() => import("./pages/view-detail.page"));
 const OAuthCallbackPage = lazy(() => import("./pages/oauth-callback.page"));
+const FolderWorkspacePage = lazy(() => import("./pages/folder-workspace.page"));
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -118,6 +119,10 @@ export const router = createRouter([
       {
         path: "oauth/callback",
         element: <OAuthCallbackPage />,
+      },
+      {
+        path: "folder",
+        element: <FolderWorkspacePage />,
       },
       {
         path: "examples",

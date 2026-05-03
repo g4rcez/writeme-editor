@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getCachedRates, setCachedRates, isCacheValid, clearCurrencyCache } from "../../../lib/currency/cache";
+import { getCachedRates, setCachedRates } from "../../../lib/currency/cache";
 import { SettingsService } from "../../../store/settings";
-import type { ExchangeRateData, CachedRates } from "../../../lib/currency/types";
+import type { ExchangeRateData } from "../../../lib/currency/types";
 
 vi.mock("../../../store/settings", () => ({
   SettingsService: {
@@ -20,12 +20,12 @@ describe("currency/cache", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    
+
     // Default settings mock
     vi.mocked(SettingsService.load).mockReturnValue({
       currency: {
         cacheDuration: 3600000, // 1 hour
-      }
+      },
     } as any);
   });
 
@@ -36,7 +36,7 @@ describe("currency/cache", () => {
   it("should save and retrieve cached rates", () => {
     setCachedRates("USD", mockData);
     const cached = getCachedRates("USD");
-    
+
     expect(cached).not.toBeNull();
     expect(cached?.data).toEqual(mockData);
   });
@@ -47,10 +47,10 @@ describe("currency/cache", () => {
     vi.setSystemTime(now);
 
     setCachedRates("USD", mockData);
-    
+
     // Advance time past expiry (1 hour + 1 second)
     vi.setSystemTime(now + 3600001);
-    
+
     const cached = getCachedRates("USD");
     expect(cached).toBeNull();
   });
@@ -70,11 +70,11 @@ describe("currency/cache", () => {
 
     // This is expected to fail because of the date in buildCacheKey
     const cached = getCachedRates("USD");
-    expect(cached).not.toBeNull(); 
+    expect(cached).not.toBeNull();
   });
 
   it("should handle settings correctly", () => {
-     setCachedRates("USD", mockData);
-     expect(SettingsService.load).toHaveBeenCalled();
+    setCachedRates("USD", mockData);
+    expect(SettingsService.load).toHaveBeenCalled();
   });
 });

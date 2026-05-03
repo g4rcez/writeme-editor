@@ -21,10 +21,7 @@ export class NoteGroupMembersRepository
     return window.electronAPI.db.noteGroupMembers.getByGroupId(groupId);
   }
 
-  async reorder(
-    _groupId: string,
-    members: NoteGroupMember[],
-  ): Promise<void> {
+  async reorder(_groupId: string, members: NoteGroupMember[]): Promise<void> {
     return window.electronAPI.db.noteGroupMembers.reorder(
       members.map((m) => ({ id: m.id, order: m.order })),
     );

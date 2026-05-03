@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useListSearch } from "./use-list-search";
 
 describe("useListSearch", () => {
@@ -22,7 +22,7 @@ describe("useListSearch", () => {
   it("should reset selectedIndex when items length changes", () => {
     const { result, rerender } = renderHook(
       ({ items }) => useListSearch({ items, onSelect }),
-      { initialProps: { items } }
+      { initialProps: { items } },
     );
 
     act(() => {
@@ -36,19 +36,19 @@ describe("useListSearch", () => {
 
   it("should handle ArrowDown to increment selectedIndex", () => {
     renderHook(() => useListSearch({ items, onSelect }));
-    
+
     act(() => {
       const event = new KeyboardEvent("keydown", { key: "ArrowDown" });
       window.dispatchEvent(event);
     });
-    
-    // We can't easily check the result here because renderHook returns a stable result 
+
+    // We can't easily check the result here because renderHook returns a stable result
     // but the state inside the hook changes. We need to check result.current.
   });
 
   it("should increment index on ArrowDown", () => {
     const { result } = renderHook(() => useListSearch({ items, onSelect }));
-    
+
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     });
@@ -68,7 +68,7 @@ describe("useListSearch", () => {
 
   it("should decrement index on ArrowUp", () => {
     const { result } = renderHook(() => useListSearch({ items, onSelect }));
-    
+
     // Move to index 1 first
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
@@ -88,26 +88,28 @@ describe("useListSearch", () => {
   });
 
   it("should call onSelect when Enter is pressed", () => {
-    const { result } = renderHook(() => useListSearch({ items, onSelect }));
-    
+    renderHook(() => useListSearch({ items, onSelect }));
+
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     });
-    
+
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
     });
-    
+
     expect(onSelect).toHaveBeenCalledWith(items[1]);
   });
 
   it("should not respond to keys when isOpen is false", () => {
-    const { result } = renderHook(() => useListSearch({ items, onSelect, isOpen: false }));
-    
+    const { result } = renderHook(() =>
+      useListSearch({ items, onSelect, isOpen: false }),
+    );
+
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     });
-    
+
     expect(result.current.selectedIndex).toBe(0);
   });
 });

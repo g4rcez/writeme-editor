@@ -3,7 +3,6 @@ import { shortcuts } from "@/lib/shortcuts";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { isElectron } from "@/lib/is-electron";
-import { SettingsService } from "@/store/settings";
 import {
   createStandaloneNote,
   generateNotePath,
