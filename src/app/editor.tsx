@@ -250,7 +250,7 @@ const InnerEditor = (props: {
     const worker = getMarkdownWorker();
 
     const recover = () => {
-      if (generationRef.current !== myGen) return;
+      if (generationRef.current !== myGen || editor.isDestroyed) return;
       uiDispatch.setParsingContent(false);
       editor.setEditable(true);
     };
@@ -274,7 +274,7 @@ const InnerEditor = (props: {
       function handler(
         e: MessageEvent<{ html: string; gen: number; error?: string }>,
       ) {
-        if (e.data.gen !== myGen) return;
+        if (e.data.gen !== myGen || generationRef.current !== myGen) return;
         clearTimeout(watchdogId);
         worker.removeEventListener("message", handler);
         if (editor.isDestroyed) return;
