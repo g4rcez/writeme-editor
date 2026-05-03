@@ -311,6 +311,10 @@ const InnerEditor = (props: {
     if (!editor || props.content === undefined) return;
     const currentMarkdown = editor.getMarkdown();
     if (props.content !== currentMarkdown) {
+      if (props.content.length > LARGE_MARKDOWN_THRESHOLD) {
+        triggerWorkerParseRef.current(props.content);
+        return;
+      }
       isSettingContent.current = true;
       (editor.commands as any).setContent(props.content, {
         contentType: "markdown",
