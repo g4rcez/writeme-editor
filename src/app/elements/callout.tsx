@@ -1,7 +1,13 @@
 import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
+import {
+  NodeViewContent,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type NodeViewProps,
+} from "@tiptap/react";
 import { Fragment, Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
-import type { AlertProps } from "@g4rcez/components";
+import { Alert, type AlertProps } from "@g4rcez/components";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
 import { LightbulbIcon } from "@phosphor-icons/react/dist/csr/Lightbulb";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
@@ -65,6 +71,31 @@ export function parseDocusaurusAdmonitions(element: HTMLElement): void {
 
 export const inputRegex =
   /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
+
+const CalloutNodeView = ({ node }: NodeViewProps) => {
+  const type = node.attrs.type as string;
+  const config = ADMONITION_MAP[type as AdmonitionType];
+  if (!config) {
+    return (
+      <NodeViewWrapper>
+        <div className={`callout callout-${type}`}>
+          <NodeViewContent />
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+  return (
+    <NodeViewWrapper>
+      <Alert
+        theme={config.theme}
+        title={config.label}
+        Icon={<config.Icon size={20} />}
+      >
+        <NodeViewContent />
+      </Alert>
+    </NodeViewWrapper>
+  );
+};
 
 export const Callout = Node.create<CalloutOptions>({
   name: "callout",
@@ -281,5 +312,9 @@ export const Callout = Node.create<CalloutOptions>({
         },
       }),
     ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(CalloutNodeView);
   },
 });
