@@ -11,7 +11,10 @@ const ShikiBlock = CodeBlock.extend({
     return {
       markdown: {
         serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
-          state.write("```" + (node.attrs.language || "") + "\n");
+          const titleSuffix = node.attrs.title
+            ? ` title="${(node.attrs.title as string).replace(/"/g, '\\"')}"`
+            : "";
+          state.write("```" + (node.attrs.language || "") + titleSuffix + "\n");
           state.text(node.textContent, false);
           state.ensureNewLine();
           state.write("```");

@@ -11,7 +11,12 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import { Node as ProsemirrorNode } from "@tiptap/pm/model";
-import { Plugin, PluginKey, type PluginView } from "@tiptap/pm/state";
+import {
+  Plugin,
+  PluginKey,
+  TextSelection,
+  type PluginView,
+} from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
   NodeViewContent,
@@ -439,6 +444,7 @@ const getAllLanguages = (): string[] => {
 const CodeBlockHeader = ({
   language,
   code,
+  title,
   handleLanguageChange: onChangeLanguage,
   handleFormat,
   isFormatting,
@@ -448,6 +454,7 @@ const CodeBlockHeader = ({
 }: {
   language: string;
   code: string;
+  title?: string | null;
   handleLanguageChange: (lang: string) => void;
   handleFormat: () => void;
   isFormatting: boolean;
@@ -476,6 +483,16 @@ const CodeBlockHeader = ({
             })),
           ]}
         />
+        {title && (
+          <span
+            title={title}
+            className="!text-xs text-muted font-mono px-2 py-1"
+          >
+            {title}
+          </span>
+        )}
+      </div>
+      <div className="text-xs text-foreground flex items-center gap-2">
         {canFormat(language) && (
           <Button
             size="small"
@@ -512,8 +529,6 @@ const CodeBlockHeader = ({
             )}
           </Button>
         )}
-      </div>
-      <div className="text-xs text-foreground">
         {code.split("\n").length} lines - {code.length} characters
       </div>
     </div>
@@ -641,6 +656,7 @@ type OutputState = {
 const LanguageSelector = (props: ReactNodeViewProps) => {
   const id = useId();
   const language = props.node.attrs.language || "plaintext";
+  const title = props.node.attrs.title as string | null;
   const code = props.node.textContent.trim();
   const [isFormatting, setIsFormatting] = useState(false);
   const [executablePath, setExecutablePath] = useState<string | null>(null);
@@ -765,6 +781,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
       header={
         <CodeBlockHeader
           code={code}
+          title={title}
           canRun={canRun}
           language={language}
           handleRun={handleRun}
@@ -835,6 +852,17 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   addNodeView() {
     return ReactNodeViewRenderer(LanguageSelector);
   },
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      title: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-title"),
+        renderHTML: (attrs: Record<string, unknown>) =>
+          attrs.title ? { "data-title": attrs.title } : {},
+      },
+    };
+  },
   addOptions() {
     return {
       ...this.parent?.(),
@@ -866,11 +894,30 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
     };
   },
   addProseMirrorPlugins() {
+    const nodeName = this.name;
     return [
-      PastePlugin(this.name),
+      PastePlugin(nodeName),
+      new Plugin({
+        key: new PluginKey("codeBlockSelectAll"),
+        props: {
+          handleKeyDown(view, event) {
+            if (!(event.key === "a" && (event.metaKey || event.ctrlKey)))
+              return false;
+            const { state } = view;
+            const { $from } = state.selection;
+            if ($from.parent.type.name !== nodeName) return false;
+            event.preventDefault();
+            const tr = state.tr.setSelection(
+              TextSelection.create(state.doc, $from.start(), $from.end()),
+            );
+            view.dispatch(tr);
+            return true;
+          },
+        },
+      }),
       ...(this.parent?.() || []),
       ShikiPlugin({
-        name: this.name,
+        name: nodeName,
         defaultLanguage: this.options.defaultLanguage,
         getCurrentTheme: this.options.getCurrentTheme,
       }),

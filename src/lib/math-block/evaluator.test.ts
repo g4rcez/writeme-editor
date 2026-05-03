@@ -166,6 +166,38 @@ describe("evaluateMathBlock", () => {
     });
   });
 
+  it("round(1 month in days) returns integer", () => {
+    const result = evaluateMathBlock(lines("round(1 month in days)"));
+    expect(result[0]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "30" },
+    });
+  });
+
+  it("round(2 years in weeks) returns integer", () => {
+    const result = evaluateMathBlock(lines("round(2 years in weeks)"));
+    expect(result[0]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "104" },
+    });
+  });
+
+  it("floor(1 month in days) returns integer", () => {
+    const result = evaluateMathBlock(lines("floor(1 month in days)"));
+    expect(result[0]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "30" },
+    });
+  });
+
+  it("ceil(1 month in days) returns integer", () => {
+    const result = evaluateMathBlock(lines("ceil(1 month in days)"));
+    expect(result[0]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "31" },
+    });
+  });
+
   it("error on one line does not corrupt scope", () => {
     const result = evaluateMathBlock(
       lines("x = 10", "undefinedVar + 1", "x + 5"),

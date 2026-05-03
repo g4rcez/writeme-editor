@@ -134,3 +134,13 @@ export function largeNumberShorthands(expr: string): string {
 export function prevSubstitution(expr: string, lastBareResult: number): string {
   return expr.replace(/\bprev\b/g, String(lastBareResult));
 }
+
+const ROUNDING_FN_RE =
+  /\b(round|floor|ceil|trunc)\(([^()]+?)\s+(?:in|to)\s+(\w+)\)/gi;
+
+export function roundingUnitConversion(expr: string): string {
+  return expr.replace(
+    ROUNDING_FN_RE,
+    (_, fn, inner, unit) => `${fn}(number(${inner.trim()}, '${unit}'))`,
+  );
+}

@@ -26,7 +26,7 @@ export function isValidUrl(text: string): boolean {
  */
 export function isRelativeLink(text: string): boolean {
   // Matches ./, ../, or / followed by a path ending in .md or a folder
-  const relativePathRegex = /^(\.\.?\/|\/)[^\s]*(\.md|\/)?$/i;
+  const relativePathRegex = /^(\.\.?\/|\/)[^\s]*(\.md|\/)$/i;
   return relativePathRegex.test(text);
 }
 

@@ -15,6 +15,7 @@ import {
   largeNumberShorthands,
   normalizeCurrencyDirection,
   prevSubstitution,
+  roundingUnitConversion,
 } from "./preprocessors";
 import type {
   BlockScope,
@@ -76,6 +77,7 @@ export function applyBasePreprocessors(expr: string): string {
   e = bitwiseKeywords(e);
   e = largeNumberShorthands(e);
   e = normalizeCurrencyDirection(e);
+  e = roundingUnitConversion(e);
   return e;
 }
 

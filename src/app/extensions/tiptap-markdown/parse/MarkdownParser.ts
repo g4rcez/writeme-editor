@@ -3,6 +3,29 @@ import { Marked } from "marked";
 import { elementFromString, extractElement, unwrapElement } from "../util/dom";
 import { getMarkdownSpec } from "../util/extensions";
 
+function parseFenceInfo(raw: string): { lang: string; title: string | null } {
+  const firstLine = raw.split("\n")[0] ?? "";
+  const stripped = firstLine.replace(/^[`~]+/, "").trim();
+  const titleMatch = stripped.match(/title=(?:"([^"]*)"|'([^']*)'|(\S+))/);
+  const title = titleMatch
+    ? (titleMatch[1] ?? titleMatch[2] ?? titleMatch[3] ?? null)
+    : null;
+  const beforeTitle = titleMatch
+    ? stripped.slice(0, stripped.indexOf("title=")).trim()
+    : stripped;
+  const lang = beforeTitle.split(/\s+/)[0] ?? "";
+  return { lang, title };
+}
+
+function htmlEscape(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const appNoteUrlExtension = {
   extensions: [
     {
@@ -83,6 +106,17 @@ export class MarkdownParser {
     this.editor = editor;
     this.md = new Marked({ gfm: true, breaks: breaks ?? true });
     this.md.use(appNoteUrlExtension);
+    this.md.use({
+      renderer: {
+        code(token: { raw: string; text: string }) {
+          const { lang, title } = parseFenceInfo(token.raw);
+          const escaped = htmlEscape(token.text);
+          const titleAttr = title ? ` data-title="${htmlEscape(title)}"` : "";
+          const langClass = lang ? ` class="language-${lang}"` : "";
+          return `<pre${titleAttr}><code${langClass}>${escaped}</code></pre>\n`;
+        },
+      },
+    });
     editor.extensionManager.extensions.forEach((extension) =>
       getMarkdownSpec(extension)?.parse?.setup?.call(
         { editor: this.editor, options: extension.options },
