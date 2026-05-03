@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { parseDocusaurusAdmonitions } from "./callout";
+import { describe, it, expect, beforeAll } from "vitest";
+import { parseDocusaurusAdmonitions, Callout, ADMONITION_MAP } from "./callout";
 
 function makeRoot(html: string): HTMLDivElement {
   const doc = new DOMParser().parseFromString(
@@ -108,5 +108,96 @@ describe("parseDocusaurusAdmonitions", () => {
       expect(callout).not.toBeNull();
       expect(callout?.textContent?.trim()).toBe(`content for ${type}`);
     }
+  });
+});
+
+describe("callout serialize", () => {
+  function makeSerializeState() {
+    const calls: string[] = [];
+    let out = "";
+    let closed: unknown = null;
+    return {
+      get calls() {
+        return calls;
+      },
+      get out() {
+        return out;
+      },
+      get closed() {
+        return closed;
+      },
+      set closed(v: unknown) {
+        closed = v;
+      },
+      write(str: string) {
+        calls.push(`write:${str}`);
+        out += str;
+      },
+      ensureNewLine() {
+        calls.push("ensureNewLine");
+        if (!out.endsWith("\n")) out += "\n";
+      },
+      closeBlock(_n: unknown) {
+        calls.push("closeBlock");
+        closed = null;
+        out += "\n\n";
+      },
+      renderContent(_n: unknown) {
+        calls.push("renderContent");
+        out += "content\n\n";
+        closed = {}; // simulate a closed paragraph
+      },
+      wrapBlock(prefix: string, _d: unknown, _n: unknown, fn: () => void) {
+        calls.push(`wrapBlock:${prefix}`);
+        fn();
+      },
+    };
+  }
+
+  let serialize: (
+    state: ReturnType<typeof makeSerializeState>,
+    node: { attrs: { type: string } },
+  ) => void;
+
+  beforeAll(() => {
+    const config = (Callout as any).config;
+    const storage = config.addStorage?.call({}) as any;
+    serialize = storage?.markdown?.serialize;
+    expect(serialize).toBeDefined();
+  });
+
+  it("emits :::type fence without blank line before closing for Docusaurus types", () => {
+    for (const type of Object.keys(ADMONITION_MAP)) {
+      const state = makeSerializeState();
+      serialize(state, { attrs: { type } });
+      expect(state.out).toContain(`:::${type}\n`);
+      expect(state.calls).toContain("ensureNewLine");
+      const ensureIdx = state.calls.indexOf("ensureNewLine");
+      const writeClosingIdx = state.calls.indexOf("write::::");
+      expect(writeClosingIdx).toBeGreaterThan(ensureIdx);
+      expect(state.out).not.toMatch(/content\n\n\n:::/);
+    }
+  });
+
+  it("emits GFM format for legacy types", () => {
+    const cases = [
+      ["success", "TIP"],
+      ["primary", "IMPORTANT"],
+      ["default", "NOTE"],
+      ["important", "IMPORTANT"],
+      ["caution", "CAUTION"],
+    ] as const;
+    for (const [type, gfmType] of cases) {
+      const state = makeSerializeState();
+      serialize(state, { attrs: { type } });
+      expect(state.calls.some((c) => c.startsWith("wrapBlock"))).toBe(true);
+      expect(state.out).toContain(`[!${gfmType}]`);
+    }
+  });
+
+  it("falls back to NOTE for unknown legacy types", () => {
+    const state = makeSerializeState();
+    serialize(state, { attrs: { type: "completely-unknown" } });
+    expect(state.out).toContain("[!NOTE]");
   });
 });

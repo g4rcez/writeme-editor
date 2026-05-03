@@ -144,6 +144,7 @@ export const Callout = Node.create<CalloutOptions>({
             state.write(`:::${type}\n`);
             state.renderContent(node);
             state.ensureNewLine();
+            // Null the internal closed pointer so flushClose() doesn't inject a blank line before the closing fence.
             state.closed = null;
             state.write(":::");
             state.closeBlock(node);
