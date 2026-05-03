@@ -6,6 +6,41 @@ export interface CalloutOptions {
   HTMLAttributes: Record<string, unknown>;
 }
 
+const DOCUSAURUS_OPEN_RE = /^:::(note|tip|info|warning|danger)\s*$/;
+const DOCUSAURUS_CLOSE_RE = /^:::\s*$/;
+
+export function parseDocusaurusAdmonitions(element: HTMLElement): void {
+  const children = Array.from(element.children) as HTMLElement[];
+  for (const child of children) {
+    if (child.parentElement !== element) continue;
+    if (child.tagName !== "P") continue;
+    const text = child.textContent?.trim() ?? "";
+    const match = text.match(DOCUSAURUS_OPEN_RE);
+    if (!match) continue;
+    const type = match[1]!;
+    const contentNodes: Element[] = [];
+    let cursor: Element | null = child.nextElementSibling;
+    let closingEl: Element | null = null;
+    while (cursor) {
+      if (
+        cursor.tagName === "P" &&
+        DOCUSAURUS_CLOSE_RE.test(cursor.textContent?.trim() ?? "")
+      ) {
+        closingEl = cursor;
+        break;
+      }
+      contentNodes.push(cursor);
+      cursor = cursor.nextElementSibling;
+    }
+    const div = document.createElement("div");
+    div.setAttribute("data-type", "callout");
+    div.setAttribute("data-callout-type", type);
+    for (const n of contentNodes) div.appendChild(n);
+    child.replaceWith(div);
+    closingEl?.remove();
+  }
+}
+
 export const inputRegex =
   /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
 
