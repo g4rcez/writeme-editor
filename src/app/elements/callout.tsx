@@ -143,6 +143,8 @@ export const Callout = Node.create<CalloutOptions>({
           if (type in ADMONITION_MAP) {
             state.write(`:::${type}\n`);
             state.renderContent(node);
+            state.ensureNewLine();
+            state.closed = null;
             state.write(":::");
             state.closeBlock(node);
           } else {
