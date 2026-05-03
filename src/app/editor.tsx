@@ -7,7 +7,7 @@ import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { CursorPositionStore } from "@/store/cursor-position.store";
-import { useGlobalStore } from "@/store/global.store";
+import { globalState, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { uuid } from "@g4rcez/components";
@@ -19,16 +19,18 @@ import {
   type Editor as TipTapEditor,
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import { YAML } from "@/lib/encoding";
 import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
-import { CircleNotch } from "@phosphor-icons/react";
+import { CircleNotchIcon } from "@phosphor-icons/react";
 import {
   getMarkdownWorker,
+  HARD_LIMIT,
   LARGE_MARKDOWN_THRESHOLD,
+  WARN_THRESHOLD,
 } from "@/lib/markdown-worker";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 
@@ -90,6 +92,459 @@ const useCopyEvents = (editor: TipTapEditor) => {
   }, [editor]);
 };
 
+type WorkerOutMessage =
+  | { type: "start"; gen: number; totalChunks: number }
+  | {
+      type: "chunk";
+      gen: number;
+      html: string;
+      chunkIndex: number;
+      totalChunks: number;
+    }
+  | { type: "error"; gen: number; error: string };
+
+const ric: (cb: () => void) => void =
+  typeof requestIdleCallback !== "undefined"
+    ? (cb) => requestIdleCallback(cb)
+    : (cb) => setTimeout(cb, 0);
+
+type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
+
+type TiptapEditorCoreProps = {
+  id: string;
+  note?: Note;
+  content?: string;
+  readonly?: boolean;
+  theme: string;
+  dispatch: GlobalDispatch;
+  onSaveRef: React.MutableRefObject<
+    ((content: string) => Promise<void>) | undefined
+  >;
+};
+
+const TiptapEditorCore = memo(
+  function TiptapEditorCore({
+    id,
+    note,
+    content,
+    readonly,
+    theme,
+    dispatch,
+    onSaveRef,
+  }: TiptapEditorCoreProps) {
+    const extensions = useMemo(
+      () => createExtensions(() => getThemeForMode(theme)),
+      [theme],
+    );
+
+    const noteRef = useRef(note);
+    const generationRef = useRef(0);
+    const triggerWorkerParseRef = useRef<(text: string) => void>(() => {});
+    const [uiState] = useUIStore();
+    const isSettingContent = useRef(false);
+    const [parseProgress, setParseProgress] = useState(0);
+
+    const editor = useEditor({
+      extensions,
+      autofocus: true,
+      immediatelyRender: true,
+      enableContentCheck: true,
+      editable: !readonly,
+      enableCoreExtensions: true,
+      content: content ?? "",
+      shouldRerenderOnTransaction: false,
+      parseOptions: { preserveWhitespace: "full" },
+      onCreate: ({ editor: currentEditor }) => {
+        (currentEditor.storage as any).note = note;
+        try {
+          return void migrateMathStrings(currentEditor);
+        } catch (e) {}
+      },
+      onUpdate: ({ editor: currentEditor }) => {
+        (currentEditor.storage as any).note = noteRef.current;
+      },
+      editorProps: {
+        attributes: { class: "writeme-editor-content" },
+        handleClick: (_, __, event) => {
+          const node = event.target as HTMLElement;
+          const linkNode = node.closest("a");
+          if (linkNode) {
+            const href = linkNode.getAttribute("href");
+            if (href && isRelativeLink(href)) {
+              const currentNote = noteRef.current;
+              if (currentNote) {
+                const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
+                const target = globalState().notes.find(
+                  (n: Note) => n.title === fileName,
+                );
+                if (target) {
+                  dispatch.selectNoteById(target.id);
+                  return true;
+                }
+              }
+            }
+          }
+          return false;
+        },
+        handlePaste: (_, event) => {
+          if (isElectron()) {
+            const items = event.clipboardData?.items;
+            if (items) {
+              for (let i = 0; i < items.length; i++) {
+                if (items[i]!.type.startsWith("image/")) {
+                  handlePasteImage(editor);
+                  return true;
+                }
+              }
+            }
+          }
+
+          const cd = event.clipboardData;
+          const text = cd?.getData("text/plain");
+
+          if (text && text.length > LARGE_MARKDOWN_THRESHOLD) {
+            triggerWorkerParseRef.current(text);
+            return true;
+          }
+
+          if (text && text.startsWith("---") && noteRef.current) {
+            const match = text.match(/^---\n([\s\S]*?)\n---/);
+            if (match) {
+              try {
+                const parsed = YAML.parse(match?.[1]!);
+                if (parsed && typeof parsed === "object") {
+                  const n = Note.parse(noteRef.current);
+                  let changed = false;
+                  if (parsed.title && parsed.title !== n.title) {
+                    n.setTitle(parsed.title);
+                    changed = true;
+                  }
+                  if (parsed.tags) {
+                    const newTags = Array.isArray(parsed.tags)
+                      ? parsed.tags
+                          .map((t: any) => String(t).trim())
+                          .filter(Boolean)
+                      : String(parsed.tags)
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter(Boolean);
+                    if (
+                      newTags.sort().join(",") !== [...n.tags].sort().join(",")
+                    ) {
+                      n.tags = newTags;
+                      changed = true;
+                    }
+                  }
+                  if (changed) dispatch.syncNoteState(n);
+                }
+              } catch (e) {
+                console.warn("Failed to parse pasted frontmatter:", e);
+              }
+            }
+          }
+          return false;
+        },
+        handleKeyDown: (view, event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+            const { from, to } = view.state.selection;
+            const selectedContent = view.state.doc.slice(from, to);
+            const contentObj = {
+              type: "doc",
+              content: selectedContent.content.toJSON(),
+            };
+            const markdown = editor.storage.markdown.serializer!.serialize(
+              selectedContent.content as unknown as import("@tiptap/pm/model").Node,
+            );
+            navigator.clipboard.write([
+              new ClipboardItem({
+                "text/html": new Blob(
+                  [tiptapToHtml({ content: contentObj, extensions })],
+                  { type: "text/html" },
+                ),
+                "text/plain": new Blob([markdown], { type: "text/plain" }),
+              }),
+            ]);
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
+      },
+    });
+
+    editorGlobalRef.current = editor;
+    useCopyEvents(editor);
+
+    triggerWorkerParseRef.current = (text: string) => {
+      if (!editor) return;
+
+      if (text.length > HARD_LIMIT) {
+        console.error(
+          `[writeme] Document exceeds ${HARD_LIMIT / 1_000_000}MB hard limit — import aborted.`,
+        );
+        return;
+      }
+
+      if (
+        text.length > WARN_THRESHOLD &&
+        !window.confirm(
+          `This document is ${(text.length / 1_000_000).toFixed(1)}MB. Importing may take a while. Continue?`,
+        )
+      ) {
+        return;
+      }
+
+      generationRef.current += 1;
+      const myGen = generationRef.current;
+      uiDispatch.setParsingContent(true);
+      setParseProgress(0);
+      editor.setEditable(false);
+      isSettingContent.current = true;
+
+      const worker = getMarkdownWorker();
+      let totalChunks = 0;
+      let receivedChunks = 0;
+      let firstChunk = true;
+
+      const recover = () => {
+        if (generationRef.current !== myGen || editor.isDestroyed) return;
+        generationRef.current += 1;
+        isSettingContent.current = false;
+        uiDispatch.setParsingContent(false);
+        setParseProgress(0);
+        editor.setEditable(true);
+      };
+
+      const finalize = () => {
+        if (generationRef.current !== myGen || editor.isDestroyed) return;
+        isSettingContent.current = false;
+        uiDispatch.setParsingContent(false);
+        setParseProgress(0);
+        editor.setEditable(true);
+        const tr = editor.state.tr
+          .setMeta("shikiSuspended", false)
+          .setMeta("shikiPluginForceDecoration", true);
+        editor.view.dispatch(tr);
+      };
+
+      if (!editor.isDestroyed) {
+        editor.view.dispatch(editor.state.tr.setMeta("shikiSuspended", true));
+      }
+
+      const watchdogId = setTimeout(() => {
+        worker.removeEventListener("message", handler);
+        recover();
+      }, 120_000);
+
+      function handler(e: MessageEvent<WorkerOutMessage>) {
+        if (e.data.gen !== myGen || generationRef.current !== myGen) {
+          worker.removeEventListener("message", handler);
+          return;
+        }
+
+        if (e.data.type === "start") {
+          totalChunks = e.data.totalChunks;
+          return;
+        }
+
+        if (e.data.type === "error") {
+          clearTimeout(watchdogId);
+          worker.removeEventListener("message", handler);
+          recover();
+          return;
+        }
+
+        if (e.data.type === "chunk") {
+          const { html } = e.data;
+          ric(() => {
+            if (generationRef.current !== myGen || editor.isDestroyed) return;
+
+            if (firstChunk) {
+              firstChunk = false;
+              editor.commands.setContent(html);
+            } else {
+              editor.commands.insertContentAt(
+                editor.state.doc.content.size,
+                html,
+                { parseOptions: { preserveWhitespace: true } },
+              );
+            }
+
+            receivedChunks++;
+            if (totalChunks > 0) {
+              setParseProgress(
+                Math.round((receivedChunks / totalChunks) * 100),
+              );
+            }
+
+            if (receivedChunks >= totalChunks && totalChunks > 0) {
+              clearTimeout(watchdogId);
+              worker.removeEventListener("message", handler);
+              finalize();
+            }
+          });
+        }
+      }
+
+      worker.onerror = () => {
+        clearTimeout(watchdogId);
+        if (generationRef.current !== myGen || editor.isDestroyed) return;
+        recover();
+        (editor.commands as any).setContent(text, {
+          contentType: "markdown",
+          parseOptions: { preserveWhitespace: "full" },
+        });
+        isSettingContent.current = false;
+      };
+
+      worker.addEventListener("message", handler);
+      worker.postMessage({ text, gen: myGen });
+    };
+
+    useEffect(() => {
+      noteRef.current = note;
+    }, [note]);
+
+    useEffect(() => {
+      if (!editor || content === undefined) return;
+      const currentMarkdown = editor.getMarkdown();
+      if (content !== currentMarkdown) {
+        if (content.length > LARGE_MARKDOWN_THRESHOLD) {
+          triggerWorkerParseRef.current(content);
+          return;
+        }
+        isSettingContent.current = true;
+        (editor.commands as any).setContent(content, {
+          contentType: "markdown",
+          parseOptions: { preserveWhitespace: "full" },
+        });
+        isSettingContent.current = false;
+      }
+    }, [editor, content]);
+
+    useEffect(() => {
+      if (editor) setEditorNote(editor, note);
+    }, [editor, note]);
+
+    useEffect(() => {
+      if (editor) setEditorAllNotes(editor, globalState().notes);
+    }, [editor]);
+
+    useEffect(() => {
+      if (editor === null) return;
+      if (readonly) return;
+
+      let saveTimeout: NodeJS.Timeout;
+
+      const updateHandler = () => {
+        if (isSettingContent.current) {
+          clearTimeout(saveTimeout);
+          return;
+        }
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+          try {
+            const html = editor.getMarkdown();
+            if (onSaveRef.current) {
+              await onSaveRef.current(html);
+              return;
+            }
+            if (!noteRef.current) return;
+            await dispatch.updateNoteContent(noteRef.current.id, html);
+            CursorPositionStore.save(
+              noteRef.current.id,
+              editor.state.selection.anchor,
+              getScrollY(),
+            );
+          } catch (error) {
+            console.error("Failed to save document:", error);
+          }
+        }, 500);
+      };
+
+      editor.on("update", updateHandler);
+
+      return () => {
+        editor.off("update", updateHandler);
+        clearTimeout(saveTimeout);
+        try {
+          const html = editor.getMarkdown();
+          if (onSaveRef.current) {
+            onSaveRef.current(html);
+            return;
+          }
+          if (noteRef.current) {
+            dispatch.updateNoteContent(noteRef.current.id, html);
+            CursorPositionStore.save(
+              noteRef.current.id,
+              editor.state.selection.anchor,
+              getScrollY(),
+            );
+          }
+        } catch (error) {
+          console.warn("Failed to perform final save on unmount:", error);
+        }
+      };
+    }, [editor, readonly]);
+
+    useEffect(() => {
+      if (editor) {
+        const tr = editor.state.tr.setMeta("shikiPluginForceDecoration", true);
+        editor.view.dispatch(tr);
+      }
+    }, [theme, editor]);
+
+    useEffect(() => {
+      if (!editor || !note) return;
+      const position = CursorPositionStore.get(note.id);
+      if (!position) return;
+      const maxPos = editor.state.doc.content.size;
+      const safePos = Math.min(position.cursor, maxPos);
+      const raf = requestAnimationFrame ?? ((fn: Function) => fn());
+      raf(() => {
+        editor.chain().setTextSelection(safePos).run();
+        setScrollY(position.scroll);
+      });
+    }, [editor, note?.id]);
+
+    useEffect(() => {
+      return () => {
+        uiDispatch.setParsingContent(false);
+      };
+    }, []);
+
+    const settings = useMemo(() => SettingsService.load(), []);
+
+    return (
+      <div
+        id="editor-container"
+        style={{ fontSize: `${settings.editorFontSize}px` }}
+        className="writeme-editor relative"
+      >
+        {uiState.parsingContent && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+            <CircleNotchIcon size={32} className="animate-spin" />
+            <span className="mt-2 text-sm text-foreground">
+              {parseProgress > 0
+                ? `Parsing large document… ${parseProgress}%`
+                : "Parsing large document…"}
+            </span>
+          </div>
+        )}
+        <EditorContext.Provider value={{ editor }}>
+          <EditorContent key={id} editor={editor} className="writeme-block" />
+        </EditorContext.Provider>
+      </div>
+    );
+  },
+  (prev, next) =>
+    prev.id === next.id &&
+    prev.theme === next.theme &&
+    prev.content === next.content &&
+    prev.readonly === next.readonly &&
+    prev.note?.id === next.note?.id,
+);
+
 const InnerEditor = (props: {
   id: string;
   note?: Note;
@@ -98,358 +553,27 @@ const InnerEditor = (props: {
   onSave?: (content: string) => Promise<void>;
 }) => {
   const [state, dispatch] = useGlobalStore();
-
-  const extensions = useMemo(
-    () => createExtensions(() => getThemeForMode(state.theme)),
-    [state.theme],
-  );
-
-  const editor = useEditor({
-    extensions,
-    autofocus: true,
-    immediatelyRender: true,
-    enableContentCheck: true,
-    editable: !props.readonly,
-    enableCoreExtensions: true,
-    content: props.content ?? "",
-    shouldRerenderOnTransaction: false,
-    parseOptions: { preserveWhitespace: "full" },
-    onCreate: ({ editor: currentEditor }) => {
-      (currentEditor.storage as any).note = props.note;
-      try {
-        return void migrateMathStrings(currentEditor);
-      } catch (e) {}
-    },
-    onUpdate: ({ editor: currentEditor }) => {
-      (currentEditor.storage as any).note = props.note;
-    },
-    editorProps: {
-      attributes: { class: "writeme-editor-content" },
-      handleClick: (_, __, event) => {
-        const node = event.target as HTMLElement;
-        const linkNode = node.closest("a");
-        if (linkNode) {
-          const href = linkNode.getAttribute("href");
-          if (href && isRelativeLink(href)) {
-            const currentNote = props.note;
-            if (currentNote) {
-              const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
-              const target = state.notes.find(
-                (n: Note) => n.title === fileName,
-              );
-              if (target) {
-                dispatch.selectNoteById(target.id);
-                return true;
-              }
-            }
-          }
-        }
-        return false;
-      },
-      handlePaste: (_, event) => {
-        // Handle image paste in Electron
-        if (isElectron()) {
-          const items = event.clipboardData?.items;
-          if (items) {
-            for (let i = 0; i < items.length; i++) {
-              if (items[i]!.type.startsWith("image/")) {
-                handlePasteImage(editor);
-                return true;
-              }
-            }
-          }
-        }
-
-        const cd = event.clipboardData;
-        const text = cd?.getData("text/plain");
-
-        if (text && text.length > LARGE_MARKDOWN_THRESHOLD) {
-          triggerWorkerParseRef.current(text);
-          return true;
-        }
-
-        if (text && text.startsWith("---") && props.note) {
-          const match = text.match(/^---\n([\s\S]*?)\n---/);
-          if (match) {
-            try {
-              const parsed = YAML.parse(match?.[1]!);
-              if (parsed && typeof parsed === "object") {
-                const note = Note.parse(props.note);
-                let changed = false;
-                if (parsed.title && parsed.title !== note.title) {
-                  note.setTitle(parsed.title);
-                  changed = true;
-                }
-                if (parsed.tags) {
-                  const newTags = Array.isArray(parsed.tags)
-                    ? parsed.tags
-                        .map((t: any) => String(t).trim())
-                        .filter(Boolean)
-                    : String(parsed.tags)
-                        .split(",")
-                        .map((t) => t.trim())
-                        .filter(Boolean);
-                  if (
-                    newTags.sort().join(",") !== [...note.tags].sort().join(",")
-                  ) {
-                    note.tags = newTags;
-                    changed = true;
-                  }
-                }
-                if (changed) {
-                  dispatch.syncNoteState(note);
-                }
-              }
-            } catch (e) {
-              console.warn("Failed to parse pasted frontmatter:", e);
-            }
-          }
-        }
-        return false;
-      },
-      handleKeyDown: (view, event) => {
-        if ((event.ctrlKey || event.metaKey) && event.key === "c") {
-          const { from, to } = view.state.selection;
-          const selectedContent = view.state.doc.slice(from, to);
-          const content = {
-            type: "doc",
-            content: selectedContent.content.toJSON(),
-          };
-          const markdown = editor.storage.markdown.serializer!.serialize(
-            selectedContent.content as unknown as import("@tiptap/pm/model").Node,
-          );
-          navigator.clipboard.write([
-            new ClipboardItem({
-              "text/html": new Blob([tiptapToHtml({ content, extensions })], {
-                type: "text/html",
-              }),
-              "text/plain": new Blob([markdown], { type: "text/plain" }),
-            }),
-          ]);
-          event.preventDefault();
-          return true;
-        }
-        return false;
-      },
-    },
-  });
-  editorGlobalRef.current = editor;
-  useCopyEvents(editor);
-
-  const generationRef = useRef(0);
-  const triggerWorkerParseRef = useRef<(text: string) => void>(() => {});
-  const [uiState] = useUIStore();
-  const isSettingContent = useRef(false);
-
-  triggerWorkerParseRef.current = (text: string) => {
-    if (!editor) return;
-    generationRef.current += 1;
-    const myGen = generationRef.current;
-    uiDispatch.setParsingContent(true);
-    editor.setEditable(false);
-    const worker = getMarkdownWorker();
-
-    const recover = () => {
-      if (generationRef.current !== myGen || editor.isDestroyed) return;
-      generationRef.current += 1;
-      uiDispatch.setParsingContent(false);
-      editor.setEditable(true);
-    };
-
-    const watchdogId = setTimeout(recover, 30_000);
-
-    worker.onerror = () => {
-      clearTimeout(watchdogId);
-      if (generationRef.current !== myGen || editor.isDestroyed) return;
-      recover();
-      isSettingContent.current = true;
-      (editor.commands as any).setContent(text, {
-        contentType: "markdown",
-        parseOptions: { preserveWhitespace: "full" },
-      });
-      isSettingContent.current = false;
-    };
-
-    worker.addEventListener(
-      "message",
-      function handler(
-        e: MessageEvent<{ html: string; gen: number; error?: string }>,
-      ) {
-        if (e.data.gen !== myGen || generationRef.current !== myGen) {
-          worker.removeEventListener("message", handler);
-          return;
-        }
-        clearTimeout(watchdogId);
-        worker.removeEventListener("message", handler);
-        if (editor.isDestroyed) return;
-        if (e.data.error) {
-          recover();
-          isSettingContent.current = true;
-          (editor.commands as any).setContent(text, {
-            contentType: "markdown",
-            parseOptions: { preserveWhitespace: "full" },
-          });
-          isSettingContent.current = false;
-          return;
-        }
-        isSettingContent.current = true;
-        editor.commands.setContent(e.data.html);
-        isSettingContent.current = false;
-        uiDispatch.setParsingContent(false);
-        editor.setEditable(true);
-      },
-    );
-
-    worker.postMessage({ text, gen: myGen });
-  };
-
   const onSaveRef = useRef(props.onSave);
-  const noteRef = useRef(props.note);
-
   useEffect(() => {
     onSaveRef.current = props.onSave;
-    noteRef.current = props.note;
-  }, [props.onSave, props.note]);
+  }, [props.onSave]);
 
   useEffect(() => {
-    if (!editor || props.content === undefined) return;
-    const currentMarkdown = editor.getMarkdown();
-    if (props.content !== currentMarkdown) {
-      if (props.content.length > LARGE_MARKDOWN_THRESHOLD) {
-        triggerWorkerParseRef.current(props.content);
-        return;
-      }
-      isSettingContent.current = true;
-      (editor.commands as any).setContent(props.content, {
-        contentType: "markdown",
-        parseOptions: {
-          preserveWhitespace: "full",
-        },
-      });
-      isSettingContent.current = false;
+    if (editorGlobalRef.current) {
+      setEditorAllNotes(editorGlobalRef.current, state.notes);
     }
-  }, [editor, props.content]);
-
-  useEffect(() => {
-    if (editor) {
-      setEditorNote(editor, props.note);
-    }
-  }, [editor, props.note]);
-
-  useEffect(() => {
-    if (editor) {
-      setEditorAllNotes(editor, state.notes);
-    }
-  }, [editor, state.notes]);
-
-  useEffect(() => {
-    if (editor === null) return;
-    if (props.readonly) return;
-
-    let saveTimeout: NodeJS.Timeout;
-
-    const updateHandler = () => {
-      if (isSettingContent.current) {
-        clearTimeout(saveTimeout);
-        return;
-      }
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(async () => {
-        try {
-          const html = editor.getMarkdown();
-          if (onSaveRef.current) {
-            await onSaveRef.current(html);
-            return;
-          }
-          if (!noteRef.current) return;
-          await dispatch.updateNoteContent(noteRef.current.id, html);
-          CursorPositionStore.save(
-            noteRef.current.id,
-            editor.state.selection.anchor,
-            getScrollY(),
-          );
-        } catch (error) {
-          console.error("Failed to save document:", error);
-        }
-      }, 500);
-    };
-
-    editor.on("update", updateHandler);
-
-    return () => {
-      editor.off("update", updateHandler);
-      clearTimeout(saveTimeout);
-      try {
-        const html = editor.getMarkdown();
-        if (onSaveRef.current) {
-          onSaveRef.current(html);
-          return;
-        }
-        if (noteRef.current) {
-          dispatch.updateNoteContent(noteRef.current.id, html);
-
-          CursorPositionStore.save(
-            noteRef.current.id,
-            editor.state.selection.anchor,
-            getScrollY(),
-          );
-        }
-      } catch (error) {
-        console.warn("Failed to perform final save on unmount:", error);
-      }
-    };
-  }, [editor, props.readonly]);
-
-  useEffect(() => {
-    if (editor) {
-      const tr = editor.state.tr.setMeta("shikiPluginForceDecoration", true);
-      editor.view.dispatch(tr);
-    }
-  }, [state.theme, editor]);
-
-  useEffect(() => {
-    if (!editor || !props.note) return;
-    const position = CursorPositionStore.get(props.note.id);
-    if (!position) return;
-    const maxPos = editor.state.doc.content.size;
-    const safePos = Math.min(position.cursor, maxPos);
-    const raf = requestAnimationFrame ?? ((fn: Function) => fn());
-    raf(() => {
-      editor.chain().setTextSelection(safePos).run();
-      setScrollY(position.scroll);
-    });
-  }, [editor, props.note?.id]);
-
-  useEffect(() => {
-    return () => {
-      uiDispatch.setParsingContent(false);
-    };
-  }, []);
-
-  const settings = SettingsService.load();
+  }, [state.notes]);
 
   return (
-    <div
-      id="editor-container"
-      style={{ fontSize: `${settings.editorFontSize}px` }}
-      className="writeme-editor relative"
-    >
-      {uiState.parsingContent && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-          <CircleNotch size={32} className="animate-spin" />
-          <span className="mt-2 text-sm text-foreground">
-            Parsing large document…
-          </span>
-        </div>
-      )}
-      <EditorContext.Provider value={{ editor }}>
-        <EditorContent
-          key={props.id}
-          editor={editor}
-          className="writeme-block"
-        />
-      </EditorContext.Provider>
-    </div>
+    <TiptapEditorCore
+      id={props.id}
+      note={props.note}
+      content={props.content}
+      readonly={props.readonly}
+      theme={state.theme}
+      dispatch={dispatch}
+      onSaveRef={onSaveRef}
+    />
   );
 };
 

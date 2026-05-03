@@ -233,22 +233,31 @@ export async function initHighlighter({
   }
 }
 
+type ShikiState = {
+  decorations: DecorationSet;
+  visiblePositions: Set<number>;
+  suspended: boolean;
+};
+
 function getDecorations({
   doc,
   name,
   defaultTheme,
   defaultLanguage,
   renderBackground = true,
+  positions,
 }: {
   doc: ProsemirrorNode;
   name: string;
   defaultLanguage: BundledLanguage | null | undefined;
   defaultTheme: BundledTheme;
   renderBackground?: boolean;
+  positions?: Set<number>;
 }) {
   const decorations: Decoration[] = [];
   const codeBlocks = findChildren(doc, (node) => node.type.name === name);
   codeBlocks.forEach((block) => {
+    if (positions !== undefined && !positions.has(block.pos)) return;
     let from = block.pos + 1;
     let language = block.node.attrs.language || defaultLanguage;
     const theme = block.node.attrs.theme || defaultTheme;
@@ -285,6 +294,17 @@ function getDecorations({
     }
   });
   return DecorationSet.create(doc, decorations);
+}
+
+function remapPositions(
+  positions: Set<number>,
+  mapping: { map(pos: number): number },
+): Set<number> {
+  const next = new Set<number>();
+  for (const pos of positions) {
+    next.add(mapping.map(pos));
+  }
+  return next;
 }
 
 export function ShikiPlugin({
@@ -359,18 +379,60 @@ export function ShikiPlugin({
     },
 
     state: {
-      init: (_, { doc }) => {
-        const currentTheme = getCurrentTheme!();
-        return getDecorations({
-          doc,
-          name,
-          defaultLanguage,
-          defaultTheme: currentTheme,
-          renderBackground,
-          // @ts-ignore
-        });
-      },
-      apply: (transaction, decorationSet, oldState, newState) => {
+      init: (): ShikiState => ({
+        decorations: DecorationSet.empty,
+        visiblePositions: new Set(),
+        suspended: false,
+      }),
+      apply: (
+        transaction,
+        pluginState: ShikiState,
+        oldState,
+        newState,
+      ): ShikiState => {
+        const suspendMeta = transaction.getMeta("shikiSuspended");
+        const isSuspended =
+          suspendMeta === true
+            ? true
+            : suspendMeta === false
+              ? false
+              : pluginState.suspended;
+
+        if (isSuspended) {
+          return {
+            decorations: DecorationSet.empty,
+            visiblePositions: remapPositions(
+              pluginState.visiblePositions,
+              transaction.mapping,
+            ),
+            suspended: true,
+          };
+        }
+
+        const highlightPos = transaction.getMeta("shikiHighlightPos") as
+          | number
+          | undefined;
+        if (highlightPos !== undefined) {
+          const newVisible = remapPositions(
+            pluginState.visiblePositions,
+            transaction.mapping,
+          );
+          newVisible.add(highlightPos);
+          const currentTheme = getCurrentTheme!();
+          return {
+            decorations: getDecorations({
+              doc: transaction.doc,
+              name,
+              defaultLanguage,
+              defaultTheme: currentTheme,
+              renderBackground,
+              positions: newVisible,
+            }),
+            visiblePositions: newVisible,
+            suspended: false,
+          };
+        }
+
         const oldNodeName = oldState.selection.$head.parent.type.name;
         const newNodeName = newState.selection.$head.parent.type.name;
         const oldNodes = findChildren(
@@ -397,27 +459,47 @@ export function ShikiPlugin({
                 })
               );
             }));
+
         if (
           transaction.getMeta("shikiPluginForceDecoration") ||
           didChangeSomeCodeBlock
         ) {
+          const remappedPositions = remapPositions(
+            pluginState.visiblePositions,
+            transaction.mapping,
+          );
           const currentTheme = getCurrentTheme!();
-          return getDecorations({
-            doc: transaction.doc,
-            name,
-            defaultLanguage,
-            defaultTheme: currentTheme,
-            renderBackground,
-            // @ts-ignore
-          });
+          return {
+            decorations: getDecorations({
+              doc: transaction.doc,
+              name,
+              defaultLanguage,
+              defaultTheme: currentTheme,
+              renderBackground,
+              positions: remappedPositions,
+            }),
+            visiblePositions: remappedPositions,
+            suspended: false,
+          };
         }
-        return decorationSet.map(transaction.mapping, transaction.doc);
+
+        return {
+          decorations: pluginState.decorations.map(
+            transaction.mapping,
+            transaction.doc,
+          ),
+          visiblePositions: remapPositions(
+            pluginState.visiblePositions,
+            transaction.mapping,
+          ),
+          suspended: false,
+        };
       },
     },
 
     props: {
       decorations(state) {
-        return shikiPlugin.getState(state);
+        return (shikiPlugin.getState(state) as ShikiState | null)?.decorations;
       },
     },
   });
@@ -676,6 +758,26 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     };
     checkExecutable();
   }, [language]);
+
+  useEffect(() => {
+    const pos = props.getPos();
+    if (typeof pos !== "number") return;
+    const dom = props.editor.view.nodeDOM(pos);
+    if (!(dom instanceof Element)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        const currentPos = props.getPos();
+        if (typeof currentPos !== "number") return;
+        props.editor.view.dispatch(
+          props.editor.state.tr.setMeta("shikiHighlightPos", currentPos),
+        );
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(dom);
+    return () => observer.disconnect();
+  }, []);
 
   const handleLanguageChange = (newLanguage: string) => {
     const { view, getPos } = props;
