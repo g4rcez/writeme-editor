@@ -32,10 +32,14 @@ export function parseDocusaurusAdmonitions(element: HTMLElement): void {
       contentNodes.push(cursor);
       cursor = cursor.nextElementSibling;
     }
+    if (!closingEl) continue;
     const div = document.createElement("div");
     div.setAttribute("data-type", "callout");
     div.setAttribute("data-callout-type", type);
     for (const n of contentNodes) div.appendChild(n);
+    if (div.childElementCount === 0) {
+      div.appendChild(document.createElement("p"));
+    }
     child.replaceWith(div);
     closingEl?.remove();
   }

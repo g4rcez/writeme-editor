@@ -82,6 +82,21 @@ describe("parseDocusaurusAdmonitions", () => {
     expect(directPs[1]?.textContent).toBe("after");
   });
 
+  it("does not mutate when closing marker is absent", () => {
+    const root = makeRoot("<p>:::note</p><p>orphaned content</p>");
+    parseDocusaurusAdmonitions(root);
+    expect(root.querySelector("div[data-type='callout']")).toBeNull();
+    expect(root.querySelectorAll("p").length).toBe(2);
+  });
+
+  it("inserts empty paragraph when admonition has no content", () => {
+    const root = makeRoot("<p>:::note</p><p>:::</p>");
+    parseDocusaurusAdmonitions(root);
+    const callout = root.querySelector("div[data-type='callout']");
+    expect(callout).not.toBeNull();
+    expect(callout?.querySelectorAll("p").length).toBe(1);
+  });
+
   it("preserves all five Docusaurus types in round-trip", () => {
     const types = ["note", "tip", "info", "warning", "danger"] as const;
     for (const type of types) {
