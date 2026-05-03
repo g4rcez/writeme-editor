@@ -139,26 +139,29 @@ export const Callout = Node.create<CalloutOptions>({
     return {
       markdown: {
         serialize(state: any, node: any) {
-          const typeMap: Record<string, string> = {
-            info: "NOTE",
-            danger: "CAUTION",
-            success: "TIP",
-            primary: "IMPORTANT",
-            default: "NOTE",
-            warning: "WARNING",
-            note: "NOTE",
-            tip: "TIP",
-            important: "IMPORTANT",
-            caution: "CAUTION",
-          };
-          const gfmType = typeMap[node.attrs.type] ?? "NOTE";
-          state.wrapBlock("> ", null, node, () => {
-            state.write(`[!${gfmType}]\n`);
+          const type: string = node.attrs.type ?? "note";
+          if (type in ADMONITION_MAP) {
+            state.write(`:::${type}\n`);
             state.renderContent(node);
-          });
+            state.write(":::");
+            state.closeBlock(node);
+          } else {
+            const gfmFallback: Record<string, string> = {
+              success: "TIP",
+              primary: "IMPORTANT",
+              default: "NOTE",
+              important: "IMPORTANT",
+              caution: "CAUTION",
+            };
+            state.wrapBlock("> ", null, node, () => {
+              state.write(`[!${gfmFallback[type] ?? "NOTE"}]\n`);
+              state.renderContent(node);
+            });
+          }
         },
         parse: {
           updateDOM(element: HTMLElement) {
+            parseDocusaurusAdmonitions(element);
             element.querySelectorAll("blockquote").forEach((blockquote) => {
               const firstP = blockquote.querySelector("p");
               if (!firstP) return;
