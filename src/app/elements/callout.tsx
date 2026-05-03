@@ -1,6 +1,24 @@
 import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
 import { Fragment, Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import type { AlertProps } from "@g4rcez/components";
+import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
+import { LightbulbIcon } from "@phosphor-icons/react/dist/csr/Lightbulb";
+import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
+import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
+import { FireIcon } from "@phosphor-icons/react/dist/csr/Fire";
+
+type AlertTheme = NonNullable<AlertProps["theme"]>;
+
+export const ADMONITION_MAP = {
+  note: { label: "NOTE", theme: "neutral" as AlertTheme, Icon: InfoIcon },
+  tip: { label: "TIP", theme: "success" as AlertTheme, Icon: LightbulbIcon },
+  info: { label: "INFO", theme: "info" as AlertTheme, Icon: WarningCircleIcon },
+  warning: { label: "WARNING", theme: "warn" as AlertTheme, Icon: WarningIcon },
+  danger: { label: "DANGER", theme: "danger" as AlertTheme, Icon: FireIcon },
+} as const;
+
+export type AdmonitionType = keyof typeof ADMONITION_MAP;
 
 export interface CalloutOptions {
   HTMLAttributes: Record<string, unknown>;
