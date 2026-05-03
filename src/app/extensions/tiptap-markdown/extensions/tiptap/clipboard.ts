@@ -2,22 +2,9 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { DOMParser, Fragment, Slice } from "@tiptap/pm/model";
 import { elementFromString } from "../../util/dom";
+import { dedent } from "@/lib/markdown-worker/dedent";
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
-
-function dedent(text: string): string {
-  const lines = text.split("\n");
-  let minIndent = Infinity;
-  for (const line of lines) {
-    if (line.trim().length === 0) continue;
-    const indent = line.match(/^\s*/)?.[0].length ?? 0;
-    if (indent < minIndent) minIndent = indent;
-  }
-  if (minIndent === Infinity) return text;
-  return lines
-    .map((line) => (line.length >= minIndent ? line.slice(minIndent) : line))
-    .join("\n");
-}
 
 export const MarkdownClipboard = Extension.create({
   name: "markdownClipboard",
