@@ -164,7 +164,7 @@ const InnerEditor = (props: {
         const text = cd?.getData("text/plain");
 
         if (text && text.length > LARGE_MARKDOWN_THRESHOLD) {
-          triggerWorkerParse(text);
+          triggerWorkerParseRef.current(text);
           return true;
         }
 
@@ -237,10 +237,11 @@ const InnerEditor = (props: {
   useCopyEvents(editor);
 
   const generationRef = useRef(0);
+  const triggerWorkerParseRef = useRef<(text: string) => void>(() => {});
   const [uiState] = useUIStore();
   const isSettingContent = useRef(false);
 
-  const triggerWorkerParse = (text: string) => {
+  triggerWorkerParseRef.current = (text: string) => {
     if (!editor) return;
     generationRef.current += 1;
     const myGen = generationRef.current;
@@ -254,32 +255,48 @@ const InnerEditor = (props: {
       editor.setEditable(true);
     };
 
-    worker.onerror = () => recover();
+    const watchdogId = setTimeout(recover, 30_000);
 
-    worker.onmessage = (e: MessageEvent<{ html: string; error?: string }>) => {
-      if (generationRef.current !== myGen) {
-        uiDispatch.setParsingContent(false);
-        editor.setEditable(true);
-        return;
-      }
-      if (e.data.error) {
-        recover();
-        isSettingContent.current = true;
-        (editor.commands as any).setContent(text, {
-          contentType: "markdown",
-          parseOptions: { preserveWhitespace: "full" },
-        });
-        isSettingContent.current = false;
-        return;
-      }
+    worker.onerror = () => {
+      clearTimeout(watchdogId);
+      if (generationRef.current !== myGen || editor.isDestroyed) return;
+      recover();
       isSettingContent.current = true;
-      editor.commands.setContent(e.data.html);
+      (editor.commands as any).setContent(text, {
+        contentType: "markdown",
+        parseOptions: { preserveWhitespace: "full" },
+      });
       isSettingContent.current = false;
-      uiDispatch.setParsingContent(false);
-      editor.setEditable(true);
     };
 
-    worker.postMessage({ text });
+    worker.addEventListener(
+      "message",
+      function handler(
+        e: MessageEvent<{ html: string; gen: number; error?: string }>,
+      ) {
+        if (e.data.gen !== myGen) return;
+        clearTimeout(watchdogId);
+        worker.removeEventListener("message", handler);
+        if (editor.isDestroyed) return;
+        if (e.data.error) {
+          recover();
+          isSettingContent.current = true;
+          (editor.commands as any).setContent(text, {
+            contentType: "markdown",
+            parseOptions: { preserveWhitespace: "full" },
+          });
+          isSettingContent.current = false;
+          return;
+        }
+        isSettingContent.current = true;
+        editor.commands.setContent(e.data.html);
+        isSettingContent.current = false;
+        uiDispatch.setParsingContent(false);
+        editor.setEditable(true);
+      },
+    );
+
+    worker.postMessage({ text, gen: myGen });
   };
 
   const onSaveRef = useRef(props.onSave);

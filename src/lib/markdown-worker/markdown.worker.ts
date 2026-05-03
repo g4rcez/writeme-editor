@@ -15,12 +15,13 @@ if (
   typeof DedicatedWorkerGlobalScope !== "undefined" &&
   self instanceof DedicatedWorkerGlobalScope
 ) {
-  self.onmessage = (e: MessageEvent<{ text: string }>) => {
+  self.onmessage = (e: MessageEvent<{ text: string; gen: number }>) => {
+    const { text, gen } = e.data;
     try {
-      const html = processMarkdown(e.data.text);
-      self.postMessage({ html });
+      const html = processMarkdown(text);
+      self.postMessage({ html, gen });
     } catch (err) {
-      self.postMessage({ html: "", error: String(err) });
+      self.postMessage({ html: "", error: String(err), gen });
     }
   };
 }
