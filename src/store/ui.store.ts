@@ -44,6 +44,7 @@ export type UISettings = {
   findReplace: { isOpen: boolean };
   mediaPreview: MediaPreviewState;
   tasksDialog: { isOpen: boolean };
+  parsingContent: boolean;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -69,6 +70,7 @@ const initialState: UISettings = {
   tasksDialog: { isOpen: false },
   contentWidth: persistedState.contentWidth || "medium",
   findReplace: persistedState.findReplace || { isOpen: false },
+  parsingContent: false,
 };
 
 export const useUIStore = createGlobalReducer(
@@ -104,6 +106,7 @@ export const useUIStore = createGlobalReducer(
     }),
     openTasksDialog: () => ({ tasksDialog: { isOpen: true } }),
     closeTasksDialog: () => ({ tasksDialog: { isOpen: false } }),
+    setParsingContent: (value: boolean) => ({ parsingContent: value }),
   }),
   {
     interceptor: [
@@ -115,6 +118,7 @@ export const useUIStore = createGlobalReducer(
           findReplace: _findReplace,
           mediaPreview: _mediaPreview,
           tasksDialog: _tasksDialog,
+          parsingContent: _parsingContent,
           ...toPersist
         } = state;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
