@@ -427,6 +427,11 @@
         padding: 32px 48px;
         overflow: hidden;
       }
+      .f3-mockup .mockup-body {
+        height: 400px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+      }
 
       /* ── FEATURE 02: THINK ── */
       .think-block {
@@ -515,6 +520,99 @@
         color: var(--fg-faint);
         padding: 0 10px;
         flex-shrink: 0;
+      }
+
+      /* ── FEATURE 03: OWN ── */
+      .own-panel {
+        padding: 28px 24px;
+        border-right: 1px solid var(--border);
+      }
+      .own-panel:last-child {
+        border-right: none;
+      }
+      .own-panel-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--fg-faint);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+      .file-tree-item {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(59, 52, 134, 0.2);
+      }
+      .file-tree-item:last-child {
+        border-bottom: none;
+      }
+      .file-icon {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--green);
+        flex-shrink: 0;
+      }
+      .file-name {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--fg);
+      }
+      .file-path {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--fg-faint);
+        margin-top: 1px;
+      }
+      .own-lock-icon {
+        font-size: 32px;
+        margin-bottom: 16px;
+        line-height: 1;
+      }
+      .own-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: "Manrope", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        width: 100%;
+      }
+      .own-badge-green {
+        background: rgba(146, 227, 65, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(146, 227, 65, 0.2);
+      }
+      .own-badge-purple {
+        background: rgba(183, 153, 255, 0.1);
+        color: var(--purple);
+        border: 1px solid rgba(183, 153, 255, 0.2);
+      }
+      .own-badge-dim {
+        background: rgba(173, 217, 181, 0.06);
+        color: var(--fg-dim);
+        border: 1px solid var(--border);
+      }
+      .own-terminal {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 14px;
+        line-height: 1.8;
+      }
+      .term-prompt {
+        color: var(--green);
+      }
+      .term-cmd {
+        color: var(--fg);
+      }
+      .term-out {
+        color: var(--fg-faint);
       }
 
       /* ── FEATURE SECTION SHARED ── */
@@ -1022,26 +1120,89 @@
         </div>
       </section>
 
-      <!-- SCREENSHOT -->
-      <section class="screenshot-section" aria-labelledby="screenshot-heading">
-        <h2 class="screenshot-label" id="screenshot-heading">The workspace</h2>
-        <div class="screenshot-frame">
-          <div class="screenshot-bar" aria-hidden="true">
-            <div class="wdot wdot-r"></div>
-            <div class="wdot wdot-y"></div>
-            <div class="wdot wdot-g"></div>
+      <!-- FEATURE 03: OWN -->
+      <section
+        class="feature-section"
+        id="feature-own"
+        aria-labelledby="f3-heading"
+      >
+        <div class="container">
+          <div class="feature-text">
+            <div class="section-label" aria-hidden="true">03 — Own</div>
+            <h2 class="feature-h2" id="f3-heading">Your data never leaves.</h2>
+            <p class="feature-body">
+              No accounts. No servers. No trackers. Everything lives on your
+              device — in plain Markdown files you can read with any tool, now
+              and in twenty years.
+            </p>
           </div>
-          <img
-            src="/screenshot.png"
-            class="screenshot-img"
-            alt="Write Me editor"
-            onerror="
-              this.style.display = 'none';
-              this.nextElementSibling.style.display = 'flex';
-            "
-          />
-          <div class="screenshot-placeholder" style="display: none">
-            <span>screenshot.png</span>
+          <div class="mockup-frame f3-mockup" aria-hidden="true">
+            <div class="mockup-chrome">
+              <span class="chrome-dot chrome-dot-r"></span>
+              <span class="chrome-dot chrome-dot-y"></span>
+              <span class="chrome-dot chrome-dot-g"></span>
+            </div>
+            <div class="mockup-body">
+              <!-- File tree -->
+              <div class="own-panel">
+                <div class="own-panel-title">~/notes</div>
+                <div class="file-tree-item">
+                  <span class="file-icon">▸</span>
+                  <div>
+                    <div class="file-name">the-blank-page.md</div>
+                    <div class="file-path">~/notes/the-blank-page.md</div>
+                  </div>
+                </div>
+                <div class="file-tree-item">
+                  <span class="file-icon">▸</span>
+                  <div>
+                    <div class="file-name">weekly-review.md</div>
+                    <div class="file-path">~/notes/weekly-review.md</div>
+                  </div>
+                </div>
+                <div class="file-tree-item">
+                  <span class="file-icon">▸</span>
+                  <div>
+                    <div class="file-name">book-notes-sicp.md</div>
+                    <div class="file-path">~/notes/book-notes-sicp.md</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Privacy badges -->
+              <div class="own-panel">
+                <div class="own-panel-title">Privacy</div>
+                <div class="own-lock-icon" aria-hidden="true">🔒</div>
+                <div class="own-badge own-badge-green">
+                  <span aria-hidden="true">✓</span> No network required
+                </div>
+                <div class="own-badge own-badge-purple">
+                  <span aria-hidden="true">✓</span> No account needed
+                </div>
+                <div class="own-badge own-badge-dim">
+                  <span aria-hidden="true">✓</span> Plain .md files
+                </div>
+              </div>
+              <!-- Terminal -->
+              <div class="own-panel">
+                <div class="own-panel-title">Your files</div>
+                <div class="own-terminal">
+                  <div>
+                    <span class="term-prompt">~ </span
+                    ><span class="term-cmd">ls ~/notes/</span>
+                  </div>
+                  <div class="term-out">the-blank-page.md</div>
+                  <div class="term-out">weekly-review.md</div>
+                  <div class="term-out">book-notes-sicp.md</div>
+                  <div style="margin-top: 8px">
+                    <span class="term-prompt">~ </span
+                    ><span class="term-cmd">cat weekly-review.md</span>
+                  </div>
+                  <div class="term-out"># Weekly Review</div>
+                  <div class="term-out">## What went well</div>
+                  <div class="term-out">...</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
