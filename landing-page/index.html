@@ -798,11 +798,9 @@
       }
       .footer-bottom {
         padding: 20px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        border-top: 1px solid var(--border);
       }
-      footer .container {
+      footer > .container {
         display: grid;
         grid-template-columns: 2fr 1fr 1fr;
         gap: 48px;
@@ -1282,12 +1280,12 @@
           </ul>
         </nav>
       </div>
-    </footer>
-    <div class="footer-bottom">
-      <div class="container">
-        <span>© 2026 Write Me</span>
-        <span>Built by g4rcez</span>
+      <div class="footer-bottom">
+        <div class="container">
+          <span>© 2026 Write Me</span>
+          <span>Built by g4rcez</span>
+        </div>
       </div>
-    </div>
+    </footer>
   </body>
 </html>
