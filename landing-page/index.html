@@ -379,6 +379,11 @@
         color: var(--fg-faint);
       }
 
+      /* ── FEATURE 01: WRITE ── */
+      .f1-mockup .mockup-body {
+        height: 400px;
+      }
+
       /* ── MOCKUP FRAME ── */
       .mockup-frame {
         border: 1px solid var(--border);
@@ -777,55 +782,73 @@
         </div>
       </section>
 
-      <!-- FEATURES -->
+      <!-- FEATURE 01: WRITE -->
       <section
-        class="features"
-        id="features"
-        aria-labelledby="features-heading"
+        class="feature-section"
+        id="feature-write"
+        aria-labelledby="f1-heading"
       >
-        <div class="features-header">
-          <h2 class="features-title" id="features-heading">What's inside</h2>
-          <span class="features-count">04 features</span>
-        </div>
-        <div class="features-grid">
-          <div class="feature-item">
-            <div class="feature-num" aria-hidden="true">01</div>
-            <div>
-              <h3 class="feature-title">True Privacy</h3>
-              <p class="feature-desc">
-                No servers, no trackers, no accounts. Everything lives on your
-                device. Your thoughts are yours alone.
-              </p>
-            </div>
+        <div class="container">
+          <div class="feature-text">
+            <div class="section-label" aria-hidden="true">01 — Write</div>
+            <h2 class="feature-h2" id="f1-heading">Write without friction.</h2>
+            <p class="feature-body">
+              One focused editor. No toolbars competing for your attention.
+              Markdown rendered live, rich content when you need it. Your cursor
+              is always in the right place.
+            </p>
           </div>
-          <div class="feature-item">
-            <div class="feature-num" aria-hidden="true">02</div>
-            <div>
-              <h3 class="feature-title">Zero Distraction</h3>
-              <p class="feature-desc">
-                A minimalist interface designed to disappear. No toolbars, no
-                popups — a blank canvas that gets out of your way.
-              </p>
+          <div class="mockup-frame f1-mockup" aria-hidden="true">
+            <div class="mockup-chrome">
+              <span class="chrome-dot chrome-dot-r"></span>
+              <span class="chrome-dot chrome-dot-y"></span>
+              <span class="chrome-dot chrome-dot-g"></span>
             </div>
-          </div>
-          <div class="feature-item">
-            <div class="feature-num" aria-hidden="true">03</div>
-            <div>
-              <h3 class="feature-title">Pure Markdown</h3>
-              <p class="feature-desc">
-                Your notes are plain text. Portable, future-proof, readable by
-                any tool — now and in twenty years.
-              </p>
-            </div>
-          </div>
-          <div class="feature-item">
-            <div class="feature-num" aria-hidden="true">04</div>
-            <div>
-              <h3 class="feature-title">AI, Privately</h3>
-              <p class="feature-desc">
-                Bring your own model. Math, diagrams, code, chat — all the
-                power, none of the surveillance.
-              </p>
+            <div class="mockup-body">
+              <aside class="mockup-sidebar">
+                <div class="sidebar-header">Notes</div>
+                <div class="sidebar-item active">
+                  <div class="sidebar-item-title">The blank page myth</div>
+                  <div class="sidebar-item-date">Today</div>
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-title">Weekly review</div>
+                  <div class="sidebar-item-date">Yesterday</div>
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-title">Book notes — SICP</div>
+                  <div class="sidebar-item-date">Apr 30</div>
+                </div>
+              </aside>
+              <div class="mockup-editor">
+                <div class="editor-h1">The blank page myth</div>
+                <p class="editor-p">
+                  There is no blank page. Every thought you sit down to write
+                  already exists somewhere in your head — the editor's only job
+                  is to
+                  <strong style="color: var(--fg)">get out of the way</strong>
+                  while you retrieve it.
+                </p>
+                <p class="editor-p">
+                  Write Me strips the interface to its minimum. No toolbar. No
+                  sidebar unless you want one. Just the cursor blinking in a
+                  <span class="editor-code">clean 72-character column</span>.
+                </p>
+                <ul class="editor-task-list" role="list">
+                  <li class="editor-task done">
+                    <span class="task-check done" aria-label="done">✓</span>
+                    <span>Open a new note</span>
+                  </li>
+                  <li class="editor-task done">
+                    <span class="task-check done" aria-label="done">✓</span>
+                    <span>Write the first sentence</span>
+                  </li>
+                  <li class="editor-task">
+                    <span class="task-check" aria-label="not done"></span>
+                    <span>Stop editing, start thinking</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
