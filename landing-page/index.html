@@ -751,11 +751,8 @@
 
       /* ── FOOTER ── */
       footer {
-        padding: 56px 48px 40px;
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
-        gap: 48px;
-        border-bottom: 1px solid var(--border);
+        padding: 56px 0 40px;
+        border-top: 1px solid var(--border);
       }
       .footer-brand-name {
         font-family: "Plus Jakarta Sans", sans-serif;
@@ -800,10 +797,21 @@
         color: var(--fg);
       }
       .footer-bottom {
-        padding: 20px 48px;
+        padding: 20px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+      }
+      footer .container {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 48px;
+      }
+      .footer-bottom .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
       }
       .footer-bottom span {
         font-family: "Manrope", sans-serif;
@@ -1239,43 +1247,47 @@
 
     <!-- FOOTER -->
     <footer>
-      <div>
-        <p class="footer-brand-name">Write Me</p>
-        <p class="footer-brand-desc">
-          The open-source editor for those who value focus and privacy.
-        </p>
+      <div class="container">
+        <div>
+          <p class="footer-brand-name">Write Me</p>
+          <p class="footer-brand-desc">
+            The open-source editor for those who value focus and privacy.
+          </p>
+        </div>
+        <nav aria-labelledby="footer-product-heading">
+          <h2 class="footer-col-title" id="footer-product-heading">Product</h2>
+          <ul class="footer-links">
+            <li>
+              <a href="https://app.writeme.dev" rel="noopener noreferrer"
+                >Web App</a
+              >
+            </li>
+            <li><a href="#">Desktop (soon)</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="footer-community-heading">
+          <h2 class="footer-col-title" id="footer-community-heading">
+            Community
+          </h2>
+          <ul class="footer-links">
+            <li>
+              <a
+                href="https://github.com/g4rcez/writeme-editor"
+                rel="noopener noreferrer"
+                >GitHub</a
+              >
+            </li>
+            <li><a href="#">Twitter / X</a></li>
+          </ul>
+        </nav>
       </div>
-      <nav aria-labelledby="footer-product-heading">
-        <h2 class="footer-col-title" id="footer-product-heading">Product</h2>
-        <ul class="footer-links">
-          <li>
-            <a href="https://app.writeme.dev" rel="noopener noreferrer"
-              >Web App</a
-            >
-          </li>
-          <li><a href="#">Desktop (soon)</a></li>
-          <li><a href="#">Changelog</a></li>
-        </ul>
-      </nav>
-      <nav aria-labelledby="footer-community-heading">
-        <h2 class="footer-col-title" id="footer-community-heading">
-          Community
-        </h2>
-        <ul class="footer-links">
-          <li>
-            <a
-              href="https://github.com/g4rcez/writeme-editor"
-              rel="noopener noreferrer"
-              >GitHub</a
-            >
-          </li>
-          <li><a href="#">Twitter / X</a></li>
-        </ul>
-      </nav>
     </footer>
     <div class="footer-bottom">
-      <span>© 2026 Write Me</span>
-      <span>Built by g4rcez</span>
+      <div class="container">
+        <span>© 2026 Write Me</span>
+        <span>Built by g4rcez</span>
+      </div>
     </div>
   </body>
 </html>
