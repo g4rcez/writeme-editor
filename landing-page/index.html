@@ -186,6 +186,199 @@
         border-radius: 3px;
       }
 
+      /* ── HERO ── */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 48px 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 70% 50% at 50% 100%,
+          rgba(183, 153, 255, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .hero-content {
+        max-width: 800px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--green);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      .hero-eyebrow::before,
+      .hero-eyebrow::after {
+        content: "";
+        display: block;
+        width: 24px;
+        height: 1px;
+        background: var(--green);
+        flex-shrink: 0;
+      }
+      .hero-h1 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: clamp(56px, 8vw, 96px);
+        font-weight: 800;
+        line-height: 0.93;
+        letter-spacing: -0.04em;
+        color: var(--fg);
+        margin-bottom: 28px;
+      }
+      .hero-h1 em {
+        font-style: italic;
+        font-weight: 300;
+        color: var(--purple);
+      }
+      .hero-sub {
+        font-family: "Manrope", sans-serif;
+        font-size: 18px;
+        font-weight: 400;
+        color: var(--fg-dim);
+        max-width: 480px;
+        margin: 0 auto 40px;
+        line-height: 1.7;
+      }
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 72px;
+      }
+      .hero-mockup-wrap {
+        width: 100%;
+        max-width: 1200px;
+        position: relative;
+        z-index: 1;
+        padding: 0 48px;
+      }
+
+      /* ── HERO EDITOR MOCKUP ── */
+      .mockup-sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        border-right: 1px solid var(--border);
+        padding: 16px 0;
+        overflow: hidden;
+      }
+      .sidebar-header {
+        font-family: "Manrope", sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fg-faint);
+        padding: 0 16px 12px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 8px;
+      }
+      .sidebar-item {
+        padding: 10px 16px;
+        cursor: default;
+      }
+      .sidebar-item.active {
+        background: rgba(183, 153, 255, 0.08);
+        border-left: 2px solid var(--purple);
+      }
+      .sidebar-item-title {
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--fg);
+        margin-bottom: 3px;
+      }
+      .sidebar-item.active .sidebar-item-title {
+        color: var(--purple);
+      }
+      .sidebar-item-date {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--fg-faint);
+      }
+      .mockup-editor {
+        flex: 1;
+        padding: 40px 48px;
+        overflow: hidden;
+      }
+      .editor-h1 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--fg);
+        margin-bottom: 20px;
+        letter-spacing: -0.02em;
+      }
+      .editor-p {
+        font-family: "Manrope", sans-serif;
+        font-size: 14px;
+        color: var(--fg-dim);
+        line-height: 1.7;
+        margin-bottom: 14px;
+      }
+      .editor-code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        background: rgba(59, 52, 134, 0.25);
+        color: var(--purple);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .editor-task-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .editor-task {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        color: var(--fg-dim);
+      }
+      .task-check {
+        width: 15px;
+        height: 15px;
+        border-radius: 4px;
+        border: 1.5px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .task-check.done {
+        background: var(--purple);
+        border-color: var(--purple);
+        color: var(--bg);
+        font-size: 9px;
+      }
+      .editor-task.done span {
+        text-decoration: line-through;
+        color: var(--fg-faint);
+      }
+
       /* ── MOCKUP FRAME ── */
       .mockup-frame {
         border: 1px solid var(--border);
@@ -492,13 +685,16 @@
 
     <main id="main-content" tabindex="-1">
       <!-- HERO -->
-      <section class="hero">
-        <div class="hero-left">
-          <div class="hero-kicker">Digital workshop for thought</div>
-          <h1 class="hero-h1">
-            Just you<br />
-            and your<br />
-            <em>thoughts.</em>
+      <section class="hero" aria-labelledby="hero-h1">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="hero-eyebrow" aria-hidden="true">
+            A digital workshop for thought
+          </div>
+          <h1 class="hero-h1" id="hero-h1">
+            The editor that<br />
+            gets out of your<br />
+            <em>way.</em>
           </h1>
           <p class="hero-sub">
             A zero-distraction workspace for your mind. Privacy by design, focus
@@ -509,8 +705,9 @@
               href="https://app.writeme.dev"
               class="btn-primary"
               rel="noopener noreferrer"
-              >Start writing</a
             >
+              Start writing
+            </a>
             <a
               href="https://github.com/g4rcez/writeme-editor"
               class="btn-ghost"
@@ -520,36 +717,64 @@
             </a>
           </div>
         </div>
-
-        <div class="hero-right">
-          <div class="hero-rule"></div>
-          <div class="hero-stats">
-            <div class="stat">
-              <div class="stat-num">0</div>
-              <div class="stat-label">distractions</div>
+        <div class="hero-mockup-wrap" aria-hidden="true">
+          <div class="mockup-frame">
+            <div class="mockup-chrome">
+              <span class="chrome-dot chrome-dot-r"></span>
+              <span class="chrome-dot chrome-dot-y"></span>
+              <span class="chrome-dot chrome-dot-g"></span>
             </div>
-            <div class="stat">
-              <div class="stat-num" style="color: var(--green)">∞</div>
-              <div class="stat-label">focus</div>
-            </div>
-            <div class="stat">
-              <div class="stat-num">100%</div>
-              <div class="stat-label">local first</div>
+            <div class="mockup-body">
+              <aside class="mockup-sidebar">
+                <div class="sidebar-header">Notes</div>
+                <div class="sidebar-item active">
+                  <div class="sidebar-item-title">Getting started</div>
+                  <div class="sidebar-item-date">Today</div>
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-title">Project ideas</div>
+                  <div class="sidebar-item-date">Yesterday</div>
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-title">Reading list</div>
+                  <div class="sidebar-item-date">May 2</div>
+                </div>
+              </aside>
+              <div class="mockup-editor">
+                <div class="editor-h1">Getting started with Write Me</div>
+                <p class="editor-p">
+                  Write Me is a
+                  <strong style="color: var(--fg)">local-first editor</strong> —
+                  your notes live on your device, never on a server. Open a note
+                  and start typing. Everything is saved automatically as
+                  <span class="editor-code">.md</span> files you can read
+                  anywhere.
+                </p>
+                <p class="editor-p">
+                  Use <span class="editor-code">&gt;&gt;math</span> to evaluate
+                  inline expressions, <span class="editor-code">```js</span> for
+                  syntax-highlighted code blocks, or
+                  <span class="editor-code">/diagram</span> to insert a Mermaid
+                  flowchart.
+                </p>
+                <ul class="editor-task-list" role="list">
+                  <li class="editor-task done">
+                    <span class="task-check done" aria-label="done">✓</span>
+                    <span>Install Write Me</span>
+                  </li>
+                  <li class="editor-task done">
+                    <span class="task-check done" aria-label="done">✓</span>
+                    <span>Create your first note</span>
+                  </li>
+                  <li class="editor-task">
+                    <span class="task-check" aria-label="not done"></span>
+                    <span>Explore the command palette</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- CONCEPT -->
-      <section class="concept" aria-labelledby="concept-heading">
-        <h2 class="concept-label" id="concept-heading">The idea</h2>
-        <p class="concept-body">
-          Write Me is a <strong>digital workshop for thought</strong> — not a
-          word processor, not a productivity suite. It's a clean space where
-          <em>the only thing that matters is the quality of your thinking.</em>
-          No toolbars fighting for your attention. No cloud syncing your private
-          ideas. Just clarity, speed, and the words you mean to write.
-        </p>
       </section>
 
       <!-- FEATURES -->
