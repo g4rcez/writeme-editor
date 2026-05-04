@@ -90,11 +90,6 @@
         padding: 0 48px;
       }
 
-      .section {
-        padding: 120px 0;
-        border-top: 1px solid var(--border);
-      }
-
       .section-label {
         font-family: "JetBrains Mono", monospace;
         font-size: 11px;
@@ -170,6 +165,21 @@
       .btn-large {
         font-size: 15px;
         padding: 14px 36px;
+      }
+      .btn-primary:focus-visible {
+        outline: 2px solid var(--purple);
+        outline-offset: 3px;
+        border-radius: 9px;
+      }
+      .btn-outline:focus-visible {
+        outline: 2px solid var(--purple);
+        outline-offset: 3px;
+        border-radius: 8px;
+      }
+      .btn-ghost:focus-visible {
+        outline: 2px solid var(--purple);
+        outline-offset: 3px;
+        border-radius: 3px;
       }
 
       /* ── MOCKUP FRAME ── */
@@ -378,6 +388,7 @@
         margin-bottom: 16px;
       }
       .footer-links {
+        list-style: none;
         display: flex;
         flex-direction: column;
         gap: 11px;
@@ -432,9 +443,6 @@
       }
       main:focus {
         outline: none;
-      }
-      .footer-links {
-        list-style: none;
       }
       @media (prefers-reduced-motion: reduce) {
         html {
