@@ -3,12 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WriteMe — The Minimalist Workspace</title>
+    <title>Write Me — Digital Workshop for Thought</title>
     <meta
       name="description"
-      content="A privacy-first, lightning-fast markdown editor."
+      content="A zero-distraction workspace for your mind. Privacy by design, focus by nature. Local-first, lightning-fast."
     />
-    <meta property="og:title" content="WriteMe — The Minimalist Workspace" />
+    <meta
+      property="og:title"
+      content="Write Me — Digital Workshop for Thought"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://app.writeme.dev" />
     <link rel="icon" type="image/png" href="/favicon.ico" />
@@ -17,39 +20,43 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Manrope:wght@200..800&family=JetBrains+Mono:wght@400;700&display=swap"
     />
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-      :root {
-        --bg: #0b0d10;
-        --fg: #e2e8f0;
-        --muted: #94a3b8;
-        --border: #1e293b;
-        --primary: #4682b4;
-        --primary-hover: #5a9bc8;
-        --primary-bg: rgba(70, 130, 180, 0.1);
-        --surface: #13161c;
-        --surface-hover: #1a1e26;
-        --radius: 8px;
-      }
-
-      * {
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #1c0520;
+        --fg: #add9b5;
+        --purple: #b799ff;
+        --indigo: #3b3486;
+        --green: #92e341;
+        --alt-bg: #171717;
+        --fg-dim: rgba(173, 217, 181, 0.55);
+        --fg-faint: rgba(173, 217, 181, 0.28);
+        --border: rgba(59, 52, 134, 0.5);
+        --surface: rgba(59, 52, 134, 0.12);
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       body {
-        background-color: var(--bg);
+        background: var(--bg);
         color: var(--fg);
-        font-family:
-          "IBM Plex Sans",
-          system-ui,
-          -apple-system,
-          sans-serif;
-        line-height: 1.5;
+        font-family: "Manrope", sans-serif;
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 1.6;
         overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
       }
 
       h1,
@@ -57,591 +64,729 @@
       h3,
       h4,
       h5,
-      h6,
-      .logo,
-      .btn-cta,
-      .nav-desktop {
-        font-family: "Outfit", sans-serif;
+      h6 {
+        font-family: "Plus Jakarta Sans", sans-serif;
       }
 
-      a {
-        text-decoration: none;
-        color: inherit;
-        transition: opacity 0.2s;
-      }
-
-      a:hover {
-        opacity: 0.8;
-      }
-
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-
-      .grid {
-        display: grid;
-        gap: 1px;
-        background: var(--border);
-        border: 1px solid var(--border);
-      }
-
-      header {
+      /* ── NAV ── */
+      nav {
         position: sticky;
         top: 0;
         z-index: 100;
-        background: hsla(221, 40%, 12%, 0.6);
-        backdrop-filter: blur(24px);
-        border-bottom: 1px solid var(--border);
-      }
-
-      .header-inner {
-        height: 4.5rem;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 1rem;
+        justify-content: space-between;
+        padding: 0 48px;
+        height: 60px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(28, 5, 32, 0.9);
+        backdrop-filter: blur(20px);
       }
-
-      .logo {
+      .nav-logo {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 15px;
         font-weight: 700;
-        font-size: 1.4rem;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.04em;
+        color: var(--fg);
+        text-decoration: none;
         display: flex;
         align-items: center;
         gap: 10px;
-        text-transform: uppercase;
       }
-
-      .nav-desktop {
-        display: none;
-        gap: 30px;
-        font-size: 0.9rem;
+      .nav-logo-mark {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+      }
+      .nav-links {
+        display: flex;
+        gap: 36px;
+        list-style: none;
+      }
+      .nav-links a {
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
         font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        color: var(--fg-dim);
+        text-decoration: none;
+        letter-spacing: 0.02em;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: var(--fg);
+      }
+      .nav-cta {
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 22px;
+        border-radius: 8px;
+        background: var(--purple);
+        color: var(--bg);
+        text-decoration: none;
+        letter-spacing: 0.01em;
+        transition: opacity 0.15s;
+      }
+      .nav-cta:hover {
+        opacity: 0.85;
       }
 
-      .btn-cta {
+      /* ── HERO ── */
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        padding: 0 48px;
+        min-height: calc(100vh - 60px);
+        border-bottom: 1px solid var(--border);
+      }
+      .hero-left {
+        max-width: 620px;
+        padding: 80px 0;
+      }
+      .hero-kicker {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--green);
+        letter-spacing: 0.14em;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .hero-kicker::before {
+        content: "";
+        display: block;
+        width: 32px;
+        height: 1px;
+        background: var(--green);
+        flex-shrink: 0;
+      }
+      .hero-h1 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: clamp(56px, 7.5vw, 90px);
+        font-weight: 800;
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        color: var(--fg);
+        margin-bottom: 32px;
+      }
+      .hero-h1 em {
+        font-style: italic;
+        font-weight: 300;
+        color: var(--purple);
+        letter-spacing: -0.02em;
+      }
+      .hero-sub {
+        font-family: "Manrope", sans-serif;
+        font-size: 17px;
+        font-weight: 400;
+        color: var(--fg-dim);
+        max-width: 420px;
+        line-height: 1.75;
+        margin-bottom: 40px;
+      }
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .btn-primary {
+        font-family: "Manrope", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 13px 30px;
+        border-radius: 9px;
         background: var(--fg);
         color: var(--bg);
-        padding: 5px 15px;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        border-radius: var(--radius);
-        transition:
-          transform 0.2s,
-          background 0.2s;
-      }
-
-      .btn-cta:hover {
-        transform: translateY(-2px);
-        background: #fff;
-      }
-
-      .hero {
-        padding: 100px 0 80px;
-        border-bottom: 1px solid var(--border);
-        text-align: center;
-        background: radial-gradient(
-          circle at center top,
-          hsla(215, 100%, 40%, 0.4) 0%,
-          transparent 70%
-        );
-      }
-
-      h1 {
-        font-size: clamp(3rem, 10vw, 7rem);
-        font-weight: 800;
-        line-height: 0.9;
-        text-transform: uppercase;
+        text-decoration: none;
         letter-spacing: 0.01em;
-        margin-bottom: 20px;
+        transition: opacity 0.15s;
+        display: inline-block;
+      }
+      .btn-primary:hover {
+        opacity: 0.88;
+      }
+      .btn-ghost {
+        font-family: "Manrope", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--fg-dim);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.15s;
+      }
+      .btn-ghost:hover {
         color: var(--fg);
       }
 
-      .hero p {
-        font-size: clamp(1rem, 2vw, 1.25rem);
-        color: var(--muted);
-        max-width: 600px;
-        margin: 0 auto 40px;
-        font-weight: 400;
-        text-wrap: pretty;
-      }
-
-      /* MARQUEE */
-      .marquee-container {
-        border-bottom: 1px solid var(--border);
-        overflow: hidden;
-        background: var(--surface);
-        padding: 15px 0;
-      }
-
-      .marquee-content {
+      /* right column: rule + stats */
+      .hero-right {
         display: flex;
-        gap: 40px;
-        white-space: nowrap;
-        animation: scroll 20s linear infinite;
+        align-items: stretch;
+        align-self: stretch;
       }
-
-      .marquee-item {
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--muted);
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+      .hero-rule {
+        width: 1px;
+        margin: 0 60px;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          var(--border) 20%,
+          var(--border) 80%,
+          transparent 100%
+        );
+        flex-shrink: 0;
       }
-
-      @keyframes scroll {
-        0% {
-          transform: translateX(0);
-        }
-
-        100% {
-          transform: translateX(-50%);
-        }
-      }
-
-      /* PRODUCT GRID (FEATURES) */
-      .grid-section {
-        padding: 60px 0;
-      }
-
-      .section-title {
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--muted);
-        margin-bottom: 20px;
-        display: block;
-        text-align: center;
-      }
-
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(1, 1fr);
-        border-top: 1px solid var(--border);
-        border-left: 1px solid var(--border);
-      }
-
-      .feature-card {
-        background: var(--bg);
-        border-right: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        padding: 40px;
+      .hero-stats {
         display: flex;
         flex-direction: column;
-        gap: 20px;
-        transition: background 0.3s;
-        position: relative;
-        overflow: hidden;
+        justify-content: center;
+        gap: 44px;
+        padding: 80px 0;
+      }
+      .stat {
+        text-align: right;
+      }
+      .stat-num {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 44px;
+        font-weight: 800;
+        color: var(--purple);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .stat-label {
+        font-family: "Manrope", sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--fg-faint);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-top: 5px;
       }
 
-      .feature-card:hover {
-        background: var(--surface);
+      /* ── CONCEPT ── */
+      .concept {
+        padding: 88px 48px;
+        border-bottom: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 72px;
+        align-items: start;
+      }
+      .concept-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--green);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding-top: 8px;
+      }
+      .concept-body {
+        font-family: "Manrope", sans-serif;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1.6;
+        color: var(--fg);
+        max-width: 640px;
+      }
+      .concept-body strong {
+        font-weight: 700;
+      }
+      .concept-body em {
+        font-style: italic;
+        color: var(--purple);
+        font-weight: 300;
       }
 
-      .feature-icon {
-        width: 50px;
-        height: 50px;
-        background: var(--surface);
+      /* ── FEATURES ── */
+      .features {
+        padding: 88px 48px;
+        border-bottom: 1px solid var(--border);
+      }
+      .features-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 52px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .features-title {
+        font-family: "Manrope", sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--fg-dim);
+      }
+      .features-count {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--fg-faint);
+      }
+      .features-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .feature-item {
+        padding: 36px 0;
+        border-bottom: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .feature-item:nth-child(odd) {
+        padding-right: 52px;
+        border-right: 1px solid var(--border);
+      }
+      .feature-item:nth-child(even) {
+        padding-left: 52px;
+      }
+      .feature-item:nth-last-child(-n + 2) {
+        border-bottom: none;
+      }
+      .feature-num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--fg-faint);
+        padding-top: 5px;
+        letter-spacing: 0.04em;
+      }
+      .feature-title {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--fg);
+        margin-bottom: 10px;
+        letter-spacing: -0.02em;
+      }
+      .feature-desc {
+        font-family: "Manrope", sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--fg-dim);
+        line-height: 1.7;
+      }
+
+      /* ── SCREENSHOT ── */
+      .screenshot-section {
+        padding: 88px 48px;
+        border-bottom: 1px solid var(--border);
+      }
+      .screenshot-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--green);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        margin-bottom: 28px;
+      }
+      .screenshot-frame {
         border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--alt-bg);
+      }
+      .screenshot-bar {
+        height: 40px;
+        background: rgba(59, 52, 134, 0.25);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        gap: 8px;
+      }
+      .wdot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+      }
+      .wdot-r {
+        background: #ff5f57;
+      }
+      .wdot-y {
+        background: #febc2e;
+      }
+      .wdot-g {
+        background: #28c840;
+      }
+      .screenshot-img {
+        display: block;
+        width: 100%;
+        height: 420px;
+        object-fit: cover;
+        object-position: top;
+      }
+      .screenshot-placeholder {
+        height: 420px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--primary);
+        flex-direction: column;
+        gap: 14px;
+      }
+      .screenshot-placeholder span {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--fg-faint);
       }
 
-      .feature-card h3 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .feature-card p {
-        color: var(--muted);
-        font-size: 0.95rem;
-        line-height: 1.6;
-      }
-
-      .app-preview {
-        border: 1px solid var(--border);
-        margin: 0 0;
-        background: var(--surface);
-        padding: 20px;
+      /* ── CTA ── */
+      .cta-section {
+        padding: 120px 48px;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
         position: relative;
-        border-radius: 1rem;
+        overflow: hidden;
       }
-
-      footer {
-        border-top: 1px solid var(--border);
-        padding: 80px 0 40px;
-        background: var(--surface);
+      .cta-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 55% 60% at 50% 110%,
+          rgba(183, 153, 255, 0.1) 0%,
+          transparent 65%
+        );
+        pointer-events: none;
       }
-
-      .footer-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 40px;
-        margin-bottom: 60px;
-      }
-
-      .footer-brand h2 {
-        font-size: 2rem;
-        font-weight: 800;
+      .cta-eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--green);
+        letter-spacing: 0.18em;
         text-transform: uppercase;
+        margin-bottom: 20px;
+      }
+      .cta-h2 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: clamp(40px, 5.5vw, 68px);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 0.97;
+        color: var(--fg);
+        margin-bottom: 22px;
+      }
+      .cta-h2 em {
+        font-style: italic;
+        font-weight: 300;
+        color: var(--purple);
+      }
+      .cta-sub {
+        font-family: "Manrope", sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        color: var(--fg-dim);
+        max-width: 460px;
+        margin: 0 auto 40px;
+        line-height: 1.75;
+      }
+      .cta-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .btn-outline {
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 11px 24px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        color: var(--fg-dim);
+        text-decoration: none;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-outline:hover {
+        border-color: var(--purple);
+        color: var(--fg);
+      }
+      .btn-cta-large {
+        font-size: 15px;
+        padding: 14px 36px;
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        padding: 56px 48px 40px;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 48px;
+        border-bottom: 1px solid var(--border);
+      }
+      .footer-brand-name {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--fg);
         margin-bottom: 10px;
       }
-
+      .footer-brand-desc {
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--fg-faint);
+        line-height: 1.65;
+        max-width: 260px;
+      }
+      .footer-col-title {
+        font-family: "Manrope", sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--fg-dim);
+        margin-bottom: 16px;
+      }
       .footer-links {
         display: flex;
         flex-direction: column;
-        gap: 15px;
+        gap: 11px;
       }
-
       .footer-links a {
-        color: var(--muted);
-        text-transform: uppercase;
-        font-size: 0.9rem;
-        font-weight: 500;
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--fg-faint);
+        text-decoration: none;
+        transition: color 0.15s;
       }
-
       .footer-links a:hover {
-        color: var(--primary);
+        color: var(--fg);
       }
-
-      .bottom-bar {
-        border-top: 1px solid var(--border);
-        padding-top: 20px;
+      .footer-bottom {
+        padding: 20px 48px;
         display: flex;
-        flex-direction: column;
-        gap: 10px;
-        color: var(--muted);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        text-align: center;
+        justify-content: space-between;
+        align-items: center;
       }
-
-      @media (min-width: 768px) {
-        .nav-desktop {
-          display: flex;
-        }
-
-        .features-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .footer-grid {
-          grid-template-columns: 2fr 1fr 1fr;
-        }
-
-        .footer-cta {
-          background: radial-gradient(
-            circle at center bottom,
-            hsla(215, 100%, 40%, 0.4) 0%,
-            transparent 70%
-          );
-        }
-
-        .bottom-bar {
-          flex-direction: row;
-          justify-content: space-between;
-          text-align: left;
-        }
-      }
-
-      @media (min-width: 1024px) {
-        .features-grid {
-          grid-template-columns: repeat(3, 1fr);
-        }
+      .footer-bottom span {
+        font-family: "Manrope", sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--fg-faint);
+        letter-spacing: 0.04em;
       }
     </style>
   </head>
-
   <body>
-    <header>
-      <div class="container header-inner">
-        <a href="#" class="logo">
-          <img
-            src="/logo.svg"
-            alt="WriteMe Logo"
-            style="height: 32px; width: auto"
-          />
-          WriteMe
-        </a>
-        <nav class="nav-desktop">
-          <a href="#features">Zero distraction</a>
-          <a href="#philosophy">Privacy</a>
-          <a href="https://github.com/g4rcez/writeme-editor">Open Source</a>
-        </nav>
-        <a href="https://app.writeme.dev" class="btn-cta">Start writing</a>
-      </div>
-    </header>
-    <main>
-      <section class="container hero">
-        <h1>Just you and<br />your thoughts.</h1>
-        <p>
-          A zero distraction workspace for your mind. Privacy by design, focus
-          by nature. Unleash your productivity in a pure and powerfull editor.
-        </p>
-        <a
-          href="https://app.writeme.dev"
-          class="btn-cta"
-          style="padding: 15px 30px; font-size: 1rem"
-          >Start writing</a
-        >
-      </section>
-      <div class="marquee-container">
-        <div class="marquee-content">
-          <div class="marquee-item">
-            <i data-lucide="shield-check"></i>Respect privacy
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="wind"></i>No distractions
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="wrench"></i>Tools out of the box
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="shield"></i>Future proof
-          </div>
-          <div class="marquee-item"><i data-lucide="house"></i>Local first</div>
-          <div class="marquee-item">
-            <i data-lucide="eye-off"></i>No tracking
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="shield-check"></i>Code blocks
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="calculator"></i>Math solver
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="bookmark"></i>Read it later
-          </div>
-          <div class="marquee-item">
-            <i data-lucide="keyboard"></i>Keyboard driven
-          </div>
-          <div class="marquee-item"><i data-lucide="heading1"></i>Markdown</div>
-          <div class="marquee-item">
-            <i data-lucide="layers-2"></i>Fast Commands
-          </div>
-        </div>
-      </div>
-      <section class="container grid-section" id="features">
-        <span class="section-title">The features</span>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="eye-off"></i></div>
-            <h3>True Privacy</h3>
-            <p>
-              Your workspace is private. No clouds, no trackers, no eyes but
-              yours. Everything stays on your device.
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="wind"></i></div>
-            <h3>Zero distraction</h3>
-            <p>
-              Minimalist interface designed to disappear. No toolbars, no
-              popups—just a blank canvas for your flow.
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="brain"></i></div>
-            <h3>Flow State</h3>
-            <p>
-              Lightning-fast performance ensures your tools never interrupt your
-              stream of consciousness.
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="layers"></i></div>
-            <h3>Pure Markdown</h3>
-            <p>
-              The simplicity of text. Your data is stored in open,
-              human-readable formats. Ownership is absolute.
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="palette"></i></div>
-            <h3>Focused Visuals</h3>
-            <p>
-              Integrated sketching and diagramming that feel like a natural
-              extension of your pen, not a distraction.
-            </p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon"><i data-lucide="infinity"></i></div>
-            <h3>Infinite productivity</h3>
-            <p>
-              Read it later, fast commands, language parsers, and everything
-              with a beautiful UI to help you focus on what matters.
-            </p>
-          </div>
-        </div>
-      </section>
-      <section class="container" style="margin-bottom: 100px">
-        <span class="section-title">Welcome to Writeme</span>
-        <div class="app-preview" style="overflow: clip">
-          <img
-            src="/screenshot.png"
-            style="display: block; max-width: 100%; border-radius: 1rem"
-          />
-        </div>
-      </section>
+    <!-- NAV -->
+    <nav>
+      <a href="#" class="nav-logo">
+        <span class="nav-logo-mark"></span>
+        Write Me
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#">Privacy</a></li>
+        <li>
+          <a href="https://github.com/g4rcez/writeme-editor" rel="noopener"
+            >GitHub</a
+          >
+        </li>
+      </ul>
+      <a href="https://app.writeme.dev" class="nav-cta">Start writing</a>
+    </nav>
 
-      <!-- CTA Section -->
-      <section
-        class="container footer-cta"
-        style="
-          padding: 100px 0;
-          border-top: 1px solid var(--border);
-          text-align: center;
-        "
-      >
-        <h2
-          style="
-            font-size: clamp(2rem, 5vw, 4rem);
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-          "
-        >
-          Find your Flow
-        </h2>
-        <p
-          style="
-            color: var(--muted);
-            margin-bottom: 40px;
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin-inline: auto;
-          "
-        >
-          Step into a zero distraction environment where your productivity meets
-          peace of mind. Launch the web workspace or wait for the native
-          experience.
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-kicker">Digital workshop for thought</div>
+        <h1 class="hero-h1">
+          Just you<br />
+          and your<br />
+          <em>thoughts.</em>
+        </h1>
+        <p class="hero-sub">
+          A zero-distraction workspace for your mind. Privacy by design, focus
+          by nature. Local-first, lightning-fast.
         </p>
-
-        <div
-          style="
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 60px;
-          "
-        >
-          <a
-            href="https://app.writeme.dev"
-            class="btn-cta"
-            style="padding: 15px 40px; font-size: 1rem"
+        <div class="hero-actions">
+          <a href="https://app.writeme.dev" class="btn-primary"
             >Start writing</a
           >
-          <div
-            style="
-              border: 1px solid var(--border);
-              padding: 15px 30px;
-              font-weight: 700;
-              text-transform: uppercase;
-              font-size: 0.8rem;
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              color: var(--muted);
-            "
+          <a
+            href="https://github.com/g4rcez/writeme-editor"
+            class="btn-ghost"
+            rel="noopener"
           >
-            <i data-lucide="monitor"></i> Desktop App Coming Soon
+            View on GitHub →
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="hero-rule"></div>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-num">0</div>
+            <div class="stat-label">distractions</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" style="color: var(--green)">∞</div>
+            <div class="stat-label">focus</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">100%</div>
+            <div class="stat-label">local first</div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div
-          style="
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 40px;
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: left;
+    <!-- CONCEPT -->
+    <section class="concept">
+      <div class="concept-label">The idea</div>
+      <p class="concept-body">
+        Write Me is a <strong>digital workshop for thought</strong> — not a word
+        processor, not a productivity suite. It's a clean space where
+        <em>the only thing that matters is the quality of your thinking.</em> No
+        toolbars fighting for your attention. No cloud syncing your private
+        ideas. Just clarity, speed, and the words you mean to write.
+      </p>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+      <div class="features-header">
+        <span class="features-title">What's inside</span>
+        <span class="features-count">04 features</span>
+      </div>
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-num">01</div>
+          <div>
+            <div class="feature-title">True Privacy</div>
+            <div class="feature-desc">
+              No servers, no trackers, no accounts. Everything lives on your
+              device. Your thoughts are yours alone.
+            </div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">02</div>
+          <div>
+            <div class="feature-title">Zero Distraction</div>
+            <div class="feature-desc">
+              A minimalist interface designed to disappear. No toolbars, no
+              popups — a blank canvas that gets out of your way.
+            </div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">03</div>
+          <div>
+            <div class="feature-title">Pure Markdown</div>
+            <div class="feature-desc">
+              Your notes are plain text. Portable, future-proof, readable by any
+              tool — now and in twenty years.
+            </div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">04</div>
+          <div>
+            <div class="feature-title">AI, Privately</div>
+            <div class="feature-desc">
+              Bring your own model. Math, diagrams, code, chat — all the power,
+              none of the surveillance.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREENSHOT -->
+    <section class="screenshot-section">
+      <div class="screenshot-label">The workspace</div>
+      <div class="screenshot-frame">
+        <div class="screenshot-bar">
+          <div class="wdot wdot-r"></div>
+          <div class="wdot wdot-y"></div>
+          <div class="wdot wdot-g"></div>
+        </div>
+        <img
+          src="/screenshot.png"
+          class="screenshot-img"
+          alt="Write Me editor"
+          onerror="
+            this.style.display = 'none';
+            this.nextElementSibling.style.display = 'flex';
           "
-        >
-          <div style="display: flex; gap: 20px; align-items: center">
-            <div style="font-size: 2rem; color: var(--primary)">
-              <i data-lucide="coffee"></i>
-            </div>
-            <div>
-              <h4
-                style="
-                  text-transform: uppercase;
-                  font-weight: 800;
-                  margin-bottom: 5px;
-                "
-              >
-                Shape the future
-              </h4>
-              <p style="color: var(--muted); font-size: 0.9rem">
-                Want a specific feature? I accept donations to prioritize
-                community requests. Help me build the tool you need.
-              </p>
-              <a
-                href="#"
-                style="
-                  color: var(--fg);
-                  font-weight: 700;
-                  text-decoration: underline;
-                  margin-top: 10px;
-                  display: inline-block;
-                  text-transform: uppercase;
-                  font-size: 0.8rem;
-                "
-                >Request a feature <i data-lucide="external-link" size="14"></i
-              ></a>
-            </div>
-          </div>
+        />
+        <div class="screenshot-placeholder" style="display: none">
+          <span>screenshot.png</span>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="cta-glow"></div>
+      <div class="cta-eyebrow">Ready?</div>
+      <h2 class="cta-h2">Find your <em>flow.</em></h2>
+      <p class="cta-sub">
+        Step into a zero-distraction environment. Launch the web workspace now,
+        or wait for the native desktop app.
+      </p>
+      <div class="cta-actions">
+        <a href="https://app.writeme.dev" class="btn-primary btn-cta-large">
+          Start writing →
+        </a>
+        <a
+          href="https://github.com/g4rcez/writeme-editor"
+          class="btn-outline"
+          rel="noopener"
+        >
+          ★ Star on GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer>
-      <div class="container">
-        <div class="footer-grid">
-          <div class="footer-brand">
-            <h2>WriteMe</h2>
-            <p style="color: var(--muted); max-width: 300px">
-              The open-source editor for those who value focus and privacy.
-            </p>
-          </div>
-          <div class="footer-links">
-            <span
-              style="color: var(--fg); font-weight: 700; margin-bottom: 10px"
-              >PRODUCT</span
-            >
-            <a href="https://app.writeme.dev">Web App</a>
-            <a href="#">Desktop (Soon)</a>
-            <a href="#">Changelog</a>
-          </div>
-          <div class="footer-links">
-            <span
-              style="color: var(--fg); font-weight: 700; margin-bottom: 10px"
-              >COMMUNITY</span
-            >
-            <a href="https://github.com/g4rcez/writeme-editor">GitHub</a>
-            <a href="#">Twitter</a>
-            <a href="#">Discord</a>
-          </div>
+      <div>
+        <div class="footer-brand-name">Write Me</div>
+        <p class="footer-brand-desc">
+          The open-source editor for those who value focus and privacy.
+        </p>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <div class="footer-links">
+          <a href="https://app.writeme.dev">Web App</a>
+          <a href="#">Desktop (soon)</a>
+          <a href="#">Changelog</a>
         </div>
-        <div class="bottom-bar">
-          <span>© 2024 WriteMe Editor</span>
-          <span>Designed & Built by g4rcez</span>
+      </div>
+      <div>
+        <div class="footer-col-title">Community</div>
+        <div class="footer-links">
+          <a href="https://github.com/g4rcez/writeme-editor" rel="noopener"
+            >GitHub</a
+          >
+          <a href="#">Twitter / X</a>
         </div>
       </div>
     </footer>
-    <script>
-      lucide.createIcons();
-    </script>
+    <div class="footer-bottom">
+      <span>© 2026 Write Me</span>
+      <span>Built by g4rcez</span>
+    </div>
   </body>
 </html>
