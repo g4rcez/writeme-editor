@@ -421,6 +421,101 @@
       .f1-mockup .mockup-body {
         height: 400px;
       }
+      .f2-mockup .mockup-body {
+        height: 400px;
+        display: block;
+        padding: 32px 48px;
+        overflow: hidden;
+      }
+
+      /* ── FEATURE 02: THINK ── */
+      .think-block {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+      .think-block-label {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        color: var(--fg-faint);
+        padding: 6px 14px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(59, 52, 134, 0.1);
+        letter-spacing: 0.08em;
+      }
+      .think-math {
+        padding: 14px 18px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .math-input {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .math-result {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--green);
+        background: rgba(146, 227, 65, 0.08);
+        padding: 2px 10px;
+        border-radius: 4px;
+        margin-left: auto;
+      }
+      .think-code {
+        padding: 14px 18px;
+      }
+      .code-line {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        white-space: pre;
+      }
+      .tok-kw {
+        color: var(--purple);
+      }
+      .tok-fn {
+        color: #7ec8e3;
+      }
+      .tok-str {
+        color: var(--green);
+      }
+      .tok-cm {
+        color: var(--fg-faint);
+        font-style: italic;
+      }
+      .tok-num {
+        color: #febc2e;
+      }
+      .think-diagram {
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+      .diag-node {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--fg);
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: rgba(59, 52, 134, 0.15);
+        white-space: nowrap;
+      }
+      .diag-node.diag-end {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .diag-arrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--fg-faint);
+        padding: 0 10px;
+        flex-shrink: 0;
+      }
 
       /* ── FEATURE SECTION SHARED ── */
       .feature-section {
@@ -848,6 +943,79 @@
                     <span>Stop editing, start thinking</span>
                   </li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURE 02: THINK -->
+      <section
+        class="feature-section"
+        id="feature-think"
+        aria-labelledby="f2-heading"
+      >
+        <div class="container">
+          <div class="feature-text">
+            <div class="section-label" aria-hidden="true">02 — Think</div>
+            <h2 class="feature-h2" id="f2-heading">Your thinking, extended.</h2>
+            <p class="feature-body">
+              Inline math that evaluates as you type. Code blocks with syntax
+              highlighting. Diagrams from text. The tools stay invisible until
+              you need them — then they're exactly where you expect.
+            </p>
+          </div>
+          <div class="mockup-frame f2-mockup" aria-hidden="true">
+            <div class="mockup-chrome">
+              <span class="chrome-dot chrome-dot-r"></span>
+              <span class="chrome-dot chrome-dot-y"></span>
+              <span class="chrome-dot chrome-dot-g"></span>
+            </div>
+            <div class="mockup-body">
+              <!-- Math block -->
+              <div class="think-block">
+                <div class="think-block-label">math</div>
+                <div class="think-math">
+                  <span class="math-input">E = 9e16 * 1</span>
+                  <span class="math-result">= 90,000,000,000,000,000 J</span>
+                </div>
+              </div>
+              <!-- Code block -->
+              <div class="think-block">
+                <div class="think-block-label">javascript</div>
+                <div class="think-code">
+                  <div class="code-line">
+                    <span class="tok-cm">// debounce with leading edge</span>
+                  </div>
+                  <div class="code-line">
+                    <span class="tok-kw">function </span
+                    ><span class="tok-fn">debounce</span>(fn, wait) {
+                  </div>
+                  <div class="code-line">
+                    <span class="tok-kw">let</span> timer
+                  </div>
+                  <div class="code-line">
+                    <span class="tok-kw">return</span> (...args) => {
+                  </div>
+                  <div class="code-line">clearTimeout(timer)</div>
+                  <div class="code-line">
+                    timer = setTimeout(() => fn(...args),
+                    <span class="tok-num">wait</span>)
+                  </div>
+                  <div class="code-line">}</div>
+                  <div class="code-line">}</div>
+                </div>
+              </div>
+              <!-- Diagram -->
+              <div class="think-block">
+                <div class="think-block-label">diagram</div>
+                <div class="think-diagram">
+                  <div class="diag-node">Draft</div>
+                  <div class="diag-arrow">──→</div>
+                  <div class="diag-node">Review</div>
+                  <div class="diag-arrow">──→</div>
+                  <div class="diag-node diag-end">Published</div>
+                </div>
               </div>
             </div>
           </div>
