@@ -53,6 +53,28 @@ To create distributables (e.g., .deb, .exe, .zip):
 npm run make
 ```
 
+#### Installing the DMG locally (macOS)
+
+The build is ad-hoc signed, which satisfies Apple Silicon's code-signing requirement but is not notarized. macOS will quarantine the downloaded file and block the first launch. Clear the quarantine flag before opening:
+
+```bash
+# Build
+npm run make -- --platform=darwin
+
+# Clear quarantine from the DMG before mounting
+xattr -dr com.apple.quarantine out/make/writeme.dmg
+```
+
+Open the DMG, drag **writeme** to `/Applications`, then clear quarantine from the installed app:
+
+```bash
+xattr -cr /Applications/writeme.app
+```
+
+The app will open normally from that point on.
+
+> **Distributing to other machines** requires a paid Apple Developer ID certificate and notarization. Set `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` in your environment before running `npm run make` and the build will sign and notarize automatically.
+
 ### Web / PWA
 
 To build the web version and generate PWA assets:
