@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="866.173 688.737 291.948 359.527" xmlns:bx="https://boxy-svg.com" width="291.948px" height="359.527px"><defs><style>
+      .cls-1 {
+        fill: #add9b5;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #add9b5;
+        stroke-miterlimit: 10;
+        stroke-width: 5px;
+      }
+
+      .cls-3 {
+        fill: #1c0520;
+      }
+    </style><bx:export><bx:file format="svg"/></bx:export></defs><g><polygon class="cls-1" points="884.82 767.69 940.71 802.03 884.82 836.38 884.82 902.08 884.82 902.08 884.82 902.25 940.71 936.6 884.82 970.94 884.82 1036.64 990.24 976.91 990.24 896.28 942.65 869.32 990.24 842.35 990.24 761.72 884.82 701.99 884.82 767.69"/><polygon class="cls-1" points="1140.63 836.55 1140.63 836.55 1140.63 836.38 1084.74 802.03 1140.63 767.69 1140.63 701.99 1035.21 761.72 1035.21 842.35 1082.8 869.32 1035.21 896.28 1035.21 976.91 1140.63 1036.64 1140.63 970.94 1084.74 936.6 1140.63 902.25 1140.63 836.55"/></g></svg>

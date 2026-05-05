@@ -41,9 +41,9 @@ const THEMES = {
 const injectTheme = (dot: string, isDark: boolean) => {
   const colors = isDark ? THEMES.dark : THEMES.light;
   const themeAttributes = `
-    graph [nodesep=0.1, ranksep=0.1, margin=0, pad=0.02, fontsize=8, center=true, bgcolor="transparent", fontname="IBM Plex Sans", fontcolor="${colors.foreground}", color="${colors.border}"];
-    node [fontsize=8, fontname="IBM Plex Sans", fontcolor="${colors.foreground}", color="${colors.border}", fillcolor="${colors.nodeBg}", style="filled"];
-    edge [fontsize=8, fontname="IBM Plex Sans", fontcolor="${colors.foreground}", color="${colors.border}"];
+    graph [nodesep=0.1, ranksep=0.1, margin=0, pad=0.02, fontsize=8, center=true, bgcolor="transparent", fontname="Inter", fontcolor="${colors.foreground}", color="${colors.border}"];
+    node [fontsize=8, fontname="Inter", fontcolor="${colors.foreground}", color="${colors.border}", fillcolor="${colors.nodeBg}", style="filled"];
+    edge [fontsize=8, fontname="Inter", fontcolor="${colors.foreground}", color="${colors.border}"];
   `;
   const firstBrace = dot.indexOf("{");
   if (firstBrace !== -1) {

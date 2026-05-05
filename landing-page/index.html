@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Write Me — Digital Workshop for Thought</title>
+    <title>Write Me — Just you and your thoughts</title>
     <meta
       name="description"
       content="A zero-distraction workspace for your mind. Privacy by design, focus by nature. Local-first, lightning-fast."
@@ -32,7 +32,7 @@
       }
 
       :root {
-        --bg: #1c0520;
+        --bg: #171717;
         --fg: #add9b5;
         --purple: #b799ff;
         --indigo: #3b3486;
@@ -76,7 +76,7 @@
         padding: 0;
         height: 60px;
         border-bottom: 1px solid var(--border);
-        background: rgba(28, 5, 32, 0.9);
+        background: rgba(23, 23, 23, 0.9);
         backdrop-filter: blur(20px);
       }
       body > nav .container {
@@ -239,10 +239,11 @@
         font-family: "Plus Jakarta Sans", sans-serif;
         font-size: clamp(56px, 8vw, 96px);
         font-weight: 800;
-        line-height: 0.93;
+        line-height: 1.15;
         letter-spacing: -0.04em;
         color: var(--fg);
         margin-bottom: 28px;
+        text-wrap: pretty;
       }
       .hero-h1 em {
         font-style: italic;
@@ -318,7 +319,6 @@
       .mockup-editor {
         flex: 1;
         padding: 40px 48px;
-        overflow: hidden;
       }
       .editor-h1 {
         font-family: "Plus Jakarta Sans", sans-serif;
@@ -383,7 +383,6 @@
       .mockup-frame {
         border: 1px solid var(--border);
         border-radius: 16px;
-        overflow: hidden;
         background: var(--alt-bg);
         box-shadow: 0 0 80px rgba(183, 153, 255, 0.06);
         margin-top: 56px;
@@ -419,16 +418,15 @@
 
       /* ── FEATURE MOCKUP OVERRIDES ── */
       .f1-mockup .mockup-body {
-        height: 400px;
+        height: 500px;
       }
       .f2-mockup .mockup-body {
-        height: 400px;
+        height: 500px;
         display: block;
         padding: 32px 48px;
-        overflow: hidden;
       }
       .f3-mockup .mockup-body {
-        height: 400px;
+        height: 500px;
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
       }
@@ -470,13 +468,35 @@
         margin-left: auto;
       }
       .think-code {
-        padding: 14px 18px;
+        padding: 6px 0;
       }
-      .code-line {
+      .code-pre {
         font-family: "JetBrains Mono", monospace;
         font-size: 12px;
-        line-height: 1.7;
-        white-space: pre;
+        line-height: 0.9;
+        margin: 0;
+        overflow: auto;
+        counter-reset: line;
+        padding: 2px 0;
+      }
+      .code-lw {
+        display: block;
+        counter-increment: line;
+        padding-right: 16px;
+      }
+      .code-lw:hover {
+        background: rgba(183, 153, 255, 0.04);
+      }
+      .code-lw::before {
+        content: counter(line);
+        display: inline-block;
+        width: 36px;
+        padding-right: 10px;
+        text-align: right;
+        color: rgba(173, 217, 181, 0.2);
+        user-select: none;
+        border-right: 1px solid rgba(59, 52, 134, 0.25);
+        margin-right: 14px;
       }
       .tok-kw {
         color: var(--purple);
@@ -700,14 +720,14 @@
 
       .nav-logo {
         font-family: "Plus Jakarta Sans", sans-serif;
-        font-size: 15px;
-        font-weight: 700;
+        font-size: 1.5rem;
+        font-weight: 900;
         letter-spacing: 0.04em;
         color: var(--fg);
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 0.5rem;
       }
       .nav-logo-mark {
         width: 8px;
@@ -860,12 +880,10 @@
   </head>
   <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
-    <!-- NAV -->
     <nav aria-label="Main navigation">
       <div class="container">
-        <a href="#" class="nav-logo">
-          <span class="nav-logo-mark" aria-hidden="true"></span>
-          Write Me
+        <a href="/" class="nav-logo">
+          <img src="../writeme.svg" width="24px" />
         </a>
         <ul class="nav-links">
           <li><a href="#feature-write">Features</a></li>
@@ -886,9 +904,7 @@
         >
       </div>
     </nav>
-
     <main id="main-content" tabindex="-1">
-      <!-- HERO -->
       <section class="hero" aria-labelledby="hero-h1">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-content">
@@ -896,13 +912,12 @@
             A digital workshop for thought
           </div>
           <h1 class="hero-h1" id="hero-h1">
-            The editor that<br />
-            gets out of your<br />
-            <em>way.</em>
+            Just you and
+            <em style="font-weight: 900">your thoughts</em>
           </h1>
           <p class="hero-sub">
             A zero-distraction workspace for your mind. Privacy by design, focus
-            by nature. Local-first, lightning-fast.
+            by nature. Integrated with AI by default.
           </p>
           <div class="hero-actions">
             <a
@@ -980,8 +995,6 @@
           </div>
         </div>
       </section>
-
-      <!-- FEATURE 01: WRITE -->
       <section
         class="feature-section"
         id="feature-write"
@@ -1052,8 +1065,6 @@
           </div>
         </div>
       </section>
-
-      <!-- FEATURE 02: THINK -->
       <section
         class="feature-section"
         id="feature-think"
@@ -1084,30 +1095,18 @@
                   <span class="math-result">= 90,000,000,000,000,000 J</span>
                 </div>
               </div>
-              <!-- Code block -->
               <div class="think-block">
                 <div class="think-block-label">javascript</div>
                 <div class="think-code">
-                  <div class="code-line">
-                    <span class="tok-cm">// debounce with leading edge</span>
-                  </div>
-                  <div class="code-line">
-                    <span class="tok-kw">function </span
-                    ><span class="tok-fn">debounce</span>(fn, wait) {
-                  </div>
-                  <div class="code-line">
-                    <span class="tok-kw">let</span> timer
-                  </div>
-                  <div class="code-line">
-                    <span class="tok-kw">return</span> (...args) => {
-                  </div>
-                  <div class="code-line">clearTimeout(timer)</div>
-                  <div class="code-line">
-                    timer = setTimeout(() => fn(...args),
-                    <span class="tok-num">wait</span>)
-                  </div>
-                  <div class="code-line">}</div>
-                  <div class="code-line">}</div>
+                  <!-- prettier-ignore -->
+                  <pre class="code-pre"><span class="code-lw"><span class="tok-cm">// debounce with leading edge</span></span>
+<span class="code-lw"><span class="tok-kw">function </span><span class="tok-fn">debounce</span>(fn, wait) {</span>
+<span class="code-lw">  <span class="tok-kw">let</span> timer</span>
+<span class="code-lw">  <span class="tok-kw">return</span> (...args) => {</span>
+<span class="code-lw">    <span class="tok-fn">clearTimeout</span>(timer)</span>
+<span class="code-lw">    timer = <span class="tok-fn">setTimeout</span>(() => fn(...args), wait)</span>
+<span class="code-lw">  }</span>
+<span class="code-lw">}</span></pre>
                 </div>
               </div>
               <!-- Diagram -->
@@ -1125,8 +1124,6 @@
           </div>
         </div>
       </section>
-
-      <!-- FEATURE 03: OWN -->
       <section
         class="feature-section"
         id="feature-own"
@@ -1212,13 +1209,11 @@
           </div>
         </div>
       </section>
-
-      <!-- CTA -->
       <section class="cta-section" aria-labelledby="cta-heading">
         <div class="cta-glow" aria-hidden="true"></div>
         <div class="container">
           <div class="cta-eyebrow" aria-hidden="true">Ready?</div>
-          <h2 class="cta-h2" id="cta-heading">Start writing <em>today.</em></h2>
+          <h2 class="cta-h2" id="cta-heading">Start writing <em style="font-weight:900;">today.</em></h2>
           <p class="cta-sub">
             Step into a zero-distraction environment. Launch the web workspace
             now, or wait for the native desktop app.
@@ -1242,8 +1237,6 @@
         </div>
       </section>
     </main>
-
-    <!-- FOOTER -->
     <footer>
       <div class="container">
         <div>

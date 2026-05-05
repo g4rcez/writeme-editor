@@ -167,7 +167,7 @@ const TreeNodeItem = ({
       aria-expanded={isDirectory ? isExpanded : undefined}
       className={`
         group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition-colors
-        ${isFocused ? "bg-primary-subtle/40" : "hover:bg-muted"}
+        ${isFocused ? "bg-muted" : "hover:bg-muted/60"}
         ${!isDirectory && !extConfig ? "opacity-50 cursor-default" : ""}
       `}
     >
@@ -183,7 +183,7 @@ const TreeNodeItem = ({
           {isExpanded ? (
             <FolderOpenIcon className="size-4 text-secondary" />
           ) : (
-            <FolderIcon className="size-4 text-warn" />
+            <FolderIcon className="size-4 text-secondary" />
           )}
         </>
       ) : (

@@ -26,12 +26,12 @@ html,
 body,
 #root {
   font-size: 16px;
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: "Manrope", sans-serif;
   font-optical-sizing: auto;
-  font-weight: normal;
+  font-weight: 300;
   font-style: normal;
   font-variant-ligatures: common-ligatures;
-  font-feature-settings: "cv01", "cv02", "cv03", "cv04", "ss01";
+  font-feature-settings: "calt", "cv11";
 }
 
 h1,
@@ -40,7 +40,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Outfit", sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
 }
 
 pre,
@@ -234,6 +235,6 @@ input:focus {
   background: hsla(var(--primary-DEFAULT), 0.6);
 }
 
-.react-renderer.node-codeBlock { 
+.react-renderer.node-codeBlock {
   min-width: 100%;
 }

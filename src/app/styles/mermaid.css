@@ -3,7 +3,7 @@
 }
 
 .dark .mermaid svg text {
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .mermaid svg .cluster rect {
