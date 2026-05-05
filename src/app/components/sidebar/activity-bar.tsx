@@ -4,28 +4,18 @@ import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
-import { LayoutIcon } from "@phosphor-icons/react/dist/csr/Layout";
-import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
-import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
-import {
-  BracketsCurlyIcon,
-  CalendarDotsIcon,
-  DatabaseIcon,
-  TrashSimpleIcon,
-  type Icon,
-} from "@phosphor-icons/react";
+import { type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
   type ActivityType,
 } from "@/app/contexts/layout-context";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
-import { css, Tooltip } from "@g4rcez/components";
 import { Note } from "@/store/note";
+import { css, Tooltip } from "@g4rcez/components";
 import { useNavigate } from "react-router-dom";
 
 type ActivityIconProps = {
   icon: Icon;
-  id?: string;
   label: string;
   badge?: number;
   active?: boolean;
@@ -53,7 +43,7 @@ const ActivityIcon = ({
             : "writeme-aside-activity-icon--inactive",
         )}
       >
-        <Icon size={24} strokeWidth={1.5} />
+        <Icon size={18} strokeWidth={1.5} />
         {active ? <div className="writeme-aside-activity-indicator" /> : null}
         {badge !== undefined && badge > 0 && (
           <span className="writeme-aside-activity-badge">
@@ -70,7 +60,7 @@ const ActivityIcon = ({
 export const ActivityBar = () => {
   const navigate = useNavigate();
   const [layout, dispatchLayout] = useLayoutStore();
-  const [state, dispatch] = useGlobalStore();
+  const [state] = useGlobalStore();
   const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
 
   const onActivityClick = (
@@ -108,57 +98,6 @@ export const ActivityBar = () => {
           icon={HashIcon}
           active={layout.activeActivity === "tags"}
           onClick={() => onActivityClick("tags")}
-        />
-        <ActivityIcon
-          label="Json"
-          icon={BracketsCurlyIcon}
-          active={layout.activeActivity === "json"}
-          onClick={() => {
-            onActivityClick("json");
-            dispatch.setInspectJsonDialog(true);
-          }}
-        />
-        <ActivityIcon
-          label="Templates"
-          icon={LayoutIcon}
-          active={layout.activeActivity === "templates"}
-          onClick={() => onActivityClick("templates")}
-        />
-        <ActivityIcon
-          label="Groups"
-          icon={FolderSimpleIcon}
-          active={layout.activeActivity === "groups"}
-          onClick={() => onActivityClick("groups")}
-        />
-        <ActivityIcon
-          label="Calendar"
-          icon={CalendarDotsIcon}
-          active={layout.activeActivity === "calendar"}
-          onClick={() => {
-            navigate("/calendar");
-            onActivityClick("calendar", true);
-          }}
-        />
-        <ActivityIcon
-          label="Views"
-          icon={DatabaseIcon}
-          active={layout.activeActivity === "views"}
-          onClick={() => {
-            navigate("/views");
-            onActivityClick("views", true);
-          }}
-        />
-        <ActivityIcon
-          label="Terminal"
-          icon={TerminalWindowIcon}
-          active={state.terminalVisible}
-          onClick={() => dispatch.toggleTerminal()}
-        />
-        <ActivityIcon
-          label="Trash"
-          icon={TrashSimpleIcon}
-          active={layout.activeActivity === "trash"}
-          onClick={() => onActivityClick("trash")}
         />
       </div>
       <div className="writeme-aside-activity-bottom">
