@@ -1,19 +1,19 @@
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { DotsThreeVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsThreeVertical";
+import { SettingsService } from "@/store/settings";
 import { Button, Menu, MenuItem } from "@g4rcez/components";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { SettingsMenu } from "@/app/components/settings-menu";
-import { NavbarButton } from "@/app/components/navbar-button";
-import { ChatCircleDotsIcon } from "@phosphor-icons/react/dist/csr/ChatCircleDots";
-import { ThemeToggle } from "@/app/components/theme-toggle";
 import {
   BookBookmarkIcon,
+  ChatCircleDotsIcon,
+  DotsThreeVerticalIcon,
   GearFineIcon,
   GraphIcon,
+  MoonIcon,
   NotepadIcon,
   NotePencilIcon,
+  SunIcon,
   TerminalWindowIcon,
 } from "@phosphor-icons/react";
 
@@ -22,12 +22,11 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [editingTitle, setEditingTitle] = useState<string | null>(
-    state.note?.title || "",
+    state.note?.title ?? null,
   );
 
   useEffect(() => {
-    if (state.note?.title) setEditingTitle(state.note.title);
-    else setEditingTitle(null);
+    setEditingTitle(state.note?.title ?? null);
   }, [state.note?.id, state.note?.title]);
 
   useEffect(() => {
@@ -43,6 +42,14 @@ export const Navbar = () => {
 
   const isEditor =
     location.pathname.startsWith("/note/") || location.pathname === "/";
+
+  const isDark = state.theme === "dark";
+
+  const toggleTheme = async () => {
+    const nextTheme = isDark ? "light" : "dark";
+    dispatch.theme(nextTheme);
+    await SettingsService.save({ theme: nextTheme });
+  };
 
   return (
     <header className="writeme-navbar">
@@ -91,13 +98,6 @@ export const Navbar = () => {
           )}
         </div>
         <nav className="writeme-navbar-nav">
-          <NavbarButton
-            title="AI Assistant"
-            Icon={ChatCircleDotsIcon}
-            onClick={() => dispatch.setAiDrawer({ isOpen: true, chatId: null })}
-          />
-          <SettingsMenu />
-          <ThemeToggle />
           <Menu
             asChild
             title="Menu"
@@ -107,6 +107,23 @@ export const Navbar = () => {
               </Button>
             }
           >
+            <MenuItem
+              title="AI Assistant"
+              onClick={() =>
+                dispatch.setAiDrawer({ isOpen: true, chatId: null })
+              }
+            >
+              <span className="flex items-center gap-1">
+                <ChatCircleDotsIcon />
+                AI Assistant
+              </span>
+            </MenuItem>
+            <MenuItem title="Toggle theme" onClick={toggleTheme}>
+              <span className="flex items-center gap-1">
+                {isDark ? <SunIcon /> : <MoonIcon />}
+                {isDark ? "Switch to light mode" : "Switch to dark mode"}
+              </span>
+            </MenuItem>
             <MenuItem
               title="New note"
               onClick={() =>
