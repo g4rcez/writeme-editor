@@ -152,6 +152,34 @@ export default function SettingsPage() {
             />
           </div>
         </Card>
+        <Card title="Trash">
+          <div className="flex justify-between items-center py-2">
+            <Info label="Auto-purge after" className="flex flex-col gap-1">
+              <p className="text-sm text-muted-foreground">
+                Permanently delete trashed notes after this period
+              </p>
+            </Info>
+            <Autocomplete
+              hiddenLabel
+              value={String(settings.trashRetentionDays)}
+              options={[
+                { label: "7 days", value: "7" },
+                { label: "10 days", value: "10" },
+                { label: "30 days", value: "30" },
+                { label: "Never", value: "never" },
+              ]}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  trashRetentionDays:
+                    e.target.value === "never"
+                      ? "never"
+                      : (parseInt(e.target.value) as 7 | 10 | 30),
+                })
+              }
+            />
+          </div>
+        </Card>
         <CustomVariables />
         <AISettings />
         {!isElectron() ? (

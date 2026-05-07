@@ -135,6 +135,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
       getTemplates: () => ipcRenderer.invoke("db:notes:getTemplates"),
       getByFilePath: (filePath: string) =>
         ipcRenderer.invoke("db:notes:getByFilePath", filePath),
+      softDelete: (id: string, deletedAt: string) =>
+        ipcRenderer.invoke("db:notes:softDelete", id, deletedAt),
+      hardDelete: (id: string) => ipcRenderer.invoke("db:notes:hardDelete", id),
+      restore: (id: string) => ipcRenderer.invoke("db:notes:restore", id),
+      getTrashed: () => ipcRenderer.invoke("db:notes:getTrashed"),
+      emptyTrash: () => ipcRenderer.invoke("db:notes:emptyTrash"),
+      purgeBefore: (cutoff: string) =>
+        ipcRenderer.invoke("db:notes:purgeBefore", cutoff),
       updateContent: (
         id: string,
         content: string,
@@ -338,6 +346,12 @@ declare global {
           getRecentNotes(limit: number): Promise<Note[]>;
           getTemplates(): Promise<any[]>;
           getByFilePath(filePath: string): Promise<Note | null>;
+          softDelete(id: string, deletedAt: string): Promise<void>;
+          hardDelete(id: string): Promise<void>;
+          restore(id: string): Promise<void>;
+          getTrashed(): Promise<any[]>;
+          emptyTrash(): Promise<void>;
+          purgeBefore(cutoff: string): Promise<void>;
           updateContent(
             id: string,
             content: string,

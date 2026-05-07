@@ -348,6 +348,16 @@ export const useGlobalStore = createGlobalReducer(
       deleteNote: async (id: string) => {
         const state = get.state();
         await repositories.notes.delete(id);
+        const tabs = state.tabs.filter((x) => x.noteId !== id);
+        const activeTabId =
+          state.activeTabId === id ? (tabs[0]?.id ?? null) : state.activeTabId;
+        const notes = state.notes.filter((n) => n.id !== id);
+        const note = state.note?.id === id ? null : state.note;
+        return { notes, tabs, activeTabId, note };
+      },
+      hardDeleteNote: async (id: string) => {
+        const state = get.state();
+        await repositories.notes.hardDelete(id);
         await repositories.noteGroupMembers.deleteByNoteId(id);
         const tabs = state.tabs.filter((x) => x.noteId !== id);
         const activeTabId =
@@ -358,6 +368,17 @@ export const useGlobalStore = createGlobalReducer(
           (m) => m.noteId !== id,
         );
         return { notes, tabs, activeTabId, note, noteGroupMembers };
+      },
+      restoreNote: async (id: string) => {
+        const state = get.state();
+        const restored = await repositories.notes.restore(id);
+        if (!restored) return state;
+        return { notes: state.notes.concat(restored) };
+      },
+      emptyTrash: async () => {
+        const state = get.state();
+        await repositories.notes.emptyTrash();
+        return state;
       },
       updateNoteContent: async (id: string, content: string) => {
         try {

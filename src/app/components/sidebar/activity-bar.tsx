@@ -11,6 +11,7 @@ import {
   BracketsCurlyIcon,
   CalendarDotsIcon,
   DatabaseIcon,
+  TrashSimpleIcon,
   type Icon,
 } from "@phosphor-icons/react";
 import {
@@ -43,6 +44,7 @@ const ActivityIcon = ({
     title={
       <button
         type="button"
+        aria-label={label}
         onClick={onClick}
         className={css(
           "writeme-aside-activity-icon",
@@ -151,6 +153,12 @@ export const ActivityBar = () => {
           icon={TerminalWindowIcon}
           active={state.terminalVisible}
           onClick={() => dispatch.toggleTerminal()}
+        />
+        <ActivityIcon
+          label="Trash"
+          icon={TrashSimpleIcon}
+          active={layout.activeActivity === "trash"}
+          onClick={() => onActivityClick("trash")}
         />
       </div>
       <div className="writeme-aside-activity-bottom">

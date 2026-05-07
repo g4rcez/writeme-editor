@@ -10,7 +10,8 @@ export type ActivityType =
   | "settings"
   | "favorites"
   | "templates"
-  | "views";
+  | "views"
+  | "trash";
 
 export type LayoutView =
   | { type: "all" }

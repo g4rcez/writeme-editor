@@ -1,4 +1,5 @@
-import { Modal, Tooltip } from "@g4rcez/components";
+import { Tooltip } from "@g4rcez/components";
+import { notificationRef } from "@/app/notification-ref";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { type NoteWithTags } from "@/app/hooks/use-note-list";
@@ -130,13 +131,32 @@ const NoteListItems = (props: {
 
   const handleDelete = async (e: React.MouseEvent, note: NoteWithTags) => {
     e.stopPropagation();
-    const confirmed = await Modal.confirm({
-      title: "Delete note",
-      description: "Are you sure you want to delete this note?",
-      confirm: { text: "Delete", theme: "danger" },
-    });
-    if (confirmed) {
-      await globalDispatch.deleteNote(note.id);
+    await globalDispatch.deleteNote(note.id);
+    const notify = notificationRef.current;
+    if (notify) {
+      const closeRef = { current: () => {} };
+      const { close } = notify(
+        <div className="flex items-center gap-2">
+          <span>"{note.title}" moved to Trash.</span>
+          <button
+            type="button"
+            className="shrink-0 font-semibold underline underline-offset-2 hover:opacity-70"
+            onClick={() => {
+              closeRef.current();
+              globalDispatch.restoreNote(note.id);
+            }}
+          >
+            Undo
+          </button>
+        </div>,
+        {
+          theme: "info",
+          closable: true,
+          id: `trash:${note.id}`,
+          timeout: 8000,
+        },
+      );
+      closeRef.current = close;
     }
   };
 

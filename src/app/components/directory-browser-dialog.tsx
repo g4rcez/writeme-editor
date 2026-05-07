@@ -75,7 +75,7 @@ export const DirectoryBrowserDialog = () => {
         const existingNote = allNotes.find((n) => n.filePath === node.path);
 
         if (existingNote) {
-          await dispatch.deleteNote(existingNote.id);
+          await dispatch.hardDeleteNote(existingNote.id);
           refreshView();
           return true;
         }
@@ -85,7 +85,7 @@ export const DirectoryBrowserDialog = () => {
           n.filePath?.startsWith(node.path + "/"),
         );
         for (const note of notesInDir) {
-          await dispatch.deleteNote(note.id);
+          await dispatch.hardDeleteNote(note.id);
         }
       }
       const result = await window.electronAPI.fs.deleteFile(node.path);

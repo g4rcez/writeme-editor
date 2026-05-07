@@ -33,6 +33,9 @@ export const SettingsSchema = z.object({
   quickNoteShortcut: z.string().default("CommandOrControl+Alt+N"),
   mathNoteShortcut: z.string().default("CommandOrControl+Alt+M"),
   mathNoteId: z.string().nullable().default(null),
+  trashRetentionDays: z
+    .union([z.literal(7), z.literal(10), z.literal(30), z.literal("never")])
+    .default(10),
 });
 
 export type AppSettings = z.infer<typeof SettingsSchema>;

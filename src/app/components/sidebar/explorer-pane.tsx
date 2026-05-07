@@ -52,7 +52,7 @@ export const ExplorerPane = () => {
         const allNotes = await repositories.notes.getAll();
         const existingNote = allNotes.find((n) => n.filePath === node.path);
         if (existingNote) {
-          await globalDispatch.deleteNote(existingNote.id);
+          await globalDispatch.hardDeleteNote(existingNote.id);
           return true;
         }
       } else {
@@ -61,7 +61,7 @@ export const ExplorerPane = () => {
           n.filePath?.startsWith(node.path + "/"),
         );
         for (const note of notesInDir) {
-          await globalDispatch.deleteNote(note.id);
+          await globalDispatch.hardDeleteNote(note.id);
         }
       }
       const result = await window.electronAPI.fs.deleteFile(node.path);

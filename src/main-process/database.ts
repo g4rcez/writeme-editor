@@ -246,6 +246,7 @@ class DatabaseManager {
       "favicon",
       "metadata",
       "favorite",
+      "deletedAt",
     ];
     const aiMessageColumns = ["selectionSlice", "files"];
     const aiConfigColumns = ["adapterId", "model"];
@@ -269,7 +270,8 @@ class DatabaseManager {
           for (const col of noteColumns) {
             if (!columns.some((c: any) => c.name === col)) {
               console.log(`Migrating table ${table}: adding '${col}' column`);
-              const type = col === "favorite" ? "INTEGER DEFAULT 0" : "TEXT";
+              const type =
+                col === "favorite" ? "INTEGER DEFAULT 0" : "TEXT DEFAULT NULL";
               this.db
                 .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`)
                 .run();
@@ -425,7 +427,7 @@ class DatabaseManager {
   // Specific query for quicknotes
   public getLatestQuicknote(): any {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType = 'quick' ORDER BY updatedAt DESC LIMIT 1`,
+      `SELECT * FROM notes WHERE noteType = 'quick' AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1`,
     );
     const result = stmt.get() as any;
     return this.normalizeRow(result);
@@ -433,7 +435,7 @@ class DatabaseManager {
 
   public getQuicknoteByDate(start: string, end: string): any {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType = 'quick' AND updatedAt >= ? AND updatedAt <= ? LIMIT 1`,
+      `SELECT * FROM notes WHERE noteType = 'quick' AND deletedAt IS NULL AND updatedAt >= ? AND updatedAt <= ? LIMIT 1`,
     );
     const result = stmt.get(start, end) as any;
     return this.normalizeRow(result);
@@ -441,7 +443,7 @@ class DatabaseManager {
 
   public getRecentNotes(limit: number): any[] {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType != 'template' ORDER BY updatedAt DESC LIMIT ?`,
+      `SELECT * FROM notes WHERE noteType != 'template' AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT ?`,
     );
     const results = stmt.all(limit) as any[];
     return results.map((row) => this.normalizeRow(row));
@@ -449,10 +451,43 @@ class DatabaseManager {
 
   public getTemplates(): any[] {
     const stmt = this.db.prepare(
-      `SELECT * FROM notes WHERE noteType = 'template' ORDER BY updatedAt DESC`,
+      `SELECT * FROM notes WHERE noteType = 'template' AND deletedAt IS NULL ORDER BY updatedAt DESC`,
     );
     const results = stmt.all() as any[];
     return results.map((row) => this.normalizeRow(row));
+  }
+
+  public softDeleteNote(id: string, deletedAt: string): void {
+    this.db
+      .prepare("UPDATE notes SET deletedAt = ? WHERE id = ?")
+      .run(deletedAt, id);
+  }
+
+  public hardDeleteNote(id: string): void {
+    this.db.prepare("DELETE FROM notes WHERE id = ?").run(id);
+  }
+
+  public restoreNote(id: string): void {
+    this.db.prepare("UPDATE notes SET deletedAt = NULL WHERE id = ?").run(id);
+  }
+
+  public getTrashedNotes(): any[] {
+    const stmt = this.db.prepare(
+      `SELECT * FROM notes WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC`,
+    );
+    return (stmt.all() as any[]).map((row) => this.normalizeRow(row));
+  }
+
+  public emptyTrash(): void {
+    this.db.prepare("DELETE FROM notes WHERE deletedAt IS NOT NULL").run();
+  }
+
+  public purgeTrashedNotesBefore(cutoff: string): void {
+    this.db
+      .prepare(
+        "DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?",
+      )
+      .run(cutoff);
   }
 
   public updateTabsOrder(tabs: { id: string; order: number }[]): void {
