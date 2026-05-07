@@ -247,6 +247,7 @@ class DatabaseManager {
       "metadata",
       "favorite",
       "deletedAt",
+      "originalFilePath",
     ];
     const aiMessageColumns = ["selectionSlice", "files"];
     const aiConfigColumns = ["adapterId", "model"];
@@ -488,6 +489,27 @@ class DatabaseManager {
         "DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?",
       )
       .run(cutoff);
+  }
+
+  public moveNoteToTrash(
+    id: string,
+    trashPath: string,
+    originalFilePath: string,
+    deletedAt: string,
+  ): void {
+    this.db
+      .prepare(
+        "UPDATE notes SET filePath = ?, originalFilePath = ?, deletedAt = ? WHERE id = ?",
+      )
+      .run(trashPath, originalFilePath, deletedAt, id);
+  }
+
+  public restoreNoteFromTrash(id: string): void {
+    this.db
+      .prepare(
+        "UPDATE notes SET filePath = originalFilePath, originalFilePath = NULL, deletedAt = NULL WHERE id = ?",
+      )
+      .run(id);
   }
 
   public updateTabsOrder(tabs: { id: string; order: number }[]): void {
