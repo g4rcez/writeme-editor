@@ -21,6 +21,7 @@ export class NotesRepository
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {
     await db.notes.update(id, { deletedAt: new Date() } as any);
+    await this.tabsRepository.deleteByNoteId(id);
     return true;
   }
 
@@ -96,9 +97,8 @@ export class NotesRepository
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await super.getOne(id);
-    if (!metadata) {
-      return null;
-    }
+    if (!metadata) return null;
+    if (metadata.deletedAt != null) return null;
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 

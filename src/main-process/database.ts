@@ -597,7 +597,7 @@ class DatabaseManager {
 
   public getNoteByFilePath(filePath: string): any {
     const stmt = this.db.prepare(
-      "SELECT * FROM notes WHERE filePath = ? LIMIT 1",
+      "SELECT * FROM notes WHERE filePath = ? AND deletedAt IS NULL LIMIT 1",
     );
     const result = stmt.get(filePath) as any;
     return this.normalizeRow(result);

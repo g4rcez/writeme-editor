@@ -29,7 +29,12 @@ describe("NotesRepository", () => {
     repository = new NotesRepository({});
     vi.clearAllMocks();
     (db.notes.where as any).mockReturnValue({
-      notEqual: vi.fn().mockReturnThis(),
+      notEqual: vi.fn().mockReturnValue({
+        and: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockImplementation(() => mockCollection.toArray()),
+        }),
+        toArray: vi.fn().mockImplementation(() => mockCollection.toArray()),
+      }),
       toArray: vi.fn().mockImplementation(() => mockCollection.toArray()),
     });
   });

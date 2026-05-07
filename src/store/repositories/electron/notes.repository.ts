@@ -151,9 +151,8 @@ export class NotesRepository
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata = await this.adapter.get<Note>(this.collection, id);
-    if (!metadata) {
-      return null;
-    }
+    if (!metadata) return null;
+    if ((metadata as any).deletedAt != null) return null;
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && metadata.filePath) {
@@ -300,6 +299,7 @@ export class NotesRepository
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {
     await window.electronAPI.db.notes.softDelete(id, new Date().toISOString());
+    await this.tabsRepository.deleteByNoteId(id);
     return true;
   }
 
