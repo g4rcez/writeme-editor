@@ -11,7 +11,6 @@ export const TrashPane = () => {
   const [trashed, setTrashed] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmEmpty, setConfirmEmpty] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,20 +31,11 @@ export const TrashPane = () => {
     setTrashed((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const handleHardDelete = async () => {
-    if (!confirmDeleteId) return;
-    await globalDispatch.hardDeleteNote(confirmDeleteId);
-    setTrashed((prev) => prev.filter((n) => n.id !== confirmDeleteId));
-    setConfirmDeleteId(null);
-  };
-
   const handleEmptyTrash = async () => {
     await globalDispatch.emptyTrash();
     setTrashed([]);
     setConfirmEmpty(false);
   };
-
-  const confirmingNote = trashed.find((n) => n.id === confirmDeleteId);
 
   return (
     <div className="flex flex-col h-full bg-background/50">
@@ -93,30 +83,12 @@ export const TrashPane = () => {
                   >
                     <ArrowCounterClockwiseIcon className="size-3" />
                   </button>
-                  <button
-                    type="button"
-                    title="Delete permanently"
-                    onClick={() => setConfirmDeleteId(note.id)}
-                    className="p-1 rounded transition-all text-destructive hover:bg-destructive/10"
-                  >
-                    <TrashSimpleIcon className="size-3" />
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      <Confirm
-        type="danger"
-        confirmText="Delete permanently"
-        title="Delete permanently"
-        open={!!confirmDeleteId}
-        onConfirm={handleHardDelete}
-        onCancel={() => setConfirmDeleteId(null)}
-        message={`"${confirmingNote?.title}" will be permanently deleted and cannot be recovered.`}
-      />
 
       <Confirm
         type="danger"
