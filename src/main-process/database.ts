@@ -494,7 +494,7 @@ class DatabaseManager {
   public moveNoteToTrash(
     id: string,
     trashPath: string,
-    originalFilePath: string,
+    originalFilePath: string | null,
     deletedAt: string,
   ): void {
     this.db
@@ -507,7 +507,7 @@ class DatabaseManager {
   public restoreNoteFromTrash(id: string): void {
     this.db
       .prepare(
-        "UPDATE notes SET filePath = originalFilePath, originalFilePath = NULL, deletedAt = NULL WHERE id = ?",
+        "UPDATE notes SET filePath = originalFilePath, originalFilePath = NULL, deletedAt = NULL WHERE id = ? AND originalFilePath IS NOT NULL",
       )
       .run(id);
   }
