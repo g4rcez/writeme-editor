@@ -27,8 +27,13 @@ export const TrashPane = () => {
   }, [load]);
 
   const handleRestore = async (id: string) => {
-    await globalDispatch.restoreNote(id);
-    setTrashed((prev) => prev.filter((n) => n.id !== id));
+    const newState = await globalDispatch.restoreNote(id);
+    const wasRestored =
+      Array.isArray(newState?.notes) &&
+      newState.notes.some((n: Note) => n.id === id);
+    if (wasRestored) {
+      setTrashed((prev) => prev.filter((n) => n.id !== id));
+    }
   };
 
   const handleEmptyTrash = async () => {

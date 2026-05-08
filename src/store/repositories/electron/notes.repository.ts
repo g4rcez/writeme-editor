@@ -375,8 +375,11 @@ export class NotesRepository
         if (!moveResult.success) {
           return null; // file couldn't be moved back — leave note in trash, caller sees null
         }
+        await window.electronAPI.db.notes.restoreFromTrash(id);
+      } else {
+        // no originalFilePath — note was soft-deleted without a file move; plain restore
+        await window.electronAPI.db.notes.restore(id);
       }
-      await window.electronAPI.db.notes.restoreFromTrash(id);
     } else {
       await window.electronAPI.db.notes.restore(id);
     }
