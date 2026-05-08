@@ -298,7 +298,32 @@ export class NotesRepository
   }
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {
-    await window.electronAPI.db.notes.softDelete(id, new Date().toISOString());
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    if (mode === "filesystem") {
+      const raw: any = await this.adapter.get(this.collection, id);
+      if (raw?.filePath && settings.directory) {
+        const basename = raw.filePath.split("/").pop() ?? `${id}.md`;
+        const trashPath = `${settings.directory}/.trash/${id}-${basename}`;
+        await window.electronAPI.fs.moveFile(raw.filePath, trashPath);
+        await window.electronAPI.db.notes.moveToTrash(
+          id,
+          trashPath,
+          raw.filePath,
+          new Date().toISOString(),
+        );
+      } else {
+        await window.electronAPI.db.notes.softDelete(
+          id,
+          new Date().toISOString(),
+        );
+      }
+    } else {
+      await window.electronAPI.db.notes.softDelete(
+        id,
+        new Date().toISOString(),
+      );
+    }
     await this.tabsRepository.deleteByNoteId(id);
     return true;
   }
@@ -327,7 +352,20 @@ export class NotesRepository
   }
 
   async restore(id: string): Promise<Note | null> {
-    await window.electronAPI.db.notes.restore(id);
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    if (mode === "filesystem") {
+      const raw: any = await this.adapter.get(this.collection, id);
+      if (raw?.filePath && raw?.originalFilePath) {
+        await window.electronAPI.fs.moveFile(
+          raw.filePath,
+          raw.originalFilePath,
+        );
+      }
+      await window.electronAPI.db.notes.restoreFromTrash(id);
+    } else {
+      await window.electronAPI.db.notes.restore(id);
+    }
     return this.getOne(id);
   }
 
