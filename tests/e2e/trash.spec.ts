@@ -90,30 +90,19 @@ test.describe("Trash / soft-delete", () => {
     ).toBeVisible();
   });
 
-  test("permanent delete from Trash pane removes the note forever", async ({
+  test("Delete permanently button is absent from Trash pane", async ({
     cleanPage: page,
   }) => {
-    await createNote(page, "Permanent delete note");
+    await createNote(page, "No permanent delete");
 
     await page.goto("/notes");
     await page.getByRole("button", { name: "Delete note" }).click();
 
     await openTrashPane(page);
 
-    const row = page.locator(".group", { hasText: "Permanent delete note" });
+    const row = page.locator(".group", { hasText: "No permanent delete" });
     await row.hover();
-    await row.getByTitle("Delete permanently").click();
-
-    const confirmDialog = page.getByRole("dialog", {
-      name: /Delete permanently/i,
-    });
-    await expect(confirmDialog).toBeVisible();
-    await confirmDialog
-      .getByRole("button", { name: "Delete permanently" })
-      .click();
-
-    await expect(page.getByText("Permanent delete note")).toBeHidden();
-    await expect(page.getByText("Trash is empty")).toBeVisible();
+    await expect(page.getByTitle("Delete permanently")).toHaveCount(0);
   });
 
   test("Empty Trash removes all trashed notes", async ({ cleanPage: page }) => {
