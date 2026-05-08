@@ -305,13 +305,24 @@ export class NotesRepository
       if (raw?.filePath && settings.directory) {
         const basename = raw.filePath.split("/").pop() ?? `${id}.md`;
         const trashPath = `${settings.directory}/.trash/${id}-${basename}`;
-        await window.electronAPI.fs.moveFile(raw.filePath, trashPath);
-        await window.electronAPI.db.notes.moveToTrash(
-          id,
-          trashPath,
+        const moveResult = await window.electronAPI.fs.moveFile(
           raw.filePath,
-          new Date().toISOString(),
+          trashPath,
         );
+        if (moveResult.success) {
+          await window.electronAPI.db.notes.moveToTrash(
+            id,
+            trashPath,
+            raw.filePath,
+            new Date().toISOString(),
+          );
+        } else {
+          // file couldn't be moved — soft-delete in place so the DB record is consistent
+          await window.electronAPI.db.notes.softDelete(
+            id,
+            new Date().toISOString(),
+          );
+        }
       } else {
         await window.electronAPI.db.notes.softDelete(
           id,
@@ -357,10 +368,13 @@ export class NotesRepository
     if (mode === "filesystem") {
       const raw: any = await this.adapter.get(this.collection, id);
       if (raw?.filePath && raw?.originalFilePath) {
-        await window.electronAPI.fs.moveFile(
+        const moveResult = await window.electronAPI.fs.moveFile(
           raw.filePath,
           raw.originalFilePath,
         );
+        if (!moveResult.success) {
+          return null; // file couldn't be moved back — leave note in trash, caller sees null
+        }
       }
       await window.electronAPI.db.notes.restoreFromTrash(id);
     } else {
