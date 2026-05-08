@@ -18,8 +18,15 @@
 }
 
 html.dark,
-html.catppuccin-mocha {
+html.catppuccin-mocha,
+html.tokyonight-night {
   color-scheme: dark;
+}
+
+select,
+select option {
+  background-color: Canvas;
+  color: CanvasText;
 }
 
 html,
