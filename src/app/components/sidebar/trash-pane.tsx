@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
 import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { Button } from "@g4rcez/components";
-import { globalDispatch } from "@/store/global.store";
+import { globalDispatch, globalState } from "@/store/global.store";
 import { type Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
+import { notificationRef } from "@/app/notification-ref";
 import { Confirm } from "../confirm";
 
 export const TrashPane = () => {
@@ -26,13 +27,20 @@ export const TrashPane = () => {
     load();
   }, [load]);
 
-  const handleRestore = async (id: string) => {
-    const newState = await globalDispatch.restoreNote(id);
-    const wasRestored =
-      Array.isArray(newState?.notes) &&
-      newState.notes.some((n: Note) => n.id === id);
+  const handleRestore = async (note: Note) => {
+    await globalDispatch.restoreNote(note.id);
+    const wasRestored = globalState().notes.some((n) => n.id === note.id);
     if (wasRestored) {
-      setTrashed((prev) => prev.filter((n) => n.id !== id));
+      setTrashed((prev) => prev.filter((n) => n.id !== note.id));
+      notificationRef.current?.(
+        <span>&ldquo;{note.title}&rdquo; restored.</span>,
+        { theme: "success", closable: true, timeout: 4000 },
+      );
+    } else {
+      notificationRef.current?.(
+        <span>Failed to restore &ldquo;{note.title}&rdquo;.</span>,
+        { theme: "danger", closable: true, timeout: 4000 },
+      );
     }
   };
 
@@ -83,7 +91,7 @@ export const TrashPane = () => {
                   <button
                     type="button"
                     title="Restore"
-                    onClick={() => handleRestore(note.id)}
+                    onClick={() => handleRestore(note)}
                     className="p-1 rounded transition-all text-primary hover:bg-primary/10"
                   >
                     <ArrowCounterClockwiseIcon className="size-3" />

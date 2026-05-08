@@ -373,17 +373,28 @@ export class NotesRepository
           raw.originalFilePath,
         );
         if (!moveResult.success) {
-          return null; // file couldn't be moved back — leave note in trash, caller sees null
+          const sourceCheck = await window.electronAPI.fs.statFile(
+            raw.filePath,
+          );
+          if (!sourceCheck.exists) {
+            await window.electronAPI.db.notes.restoreFromTrash(id);
+          } else {
+            await window.electronAPI.db.notes.restore(id);
+          }
+        } else {
+          await window.electronAPI.db.notes.restoreFromTrash(id);
         }
-        await window.electronAPI.db.notes.restoreFromTrash(id);
       } else {
-        // no originalFilePath — note was soft-deleted without a file move; plain restore
         await window.electronAPI.db.notes.restore(id);
       }
     } else {
       await window.electronAPI.db.notes.restore(id);
     }
-    return this.getOne(id);
+    const note = await this.getOne(id);
+    if (note) return note;
+    const refreshed: any = await this.adapter.get(this.collection, id);
+    if (!refreshed || refreshed.deletedAt != null) return null;
+    return Note.parse({ ...refreshed, content: "" });
   }
 
   async getTrashed(): Promise<Note[]> {
