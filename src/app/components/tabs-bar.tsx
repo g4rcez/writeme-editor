@@ -13,6 +13,7 @@ export const TabsBar: React.FC = () => {
   const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
   const [renamingValue, setRenamingValue] = useState("");
   const renameEscapedRef = useRef(false);
+  const renameCommittedRef = useRef(false);
 
   const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
@@ -34,8 +35,11 @@ export const TabsBar: React.FC = () => {
       setRenamingNoteId(null);
       return;
     }
+    if (renameCommittedRef.current) return;
+    renameCommittedRef.current = true;
     const note = state.notes.find((n: Note) => n.id === noteId);
     if (!note) {
+      renameCommittedRef.current = false;
       setRenamingNoteId(null);
       return;
     }
@@ -45,6 +49,7 @@ export const TabsBar: React.FC = () => {
       parsed.setTitle(trimmed);
       await dispatch.note(parsed);
     }
+    renameCommittedRef.current = false;
     setRenamingNoteId(null);
   };
 
@@ -98,21 +103,24 @@ export const TabsBar: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
+                    e.stopPropagation();
                     commitRename(tab.noteId);
                   }
                   if (e.key === "Escape") {
+                    e.stopPropagation();
                     renameEscapedRef.current = true;
                     (e.target as HTMLInputElement).blur();
                   }
                 }}
-                onBlur={() => commitRename(tab.noteId)}
-                onClick={(e) => e.preventDefault()}
+                onBlur={() => void commitRename(tab.noteId)}
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <span
                 className="flex-1 text-xs truncate"
                 onDoubleClick={(e) => {
                   e.preventDefault();
+                  renameCommittedRef.current = false;
                   setRenamingNoteId(tab.noteId);
                   setRenamingValue(title);
                 }}
