@@ -137,4 +137,23 @@ export const databaseIpcHandler = () => {
     db.purgeTrashedNotesBefore(cutoff);
     return true;
   });
+
+  ipcMain.handle(
+    "db:notes:moveToTrash",
+    (
+      _,
+      id: string,
+      trashPath: string,
+      originalFilePath: string | null,
+      deletedAt: string,
+    ) => {
+      db.moveNoteToTrash(id, trashPath, originalFilePath, deletedAt);
+      return true;
+    },
+  );
+
+  ipcMain.handle("db:notes:restoreFromTrash", (_, id: string) => {
+    db.restoreNoteFromTrash(id);
+    return true;
+  });
 };
