@@ -22,8 +22,8 @@ test.describe("Create note flow", () => {
     await expect(page).toHaveURL(/\/note\/[^/]+$/);
     await expect(dialog).toBeHidden();
     await expect(
-      page.getByRole("textbox", { name: "Untitled Note" }),
-    ).toHaveValue(NOTE_TITLE);
+      page.locator("[data-tab-id]").filter({ hasText: NOTE_TITLE }),
+    ).toBeVisible();
   });
 
   test("typed content persists across reload", async ({ cleanPage: page }) => {
