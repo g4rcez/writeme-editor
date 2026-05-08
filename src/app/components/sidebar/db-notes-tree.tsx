@@ -153,7 +153,7 @@ export const DbNotesTree = ({ notes, rootPath }: DbNotesTreeProps) => {
       confirm: { text: "Delete", theme: "danger" },
     });
     if (confirmed) {
-      await globalDispatch.hardDeleteNote(note.id);
+      await globalDispatch.deleteNote(note.id);
     }
   };
 

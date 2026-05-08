@@ -54,7 +54,7 @@ export const TemplatesPane = () => {
 
   const onDeleteTemplate = async () => {
     if (!deletingTemplate) return;
-    await dispatch.hardDeleteNote(deletingTemplate.id);
+    await dispatch.deleteNote(deletingTemplate.id);
     setDeletingTemplate(null);
     refresh();
   };
