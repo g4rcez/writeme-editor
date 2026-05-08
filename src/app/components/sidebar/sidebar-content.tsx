@@ -6,6 +6,7 @@ import { QuickSettingsPane } from "./quick-settings-pane";
 import { SearchPane } from "./search-pane";
 import { TagsPane } from "./tags-pane";
 import { TemplatesPane } from "./templates-pane";
+import { TrashPane } from "./trash-pane";
 
 export const SidebarContent = () => {
   const [state] = useLayoutStore();
@@ -25,6 +26,8 @@ export const SidebarContent = () => {
       return <TemplatesPane />;
     case "groups":
       return <GroupsPane />;
+    case "trash":
+      return <TrashPane />;
     case "settings":
       return <QuickSettingsPane />;
     default:

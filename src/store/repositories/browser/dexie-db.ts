@@ -309,3 +309,21 @@ db.version(19)
       await tx.table("views").bulkAdd(existing);
     }
   });
+
+// Version 20 (Trash / soft-delete)
+db.version(20).stores({
+  notes:
+    "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite, deletedAt",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, createdAt",
+  hashtags: "&id, hashtag, filename, project",
+  settings: "&id, &name, value",
+  scripts: "&id, name, createdAt, updatedAt",
+  noteGroups: "&id, title, createdAt, updatedAt",
+  noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+  aiConfigs: "&id, adapterId, isDefault, createdAt",
+  aiChats: "&id, noteId, createdAt",
+  aiMessages: "&id, chatId, role, createdAt",
+  aiCredentials: "&adapterId",
+  views: "&id, title, viewType, createdAt, updatedAt",
+});

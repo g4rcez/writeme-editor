@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
 import { useGlobalStore } from "@/store/global.store";
 import { Modal } from "@g4rcez/components";
+import { notificationRef } from "@/app/notification-ref";
 
 export type NoteWithTags = Note & {
   tagCount: number;
@@ -95,25 +96,48 @@ export function useNoteList(options: UseNoteListOptions = {}) {
 
   const handleDelete = async (e: React.MouseEvent | undefined, id: string) => {
     e?.stopPropagation();
-    const confirmed = await Modal.confirm({
-      title: "Delete note",
-      description: "Are you sure you want to delete this note?",
-      confirm: {
-        text: "Delete",
-        theme: "danger",
-      },
-    });
-
-    if (confirmed) {
-      await dispatch.deleteNote(id);
-      if (selectedIds.has(id)) {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-      options.onDelete?.(id);
+    const note = innerNotes.find((n) => n.id === id);
+    await dispatch.deleteNote(id);
+    if (selectedIds.has(id)) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+    options.onDelete?.(id);
+    const notify = notificationRef.current;
+    if (notify) {
+      const closeRef = { current: () => {} };
+      const content = React.createElement(
+        "div",
+        { className: "flex items-center gap-2" },
+        React.createElement(
+          "span",
+          null,
+          note ? `"${note.title}" moved to Trash.` : "Note moved to Trash.",
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            className:
+              "shrink-0 font-semibold underline underline-offset-2 hover:opacity-70",
+            onClick: () => {
+              closeRef.current();
+              dispatch.restoreNote(id);
+            },
+          },
+          "Undo",
+        ),
+      );
+      const { close } = notify(content, {
+        theme: "info",
+        closable: true,
+        id: `trash:${id}`,
+        timeout: 8000,
+      });
+      closeRef.current = close;
     }
   };
 

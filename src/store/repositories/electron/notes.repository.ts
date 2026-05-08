@@ -151,9 +151,8 @@ export class NotesRepository
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata = await this.adapter.get<Note>(this.collection, id);
-    if (!metadata) {
-      return null;
-    }
+    if (!metadata) return null;
+    if ((metadata as any).deletedAt != null) return null;
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && metadata.filePath) {
@@ -185,9 +184,9 @@ export class NotesRepository
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
 
-    let filtered = all;
+    let filtered = all.filter((n) => (n as any).deletedAt == null);
     if (mode === "filesystem" && settings.directory) {
-      filtered = all.filter(
+      filtered = filtered.filter(
         (n) => !n.filePath || n.filePath.startsWith(settings.directory!),
       );
     }
@@ -299,6 +298,48 @@ export class NotesRepository
   }
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    if (mode === "filesystem") {
+      const raw: any = await this.adapter.get(this.collection, id);
+      if (raw?.filePath && settings.directory) {
+        const basename = raw.filePath.split("/").pop() ?? `${id}.md`;
+        const trashPath = `${settings.directory}/.trash/${id}-${basename}`;
+        const moveResult = await window.electronAPI.fs.moveFile(
+          raw.filePath,
+          trashPath,
+        );
+        if (moveResult.success) {
+          await window.electronAPI.db.notes.moveToTrash(
+            id,
+            trashPath,
+            raw.filePath,
+            new Date().toISOString(),
+          );
+        } else {
+          // file couldn't be moved — soft-delete in place so the DB record is consistent
+          await window.electronAPI.db.notes.softDelete(
+            id,
+            new Date().toISOString(),
+          );
+        }
+      } else {
+        await window.electronAPI.db.notes.softDelete(
+          id,
+          new Date().toISOString(),
+        );
+      }
+    } else {
+      await window.electronAPI.db.notes.softDelete(
+        id,
+        new Date().toISOString(),
+      );
+    }
+    await this.tabsRepository.deleteByNoteId(id);
+    return true;
+  }
+
+  async hardDelete(id: EntityBase["id"]): Promise<boolean> {
     const note: any = await this.adapter.get(this.collection, id);
     if (!note) {
       return false;
@@ -316,11 +357,90 @@ export class NotesRepository
         );
       }
     }
-
-    await this.adapter.delete(this.collection, id);
+    await window.electronAPI.db.notes.hardDelete(id);
     await this.tabsRepository.deleteByNoteId(id);
-
     return true;
+  }
+
+  async restore(id: string): Promise<Note | null> {
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    if (mode === "filesystem") {
+      const raw: any = await this.adapter.get(this.collection, id);
+      if (raw?.filePath && raw?.originalFilePath) {
+        const moveResult = await window.electronAPI.fs.moveFile(
+          raw.filePath,
+          raw.originalFilePath,
+        );
+        if (!moveResult.success) {
+          const sourceCheck = await window.electronAPI.fs.statFile(
+            raw.filePath,
+          );
+          if (!sourceCheck.exists) {
+            await window.electronAPI.db.notes.restoreFromTrash(id);
+          } else {
+            await window.electronAPI.db.notes.restore(id);
+          }
+        } else {
+          await window.electronAPI.db.notes.restoreFromTrash(id);
+        }
+      } else {
+        await window.electronAPI.db.notes.restore(id);
+      }
+    } else {
+      await window.electronAPI.db.notes.restore(id);
+    }
+    const note = await this.getOne(id);
+    if (note) return note;
+    const refreshed: any = await this.adapter.get(this.collection, id);
+    if (!refreshed || refreshed.deletedAt != null) return null;
+    return Note.parse({ ...refreshed, content: "" });
+  }
+
+  async getTrashed(): Promise<Note[]> {
+    const rows = await window.electronAPI.db.notes.getTrashed();
+    return rows.map((r: any) => Note.parse({ ...r, content: "" }));
+  }
+
+  async emptyTrash(): Promise<void> {
+    const trashed = await window.electronAPI.db.notes.getTrashed();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    for (const note of trashed) {
+      if (mode === "filesystem" && note.filePath) {
+        const result = await window.electronAPI.fs.deleteFile(note.filePath);
+        if (!result.success) {
+          console.warn(
+            `Failed to delete trashed file ${note.filePath}:`,
+            result.error,
+          );
+        }
+      }
+      await this.tabsRepository.deleteByNoteId(note.id);
+    }
+    await window.electronAPI.db.notes.emptyTrash();
+  }
+
+  async purgeBefore(cutoff: Date): Promise<void> {
+    const cutoffIso = cutoff.toISOString();
+    const trashed = await window.electronAPI.db.notes.getTrashed();
+    const settings = SettingsService.load();
+    const mode = getStorageMode(settings.directory);
+    for (const note of trashed) {
+      const deletedAt = (note as any).deletedAt;
+      if (!deletedAt || new Date(deletedAt) >= cutoff) continue;
+      if (mode === "filesystem" && note.filePath) {
+        const result = await window.electronAPI.fs.deleteFile(note.filePath);
+        if (!result.success) {
+          console.warn(
+            `Failed to delete purged file ${note.filePath}:`,
+            result.error,
+          );
+        }
+      }
+      await this.tabsRepository.deleteByNoteId(note.id);
+    }
+    await window.electronAPI.db.notes.purgeBefore(cutoffIso);
   }
 
   async updateContent(id: string, content: string): Promise<void> {

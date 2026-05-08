@@ -23,6 +23,7 @@ import { SettingsService } from "../store/settings";
 import { isElectron } from "@/lib/is-electron";
 import { sortByNewest } from "@/lib/array";
 import { setupAIAdapters } from "./ai/setup";
+import { runPurge } from "@/lib/trash/purge";
 
 declare global {
   interface Window {
@@ -112,6 +113,8 @@ export async function main() {
       const note = await repositories.notes.getOne(find.id);
       globalDispatch.note(note!);
     }
+    runPurge().catch(console.error);
+    setInterval(() => runPurge().catch(console.error), 60 * 60 * 1000);
   } catch (error) {
     console.error("Failed to load notes:", error);
   }

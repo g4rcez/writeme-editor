@@ -20,11 +20,58 @@ export class NotesRepository
   }
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {
+    await db.notes.update(id, { deletedAt: new Date() } as any);
+    await this.tabsRepository.deleteByNoteId(id);
+    return true;
+  }
+
+  async hardDelete(id: EntityBase["id"]): Promise<boolean> {
     const result = await super.delete(id);
     if (result) {
       await this.tabsRepository.deleteByNoteId(id);
     }
     return result;
+  }
+
+  async restore(id: string): Promise<Note | null> {
+    await db.notes.update(id, { deletedAt: null } as any);
+    return this.getOne(id);
+  }
+
+  async getTrashed(): Promise<Note[]> {
+    const all = await db.notes.toArray();
+    return all
+      .filter((n) => (n as any).deletedAt != null)
+      .map((n) => Note.parse({ ...n, content: (n as any).content || "" }))
+      .sort(
+        (a, b) =>
+          +new Date((b as any).deletedAt) - +new Date((a as any).deletedAt),
+      );
+  }
+
+  async purgeBefore(cutoff: Date): Promise<void> {
+    const all = await db.notes.toArray();
+    const ids = all
+      .filter((n) => {
+        const deletedAt = (n as any).deletedAt;
+        return deletedAt != null && new Date(deletedAt) < cutoff;
+      })
+      .map((n) => n.id);
+    await db.notes.bulkDelete(ids);
+    for (const id of ids) {
+      await this.tabsRepository.deleteByNoteId(id);
+    }
+  }
+
+  async emptyTrash(): Promise<void> {
+    const trashed = await db.notes.toArray();
+    const ids = trashed
+      .filter((n) => (n as any).deletedAt != null)
+      .map((n) => n.id);
+    await db.notes.bulkDelete(ids);
+    for (const id of ids) {
+      await this.tabsRepository.deleteByNoteId(id);
+    }
   }
 
   override async save(item: Note): Promise<Note> {
@@ -50,23 +97,25 @@ export class NotesRepository
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await super.getOne(id);
-    if (!metadata) {
-      return null;
-    }
+    if (!metadata) return null;
+    if (metadata.deletedAt != null) return null;
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
   override async getAll(query?: { limit?: number }): Promise<Note[]> {
     const items = await super.getAll(query);
-    return items.map((metadata) =>
-      Note.parse({ ...metadata, content: metadata.content || "" }),
-    );
+    return items
+      .filter((n) => (n as any).deletedAt == null)
+      .map((metadata) =>
+        Note.parse({ ...metadata, content: metadata.content || "" }),
+      );
   }
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
     const metadataList = await db.notes
       .where("noteType")
       .notEqual("template")
+      .and((n) => (n as any).deletedAt == null)
       .toArray();
 
     const sorted = metadataList
@@ -86,6 +135,7 @@ export class NotesRepository
     const result = await db.notes
       .where("noteType")
       .equals("quick")
+      .and((n) => (n as any).deletedAt == null)
       .reverse()
       .sortBy("updatedAt");
 
@@ -103,6 +153,7 @@ export class NotesRepository
       .where("noteType")
       .equals("quick")
       .and((note) => {
+        if ((note as any).deletedAt != null) return false;
         const noteDate = new Date(note.updatedAt);
         return noteDate >= start && noteDate <= end;
       })
@@ -116,6 +167,7 @@ export class NotesRepository
     const result = await db.notes
       .where("noteType")
       .equals("template")
+      .and((n) => (n as any).deletedAt == null)
       .toArray();
 
     return result.map((metadata) =>

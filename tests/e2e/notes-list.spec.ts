@@ -52,7 +52,7 @@ test.describe("Notes list", () => {
     ).toBeHidden();
   });
 
-  test("delete row removes the note via confirmation prompt", async ({
+  test("delete row soft-deletes the note and shows undo toast", async ({
     cleanPage: page,
   }) => {
     await seedNote(page, "Disposable note");
@@ -63,10 +63,8 @@ test.describe("Notes list", () => {
     await expect(row).toBeVisible();
 
     await page.getByRole("button", { name: "Delete note" }).click();
-    const confirm = page.getByRole("dialog", { name: /Delete note/i });
-    await expect(confirm).toBeVisible();
-    await confirm.getByRole("button", { name: "Delete" }).click();
 
     await expect(row).toBeHidden();
+    await expect(page.getByText(/moved to Trash/)).toBeVisible();
   });
 });

@@ -1,6 +1,5 @@
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
-import { isElectron } from "@/lib/is-electron";
 import { SYSTEM_VARIABLES, type SystemVariable } from "@/lib/template-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -55,9 +54,6 @@ export const TemplatesPane = () => {
 
   const onDeleteTemplate = async () => {
     if (!deletingTemplate) return;
-    if (isElectron() && deletingTemplate.filePath) {
-      await window.electronAPI.fs.deleteFile(deletingTemplate.filePath);
-    }
     await dispatch.deleteNote(deletingTemplate.id);
     setDeletingTemplate(null);
     refresh();

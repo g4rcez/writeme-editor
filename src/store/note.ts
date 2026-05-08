@@ -32,6 +32,7 @@ export class Note implements EntityBase {
     public favicon: string | null,
     public metadata: Record<string, any> = {},
     public favorite: boolean = false,
+    public deletedAt: Date | null = null,
   ) {}
 
   public static new(
@@ -64,6 +65,7 @@ export class Note implements EntityBase {
       favicon,
       metadata,
       favorite,
+      null,
     );
   }
 
@@ -118,6 +120,7 @@ export class Note implements EntityBase {
       a.favicon || null,
       a.metadata || {},
       a.favorite || false,
+      a.deletedAt ? new Date(a.deletedAt) : null,
     );
   }
 }
@@ -128,4 +131,9 @@ export interface INoteRepository extends Repository<Note> {
   getQuicknoteByDate: (date: Date) => Promise<Note | null>;
   getTemplates: () => Promise<Note[]>;
   updateContent: (id: string, content: string) => Promise<void>;
+  getTrashed: () => Promise<Note[]>;
+  hardDelete: (id: string) => Promise<boolean>;
+  restore: (id: string) => Promise<Note | null>;
+  emptyTrash: () => Promise<void>;
+  purgeBefore: (cutoff: Date) => Promise<void>;
 }

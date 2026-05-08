@@ -108,4 +108,52 @@ export const databaseIpcHandler = () => {
   ipcMain.handle("db:notes:getByFilePath", (_, filePath: string) => {
     return db.getNoteByFilePath(filePath);
   });
+
+  ipcMain.handle("db:notes:softDelete", (_, id: string, deletedAt: string) => {
+    db.softDeleteNote(id, deletedAt);
+    return true;
+  });
+
+  ipcMain.handle("db:notes:hardDelete", (_, id: string) => {
+    db.hardDeleteNote(id);
+    return true;
+  });
+
+  ipcMain.handle("db:notes:restore", (_, id: string) => {
+    db.restoreNote(id);
+    return true;
+  });
+
+  ipcMain.handle("db:notes:getTrashed", () => {
+    return db.getTrashedNotes();
+  });
+
+  ipcMain.handle("db:notes:emptyTrash", () => {
+    db.emptyTrash();
+    return true;
+  });
+
+  ipcMain.handle("db:notes:purgeBefore", (_, cutoff: string) => {
+    db.purgeTrashedNotesBefore(cutoff);
+    return true;
+  });
+
+  ipcMain.handle(
+    "db:notes:moveToTrash",
+    (
+      _,
+      id: string,
+      trashPath: string,
+      originalFilePath: string | null,
+      deletedAt: string,
+    ) => {
+      db.moveNoteToTrash(id, trashPath, originalFilePath, deletedAt);
+      return true;
+    },
+  );
+
+  ipcMain.handle("db:notes:restoreFromTrash", (_, id: string) => {
+    db.restoreNoteFromTrash(id);
+    return true;
+  });
 };
