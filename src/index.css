@@ -1,3 +1,6 @@
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/jetbrains-mono";
 @import "./app/styles/writeme.css";
 @import "./app/styles/code.css";
 @import "./app/styles/typography.css";
@@ -26,7 +29,7 @@ html,
 body,
 #root {
   font-size: 16px;
-  font-family: "Manrope", sans-serif;
+  font-family: "Manrope Variable", sans-serif;
   font-optical-sizing: auto;
   font-weight: 300;
   font-style: normal;
@@ -40,13 +43,13 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Plus Jakarta Sans Variable", sans-serif;
   font-weight: 700;
 }
 
 pre,
 code {
-  font-family: "JetBrains Mono", monospace;
+  font-family: "JetBrains Mono Variable", monospace;
   font-optical-sizing: auto;
   font-weight: normal;
   font-style: normal;

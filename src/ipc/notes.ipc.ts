@@ -237,7 +237,7 @@ export const notesIpcHandler = async () => {
 
   ipcMain.handle(
     "context-menu:explorer",
-    async (event, filePath: string, _isDirectory: boolean) => {
+    async (event, filePath: string, isDirectory: boolean) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (!win) return;
 
@@ -251,15 +251,50 @@ export const notesIpcHandler = async () => {
       const menu = new Menu();
       menu.append(
         new MenuItem({
-          label: "Delete",
+          label: "New file",
           click: () => {
             win.webContents.send("context-menu:action", {
-              action: "delete",
+              action: "new-file",
               filePath,
+              isDirectory,
             });
           },
         }),
       );
+      menu.append(
+        new MenuItem({
+          label: "New folder",
+          click: () => {
+            win.webContents.send("context-menu:action", {
+              action: "new-folder",
+              filePath,
+              isDirectory,
+            });
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(
+        new MenuItem({
+          label: "Copy path",
+          click: () => {
+            clipboard.writeText(filePath);
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: "Copy relative path",
+          click: () => {
+            win.webContents.send("context-menu:action", {
+              action: "copy-relative-path",
+              filePath,
+              isDirectory,
+            });
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
       menu.append(
         new MenuItem({
           label: "Rename",
@@ -277,6 +312,18 @@ export const notesIpcHandler = async () => {
           label: revealLabel,
           click: () => {
             shell.showItemInFolder(filePath);
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(
+        new MenuItem({
+          label: "Delete",
+          click: () => {
+            win.webContents.send("context-menu:action", {
+              action: "delete",
+              filePath,
+            });
           },
         }),
       );

@@ -46,7 +46,7 @@
 }
 
 .writeme-aside-activity-icon--inactive {
-  @apply text-muted-foreground hover:text-foreground;
+  @apply text-foreground/50 hover:text-foreground;
 }
 
 .writeme-aside-activity-indicator {
@@ -93,7 +93,7 @@
 }
 
 .writeme-aside-nav-item--inactive {
-  @apply text-muted-foreground hover:text-foreground;
+  @apply text-foreground/55 hover:text-foreground;
 }
 
 .writeme-aside-nav-item--inactive:hover {
@@ -102,7 +102,7 @@
 
 .writeme-aside-nav-section {
   @apply px-2 py-1.5 text-xs font-semibold uppercase tracking-wider mt-4 mb-1;
-  color: hsla(var(--muted-foreground), 0.6);
+  color: hsla(var(--foreground), 0.35);
 }
 
 .writeme-aside-nav-footer {

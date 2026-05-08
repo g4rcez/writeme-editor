@@ -71,7 +71,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-8 select-none print:hidden z-navbar bg-background isolate"
+      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
     >
       {state.tabs.map((tab: Tab) => {
         const note = state.notes.find((n: Note) => n.id === tab.noteId);
@@ -90,8 +90,8 @@ export const TabsBar: React.FC = () => {
             className={css(
               "group flex border-r border-card-border items-center min-w-24 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-all relative",
               isActive
-                ? "bg-background text-foreground"
-                : "bg-transparent text-foreground/50 hover:text-foreground hover:bg-muted/20",
+                ? "bg-muted/30 text-foreground"
+                : "bg-transparent text-foreground/50 hover:text-foreground/80 hover:bg-muted/10",
             )}
           >
             {renamingNoteId === tab.noteId ? (
@@ -130,12 +130,17 @@ export const TabsBar: React.FC = () => {
             )}
             <button
               onClick={(e) => onCloseTab(e, tab.id)}
-              className="p-0.5 rounded opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
+              className={css(
+                "p-0.5 rounded transition-opacity hover:bg-foreground/10",
+                isActive
+                  ? "opacity-60 group-hover:opacity-100"
+                  : "opacity-0 group-hover:opacity-100",
+              )}
             >
               <XIcon className="size-2.5" />
             </button>
             {isActive && (
-              <div className="absolute bottom-0 right-0 left-0 h-0.5 bg-primary" />
+              <div className="absolute top-0 right-0 left-0 h-0.5 bg-primary" />
             )}
           </Link>
         );
