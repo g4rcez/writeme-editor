@@ -29,7 +29,7 @@
 }
 
 .writeme-aside-activity-bar {
-  @apply flex flex-col items-center py-2 h-full border-r bg-background w-[52px] backdrop-blur-xl;
+  @apply flex flex-col items-center py-2 h-full border-r bg-background w-10;
   border-color: hsla(var(--border), 0.4);
 }
 
@@ -38,7 +38,7 @@
 }
 
 .writeme-aside-activity-icon {
-  @apply relative flex items-center justify-center w-12 h-12 transition-all duration-200;
+  @apply relative flex items-center justify-center size-10 transition-all duration-200;
 }
 
 .writeme-aside-activity-icon--active {
