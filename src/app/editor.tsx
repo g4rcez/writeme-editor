@@ -132,14 +132,9 @@ const TiptapEditorCore = memo(
     dispatch,
     onSaveRef,
   }: TiptapEditorCoreProps) {
-    const themeRef = useRef(theme);
-    useEffect(() => {
-      themeRef.current = theme;
-    }, [theme]);
-
     const extensions = useMemo(
-      () => createExtensions(() => getThemeForMode(themeRef.current)),
-      [],
+      () => createExtensions(() => getThemeForMode(theme)),
+      [theme],
     );
 
     const noteRef = useRef(note);
