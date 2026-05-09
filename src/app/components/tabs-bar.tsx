@@ -140,7 +140,7 @@ export const TabsBar: React.FC = () => {
               <XIcon className="size-2.5" />
             </button>
             {isActive && (
-              <div className="absolute top-0 right-0 left-0 h-0.5 bg-primary" />
+              <div className="absolute bottom-0 right-0 left-0 h-hairline bg-primary" />
             )}
           </Link>
         );

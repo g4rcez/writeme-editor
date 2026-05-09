@@ -1,0 +1,11 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1280" height="80" fill="#2563eb"/>
+  <text x="640" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">Writeme</text>
+  <rect x="20" y="100" width="1240" height="580" fill="white" stroke="#e2e8f0" stroke-width="2" rx="8"/>
+  <rect x="40" y="120" width="1200" height="20" fill="#e2e8f0" rx="4"/>
+  <rect x="40" y="160" width="840" height="20" fill="#e2e8f0" rx="4"/>
+  <rect x="40" y="200" width="1080" height="20" fill="#e2e8f0" rx="4"/>
+  <text x="640" y="690" font-family="Arial, sans-serif" font-size="16" fill="#64748b" text-anchor="middle">Desktop Editor View</text>
+</svg>
