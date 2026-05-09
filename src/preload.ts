@@ -274,11 +274,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
       }>,
   },
   onContextMenuAction: (
-    callback: (data: { action: string; filePath: string }) => void,
+    callback: (data: {
+      action: string;
+      filePath: string;
+      isDirectory?: boolean;
+    }) => void,
   ) => {
     const handler = (
       _: Electron.IpcRendererEvent,
-      data: { action: string; filePath: string },
+      data: { action: string; filePath: string; isDirectory?: boolean },
     ) => callback(data);
     ipcRenderer.on("context-menu:action", handler);
     return () => ipcRenderer.removeListener("context-menu:action", handler);
@@ -445,7 +449,11 @@ declare global {
         showExplorer(filePath: string, isDirectory: boolean): Promise<void>;
       };
       onContextMenuAction(
-        callback: (data: { action: string; filePath: string }) => void,
+        callback: (data: {
+          action: string;
+          filePath: string;
+          isDirectory?: boolean;
+        }) => void,
       ): () => void;
       readItLater: {
         fetchUrl(url: string): Promise<{

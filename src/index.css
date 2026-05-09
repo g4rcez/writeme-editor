@@ -1,3 +1,4 @@
+@import "@fontsource-variable/jetbrains-mono";
 @import "./app/styles/writeme.css";
 @import "./app/styles/code.css";
 @import "./app/styles/typography.css";
@@ -47,12 +48,13 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Outfit", sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-weight: 700;
 }
 
 pre,
 code {
-  font-family: "JetBrains Mono", monospace;
+  font-family: "JetBrains Mono Variable", monospace;
   font-optical-sizing: auto;
   font-weight: normal;
   font-style: normal;
@@ -241,6 +243,6 @@ input:focus {
   background: hsla(var(--primary-DEFAULT), 0.6);
 }
 
-.react-renderer.node-codeBlock { 
+.react-renderer.node-codeBlock {
   min-width: 100%;
 }

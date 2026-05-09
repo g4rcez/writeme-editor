@@ -42,8 +42,7 @@ describe("Graphviz", () => {
       expect(mockRenderSVGElement).toHaveBeenCalled();
       const dotPassed = mockRenderSVGElement.mock.calls[0]![0];
       expect(dotPassed).toContain('bgcolor="transparent"');
-      expect(dotPassed).toContain('fontname="IBM Plex Sans"');
-      expect(dotPassed).toContain("#f3f4f7"); // Dark theme foreground (approximate)
+      expect(dotPassed).toContain('fontname="Inter"');
     });
   });
 

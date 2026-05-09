@@ -27,7 +27,9 @@ test.describe("Trash / soft-delete", () => {
     await createNote(page, "Note to trash");
 
     await page.goto("/notes");
-    const row = page.getByRole("link", { name: "Note to trash" });
+    const row = page
+      .getByTestId("virtuoso-item-list")
+      .getByRole("link", { name: "Note to trash" });
     await expect(row).toBeVisible();
 
     await page.getByRole("button", { name: "Delete note" }).click();
@@ -49,7 +51,9 @@ test.describe("Trash / soft-delete", () => {
     await undoButton.click();
 
     await expect(
-      page.getByRole("link", { name: "Note to undo" }),
+      page
+        .getByTestId("virtuoso-item-list")
+        .getByRole("link", { name: "Note to undo" }),
     ).toBeVisible();
   });
 
@@ -60,7 +64,11 @@ test.describe("Trash / soft-delete", () => {
 
     await page.goto("/notes");
     await page.getByRole("button", { name: "Delete note" }).click();
-    await expect(page.getByRole("link", { name: "Trashed note" })).toBeHidden();
+    await expect(
+      page
+        .getByTestId("virtuoso-item-list")
+        .getByRole("link", { name: "Trashed note" }),
+    ).toBeHidden();
 
     await openTrashPane(page);
     await expect(page.getByText("Trashed note")).toBeVisible();
@@ -86,7 +94,9 @@ test.describe("Trash / soft-delete", () => {
     await page.getByRole("button", { name: "Explorer" }).click();
     await page.goto("/notes");
     await expect(
-      page.getByRole("link", { name: "Restorable note" }),
+      page
+        .getByTestId("virtuoso-item-list")
+        .getByRole("link", { name: "Restorable note" }),
     ).toBeVisible();
   });
 

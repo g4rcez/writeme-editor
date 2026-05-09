@@ -1,3 +1,9 @@
+# Brainstorming session files
+.superpowers/
+.superset/
+docs/superpowers/
+.ai/plans/
+
 # Logs
 logs
 *.log

@@ -34,7 +34,7 @@ interface FileExtensionConfig {
 const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
   ".md": {
     icon: FileTextIcon,
-    iconClass: "text-primary size-4",
+    iconClass: "text-foreground/70 size-4",
     selectable: true,
   },
   ".json": {
@@ -167,7 +167,7 @@ const TreeNodeItem = ({
       aria-expanded={isDirectory ? isExpanded : undefined}
       className={`
         group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition-colors
-        ${isFocused ? "bg-primary-subtle/40" : "hover:bg-muted"}
+        ${isFocused ? "bg-muted" : "hover:bg-muted/60"}
         ${!isDirectory && !extConfig ? "opacity-50 cursor-default" : ""}
       `}
     >
@@ -181,9 +181,9 @@ const TreeNodeItem = ({
             <CaretRightIcon className="size-4" />
           )}
           {isExpanded ? (
-            <FolderOpenIcon className="size-4 text-secondary" />
+            <FolderOpenIcon className="size-4 text-foreground/70" />
           ) : (
-            <FolderIcon className="size-4 text-warn" />
+            <FolderIcon className="size-4 text-foreground/70" />
           )}
         </>
       ) : (
@@ -194,15 +194,15 @@ const TreeNodeItem = ({
           ) : extConfig ? (
             <extConfig.icon className={extConfig.iconClass} />
           ) : (
-            <FileIcon className="text-secondary size-4" />
+            <FileIcon className="text-foreground/50 size-4" />
           )}
         </>
       )}
       <span
         className={`
           text-sm truncate flex-1
-          ${isFocused ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-700 dark:text-gray-300"}
-          ${!isDirectory && !extConfig ? "text-gray-400 dark:text-gray-600" : ""}
+          ${isFocused ? "text-foreground font-medium" : "text-foreground/70"}
+          ${!isDirectory && !extConfig ? "text-foreground/35" : ""}
         `}
       >
         {node.name}
@@ -305,12 +305,16 @@ interface TreeViewProps {
   map: Map<string, Note>;
   onFileSelect: (node: TreeNode) => void;
   onDelete?: (node: TreeNode) => Promise<boolean>;
+  onNewFile?: (targetPath: string) => Promise<boolean>;
+  onNewFolder?: (targetPath: string) => Promise<boolean>;
   onFocusChange?: (node: TreeNode | null) => void;
 }
 
 export const TreeView = ({
   map,
   onDelete,
+  onNewFile,
+  onNewFolder,
   rootPath,
   onFileSelect,
   onFocusChange,
@@ -328,7 +332,17 @@ export const TreeView = ({
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [pendingCreate, setPendingCreate] = useState<{
+    parentPath: string | null;
+    kind: "file" | "directory";
+    depth: number;
+  } | null>(null);
+  const [pendingName, setPendingName] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingInputRef = useRef<HTMLInputElement>(null);
+  const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
+  const expandedPathsRef = useRef(new Set<string>());
+  const flattenedNodesRef = useRef<FlattenedNode[]>([]);
 
   const loadRoot = useCallback(async () => {
     setIsLoading(true);
@@ -356,7 +370,7 @@ export const TreeView = ({
     return window.electronAPI.fs.onDirChanged(({ dirPath }) => {
       if (dirPath === rootPath) {
         loadRoot();
-      } else if (childrenCache.has(dirPath)) {
+      } else if (childrenCacheRef.current.has(dirPath)) {
         window.electronAPI.fs.readDir(dirPath).then((result) => {
           setChildrenCache((prev) =>
             new Map(prev).set(dirPath, result.entries || []),
@@ -364,7 +378,7 @@ export const TreeView = ({
         });
       }
     });
-  }, [rootPath, loadRoot, childrenCache]);
+  }, [rootPath, loadRoot]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
@@ -404,17 +418,58 @@ export const TreeView = ({
   }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
 
   useEffect(() => {
-    if (!isElectron()) return;
-    return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
-      const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
-      if (!flatNode) return;
-      if (action === "delete") {
-        setConfirmingPath(filePath);
-      } else if (action === "rename") {
-        setRenamingPath(filePath);
-      }
-    });
+    childrenCacheRef.current = childrenCache;
+  }, [childrenCache]);
+  useEffect(() => {
+    expandedPathsRef.current = expandedPaths;
+  }, [expandedPaths]);
+  useEffect(() => {
+    flattenedNodesRef.current = flattenedNodes;
   }, [flattenedNodes]);
+
+  const insertionIndex = useMemo(() => {
+    if (!pendingCreate) return -1;
+    if (pendingCreate.parentPath === null) return flattenedNodes.length;
+    const parentIdx = flattenedNodes.findIndex(
+      (n) => n.node.path === pendingCreate.parentPath,
+    );
+    if (parentIdx === -1) return flattenedNodes.length;
+    let lastChildIdx = parentIdx;
+    const parentDepth = flattenedNodes[parentIdx]!.depth;
+    for (
+      let i = parentIdx + 1;
+      i < flattenedNodes.length &&
+      (flattenedNodes[i]?.depth ?? 0) > parentDepth;
+      i++
+    ) {
+      lastChildIdx = i;
+    }
+    return lastChildIdx + 1;
+  }, [pendingCreate, flattenedNodes]);
+
+  const handlePendingCommit = useCallback(async () => {
+    if (!pendingCreate || !pendingName.trim()) {
+      setPendingCreate(null);
+      setPendingName("");
+      return;
+    }
+    const rawName = pendingName.trim();
+    const fileName =
+      pendingCreate.kind === "file"
+        ? rawName.includes(".")
+          ? rawName
+          : rawName + ".md"
+        : rawName;
+    const targetPath = (pendingCreate.parentPath ?? rootPath) + "/" + fileName;
+    const success =
+      pendingCreate.kind === "file"
+        ? await onNewFile?.(targetPath)
+        : await onNewFolder?.(targetPath);
+    if (success) {
+      setPendingCreate(null);
+      setPendingName("");
+    }
+  }, [pendingCreate, pendingName, rootPath, onNewFile, onNewFolder]);
 
   useEffect(() => {
     if (flattenedNodes.length > 0 && focusedIndex >= flattenedNodes.length) {
@@ -428,14 +483,19 @@ export const TreeView = ({
     }
   }, [flattenedNodes, focusedIndex, onFocusChange]);
 
+  useEffect(() => {
+    setPendingCreate(null);
+    setPendingName("");
+  }, [rootPath]);
+
+  useEffect(() => {
+    if (pendingCreate !== null) {
+      pendingInputRef.current?.focus();
+    }
+  }, [pendingCreate]);
+
   const loadChildren = useCallback(
     async (path: string): Promise<TreeNode[]> => {
-      if (childrenCache.has(path)) {
-        // Force reload if we are calling this explicitly (e.g. after delete),
-        // but usually this is called by toggle/expand which might rely on cache.
-        // For now, simple cache check.
-        // To support force reload, we'd need a flag or manual cache invalidation before calling.
-      }
       setLoadingPaths((prev) => new Set(prev).add(path));
       try {
         const result = await window.electronAPI.fs.readDir(path);
@@ -454,18 +514,59 @@ export const TreeView = ({
         });
       }
     },
-    [childrenCache],
+    [],
   );
 
   const expandNode = useCallback(
     async (path: string) => {
-      if (!childrenCache.has(path)) {
+      if (!childrenCacheRef.current.has(path)) {
         await loadChildren(path);
       }
       setExpandedPaths((prev) => new Set(prev).add(path));
     },
-    [loadChildren, childrenCache],
+    [loadChildren],
   );
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    return window.electronAPI.onContextMenuAction(
+      ({ action, filePath, isDirectory }) => {
+        if (action === "copy-relative-path") {
+          const rel = filePath.startsWith(rootPath + "/")
+            ? filePath.slice(rootPath.length + 1)
+            : filePath;
+          navigator.clipboard.writeText(rel);
+          return;
+        }
+
+        const flatNode = flattenedNodesRef.current.find(
+          (n) => n.node.path === filePath,
+        );
+        if (!flatNode) return;
+
+        if (action === "delete") {
+          setConfirmingPath(filePath);
+        } else if (action === "rename") {
+          setRenamingPath(filePath);
+        } else if (action === "new-file" || action === "new-folder") {
+          const kind = action === "new-file" ? "file" : "directory";
+          const parentPath = isDirectory
+            ? filePath
+            : filePath.substring(0, filePath.lastIndexOf("/"));
+          const depth = isDirectory ? flatNode.depth + 1 : flatNode.depth;
+          if (isDirectory) {
+            expandNode(parentPath).then(() => {
+              setPendingCreate({ parentPath, kind, depth });
+              setPendingName("");
+            });
+          } else {
+            setPendingCreate({ parentPath, kind, depth });
+            setPendingName("");
+          }
+        }
+      },
+    );
+  }, [rootPath, expandNode]);
 
   const collapseNode = useCallback((path: string) => {
     setExpandedPaths((prev) => {
@@ -477,13 +578,13 @@ export const TreeView = ({
 
   const toggleNode = useCallback(
     async (path: string) => {
-      if (expandedPaths.has(path)) {
+      if (expandedPathsRef.current.has(path)) {
         collapseNode(path);
       } else {
         await expandNode(path);
       }
     },
-    [expandedPaths, expandNode, collapseNode],
+    [expandNode, collapseNode],
   );
 
   const activateNode = useCallback(
@@ -513,7 +614,10 @@ export const TreeView = ({
         }
 
         // Check cache for parent
-        for (const [parentPath, children] of childrenCache.entries()) {
+        for (const [
+          parentPath,
+          children,
+        ] of childrenCacheRef.current.entries()) {
           if (children.some((n) => n.path === node.path)) {
             // Reload this parent
             // We need to bypass cache check in loadChildren.
@@ -539,23 +643,22 @@ export const TreeView = ({
         }
       }
     },
-    [onDelete, rootChildren, childrenCache, loadRoot],
+    [onDelete, rootChildren, loadRoot],
   );
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      if (flattenedNodes.length === 0) return;
+      const nodes = flattenedNodesRef.current;
+      if (nodes.length === 0) return;
 
-      const currentNode = flattenedNodes[focusedIndex];
+      const currentNode = nodes[focusedIndex];
       if (!currentNode) return;
 
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setFocusedIndex((prev) =>
-            Math.min(prev + 1, flattenedNodes.length - 1),
-          );
+          setFocusedIndex((prev) => Math.min(prev + 1, nodes.length - 1));
           break;
 
         case "ArrowUp":
@@ -567,13 +670,12 @@ export const TreeView = ({
           e.preventDefault();
           if (currentNode.node.type === "directory") {
             if (!currentNode.isExpanded) {
-              // Expand folder
               await expandNode(currentNode.node.path);
             } else {
-              // Move to first child if expanded and has children
-              const children = childrenCache.get(currentNode.node.path) || [];
+              const children =
+                childrenCacheRef.current.get(currentNode.node.path) || [];
               if (children.length > 0) {
-                setFocusedIndex(focusedIndex + 1);
+                setFocusedIndex((prev) => prev + 1);
               }
             }
           }
@@ -582,11 +684,9 @@ export const TreeView = ({
         case "ArrowLeft":
           e.preventDefault();
           if (currentNode.node.type === "directory" && currentNode.isExpanded) {
-            // Collapse folder
             collapseNode(currentNode.node.path);
           } else if (currentNode.parentPath) {
-            // Move to parent
-            const parentIndex = flattenedNodes.findIndex(
+            const parentIndex = nodes.findIndex(
               (n) => n.node.path === currentNode.parentPath,
             );
             if (parentIndex !== -1) {
@@ -636,12 +736,10 @@ export const TreeView = ({
     }
     return undefined;
   }, [
-    flattenedNodes,
     focusedIndex,
     expandNode,
     collapseNode,
     activateNode,
-    childrenCache,
     onDelete,
     handleNodeDelete,
     confirmingPath,
@@ -687,28 +785,86 @@ export const TreeView = ({
       className="py-2 outline-none"
       tabIndex={0}
     >
-      {flattenedNodes.map((flatNode, index) => (
-        <TreeNodeItem
-          node={flatNode.node}
-          depth={flatNode.depth}
-          key={flatNode.node.path}
-          isExpanded={flatNode.isExpanded}
-          isFocused={index === focusedIndex}
-          note={map.get(flatNode.node.path)!}
-          onHover={() => setFocusedIndex(index)}
-          onConfirmCancel={() => setConfirmingPath(null)}
-          isLoading={loadingPaths.has(flatNode.node.path)}
-          onDelete={onDelete ? handleNodeDelete : undefined}
-          isConfirming={confirmingPath === flatNode.node.path}
-          onConfirmDelete={() => handleNodeDelete(flatNode.node)}
-          onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
-          onContextMenu={isElectron() ? handleContextMenu : undefined}
-          onActivate={() => {
-            setFocusedIndex(index);
-            activateNode(flatNode);
-          }}
-        />
-      ))}
+      {flattenedNodes
+        .slice(0, insertionIndex === -1 ? undefined : insertionIndex)
+        .map((flatNode, index) => (
+          <TreeNodeItem
+            node={flatNode.node}
+            depth={flatNode.depth}
+            key={flatNode.node.path}
+            isExpanded={flatNode.isExpanded}
+            isFocused={index === focusedIndex}
+            note={map.get(flatNode.node.path)!}
+            onHover={() => setFocusedIndex(index)}
+            onConfirmCancel={() => setConfirmingPath(null)}
+            isLoading={loadingPaths.has(flatNode.node.path)}
+            onDelete={onDelete ? handleNodeDelete : undefined}
+            isConfirming={confirmingPath === flatNode.node.path}
+            onConfirmDelete={() => handleNodeDelete(flatNode.node)}
+            onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
+            onContextMenu={isElectron() ? handleContextMenu : undefined}
+            onActivate={() => {
+              setFocusedIndex(index);
+              activateNode(flatNode);
+            }}
+          />
+        ))}
+      {pendingCreate !== null && (
+        <div
+          role="none"
+          className="flex items-center gap-2 py-1.5 px-2"
+          style={{ paddingLeft: 12 + pendingCreate.depth * 16 }}
+        >
+          {pendingCreate.kind === "directory" ? (
+            <FolderIcon className="size-4 text-foreground/70 shrink-0" />
+          ) : (
+            <FileTextIcon className="size-4 text-foreground/70 shrink-0" />
+          )}
+          <input
+            ref={pendingInputRef}
+            className="flex-1 text-sm bg-transparent border-b border-border outline-none text-foreground"
+            value={pendingName}
+            onChange={(e) => setPendingName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handlePendingCommit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setPendingCreate(null);
+                setPendingName("");
+              }
+            }}
+            onBlur={handlePendingCommit}
+          />
+        </div>
+      )}
+      {insertionIndex !== -1 &&
+        flattenedNodes.slice(insertionIndex).map((flatNode, i) => {
+          const index = insertionIndex + i;
+          return (
+            <TreeNodeItem
+              node={flatNode.node}
+              depth={flatNode.depth}
+              key={flatNode.node.path}
+              isExpanded={flatNode.isExpanded}
+              isFocused={index === focusedIndex}
+              note={map.get(flatNode.node.path)!}
+              onHover={() => setFocusedIndex(index)}
+              onConfirmCancel={() => setConfirmingPath(null)}
+              isLoading={loadingPaths.has(flatNode.node.path)}
+              onDelete={onDelete ? handleNodeDelete : undefined}
+              isConfirming={confirmingPath === flatNode.node.path}
+              onConfirmDelete={() => handleNodeDelete(flatNode.node)}
+              onConfirmRequest={() => setConfirmingPath(flatNode.node.path)}
+              onContextMenu={isElectron() ? handleContextMenu : undefined}
+              onActivate={() => {
+                setFocusedIndex(index);
+                activateNode(flatNode);
+              }}
+            />
+          );
+        })}
       {renamingPath && (
         <Prompt
           open

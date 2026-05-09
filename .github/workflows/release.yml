@@ -10,13 +10,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    permissions:
-      contents: write
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  build-mac-arm64:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -25,22 +20,18 @@ jobs:
           node-version: 24.14.0
           cache: npm
 
-      - name: Install rpm (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y rpm
+      - uses: oven-sh/setup-bun@v2
 
       - run: npm ci
 
-      - name: Get commit message
-        id: commit
-        shell: bash
-        run: |
-          NOTES=$(git log -1 --pretty=format:%B)
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Import code-signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-base64: ${{ secrets.CSC_LINK }}
+          p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - run: npm run make
+      - name: Build Electron app
+        run: npm run make
         env:
           NODE_OPTIONS: --max-old-space-size=4096
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -49,9 +40,201 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
+      - name: Stage artifacts
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          DMG_COUNT=$(find out/make -name "*arm64*.dmg" | wc -l | tr -d ' ')
+          if [ "$DMG_COUNT" -ne 1 ]; then
+            echo "ERROR: expected exactly 1 arm64 .dmg, found ${DMG_COUNT}" && exit 1
+          fi
+          mkdir -p release-artifacts
+          find out/make -name "*arm64*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-arm64.dmg" \;
+          bun build --compile packages/cli/src/index.ts \
+            --outfile "release-artifacts/writeme-darwin-arm64"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64
+          path: release-artifacts/
+
+  build-mac-x64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: npm ci
+
+      - name: Import code-signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-base64: ${{ secrets.CSC_LINK }}
+          p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Build Electron app
+        run: npm run make
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Stage artifacts
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          DMG_COUNT=$(find out/make -name "*x64*.dmg" | wc -l | tr -d ' ')
+          if [ "$DMG_COUNT" -ne 1 ]; then
+            echo "ERROR: expected exactly 1 x64 .dmg, found ${DMG_COUNT}" && exit 1
+          fi
+          mkdir -p release-artifacts
+          find out/make -name "*x64*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-x64.dmg" \;
+          bun build --compile packages/cli/src/index.ts \
+            --outfile "release-artifacts/writeme-darwin-x64"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-x64
+          path: release-artifacts/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build Electron app
+        run: npm run make
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Stage artifacts
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          find out/make \( -name "*.exe" -o -name "*.nupkg" \) \
+            -exec cp {} release-artifacts/ \;
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: release-artifacts/
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install rpm
+        run: sudo apt-get install -y rpm
+
+      - run: npm ci
+
+      - name: Build Electron app
+        run: npm run make
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Stage artifacts
+        run: |
+          mkdir -p release-artifacts
+          find out/make \( -name "*.deb" -o -name "*.rpm" \) \
+            -exec cp {} release-artifacts/ \;
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: release-artifacts/
+
+  release:
+    needs: [build-mac-arm64, build-mac-x64, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Get commit message
+        id: commit
+        run: |
+          NOTES=$(git log -1 --pretty=format:%B)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - uses: softprops/action-gh-release@v2
         with:
           body: ${{ steps.commit.outputs.notes }}
-          files: out/make/**/*
+          files: artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  bump-tap:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      REF_NAME: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download macOS artifacts
+        run: |
+          gh release download "$REF_NAME" \
+            --repo g4rcez/writeme-editor \
+            --pattern "writeme-*-arm64.dmg" \
+            --pattern "writeme-*-x64.dmg" \
+            --pattern "writeme-darwin-arm64" \
+            --pattern "writeme-darwin-x64" \
+            --dir ./artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git credentials
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          git config --global http.https://github.com/.extraHeader \
+            "AUTHORIZATION: basic $(echo -n "x-access-token:${TAP_TOKEN}" | base64)"
+
+      - name: Clone tap repo
+        run: git clone https://github.com/g4rcez/homebrew-writeme.git tap
+
+      - name: Bump cask and formula
+        run: |
+          VERSION="${REF_NAME#v}"
+          python3 scripts/bump-tap.py "$VERSION" ./artifacts ./tap
+
+      - name: Push tap
+        working-directory: tap
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Casks/writeme.rb Formula/writeme.rb
+          git commit -m "chore: bump to ${REF_NAME}"
+          git pull --rebase origin main
+          git push

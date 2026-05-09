@@ -76,6 +76,11 @@ export const CodeBlockFrame = ({
   isBodyVisible = true,
   isTransparent = false,
 }: CodeBlockFrameProps) => {
+  const lineNumbers = useMemo(
+    () =>
+      Array.from({ length: lineCount }, (_, i) => <span key={i}>{i + 1}</span>),
+    [lineCount],
+  );
   return (
     <NodeViewWrapper
       id={id}
@@ -104,9 +109,7 @@ export const CodeBlockFrame = ({
             )}
             aria-hidden="true"
           >
-            {Array.from({ length: lineCount }).map((_, i) => (
-              <span key={i}>{i + 1}</span>
-            ))}
+            {lineNumbers}
           </div>
           <div className="overflow-x-auto relative p-4 w-full font-mono leading-6 whitespace-pre">
             {children}
@@ -322,11 +325,23 @@ export function ShikiPlugin({
     key: new PluginKey("shiki"),
     view(view) {
       class ShikiPluginView implements PluginView {
+        private debouncedCheckTimer: ReturnType<typeof setTimeout> | null =
+          null;
+
         constructor() {
           this.initDecorations();
         }
         update() {
-          this.checkUndecoratedBlocks();
+          if (this.debouncedCheckTimer !== null)
+            clearTimeout(this.debouncedCheckTimer);
+          this.debouncedCheckTimer = setTimeout(() => {
+            this.debouncedCheckTimer = null;
+            this.checkUndecoratedBlocks();
+          }, 300);
+        }
+        destroy() {
+          if (this.debouncedCheckTimer !== null)
+            clearTimeout(this.debouncedCheckTimer);
         }
         async initDecorations() {
           const doc = view.state.doc;
@@ -523,6 +538,14 @@ const getAllLanguages = (): string[] => {
   return allLanguages.sort();
 };
 
+const LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "plaintext", label: "Plain text" },
+  ...getAllLanguages().map((lang) => ({
+    value: lang,
+    label: lang.charAt(0).toUpperCase() + lang.slice(1),
+  })),
+];
+
 const CodeBlockHeader = ({
   language,
   code,
@@ -557,13 +580,7 @@ const CodeBlockHeader = ({
           aria-description="Language"
           placeholder="Select a language"
           onChange={(e) => onChangeLanguage(e.target.value)}
-          options={[
-            { value: "plaintext", label: "Plain text" },
-            ...getAllLanguages().map((lang) => ({
-              value: lang,
-              label: lang.charAt(0).toUpperCase() + lang.slice(1),
-            })),
-          ]}
+          options={LANGUAGE_OPTIONS}
         />
         {title && (
           <span

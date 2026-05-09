@@ -28,7 +28,7 @@ const getFlowchartOptions = (isDark: boolean) => {
     "line-length": 50,
     "text-margin": 12,
     "font-size": 14,
-    "font-family": "IBM Plex Sans, sans-serif",
+    "font-family": "Inter, sans-serif",
     "font-color": colors.foreground,
     "line-color": colors.foreground,
     "element-color": colors.foreground,

@@ -1,7 +1,6 @@
 import { css } from "@g4rcez/components";
-import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useGlobalStore } from "@/store/global.store";
 import { Tab } from "@/store/repositories/entities/tab";
@@ -11,6 +10,10 @@ export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
   const params = useParams<{ noteId: string }>();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState("");
+  const renameEscapedRef = useRef(false);
+  const renameCommittedRef = useRef(false);
 
   const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
@@ -24,6 +27,30 @@ export const TabsBar: React.FC = () => {
     if (e.button === 1) {
       onCloseTab(e, tabId);
     }
+  };
+
+  const commitRename = async (noteId: string) => {
+    if (renameEscapedRef.current) {
+      renameEscapedRef.current = false;
+      setRenamingNoteId(null);
+      return;
+    }
+    if (renameCommittedRef.current) return;
+    renameCommittedRef.current = true;
+    const note = state.notes.find((n: Note) => n.id === noteId);
+    if (!note) {
+      renameCommittedRef.current = false;
+      setRenamingNoteId(null);
+      return;
+    }
+    const trimmed = renamingValue.trim();
+    if (trimmed && trimmed !== note.title) {
+      const parsed = Note.parse(note);
+      parsed.setTitle(trimmed);
+      await dispatch.note(parsed);
+    }
+    renameCommittedRef.current = false;
+    setRenamingNoteId(null);
   };
 
   useEffect(() => {
@@ -44,7 +71,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-12 select-none print:hidden z-navbar bg-background isolate"
+      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
     >
       {state.tabs.map((tab: Tab) => {
         const note = state.notes.find((n: Note) => n.id === tab.noteId);
@@ -57,23 +84,63 @@ export const TabsBar: React.FC = () => {
             title={note?.filePath || title}
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
             onMouseDown={(e) => onMiddleClick(e, tab.id)}
+            onClick={(e) => {
+              if (renamingNoteId === tab.noteId || isActive) e.preventDefault();
+            }}
             className={css(
-              "group border-b flex border-r border-card-border items-center min-w-32 max-w-xs h-full px-3 gap-2 cursor-pointer transition-all relative",
+              "group flex border-r border-card-border items-center min-w-24 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-all relative",
               isActive
-                ? "bg-background shadow-sm text-foreground"
-                : "bg-transparent text-foreground/60 hover:text-foreground hover:bg-muted/20",
+                ? "bg-muted/30 text-foreground"
+                : "bg-transparent text-foreground/50 hover:text-foreground/80 hover:bg-muted/10",
             )}
           >
-            <FileTextIcon className="flex-shrink-0 w-3.5 h-3.5 opacity-60" />
-            <span className="flex-1 text-xs truncate">{title}</span>
+            {renamingNoteId === tab.noteId ? (
+              <input
+                autoFocus
+                className="flex-1 text-xs bg-transparent outline-none min-w-0"
+                value={renamingValue}
+                onChange={(e) => setRenamingValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    commitRename(tab.noteId);
+                  }
+                  if (e.key === "Escape") {
+                    e.stopPropagation();
+                    renameEscapedRef.current = true;
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                onBlur={() => void commitRename(tab.noteId)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                className="flex-1 text-xs truncate"
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  renameCommittedRef.current = false;
+                  setRenamingNoteId(tab.noteId);
+                  setRenamingValue(title);
+                }}
+              >
+                {title}
+              </span>
+            )}
             <button
               onClick={(e) => onCloseTab(e, tab.id)}
-              className="p-0.5 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground/10"
+              className={css(
+                "p-0.5 rounded transition-opacity hover:bg-foreground/10",
+                isActive
+                  ? "opacity-60 group-hover:opacity-100"
+                  : "opacity-0 group-hover:opacity-100",
+              )}
             >
-              <XIcon className="size-3" />
+              <XIcon className="size-2.5" />
             </button>
             {isActive && (
-              <div className="absolute bottom-0 right-0 left-0 h-0.5 bg-primary" />
+              <div className="absolute bottom-0 right-0 left-0 h-hairline bg-primary" />
             )}
           </Link>
         );

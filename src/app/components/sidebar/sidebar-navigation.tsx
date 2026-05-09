@@ -33,7 +33,7 @@ const SidebarItem = ({
     className={`writeme-aside-nav-item ${active ? "writeme-aside-nav-item--active" : "writeme-aside-nav-item--inactive"}`}
     style={{ paddingLeft: `${8 + depth * 12}px` }}
   >
-    <span className="shrink-0 opacity-70">{icon}</span>
+    <span className="shrink-0">{icon}</span>
     <span className="flex-1 truncate text-left">{label}</span>
     {count !== undefined && <span className="text-xs opacity-50">{count}</span>}
   </button>

@@ -107,6 +107,10 @@ export const RootLayout = () => {
   useEffect(
     function registerBindings() {
       const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+          e.preventDefault();
+          dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+        }
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
           e.preventDefault();
           uiDispatch.toggleFocusMode();

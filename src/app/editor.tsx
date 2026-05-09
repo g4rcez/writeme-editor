@@ -568,11 +568,11 @@ const InnerEditor = (props: {
     <TiptapEditorCore
       id={props.id}
       note={props.note}
+      dispatch={dispatch}
+      theme={state.theme}
+      onSaveRef={onSaveRef}
       content={props.content}
       readonly={props.readonly}
-      theme={state.theme}
-      dispatch={dispatch}
-      onSaveRef={onSaveRef}
     />
   );
 };
@@ -595,10 +595,10 @@ export const Editor = (props: {
         <InnerEditor
           id={id}
           note={props.note}
-          key={props.note?.id || props.id}
+          onSave={props.onSave}
           content={props.content}
           readonly={props.readonly}
-          onSave={props.onSave}
+          key={props.note?.id || props.id}
         />
       ) : (
         <div className="flex justify-center items-center">Loading...</div>

@@ -45,6 +45,43 @@ export const ExplorerPane = () => {
   const navigate = useNavigate();
   const [showDbNotes, setShowDbNotes] = useState(false);
 
+  const handleNewFile = useCallback(
+    async (targetPath: string): Promise<boolean> => {
+      try {
+        const writeResult = await window.electronAPI.fs.writeFile(
+          targetPath,
+          "",
+        );
+        if (!writeResult?.success) return false;
+        const title = targetPath
+          .substring(targetPath.lastIndexOf("/") + 1)
+          .replace(/\.md$/, "");
+        const note = Note.new(title, "");
+        note.filePath = targetPath;
+        await repositories.notes.save(note);
+        const updatedNotes = await repositories.notes.getAll();
+        globalDispatch.notes(updatedNotes);
+        navigate(`/note/${note.id}`);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [navigate],
+  );
+
+  const handleNewFolder = useCallback(
+    async (targetPath: string): Promise<boolean> => {
+      try {
+        const result = await window.electronAPI.fs.mkdir(targetPath);
+        return Boolean(result?.success);
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const handleDelete = useCallback(async (node: TreeNode): Promise<boolean> => {
     const isDir = node.type === "directory";
     try {
@@ -208,6 +245,8 @@ export const ExplorerPane = () => {
             rootPath={state.explorerRoot}
             onFileSelect={onFileSelect}
             onDelete={handleDelete}
+            onNewFile={handleNewFile}
+            onNewFolder={handleNewFolder}
           />
         )}
       </div>

@@ -4,7 +4,11 @@ import { useTemplates } from "@/app/hooks/use-templates";
 import { utf8ToBase64 } from "@/lib/encoding";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
-import { CommanderType, useGlobalStore } from "@/store/global.store";
+import {
+  CommanderType,
+  globalState,
+  useGlobalStore,
+} from "@/store/global.store";
 import { Note } from "@/store/note";
 import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
@@ -33,17 +37,27 @@ export const Commander = () => {
   const commands = useWritemeShortcuts();
   const navigate = useNavigate();
 
+  const notesSig = useMemo(
+    () => state.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"),
+    [state.notes],
+  );
+
+  const noteGroup = useMemo(
+    (): CommandItemTypes[] =>
+      globalState().notes.map(
+        (note: Note): CommandItemTypes => ({
+          type: "shortcut",
+          title: `Note: ${note.title}`,
+          action: (args) => {
+            args.setOpen(false);
+            navigate(`/note/${note.id}`);
+          },
+        }),
+      ),
+    [notesSig, navigate],
+  );
+
   const options = useMemo(() => {
-    const noteGroup = state.notes.map((note: Note): CommandItemTypes => {
-      return {
-        type: "shortcut",
-        title: `Note: ${note.title}`,
-        action: (args) => {
-          args.setOpen(false);
-          navigate(`/note/${note.id}`);
-        },
-      };
-    });
     if (state.commander.type === CommanderType.Notes) {
       return noteGroup;
     }
@@ -255,7 +269,7 @@ export const Commander = () => {
     };
 
     return [notesItem, templateItem, ...otherStuff];
-  }, [state.commander, state.notes, navigate, dispatch, commands, templates]);
+  }, [state.commander, noteGroup, navigate, dispatch, commands, templates]);
 
   return (
     <CommandPalette

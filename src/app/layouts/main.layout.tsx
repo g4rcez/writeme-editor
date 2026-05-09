@@ -5,7 +5,6 @@ import { XIcon } from "@phosphor-icons/react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { Outlet } from "react-router-dom";
 import { useJsonDrop } from "../hooks/use-json-drop";
-import { Navbar } from "./navbar";
 import { Sidebar } from "./sidebar";
 
 export const MainLayout = () => {
@@ -13,7 +12,6 @@ export const MainLayout = () => {
   useJsonDrop();
   return (
     <div className="writeme-layout">
-      <Navbar />
       <div className="writeme-layout-body">
         <Sidebar />
         <div className="writeme-layout-main">

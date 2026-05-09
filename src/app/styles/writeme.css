@@ -1,25 +1,3 @@
-/* writeme-navbar */
-.writeme-navbar {
-  @apply sticky top-0 z-50 w-full border-b print:hidden h-navbar bg-background;
-  border-color: hsla(var(--border), 0.2);
-}
-
-.writeme-navbar-inner {
-  @apply flex gap-8 justify-between items-center px-3.5 w-full h-full;
-}
-
-.writeme-navbar-left {
-  @apply flex flex-1 gap-x-6 items-center;
-}
-
-.writeme-navbar-title {
-  @apply py-0 px-2 w-full h-8 text-sm bg-transparent;
-}
-
-.writeme-navbar-nav {
-  @apply flex gap-2 items-center;
-}
-
 /* writeme-aside */
 .writeme-aside-activity-wrapper {
   @apply flex-shrink-0 print:hidden w-fit;
@@ -51,7 +29,7 @@
 }
 
 .writeme-aside-activity-bar {
-  @apply flex flex-col items-center py-2 h-full border-r bg-background w-[52px] backdrop-blur-xl;
+  @apply flex flex-col items-center py-2 h-full border-r bg-background w-10;
   border-color: hsla(var(--border), 0.4);
 }
 
@@ -60,7 +38,7 @@
 }
 
 .writeme-aside-activity-icon {
-  @apply relative flex items-center justify-center w-12 h-12 transition-all duration-200;
+  @apply relative flex items-center justify-center size-10 transition-all duration-200;
 }
 
 .writeme-aside-activity-icon--active {
@@ -68,7 +46,7 @@
 }
 
 .writeme-aside-activity-icon--inactive {
-  @apply text-muted-foreground hover:text-foreground;
+  @apply text-foreground/50 hover:text-foreground;
 }
 
 .writeme-aside-activity-indicator {
@@ -115,7 +93,7 @@
 }
 
 .writeme-aside-nav-item--inactive {
-  @apply text-muted-foreground hover:text-foreground;
+  @apply text-foreground/55 hover:text-foreground;
 }
 
 .writeme-aside-nav-item--inactive:hover {
@@ -124,7 +102,7 @@
 
 .writeme-aside-nav-section {
   @apply px-2 py-1.5 text-xs font-semibold uppercase tracking-wider mt-4 mb-1;
-  color: hsla(var(--muted-foreground), 0.6);
+  color: hsla(var(--foreground), 0.35);
 }
 
 .writeme-aside-nav-footer {

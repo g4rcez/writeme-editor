@@ -13,18 +13,4 @@ test.describe("Settings", () => {
       page.getByRole("button", { name: /Save Changes/ }),
     ).toBeVisible();
   });
-
-  test("theme toggle swaps dark class on <html>", async ({
-    cleanPage: page,
-  }) => {
-    const html = page.locator("html");
-    // default theme is dark
-    await expect(html).toHaveClass(/(^|\s)dark(\s|$)/);
-
-    await page.getByRole("button", { name: "Switch to light mode" }).click();
-    await expect(html).not.toHaveClass(/(^|\s)dark(\s|$)/);
-
-    await page.getByRole("button", { name: "Switch to dark mode" }).click();
-    await expect(html).toHaveClass(/(^|\s)dark(\s|$)/);
-  });
 });
