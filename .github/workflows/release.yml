@@ -24,6 +24,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Import code-signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-base64: ${{ secrets.CSC_LINK }}
+          p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
+
       - name: Build Electron app
         run: npm run make
         env:
@@ -64,6 +70,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - run: npm ci
+
+      - name: Import code-signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-base64: ${{ secrets.CSC_LINK }}
+          p12-password: ${{ secrets.CSC_KEY_PASSWORD }}
 
       - name: Build Electron app
         run: npm run make
@@ -108,8 +120,6 @@ jobs:
         run: npm run make
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
       - name: Stage artifacts
         shell: bash
@@ -205,20 +215,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure git credentials
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
           git config --global http.https://github.com/.extraHeader \
-            "AUTHORIZATION: basic $(echo -n "x-access-token:${{ secrets.TAP_GITHUB_TOKEN }}" | base64)"
+            "AUTHORIZATION: basic $(echo -n "x-access-token:${TAP_TOKEN}" | base64)"
 
       - name: Clone tap repo
         run: git clone https://github.com/g4rcez/homebrew-writeme.git tap
 
       - name: Bump cask and formula
         run: |
-          mapfile -t DMG_FILES < <(ls artifacts/writeme-*-arm64.dmg 2>/dev/null)
-          if [ "${#DMG_FILES[@]}" -ne 1 ]; then
-            echo "ERROR: expected 1 arm64 DMG in artifacts/, found ${#DMG_FILES[@]}" && exit 1
-          fi
-          VERSION=$(echo "${DMG_FILES[0]}" | sed 's/.*writeme-\(.*\)-arm64\.dmg/\1/')
+          VERSION="${REF_NAME#v}"
           python3 scripts/bump-tap.py "$VERSION" ./artifacts ./tap
 
       - name: Push tap
@@ -228,5 +236,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git add Casks/writeme.rb Formula/writeme.rb
           git commit -m "chore: bump to ${REF_NAME}"
-          git pull --rebase origin HEAD
+          git pull --rebase origin main
           git push
