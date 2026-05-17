@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useEffect, useReducer, useRef } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { Button, Modal } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { notificationRef } from "@/app/notification-ref";
@@ -100,13 +107,15 @@ const countsAriaLabel = (c: GitCounts): string => {
 export const GitSyncDialog = () => {
   const [ui, uiActions] = useUIStore();
   const [state, dispatch] = useReducer(reducer, { status: "idle" });
-  const messageRef = useRef<HTMLTextAreaElement | null>(null);
+  const [message, setMessage] = useState("");
+  const genRef = useRef(0);
 
   const open = ui.gitDialog.open;
 
   const handleClose = useCallback(() => {
     uiActions.closeGitDialog();
     dispatch({ type: "reset" });
+    setMessage("");
   }, [uiActions]);
 
   useEffect(() => {
@@ -115,31 +124,38 @@ export const GitSyncDialog = () => {
     const dir = SettingsService.load().directory;
     if (!dir) return;
     dispatch({ type: "load" });
+    const myGen = ++genRef.current;
     window.electronAPI.git
       .status(dir)
-      .then((result) => dispatch({ type: "loaded", result }))
-      .catch((err: unknown) =>
-        dispatch({
-          type: "loaded",
-          result: {
-            kind: "error",
-            stderr: err instanceof Error ? err.message : String(err),
-          },
-        }),
-      );
+      .then((result) => {
+        if (genRef.current === myGen) dispatch({ type: "loaded", result });
+      })
+      .catch((err: unknown) => {
+        if (genRef.current === myGen)
+          dispatch({
+            type: "loaded",
+            result: {
+              kind: "error",
+              stderr: err instanceof Error ? err.message : String(err),
+            },
+          });
+      });
+    return () => {
+      genRef.current++;
+    };
   }, [open]);
 
   const submit = useCallback(async () => {
     if (state.status !== "ready") return;
     const dir = SettingsService.load().directory;
     if (!dir) return;
-    const message = messageRef.current?.value.trim() ?? "";
-    if (!message) return;
+    const trimmed = message.trim();
+    if (!trimmed) return;
 
     dispatch({ type: "submit" });
     let result: GitPushResult;
     try {
-      result = await window.electronAPI.git.commitAndPush(dir, message);
+      result = await window.electronAPI.git.commitAndPush(dir, trimmed);
     } catch (err) {
       result = {
         kind: "error",
@@ -173,26 +189,45 @@ export const GitSyncDialog = () => {
       </span>,
       { theme: "danger", closable: true, timeout: 4000 },
     );
-  }, [handleClose, state.status]);
+  }, [handleClose, message, state.status]);
 
   const retry = useCallback(() => {
     if (!isElectron()) return;
     const dir = SettingsService.load().directory;
     if (!dir) return;
     dispatch({ type: "load" });
+    const myGen = ++genRef.current;
     window.electronAPI.git
       .status(dir)
-      .then((result) => dispatch({ type: "loaded", result }))
-      .catch((err: unknown) =>
-        dispatch({
-          type: "loaded",
-          result: {
-            kind: "error",
-            stderr: err instanceof Error ? err.message : String(err),
-          },
-        }),
-      );
+      .then((result) => {
+        if (genRef.current === myGen) dispatch({ type: "loaded", result });
+      })
+      .catch((err: unknown) => {
+        if (genRef.current === myGen)
+          dispatch({
+            type: "loaded",
+            result: {
+              kind: "error",
+              stderr: err instanceof Error ? err.message : String(err),
+            },
+          });
+      });
   }, []);
+
+  const srStatus =
+    state.status === "loading"
+      ? "Reading repository status"
+      : state.status === "pushing"
+        ? "Committing and pushing"
+        : state.status === "error"
+          ? `Error: ${state.message}`
+          : state.status === "ready"
+            ? `Ready on branch ${state.branch}`
+            : state.status === "not-a-repo"
+              ? "Not a git repository"
+              : state.status === "git-missing"
+                ? "Git not installed"
+                : "";
 
   return (
     <Modal
@@ -200,7 +235,11 @@ export const GitSyncDialog = () => {
       onChange={(val) => (val ? uiActions.openGitDialog() : handleClose())}
       title="Git sync"
     >
-      <div aria-live="polite" className="flex flex-col gap-4 min-w-[28rem]">
+      <div className="flex flex-col gap-4 min-w-[28rem]">
+        <p aria-live="polite" aria-atomic="true" className="sr-only">
+          {srStatus}
+        </p>
+
         {state.status === "idle" || state.status === "loading" ? (
           <p className="text-sm text-foreground/50">
             Reading repository status…
@@ -208,21 +247,31 @@ export const GitSyncDialog = () => {
         ) : null}
 
         {state.status === "git-missing" ? (
-          <div className="text-sm">
+          <div className="flex flex-col gap-2 text-sm">
             <p className="font-medium">git not found</p>
             <p className="text-foreground/50">
               Install git and make sure it is on your PATH.
             </p>
+            <div className="flex justify-end">
+              <Button type="button" theme="ghost-muted" onClick={handleClose}>
+                Close
+              </Button>
+            </div>
           </div>
         ) : null}
 
         {state.status === "not-a-repo" ? (
-          <div className="text-sm">
+          <div className="flex flex-col gap-2 text-sm">
             <p className="font-medium">Not a git repository</p>
             <p className="text-foreground/50">
               Initialise the folder with <code>git init</code> and add a remote,
               then try again.
             </p>
+            <div className="flex justify-end">
+              <Button type="button" theme="ghost-muted" onClick={handleClose}>
+                Close
+              </Button>
+            </div>
           </div>
         ) : null}
 
@@ -250,8 +299,9 @@ export const GitSyncDialog = () => {
             <label className="flex flex-col gap-1 text-sm">
               <span>Commit message</span>
               <textarea
-                ref={messageRef}
                 rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 disabled={state.status === "pushing"}
                 className="border border-border rounded p-2 bg-background"
                 placeholder="Describe your changes"
@@ -259,14 +309,23 @@ export const GitSyncDialog = () => {
               />
             </label>
             <div className="flex justify-end gap-2">
-              <Button type="button" theme="ghost-muted" onClick={handleClose}>
+              <Button
+                type="button"
+                theme="ghost-muted"
+                onClick={handleClose}
+                disabled={state.status === "pushing"}
+              >
                 Cancel
               </Button>
               <Button
                 type="button"
                 theme="primary"
                 onClick={submit}
-                disabled={state.status === "pushing" || !state.hasChanges}
+                disabled={
+                  state.status === "pushing" ||
+                  !state.hasChanges ||
+                  message.trim().length === 0
+                }
               >
                 {state.status === "pushing" ? "Pushing…" : "Commit & push"}
               </Button>
