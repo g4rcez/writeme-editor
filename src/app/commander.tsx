@@ -10,6 +10,7 @@ import {
   useGlobalStore,
 } from "@/store/global.store";
 import { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useMemo } from "react";
@@ -268,7 +269,30 @@ export const Commander = () => {
       ],
     };
 
-    return [notesItem, templateItem, ...otherStuff];
+    const gitDirectory = isElectron() ? SettingsService.load().directory : null;
+    const gitGroup: CommandItemTypes | null = gitDirectory
+      ? {
+          title: "Git",
+          type: "group",
+          items: [
+            {
+              title: "Commit & push",
+              type: "shortcut",
+              action: (args) => {
+                args.setOpen(false);
+                setTimeout(() => uiDispatch.openGitDialog(), 50);
+              },
+            },
+          ],
+        }
+      : null;
+
+    return [
+      notesItem,
+      templateItem,
+      ...(gitGroup ? [gitGroup] : []),
+      ...otherStuff,
+    ];
   }, [state.commander, noteGroup, navigate, dispatch, commands, templates]);
 
   return (
