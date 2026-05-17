@@ -25,6 +25,7 @@ import { editorGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
+import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 
 // Maps noteId -> requestId for files opened with --wait
 const waitMap = new Map<string, string>();
@@ -33,6 +34,7 @@ export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
   notificationRef.current = useNotification();
+  usePwaUpdate();
   const navigate = useNavigate();
   const location = useLocation();
   const prevTabsRef = useRef(state.tabs);

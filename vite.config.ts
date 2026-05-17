@@ -11,13 +11,11 @@ export default defineConfig({
   plugins: [
     react({
       babel: {
-        plugins: [
-          ['babel-plugin-react-compiler']
-        ],
+        plugins: [["babel-plugin-react-compiler"]],
       },
     }),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       devOptions: { enabled: true },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],

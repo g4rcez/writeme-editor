@@ -1,5 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#2563eb"/>
-  <text x="50" y="65" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">W</text>
-  <circle cx="75" cy="25" r="8" fill="#60a5fa"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="522 413 163 210" width="163" height="210" fill="var(--foreground)">
+    <path d="m527.912 458.028 33.346 20.489 -33.346 20.494v39.3l33.346 20.494 -33.346 20.489v39.199l62.897 -35.637v-48.107l-28.394 -16.085 28.394 -16.091v-48.107l-62.897 -35.637zm152.624 41.084v-0.102l-33.346 -20.494 33.346 -20.489v-39.199l-62.897 35.637v48.107l28.394 16.091 -28.394 16.085v48.107l62.897 35.637v-39.199l-33.346 -20.489 33.346 -20.494z"/>
 </svg>
+

@@ -12,7 +12,8 @@ import {
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { css, Tooltip } from "@g4rcez/components";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { WritemeLogo } from "../logo";
 
 type ActivityIconProps = {
   icon: Icon;
@@ -74,30 +75,33 @@ export const ActivityBar = () => {
   return (
     <div className="writeme-aside-activity-bar">
       <div className="writeme-aside-activity-icons">
+        <Link to="/" className="w-full flex items-center justify-center">
+          <WritemeLogo className="size-8 aspect-square px-2" fill="white" />
+        </Link>
         <ActivityIcon
-          label="Explorer"
           icon={FilesIcon}
-          active={layout.activeActivity === "explorer"}
+          label="Explorer"
           onClick={() => onActivityClick("explorer")}
+          active={layout.activeActivity === "explorer"}
         />
         <ActivityIcon
           label="Search"
           icon={MagnifyingGlassIcon}
-          active={layout.activeActivity === "search"}
           onClick={() => onActivityClick("search")}
+          active={layout.activeActivity === "search"}
         />
         <ActivityIcon
-          label="Favorites"
           icon={StarIcon}
+          label="Favorites"
           badge={favoritesCount}
-          active={layout.activeActivity === "favorites"}
           onClick={() => onActivityClick("favorites")}
+          active={layout.activeActivity === "favorites"}
         />
         <ActivityIcon
           label="Tags"
           icon={HashIcon}
-          active={layout.activeActivity === "tags"}
           onClick={() => onActivityClick("tags")}
+          active={layout.activeActivity === "tags"}
         />
       </div>
       <div className="writeme-aside-activity-bottom">
