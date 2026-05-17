@@ -14,7 +14,7 @@ const runGit = (args: string[], gitBin: string): Promise<RunResult> =>
     let stdout = "";
     let stderr = "";
     const child = spawn(gitBin, args, {
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0", LANG: "C", LC_ALL: "C" },
     });
     child.stdout.on("data", (d: Buffer) => {
       stdout += d.toString();
