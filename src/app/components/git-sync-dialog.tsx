@@ -296,6 +296,18 @@ export const GitSyncDialog = () => {
                 rows={3}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    (e.metaKey || e.ctrlKey) &&
+                    state.status === "ready" &&
+                    state.hasChanges &&
+                    message.trim().length > 0
+                  ) {
+                    e.preventDefault();
+                    submit();
+                  }
+                }}
                 disabled={state.status === "pushing"}
                 className="border border-border rounded p-2 bg-background"
                 placeholder="Describe your changes"

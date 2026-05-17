@@ -276,7 +276,7 @@ export const Commander = () => {
           type: "group",
           items: [
             {
-              title: "Commit & push",
+              title: "[git] Commit & push",
               type: "shortcut",
               action: (args) => {
                 args.setOpen(false);

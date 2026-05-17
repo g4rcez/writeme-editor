@@ -159,6 +159,44 @@ describe("GitSyncDialog", () => {
     ).toMatchObject({ theme: "success" });
   });
 
+  it("submits via Cmd/Ctrl+Enter in the textarea", async () => {
+    window.electronAPI.git.status = vi.fn().mockResolvedValue(okStatus());
+    window.electronAPI.git.commitAndPush = vi
+      .fn()
+      .mockResolvedValue({ kind: "success", pushedRefs: "refs/heads/main" });
+
+    render(<GitSyncDialog />);
+
+    await waitFor(() => screen.getByRole("button", { name: "Commit & push" }));
+
+    const textarea = screen.getByPlaceholderText("Describe your changes");
+    fireEvent.change(textarea, { target: { value: "shortcut commit" } });
+
+    await act(async () => {
+      fireEvent.keyDown(textarea, { key: "Enter", metaKey: true });
+    });
+
+    expect(window.electronAPI.git.commitAndPush).toHaveBeenCalledWith(
+      "/tmp/notes",
+      "shortcut commit",
+    );
+    expect(closeGitDialog).toHaveBeenCalled();
+  });
+
+  it("does not submit on Cmd+Enter when message is empty", async () => {
+    window.electronAPI.git.status = vi.fn().mockResolvedValue(okStatus());
+    window.electronAPI.git.commitAndPush = vi.fn();
+
+    render(<GitSyncDialog />);
+
+    await waitFor(() => screen.getByRole("button", { name: "Commit & push" }));
+
+    const textarea = screen.getByPlaceholderText("Describe your changes");
+    fireEvent.keyDown(textarea, { key: "Enter", metaKey: true });
+
+    expect(window.electronAPI.git.commitAndPush).not.toHaveBeenCalled();
+  });
+
   it("shows nothing-to-commit toast and closes when push returns nothing-to-commit", async () => {
     window.electronAPI.git.status = vi.fn().mockResolvedValue(okStatus());
     const pushResult: GitPushResult = { kind: "nothing-to-commit" };
