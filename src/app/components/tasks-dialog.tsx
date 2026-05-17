@@ -423,7 +423,7 @@ const TaskCard = ({
         isDragging ? "opacity-0" : ""
       } ${isOverlay ? "shadow-xl ring-2 ring-primary/20" : ""}`}
     >
-      <div className="flex gap-2 items-start">
+      <div className="flex gap-2 items-center">
         <div className="mt-1 shrink-0 opacity-40 group-hover:opacity-70 transition-opacity">
           <DotsSixVerticalIcon className="size-4" />
         </div>
