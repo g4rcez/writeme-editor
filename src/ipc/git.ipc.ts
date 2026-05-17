@@ -9,10 +9,13 @@ const DirSchema = z
   .string()
   .min(1)
   .refine((p) => isAbsolute(p), "must be absolute")
-  .refine(
-    (p) => existsSync(p) && statSync(p).isDirectory(),
-    "must exist and be a directory",
-  );
+  .refine((p) => {
+    try {
+      return existsSync(p) && statSync(p).isDirectory();
+    } catch {
+      return false;
+    }
+  }, "must exist and be a directory");
 
 const MessageSchema = z.string().min(1).max(2048);
 
