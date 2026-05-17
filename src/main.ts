@@ -20,6 +20,7 @@ import { notesIpcHandler } from "./ipc/notes.ipc";
 import { terminalIpcHandler } from "./ipc/terminal.ipc";
 import { readItLaterIpcHandler } from "./ipc/read-it-later.ipc";
 import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
+import { gitIpcHandler } from "./ipc/git.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
@@ -331,6 +332,7 @@ async function main() {
   executionIpcHandler();
   terminalIpcHandler();
   readItLaterIpcHandler();
+  gitIpcHandler();
   ipcMain.handle("fs:watcher:start", (_, directory: string) => {
     if (mainWindow) FileWatcher.start(directory, mainWindow);
   });

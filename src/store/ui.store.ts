@@ -44,6 +44,7 @@ export type UISettings = {
   findReplace: { isOpen: boolean };
   mediaPreview: MediaPreviewState;
   tasksDialog: { isOpen: boolean };
+  gitDialog: { open: boolean };
   parsingContent: boolean;
 };
 
@@ -68,6 +69,7 @@ const initialState: UISettings = {
   sidebarOpen: persistedState.sidebarOpen ?? true,
   mediaPreview: { open: false, sources: [], index: 0 },
   tasksDialog: { isOpen: false },
+  gitDialog: { open: false },
   contentWidth: persistedState.contentWidth || "medium",
   findReplace: persistedState.findReplace || { isOpen: false },
   parsingContent: false,
@@ -106,6 +108,8 @@ export const useUIStore = createGlobalReducer(
     }),
     openTasksDialog: () => ({ tasksDialog: { isOpen: true } }),
     closeTasksDialog: () => ({ tasksDialog: { isOpen: false } }),
+    openGitDialog: () => ({ gitDialog: { open: true } }),
+    closeGitDialog: () => ({ gitDialog: { open: false } }),
     setParsingContent: (value: boolean) => ({ parsingContent: value }),
   }),
   {
@@ -118,6 +122,7 @@ export const useUIStore = createGlobalReducer(
           findReplace: _findReplace,
           mediaPreview: _mediaPreview,
           tasksDialog: _tasksDialog,
+          gitDialog: _gitDialog,
           parsingContent: _parsingContent,
           ...toPersist
         } = state;
