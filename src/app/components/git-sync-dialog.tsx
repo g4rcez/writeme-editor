@@ -182,7 +182,16 @@ export const GitSyncDialog = () => {
     dispatch({ type: "load" });
     window.electronAPI.git
       .status(dir)
-      .then((result) => dispatch({ type: "loaded", result }));
+      .then((result) => dispatch({ type: "loaded", result }))
+      .catch((err: unknown) =>
+        dispatch({
+          type: "loaded",
+          result: {
+            kind: "error",
+            stderr: err instanceof Error ? err.message : String(err),
+          },
+        }),
+      );
   }, []);
 
   return (
