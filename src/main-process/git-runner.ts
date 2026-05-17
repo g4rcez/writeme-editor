@@ -52,17 +52,27 @@ export const buildPushUpstreamArgs = (
 export const isNoUpstreamError = (stderr: string): boolean =>
   /has no upstream branch/i.test(stderr);
 
-export const getStatus = async (dir: string): Promise<GitStatusResult> => {
-  const gitBin = await resolveGit();
+export type GitDeps = {
+  resolveGit: () => Promise<string | null>;
+  runGit: (args: string[], gitBin: string) => Promise<RunResult>;
+};
+
+const defaultDeps: GitDeps = { resolveGit, runGit };
+
+export const getStatus = async (
+  dir: string,
+  deps: GitDeps = defaultDeps,
+): Promise<GitStatusResult> => {
+  const gitBin = await deps.resolveGit();
   if (!gitBin) return { kind: "git-missing" };
 
-  const inside = await runGit(
+  const inside = await deps.runGit(
     ["-C", dir, "rev-parse", "--is-inside-work-tree"],
     gitBin,
   );
   if (inside.exitCode !== 0) return { kind: "not-a-repo" };
 
-  const status = await runGit(
+  const status = await deps.runGit(
     ["-C", dir, "status", "--porcelain=v1", "-b"],
     gitBin,
   );
@@ -76,17 +86,18 @@ export const getStatus = async (dir: string): Promise<GitStatusResult> => {
 export const commitAndPush = async (
   dir: string,
   message: string,
+  deps: GitDeps = defaultDeps,
 ): Promise<GitPushResult> => {
-  const gitBin = await resolveGit();
+  const gitBin = await deps.resolveGit();
   if (!gitBin) return { kind: "git-missing" };
 
-  const inside = await runGit(
+  const inside = await deps.runGit(
     ["-C", dir, "rev-parse", "--is-inside-work-tree"],
     gitBin,
   );
   if (inside.exitCode !== 0) return { kind: "not-a-repo" };
 
-  const add = await runGit(["-C", dir, "add", "."], gitBin);
+  const add = await deps.runGit(["-C", dir, "add", "."], gitBin);
   if (add.exitCode !== 0)
     return {
       kind: "error",
@@ -94,10 +105,13 @@ export const commitAndPush = async (
       stderr: add.stderr || "git add failed",
     };
 
-  const diff = await runGit(["-C", dir, "diff", "--cached", "--quiet"], gitBin);
+  const diff = await deps.runGit(
+    ["-C", dir, "diff", "--cached", "--quiet"],
+    gitBin,
+  );
   if (diff.exitCode === 0) return { kind: "nothing-to-commit" };
 
-  const commit = await runGit(buildCommitArgs(dir, message), gitBin);
+  const commit = await deps.runGit(buildCommitArgs(dir, message), gitBin);
   if (commit.exitCode !== 0)
     return {
       kind: "error",
@@ -105,17 +119,17 @@ export const commitAndPush = async (
       stderr: commit.stderr || "git commit failed",
     };
 
-  const push = await runGit(["-C", dir, "push"], gitBin);
+  const push = await deps.runGit(["-C", dir, "push"], gitBin);
   if (push.exitCode === 0)
     return { kind: "success", pushedRefs: push.stderr || push.stdout };
 
   if (isNoUpstreamError(push.stderr)) {
-    const branchRes = await runGit(
+    const branchRes = await deps.runGit(
       ["-C", dir, "rev-parse", "--abbrev-ref", "HEAD"],
       gitBin,
     );
     const branch = branchRes.stdout.trim() || "HEAD";
-    const retry = await runGit(buildPushUpstreamArgs(dir, branch), gitBin);
+    const retry = await deps.runGit(buildPushUpstreamArgs(dir, branch), gitBin);
     if (retry.exitCode === 0)
       return { kind: "success", pushedRefs: retry.stderr || retry.stdout };
     return {

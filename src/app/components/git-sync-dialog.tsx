@@ -183,12 +183,6 @@ export const GitSyncDialog = () => {
       handleClose();
       return;
     }
-    notificationRef.current?.(
-      <span>
-        Git {result.kind === "error" ? result.stage : "operation"} failed.
-      </span>,
-      { theme: "danger", closable: true, timeout: 4000 },
-    );
   }, [handleClose, message, state.status]);
 
   const retry = useCallback(() => {
