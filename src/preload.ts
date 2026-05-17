@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { ReadDirResult } from "./types/tree";
 import type { Note } from "./store/note";
+import type { GitPushResult, GitStatusResult } from "./types/git";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   env: {
@@ -204,6 +205,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("execution:resolve", command),
     run: (command: string, args: string[] = [], code: string) =>
       ipcRenderer.invoke("execution:run", command, args, code),
+  },
+  git: {
+    status: (dir: string) => ipcRenderer.invoke("git:status", dir),
+    commitAndPush: (dir: string, message: string) =>
+      ipcRenderer.invoke("git:commitAndPush", dir, message),
   },
   ai: {
     query: (params: {
@@ -410,6 +416,10 @@ declare global {
           args: string[] | undefined,
           code: string,
         ): Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
+      };
+      git: {
+        status(dir: string): Promise<GitStatusResult>;
+        commitAndPush(dir: string, message: string): Promise<GitPushResult>;
       };
       ai: {
         query(params: {
