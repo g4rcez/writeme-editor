@@ -20,8 +20,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
 import { GitMergeIcon } from "@phosphor-icons/react/dist/csr/GitMerge";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { repositories } from "@/store/repositories";
 
@@ -94,6 +95,9 @@ export default function GroupDetailPage() {
   const [editingDesc, setEditingDesc] = useState<string | null>(null);
   const [localMembers, setLocalMembers] = useState<NoteGroupMember[]>([]);
   const [merging, setMerging] = useState(false);
+  const [addNoteOpen, setAddNoteOpen] = useState(false);
+  const [addNoteQuery, setAddNoteQuery] = useState("");
+  const addNoteContainerRef = useRef<HTMLDivElement>(null);
 
   const group = state.noteGroups.find((g) => g.id === groupId);
 
@@ -115,6 +119,21 @@ export default function GroupDetailPage() {
     }
     return map;
   }, [state.notes]);
+
+  const memberNoteIds = useMemo(
+    () => new Set(localMembers.map((m) => m.noteId)),
+    [localMembers],
+  );
+
+  const availableNotes = useMemo(() => {
+    const q = addNoteQuery.toLowerCase();
+    return state.notes.filter(
+      (n) =>
+        !n.deletedAt &&
+        !memberNoteIds.has(n.id) &&
+        (q === "" || (n.title || "Untitled").toLowerCase().includes(q)),
+    );
+  }, [state.notes, memberNoteIds, addNoteQuery]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -188,6 +207,28 @@ export default function GroupDetailPage() {
     }
   };
 
+  const handleAddNote = async (note: Note) => {
+    await dispatch.addNoteToGroup(groupId!, note.id);
+    setAddNoteQuery("");
+    setAddNoteOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        addNoteContainerRef.current &&
+        !addNoteContainerRef.current.contains(e.target as Node)
+      ) {
+        setAddNoteOpen(false);
+        setAddNoteQuery("");
+      }
+    };
+    if (addNoteOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [addNoteOpen]);
+
   if (!group) {
     return (
       <div className="py-6 mx-auto max-w-safe">
@@ -259,16 +300,68 @@ export default function GroupDetailPage() {
         <p className="text-sm text-foreground/50">
           {localMembers.length} note{localMembers.length !== 1 ? "s" : ""}
         </p>
-        <Button
-          size="small"
-          theme="primary"
-          onClick={handleMerge}
-          disabled={localMembers.length === 0 || merging}
-        >
-          <GitMergeIcon className="w-4 h-4" />
-          {merging ? "Merging…" : "Merge into new note"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="small"
+            theme="neutral"
+            onClick={() => setAddNoteOpen((v) => !v)}
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add note
+          </Button>
+          <Button
+            size="small"
+            theme="primary"
+            onClick={handleMerge}
+            disabled={localMembers.length === 0 || merging}
+          >
+            <GitMergeIcon className="w-4 h-4" />
+            {merging ? "Merging…" : "Merge into new note"}
+          </Button>
+        </div>
       </div>
+
+      {addNoteOpen && (
+        <div ref={addNoteContainerRef} className="relative mb-4">
+          <Input
+            autoFocus
+            hiddenLabel
+            title="Search notes to add"
+            placeholder="Search notes…"
+            value={addNoteQuery}
+            onChange={(e) => setAddNoteQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setAddNoteOpen(false);
+                setAddNoteQuery("");
+              }
+            }}
+          />
+          {availableNotes.length > 0 && (
+            <ul className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+              {availableNotes.map((note) => (
+                <li key={note.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleAddNote(note);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm truncate hover:bg-muted/50 transition-colors"
+                  >
+                    {note.title || "Untitled"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {availableNotes.length === 0 && addNoteQuery !== "" && (
+            <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-background shadow-lg px-3 py-4 text-sm text-center text-foreground/50">
+              No matching notes
+            </div>
+          )}
+        </div>
+      )}
 
       {localMembers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-foreground/40">

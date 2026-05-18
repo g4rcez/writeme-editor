@@ -46,6 +46,7 @@ type State = {
   commander: Commander;
   activeTabId: string | null;
   readItLaterDialog: boolean;
+  addToGroupDialog: boolean;
   recentNotesDialog: boolean;
   inspectJsonDialog: boolean;
   inspectJsonInitialContent: string | null;
@@ -72,6 +73,7 @@ const initialState: State = {
   noteGroupMembers: [] as NoteGroupMember[],
   notes: [] as Note[],
   readItLaterDialog: false,
+  addToGroupDialog: false,
   recentNotesDialog: false,
   inspectJsonDialog: false,
   inspectJsonInitialContent: null,
@@ -253,6 +255,9 @@ export const useGlobalStore = createGlobalReducer(
       }),
       readItLaterDialog: (readItLaterDialog: boolean) => ({
         readItLaterDialog,
+      }),
+      setAddToGroupDialog: (addToGroupDialog: boolean) => ({
+        addToGroupDialog,
       }),
       setCreateNoteDialog: (createNoteDialog: {
         isOpen: boolean;

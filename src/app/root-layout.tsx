@@ -16,6 +16,7 @@ import { CreateNoteDialog } from "@/app/components/create-note-dialog";
 import { CreateVariableDialog } from "@/app/components/create-variable-dialog";
 import { CreateTemplateDialog } from "@/app/components/create-template-dialog";
 import { ReadItLaterDialog } from "@/app/components/read-it-later-dialog";
+import { AddToGroupDialog } from "@/app/components/add-to-group-dialog";
 import { DirectoryBrowserDialog } from "@/app/components/directory-browser-dialog";
 import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { InspectJsonDialog } from "@/app/components/inspect-json-dialog";
@@ -182,6 +183,7 @@ export const RootLayout = () => {
         <CreateVariableDialog />
         <RecentNotesDialog />
         <ReadItLaterDialog />
+        <AddToGroupDialog />
         <DirectoryBrowserDialog />
         <InspectJsonDialog />
         <TasksDialog />

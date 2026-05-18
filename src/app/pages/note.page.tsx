@@ -7,6 +7,7 @@ import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
 import { type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { NoteFooter } from "../components/note-footer";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
@@ -182,6 +183,7 @@ export default function NotePage() {
         <Editor note={note} key={note.id} content={note.content || ""} />
       )}
       <NoteReferences note={note} />
+      {!isJson && <NoteFooter noteId={note.id} />}
     </Wrapper>
   );
 }

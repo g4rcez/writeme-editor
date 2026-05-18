@@ -15,7 +15,7 @@ import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
-import { Fragment, useMemo } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
@@ -52,6 +52,10 @@ export const Commander = () => {
     () => state.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"),
     [state.notes],
   );
+
+  useEffect(() => {
+    dispatch.loadGroups();
+  }, []);
 
   const noteGroup = useMemo(
     (): CommandItemTypes[] =>
@@ -325,6 +329,43 @@ export const Commander = () => {
       ],
     };
 
+    const noteGroupsItem: CommandItemTypes = {
+      title: "Note Groups",
+      type: "group",
+      items: [
+        ...(state.note
+          ? [
+              {
+                title: "Add current note to group",
+                type: "shortcut" as const,
+                action: (args: { setOpen: (v: boolean) => void }) => {
+                  args.setOpen(false);
+                  setTimeout(() => dispatch.setAddToGroupDialog(true), 50);
+                },
+              },
+            ]
+          : []),
+        {
+          title: "Manage groups",
+          type: "shortcut" as const,
+          action: (args: { setOpen: (v: boolean) => void }) => {
+            args.setOpen(false);
+            navigate("/groups");
+          },
+        },
+        ...state.noteGroups.map(
+          (g): CommandItemTypes => ({
+            title: `Group: ${g.title}`,
+            type: "shortcut",
+            action: (args) => {
+              args.setOpen(false);
+              navigate(`/groups/${g.id}`);
+            },
+          }),
+        ),
+      ],
+    };
+
     const gitDirectory = isElectron() ? SettingsService.load().directory : null;
     const gitGroup: CommandItemTypes | null = gitDirectory
       ? {
@@ -346,10 +387,20 @@ export const Commander = () => {
     return [
       notesItem,
       templateItem,
+      noteGroupsItem,
       ...(gitGroup ? [gitGroup] : []),
       ...otherStuff,
     ];
-  }, [state.commander, noteGroup, navigate, dispatch, commands, templates]);
+  }, [
+    state.commander,
+    state.noteGroups,
+    state.note,
+    noteGroup,
+    navigate,
+    dispatch,
+    commands,
+    templates,
+  ]);
 
   return (
     <CommandPalette

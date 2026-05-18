@@ -21,7 +21,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
 import { UniqueID } from "@tiptap/extension-unique-id";
-import { Placeholder } from "@tiptap/extensions";
+import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import StarterKit from "@tiptap/starter-kit";
 import { type BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
@@ -380,5 +380,6 @@ export const createExtensions = (
       } as any),
     }),
     Markdown,
+    CharacterCount,
   ];
 };

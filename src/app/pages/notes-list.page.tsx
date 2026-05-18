@@ -103,8 +103,8 @@ function AddToGroupModal({
   return (
     <Modal
       open={open}
-      className="max-w-sm"
       onChange={onClose}
+      className="max-w-sm"
       title="Add to Group"
     >
       {state.noteGroups.length === 0 ? (
@@ -241,17 +241,14 @@ export default function NotesListPage() {
             All Notes
           </h1>
         </div>
-        <div className="relative w-64">
-          <Input
-            hiddenLabel
-            type="text"
-            value={search}
-            left={<MagnifyingGlassIcon size={16} />}
-            title="Search notes or tags..."
-            placeholder="Search notes or tags..."
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <Input
+          type="text"
+          value={search}
+          left={<MagnifyingGlassIcon size={16} />}
+          title="Search notes or tags..."
+          placeholder="Search notes or tags..."
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
       <Table
         cols={cols}
