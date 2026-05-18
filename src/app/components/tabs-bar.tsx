@@ -71,7 +71,7 @@ export const TabsBar: React.FC = () => {
   return (
     <div
       ref={scrollRef}
-      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
+      className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-11 md:h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
     >
       {state.tabs.map((tab: Tab) => {
         const note = state.notes.find((n: Note) => n.id === tab.noteId);
@@ -88,7 +88,7 @@ export const TabsBar: React.FC = () => {
               if (renamingNoteId === tab.noteId || isActive) e.preventDefault();
             }}
             className={css(
-              "group flex border-r border-card-border items-center min-w-24 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-all relative",
+              "group flex border-r border-card-border items-center min-w-24 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-[color,background-color] relative",
               isActive
                 ? "bg-muted/30 text-foreground"
                 : "bg-transparent text-foreground/50 hover:text-foreground/80 hover:bg-muted/10",
@@ -118,17 +118,27 @@ export const TabsBar: React.FC = () => {
             ) : (
               <span
                 className="flex-1 text-xs truncate"
+                tabIndex={0}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   renameCommittedRef.current = false;
                   setRenamingNoteId(tab.noteId);
                   setRenamingValue(title);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "F2") {
+                    e.preventDefault();
+                    renameCommittedRef.current = false;
+                    setRenamingNoteId(tab.noteId);
+                    setRenamingValue(title);
+                  }
+                }}
               >
                 {title}
               </span>
             )}
             <button
+              aria-label={`Close ${title}`}
               onClick={(e) => onCloseTab(e, tab.id)}
               className={css(
                 "p-0.5 rounded transition-opacity hover:bg-foreground/10",

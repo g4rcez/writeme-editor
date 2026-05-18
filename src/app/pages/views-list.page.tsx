@@ -86,7 +86,7 @@ export default function ViewsListPage() {
               <h2 className="font-semibold truncate">{view.title}</h2>
               <button
                 onClick={(e) => handleDelete(e, view.id)}
-                className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-all hover:text-danger hover:bg-danger/10"
+                className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-[color,background-color,opacity] hover:text-danger hover:bg-danger/10"
                 title="Delete view"
               >
                 <TrashIcon className="w-4 h-4" />

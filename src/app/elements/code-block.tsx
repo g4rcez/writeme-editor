@@ -95,7 +95,7 @@ export const CodeBlockFrame = ({
       {header}
       <div
         className={clsx(
-          "transition-all duration-200",
+          "transition-opacity duration-200",
           isBodyVisible
             ? "h-auto opacity-100"
             : "h-0 opacity-0 pointer-events-none overflow-hidden",

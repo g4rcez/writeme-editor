@@ -48,7 +48,7 @@ export const SearchPane = () => {
               placeholder="Search all notes..."
               value={searchQuery}
               onChange={handleGlobalSearch}
-              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-all outline-none bg-muted/40 focus:border-primary/50"
+              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 focus:border-primary/50"
             />
           </div>
         </div>
@@ -65,7 +65,7 @@ export const SearchPane = () => {
               placeholder="Find in note..."
               value={localQuery}
               onChange={(e) => setLocalQuery(e.target.value)}
-              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-all outline-none bg-muted/40 focus:border-primary/50"
+              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 focus:border-primary/50"
             />
           </div>
           {/* TODO: Integration with TipTap Search extension */}

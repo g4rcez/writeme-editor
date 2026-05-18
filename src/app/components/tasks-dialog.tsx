@@ -525,7 +525,7 @@ function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`w-80 flex-shrink-0 flex flex-col gap-3 rounded-xl bg-neutral-100/50 dark:bg-neutral-800/30 p-4 transition-all duration-300 ${
+      className={`w-80 flex-shrink-0 flex flex-col gap-3 rounded-xl bg-neutral-100/50 dark:bg-neutral-800/30 p-4 transition-[box-shadow,background-color] duration-300 ${
         isOver
           ? "ring-2 ring-primary/40 bg-primary/5 shadow-inner"
           : "ring-1 ring-transparent"
@@ -567,7 +567,7 @@ function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
                 layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-[transform,background-color,border-color,color] duration-300 ${
                   isOver
                     ? "border-primary bg-primary/10 text-primary scale-[0.98]"
                     : "border-neutral-200 dark:border-neutral-700 text-foreground/20"

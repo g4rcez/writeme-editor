@@ -274,7 +274,7 @@ export const AISettings = () => {
                   type="button"
                   onClick={() => handleAdapterChange(a.id)}
                   className={css(
-                    "flex flex-col gap-1 p-3 rounded-lg border text-left transition-all",
+                    "flex flex-col gap-1 p-3 rounded-lg border text-left transition-[box-shadow,border-color]",
                     aMeta?.color ?? "bg-muted/50 border-border",
                     isSelected &&
                       "ring-2 ring-primary ring-offset-1 ring-offset-background",

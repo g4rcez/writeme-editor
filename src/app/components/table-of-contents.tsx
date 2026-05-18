@@ -66,7 +66,7 @@ export const TableOfContents = () => {
         title={
           <span
             className={css(
-              "flex items-center justify-center p-2 rounded-xl transition-all duration-300",
+              "flex items-center justify-center p-2 rounded-xl transition-colors duration-300",
               "bg-background/80 backdrop-blur-md border border-border shadow-sm",
               "hover:bg-muted/50 hover:border-primary/20",
               isOpen ? "bg-muted text-foreground" : "text-muted-foreground",
@@ -130,9 +130,8 @@ export const TableOfContents = () => {
                       }
                     }}
                     className={css(
-                      "block py-1 text-sm transition-all duration-200 line-clamp-2",
-                      "text-muted-foreground hover:text-primary",
-                      "border-l-2 border-transparent hover:border-primary pl-3 -ml-3",
+                      "block py-1 px-1.5 -mx-1.5 rounded text-sm transition-[color,background-color] duration-200 line-clamp-2",
+                      "text-muted-foreground hover:text-primary hover:bg-primary/5",
                     )}
                   >
                     {heading.text}

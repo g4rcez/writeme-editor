@@ -51,7 +51,7 @@ export default function AboutPage() {
         <li key={example.title}>
           <Link
             to={example.to}
-            className="transition-all duration-300 ease-in group hover:text-primary"
+            className="transition-colors duration-200 ease-out group hover:text-primary"
           >
             <Card title={example.title} className="block">
               <p className="group-hover:underline">{example.description}</p>

@@ -50,10 +50,8 @@ export const NoteItem = ({
     <li
       ref={itemRef}
       onClick={onClick}
-      className={`group relative cursor-pointer px-3 py-2.5 transition-all hover:bg-muted/20 ${
-        isActive
-          ? "bg-muted/40 border-l-2 border-primary"
-          : "border-l-2 border-transparent"
+      className={`group relative cursor-pointer px-3 py-2.5 transition-colors hover:bg-muted/20 ${
+        isActive ? "bg-primary/10" : ""
       }`}
     >
       <div className="flex gap-2 justify-between items-start mb-1">
@@ -80,7 +78,7 @@ export const NoteItem = ({
         {onDelete && (
           <button
             onClick={onDelete}
-            className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-opacity text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-500"
+            className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-[color,opacity] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
           >
             <TrashIcon className="size-3" />
           </button>
@@ -164,7 +162,7 @@ const NoteListItems = (props: {
     <ul className="flex overflow-y-auto flex-col h-full divide-y max-h- divide-border/20 scrollbar-hide">
       <li
         onClick={props.onCreateNewNote}
-        className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-all cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+        className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-colors cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
       >
         <PlusIcon className="size-4" />
         <span>New note</span>
@@ -280,7 +278,7 @@ export const NoteListSidebar = () => {
             onChange={onSearch}
             placeholder="Search..."
             value={state.searchQuery}
-            className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-all outline-none bg-muted/40 placeholder:text-muted-foreground/60 focus:border-primary/50 focus:bg-background"
+            className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 placeholder:text-muted-foreground/60 focus:border-primary/50 focus:bg-background"
           />
         </div>
       </div>
@@ -289,7 +287,7 @@ export const NoteListSidebar = () => {
           <span>No notes found</span>
           <button
             onClick={createNewNote}
-            className="flex gap-2 items-center py-1.5 px-3 rounded-md border transition-all border-border/40 hover:bg-muted/50 hover:text-foreground"
+            className="flex gap-2 items-center py-1.5 px-3 rounded-md border transition-colors border-border/40 hover:bg-muted/50 hover:text-foreground"
           >
             <PlusIcon className="size-4" />
             <span>Create first note</span>

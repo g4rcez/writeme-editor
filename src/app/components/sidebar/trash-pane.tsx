@@ -92,7 +92,7 @@ export const TrashPane = () => {
                     type="button"
                     title="Restore"
                     onClick={() => handleRestore(note)}
-                    className="p-1 rounded transition-all text-primary hover:bg-primary/10"
+                    className="p-1 rounded transition-colors text-primary hover:bg-primary/10"
                   >
                     <ArrowCounterClockwiseIcon className="size-3" />
                   </button>

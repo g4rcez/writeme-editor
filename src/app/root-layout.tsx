@@ -196,7 +196,7 @@ export const RootLayout = () => {
         <button
           title="Exit focus mode (⌘⇧F)"
           onClick={() => uiDispatch.toggleFocusMode()}
-          className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-all hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
+          className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-[transform,color,background-color,border-color] hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
         >
           <CornersOutIcon className="size-4" />
           <span>Exit Focus</span>

@@ -77,7 +77,7 @@ function SortableMemberRow({
       </button>
       <button
         onClick={() => onRemove(member)}
-        className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-all hover:text-red-500 hover:bg-red-500/10"
+        className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-[color,background-color,opacity] hover:text-red-500 hover:bg-red-500/10"
         title="Remove from group"
       >
         <TrashIcon className="w-4 h-4" />

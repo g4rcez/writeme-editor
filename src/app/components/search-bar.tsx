@@ -103,7 +103,7 @@ export const SearchBar = () => {
       {/* Search trigger button */}
       <button
         onClick={openSearch}
-        className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-all ${
+        className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-[color,background-color] ${
           isOpen
             ? "bg-muted/50 text-foreground"
             : "text-foreground/60 hover:text-foreground hover:bg-muted/30"

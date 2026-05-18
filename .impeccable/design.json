@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-18T00:00:00.000Z",
+  "title": "Design System: writeme",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Quiet Violet",
+        "canonical": "#B899FF",
+        "tonalRamp": [
+          "#1a0f33",
+          "#2e1a5c",
+          "#442985",
+          "#5c3aae",
+          "#7a52cc",
+          "#9b77f5",
+          "#b899ff",
+          "#dcc8ff"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Violet Hover",
+        "canonical": "#9B77F5",
+        "tonalRamp": [
+          "#160e2e",
+          "#281850",
+          "#3e2778",
+          "#5738a0",
+          "#7352bf",
+          "#9b77f5",
+          "#b899ff",
+          "#d8c4fe"
+        ]
+      },
+      "primary-surface": {
+        "role": "primary",
+        "displayName": "Violet Surface",
+        "canonical": "#F0EAFF",
+        "tonalRamp": [
+          "#1a0f33",
+          "#2e1a5c",
+          "#442985",
+          "#5c3aae",
+          "#7a52cc",
+          "#b899ff",
+          "#d8c4fe",
+          "#f0eaff"
+        ]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#323843",
+        "tonalRamp": [
+          "#0d0e10",
+          "#191c22",
+          "#232833",
+          "#323843",
+          "#50586a",
+          "#717a8c",
+          "#b0b7c4",
+          "#e8eaed"
+        ]
+      },
+      "foreground-muted": {
+        "role": "neutral",
+        "displayName": "Slate",
+        "canonical": "#717178",
+        "tonalRamp": [
+          "#1a1a1c",
+          "#2e2e31",
+          "#444448",
+          "#585860",
+          "#717178",
+          "#9494a0",
+          "#c0c0c8",
+          "#e8e8ec"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#111117",
+          "#1e1e26",
+          "#2c2c38",
+          "#3c3c4a",
+          "#6c6c7a",
+          "#a8a8b4",
+          "#d8d8e0",
+          "#ffffff"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Bone",
+        "canonical": "#F4F4F5",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#f4f4f5"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Ghost",
+        "canonical": "#E4E4E8",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e4e4e8",
+          "#f8f8fa"
+        ]
+      },
+      "danger": {
+        "role": "semantic-danger",
+        "displayName": "Alert Red",
+        "canonical": "#F16161",
+        "tonalRamp": [
+          "#330808",
+          "#661515",
+          "#991f1f",
+          "#cc2a2a",
+          "#f16161",
+          "#f88e8e",
+          "#fbbcbc",
+          "#fdeaea"
+        ]
+      },
+      "warn": {
+        "role": "semantic-warn",
+        "displayName": "Amber",
+        "canonical": "#F59E0B",
+        "tonalRamp": [
+          "#2d1b00",
+          "#5c3700",
+          "#8a5400",
+          "#b87200",
+          "#f59e0b",
+          "#f7be5e",
+          "#fad9a3",
+          "#fef3d8"
+        ]
+      },
+      "success": {
+        "role": "semantic-success",
+        "displayName": "Leaf",
+        "canonical": "#22C55E",
+        "tonalRamp": [
+          "#042510",
+          "#084e21",
+          "#0d7a34",
+          "#12a748",
+          "#22c55e",
+          "#6be09b",
+          "#a8efc5",
+          "#e8fbf0"
+        ]
+      },
+      "info": {
+        "role": "semantic-info",
+        "displayName": "Sky",
+        "canonical": "#0EA5E9",
+        "tonalRamp": [
+          "#031d2e",
+          "#063c5c",
+          "#0a5a8a",
+          "#0d7cba",
+          "#0ea5e9",
+          "#5ec6f3",
+          "#a3e0f9",
+          "#e0f5fe"
+        ]
+      },
+      "background-dark": {
+        "role": "neutral",
+        "displayName": "Deep Charcoal",
+        "canonical": "#111117",
+        "tonalRamp": [
+          "#05050a",
+          "#0a0a10",
+          "#111117",
+          "#1a1a22",
+          "#2c2c38",
+          "#4a4a60",
+          "#7a7a96",
+          "#b8b8cc"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Night Surface",
+        "canonical": "#10131B",
+        "tonalRamp": [
+          "#05060c",
+          "#0a0c14",
+          "#10131b",
+          "#1c2030",
+          "#2e3348",
+          "#4c5470",
+          "#7a8499",
+          "#b8bece"
+        ]
+      },
+      "border-dark": {
+        "role": "neutral",
+        "displayName": "Coal",
+        "canonical": "#27272C",
+        "tonalRamp": [
+          "#0d0d10",
+          "#18181b",
+          "#27272c",
+          "#3a3a40",
+          "#52525a",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Editor prose, note content, settings descriptions. Max line length 70ch."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Dialog titles, settings section headers, sidebar panel titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sub-section labels, nav section headers, panel sub-titles."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tab labels, activity icon tooltips, metadata chips, keyboard shortcut hints. Uppercase at 0.04em tracking for metadata labels only."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "All code blocks, inline code, terminal output, frontmatter, math."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-low",
+        "value": "0 2px 8px -2px rgba(0, 0, 0, 0.06)",
+        "purpose": "Hover lift on interactive cards and draggable elements. The barest grounding shadow."
+      },
+      {
+        "name": "ambient-medium",
+        "value": "0 4px 16px -4px rgba(0, 0, 0, 0.10)",
+        "purpose": "Floating panels, popovers, command palette."
+      },
+      {
+        "name": "ambient-large",
+        "value": "0 4px 12px -3px rgba(0, 0, 0, 0.08)",
+        "purpose": "Modals and dialogs. Overlay handles depth; shadow is minimal."
+      },
+      {
+        "name": "notification",
+        "value": "1px 2px 2px 2px rgba(33, 54, 68, 0.15)",
+        "purpose": "Toast and notification cards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for all state transitions."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Micro-interactions: button hover, icon swap, opacity toggle."
+      },
+      {
+        "name": "duration-normal",
+        "value": "200ms",
+        "purpose": "Panel transitions, fade-in, nav state changes."
+      },
+      {
+        "name": "duration-slow",
+        "value": "300ms",
+        "purpose": "Sidebar expand/collapse, dialog entrance."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action. Quiet Violet background, white label. Tactile feedback on hover and press.",
+      "html": "<button class=\"ds-btn-primary\">Save Note</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #B899FF; color: #ffffff; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; line-height: 1; padding: 7px 14px; border: none; border-radius: 0.55rem; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #9B77F5; } .ds-btn-primary:active { background: #7d5de0; transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid #B899FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action. Bone surface background, Ink text. Same shape as primary.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #F4F4F5; color: #323843; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; line-height: 1; padding: 7px 14px; border: none; border-radius: 0.55rem; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-secondary:hover { background: #e8e8ea; } .ds-btn-secondary:active { background: #d8d8db; transform: scale(0.98); } .ds-btn-secondary:focus-visible { outline: 2px solid #B899FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Toolbar and activity bar actions. Transparent at rest, Bone on hover. Slate text.",
+      "html": "<button class=\"ds-btn-ghost\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M213.66 82.34l-56-56a8 8 0 0 0-11.32 0l-104 104A8 8 0 0 0 40 136v56a8 8 0 0 0 8 8h56a8 8 0 0 0 5.66-2.34l104-104a8 8 0 0 0 0-11.32z\" fill=\"currentColor\"/></svg> Edit</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: #717178; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 400; line-height: 1; padding: 6px 10px; border: none; border-radius: 0.55rem; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-ghost:hover { background: #F4F4F5; color: #323843; } .ds-btn-ghost:focus-visible { outline: 2px solid #B899FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Sidebar Nav Item (Active)",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Active state for sidebar navigation items. Violet surface tint, Quiet Violet text.",
+      "html": "<div class=\"ds-nav-item ds-nav-item--active\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 256 256\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M213.66 82.34l-56-56a8 8 0 0 0-11.32 0l-104 104A8 8 0 0 0 40 136v56a8 8 0 0 0 8 8h56a8 8 0 0 0 5.66-2.34l104-104a8 8 0 0 0 0-11.32z\"/></svg><span>Active Note</span></div>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 0.375rem; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 400; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item--active { background: #F0EAFF; color: #B899FF; font-weight: 500; } .ds-nav-item--inactive { background: transparent; color: #717178; } .ds-nav-item--inactive:hover { background: rgba(244,244,245,0.5); color: #323843; }"
+    },
+    {
+      "name": "Sidebar Nav Item (Inactive)",
+      "kind": "nav",
+      "refersTo": "nav-item-inactive",
+      "description": "Inactive sidebar nav item. Transparent, Slate text, Bone hover.",
+      "html": "<div class=\"ds-nav-item ds-nav-item--inactive\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 256 256\" fill=\"currentColor\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M213.66 82.34l-56-56a8 8 0 0 0-11.32 0l-104 104A8 8 0 0 0 40 136v56a8 8 0 0 0 8 8h56a8 8 0 0 0 5.66-2.34l104-104a8 8 0 0 0 0-11.32z\"/></svg><span>Draft Notes</span></div>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 0.375rem; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 400; cursor: pointer; transition: background 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item--inactive { background: transparent; color: #717178; } .ds-nav-item--inactive:hover { background: rgba(244,244,245,0.5); color: #323843; }"
+    },
+    {
+      "name": "Tab (Active)",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Active editor tab. Bone/muted background, full foreground text, 1px violet bottom underline.",
+      "html": "<div class=\"ds-tab ds-tab--active\"><span class=\"ds-tab-label\">My Notes.md</span><button class=\"ds-tab-close\" aria-label=\"Close\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M205.66 194.34a8 8 0 0 1-11.32 11.32L128 139.31l-66.34 66.35a8 8 0 0 1-11.32-11.32L116.69 128 50.34 61.66a8 8 0 0 1 11.32-11.32L128 116.69l66.34-66.35a8 8 0 0 1 11.32 11.32L139.31 128z\"/></svg></button></div>",
+      "css": ".ds-tab { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; min-width: 96px; max-width: 320px; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; border-right: 1px solid #E4E4E8; position: relative; cursor: pointer; transition: background 150ms; } .ds-tab--active { background: rgba(244,244,245,0.3); color: #323843; } .ds-tab--active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: #B899FF; } .ds-tab--inactive { background: transparent; color: rgba(50,56,67,0.5); } .ds-tab--inactive:hover { background: rgba(244,244,245,0.1); color: rgba(50,56,67,0.8); } .ds-tab-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-tab-close { display: flex; align-items: center; justify-content: center; padding: 2px; border: none; background: transparent; cursor: pointer; border-radius: 3px; color: inherit; opacity: 0.6; transition: opacity 150ms, background 150ms; } .ds-tab-close:hover { opacity: 1; background: rgba(0,0,0,0.08); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "button-ghost",
+      "description": "Text input. Borderless at rest, minimal focus treatment. Height 40px.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\">Note title</label><input class=\"ds-field-input\" type=\"text\" placeholder=\"Untitled note\"></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; } .ds-field-label { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 500; color: #717178; letter-spacing: 0.04em; text-transform: uppercase; } .ds-field-input { height: 40px; padding: 0 8px; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: #323843; background: #F4F4F5; border: 1px solid #E4E4E8; border-radius: 0.55rem; outline: none; width: 100%; transition: border-color 150ms; } .ds-field-input::placeholder { color: #717178; } .ds-field-input:focus { border-color: #B899FF; background: #FFFFFF; }"
+    },
+    {
+      "name": "Activity Icon",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "40x40 activity bar icon button. Active: Quiet Violet + left-edge indicator. Inactive: 50% foreground.",
+      "html": "<div style=\"display:flex;flex-direction:column;gap:4px;align-items:center;background:#ffffff;padding:4px;border-right:1px solid #E4E4E8;width:40px;\"><button class=\"ds-activity-icon ds-activity-icon--active\" aria-label=\"Explorer\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M215.59 78.41l-56-56A8 8 0 0 0 154 20H56a12 12 0 0 0-12 12v192a12 12 0 0 0 12 12h144a12 12 0 0 0 12-12V84a8 8 0 0 0-2.41-5.59zM160 46.63 197.37 84H160zM200 228H56V32h88v56a8 8 0 0 0 8 8h48z\"/></svg><div class=\"ds-activity-indicator\"></div></button><button class=\"ds-activity-icon ds-activity-icon--inactive\" aria-label=\"Search\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M229.66 218.34l-50.07-50.06a88.21 88.21 0 1 0-11.31 11.31l50.06 50.07a8 8 0 0 0 11.32-11.32zM40 112a72 72 0 1 1 72 72 72.08 72.08 0 0 1-72-72z\"/></svg></button></div>",
+      "css": ".ds-activity-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; background: transparent; cursor: pointer; transition: color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-activity-icon--active { color: #B899FF; } .ds-activity-icon--inactive { color: rgba(50,56,67,0.5); } .ds-activity-icon--inactive:hover { color: #323843; } .ds-activity-indicator { position: absolute; left: 0; width: 2px; height: 32px; background: #B899FF; border-radius: 0 2px 2px 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Patient Workshop",
+    "overview": "writeme is the tool you return to every day. Not because it demands your attention, but because it never gets in the way. The visual language is built around reliability and restraint: a surface that stays calm whether you are capturing a half-formed idea at 7am or tracing a research thread at midnight. The primary violet accent is present, trustworthy, and quiet. It marks what matters without announcing it.\n\nThe system operates in two modes that share one vocabulary. Light mode is a clean workspace: near-white surfaces, dark foreground text, a border language that divides without interrupting. Dark mode is the same workshop after the overhead lights go down: deep charcoal surfaces, the same structural hierarchy, the same violet accent. Neither mode is primary.\n\nIBM Plex Sans carries everything: headings, labels, UI copy, running text. It is humanist, precise, and slightly warm without being decorative. JetBrains Mono handles code. The pairing needs no ornamentation.",
+    "keyCharacteristics": [
+      "Single accent color used for primary actions, active states, and semantic emphasis only.",
+      "IBM Plex Sans throughout — no display font pairing.",
+      "Nearly flat elevation: shadows are ambient and barely perceptible.",
+      "Dynamic font sizing via --default-size CSS variable (default 16px); all spacing scales from it.",
+      "Full multi-theme support: light, dark, Catppuccin Mocha, Tokyo Night. Same structural vocabulary in all."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Quiet Violet appears in ≤10% of any given screen surface. It marks the active state, the primary action, the current selection. Its rarity is the point. When everything is purple, nothing is.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic-Only Rule",
+        "body": "Alert Red, Amber, Leaf, and Sky are reserved for their semantic states. They are never used decoratively or for section headers.",
+        "section": "colors"
+      },
+      {
+        "name": "The Single-Family Rule",
+        "body": "IBM Plex Sans carries headings, UI, and body. No display family is added. Hierarchy is expressed through weight (400/500/600/700) and size, not through font switching.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scale-Root Rule",
+        "body": "Every size and spacing value derives from --default-size. Do not introduce hard-coded pixel values that break user-adjustable font sizing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Shadows appear only in response to state (hover, floating, modal). Resting surfaces are flat. A shadow that is always visible is a border that failed to commit.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Backdrop Rule",
+        "body": "backdrop-blur-sm is used on the sidebar panel to create tonal separation from the editor surface. This is purposeful (depth signal, not decoration) and is the only use of blur in the system. Blur on cards or popovers is banned.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Quiet Violet (#B899FF) exclusively for interactive primary states, active navigation, and semantic emphasis.",
+      "Do derive every size and spacing value from --default-size.",
+      "Do keep resting surfaces flat. Add shadow only when an element has been lifted by state.",
+      "Do use IBM Plex Sans for all UI text including headings.",
+      "Do keep the activity bar at 40px and icon-only. Tooltips are the label surface.",
+      "Do support prefers-reduced-motion for every animation in the product.",
+      "Do use semantic color tokens for all state: danger for errors, warn for warnings, success for confirmations."
+    ],
+    "donts": [
+      "Don't add gradient fills, glassmorphism cards, or purple-to-teal gradients. If it looks like an AI startup landing page, it's wrong.",
+      "Don't use backdrop-blur anywhere except the sidebar panel.",
+      "Don't produce dev tool brutalism: monospace-everything, gray-on-gray, no visual warmth.",
+      "Don't create sparse, empty designs that feel like a blog theme.",
+      "Don't use border-left greater than 1px as a colored stripe on cards, list items, callouts, or alerts.",
+      "Don't use gradient text (background-clip: text).",
+      "Don't use any hardcoded color that is not a design token reference or CSS custom property.",
+      "Don't animate CSS layout properties. Animate opacity and transform only."
+    ]
+  }
+}

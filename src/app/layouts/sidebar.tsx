@@ -2,8 +2,13 @@ import { ActivityBar } from "@/app/components/sidebar/activity-bar";
 import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
 import { useGlobalStore } from "@/store/global.store";
 import { css } from "@g4rcez/components";
-import { motion } from "motion/react";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useState,
+  type CSSProperties,
+} from "react";
 
 export const Sidebar = () => {
   const [state, dispatch] = useGlobalStore();
@@ -30,15 +35,24 @@ export const Sidebar = () => {
     return () => void controller.abort();
   }, [resize, stopResizing]);
 
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const onNarrow = (e: MediaQueryListEvent) => {
+      if (e.matches) dispatch.setSidebarCollapsed(true);
+    };
+    if (mql.matches) dispatch.setSidebarCollapsed(true);
+    mql.addEventListener("change", onNarrow);
+    return () => mql.removeEventListener("change", onNarrow);
+  }, []);
+
   return (
     <Fragment>
       <div className="writeme-aside-activity-wrapper">
         <ActivityBar />
       </div>
-      <motion.div
-        style={{
-          width: state.isSidebarCollapsed ? 0 : `${state.sidebarWidth}px`,
-        }}
+      <div
+        style={{ "--panel-w": `${state.sidebarWidth}px` } as CSSProperties}
+        data-resizing={isResizing || undefined}
         className={css(
           "writeme-aside-panel",
           state.isSidebarCollapsed
@@ -46,15 +60,42 @@ export const Sidebar = () => {
             : "writeme-aside-panel--open",
         )}
       >
-        <motion.div
-          style={{ width: `${state.sidebarWidth}px` }}
+        <div
+          style={{
+            width: `${state.sidebarWidth}px`,
+            transform: state.isSidebarCollapsed
+              ? "translateX(-100%)"
+              : "translateX(0)",
+          }}
           className="writeme-aside-panel-inner"
         >
           <SidebarContent />
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
       {!state.isSidebarCollapsed && (
-        <div onMouseDown={startResizing} className="writeme-aside-resize" />
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          tabIndex={0}
+          onMouseDown={startResizing}
+          onKeyDown={(e) => {
+            const step = e.shiftKey ? 32 : 16;
+            if (e.key === "ArrowRight") {
+              e.preventDefault();
+              dispatch.setSidebarWidth(
+                Math.min(state.sidebarWidth + step, 600),
+              );
+            }
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              dispatch.setSidebarWidth(
+                Math.max(state.sidebarWidth - step, 150),
+              );
+            }
+          }}
+          className="writeme-aside-resize"
+        />
       )}
     </Fragment>
   );

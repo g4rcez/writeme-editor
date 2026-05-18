@@ -16,7 +16,7 @@ export const Layout = ({ children, className, ignoreWidth }: LayoutProps) => {
   return (
     <div
       className={css(
-        "mx-auto w-full transition-all duration-300",
+        "mx-auto w-full transition-[max-width] duration-300",
         widthClass,
         className,
       )}

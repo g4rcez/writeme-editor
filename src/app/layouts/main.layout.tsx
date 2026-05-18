@@ -35,6 +35,7 @@ export const MainLayout = () => {
                         Terminal
                       </span>
                       <button
+                        aria-label="Close terminal"
                         onClick={() => dispatch.setTerminalVisible(false)}
                         className="text-muted-foreground hover:text-foreground transition-colors"
                       >

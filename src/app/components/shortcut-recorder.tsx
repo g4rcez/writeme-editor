@@ -111,7 +111,7 @@ export function ShortcutRecorder({ value, onChange }: Props) {
       onClick={() => setRecording((v) => !v)}
       onBlur={() => setRecording(false)}
       className={[
-        "min-w-[120px] rounded border px-3 py-2 text-sm font-mono transition-all",
+        "min-w-[120px] rounded border px-3 py-2 text-sm font-mono transition-[border-color,box-shadow]",
         "border-border focus:outline-none",
         recording
           ? "ring-2 ring-primary border-primary text-muted-foreground"

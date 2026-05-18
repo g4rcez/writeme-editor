@@ -230,7 +230,7 @@ const JsonGraphInner = ({
   return (
     <div
       className={css(
-        "flex overflow-hidden flex-col w-full h-full transition-all duration-500",
+        "flex overflow-hidden flex-col w-full h-full transition-opacity duration-500",
         isZenMode
           ? "fixed inset-0 z-50 bg-background"
           : "relative bg-background",

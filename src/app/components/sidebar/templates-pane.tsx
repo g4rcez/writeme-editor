@@ -227,7 +227,7 @@ export const TemplatesPane = () => {
                 <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
                     onClick={(e) => onCreateNoteFromTemplate(e, template)}
-                    className="p-1 rounded transition-all text-primary hover:bg-primary/10"
+                    className="p-1 rounded transition-colors text-primary hover:bg-primary/10"
                     title="Create note from template"
                   >
                     <FilePlusIcon className="size-3" />
@@ -237,7 +237,7 @@ export const TemplatesPane = () => {
                       e.stopPropagation();
                       setDeletingTemplate(template);
                     }}
-                    className="p-1 rounded transition-all text-destructive hover:bg-destructive/10"
+                    className="p-1 rounded transition-colors text-destructive hover:bg-destructive/10"
                     title="Delete template"
                   >
                     <TrashIcon className="size-3" />

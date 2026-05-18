@@ -45,7 +45,7 @@ export const JsonNode = ({ data }: any) => {
   return (
     <div
       className={css(
-        "min-w-[14rem] p-2.5 rounded-lg border bg-card-background transition-all duration-200",
+        "min-w-[14rem] p-2.5 rounded-lg border bg-card-background transition-[transform,box-shadow,border-color] duration-200",
         matchesSearch
           ? "border-primary ring-2 ring-primary/20 z-50 shadow-lg scale-105"
           : isPathToMatch

@@ -34,7 +34,7 @@ const ActionCard = ({
   <motion.button
     variants={item}
     onClick={onClick}
-    className="flex relative flex-col items-start p-6 text-left rounded-2xl border transition-all duration-300 hover:shadow-2xl group bg-card-background border-card-border hover:border-primary/50 hover:shadow-primary/5"
+    className="flex relative flex-col items-start p-6 text-left rounded-2xl border transition-[box-shadow,border-color] duration-300 hover:shadow-2xl group bg-card-background border-card-border hover:border-primary/50 hover:shadow-primary/5"
   >
     <div className="p-3 mb-4 rounded-xl transition-transform duration-300 group-hover:scale-110 bg-primary/10 text-primary">
       <Icon size={24} strokeWidth={1.5} />
@@ -56,7 +56,7 @@ const RecentNoteCard = ({ note }: { note: Note }) => {
     <motion.div variants={item}>
       <Link
         to={`/note/${note.id}`}
-        className="flex gap-2 items-center p-4 rounded-xl border border-transparent transition-all duration-200 group hover:bg-muted/30 hover:border-border/50"
+        className="flex gap-2 items-center p-4 rounded-xl border border-transparent transition-[background-color,border-color] duration-200 group hover:bg-muted/30 hover:border-border/50"
       >
         <div className="p-2 rounded-lg transition-colors bg-primary/5 text-disabled group-hover:bg-primary/10 group-hover:text-primary">
           <FileTextIcon size={32} />
@@ -79,7 +79,7 @@ const RecentNoteCard = ({ note }: { note: Note }) => {
         </div>
         <ArrowRightIcon
           size={16}
-          className="opacity-0 transition-all -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-muted-foreground"
+          className="opacity-0 transition-[transform,opacity] -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-muted-foreground"
         />
       </Link>
     </motion.div>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                   <Link
                     key={note.id}
                     to={`/note/${note.id}`}
-                    className="block pb-2 mb-1 border-b shadow-sm transition-all border-border group hover:border-primary/30"
+                    className="block pb-2 mb-1 border-b shadow-sm transition-[border-color] border-border group hover:border-primary/30"
                   >
                     <h4 className="text-sm font-medium transition-colors truncate group-hover:text-primary">
                       {note.title}

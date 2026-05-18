@@ -77,7 +77,11 @@ export const ActivityBar = () => {
   return (
     <div className="writeme-aside-activity-bar">
       <div className="writeme-aside-activity-icons">
-        <Link to="/" className="w-full flex items-center justify-center">
+        <Link
+          to="/"
+          aria-label="writeme — home"
+          className="w-full flex items-center justify-center"
+        >
           <WritemeLogo className="size-8 aspect-square px-2" fill="white" />
         </Link>
         <ActivityIcon

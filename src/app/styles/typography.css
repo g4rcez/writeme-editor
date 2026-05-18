@@ -68,22 +68,22 @@
 }
 
 .writeme-editor-content blockquote {
-  @apply my-6 ml-0 pl-4 py-3 border-l-2 rounded-r-lg;
-  border-left-color: hsla(var(--primary-DEFAULT), 0.4);
+  @apply my-6 ml-0 px-4 py-3 rounded-lg;
+  background-color: hsla(var(--primary-DEFAULT), 0.05);
+  border: 1px solid hsla(var(--primary-DEFAULT), 0.2);
 }
 
 .writeme-editor-content blockquote[data-callout="false"] {
   @apply border border-card-border italic;
-  border-left-width: 2px !important;
-  border-left-color: hsla(var(--primary-DEFAULT), 0.4) !important;
+  background-color: transparent;
 }
 
 .writeme-editor-content blockquote[data-callout="true"][data-theme="danger"] {
-  @apply border-l-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
+  @apply border-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
 }
 
 .writeme-editor-content blockquote[data-callout="true"][data-theme="info"] {
-  @apply border-l-alert-info-border bg-alert-info-bg text-alert-info-text;
+  @apply border-alert-info-border bg-alert-info-bg text-alert-info-text;
 }
 
 .writeme-editor-content hr {
