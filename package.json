@@ -3,7 +3,7 @@
   "private": true,
   "productName": "writeme",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Writeme is an Electron and PWA note-taking app with a rich Markdown editor powered by Tiptap. Features syntax highlighting via Shiki, Mermaid and Graphviz diagrams, Excalidraw drawing, math rendering with KaTeX and mathjs, AI chat integration, SQLite and IndexedDB dual storage, and full keyboard-driven navigation.",
   "main": ".vite/build/main.js",
   "bin": {
     "writeme": "./packages/cli/dist/writeme"
@@ -24,9 +24,25 @@
   "packageManager": "npm@11.11.1",
   "keywords": [
     "markdown",
-    "text-editor",
+    "note-taking",
+    "notes",
     "editor",
-    "tiptap"
+    "text-editor",
+    "rich-text-editor",
+    "tiptap",
+    "prosemirror",
+    "electron",
+    "pwa",
+    "shiki",
+    "syntax-highlighting",
+    "mermaid",
+    "excalidraw",
+    "katex",
+    "math",
+    "diagrams",
+    "ai",
+    "sqlite",
+    "offline"
   ],
   "scripts": {
     "dev": "npm run native:dev",
