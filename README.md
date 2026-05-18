@@ -13,6 +13,38 @@ This is designed to be a text editor that help you to interact with AI and took 
 - **Rich Media & Extensions**: Support for Excalidraw, Mermaid diagrams, KaTeX math, and Shiki syntax highlighting.
 - **Cross-Platform**: Available as an Electron desktop application and a Progressive Web App (PWA).
 
+## Installation
+
+### macOS — Homebrew
+
+```bash
+brew tap g4rcez/writeme
+```
+
+**Desktop app:**
+```bash
+brew install --cask writeme
+```
+
+**CLI:**
+```bash
+brew install g4rcez/writeme/writeme
+```
+
+### Other platforms
+
+Download the latest release for your platform from the [releases page](https://github.com/g4rcez/writeme-editor/releases):
+
+| Platform | File |
+|---|---|
+| macOS (Apple Silicon) | `writeme-<version>-arm64.dmg` |
+| macOS (Intel) | `writeme-<version>-x64.dmg` |
+| Windows | `writeme-setup.exe` |
+| Linux (Debian/Ubuntu) | `writeme_<version>_amd64.deb` |
+| Linux (Fedora/RHEL) | `writeme-<version>.x86_64.rpm` |
+
+---
+
 ## How to develop
 
 The project uses `npm` as the preferred package manager.

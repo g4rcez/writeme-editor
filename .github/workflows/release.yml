@@ -177,17 +177,12 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Get commit message
-        id: commit
-        run: |
-          NOTES=$(git log -1 --pretty=format:%B)
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Extract release notes
+        run: awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
 
       - uses: softprops/action-gh-release@v2
         with:
-          body: ${{ steps.commit.outputs.notes }}
+          body_path: release-notes.md
           files: artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

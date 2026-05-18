@@ -46,7 +46,8 @@
     "pwa:assets": "node scripts/generate-pwa-assets.js",
     "pwa:dev": "npm run pwa:assets && npm run browser:dev",
     "pwa:build": "npm run pwa:assets && npm run browser:build",
-    "ci:local": "act push -W .github/workflows/build.yml --matrix os:ubuntu-latest"
+    "ci:local": "act push -W .github/workflows/build.yml --matrix os:ubuntu-latest",
+    "release": "bash scripts/release.sh"
   },
   "resolutions": {
     "react": "19.2.4",
@@ -215,6 +216,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "chalk": "5.6.2",
     "concurrently": "9.2.1",
+    "conventional-changelog-cli": "5.0.0",
     "electron": "41.0.3",
     "electron-squirrel-startup": "1.0.1",
     "jsdom": "29.0.0",
