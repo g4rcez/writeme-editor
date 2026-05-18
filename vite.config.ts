@@ -6,7 +6,26 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
   base: "/",
   appType: "spa",
-  build: { sourcemap: true },
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("shiki")) return "shiki";
+          if (id.includes("mermaid")) return "mermaid";
+          if (id.includes("@excalidraw")) return "excalidraw";
+          if (id.includes("viz-js") || id.includes("graphviz"))
+            return "graphviz";
+          if (id.includes("flowchart.js") || id.includes("raphael"))
+            return "flowchart";
+          if (id.includes("mathjs")) return "mathjs";
+          if (id.includes("katex")) return "math";
+          if (id.includes("react-dom") || id.includes("node_modules/react/"))
+            return "react-vendor";
+        },
+      },
+    },
+  },
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   plugins: [
     react({

@@ -1,11 +1,10 @@
 import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { Note } from "@/store/note";
-import { globalState } from "@/store/global.store";
 import { getEditorAllNotes } from "@/lib/editor-storage";
+import { useGlobalStore } from "@/store/global.store";
 import { ReactRenderer } from "@tiptap/react";
 import { updatePosition } from "@/app/extensions/update-position";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -70,7 +69,8 @@ const MentionList = (props: any) => {
     props.registerKeyDown(handler);
   }, []);
 
-  const storageDir = useMemo(() => globalState().directory || "", []);
+  const [directory] = useGlobalStore((s) => s.directory);
+  const storageDir = directory || "";
 
   return (
     <ul
@@ -87,10 +87,10 @@ const MentionList = (props: any) => {
             ? relativePath.substring(0, relativePath.lastIndexOf("/"))
             : "";
           const displayPath = formatSimplifiedPath(folderPath);
-
           return (
             <li key={item.id}>
               <button
+                type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   selectItem(index);
@@ -126,7 +126,7 @@ const MentionList = (props: any) => {
 export const suggestion = {
   items: async ({ query, editor }: { query: string; editor: any }) => {
     try {
-      const notes: Note[] = getEditorAllNotes(editor);
+      const notes = getEditorAllNotes(editor);
       return notes
         .filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
         .map((n) => ({
@@ -166,7 +166,7 @@ export const suggestion = {
         if (!props.clientRect) {
           return;
         }
-        updatePosition(props.editor, reactRenderer!.element);
+        updatePosition(props.editor, reactRenderer.element);
       },
       onKeyDown(props: { event: KeyboardEvent }) {
         if (props.event.key === "Escape") {

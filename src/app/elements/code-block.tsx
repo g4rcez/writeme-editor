@@ -29,6 +29,8 @@ import { clsx } from "clsx";
 import {
   Fragment,
   type ReactNode,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useId,
@@ -44,16 +46,31 @@ import {
   createHighlighter,
 } from "shiki";
 import { canFormat, formatCode } from "./code-block-formatting";
-import { ExcalidrawCode } from "./excalidraw";
-import { FreehandCode } from "./freehand";
-import { Flowchart } from "./flowchart";
-import { Graphviz } from "./graphviz";
-import { MathBlock } from "./math-block";
-import { Mermaid } from "./mermaid";
-import { LatexBlock } from "./latex-block";
 import { handlePasteImage } from "../extensions";
 import { shikiMathGrammer } from "./shiki-math-grammar";
 import { sanitizeAnsi } from "@/lib/encoding";
+
+const ExcalidrawCode = lazy(() =>
+  import("./excalidraw").then((m) => ({ default: m.ExcalidrawCode })),
+);
+const FreehandCode = lazy(() =>
+  import("./freehand").then((m) => ({ default: m.FreehandCode })),
+);
+const Flowchart = lazy(() =>
+  import("./flowchart").then((m) => ({ default: m.Flowchart })),
+);
+const Graphviz = lazy(() =>
+  import("./graphviz").then((m) => ({ default: m.Graphviz })),
+);
+const MathBlock = lazy(() =>
+  import("./math-block").then((m) => ({ default: m.MathBlock })),
+);
+const Mermaid = lazy(() =>
+  import("./mermaid").then((m) => ({ default: m.Mermaid })),
+);
+const LatexBlock = lazy(() =>
+  import("./latex-block").then((m) => ({ default: m.LatexBlock })),
+);
 
 export type CodeBlockFrameProps = {
   id: string;
@@ -529,22 +546,57 @@ export interface CodeBlockShikiOptions extends CodeBlockOptions {
   getCurrentTheme?: () => BundledTheme;
 }
 
-const getAllLanguages = (): string[] => {
-  const allLanguages = Object.keys(bundledLanguages);
-  allLanguages.push("math");
-  allLanguages.push("excalidraw");
-  allLanguages.push("freehand");
-  allLanguages.push("graphviz");
-  allLanguages.push("flowchart");
-  return allLanguages.sort();
-};
+const SUPPORTED_LANGUAGES = [
+  "bash",
+  "c",
+  "cpp",
+  "css",
+  "diff",
+  "dockerfile",
+  "go",
+  "graphql",
+  "html",
+  "http",
+  "java",
+  "javascript",
+  "json",
+  "kotlin",
+  "lua",
+  "markdown",
+  "mermaid",
+  "php",
+  "powershell",
+  "prisma",
+  "python",
+  "ruby",
+  "rust",
+  "scss",
+  "shell",
+  "sql",
+  "swift",
+  "toml",
+  "tsx",
+  "typescript",
+  "xml",
+  "yaml",
+];
 
 const LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "plaintext", label: "Plain text" },
-  ...getAllLanguages().map((lang) => ({
-    value: lang,
-    label: lang.charAt(0).toUpperCase() + lang.slice(1),
-  })),
+  ...[
+    ...SUPPORTED_LANGUAGES,
+    "math",
+    "excalidraw",
+    "freehand",
+    "graphviz",
+    "flowchart",
+    "latex",
+  ]
+    .sort()
+    .map((lang) => ({
+      value: lang,
+      label: lang.charAt(0).toUpperCase() + lang.slice(1),
+    })),
 ];
 
 const CodeBlockHeader = ({
@@ -712,16 +764,26 @@ const CodeBlockAddons = ({
   code: string;
 }) => {
   if (language === "math" && code) {
-    return <MathBlock code={code} />;
+    return (
+      <Suspense fallback={null}>
+        <MathBlock code={code} />
+      </Suspense>
+    );
   }
   if (language === "latex" && code) {
-    return <LatexBlock code={code} />;
+    return (
+      <Suspense fallback={null}>
+        <LatexBlock code={code} />
+      </Suspense>
+    );
   }
   if (language === "mermaid" && code) {
     return (
       <div className="px-4 pb-4">
         <div className="pt-4 border-t border-card-border">
-          <Mermaid chart={code} />
+          <Suspense fallback={null}>
+            <Mermaid chart={code} />
+          </Suspense>
         </div>
       </div>
     );
@@ -730,7 +792,9 @@ const CodeBlockAddons = ({
     return (
       <div className="px-4 pb-4">
         <div className="pt-4 border-t border-card-border">
-          <Graphviz dot={code} />
+          <Suspense fallback={null}>
+            <Graphviz dot={code} />
+          </Suspense>
         </div>
       </div>
     );
@@ -739,7 +803,9 @@ const CodeBlockAddons = ({
     return (
       <div className="px-4 pb-4">
         <div className="pt-4 border-t border-card-border">
-          <Flowchart code={code} />
+          <Suspense fallback={null}>
+            <Flowchart code={code} />
+          </Suspense>
         </div>
       </div>
     );
@@ -870,11 +936,13 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         as="div"
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
-        <ExcalidrawCode
-          code={code}
-          onChange={onChangeDraw}
-          autoDelete={props.deleteNode}
-        />
+        <Suspense fallback={null}>
+          <ExcalidrawCode
+            code={code}
+            onChange={onChangeDraw}
+            autoDelete={props.deleteNode}
+          />
+        </Suspense>
       </NodeViewWrapper>
     );
   }
@@ -885,11 +953,13 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
         as="div"
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
-        <FreehandCode
-          code={code}
-          onChange={onChangeDraw}
-          autoDelete={props.deleteNode}
-        />
+        <Suspense fallback={null}>
+          <FreehandCode
+            code={code}
+            onChange={onChangeDraw}
+            autoDelete={props.deleteNode}
+          />
+        </Suspense>
       </NodeViewWrapper>
     );
   }

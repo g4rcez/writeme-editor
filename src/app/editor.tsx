@@ -7,7 +7,7 @@ import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { CursorPositionStore } from "@/store/cursor-position.store";
-import { globalState, useGlobalStore } from "@/store/global.store";
+import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { uuid } from "@g4rcez/components";
@@ -137,6 +137,7 @@ const TiptapEditorCore = memo(
       [theme],
     );
 
+    const [globalState] = useGlobalStore();
     const noteRef = useRef(note);
     const generationRef = useRef(0);
     const triggerWorkerParseRef = useRef<(text: string) => void>(() => {});
@@ -174,7 +175,7 @@ const TiptapEditorCore = memo(
               const currentNote = noteRef.current;
               if (currentNote) {
                 const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
-                const target = globalState().notes.find(
+                const target = globalState.notes.find(
                   (n: Note) => n.title === fileName,
                 );
                 if (target) {
@@ -427,7 +428,7 @@ const TiptapEditorCore = memo(
     }, [editor, note]);
 
     useEffect(() => {
-      if (editor) setEditorAllNotes(editor, globalState().notes);
+      if (editor) setEditorAllNotes(editor, globalState.notes);
     }, [editor]);
 
     useEffect(() => {

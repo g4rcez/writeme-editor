@@ -16,6 +16,8 @@ export const TerminalPanel = () => {
   const backendRef = useRef<ReturnType<typeof createTerminalBackend> | null>(
     null,
   );
+  const rafHandle = useRef<number | null>(null);
+  const initTimeoutHandle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -75,7 +77,8 @@ export const TerminalPanel = () => {
       // Ignore initial fit error if dimensions aren't ready
     }
 
-    setTimeout(() => {
+    initTimeoutHandle.current = setTimeout(() => {
+      initTimeoutHandle.current = null;
       if (term.element) {
         try {
           fitAddon.fit();
@@ -93,7 +96,9 @@ export const TerminalPanel = () => {
 
     // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
+      if (rafHandle.current !== null) cancelAnimationFrame(rafHandle.current);
+      rafHandle.current = requestAnimationFrame(() => {
+        rafHandle.current = null;
         try {
           fitAddon.fit();
         } catch (e) {
@@ -105,6 +110,14 @@ export const TerminalPanel = () => {
     resizeObserver.observe(terminalRef.current);
 
     return () => {
+      if (rafHandle.current !== null) {
+        cancelAnimationFrame(rafHandle.current);
+        rafHandle.current = null;
+      }
+      if (initTimeoutHandle.current !== null) {
+        clearTimeout(initTimeoutHandle.current);
+        initTimeoutHandle.current = null;
+      }
       resizeObserver.disconnect();
       dataSubscription.dispose();
       backend.kill();

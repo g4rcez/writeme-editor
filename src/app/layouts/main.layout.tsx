@@ -8,7 +8,7 @@ import { useJsonDrop } from "../hooks/use-json-drop";
 import { Sidebar } from "./sidebar";
 
 export const MainLayout = () => {
-  const [state, dispatch] = useGlobalStore();
+  const [terminalVisible, dispatch] = useGlobalStore((s) => s.terminalVisible);
   useJsonDrop();
   return (
     <div className="writeme-layout">
@@ -25,7 +25,7 @@ export const MainLayout = () => {
                 <Outlet />
               </div>
             </Panel>
-            {state.terminalVisible && (
+            {terminalVisible && (
               <>
                 <Separator className="h-1 bg-border/20 hover:bg-primary/50 transition-colors cursor-row-resize" />
                 <Panel defaultSize={30} minSize={10}>

@@ -16,6 +16,26 @@
   @apply font-mono bg-muted text-foreground rounded text-sm p-1;
 }
 
+.writeme-editor-content .color-inline-preview {
+  text-decoration: underline;
+  text-decoration-color: var(--color);
+  text-underline-offset: 3px;
+}
+
+.writeme-editor-content .color-inline-preview::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  border: 1px solid hsl(var(--border) / 0.6);
+  background-color: var(--color);
+  margin-right: 0.2rem;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
 .writeme-editor-content code.inline-code.color-code {
   @apply inline-flex items-center gap-1 bg-transparent;
 }

@@ -385,14 +385,14 @@ export const useGlobalStore = createGlobalReducer(
           await repositories.notes.updateContent(id, content);
           const state = get.state();
           const updatedAt = new Date();
-          const notes = state.notes.map((n) =>
-            n.id === id ? Note.parse({ ...n, content, updatedAt }) : n,
-          );
-          const note =
-            state.note?.id === id
-              ? Note.parse({ ...state.note, content, updatedAt })
-              : state.note;
-          return { notes: notes ?? [], note: note ?? null };
+          const patch = <T extends Note>(n: T): T =>
+            Object.assign(Object.create(Object.getPrototypeOf(n)), n, {
+              content,
+              updatedAt,
+            });
+          const notes = state.notes.map((n) => (n.id === id ? patch(n) : n));
+          const note = state.note?.id === id ? patch(state.note) : state.note;
+          return { notes, note };
         } catch (error: any) {
           uiDispatch.setError(error.message || "Failed to update note content");
           return get.state();

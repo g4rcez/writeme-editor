@@ -16,10 +16,7 @@ function findColors(doc: Node): DecorationSet {
       const from = position + index;
       const to = from + color.length;
       const decoration = Decoration.inline(from, to, {
-        innerText: "XABLAU",
-        innerHTML: "XABLAU",
-        innerHtml: "XABLAU",
-        class: "text-[var(--color)]",
+        class: "color-inline-preview",
         style: `--color: ${color}`,
       });
       decorations.push(decoration);
@@ -38,10 +35,10 @@ export const ColorReplacer = Extension.create({
           init(_, { doc }) {
             return findColors(doc);
           },
-          apply(transaction, oldState) {
-            return transaction.docChanged
-              ? findColors(transaction.doc)
-              : oldState;
+          apply(transaction, oldDecorations) {
+            if (!transaction.docChanged)
+              return oldDecorations.map(transaction.mapping, transaction.doc);
+            return findColors(transaction.doc);
           },
         },
         props: {

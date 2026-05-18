@@ -22,11 +22,13 @@ brew tap g4rcez/writeme
 ```
 
 **Desktop app:**
+
 ```bash
 brew install --cask writeme
 ```
 
 **CLI:**
+
 ```bash
 brew install g4rcez/writeme/writeme
 ```
@@ -36,7 +38,7 @@ brew install g4rcez/writeme/writeme
 Download the latest release for your platform from the [releases page](https://github.com/g4rcez/writeme-editor/releases):
 
 | Platform | File |
-|---|---|
+| --- | --- |
 | macOS (Apple Silicon) | `writeme-<version>-arm64.dmg` |
 | macOS (Intel) | `writeme-<version>-x64.dmg` |
 | Windows | `writeme-setup.exe` |
