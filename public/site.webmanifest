@@ -4,7 +4,7 @@
   "orientation": "any",
   "display": "standalone",
   "short_name": "Writeme",
-  "theme_color": "#66A6FF",
+  "theme_color": "#171717",
   "background_color": "#000000",
   "id": "https://www.writeme.dev/",
   "scope": "https://www.writeme.dev/",
@@ -12,26 +12,28 @@
   "description": "The home of your ideas",
   "icons": [
     {
-      "purpose": "maskable",
-      "sizes": "512x512",
-      "src": "/favicon-512x512.png",
-      "type": "image/png"
-    },
-    {
-      "purpose": "any",
-      "sizes": "512x512",
-      "src": "/favicon-512x512.png",
-      "type": "image/png"
-    },
-    {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
