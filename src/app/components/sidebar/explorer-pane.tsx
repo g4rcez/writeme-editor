@@ -7,7 +7,7 @@ import {
 import { Note, NoteType } from "@/store/note";
 import { useUIStore, type MediaSource } from "@/store/ui.store";
 import { type TreeNode } from "@/types/tree";
-import { Button } from "@g4rcez/components";
+import { Button, negate } from "@g4rcez/components";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
 import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
@@ -110,6 +110,15 @@ export const ExplorerPane = () => {
       return false;
     }
   }, []);
+
+  const handleTreeRootContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (!state.explorerRoot) return;
+      e.preventDefault();
+      window.electronAPI.contextMenu.showExplorer(state.explorerRoot, true);
+    },
+    [state.explorerRoot],
+  );
 
   const handleChooseDirectory = async () => {
     const path = await window.electronAPI.fs.chooseDirectory();
@@ -228,15 +237,19 @@ export const ExplorerPane = () => {
             <FolderPlusIcon size={14} />
           </button>
           <button
-            className={`p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground ${showDbNotes ? "bg-muted text-foreground" : ""}`}
             title="Notes in database"
-            onClick={() => setShowDbNotes((v) => !v)}
+            onClick={() => setShowDbNotes(negate)}
+            className={`p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground ${showDbNotes ? "bg-muted text-foreground" : ""}`}
           >
             <GlobeSimpleIcon size={14} />
           </button>
         </div>
       </div>
-      <div className="overflow-auto flex-1 scrollbar-hide">
+      <div
+        data-treeroot="true"
+        className="overflow-auto bg-background scrollbar-hide pb-6"
+        onContextMenu={handleTreeRootContextMenu}
+      >
         {showDbNotes ? (
           <DbNotesTree notes={state.notes} rootPath={state.explorerRoot} />
         ) : (

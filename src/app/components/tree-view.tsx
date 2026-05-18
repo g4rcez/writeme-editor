@@ -384,12 +384,23 @@ export const TreeView = ({
     (e: React.MouseEvent, node: TreeNode) => {
       if (!isElectron()) return;
       e.preventDefault();
+      e.stopPropagation();
       window.electronAPI.contextMenu.showExplorer(
         node.path,
         node.type === "directory",
       );
     },
     [],
+  );
+
+  const handleRootContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isElectron()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.electronAPI.contextMenu.showExplorer(rootPath, true);
+    },
+    [rootPath],
   );
 
   const handleRenameConfirm = useCallback(
@@ -542,24 +553,29 @@ export const TreeView = ({
         const flatNode = flattenedNodesRef.current.find(
           (n) => n.node.path === filePath,
         );
-        if (!flatNode) return;
+        const isRoot = filePath === rootPath;
+        if (!flatNode && !isRoot) return;
 
         if (action === "delete") {
+          if (!flatNode) return;
           setConfirmingPath(filePath);
         } else if (action === "rename") {
+          if (!flatNode) return;
           setRenamingPath(filePath);
         } else if (action === "new-file" || action === "new-folder") {
           const kind = action === "new-file" ? "file" : "directory";
-          const parentPath = isDirectory
-            ? filePath
-            : filePath.substring(0, filePath.lastIndexOf("/"));
-          const depth = isDirectory ? flatNode.depth + 1 : flatNode.depth;
-          if (isDirectory) {
-            expandNode(parentPath).then(() => {
-              setPendingCreate({ parentPath, kind, depth });
+          if (isRoot) {
+            setPendingCreate({ parentPath: rootPath, kind, depth: 0 });
+            setPendingName("");
+          } else if (isDirectory) {
+            const depth = (flatNode?.depth ?? 0) + 1;
+            expandNode(filePath).then(() => {
+              setPendingCreate({ parentPath: filePath, kind, depth });
               setPendingName("");
             });
           } else {
+            const parentPath = filePath.substring(0, filePath.lastIndexOf("/"));
+            const depth = flatNode?.depth ?? 0;
             setPendingCreate({ parentPath, kind, depth });
             setPendingName("");
           }
@@ -784,6 +800,7 @@ export const TreeView = ({
       role="tree"
       className="py-2 outline-none"
       tabIndex={0}
+      onContextMenu={isElectron() ? handleRootContextMenu : undefined}
     >
       {flattenedNodes
         .slice(0, insertionIndex === -1 ? undefined : insertionIndex)

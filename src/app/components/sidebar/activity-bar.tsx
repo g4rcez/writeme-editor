@@ -2,6 +2,8 @@ import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
+import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { type Icon } from "@phosphor-icons/react";
@@ -102,6 +104,18 @@ export const ActivityBar = () => {
           icon={HashIcon}
           onClick={() => onActivityClick("tags")}
           active={layout.activeActivity === "tags"}
+        />
+        <ActivityIcon
+          label="Groups"
+          icon={FolderSimpleIcon}
+          onClick={() => onActivityClick("groups")}
+          active={layout.activeActivity === "groups"}
+        />
+        <ActivityIcon
+          label="Trash"
+          icon={TrashSimpleIcon}
+          onClick={() => onActivityClick("trash")}
+          active={layout.activeActivity === "trash"}
         />
       </div>
       <div className="writeme-aside-activity-bottom">

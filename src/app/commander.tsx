@@ -4,8 +4,10 @@ import { useTemplates } from "@/app/hooks/use-templates";
 import { utf8ToBase64 } from "@/lib/encoding";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import {
   CommanderType,
+  globalDispatch,
   globalState,
   useGlobalStore,
 } from "@/store/global.store";
@@ -34,9 +36,17 @@ export const CommanderPreview = (props: {
 export const Commander = () => {
   useShortcuts();
   const [state, dispatch] = useGlobalStore();
+  const [, layoutDispatch] = useLayoutStore();
   const { templates } = useTemplates();
   const commands = useWritemeShortcuts();
   const navigate = useNavigate();
+
+  const showActivity = (
+    activity: Parameters<typeof layoutDispatch.setActivity>[0],
+  ) => {
+    layoutDispatch.setActivity(activity);
+    globalDispatch.setSidebarCollapsed(false);
+  };
 
   const notesSig = useMemo(
     () => state.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"),
@@ -204,6 +214,56 @@ export const Commander = () => {
         ],
       },
       {
+        title: "Navigate",
+        type: "group",
+        items: [
+          {
+            type: "shortcut",
+            title: "Templates",
+            action: (args) => {
+              args.setOpen(false);
+              showActivity("templates");
+            },
+          },
+          {
+            type: "shortcut",
+            title: "Calendar",
+            action: (args) => {
+              args.setOpen(false);
+              navigate("/calendar");
+            },
+          },
+          {
+            type: "shortcut",
+            title: "Views",
+            action: (args) => {
+              args.setOpen(false);
+              navigate("/views");
+            },
+          },
+          ...(isElectron()
+            ? [
+                {
+                  type: "shortcut" as const,
+                  title: "Folder workspace",
+                  action: (args: { setOpen: (v: boolean) => void }) => {
+                    args.setOpen(false);
+                    navigate("/folder");
+                  },
+                },
+              ]
+            : []),
+          {
+            type: "shortcut",
+            title: "Migrate data",
+            action: (args) => {
+              args.setOpen(false);
+              navigate("/migrate");
+            },
+          },
+        ],
+      },
+      {
         title: "About",
         type: "group",
         items: [
@@ -243,11 +303,7 @@ export const Commander = () => {
           type: "shortcut",
           action: (args) => {
             args.setOpen(false);
-            // We don't have a direct route for all templates, but we can set the activity
-            // Since this is in the commander, maybe we should just open the sidebar?
-            // Or navigate to a specific page if it existed.
-            // For now, let's just trigger the sidebar activity if possible.
-            // But usually commander is for quick actions.
+            showActivity("templates");
           },
         },
         ...templates.map(
