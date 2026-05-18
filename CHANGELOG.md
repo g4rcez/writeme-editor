@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/g4rcez/writeme-editor/compare/v1.0.1...v1.0.2) (2026-05-18)
+
+
+### Features
+
+* enhance note organization and editor statistics ([74bcc64](https://github.com/g4rcez/writeme-editor/commit/74bcc6402df1d74a7ad2b46e07b3e8b93aee7b9e))
 ## [1.0.1](https://github.com/g4rcez/writeme-editor/compare/v0.0.6...v1.0.1) (2026-05-18)
 
 
