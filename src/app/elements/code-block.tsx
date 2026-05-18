@@ -484,6 +484,7 @@ export function ShikiPlugin({
             transaction.mapping,
           );
           const currentTheme = getCurrentTheme!();
+          const forceAll = !!transaction.getMeta("shikiPluginForceDecoration");
           return {
             decorations: getDecorations({
               doc: transaction.doc,
@@ -491,7 +492,7 @@ export function ShikiPlugin({
               defaultLanguage,
               defaultTheme: currentTheme,
               renderBackground,
-              positions: remappedPositions,
+              positions: forceAll ? undefined : remappedPositions,
             }),
             visiblePositions: remappedPositions,
             suspended: false,

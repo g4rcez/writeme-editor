@@ -1,4 +1,4 @@
-# LESSONS.md
+# [LESSONS.md](http://LESSONS.md)
 
 Hard-won lessons from bugs in this codebase. Each entry has a rule, the root cause, and a concrete example.
 
@@ -43,5 +43,6 @@ useEffect(() => {
 ```
 
 **Checklist when writing or reviewing a component:**
+
 - All `useMemo` / `useCallback` / derived `const` values appear before any `useEffect` that names them.
 - If you move a hook, scan both old and new positions for forward references.
