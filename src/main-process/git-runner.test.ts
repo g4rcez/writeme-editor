@@ -209,13 +209,11 @@ describe("getDiff", () => {
     expect(await getDiff(DIR, deps)).toBe("");
   });
 
-  it("returns empty string when not inside a git repo", async () => {
+  it("returns empty string when git commands fail", async () => {
     const deps = makeDeps({
-      "rev-parse --is-inside-work-tree": fail(),
+      "add .": fail("permission denied"),
+      "diff --cached": fail("diff error"),
     });
-    // getDiff doesn't check rev-parse — it only stages and diffs.
-    // git add . will succeed (exit 0) but diff --cached returns non-zero.
-    // Simplest guard: git-missing check is enough for this test.
     expect(await getDiff(DIR, deps)).toBe("");
   });
 

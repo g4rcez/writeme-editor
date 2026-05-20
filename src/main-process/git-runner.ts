@@ -83,6 +83,11 @@ export const getStatus = async (
   return { kind: "ok", ...parsed };
 };
 
+/**
+ * Stages all working-tree changes (`git add .`) then returns the cached diff.
+ * This matches the staging behaviour in `commitAndPush` — the app has no
+ * selective staging UI, so the diff always reflects a full stage.
+ */
 export const getDiff = async (
   dir: string,
   deps: GitDeps = defaultDeps,
