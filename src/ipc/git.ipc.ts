@@ -2,7 +2,7 @@ import { ipcMain } from "electron";
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute } from "node:path";
 import { z } from "zod";
-import { commitAndPush, getStatus } from "../main-process/git-runner";
+import { commitAndPush, getStatus, getDiff } from "../main-process/git-runner";
 import type { GitPushResult, GitStatusResult } from "../types/git";
 
 const DirSchema = z
@@ -55,4 +55,10 @@ export const gitIpcHandler = () => {
       return commitAndPush(dirParsed.data, msgParsed.data);
     },
   );
+
+  ipcMain.handle("git:diff", async (_, dir: unknown): Promise<string> => {
+    const parsed = DirSchema.safeParse(dir);
+    if (!parsed.success) return "";
+    return getDiff(parsed.data);
+  });
 };
