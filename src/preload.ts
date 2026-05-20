@@ -210,6 +210,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     status: (dir: string) => ipcRenderer.invoke("git:status", dir),
     commitAndPush: (dir: string, message: string) =>
       ipcRenderer.invoke("git:commitAndPush", dir, message),
+    diff: (dir: string) =>
+      ipcRenderer.invoke("git:diff", dir) as Promise<string>,
   },
   ai: {
     query: (params: {
@@ -420,6 +422,7 @@ declare global {
       git: {
         status(dir: string): Promise<GitStatusResult>;
         commitAndPush(dir: string, message: string): Promise<GitPushResult>;
+        diff(dir: string): Promise<string>;
       };
       ai: {
         query(params: {
