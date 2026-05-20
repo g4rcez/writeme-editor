@@ -333,7 +333,7 @@ export const AISettings = () => {
             <Input
               hiddenLabel
               value={commandTemplate}
-              placeholder="claude -p '{{prompt}}'"
+              placeholder="claude --dangerously-skip-permissions {{context}}"
               onChange={(e: any) => setCommandTemplate(e.target.value)}
             />
           </div>
