@@ -69,7 +69,7 @@ export const AISettings = () => {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [commandTemplate, setCommandTemplate] = useState(
-    "claude -p '{{prompt}}'",
+    "claude --dangerously-skip-permissions {{context}}",
   );
   const [credentialStatus, setCredentialStatus] =
     useState<CredentialStatus>("loading");
