@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/g4rcez/writeme-editor/compare/v1.0.3...v1.0.4) (2026-05-20)
+
+
+### Bug Fixes
+
+* make code-signing step conditional on CSC_LINK secret being present
+
 ## [1.0.3](https://github.com/g4rcez/writeme-editor/compare/v1.0.2...v1.0.3) (2026-05-20)
 
 

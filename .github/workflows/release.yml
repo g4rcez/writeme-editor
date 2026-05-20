@@ -25,6 +25,7 @@ jobs:
       - run: npm ci
 
       - name: Import code-signing certificate
+        if: ${{ secrets.CSC_LINK != '' }}
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.CSC_LINK }}
@@ -72,6 +73,7 @@ jobs:
       - run: npm ci
 
       - name: Import code-signing certificate
+        if: ${{ secrets.CSC_LINK != '' }}
         uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.CSC_LINK }}
