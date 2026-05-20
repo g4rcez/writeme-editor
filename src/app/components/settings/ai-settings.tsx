@@ -106,7 +106,10 @@ export const AISettings = () => {
         setAdapterId(def.adapterId ?? "anthropic");
         setModel(def.model ?? "");
         setSystemPrompt(def.systemPrompt ?? "");
-        setCommandTemplate(def.commandTemplate ?? "claude -p '{{prompt}}'");
+        setCommandTemplate(
+          def.commandTemplate ??
+            "claude --dangerously-skip-permissions {{context}}",
+        );
         await checkCredentials(def.adapterId ?? "anthropic");
       } else {
         const firstId = adapters[0]?.id ?? "anthropic";
