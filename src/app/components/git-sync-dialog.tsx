@@ -12,6 +12,8 @@ import { notificationRef } from "@/app/notification-ref";
 import { SettingsService } from "@/store/settings";
 import { useUIStore } from "@/store/ui.store";
 import type { GitCounts, GitPushResult, GitStatusResult } from "@/types/git";
+import { repositories } from "@/store/repositories";
+import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 
 type State =
   | { status: "idle" }
@@ -108,6 +110,7 @@ export const GitSyncDialog = () => {
   const [ui, uiActions] = useUIStore();
   const [state, dispatch] = useReducer(reducer, { status: "idle" });
   const [message, setMessage] = useState("");
+  const [generating, setGenerating] = useState(false);
   const genRef = useRef(0);
 
   const open = ui.gitDialog.open;
@@ -184,6 +187,60 @@ export const GitSyncDialog = () => {
       return;
     }
   }, [handleClose, message, state.status]);
+
+  const generateMessage = useCallback(async () => {
+    if (state.status !== "ready" || !state.hasChanges) return;
+    if (!isElectron()) return;
+    const dir = SettingsService.load().directory;
+    if (!dir) return;
+
+    const configs = await repositories.ai.getConfigs();
+    const config = configs.find((c) => c.isDefault) ?? configs[0];
+    if (!config) return;
+
+    const diff = await window.electronAPI.git.diff(dir);
+    if (!diff) return;
+
+    const context = [
+      "Generate a concise git commit message.",
+      "Rules: subject line only, max 72 characters, imperative mood, no trailing period.",
+      "Output ONLY the commit message — no explanation, no quotes, no markdown.",
+      "",
+      "Changes:",
+      diff,
+    ].join("\n");
+
+    setGenerating(true);
+    setMessage("");
+    window.electronAPI.ai.query({
+      commandTemplate: config.commandTemplate ?? "",
+      prompt: "",
+      selection: "",
+      context,
+      systemPrompt: "",
+    });
+  }, [state]);
+
+  useEffect(() => {
+    if (!generating) return;
+    let buf = "";
+    const unChunk = window.electronAPI.ai.onChunk(({ chunk }) => {
+      buf += chunk;
+      setMessage(buf);
+    });
+    const unDone = window.electronAPI.ai.onDone(() => {
+      setMessage(buf.trim().replace(/^["'\n]+|["'\n]+$/g, ""));
+      setGenerating(false);
+    });
+    const unError = window.electronAPI.ai.onError(() => {
+      setGenerating(false);
+    });
+    return () => {
+      unChunk();
+      unDone();
+      unError();
+    };
+  }, [generating]);
 
   const retry = useCallback(() => {
     if (!isElectron()) return;
@@ -308,13 +365,28 @@ export const GitSyncDialog = () => {
                     submit();
                   }
                 }}
-                disabled={state.status === "pushing"}
+                disabled={state.status === "pushing" || generating}
                 className="border border-border rounded p-2 bg-background"
                 placeholder="Describe your changes"
                 autoFocus
               />
             </label>
             <div className="flex justify-end gap-2">
+              {isElectron() ? (
+                <Button
+                  type="button"
+                  theme="ghost-muted"
+                  onClick={generateMessage}
+                  disabled={
+                    state.status === "pushing" ||
+                    !state.hasChanges ||
+                    generating
+                  }
+                >
+                  <SparkleIcon className="mr-1.5 size-4" />
+                  {generating ? "Generating…" : "Generate with AI"}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 theme="ghost-muted"
