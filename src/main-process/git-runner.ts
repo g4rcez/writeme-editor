@@ -83,6 +83,17 @@ export const getStatus = async (
   return { kind: "ok", ...parsed };
 };
 
+export const getDiff = async (
+  dir: string,
+  deps: GitDeps = defaultDeps,
+): Promise<string> => {
+  const gitBin = await deps.resolveGit();
+  if (!gitBin) return "";
+  await deps.runGit(["-C", dir, "add", "."], gitBin);
+  const result = await deps.runGit(["-C", dir, "diff", "--cached"], gitBin);
+  return result.exitCode === 0 ? result.stdout.trim() : "";
+};
+
 export const commitAndPush = async (
   dir: string,
   message: string,

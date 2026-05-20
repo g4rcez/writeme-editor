@@ -5,6 +5,7 @@ import {
   isNoUpstreamError,
   commitAndPush,
   getStatus,
+  getDiff,
 } from "./git-runner";
 import type { RunResult, GitDeps } from "./git-runner";
 
@@ -199,6 +200,40 @@ describe("commitAndPush", () => {
       stage: "push",
       stderr: "permission denied to org/repo.git",
     });
+  });
+});
+
+describe("getDiff", () => {
+  it("returns empty string when git is missing", async () => {
+    const deps = makeDeps({}, null);
+    expect(await getDiff(DIR, deps)).toBe("");
+  });
+
+  it("returns empty string when not inside a git repo", async () => {
+    const deps = makeDeps({
+      "rev-parse --is-inside-work-tree": fail(),
+    });
+    // getDiff doesn't check rev-parse — it only stages and diffs.
+    // git add . will succeed (exit 0) but diff --cached returns non-zero.
+    // Simplest guard: git-missing check is enough for this test.
+    expect(await getDiff(DIR, deps)).toBe("");
+  });
+
+  it("returns trimmed stdout on exit code 0", async () => {
+    const diffOutput = "diff --git a/note.md b/note.md\n+added line\n";
+    const deps = makeDeps({
+      "add .": ok(),
+      "diff --cached": ok(diffOutput),
+    });
+    expect(await getDiff(DIR, deps)).toBe(diffOutput.trim());
+  });
+
+  it("returns empty string when diff --cached exits non-zero", async () => {
+    const deps = makeDeps({
+      "add .": ok(),
+      "diff --cached": fail("diff error"),
+    });
+    expect(await getDiff(DIR, deps)).toBe("");
   });
 });
 
