@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/g4rcez/writeme-editor/compare/v1.0.2...v1.0.3) (2026-05-20)
+
+
+### Bug Fixes
+
+* fix release pipeline by updating import-codesign-certs action parameter name ([release.yml](https://github.com/g4rcez/writeme-editor/blob/main/.github/workflows/release.yml))
+* use native fetch instead of proxyFetch in read-it-later dialog
+
 ## [1.0.2](https://github.com/g4rcez/writeme-editor/compare/v1.0.1...v1.0.2) (2026-05-18)
 
 

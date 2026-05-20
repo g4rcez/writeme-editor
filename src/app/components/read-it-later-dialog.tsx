@@ -4,7 +4,6 @@ import DOMPurify from "dompurify";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isElectron } from "@/lib/is-electron";
-import { proxyFetch } from "@/lib/proxy-fetch";
 import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
@@ -31,7 +30,7 @@ export const ReadItLaterDialog = () => {
           throw new Error(result.error || "Failed to fetch URL");
         html = result.html!;
       } else {
-        const response = await proxyFetch(url);
+        const response = await fetch(url);
         html = await response.text();
       }
       const article = parseReadItLaterHtml(
