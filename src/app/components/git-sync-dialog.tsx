@@ -119,6 +119,7 @@ export const GitSyncDialog = () => {
     uiActions.closeGitDialog();
     dispatch({ type: "reset" });
     setMessage("");
+    setGenerating(false);
   }, [uiActions]);
 
   useEffect(() => {
@@ -223,6 +224,7 @@ export const GitSyncDialog = () => {
 
   useEffect(() => {
     if (!generating) return;
+    if (!isElectron()) return;
     let buf = "";
     const unChunk = window.electronAPI.ai.onChunk(({ chunk }) => {
       buf += chunk;
