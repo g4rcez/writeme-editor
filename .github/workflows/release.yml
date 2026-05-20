@@ -37,12 +37,12 @@ jobs:
       - name: Stage artifacts
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          DMG_COUNT=$(find out/make -name "*arm64*.dmg" | wc -l | tr -d ' ')
+          DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
           if [ "$DMG_COUNT" -ne 1 ]; then
-            echo "ERROR: expected exactly 1 arm64 .dmg, found ${DMG_COUNT}" && exit 1
+            echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
           fi
           mkdir -p release-artifacts
-          find out/make -name "*arm64*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-arm64.dmg" \;
+          find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-arm64.dmg" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-darwin-arm64"
 
@@ -78,12 +78,12 @@ jobs:
       - name: Stage artifacts
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          DMG_COUNT=$(find out/make -name "*x64*.dmg" | wc -l | tr -d ' ')
+          DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
           if [ "$DMG_COUNT" -ne 1 ]; then
-            echo "ERROR: expected exactly 1 x64 .dmg, found ${DMG_COUNT}" && exit 1
+            echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
           fi
           mkdir -p release-artifacts
-          find out/make -name "*x64*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-x64.dmg" \;
+          find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-x64.dmg" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-darwin-x64"
 

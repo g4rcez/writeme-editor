@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/g4rcez/writeme-editor/compare/v1.0.5...v1.0.6) (2026-05-20)
+
+
+### Bug Fixes
+
+* fix DMG artifact staging: match any .dmg since Electron Forge names output by productName, not architecture
+
 ## [1.0.5](https://github.com/g4rcez/writeme-editor/compare/v1.0.4...v1.0.5) (2026-05-20)
 
 
