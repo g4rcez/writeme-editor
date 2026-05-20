@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/g4rcez/writeme-editor/compare/v1.0.4...v1.0.5) (2026-05-20)
+
+
+### Bug Fixes
+
+* remove import-codesign-certs step; Electron Forge skips signing when CSC_LINK is absent
+
 ## [1.0.4](https://github.com/g4rcez/writeme-editor/compare/v1.0.3...v1.0.4) (2026-05-20)
 
 
