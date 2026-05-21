@@ -1,13 +1,15 @@
 import { Button, Modal, Textarea, css } from "@g4rcez/components";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
-import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
-import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
-import { PaperPlaneRightIcon } from "@phosphor-icons/react/dist/csr/PaperPlaneRight";
-import { StopCircleIcon } from "@phosphor-icons/react/dist/csr/StopCircle";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { NoteIcon } from "@phosphor-icons/react/dist/csr/Note";
+import {
+  CheckIcon,
+  PlusIcon,
+  TrashIcon,
+  NoteIcon,
+  StopCircleIcon,
+  PaperPlaneRightIcon,
+  ArrowsCounterClockwiseIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
@@ -189,6 +191,8 @@ export const AIDrawer = () => {
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const msg = messages[virtualRow.index];
                 if (!msg) return null;
+                const isUser = msg.role === "user";
+                const isSystem = msg.role === "system";
                 return (
                   <div
                     key={virtualRow.key}
@@ -196,22 +200,30 @@ export const AIDrawer = () => {
                     ref={virtualizer.measureElement}
                     style={{ transform: `translateY(${virtualRow.start}px)` }}
                     className={css(
-                      "absolute top-0 left-0 w-full flex flex-col gap-2 px-4",
-                      msg.role === "user" ? "items-end" : "items-start",
+                      "absolute top-0 left-0 w-full flex flex-col gap-2 px-4 pb-5",
+                      isUser
+                        ? "items-end"
+                        : isSystem
+                          ? "items-center"
+                          : "items-start",
                     )}
                   >
-                    <div
-                      className={css(
-                        "max-w-[90%] p-3 rounded-lg text-sm",
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground ml-8"
-                          : "bg-muted text-foreground mr-8",
-                      )}
-                    >
-                      <div className="max-w-none prose prose-sm dark:prose-invert">
+                    {isSystem ? (
+                      <span className="text-[11px] text-muted-foreground/70 bg-muted/50 px-3 py-1 rounded-full border border-floating-border/40">
+                        {msg.content}
+                      </span>
+                    ) : (
+                      <div
+                        className={css(
+                          "max-w-[85%] px-4 py-2.5 text-sm leading-relaxed",
+                          isUser
+                            ? "bg-primary text-primary-foreground border border-card-border shadow-sm rounded-2xl rounded-tr-sm mr-10"
+                            : "bg-secondary-background border border-card-border text-foreground shadow-sm rounded-2xl rounded-tl-sm mr-10",
+                        )}
+                      >
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
-                    </div>
+                    )}
                     {msg.role === "assistant" &&
                       msg.diffOriginal &&
                       msg.content && (
@@ -243,14 +255,12 @@ export const AIDrawer = () => {
             </div>
           </div>
         )}
-
         {isStreaming && (
           <div className="flex gap-2 items-center px-4 py-2 text-xs text-muted-foreground border-t border-floating-border animate-pulse">
             <ArrowsCounterClockwiseIcon size={12} className="animate-spin" />
             AI is thinking...
           </div>
         )}
-
         <div className="py-4 border-t border-floating-border">
           {adapter && adapter.supportsFiles && (
             <AIFileAttachment

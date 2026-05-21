@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuid } from "uuid";
 import { repositories } from "../../store/global.store";
 import type {
   AIChat,
@@ -29,12 +29,13 @@ export function useAIChat(noteId?: string) {
         const msgs = await repositories.ai.getMessages(chats[0]?.id!);
         setMessages(msgs);
       } else {
+        const now = new Date().toISOString();
         const newChat: AIChat = {
-          id: uuidv4(),
           noteId,
+          id: uuid(),
+          createdAt: now,
+          updatedAt: now,
           title: "New Chat",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         };
         await repositories.ai.saveChat(newChat);
         setChat(newChat);
@@ -69,44 +70,41 @@ export function useAIChat(noteId?: string) {
         mimeType: f.mimeType,
         size: f.size,
       }));
-
+      const now = new Date().toISOString();
       const userMsg: AIMessage = {
-        id: uuidv4(),
-        chatId: chat.id,
+        id: uuid(),
         role: "user",
+        createdAt: now,
+        updatedAt: now,
+        chatId: chat.id,
         content: prompt,
         files: attachedFiles.length > 0 ? attachedFiles : undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       const assistantMsg: AIMessage = {
-        id: uuidv4(),
+        id: uuid(),
+        content: "",
+        createdAt: now,
+        updatedAt: now,
         chatId: chat.id,
         role: "assistant",
-        content: "",
         diffOriginal: options.selection,
         selectionSlice: options.selectionSlice,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setIsStreaming(true);
-
       await repositories.ai.saveMessage(userMsg);
-
       const adapterId: string = config.adapterId ?? "cli";
       const adapter = adapterRegistry.get(adapterId);
-
       if (!adapter) {
         const errMsg: AIMessage = {
-          id: uuidv4(),
-          chatId: chat.id,
+          id: uuid(),
+          createdAt: now,
           role: "system",
+          updatedAt: now,
+          chatId: chat.id,
           content: `Error: No adapter found for "${adapterId}". Please configure AI in Settings.`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errMsg]);
         setIsStreaming(false);
@@ -117,10 +115,9 @@ export function useAIChat(noteId?: string) {
       try {
         credentials = await authManager.getCredentials(adapterId, adapter);
       } catch {
-        // CLI adapter has no credentials — use empty object
         if (adapterId !== "cli") {
           const errMsg: AIMessage = {
-            id: uuidv4(),
+            id: uuid(),
             chatId: chat.id,
             role: "system",
             content: "Error: Not authenticated. Connect in Settings.",
@@ -205,7 +202,7 @@ export function useAIChat(noteId?: string) {
             setMessages((prev) => [
               ...prev,
               {
-                id: uuidv4(),
+                id: uuid(),
                 chatId: chat?.id || "",
                 role: "system",
                 content: `Error: ${event.message}`,
@@ -220,7 +217,7 @@ export function useAIChat(noteId?: string) {
         setMessages((prev) => [
           ...prev,
           {
-            id: uuidv4(),
+            id: uuid(),
             chatId: chat?.id || "",
             role: "system",
             content: `Error: ${err?.message ?? "Unknown error"}`,
@@ -237,7 +234,7 @@ export function useAIChat(noteId?: string) {
   const newChat = useCallback(async () => {
     if (!noteId) return;
     const freshChat: AIChat = {
-      id: uuidv4(),
+      id: uuid(),
       noteId,
       title: "New Chat",
       createdAt: new Date().toISOString(),
@@ -258,16 +255,15 @@ export function useAIChat(noteId?: string) {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setIsStreaming(false);
-
+    const now = new Date().toISOString();
     const systemMsg: AIMessage = {
-      id: uuidv4(),
-      chatId: chat?.id || "",
+      id: uuid(),
+      createdAt: now,
       role: "system",
+      updatedAt: now,
+      chatId: chat?.id || "",
       content: "--- Conversation finished ---",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
-
     setMessages((prev) => [...prev, systemMsg]);
     if (chat) repositories.ai.saveMessage(systemMsg);
   }, [chat]);

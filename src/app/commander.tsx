@@ -11,7 +11,7 @@ import {
   globalState,
   useGlobalStore,
 } from "@/store/global.store";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
@@ -214,6 +214,18 @@ export const Commander = () => {
               args.setOpen(false);
             },
           },
+          ...(state.note
+            ? [
+                {
+                  type: "shortcut" as const,
+                  title: "Open chat",
+                  action: (args: { setOpen: (v: boolean) => void }) => {
+                    dispatch.setAiDrawer({ isOpen: true, chatId: null });
+                    args.setOpen(false);
+                  },
+                },
+              ]
+            : []),
           ...actions,
         ],
       },

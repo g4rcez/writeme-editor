@@ -23,7 +23,7 @@ Agent guidelines for the Writeme Electron application.
 - **React**: Functional components with hooks, TSX extension required
 - **Store**: Use `use-typed-reducer` pattern with typed dispatchers
 - **Database**: Dexie.js repositories in `src/store/repositories/dexie/`
-- **Styling**: Tailwind CSS with `clsx` utility, theme via CSS classes
+- **Styling**: Tailwind CSS with `clsx` utility, theme via CSS classes. **Never use raw Tailwind palette colors** (`bg-violet-600`, `text-white`, `bg-zinc-700`, etc.) — always use design system tokens from `@g4rcez/components` (e.g. `bg-button-primary-bg`, `text-button-primary-text`, `bg-secondary-background`, `text-foreground`). Raw colors break non-default themes. See `LESSONS.md` for the full token reference and contrast traps.
 - **File Structure**: Feature-based organization under `src/app/`
 - **Extensions**: `.tsx` for React components, `.ts` for utilities/types
 - **Error Handling**: Use try-catch blocks with proper error types

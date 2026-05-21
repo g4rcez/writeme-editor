@@ -1,10 +1,10 @@
+import { ReactRenderer } from "@tiptap/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { updatePosition } from "@/app/extensions/update-position";
+import { getEditorAllNotes } from "@/lib/editor-storage";
 import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { getEditorAllNotes } from "@/lib/editor-storage";
 import { useGlobalStore } from "@/store/global.store";
-import { ReactRenderer } from "@tiptap/react";
-import { updatePosition } from "@/app/extensions/update-position";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);

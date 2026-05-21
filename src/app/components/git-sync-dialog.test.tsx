@@ -155,7 +155,7 @@ describe("GitSyncDialog", () => {
     );
     expect(closeGitDialog).toHaveBeenCalled();
     expect(
-      (notificationRef.current as ReturnType<typeof vi.fn>).mock.calls[0][1],
+      (notificationRef.current as ReturnType<typeof vi.fn>).mock.calls[0]![1],
     ).toMatchObject({ theme: "success" });
   });
 
@@ -218,7 +218,7 @@ describe("GitSyncDialog", () => {
 
     expect(closeGitDialog).toHaveBeenCalled();
     expect(
-      (notificationRef.current as ReturnType<typeof vi.fn>).mock.calls[0][1],
+      (notificationRef.current as ReturnType<typeof vi.fn>).mock.calls[0]![1],
     ).toMatchObject({ theme: "info" });
   });
 
