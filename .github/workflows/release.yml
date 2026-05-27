@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "*"
 
 concurrency:
   group: release-${{ github.ref }}
@@ -43,8 +43,11 @@ jobs:
           fi
           mkdir -p release-artifacts
           find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-arm64.dmg" \;
+          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-arm64.zip" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-darwin-arm64"
+          test -f "release-artifacts/writeme-${VERSION}-arm64.dmg"
+          test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -84,8 +87,11 @@ jobs:
           fi
           mkdir -p release-artifacts
           find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-x64.dmg" \;
+          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-x64.zip" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-darwin-x64"
+          test -f "release-artifacts/writeme-${VERSION}-x64.dmg"
+          test -f "release-artifacts/writeme-${VERSION}-darwin-x64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -118,8 +124,12 @@ jobs:
           mkdir -p release-artifacts
           find out/make -name "*.exe" -exec cp {} "release-artifacts/writeme-${VERSION}-setup.exe" \;
           find out/make -name "*.nupkg" -exec cp {} release-artifacts/ \;
+          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-win32-x64.zip" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-windows-x64.exe"
+          test -f "release-artifacts/writeme-${VERSION}-setup.exe"
+          test -n "$(find release-artifacts -name '*.nupkg' -print -quit)"
+          test -f "release-artifacts/writeme-${VERSION}-win32-x64.zip"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -154,8 +164,12 @@ jobs:
           mkdir -p release-artifacts
           find out/make -name "*.deb" -exec cp {} "release-artifacts/writeme-${VERSION}-amd64.deb" \;
           find out/make -name "*.rpm" -exec cp {} "release-artifacts/writeme-${VERSION}-x86_64.rpm" \;
+          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-linux-x64.zip" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-linux-x64"
+          test -f "release-artifacts/writeme-${VERSION}-amd64.deb"
+          test -f "release-artifacts/writeme-${VERSION}-x86_64.rpm"
+          test -f "release-artifacts/writeme-${VERSION}-linux-x64.zip"
 
       - uses: actions/upload-artifact@v4
         with:

@@ -163,7 +163,7 @@ export const suggestion = {
       },
       onUpdate(props: any) {
         reactRenderer?.updateProps({ ...props, registerKeyDown });
-        if (!props.clientRect) {
+        if (!props.clientRect || !reactRenderer) {
           return;
         }
         updatePosition(props.editor, reactRenderer.element);

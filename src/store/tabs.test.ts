@@ -31,7 +31,6 @@ describe("Tab Management Logic", () => {
       [],
       16,
       256,
-      false,
       null,
       null,
     );

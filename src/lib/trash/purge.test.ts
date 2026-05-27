@@ -42,7 +42,9 @@ describe("runPurge", () => {
     await runPurge();
 
     expect(mockPurgeBefore).toHaveBeenCalledOnce();
-    const cutoff: Date = mockPurgeBefore.mock.calls[0][0];
+    const call = mockPurgeBefore.mock.calls[0];
+    if (!call) throw new Error("Expected purgeBefore to be called");
+    const cutoff: Date = call[0];
     const expected = new Date("2024-06-03T12:00:00.000Z");
     expect(cutoff.toISOString()).toBe(expected.toISOString());
 
@@ -57,7 +59,9 @@ describe("runPurge", () => {
     await runPurge();
 
     expect(mockPurgeBefore).toHaveBeenCalledOnce();
-    const cutoff: Date = mockPurgeBefore.mock.calls[0][0];
+    const call = mockPurgeBefore.mock.calls[0];
+    if (!call) throw new Error("Expected purgeBefore to be called");
+    const cutoff: Date = call[0];
     const expected = new Date("2024-06-01T00:00:00.000Z");
     expect(cutoff.toISOString()).toBe(expected.toISOString());
 

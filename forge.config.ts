@@ -3,10 +3,25 @@ import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerDeb } from "@electron-forge/maker-deb";
 import { MakerRpm } from "@electron-forge/maker-rpm";
+import { MakerZIP } from "@electron-forge/maker-zip";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import { PublisherGithub } from "@electron-forge/publisher-github";
+
+const appleId = process.env.APPLE_ID;
+const appleIdPassword = process.env.APPLE_APP_SPECIFIC_PASSWORD;
+const appleTeamId = process.env.APPLE_TEAM_ID;
+const hasAppleNotarizeCredentials = Boolean(
+  appleId && appleIdPassword && appleTeamId,
+);
+const osxNotarize = hasAppleNotarizeCredentials
+  ? {
+      appleId: appleId as string,
+      appleIdPassword: appleIdPassword as string,
+      teamId: appleTeamId as string,
+    }
+  : undefined;
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -15,17 +30,8 @@ const config: ForgeConfig = {
     executableName: "writeme",
     appBundleId: "dev.writeme.app",
     icon: "./public/icon",
-    osxSign: process.env.APPLE_ID ? {} : { identity: "-" },
-    ...(process.env.APPLE_ID
-      ? {
-          osxNotarize: {
-            tool: "notarytool",
-            appleId: process.env.APPLE_ID,
-            appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
-            teamId: process.env.APPLE_TEAM_ID,
-          },
-        }
-      : {}),
+    osxSign: hasAppleNotarizeCredentials ? {} : { identity: "-" },
+    ...(osxNotarize ? { osxNotarize } : {}),
   },
   rebuildConfig: {},
   makers: [
@@ -41,6 +47,7 @@ const config: ForgeConfig = {
       },
       ["darwin"],
     ),
+    new MakerZIP({}, ["darwin", "linux", "win32"]),
     new MakerDeb({
       options: {
         name: "writeme",
@@ -48,7 +55,7 @@ const config: ForgeConfig = {
         description: "Writeme - Markdown editor",
         maintainer: "g4rcez",
         homepage: "https://writeme.dev",
-        categories: ["Utility", "TextEditor"],
+        categories: ["Utility"],
       },
     }),
     new MakerRpm({
