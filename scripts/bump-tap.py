@@ -8,10 +8,9 @@ Updates version and SHA256 values in:
 
 Expects these files in <artifacts-dir>:
   writeme-<version>-arm64.dmg
-  writeme-<version>-x64.dmg
   writeme-darwin-arm64
-  writeme-darwin-x64
 """
+
 import hashlib
 import glob
 import re
@@ -27,7 +26,7 @@ def sha256(path: str) -> str:
     return h.hexdigest()
 
 
-def update_rb(path: str, version: str, arm64_sha: str, x64_sha: str) -> None:
+def update_rb(path: str, version: str, arm64_sha: str) -> None:
     content = Path(path).read_text(encoding="utf-8")
     content = re.sub(r'version "[0-9a-zA-Z._-]+"', f'version "{version}"', content)
     content = re.sub(
@@ -36,12 +35,7 @@ def update_rb(path: str, version: str, arm64_sha: str, x64_sha: str) -> None:
         content,
         flags=re.DOTALL,
     )
-    content = re.sub(
-        r'(on_intel do.*?sha256 ")[^"]*(")',
-        lambda m: m.group(1) + x64_sha + m.group(2),
-        content,
-        flags=re.DOTALL,
-    )
+    content = re.sub(r"\n\s*on_intel do\n.*?\n\s*end\n", "\n", content, flags=re.DOTALL)
     Path(path).write_text(content, encoding="utf-8")
 
 
@@ -53,32 +47,25 @@ def main() -> None:
     version, artifacts_dir, tap_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 
     arm64_dmg_matches = glob.glob(f"{artifacts_dir}/writeme-*-arm64.dmg")
-    x64_dmg_matches = glob.glob(f"{artifacts_dir}/writeme-*-x64.dmg")
     cli_arm64 = f"{artifacts_dir}/writeme-darwin-arm64"
-    cli_x64 = f"{artifacts_dir}/writeme-darwin-x64"
 
     missing = []
     if not arm64_dmg_matches:
         missing.append("writeme-*-arm64.dmg")
-    if not x64_dmg_matches:
-        missing.append("writeme-*-x64.dmg")
     if not Path(cli_arm64).exists():
         missing.append("writeme-darwin-arm64")
-    if not Path(cli_x64).exists():
-        missing.append("writeme-darwin-x64")
     if missing:
         print(f"ERROR: missing artifacts: {', '.join(missing)}", file=sys.stderr)
         sys.exit(1)
 
     if len(arm64_dmg_matches) != 1:
-        print(f"ERROR: expected exactly one arm64 DMG, found {len(arm64_dmg_matches)}: {arm64_dmg_matches}", file=sys.stderr)
-        sys.exit(1)
-    if len(x64_dmg_matches) != 1:
-        print(f"ERROR: expected exactly one x64 DMG, found {len(x64_dmg_matches)}: {x64_dmg_matches}", file=sys.stderr)
+        print(
+            f"ERROR: expected exactly one arm64 DMG, found {len(arm64_dmg_matches)}: {arm64_dmg_matches}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     arm64_dmg = arm64_dmg_matches[0]
-    x64_dmg = x64_dmg_matches[0]
 
     cask_rb = Path(f"{tap_dir}/Casks/writeme.rb")
     formula_rb = Path(f"{tap_dir}/Formula/writeme.rb")
@@ -92,18 +79,14 @@ def main() -> None:
         sys.exit(1)
 
     arm64_dmg_sha = sha256(arm64_dmg)
-    x64_dmg_sha = sha256(x64_dmg)
     cli_arm64_sha = sha256(cli_arm64)
-    cli_x64_sha = sha256(cli_x64)
 
-    update_rb(f"{tap_dir}/Casks/writeme.rb", version, arm64_dmg_sha, x64_dmg_sha)
-    update_rb(f"{tap_dir}/Formula/writeme.rb", version, cli_arm64_sha, cli_x64_sha)
+    update_rb(f"{tap_dir}/Casks/writeme.rb", version, arm64_dmg_sha)
+    update_rb(f"{tap_dir}/Formula/writeme.rb", version, cli_arm64_sha)
 
     print(f"Bumped to v{version}")
     print(f"  arm64 DMG : {arm64_dmg_sha}")
-    print(f"  x64 DMG   : {x64_dmg_sha}")
     print(f"  CLI arm64 : {cli_arm64_sha}")
-    print(f"  CLI x64   : {cli_x64_sha}")
 
 
 if __name__ == "__main__":

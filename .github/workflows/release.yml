@@ -54,50 +54,6 @@ jobs:
           name: mac-arm64
           path: release-artifacts/
 
-  build-mac-x64:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.16.0
-          cache: npm
-
-      - uses: oven-sh/setup-bun@v2
-
-      - run: npm ci
-
-      - name: Build Electron app
-        run: npm run make
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-
-      - name: Stage artifacts
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
-          if [ "$DMG_COUNT" -ne 1 ]; then
-            echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
-          fi
-          mkdir -p release-artifacts
-          find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-x64.dmg" \;
-          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-x64.zip" \;
-          bun build --compile packages/cli/src/index.ts \
-            --outfile "release-artifacts/writeme-darwin-x64"
-          test -f "release-artifacts/writeme-${VERSION}-x64.dmg"
-          test -f "release-artifacts/writeme-${VERSION}-darwin-x64.zip"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mac-x64
-          path: release-artifacts/
-
   build-windows:
     runs-on: windows-latest
     steps:
@@ -214,9 +170,7 @@ jobs:
           gh release download "$REF_NAME" \
             --repo g4rcez/writeme-editor \
             --pattern "writeme-*-arm64.dmg" \
-            --pattern "writeme-*-x64.dmg" \
             --pattern "writeme-darwin-arm64" \
-            --pattern "writeme-darwin-x64" \
             --dir ./artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
