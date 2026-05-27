@@ -11,7 +11,8 @@ import {
   useLayoutStore,
   type ActivityType,
 } from "@/app/contexts/layout-context";
-import { globalDispatch, useGlobalStore } from "@/store/global.store";
+import { useGlobalStore } from "@/store/global.store";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { Note } from "@/store/note";
 import { css, Tooltip } from "@g4rcez/components";
 import { Link, useNavigate } from "react-router-dom";
@@ -64,14 +65,12 @@ export const ActivityBar = () => {
   const navigate = useNavigate();
   const [layout, dispatchLayout] = useLayoutStore();
   const [state] = useGlobalStore();
+  const [uiState] = useUIStore();
   const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
 
-  const onActivityClick = (
-    activity: ActivityType,
-    isSidebarCollapsed = false,
-  ) => {
+  const onActivityClick = (activity: ActivityType, shouldCollapse = false) => {
     dispatchLayout.setActivity(activity);
-    globalDispatch.setSidebarCollapsed(isSidebarCollapsed);
+    uiDispatch.setSidebarOpen(!shouldCollapse);
   };
 
   return (
@@ -125,10 +124,8 @@ export const ActivityBar = () => {
       <div className="writeme-aside-activity-bottom">
         <ActivityIcon
           icon={SidebarIcon}
-          onClick={() => globalDispatch.toggleSidebar()}
-          label={
-            state.isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"
-          }
+          onClick={() => uiDispatch.toggleSidebar()}
+          label={uiState.sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
         />
         <ActivityIcon
           label="Settings"

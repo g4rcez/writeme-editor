@@ -1,6 +1,7 @@
 import { ActivityBar } from "@/app/components/sidebar/activity-bar";
 import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
 import { useGlobalStore } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
 import { css } from "@g4rcez/components";
 import {
   Fragment,
@@ -12,6 +13,8 @@ import {
 
 export const Sidebar = () => {
   const [state, dispatch] = useGlobalStore();
+  const [uiState, uiDispatch] = useUIStore();
+  const collapsed = !uiState.sidebarOpen;
   const [isResizing, setIsResizing] = useState(false);
   const startResizing = useCallback(() => setIsResizing(true), []);
   const stopResizing = useCallback(() => setIsResizing(false), []);
@@ -38,9 +41,9 @@ export const Sidebar = () => {
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
     const onNarrow = (e: MediaQueryListEvent) => {
-      if (e.matches) dispatch.setSidebarCollapsed(true);
+      if (e.matches) uiDispatch.setSidebarOpen(false);
     };
-    if (mql.matches) dispatch.setSidebarCollapsed(true);
+    if (mql.matches) uiDispatch.setSidebarOpen(false);
     mql.addEventListener("change", onNarrow);
     return () => mql.removeEventListener("change", onNarrow);
   }, []);
@@ -55,7 +58,7 @@ export const Sidebar = () => {
         data-resizing={isResizing || undefined}
         className={css(
           "writeme-aside-panel",
-          state.isSidebarCollapsed
+          collapsed
             ? "writeme-aside-panel--collapsed"
             : "writeme-aside-panel--open",
         )}
@@ -63,16 +66,14 @@ export const Sidebar = () => {
         <div
           style={{
             width: `${state.sidebarWidth}px`,
-            transform: state.isSidebarCollapsed
-              ? "translateX(-100%)"
-              : "translateX(0)",
+            transform: collapsed ? "translateX(-100%)" : "translateX(0)",
           }}
           className="writeme-aside-panel-inner"
         >
           <SidebarContent />
         </div>
       </div>
-      {!state.isSidebarCollapsed && (
+      {!collapsed && (
         <div
           role="separator"
           aria-orientation="vertical"

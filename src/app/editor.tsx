@@ -33,25 +33,8 @@ import {
   WARN_THRESHOLD,
 } from "@/lib/markdown-worker";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
-
-const getScrollContainer = () =>
-  document.getElementById("main-scroll-container") || window;
-
-const getScrollY = () => {
-  const container = getScrollContainer();
-  return container === window
-    ? window.scrollY
-    : (container as HTMLElement).scrollTop;
-};
-
-const setScrollY = (y: number) => {
-  const container = getScrollContainer();
-  if (container === window) {
-    window.scrollTo(0, y);
-  } else {
-    (container as HTMLElement).scrollTop = y;
-  }
-};
+import { getScrollY, setScrollY } from "@/lib/scroll-utils";
+import { saveCursorIfActive } from "@/app/save-cursor";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -140,7 +123,9 @@ const TiptapEditorCore = memo(
     const [globalState] = useGlobalStore();
     const noteRef = useRef(note);
     const generationRef = useRef(0);
-    const triggerWorkerParseRef = useRef<(text: string) => void>(() => {});
+    const triggerWorkerParseRef = useRef<(text: string) => Promise<void>>(
+      async () => {},
+    );
     const [uiState] = useUIStore();
     const isSettingContent = useRef(false);
     const [parseProgress, setParseProgress] = useState(0);
@@ -179,6 +164,7 @@ const TiptapEditorCore = memo(
                   (n: Note) => n.title === fileName,
                 );
                 if (target) {
+                  saveCursorIfActive();
                   dispatch.selectNoteById(target.id);
                   return true;
                 }
@@ -276,7 +262,7 @@ const TiptapEditorCore = memo(
     editorGlobalRef.current = editor;
     useCopyEvents(editor);
 
-    triggerWorkerParseRef.current = (text: string) => {
+    triggerWorkerParseRef.current = async (text: string) => {
       if (!editor) return;
 
       if (text.length > HARD_LIMIT) {
@@ -286,13 +272,17 @@ const TiptapEditorCore = memo(
         return;
       }
 
-      if (
-        text.length > WARN_THRESHOLD &&
-        !window.confirm(
-          `This document is ${(text.length / 1_000_000).toFixed(1)}MB. Importing may take a while. Continue?`,
-        )
-      ) {
-        return;
+      if (text.length > WARN_THRESHOLD) {
+        const confirmed = await new Promise<boolean>((resolve) => {
+          uiDispatch.setPrompt({
+            open: true,
+            title: "Large document",
+            message: `This document is ${(text.length / 1_000_000).toFixed(1)}MB. Importing may take a while. Continue?`,
+            onConfirm: () => resolve(true),
+            onCancel: () => resolve(false),
+          });
+        });
+        if (!confirmed) return;
       }
 
       generationRef.current += 1;

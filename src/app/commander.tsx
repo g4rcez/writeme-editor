@@ -7,7 +7,6 @@ import { isElectron } from "@/lib/is-electron";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import {
   CommanderType,
-  globalDispatch,
   globalState,
   useGlobalStore,
 } from "@/store/global.store";
@@ -45,7 +44,7 @@ export const Commander = () => {
     activity: Parameters<typeof layoutDispatch.setActivity>[0],
   ) => {
     layoutDispatch.setActivity(activity);
-    globalDispatch.setSidebarCollapsed(false);
+    uiDispatch.setSidebarOpen(true);
   };
 
   const notesSig = useMemo(

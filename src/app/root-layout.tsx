@@ -24,6 +24,7 @@ import { MediaPreview } from "@/app/components/media-preview";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { GitSyncDialog } from "@/app/components/git-sync-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
+import { saveCursorIfActive } from "@/app/save-cursor";
 import { notificationRef } from "@/app/notification-ref";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
@@ -69,6 +70,7 @@ export const RootLayout = () => {
           if (wait) {
             waitMap.set(noteId, requestId);
           }
+          saveCursorIfActive();
           await dispatch.selectNoteById(noteId);
           navigate(`/note/${noteId}`);
         } catch (err) {
@@ -125,7 +127,7 @@ export const RootLayout = () => {
         }
         if ((e.metaKey || e.ctrlKey) && e.key === "b") {
           e.preventDefault();
-          dispatch.toggleSidebar();
+          uiDispatch.toggleSidebar();
         }
       };
 

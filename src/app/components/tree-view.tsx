@@ -16,6 +16,8 @@ import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
+import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
 import { FilmStripIcon } from "@phosphor-icons/react/dist/csr/FilmStrip";
@@ -104,6 +106,28 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
   },
 };
 
+const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
+  "agents.md": {
+    icon: RobotIcon,
+    iconClass: "text-primary size-4",
+    selectable: true,
+  },
+  "claude.md": {
+    icon: RobotIcon,
+    iconClass: "text-primary size-4",
+    selectable: true,
+  },
+  "readme.md": {
+    icon: BookmarkIcon,
+    iconClass: "text-warn size-4",
+    selectable: true,
+  },
+};
+
+const getFileConfig = (node: TreeNode) =>
+  FILE_NAME_CONFIGS[node.name.toLowerCase()] ??
+  FILE_EXTENSION_CONFIGS[node.extension?.toLowerCase() ?? ""];
+
 interface TreeNodeItemProps {
   note: Note;
   depth: number;
@@ -138,7 +162,7 @@ const TreeNodeItem = ({
   note,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
-  const extConfig = FILE_EXTENSION_CONFIGS[node.extension ?? ""];
+  const extConfig = getFileConfig(node);
   const itemRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -210,10 +234,12 @@ const TreeNodeItem = ({
       {onDelete && (
         <Tooltip
           open={isConfirming}
+          hover={false}
           onChange={(open) => !open && onConfirmCancel()}
           placement="top-start"
           title={
             <button
+              type="button"
               className="p-1 rounded opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-100 focus:opacity-100 dark:hover:bg-red-900/30"
               onClick={(e) => {
                 e.stopPropagation();
@@ -608,7 +634,7 @@ export const TreeView = ({
       const { node } = flatNode;
       if (node.type === "directory") {
         await toggleNode(node.path);
-      } else if (FILE_EXTENSION_CONFIGS[node.extension ?? ""]?.selectable) {
+      } else if (getFileConfig(node)?.selectable) {
         onFileSelect(node);
       }
     },

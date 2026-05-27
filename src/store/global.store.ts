@@ -1,8 +1,6 @@
 import { createGlobalReducer } from "use-typed-reducer";
 import { uuid } from "@g4rcez/components";
-import { editorGlobalRef } from "@/app/editor-global-ref";
 import { isElectron } from "@/lib/is-electron";
-import { CursorPositionStore } from "./cursor-position.store";
 import { Note } from "./note";
 import { repositories } from "./repositories";
 import { Tab } from "./repositories/entities/tab";
@@ -41,7 +39,6 @@ type State = {
   note: Note | null;
   editorFontSize: number;
   sidebarWidth: number;
-  isSidebarCollapsed: boolean;
   recentNotes: Note[];
   commander: Commander;
   activeTabId: string | null;
@@ -85,7 +82,6 @@ const initialState: State = {
   theme: "dark" as "light" | "dark",
   editorFontSize: 16,
   sidebarWidth: 208,
-  isSidebarCollapsed: false,
   activeTabId: null as string | null,
   aiDrawer: { isOpen: false, chatId: null },
   terminalVisible: false,
@@ -132,19 +128,9 @@ export const useGlobalStore = createGlobalReducer(
         type: "tab",
         createdAt: now,
         updatedAt: now,
-        id: noteId, // Use noteId as the ID directly
+        id: noteId,
         order: state.tabs.length,
       };
-    };
-
-    const saveCursorPosition = (noteId: string) => {
-      if (editorGlobalRef.current) {
-        CursorPositionStore.save(
-          noteId,
-          editorGlobalRef.current.state.selection.anchor,
-          window.scrollY,
-        );
-      }
     };
 
     const selectOrAddTab = async (
@@ -203,7 +189,6 @@ export const useGlobalStore = createGlobalReducer(
         tabs: Tab[],
         editorFontSize: number,
         sidebarWidth: number,
-        isSidebarCollapsed: boolean,
         directory: string | null,
         explorerRoot: string | null,
       ) => {
@@ -216,7 +201,6 @@ export const useGlobalStore = createGlobalReducer(
           theme,
           editorFontSize,
           sidebarWidth,
-          isSidebarCollapsed,
           directory,
           explorerRoot,
           notes: setNotes(notes).notes,
@@ -229,19 +213,6 @@ export const useGlobalStore = createGlobalReducer(
       setSidebarWidth: (sidebarWidth: number) => {
         SettingsService.save({ sidebarWidth });
         return { sidebarWidth };
-      },
-      setSidebarCollapsed: (isSidebarCollapsed: boolean) => {
-        SettingsService.save({ isSidebarCollapsed });
-        return { isSidebarCollapsed };
-      },
-      toggleSidebar: () => {
-        const isSidebarCollapsed = !get.state().isSidebarCollapsed;
-        SettingsService.save({ isSidebarCollapsed });
-        return { isSidebarCollapsed };
-      },
-      hideSidebar: () => {
-        SettingsService.save({ isSidebarCollapsed: false });
-        return { isSidebarCollapsed: false };
       },
       recentNotesDialog: (recentNotesDialog: boolean) => ({
         recentNotesDialog,
@@ -415,9 +386,6 @@ export const useGlobalStore = createGlobalReducer(
       },
       selectNoteById: async (noteId: string) => {
         const state = get.state();
-        if (state.note) {
-          saveCursorPosition(state.note.id);
-        }
         const note = await repositories.notes.getOne(noteId);
         if (!note) {
           uiDispatch.setError("Failed to load note");

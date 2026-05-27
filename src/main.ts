@@ -280,7 +280,6 @@ async function main() {
     return;
   }
 
-  // Single-instance lock: second invocation forwards args to first instance
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
     app.quit();
@@ -298,7 +297,6 @@ async function main() {
     }
   });
 
-  // macOS: handle files opened via Finder / drag onto dock icon
   app.on("open-file", (event, filePath) => {
     event.preventDefault();
     if (mainWindow?.webContents && !mainWindow.webContents.isLoading()) {
@@ -308,176 +306,177 @@ async function main() {
     }
   });
 
-  ipcMain.handle("app:file-closed", (_, requestId: string) => {
-    notifyFileClosed(requestId);
-    return true;
-  });
-
-  ipcMain.handle(
-    "app:open-folder",
-    (_, { folderPath }: { folderPath: string }) => {
-      createFolderWindow(preload, folderPath);
-      return true;
-    },
-  );
-
   startProxyServer();
 
-  const preload = path.join(__dirname, "preload.js");
-  console.log("Main process starting, registering AI handlers...");
-  registerAIHandlers();
-  await notesIpcHandler();
-  databaseIpcHandler();
-  appIpcHandler(preload);
-  executionIpcHandler();
-  terminalIpcHandler();
-  readItLaterIpcHandler();
-  gitIpcHandler();
-  ipcMain.handle("fs:watcher:start", (_, directory: string) => {
-    if (mainWindow) FileWatcher.start(directory, mainWindow);
-  });
-
-  ipcMain.handle("app:update-shortcut", (_, newShortcut: string) => {
-    const previous = activeQuickNoteShortcut;
-    globalShortcut.unregister(previous);
-    const success = globalShortcut.register(newShortcut, () =>
-      createQuickNoteWindow(preload),
-    );
-    if (!success) {
-      globalShortcut.register(previous, () => createQuickNoteWindow(preload));
-      return {
-        success: false,
-        error: `Failed to register shortcut: ${newShortcut}`,
-      };
-    }
-    activeQuickNoteShortcut = newShortcut;
-    return { success: true };
-  });
-
-  ipcMain.handle("app:update-math-shortcut", (_, newShortcut: string) => {
-    const previous = activeMathNoteShortcut;
-    globalShortcut.unregister(previous);
-    const success = globalShortcut.register(newShortcut, () =>
-      createMathNoteWindow(preload),
-    );
-    if (!success) {
-      globalShortcut.register(previous, () => createMathNoteWindow(preload));
-      return {
-        success: false,
-        error: `Failed to register shortcut: ${newShortcut}`,
-      };
-    }
-    activeMathNoteShortcut = newShortcut;
-    return { success: true };
-  });
-
-  const createWindow = () => {
-    mainWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
-      center: true,
-      accentColor: "#000000",
-      webPreferences: {
-        preload,
-        defaultFontSize: 16,
-        nodeIntegration: true,
-        contextIsolation: true,
-        defaultEncoding: "utf-8",
-        accessibleTitle: "Writeme",
-      },
-    });
-
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-    } else {
-      mainWindow.loadFile(
-        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-      );
-    }
-    if (process.env.NODE_ENV === "development") {
-      mainWindow.webContents.openDevTools();
-    }
-    mainWindow.webContents.on(
-      "console-message",
-      (_, level, message, line, sourceId) => {
-        if (level >= 2)
-          console.error(`[renderer] ${sourceId}:${line} ${message}`);
-      },
-    );
-    mainWindow.webContents.on("render-process-gone", (_, details) => {
-      console.error(
-        "[renderer] process gone:",
-        details.reason,
-        details.exitCode,
-      );
-    });
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-      if (url.startsWith("http:") || url.startsWith("https:")) {
-        shell.openExternal(url);
-      }
-      return { action: "deny" };
-    });
-    mainWindow.webContents.on("will-navigate", (event, url) => {
-      const requestedHost = new URL(url).host;
-      if (mainWindow) {
-        const currentHost = new URL(mainWindow.webContents.getURL()).host;
-        if (requestedHost && requestedHost !== currentHost) {
-          event.preventDefault();
-          shell.openExternal(url);
-        }
-      }
-    });
-    mainWindow.on("close", (e) => {
-      handleWindowClose(e, mainWindow!, isQuitting);
-    });
-  };
-
-  const createTray = () => {
-    const iconPath = path.join(app.getAppPath(), "public", "favicon-16x16.png");
-    const icon = nativeImage
-      .createFromPath(iconPath)
-      .resize({ width: 16, height: 16 });
-    tray = new Tray(icon);
-    tray.setToolTip("Writeme");
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: "Show Writeme",
-        click: () => {
-          mainWindow?.show();
-          mainWindow?.focus();
-        },
-      },
-      {
-        label: "Quick note",
-        click: () => createQuickNoteWindow(path.join(__dirname, "preload.js")),
-      },
-      { type: "separator" },
-      { label: "Quit", click: () => app.quit() },
-    ]);
-    tray.setContextMenu(contextMenu);
-    if (process.platform !== "darwin") {
-      tray.on("click", () => {
-        if (mainWindow?.isVisible()) {
-          mainWindow.hide();
-        } else {
-          mainWindow?.show();
-          mainWindow?.focus();
-        }
-      });
-    }
-  };
   app.on("before-quit", () => {
     isQuitting = true;
     stopCliServer();
   });
   app.on("will-quit", () => globalShortcut.unregisterAll());
-  app.on("ready", () => {
+  app.on("ready", async () => {
+    const preload = path.join(__dirname, "preload.js");
+    console.log("Main process starting, registering AI handlers...");
+    registerAIHandlers();
+    await notesIpcHandler();
+    databaseIpcHandler();
+    appIpcHandler(preload);
+    executionIpcHandler();
+    terminalIpcHandler();
+    readItLaterIpcHandler();
+    gitIpcHandler();
+    ipcMain.handle("fs:watcher:start", (_, directory: string) => {
+      if (mainWindow) FileWatcher.start(directory, mainWindow);
+    });
+    ipcMain.handle("app:file-closed", (_, requestId: string) => {
+      notifyFileClosed(requestId);
+      return true;
+    });
+    ipcMain.handle(
+      "app:open-folder",
+      (_, { folderPath }: { folderPath: string }) => {
+        createFolderWindow(preload, folderPath);
+        return true;
+      },
+    );
+    ipcMain.handle("app:update-shortcut", (_, newShortcut: string) => {
+      const previous = activeQuickNoteShortcut;
+      globalShortcut.unregister(previous);
+      const success = globalShortcut.register(newShortcut, () =>
+        createQuickNoteWindow(preload),
+      );
+      if (!success) {
+        globalShortcut.register(previous, () => createQuickNoteWindow(preload));
+        return {
+          success: false,
+          error: `Failed to register shortcut: ${newShortcut}`,
+        };
+      }
+      activeQuickNoteShortcut = newShortcut;
+      return { success: true };
+    });
+    ipcMain.handle("app:update-math-shortcut", (_, newShortcut: string) => {
+      const previous = activeMathNoteShortcut;
+      globalShortcut.unregister(previous);
+      const success = globalShortcut.register(newShortcut, () =>
+        createMathNoteWindow(preload),
+      );
+      if (!success) {
+        globalShortcut.register(previous, () => createMathNoteWindow(preload));
+        return {
+          success: false,
+          error: `Failed to register shortcut: ${newShortcut}`,
+        };
+      }
+      activeMathNoteShortcut = newShortcut;
+      return { success: true };
+    });
+    const createWindow = () => {
+      mainWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        center: true,
+        accentColor: "#000000",
+        webPreferences: {
+          preload,
+          defaultFontSize: 16,
+          nodeIntegration: true,
+          contextIsolation: true,
+          defaultEncoding: "utf-8",
+          accessibleTitle: "Writeme",
+        },
+      });
+      if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      } else {
+        mainWindow.loadFile(
+          path.join(
+            __dirname,
+            `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`,
+          ),
+        );
+      }
+      if (process.env.NODE_ENV === "development") {
+        mainWindow.webContents.openDevTools();
+      }
+      mainWindow.webContents.on(
+        "console-message",
+        (_, level, message, line, sourceId) => {
+          if (level >= 2)
+            console.error(`[renderer] ${sourceId}:${line} ${message}`);
+        },
+      );
+      mainWindow.webContents.on("render-process-gone", (_, details) => {
+        console.error(
+          "[renderer] process gone:",
+          details.reason,
+          details.exitCode,
+        );
+      });
+      mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url.startsWith("http:") || url.startsWith("https:")) {
+          shell.openExternal(url);
+        }
+        return { action: "deny" };
+      });
+      mainWindow.webContents.on("will-navigate", (event, url) => {
+        const requestedHost = new URL(url).host;
+        if (mainWindow) {
+          const currentHost = new URL(mainWindow.webContents.getURL()).host;
+          if (requestedHost && requestedHost !== currentHost) {
+            event.preventDefault();
+            shell.openExternal(url);
+          }
+        }
+      });
+      mainWindow.on("close", (e) => {
+        handleWindowClose(e, mainWindow!, isQuitting);
+      });
+    };
+
+    const createTray = () => {
+      const iconPath = path.join(
+        app.getAppPath(),
+        "public",
+        "favicon-16x16.png",
+      );
+      const icon = nativeImage
+        .createFromPath(iconPath)
+        .resize({ width: 16, height: 16 });
+      tray = new Tray(icon);
+      tray.setToolTip("Writeme");
+      const contextMenu = Menu.buildFromTemplate([
+        {
+          label: "Show Writeme",
+          click: () => {
+            mainWindow?.show();
+            mainWindow?.focus();
+          },
+        },
+        {
+          label: "Quick note",
+          click: () => createQuickNoteWindow(preload),
+        },
+        { type: "separator" },
+        { label: "Quit", click: () => app.quit() },
+      ]);
+      tray.setContextMenu(contextMenu);
+      if (process.platform !== "darwin") {
+        tray.on("click", () => {
+          if (mainWindow?.isVisible()) {
+            mainWindow.hide();
+          } else {
+            mainWindow?.show();
+            mainWindow?.focus();
+          }
+        });
+      }
+    };
+
     createWindow();
     createTray();
     if (mainWindow) registerAIOAuthHandlers(mainWindow);
     if (mainWindow) startCliServer(mainWindow);
 
-    // Open file passed as CLI arg on fresh launch
     if (mainWindow) {
       const { filePath } = parseCliArgs(process.argv);
       const fileToOpen = filePath ?? pendingFileOpen;
@@ -551,15 +550,15 @@ async function main() {
         createMathNoteWindow(preload),
       );
     }
+    app.on("activate", () => {
+      if (mainWindow) {
+        mainWindow.show();
+      } else {
+        createWindow();
+      }
+    });
   });
   app.on("window-all-closed", () => {});
-  app.on("activate", () => {
-    if (mainWindow) {
-      mainWindow.show();
-    } else {
-      createWindow();
-    }
-  });
 }
 
 main();
