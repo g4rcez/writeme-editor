@@ -177,7 +177,7 @@ jobs:
           path: release-artifacts/
 
   release:
-    needs: [build-mac-arm64, build-mac-x64, build-windows, build-linux]
+    needs: [build-mac-arm64, build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
