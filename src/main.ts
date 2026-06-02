@@ -456,8 +456,6 @@ async function main() {
           label: "Quick note",
           click: () => createQuickNoteWindow(preload),
         },
-        { type: "separator" },
-        { label: "Quit", click: () => app.quit() },
       ]);
       tray.setContextMenu(contextMenu);
       if (process.platform !== "darwin") {
@@ -472,6 +470,7 @@ async function main() {
       }
     };
 
+    Menu.setApplicationMenu(null);
     createWindow();
     createTray();
     if (mainWindow) registerAIOAuthHandlers(mainWindow);
@@ -550,6 +549,7 @@ async function main() {
         createMathNoteWindow(preload),
       );
     }
+    globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());
     app.on("activate", () => {
       if (mainWindow) {
         mainWindow.show();

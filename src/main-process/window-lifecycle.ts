@@ -1,8 +1,20 @@
-import { BrowserWindow, type Event } from "electron";
+import { type Event } from "electron";
+
+type CloseableWindow = {
+  hide(): void;
+};
+
+type QuickNoteWindow = {
+  show(): void;
+  focus(): void;
+  webContents: {
+    send(channel: string): void;
+  };
+};
 
 export function handleWindowClose(
   event: Event,
-  window: BrowserWindow,
+  window: CloseableWindow,
   isQuitting: boolean,
 ) {
   if (!isQuitting) {
@@ -11,7 +23,7 @@ export function handleWindowClose(
   }
 }
 
-export function openQuickNote(window: BrowserWindow | null) {
+export function openQuickNote(window: QuickNoteWindow | null) {
   if (!window) return;
   window.show();
   window.focus();

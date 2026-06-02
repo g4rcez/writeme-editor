@@ -1,21 +1,50 @@
 import { describe, it, expect, vi } from "vitest";
+import { type Event } from "electron";
 import { handleWindowClose, openQuickNote } from "./window-lifecycle";
+
+type CloseEvent = Pick<Event, "preventDefault" | "defaultPrevented">;
+type CloseWindow = {
+  hide(): void;
+};
+type QuickNoteWindow = {
+  show(): void;
+  focus(): void;
+  webContents: {
+    send(channel: string): void;
+  };
+};
 
 describe("Window Lifecycle", () => {
   describe("handleWindowClose", () => {
     it("should prevent default and hide window if not quitting", () => {
-      const event = { preventDefault: vi.fn() } as any;
-      const window = { hide: vi.fn() } as any;
+      let defaultPrevented = false;
+      const event: CloseEvent = {
+        get defaultPrevented() {
+          return defaultPrevented;
+        },
+        preventDefault: vi.fn(() => {
+          defaultPrevented = true;
+        }),
+      };
+      const window: CloseWindow = { hide: vi.fn() };
 
       handleWindowClose(event, window, false);
 
-      expect(event.preventDefault).toHaveBeenCalled();
-      expect(window.hide).toHaveBeenCalled();
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+      expect(window.hide).toHaveBeenCalledTimes(1);
     });
 
     it("should do nothing if quitting", () => {
-      const event = { preventDefault: vi.fn() } as any;
-      const window = { hide: vi.fn() } as any;
+      let defaultPrevented = false;
+      const event: CloseEvent = {
+        get defaultPrevented() {
+          return defaultPrevented;
+        },
+        preventDefault: vi.fn(() => {
+          defaultPrevented = true;
+        }),
+      };
+      const window: CloseWindow = { hide: vi.fn() };
 
       handleWindowClose(event, window, true);
 
@@ -26,12 +55,12 @@ describe("Window Lifecycle", () => {
 
   describe("openQuickNote", () => {
     it("should show, focus and send event to window", () => {
-      const webContents = { send: vi.fn() };
-      const window = {
+      const webContents: QuickNoteWindow["webContents"] = { send: vi.fn() };
+      const window: QuickNoteWindow = {
         show: vi.fn(),
         focus: vi.fn(),
         webContents,
-      } as any;
+      };
 
       openQuickNote(window);
 

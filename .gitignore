@@ -3,6 +3,7 @@
 .superset/
 docs/superpowers/
 .ai/plans/
+.omo/
 
 # Logs
 logs
