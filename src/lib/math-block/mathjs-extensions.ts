@@ -8,11 +8,7 @@ type Props = {
 };
 
 export function createMathInstance(props: Props): MathInstance {
-  const math = create(all!, {
-    predictable: true,
-    number: "BigNumber",
-    numberFallback: "number",
-  });
+  const math = create(all!);
   math.createUnit("px");
   math.createUnit("pt", "1.3333 px", { override: true });
   math.createUnit("em", "16 px");
