@@ -272,6 +272,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   contextMenu: {
     showExplorer: (filePath: string, isDirectory: boolean) =>
       ipcRenderer.invoke("context-menu:explorer", filePath, isDirectory),
+    showLink: (text: string, url: string, x?: number, y?: number) =>
+      ipcRenderer.invoke("context-menu:link", text, url, x, y),
+    showEdit: () => ipcRenderer.invoke("context-menu:edit"),
   },
   readItLater: {
     fetchUrl: (url: string) =>
@@ -460,6 +463,13 @@ declare global {
       };
       contextMenu: {
         showExplorer(filePath: string, isDirectory: boolean): Promise<void>;
+        showLink(
+          text: string,
+          url: string,
+          x?: number,
+          y?: number,
+        ): Promise<void>;
+        showEdit(): Promise<void>;
       };
       onContextMenuAction(
         callback: (data: {

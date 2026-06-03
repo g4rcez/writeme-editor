@@ -22,6 +22,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
 import { UniqueID } from "@tiptap/extension-unique-id";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { type BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
@@ -32,6 +33,7 @@ import { ShikiBlock } from "./elements/code-block";
 import { ColorCode } from "./elements/color-code";
 import { ColorReplacer } from "./elements/color-replacer";
 import { Frontmatter } from "./elements/frontmatter";
+import { MentionNodeView } from "./elements/mention";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { Hashtag } from "./extensions/hashtag";
@@ -43,6 +45,15 @@ import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { DomainLink } from "./extensions/domain-link";
+
+const mentionNoteNamespacePattern = /^(?:https?:\/\/[^/]+\/)?@+mention\/note\//;
+
+function normalizeMentionPath(path: string): string {
+  return path
+    .replace(getUrlNamespace("mention"), "")
+    .replace(/^\/@+mention\/note\//, "/note/")
+    .replace(mentionNoteNamespacePattern, "/note/");
+}
 
 export const handlePasteImage = async (currentEditor: any) => {
   if (!isElectron()) return false;
@@ -291,6 +302,7 @@ export const createExtensions = (
         const label = node.attrs.label ?? node.attrs.id;
         const path =
           (node.attrs.path as string) ?? innerUrl(node.attrs.id, "mention");
+        const normalizedPath = normalizeMentionPath(path);
         return [
           "a",
           {
@@ -300,11 +312,14 @@ export const createExtensions = (
             "data-type": "mention",
             "data-id": node.attrs.id,
             title: "writeme-mention:" + node.attrs.id,
-            href: path.replace(getUrlNamespace("mention"), ""),
-            "data-path": path.replace(getUrlNamespace("mention"), ""),
+            href: normalizedPath,
+            "data-path": normalizedPath,
           },
           label,
         ];
+      },
+      addNodeView() {
+        return ReactNodeViewRenderer(MentionNodeView);
       },
       addPasteRules() {
         return [
@@ -373,7 +388,9 @@ export const createExtensions = (
               const path =
                 node.attrs.path ?? innerUrl(node.attrs.id, "mention");
               const id = node.attrs.id;
-              state.write(`[${label}](${path} "writeme-mention:${id}")`);
+              state.write(
+                `[${label}](${normalizeMentionPath(path)} "writeme-mention:${id}")`,
+              );
             }
           },
         },

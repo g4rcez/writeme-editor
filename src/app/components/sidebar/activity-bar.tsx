@@ -6,6 +6,7 @@ import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
+import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
@@ -114,6 +115,17 @@ export const ActivityBar = () => {
           icon={FolderSimpleIcon}
           onClick={() => onActivityClick("groups")}
           active={layout.activeActivity === "groups"}
+        />
+        <ActivityIcon
+          label="Views"
+          icon={TableIcon}
+          onClick={() => {
+            onActivityClick("views", true);
+            if (!location.pathname.startsWith("/views")) {
+              navigate("/views");
+            }
+          }}
+          active={layout.activeActivity === "views"}
         />
         <ActivityIcon
           label="Trash"

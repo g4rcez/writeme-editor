@@ -1,4 +1,4 @@
-import { Tooltip } from "@g4rcez/components";
+import { Input, Tooltip } from "@g4rcez/components";
 import { notificationRef } from "@/app/notification-ref";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
@@ -272,13 +272,14 @@ export const NoteListSidebar = () => {
       </div>
       <div className="p-3 border-b border-border/20">
         <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            type="text"
+          <Input
+            optionalText=" "
             onChange={onSearch}
             placeholder="Search..."
             value={state.searchQuery}
-            className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 placeholder:text-muted-foreground/60 focus:border-primary/50 focus:bg-background"
+            right={
+              <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+            }
           />
         </div>
       </div>

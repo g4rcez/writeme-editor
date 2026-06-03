@@ -91,9 +91,9 @@ export const darkTheme: typeof defaultDarkTheme = {
     },
     floating: {
       foreground: foreground,
-      background: "hsla(0, 0%, 12%)",
+      background: "hsla(245, 2%, 9%)",
       hover: "hsla(0, 0%, 16%)",
-      border: "hsla(245, 12%, 15%)",
+      border: "hsla(245, 12%, 18%)",
       overlay: "hsla(0, 0%, 0%)",
     },
     tooltip: {

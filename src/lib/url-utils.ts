@@ -1,7 +1,7 @@
 export type DomainIdentification = {
-  domain: string;
   id: string;
   url: string;
+  domain: string;
 };
 
 /**
@@ -48,21 +48,13 @@ export function identifyDomain(url: string): DomainIdentification | null {
       } else if (parsed.searchParams.has("v")) {
         id = parsed.searchParams.get("v");
       }
-
-      // Check for any extra path segments or query params in ID (sometimes happens with splitting)
       if (id) {
         id = id.split(/[?&#]/)[0] ?? null;
       }
-
       if (id && id.length >= 10) {
-        return {
-          domain: "youtube",
-          id,
-          url: trimmedUrl,
-        };
+        return { id, url: trimmedUrl, domain: "youtube" };
       }
     }
-
     return null;
   } catch (e) {
     return null;

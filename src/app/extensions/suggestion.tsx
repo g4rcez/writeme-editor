@@ -1,3 +1,4 @@
+import type { EditorState } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { updatePosition } from "@/app/extensions/update-position";
@@ -33,7 +34,7 @@ const MentionList = (props: any) => {
           label: item.label,
           path: item.path,
         });
-        tr.replaceWith(from, to, node);
+        tr.replaceWith(getMentionReplacementFrom(state, from), to, node);
         return true;
       })
       .run();
@@ -121,6 +122,15 @@ const MentionList = (props: any) => {
       )}
     </ul>
   );
+};
+
+export const getMentionReplacementFrom = (
+  state: EditorState,
+  from: number,
+): number => {
+  return from > 1 && state.doc.textBetween(from - 1, from) === "@"
+    ? from - 1
+    : from;
 };
 
 export const suggestion = {

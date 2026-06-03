@@ -9,11 +9,8 @@ export function setupAIAdapters(): void {
   adapterRegistry.register(new OpenAIAdapter());
   adapterRegistry.register(new GeminiAdapter());
   if (isElectron()) {
-    // Dynamic import to avoid loading Electron-only code in browser build
     import("./adapters/cli.adapter")
-      .then(({ CLIAdapter }) => {
-        adapterRegistry.register(new CLIAdapter());
-      })
+      .then(({ CLIAdapter }) => adapterRegistry.register(new CLIAdapter()))
       .catch(() => {});
   }
 }

@@ -93,6 +93,36 @@ const ric: (cb: () => void) => void =
 
 type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
 
+type LinkContextTarget = {
+  text: string;
+  url: string;
+};
+
+const resolveLinkContextTarget = (
+  target: EventTarget | null,
+): LinkContextTarget | null => {
+  if (!(target instanceof Element)) return null;
+
+  const linkNode = target.closest("a");
+  if (linkNode) {
+    return {
+      text: linkNode.textContent?.trim() ?? "",
+      url: linkNode.getAttribute("href")?.trim() ?? "",
+    };
+  }
+
+  const wrappedLinkNode = target.closest("[data-link-url]");
+  if (!(wrappedLinkNode instanceof HTMLElement)) return null;
+
+  return {
+    text:
+      wrappedLinkNode.getAttribute("data-link-text")?.trim() ||
+      wrappedLinkNode.textContent?.trim() ||
+      "",
+    url: wrappedLinkNode.getAttribute("data-link-url")?.trim() ?? "",
+  };
+};
+
 type TiptapEditorCoreProps = {
   id: string;
   note?: Note;
@@ -151,6 +181,29 @@ const TiptapEditorCore = memo(
       },
       editorProps: {
         attributes: { class: "writeme-editor-content" },
+        handleDOMEvents: {
+          contextmenu: (view, event) => {
+            if (!isElectron()) return false;
+
+            const linkTarget = resolveLinkContextTarget(event.target);
+            if (linkTarget && (linkTarget.text || linkTarget.url)) {
+              event.preventDefault();
+              void window.electronAPI.contextMenu.showLink(
+                linkTarget.text,
+                linkTarget.url,
+                event.clientX,
+                event.clientY,
+              );
+              return true;
+            }
+
+            if (view.state.selection.empty) return false;
+
+            event.preventDefault();
+            void window.electronAPI.contextMenu.showEdit();
+            return true;
+          },
+        },
         handleClick: (_, __, event) => {
           const node = event.target as HTMLElement;
           const linkNode = node.closest("a");

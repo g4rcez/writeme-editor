@@ -6,6 +6,7 @@ import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { useNavigate } from "react-router-dom";
 import { Note } from "@/store/note";
+import { Input } from "@g4rcez/components";
 
 export const SearchPane = () => {
   const [{ searchQuery }, layoutDispatch] = useLayoutStore((s) => ({
@@ -36,42 +37,34 @@ export const SearchPane = () => {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Global Search */}
         <div className="space-y-2">
-          <label className="font-medium uppercase text-[10px] text-muted-foreground">
-            Global Search
-          </label>
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input
+            <Input
               type="text"
-              placeholder="Search all notes..."
               value={searchQuery}
               onChange={handleGlobalSearch}
-              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 focus:border-primary/50"
+              placeholder="Search all notes..."
+              optionalText=" "
+              title="Global search"
+              right={
+                <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+              }
             />
           </div>
         </div>
-
-        {/* Local Search (Current Note) */}
         <div className="space-y-2">
-          <label className="font-medium uppercase text-[10px] text-muted-foreground">
-            In Current Note
-          </label>
           <div className="relative">
-            <TextTIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Find in note..."
+            <Input
+              optionalText=" "
               value={localQuery}
+              title="In current note"
+              placeholder="Find in note..."
               onChange={(e) => setLocalQuery(e.target.value)}
-              className="py-1.5 pr-3 pl-9 w-full text-sm rounded-md border border-transparent transition-[border-color,background-color] outline-none bg-muted/40 focus:border-primary/50"
+              right={<TextTIcon className="size-4 text-muted-foreground" />}
             />
           </div>
-          {/* TODO: Integration with TipTap Search extension */}
         </div>
       </div>
-
       <div className="overflow-y-auto flex-1 px-2 pb-4">
         <div className="px-2 mb-2 font-medium uppercase text-[10px] text-muted-foreground">
           Results ({filteredNotes.length})

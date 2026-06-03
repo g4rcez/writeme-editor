@@ -8,7 +8,11 @@ type Props = {
 };
 
 export function createMathInstance(props: Props): MathInstance {
-  const math = create(all!);
+  const math = create(all!, {
+    predictable: true,
+    number: "BigNumber",
+    numberFallback: "number",
+  });
   math.createUnit("px");
   math.createUnit("pt", "1.3333 px", { override: true });
   math.createUnit("em", "16 px");
@@ -29,14 +33,14 @@ function registerCurrencyUnits(
 ): void {
   try {
     math.createUnit("EUR");
+    Object.entries(ratesData.rates).forEach(([code, rate]) => {
+      if (code !== "EUR") {
+        try {
+          math.createUnit(code, math.unit(1 / rate, "EUR"));
+        } catch {}
+      }
+    });
   } catch {}
-  Object.entries(ratesData.rates).forEach(([code, rate]) => {
-    if (code !== "EUR") {
-      try {
-        math.createUnit(code, math.unit(1 / rate, "EUR"));
-      } catch {}
-    }
-  });
 }
 
 let cached: MathInstance | null = null;
@@ -57,7 +61,6 @@ export function getMathInstance(
   return cached;
 }
 
-/** Test-only: reset the singleton math instance cache. */
 export function __resetMathInstanceCache(): void {
   cached = null;
   cachedTs = null;

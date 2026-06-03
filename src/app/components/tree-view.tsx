@@ -128,6 +128,16 @@ const getFileConfig = (node: TreeNode) =>
   FILE_NAME_CONFIGS[node.name.toLowerCase()] ??
   FILE_EXTENSION_CONFIGS[node.extension?.toLowerCase() ?? ""];
 
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  );
+};
+
 interface TreeNodeItemProps {
   note: Note;
   depth: number;
@@ -366,6 +376,7 @@ export const TreeView = ({
   const [pendingName, setPendingName] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const pendingInputRef = useRef<HTMLInputElement>(null);
+  const pendingCommitRef = useRef(false);
   const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
   const expandedPathsRef = useRef(new Set<string>());
   const flattenedNodesRef = useRef<FlattenedNode[]>([]);
@@ -484,12 +495,42 @@ export const TreeView = ({
     return lastChildIdx + 1;
   }, [pendingCreate, flattenedNodes]);
 
+  const pendingCreateDepth = useMemo(() => {
+    if (!pendingCreate) return 0;
+    if (
+      pendingCreate.parentPath === rootPath ||
+      pendingCreate.parentPath === null
+    ) {
+      return pendingCreate.depth;
+    }
+
+    const parent = flattenedNodes.find(
+      (n) => n.node.path === pendingCreate.parentPath,
+    );
+    return parent ? parent.depth + 1 : pendingCreate.depth;
+  }, [pendingCreate, flattenedNodes, rootPath]);
+
+  const refreshDirectory = useCallback(
+    async (path: string) => {
+      if (path === rootPath) {
+        await loadRoot();
+        return;
+      }
+
+      const result = await window.electronAPI.fs.readDir(path);
+      setChildrenCache((prev) => new Map(prev).set(path, result.entries || []));
+    },
+    [loadRoot, rootPath],
+  );
+
   const handlePendingCommit = useCallback(async () => {
+    if (pendingCommitRef.current) return;
     if (!pendingCreate || !pendingName.trim()) {
       setPendingCreate(null);
       setPendingName("");
       return;
     }
+    pendingCommitRef.current = true;
     const rawName = pendingName.trim();
     const fileName =
       pendingCreate.kind === "file"
@@ -497,16 +538,29 @@ export const TreeView = ({
           ? rawName
           : rawName + ".md"
         : rawName;
-    const targetPath = (pendingCreate.parentPath ?? rootPath) + "/" + fileName;
-    const success =
-      pendingCreate.kind === "file"
-        ? await onNewFile?.(targetPath)
-        : await onNewFolder?.(targetPath);
-    if (success) {
-      setPendingCreate(null);
-      setPendingName("");
+    const parentPath = pendingCreate.parentPath ?? rootPath;
+    const targetPath = parentPath + "/" + fileName;
+    try {
+      const success =
+        pendingCreate.kind === "file"
+          ? await onNewFile?.(targetPath)
+          : await onNewFolder?.(targetPath);
+      if (success) {
+        await refreshDirectory(parentPath);
+        setPendingCreate(null);
+        setPendingName("");
+      }
+    } finally {
+      pendingCommitRef.current = false;
     }
-  }, [pendingCreate, pendingName, rootPath, onNewFile, onNewFolder]);
+  }, [
+    pendingCreate,
+    pendingName,
+    rootPath,
+    onNewFile,
+    onNewFolder,
+    refreshDirectory,
+  ]);
 
   useEffect(() => {
     if (flattenedNodes.length > 0 && focusedIndex >= flattenedNodes.length) {
@@ -691,6 +745,8 @@ export const TreeView = ({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
+
       const nodes = flattenedNodesRef.current;
       if (nodes.length === 0) return;
 
@@ -856,8 +912,9 @@ export const TreeView = ({
         <div
           role="none"
           className="flex items-center gap-2 py-1.5 px-2"
-          style={{ paddingLeft: 12 + pendingCreate.depth * 16 }}
+          style={{ paddingLeft: 12 + pendingCreateDepth * 16 }}
         >
+          <span className="w-4 shrink-0" />
           {pendingCreate.kind === "directory" ? (
             <FolderIcon className="size-4 text-foreground/70 shrink-0" />
           ) : (
@@ -871,14 +928,16 @@ export const TreeView = ({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                handlePendingCommit();
+                e.stopPropagation();
+                void handlePendingCommit();
               } else if (e.key === "Escape") {
                 e.preventDefault();
+                e.stopPropagation();
                 setPendingCreate(null);
                 setPendingName("");
               }
             }}
-            onBlur={handlePendingCommit}
+            onBlur={() => void handlePendingCommit()}
           />
         </div>
       )}
