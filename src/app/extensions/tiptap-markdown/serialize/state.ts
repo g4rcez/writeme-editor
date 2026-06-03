@@ -1,4 +1,4 @@
-import { MarkdownSerializerState as BaseMarkdownSerializerState } from "@tiptap/pm/markdown";
+import { MarkdownSerializerState as BaseMarkdownSerializerState } from "prosemirror-markdown";
 import type { Node, Mark } from "@tiptap/pm/model";
 import { trimInline } from "../util/markdown";
 import "./types";

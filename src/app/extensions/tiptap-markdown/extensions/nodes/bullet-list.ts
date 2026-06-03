@@ -1,6 +1,6 @@
 import { Node } from "@tiptap/core";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { SerializeContext } from "../../serialize/types";
 
 const BulletList = Node.create({

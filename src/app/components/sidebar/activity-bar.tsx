@@ -15,7 +15,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { Note } from "@/store/note";
 import { css, Tooltip } from "@g4rcez/components";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { WritemeLogo } from "../logo";
 
 type ActivityIconProps = {
@@ -63,6 +63,7 @@ const ActivityIcon = ({
 
 export const ActivityBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [layout, dispatchLayout] = useLayoutStore();
   const [state] = useGlobalStore();
   const [uiState] = useUIStore();
@@ -133,7 +134,9 @@ export const ActivityBar = () => {
           active={layout.activeActivity === "settings"}
           onClick={() => {
             onActivityClick("settings");
-            navigate("/settings");
+            if (!location.pathname.startsWith("/settings")) {
+              navigate("/settings");
+            }
           }}
         />
       </div>

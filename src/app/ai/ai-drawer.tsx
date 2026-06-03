@@ -161,7 +161,7 @@ export const AIDrawer = () => {
             <Button
               onClick={() => {
                 globalDispatch.setAiDrawer({ isOpen: false, chatId: null });
-                navigate("/settings");
+                navigate("/settings/ai");
               }}
             >
               Configure AI

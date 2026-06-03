@@ -58,7 +58,7 @@ export const CustomVariables = () => {
   };
 
   return (
-    <Card title="Custom Variables (JS Expressions)">
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <p className="max-w-md text-sm text-muted-foreground">
@@ -144,6 +144,6 @@ export const CustomVariables = () => {
         onConfirm={handleDelete}
         onCancel={() => setDeletingId(null)}
       />
-    </Card>
+    </>
   );
 };

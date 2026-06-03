@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import type { Node, Mark } from "@tiptap/pm/model";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 
 export type { Node, Mark };
 export type { MarkdownSerializerState };

@@ -7,20 +7,49 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 let quickNoteWindow: BrowserWindow | null = null;
 let mathNoteWindow: BrowserWindow | null = null;
 
+const floatingPanelWidth = 620;
+const floatingPanelHeight = 480;
+
+type FloatingPanelBounds = {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+};
+
+function getFloatingPanelBounds(): FloatingPanelBounds {
+  const point = screen.getCursorScreenPoint();
+  const { workArea } = screen.getDisplayNearestPoint(point);
+
+  return {
+    width: floatingPanelWidth,
+    height: floatingPanelHeight,
+    x: workArea.x + Math.round((workArea.width - floatingPanelWidth) / 2),
+    y: workArea.y + Math.round((workArea.height - floatingPanelHeight) / 2),
+  };
+}
+
+function showFloatingPanel(win: BrowserWindow): void {
+  win.setBounds(getFloatingPanelBounds(), false);
+  win.setAlwaysOnTop(true, "floating");
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.moveTop();
+  win.show();
+  win.focus();
+}
+
 function createFloatingPanel(
   preloadPath: string,
   title: string,
   hash: string,
   onClosed: () => void,
 ): BrowserWindow {
-  const { workAreaSize } = screen.getPrimaryDisplay();
-  const windowWidth = 620;
-  const windowHeight = 480;
+  const bounds = getFloatingPanelBounds();
   const win = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
-    x: Math.round((workAreaSize.width - windowWidth) / 2),
-    y: Math.round((workAreaSize.height - windowHeight) / 2),
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     frame: false,
     show: false,
     transparent: true,
@@ -53,8 +82,7 @@ function createFloatingPanel(
   }
 
   win.once("ready-to-show", () => {
-    win.show();
-    win.focus();
+    showFloatingPanel(win);
   });
   win.on("blur", () => win.hide());
   win.on("closed", onClosed);
@@ -63,8 +91,7 @@ function createFloatingPanel(
 
 export const createQuickNoteWindow = (preloadPath: string) => {
   if (quickNoteWindow && !quickNoteWindow.isDestroyed()) {
-    quickNoteWindow.show();
-    quickNoteWindow.focus();
+    showFloatingPanel(quickNoteWindow);
     return;
   }
   quickNoteWindow = createFloatingPanel(
@@ -79,8 +106,7 @@ export const createQuickNoteWindow = (preloadPath: string) => {
 
 export const createMathNoteWindow = (preloadPath: string) => {
   if (mathNoteWindow && !mathNoteWindow.isDestroyed()) {
-    mathNoteWindow.show();
-    mathNoteWindow.focus();
+    showFloatingPanel(mathNoteWindow);
     return;
   }
   mathNoteWindow = createFloatingPanel(

@@ -1,4 +1,5 @@
 import { defaultDarkTheme } from "@g4rcez/components";
+import { componentDesignTokens } from "./design-tokens";
 
 const foreground = "hsla(131, 20%, 80%)";
 
@@ -6,6 +7,7 @@ export const darkTheme: typeof defaultDarkTheme = {
   ...defaultDarkTheme,
   spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
   zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
+  components: componentDesignTokens,
   custom: {
     "json-bg": "hsla(0, 0%, 10%)",
     "json-key": "hsla(258, 100%, 80%)",
@@ -75,7 +77,7 @@ export const darkTheme: typeof defaultDarkTheme = {
       notification: "hsla(150, 80%, 45%)",
     },
     input: {
-      border: "hsla(245, 12%, 15%)",
+      border: "hsla(245, 12%, 19%)",
       placeholder: "hsla(131, 20%, 50%)",
       "mask-error": "hsla(0, 94%, 81%)",
       "switch-bg": "hsla(0, 0%, 18%)",
@@ -84,7 +86,7 @@ export const darkTheme: typeof defaultDarkTheme = {
     },
     card: {
       muted: "hsla(0, 0%, 11%)",
-      border: "hsla(245, 12%, 15%)",
+      border: "hsla(245, 12%, 18%)",
       background: "hsla(245, 2%, 9%)",
     },
     floating: {

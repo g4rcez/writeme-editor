@@ -8,6 +8,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { FindReplaceBar } from "@/app/components/find-replace-bar";
 import { Commander } from "@/app/commander";
 import { Alert } from "@/app/components/alert";
@@ -30,19 +31,18 @@ import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 
-// Maps noteId -> requestId for files opened with --wait
 const waitMap = new Map<string, string>();
 
 export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
+  const [, layoutDispatch] = useLayoutStore();
   notificationRef.current = useNotification();
   usePwaUpdate();
   const navigate = useNavigate();
   const location = useLocation();
   const prevTabsRef = useRef(state.tabs);
 
-  // Handle files opened from CLI via app:open-file IPC
   useEffect(() => {
     if (!isElectron()) return;
     return window.electronAPI.onOpenFile(
@@ -87,7 +87,6 @@ export const RootLayout = () => {
     });
   }, []);
 
-  // Detect tab removal and signal --wait callers
   useEffect(() => {
     if (!isElectron()) return;
     const prevTabs = prevTabsRef.current;
@@ -109,6 +108,15 @@ export const RootLayout = () => {
       navigate(`/note/${state.activeTabId}`, { replace: true });
     }
   }, []);
+
+  useEffect(() => {
+    if (!location.pathname.startsWith("/settings")) return;
+
+    layoutDispatch.setActivity("settings");
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      uiDispatch.setSidebarOpen(true);
+    }
+  }, [location.pathname]);
 
   useEffect(
     function registerBindings() {
@@ -193,9 +201,7 @@ export const RootLayout = () => {
         <MediaPreview />
         <AIDrawer />
       </Fragment>
-
       <MainLayout />
-
       {uiState.focusMode && (
         <button
           title="Exit focus mode (⌘⇧F)"

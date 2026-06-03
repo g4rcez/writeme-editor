@@ -36,7 +36,7 @@ export default function OAuthCallbackPage() {
         sessionStorage.removeItem("ai_pkce_verifier");
         sessionStorage.removeItem("ai_pkce_adapter");
         setStatus("success");
-        const returnTo = state ?? "/settings";
+        const returnTo = state ?? "/settings/ai";
         setTimeout(() => navigate(returnTo), 1500);
       })
       .catch((err) => {
