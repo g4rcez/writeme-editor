@@ -1,7 +1,7 @@
 import type { Mark as ProseMirrorMark } from "@tiptap/pm/model";
 import { Fragment } from "@tiptap/pm/model";
 import { getHTMLFromFragment, Mark } from "@tiptap/core";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { SerializeContext } from "../../serialize/types";
 
 export default Mark.create({

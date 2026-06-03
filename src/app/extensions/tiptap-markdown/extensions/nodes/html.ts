@@ -2,7 +2,7 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Fragment } from "@tiptap/pm/model";
 import { getHTMLFromFragment, Node } from "@tiptap/core";
 import { elementFromString } from "../../util/dom";
-import type { MarkdownSerializerState } from "@tiptap/pm/markdown";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { SerializeContext } from "../../serialize/types";
 
 export default Node.create({

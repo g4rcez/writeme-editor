@@ -1,7 +1,9 @@
 import { defaultDarkTheme } from "@g4rcez/components";
+import { componentDesignTokens } from "./design-tokens";
 
 export const tokyonightNightTheme: typeof defaultDarkTheme = {
   ...defaultDarkTheme,
+  components: componentDesignTokens,
   spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
   zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
   colors: {

@@ -4,7 +4,7 @@ import {
   Card,
   Checkbox,
   Info,
-  Autocomplete,
+  Select,
   Input,
 } from "@g4rcez/components";
 import { ShortcutRecorder } from "@/app/components/shortcut-recorder";
@@ -140,7 +140,7 @@ export default function SettingsPage() {
                 Choose your preferred editor theme
               </p>
             </div>
-            <Autocomplete
+            <Select
               hiddenLabel
               value={settings.theme}
               options={GLOBAL_THEMES}
@@ -159,7 +159,7 @@ export default function SettingsPage() {
                 Permanently delete trashed notes after this period
               </p>
             </Info>
-            <Autocomplete
+            <Select
               hiddenLabel
               value={String(settings.trashRetentionDays)}
               options={[

@@ -262,9 +262,8 @@ export const AISettings = () => {
   );
 
   return (
-    <Card title="AI Configuration">
+    <>
       <div className="space-y-6">
-        {/* Provider quick-select buttons */}
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">Provider</span>
           <div className="grid grid-cols-2 gap-2">
@@ -553,6 +552,6 @@ export const AISettings = () => {
           </Button>
         </div>
       </div>
-    </Card>
+    </>
   );
 };

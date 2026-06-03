@@ -64,22 +64,23 @@ export const Sidebar = () => {
         )}
       >
         <div
+          className="writeme-aside-panel-inner"
           style={{
             width: `${state.sidebarWidth}px`,
             transform: collapsed ? "translateX(-100%)" : "translateX(0)",
           }}
-          className="writeme-aside-panel-inner"
         >
           <SidebarContent />
         </div>
       </div>
       {!collapsed && (
         <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
           tabIndex={0}
+          role="separator"
+          aria-label="Resize sidebar"
+          aria-orientation="vertical"
           onMouseDown={startResizing}
+          className="writeme-aside-resize"
           onKeyDown={(e) => {
             const step = e.shiftKey ? 32 : 16;
             if (e.key === "ArrowRight") {
@@ -95,7 +96,6 @@ export const Sidebar = () => {
               );
             }
           }}
-          className="writeme-aside-resize"
         />
       )}
     </Fragment>

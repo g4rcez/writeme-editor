@@ -1,4 +1,8 @@
-import { createHashRouter, createBrowserRouter } from "react-router-dom";
+import {
+  createHashRouter,
+  createBrowserRouter,
+  Navigate,
+} from "react-router-dom";
 import { lazy } from "react";
 import { RootLayout } from "./root-layout";
 import { isElectron } from "../lib/is-electron";
@@ -22,7 +26,34 @@ const TagPage = lazy(() => import("./pages/tag.page"));
 const NotesListPage = lazy(() => import("./pages/notes-list.page"));
 const SharePage = lazy(() => import("./pages/share.page"));
 const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
-const SettingsPage = lazy(() => import("./pages/settings.page.tsx"));
+const SettingsQuickPage = lazy(
+  () => import("./pages/settings/settings-quick.page"),
+);
+const SettingsAppearancePage = lazy(
+  () => import("./pages/settings/settings-appearance.page"),
+);
+const SettingsEditorPage = lazy(
+  () => import("./pages/settings/settings-editor.page"),
+);
+const SettingsShortcutsPage = lazy(
+  () => import("./pages/settings/settings-shortcuts.page"),
+);
+const SettingsTrashPage = lazy(
+  () => import("./pages/settings/settings-trash.page"),
+);
+const SettingsAIPage = lazy(() => import("./pages/settings/settings-ai.page"));
+const SettingsWorkspacePage = lazy(
+  () => import("./pages/settings/settings-workspace.page"),
+);
+const SettingsVariablesPage = lazy(
+  () => import("./pages/settings/settings-variables.page"),
+);
+const SettingsMigrationPage = lazy(
+  () => import("./pages/settings/settings-migration.page"),
+);
+const SettingsNotFoundPage = lazy(
+  () => import("./pages/settings/settings-not-found.page"),
+);
 const TemplatePage = lazy(() => import("./pages/template.page"));
 const MigratePage = lazy(() => import("./pages/migrate.page"));
 const GroupsListPage = lazy(() => import("./pages/groups-list.page"));
@@ -32,6 +63,11 @@ const ViewsListPage = lazy(() => import("./pages/views-list.page"));
 const ViewDetailPage = lazy(() => import("./pages/view-detail.page"));
 const OAuthCallbackPage = lazy(() => import("./pages/oauth-callback.page"));
 const FolderWorkspacePage = lazy(() => import("./pages/folder-workspace.page"));
+const SettingsPlatformGate = lazy(() =>
+  import("./pages/settings/settings-platform-gate").then((module) => ({
+    default: module.SettingsPlatformGate,
+  })),
+);
 
 const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
 
@@ -86,7 +122,64 @@ export const router = createRouter([
       },
       {
         path: "settings",
-        element: <SettingsPage />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="quick" replace />,
+          },
+          {
+            path: "quick",
+            element: <SettingsQuickPage />,
+          },
+          {
+            path: "appearance",
+            element: <SettingsAppearancePage />,
+          },
+          {
+            path: "editor",
+            element: <SettingsEditorPage />,
+          },
+          {
+            path: "shortcuts",
+            element: (
+              <SettingsPlatformGate sectionId="shortcuts">
+                <SettingsShortcutsPage />
+              </SettingsPlatformGate>
+            ),
+          },
+          {
+            path: "trash",
+            element: <SettingsTrashPage />,
+          },
+          {
+            path: "ai",
+            element: <SettingsAIPage />,
+          },
+          {
+            path: "workspace",
+            element: (
+              <SettingsPlatformGate sectionId="workspace">
+                <SettingsWorkspacePage />
+              </SettingsPlatformGate>
+            ),
+          },
+          {
+            path: "variables",
+            element: <SettingsVariablesPage />,
+          },
+          {
+            path: "migration",
+            element: (
+              <SettingsPlatformGate sectionId="migration">
+                <SettingsMigrationPage />
+              </SettingsPlatformGate>
+            ),
+          },
+          {
+            path: "*",
+            element: <SettingsNotFoundPage />,
+          },
+        ],
       },
       {
         path: "templates/:templateId",

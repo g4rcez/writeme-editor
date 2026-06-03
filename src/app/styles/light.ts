@@ -1,8 +1,10 @@
 import { defaultLightTheme } from "@g4rcez/components";
+import { componentDesignTokens } from "./design-tokens";
 
 export const lightTheme: typeof defaultLightTheme = {
   ...defaultLightTheme,
   zIndex: { ...defaultLightTheme.zIndex, tooltip: "30" },
+  components: componentDesignTokens,
   spacing: {
     ...defaultLightTheme.spacing,
     sm: "0.875rem",
