@@ -21,7 +21,7 @@ export const CreateNoteDialog = () => {
   const { scripts } = useScripts();
   const navigate = useNavigate();
 
-  const { isOpen, type, templateId } = state.createNoteDialog;
+  const { isOpen, type, templateId, initialTitle } = state.createNoteDialog;
 
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId),
@@ -37,7 +37,7 @@ export const CreateNoteDialog = () => {
   useEffect(() => {
     if (isOpen) {
       if (type === "note") {
-        setTitle(getUniqueNoteTitle("", state.notes));
+        setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
       } else {
         const dateTitle = Dates.yearMonthDay(startOfDay(new Date()));
         setTitle(`${dateTitle}-QuickNote`);
@@ -45,7 +45,7 @@ export const CreateNoteDialog = () => {
       setSelectedTemplateId(templateId || "");
       setVariableValues({});
     }
-  }, [isOpen, type, templateId, state.notes]);
+  }, [isOpen, type, templateId, initialTitle, state.notes]);
 
   const onClose = () => {
     dispatch.setCreateNoteDialog({ isOpen: false, type });

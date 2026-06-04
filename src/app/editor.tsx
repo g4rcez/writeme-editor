@@ -35,6 +35,7 @@ import {
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { getScrollY, setScrollY } from "@/lib/scroll-utils";
 import { saveCursorIfActive } from "@/app/save-cursor";
+import { findCompatibleNote } from "@/lib/note-lookup";
 
 const useCopyEvents = (editor: TipTapEditor) => {
   const monitoring = useRef(false);
@@ -207,14 +208,25 @@ const TiptapEditorCore = memo(
         handleClick: (_, __, event) => {
           const node = event.target as HTMLElement;
           const linkNode = node.closest("a");
-          if (linkNode) {
-            const href = linkNode.getAttribute("href");
-            if (href && isRelativeLink(href)) {
+          const mentionNode = node.closest('[data-type="mention"]');
+          if (linkNode || mentionNode) {
+            const linkElement = (linkNode ?? mentionNode) as Element;
+            const href = linkElement.getAttribute("href");
+            const mentionTarget = {
+              id: linkElement.getAttribute("data-id"),
+              label: linkElement.getAttribute("data-label"),
+              path: href || linkElement.getAttribute("data-path"),
+              target: `${linkElement.getAttribute("data-obsidian-target") ?? ""}${linkElement.getAttribute("data-obsidian-subpath") ?? ""}`,
+            };
+            const isMentionLink =
+              linkElement.getAttribute("data-type") === "mention";
+            if ((href && isRelativeLink(href)) || isMentionLink) {
               const currentNote = noteRef.current;
               if (currentNote) {
-                const fileName = href.split("/").pop()?.replace(/\.md$/i, "");
-                const target = globalState.notes.find(
-                  (n: Note) => n.title === fileName,
+                const fileName = href?.split("/").pop()?.replace(/\.md$/i, "");
+                const target = findCompatibleNote(
+                  globalState.notes,
+                  isMentionLink ? mentionTarget : (fileName ?? href ?? ""),
                 );
                 if (target) {
                   saveCursorIfActive();

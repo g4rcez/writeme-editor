@@ -5,6 +5,11 @@
 .writeme-editor-content p {
   @apply text-pretty proportional-nums text-typography-paragraph;
   line-height: 2.15;
+  word-spacing: normal;
+  white-space-collapse: preserve-breaks;
+  white-space: pre-line;
+  break-before: column;
+  word-break: auto-phrase;
 }
 
 .writeme-editor-content p.is-empty::before {

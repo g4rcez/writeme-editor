@@ -59,6 +59,7 @@ type State = {
     isOpen: boolean;
     type: NoteCreationType;
     templateId?: string;
+    initialTitle?: string;
   };
 };
 
@@ -234,6 +235,7 @@ export const useGlobalStore = createGlobalReducer(
         isOpen: boolean;
         type: NoteCreationType;
         templateId?: string;
+        initialTitle?: string;
       }) => ({ createNoteDialog }),
       setCreateTemplateDialog: (isOpen: boolean) => ({
         createTemplateDialog: { isOpen },

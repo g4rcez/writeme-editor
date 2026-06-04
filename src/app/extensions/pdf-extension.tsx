@@ -5,6 +5,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { formatObsidianLink } from "@/lib/obsidian-links";
 const PdfView = (props: any) => {
   const { node, deleteNode } = props;
 
@@ -70,9 +71,32 @@ export const PdfExtension = Node.create({
     return {
       src: {
         default: null,
+        parseHTML: (element) =>
+          element.getAttribute("src") || element.getAttribute("data-src"),
       },
       title: {
         default: "",
+        parseHTML: (element) =>
+          element.getAttribute("title") ||
+          element.getAttribute("data-title") ||
+          "",
+      },
+      obsidianTarget: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-target"),
+      },
+      obsidianAlias: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-alias"),
+      },
+      obsidianSubpath: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-subpath"),
+      },
+      obsidianEmbed: {
+        default: false,
+        parseHTML: (element) =>
+          element.getAttribute("data-obsidian-embed") === "true",
       },
     };
   },
@@ -103,6 +127,18 @@ export const PdfExtension = Node.create({
     return {
       markdown: {
         serialize: (state: any, node: any) => {
+          if (node.attrs.obsidianEmbed && node.attrs.obsidianTarget) {
+            state.write(
+              formatObsidianLink({
+                embed: true,
+                target: node.attrs.obsidianTarget,
+                subpath: node.attrs.obsidianSubpath,
+                alias: node.attrs.obsidianAlias,
+              }),
+            );
+            state.closeBlock(node);
+            return;
+          }
           state.write(`![pdf](${node.attrs.src || ""})`);
           state.closeBlock(node);
         },

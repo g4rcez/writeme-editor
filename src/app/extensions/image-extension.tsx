@@ -15,6 +15,7 @@ import { TextAlignLeftIcon } from "@phosphor-icons/react/dist/csr/TextAlignLeft"
 import { TextAlignRightIcon } from "@phosphor-icons/react/dist/csr/TextAlignRight";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useEffect, useRef, useState } from "react";
+import { formatObsidianLink } from "@/lib/obsidian-links";
 
 const IMAGE_MIME_MAP: Record<string, string> = {
   png: "image/png",
@@ -243,6 +244,36 @@ export const ImageExtension = Image.extend({
             ? { width: attrs.width, style: `width:${attrs.width}` }
             : {},
       },
+      obsidianTarget: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-obsidian-target"),
+        renderHTML: (attrs) =>
+          attrs.obsidianTarget
+            ? { "data-obsidian-target": attrs.obsidianTarget }
+            : {},
+      },
+      obsidianAlias: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-obsidian-alias"),
+        renderHTML: (attrs) =>
+          attrs.obsidianAlias
+            ? { "data-obsidian-alias": attrs.obsidianAlias }
+            : {},
+      },
+      obsidianSubpath: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-obsidian-subpath"),
+        renderHTML: (attrs) =>
+          attrs.obsidianSubpath
+            ? { "data-obsidian-subpath": attrs.obsidianSubpath }
+            : {},
+      },
+      obsidianEmbed: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-obsidian-embed") === "true",
+        renderHTML: (attrs) =>
+          attrs.obsidianEmbed ? { "data-obsidian-embed": "true" } : {},
+      },
     };
   },
 
@@ -280,6 +311,18 @@ export const ImageExtension = Image.extend({
       ...this.parent?.(),
       markdown: {
         serialize(state: any, node: any) {
+          if (node.attrs.obsidianEmbed && node.attrs.obsidianTarget) {
+            state.write(
+              formatObsidianLink({
+                embed: true,
+                target: node.attrs.obsidianTarget,
+                subpath: node.attrs.obsidianSubpath,
+                alias: node.attrs.obsidianAlias,
+              }),
+            );
+            state.closeBlock(node);
+            return;
+          }
           state.write(`![${node.attrs.alt || ""}](${node.attrs.src || ""})`);
           state.closeBlock(node);
         },

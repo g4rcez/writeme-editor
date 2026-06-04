@@ -33,6 +33,74 @@ describe("mention link serialization", () => {
     editor.destroy();
   });
 
+  it("round-trips Obsidian wikilinks with aliases and subpaths", () => {
+    document.elementFromPoint = () => document.body;
+
+    const editor = new Editor({
+      content: "[[Note|Alias]]\n\n[[Note#Heading|Alias]]",
+      extensions: createExtensions(() => "github-dark"),
+    });
+
+    expect(editor.getMarkdown()).toContain("[[Note|Alias]]");
+    expect(editor.getMarkdown()).toContain("[[Note#Heading|Alias]]");
+
+    editor.destroy();
+  });
+
+  it("preserves leading bang for non-media note embeds", () => {
+    document.elementFromPoint = () => document.body;
+
+    const editor = new Editor({
+      content: "![[Note]]",
+      extensions: createExtensions(() => "github-dark"),
+    });
+
+    expect(editor.getMarkdown()).toContain("![[Note]]");
+
+    editor.destroy();
+  });
+
+  it("round-trips imported image embeds", () => {
+    document.elementFromPoint = () => document.body;
+
+    const editor = new Editor({
+      content: "![[attachments/pic.png]]",
+      extensions: createExtensions(() => "github-dark"),
+    });
+
+    expect(editor.getMarkdown()).toContain("![[attachments/pic.png]]");
+
+    editor.destroy();
+  });
+
+  it("preserves current-note subpath wikilinks", () => {
+    document.elementFromPoint = () => document.body;
+
+    const editor = new Editor({
+      content: "[[#Heading]]\n\n[[^block-id]]",
+      extensions: createExtensions(() => "github-dark"),
+    });
+
+    expect(editor.getMarkdown()).toContain("[[#Heading]]");
+    expect(editor.getMarkdown()).toContain("[[^block-id]]");
+
+    editor.destroy();
+  });
+
+  it("preserves media embed aliases and subpaths", () => {
+    document.elementFromPoint = () => document.body;
+
+    const editor = new Editor({
+      content: "![[file.pdf#page=2|Spec]]\n\n![[clip.mp4|Clip]]",
+      extensions: createExtensions(() => "github-dark"),
+    });
+
+    expect(editor.getMarkdown()).toContain("![[file.pdf#page=2|Spec]]");
+    expect(editor.getMarkdown()).toContain("![[clip.mp4|Clip]]");
+
+    editor.destroy();
+  });
+
   it("consumes the typed trigger when inserting a live note mention", () => {
     document.elementFromPoint = () => document.body;
 

@@ -2,6 +2,7 @@ import { Tooltip } from "@g4rcez/components/tooltip";
 import { type ReactNode } from "react";
 
 import { type Note } from "@/store/note";
+import { findCompatibleNote } from "@/lib/note-lookup";
 import { DomainLinkDisplay } from "../extensions/domain-link";
 
 export type NoteLinkPreview = {
@@ -14,6 +15,7 @@ export type MentionLookupTarget = {
   id: string;
   path: string;
   label: string;
+  target?: string;
 };
 
 type LinkPreviewProps = {
@@ -57,14 +59,7 @@ export function findMentionNote(
   notes: Note[],
   target: MentionLookupTarget | string,
 ): Note | undefined {
-  const lookupValues = createLookupValues(target);
-  if (lookupValues.size === 0) {
-    return undefined;
-  }
-  return notes.find((note) => {
-    const candidates = createNoteCandidateValues(note);
-    return candidates.some((candidate) => lookupValues.has(candidate));
-  });
+  return findCompatibleNote(notes, target);
 }
 
 export function createPlainTextExcerpt(
@@ -100,58 +95,6 @@ export function createNoteLinkPreview(
     excerpt: createPlainTextExcerpt(note.content),
     title: note.title || fallbackTitle || target.id || "Untitled note",
   };
-}
-
-function createLookupValues(target: MentionLookupTarget | string): Set<string> {
-  if (typeof target === "string") {
-    return createNormalizedValueSet([target]);
-  }
-  return createNormalizedValueSet([target.id, target.label, target.path]);
-}
-
-function createNoteCandidateValues(note: Note): string[] {
-  return [
-    ...createNormalizedValueSet([note.id, note.title, note.filePath ?? ""]),
-  ];
-}
-
-function createNormalizedValueSet(values: string[]): Set<string> {
-  const normalizedValues = new Set<string>();
-  values.forEach((value) => {
-    const normalizedValue = normalizeLookupValue(value);
-    if (!normalizedValue) {
-      return;
-    }
-    normalizedValues.add(normalizedValue);
-    const noteId = extractNoteIdFromPath(normalizedValue);
-    if (noteId) {
-      normalizedValues.add(noteId);
-      normalizedValues.add(normalizeLookupValue(`/note/${noteId}`));
-      normalizedValues.add(normalizeLookupValue(`@mention/note/${noteId}`));
-    }
-  });
-  return normalizedValues;
-}
-
-function extractNoteIdFromPath(value: string): string | null {
-  const decodedValue = decodeLookupValue(value);
-  const innerMentionMatch = decodedValue.match(
-    /(?:^|\/)@mention\/note\/([^/?#]+)/,
-  );
-  const notePathMatch = decodedValue.match(/(?:^|\/)note\/([^/?#]+)/);
-  return innerMentionMatch?.[1] ?? notePathMatch?.[1] ?? null;
-}
-
-function decodeLookupValue(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
-function normalizeLookupValue(value: string): string {
-  return value.trim().toLowerCase();
 }
 
 function contentToPlainText(content: string): string {

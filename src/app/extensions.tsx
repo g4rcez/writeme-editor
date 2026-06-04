@@ -45,6 +45,14 @@ import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { DomainLink } from "./extensions/domain-link";
+import {
+  createAttachmentDirectory,
+  createAttachmentRelativePath,
+} from "@/lib/attachment-paths";
+import {
+  formatObsidianLink,
+  parseObsidianLinkBody,
+} from "@/lib/obsidian-links";
 
 const mentionNoteNamespacePattern = /^(?:https?:\/\/[^/]+\/)?@+mention\/note\//;
 
@@ -63,8 +71,7 @@ export const handlePasteImage = async (currentEditor: any) => {
   const projectDir = state.directory;
   const noteTitle = state.note?.title || "untitled";
   if (!projectDir) return false;
-  const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-  const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
+  const targetDir = createAttachmentDirectory(projectDir, noteTitle);
   try {
     await window.electronAPI.fs.mkdir(targetDir);
     const dirContents = await window.electronAPI.fs.readDir(targetDir);
@@ -77,7 +84,7 @@ export const handlePasteImage = async (currentEditor: any) => {
       imageData,
     );
     if (result.success) {
-      const src = `assets/${sanitizedTitle}/${filename}`;
+      const src = createAttachmentRelativePath(noteTitle, filename);
       currentEditor
         .chain()
         .insertContent({ type: "image", attrs: { src } })
@@ -111,10 +118,7 @@ export const handleMediaFile = async (
       const projectDir = state.directory;
       const noteTitle = state.note?.title || "untitled";
       if (projectDir) {
-        const sanitizedTitle = noteTitle
-          .replace(/[^a-z0-9]/gi, "_")
-          .toLowerCase();
-        const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
+        const targetDir = createAttachmentDirectory(projectDir, noteTitle);
         try {
           await window.electronAPI.fs.mkdir(targetDir);
           const dirContents = await window.electronAPI.fs.readDir(targetDir);
@@ -130,7 +134,7 @@ export const handleMediaFile = async (
             src,
           );
           if (result.success) {
-            src = `assets/${sanitizedTitle}/${filename}`;
+            src = createAttachmentRelativePath(noteTitle, filename);
           }
         } catch (e) {
           console.error("Failed to save media to filesystem", e);
@@ -287,6 +291,39 @@ export const createExtensions = (
               return { "data-path": attributes.path };
             },
           },
+          obsidianTarget: {
+            default: null,
+            parseHTML: (element) =>
+              element.getAttribute("data-obsidian-target"),
+            renderHTML: (attributes) =>
+              attributes.obsidianTarget
+                ? { "data-obsidian-target": attributes.obsidianTarget }
+                : {},
+          },
+          obsidianAlias: {
+            default: null,
+            parseHTML: (element) => element.getAttribute("data-obsidian-alias"),
+            renderHTML: (attributes) =>
+              attributes.obsidianAlias
+                ? { "data-obsidian-alias": attributes.obsidianAlias }
+                : {},
+          },
+          obsidianSubpath: {
+            default: null,
+            parseHTML: (element) =>
+              element.getAttribute("data-obsidian-subpath"),
+            renderHTML: (attributes) =>
+              attributes.obsidianSubpath
+                ? { "data-obsidian-subpath": attributes.obsidianSubpath }
+                : {},
+          },
+          obsidianEmbed: {
+            default: false,
+            parseHTML: (element) =>
+              element.getAttribute("data-obsidian-embed") === "true",
+            renderHTML: (attributes) =>
+              attributes.obsidianEmbed ? { "data-obsidian-embed": "true" } : {},
+          },
         };
       },
       parseHTML() {
@@ -303,6 +340,17 @@ export const createExtensions = (
         const path =
           (node.attrs.path as string) ?? innerUrl(node.attrs.id, "mention");
         const normalizedPath = normalizeMentionPath(path);
+        const obsidianAttributes = node.attrs.obsidianTarget
+          ? {
+              "data-obsidian-link": "true",
+              "data-obsidian-target": node.attrs.obsidianTarget,
+              "data-obsidian-alias": node.attrs.obsidianAlias ?? "",
+              "data-obsidian-subpath": node.attrs.obsidianSubpath ?? "",
+              "data-obsidian-embed": node.attrs.obsidianEmbed
+                ? "true"
+                : "false",
+            }
+          : {};
         return [
           "a",
           {
@@ -314,6 +362,7 @@ export const createExtensions = (
             title: "writeme-mention:" + node.attrs.id,
             href: normalizedPath,
             "data-path": normalizedPath,
+            ...obsidianAttributes,
           },
           label,
         ];
@@ -324,16 +373,24 @@ export const createExtensions = (
       addPasteRules() {
         return [
           new PasteRule({
-            find: /\[\[([^\]]+)\]\]/g,
+            find: /(!)?\[\[([^\]\n]+)\]\]/g,
             handler: ({ match, chain, range }: any) => {
-              if (match[1]) {
+              if (match[2]) {
+                const parsed = parseObsidianLinkBody(
+                  match[2],
+                  Boolean(match[1]),
+                );
                 chain()
                   .insertContentAt(range, {
                     type: this.type.name,
                     attrs: {
-                      id: match[1],
-                      label: match[1],
-                      path: innerUrl(match[1], "mention"),
+                      id: parsed.target,
+                      label: parsed.display,
+                      path: parsed.target,
+                      obsidianTarget: parsed.target,
+                      obsidianAlias: parsed.alias,
+                      obsidianSubpath: parsed.subpath,
+                      obsidianEmbed: parsed.embed,
                     },
                   })
                   .run();
@@ -358,13 +415,21 @@ export const createExtensions = (
       addInputRules() {
         return [
           nodeInputRule({
-            find: /\[\[([^\]]+)\]\]$/,
+            find: /(!)?\[\[([^\]\n]+)\]\]$/,
             type: this.type,
             getAttributes: (match) => {
+              const parsed = parseObsidianLinkBody(
+                match[2] ?? "",
+                Boolean(match[1]),
+              );
               return {
-                id: match[1] ?? "",
-                label: match[1] ?? "",
-                path: innerUrl(match[1] ?? "", "mention"),
+                id: parsed.target,
+                label: parsed.display,
+                path: parsed.target,
+                obsidianTarget: parsed.target,
+                obsidianAlias: parsed.alias,
+                obsidianSubpath: parsed.subpath,
+                obsidianEmbed: parsed.embed,
               };
             },
           }),
@@ -384,6 +449,17 @@ export const createExtensions = (
         markdown: {
           serialize(state: any, node: any) {
             if (node && node.attrs) {
+              if (node.attrs.obsidianTarget || node.attrs.obsidianSubpath) {
+                state.write(
+                  formatObsidianLink({
+                    embed: Boolean(node.attrs.obsidianEmbed),
+                    target: node.attrs.obsidianTarget,
+                    subpath: node.attrs.obsidianSubpath,
+                    alias: node.attrs.obsidianAlias,
+                  }),
+                );
+                return;
+              }
               const label = node.attrs.label ?? node.attrs.id;
               const path =
                 node.attrs.path ?? innerUrl(node.attrs.id, "mention");

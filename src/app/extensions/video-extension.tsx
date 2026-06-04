@@ -7,6 +7,7 @@ import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { VideoIcon } from "@phosphor-icons/react/dist/csr/Video";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { formatObsidianLink } from "@/lib/obsidian-links";
 
 const VIDEO_MIME_MAP: Record<string, string> = {
   mp4: "video/mp4",
@@ -105,6 +106,23 @@ export const VideoExtension = Node.create({
       title: {
         default: "",
       },
+      obsidianTarget: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-target"),
+      },
+      obsidianAlias: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-alias"),
+      },
+      obsidianSubpath: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-obsidian-subpath"),
+      },
+      obsidianEmbed: {
+        default: false,
+        parseHTML: (element) =>
+          element.getAttribute("data-obsidian-embed") === "true",
+      },
     };
   },
 
@@ -134,6 +152,18 @@ export const VideoExtension = Node.create({
     return {
       markdown: {
         serialize: (state: any, node: any) => {
+          if (node.attrs.obsidianEmbed && node.attrs.obsidianTarget) {
+            state.write(
+              formatObsidianLink({
+                embed: true,
+                target: node.attrs.obsidianTarget,
+                subpath: node.attrs.obsidianSubpath,
+                alias: node.attrs.obsidianAlias,
+              }),
+            );
+            state.closeBlock(node);
+            return;
+          }
           state.write(`![video](${node.attrs.src || ""})`);
           state.closeBlock(node);
         },

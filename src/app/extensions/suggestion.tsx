@@ -1,22 +1,24 @@
-import type { EditorState } from "@tiptap/pm/state";
+import { TextSelection, type EditorState } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { updatePosition } from "@/app/extensions/update-position";
 import { getEditorAllNotes } from "@/lib/editor-storage";
 import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { useGlobalStore } from "@/store/global.store";
+import { globalDispatch, useGlobalStore } from "@/store/global.store";
 
 const MentionList = (props: any) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
 
   const itemsRef = useRef(props.items);
+  const queryRef = useRef(props.query);
   const editorRef = useRef(props.editor);
   const rangeRef = useRef(props.range);
   const selectedIndexRef = useRef(selectedIndex);
 
   itemsRef.current = props.items;
+  queryRef.current = props.query;
   editorRef.current = props.editor;
   rangeRef.current = props.range;
   selectedIndexRef.current = selectedIndex;
@@ -40,6 +42,38 @@ const MentionList = (props: any) => {
       .run();
   };
 
+  const closeSuggestionBeforeDialog = () => {
+    const editor = editorRef.current;
+    const range = rangeRef.current;
+
+    if (editor && range) {
+      editor
+        .chain()
+        .command(({ tr, state }: { tr: any; state: EditorState }) => {
+          const from = getMentionReplacementFrom(state, range.from);
+          tr.setSelection(TextSelection.create(state.doc, from));
+          return true;
+        })
+        .run();
+      editor.commands.blur();
+    }
+
+    props.closeSuggestion?.();
+  };
+
+  const createNoteFromQuery = () => {
+    const initialTitle = String(queryRef.current ?? "").trim();
+    if (!initialTitle) return false;
+
+    closeSuggestionBeforeDialog();
+    globalDispatch.setCreateNoteDialog({
+      isOpen: true,
+      type: "note",
+      initialTitle,
+    });
+    return true;
+  };
+
   useEffect(() => setSelectedIndex(0), [props.items]);
 
   useEffect(() => {
@@ -50,6 +84,15 @@ const MentionList = (props: any) => {
 
   useLayoutEffect(() => {
     const handler = ({ event }: { event: KeyboardEvent }) => {
+      if (itemsRef.current.length === 0) {
+        if (event.key === "Tab" || event.key === "Enter") {
+          if (!createNoteFromQuery()) return false;
+          event.preventDefault();
+          return true;
+        }
+        return false;
+      }
+
       if (event.key === "ArrowUp") {
         setSelectedIndex(
           (prev) =>
@@ -62,6 +105,7 @@ const MentionList = (props: any) => {
         return true;
       }
       if (event.key === "Tab" || event.key === "Enter") {
+        event.preventDefault();
         selectItem(selectedIndexRef.current);
         return true;
       }
@@ -116,8 +160,27 @@ const MentionList = (props: any) => {
           );
         })
       ) : (
-        <li className="p-4 text-center text-sm text-foreground/50">
-          No notes found
+        <li className="flex flex-col gap-2 p-2">
+          <div className="px-3 py-2 text-center text-sm text-foreground/50">
+            No notes found
+          </div>
+          {String(props.query ?? "").trim() && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                createNoteFromQuery();
+              }}
+              className="flex flex-col rounded-md px-3 py-2 text-left text-foreground transition-colors hover:bg-muted/50"
+            >
+              <span className="text-sm font-medium truncate">
+                Create note “{String(props.query).trim()}”
+              </span>
+              <span className="text-xs text-foreground/50 truncate">
+                Opens New note with this title
+              </span>
+            </button>
+          )}
         </li>
       )}
     </ul>
@@ -153,6 +216,15 @@ export const suggestion = {
     let reactRenderer: ReactRenderer | undefined;
     let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null =
       null;
+    const closeSuggestion = () => {
+      keyDownHandler = null;
+      if (!reactRenderer) return;
+
+      const element = reactRenderer.element;
+      reactRenderer.destroy();
+      element.remove();
+      reactRenderer = undefined;
+    };
     const registerKeyDown = (
       fn: (props: { event: KeyboardEvent }) => boolean,
     ) => {
@@ -164,7 +236,7 @@ export const suggestion = {
           return;
         }
         reactRenderer = new ReactRenderer(MentionList, {
-          props: { ...props, registerKeyDown },
+          props: { ...props, closeSuggestion, registerKeyDown },
           editor: props.editor,
         });
         reactRenderer.element.style.position = "absolute";
@@ -172,7 +244,11 @@ export const suggestion = {
         updatePosition(props.editor, reactRenderer.element);
       },
       onUpdate(props: any) {
-        reactRenderer?.updateProps({ ...props, registerKeyDown });
+        reactRenderer?.updateProps({
+          ...props,
+          closeSuggestion,
+          registerKeyDown,
+        });
         if (!props.clientRect || !reactRenderer) {
           return;
         }
@@ -180,16 +256,13 @@ export const suggestion = {
       },
       onKeyDown(props: { event: KeyboardEvent }) {
         if (props.event.key === "Escape") {
-          reactRenderer?.destroy();
-          reactRenderer?.element.remove();
+          closeSuggestion();
           return true;
         }
         return keyDownHandler?.(props) ?? false;
       },
       onExit() {
-        keyDownHandler = null;
-        reactRenderer?.destroy();
-        reactRenderer?.element.remove();
+        closeSuggestion();
       },
     };
   },

@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
+import {
+  isExternalAssetSrc,
+  resolveLocalAssetCandidates,
+} from "@/lib/attachment-paths";
 
 export function useLocalAsset(
   src: string,
@@ -10,12 +14,10 @@ export function useLocalAsset(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const isLocalAsset = Boolean(
-    isElectron() && src && src.startsWith("assets/"),
-  );
+  const isLocalAsset = Boolean(isElectron() && src && !isExternalAssetSrc(src));
 
   useEffect(() => {
-    if (!isElectron() || !src || !src.startsWith("assets/")) {
+    if (!isElectron() || !src || isExternalAssetSrc(src)) {
       setObjectUrl(null);
       setLoading(false);
       return;
@@ -33,11 +35,19 @@ export function useLocalAsset(
     const loadAsset = async () => {
       try {
         setLoading(true);
-        const cleanProjectDir = projectDir.replace(/\/$/, "");
-        const cleanSrc = src.replace(/^\//, "");
-        const fullPath = `${cleanProjectDir}/${cleanSrc}`;
+        const candidates = resolveLocalAssetCandidates({
+          src,
+          projectDir,
+          noteFilePath: globalState().note?.filePath,
+        });
 
-        const result = await window.electronAPI.fs.readBinaryFile(fullPath);
+        let result: Awaited<
+          ReturnType<typeof window.electronAPI.fs.readBinaryFile>
+        > | null = null;
+        for (const candidate of candidates) {
+          result = await window.electronAPI.fs.readBinaryFile(candidate);
+          if (result?.success && result.data) break;
+        }
 
         if (!isMounted) return;
 

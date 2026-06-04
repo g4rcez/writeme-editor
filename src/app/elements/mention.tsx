@@ -38,12 +38,16 @@ export const MentionNodeView = (props: NodeViewProps) => {
   const id = getStringAttribute(props.node.attrs.id);
   const label = getStringAttribute(props.node.attrs.label);
   const path = getStringAttribute(props.node.attrs.path);
+  const obsidianTarget = getStringAttribute(props.node.attrs.obsidianTarget);
+  const obsidianSubpath = getStringAttribute(props.node.attrs.obsidianSubpath);
+  const obsidianAlias = getStringAttribute(props.node.attrs.obsidianAlias);
+  const obsidianEmbed = Boolean(props.node.attrs.obsidianEmbed);
   const href = path || innerUrl(`/note/${id}`, "mention");
   const title = label || id;
   const notes = getEditorAllNotes(props.editor);
   const preview = createNoteLinkPreview(
     notes,
-    { id, label, path: href },
+    { id, label, path: href, target: `${obsidianTarget}${obsidianSubpath}` },
     title,
   );
   const LinkComp: LinkRenderer =
@@ -60,6 +64,13 @@ export const MentionNodeView = (props: NodeViewProps) => {
       data-id={id}
       data-path={href}
       data-label={label}
+      data-obsidian-link={
+        obsidianTarget || obsidianSubpath ? "true" : undefined
+      }
+      data-obsidian-target={obsidianTarget || undefined}
+      data-obsidian-subpath={obsidianSubpath || undefined}
+      data-obsidian-alias={obsidianAlias || undefined}
+      data-obsidian-embed={obsidianEmbed ? "true" : undefined}
       data-link-text={title}
       data-link-url={href}
       className="mention-node"

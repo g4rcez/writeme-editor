@@ -2,6 +2,12 @@ import { Editor } from "@tiptap/core";
 import { Marked } from "marked";
 import { elementFromString, extractElement, unwrapElement } from "../util/dom";
 import { getMarkdownSpec } from "../util/extensions";
+import {
+  isImageAttachmentTarget,
+  isPdfAttachmentTarget,
+  isVideoAttachmentTarget,
+  parseObsidianLink,
+} from "@/lib/obsidian-links";
 
 function parseFenceInfo(raw: string): { lang: string; title: string | null } {
   const firstLine = raw.split("\n")[0] ?? "";
@@ -72,24 +78,59 @@ const appNoteUrlExtension = {
         return undefined;
       },
       renderer(token: { label: string; path: string; id: string }) {
-        return `<a href="${token.path}" data-type="mention" data-id="${token.id}" data-label="${token.label}" data-path="${token.path}" class="mention" title="writeme-mention:${token.id}">${token.label}</a>`;
+        const label = htmlEscape(token.label);
+        const path = htmlEscape(token.path);
+        const id = htmlEscape(token.id);
+        return `<a href="${path}" data-type="mention" data-id="${id}" data-label="${label}" data-path="${path}" class="mention" title="writeme-mention:${id}">${label}</a>`;
       },
     },
     {
-      name: "wikilink_mention",
+      name: "obsidian_link",
       level: "inline" as const,
       start(src: string) {
-        return src.indexOf("[[");
+        const embedIndex = src.indexOf("![[");
+        const linkIndex = src.indexOf("[[");
+        if (embedIndex < 0) return linkIndex;
+        if (linkIndex < 0) return embedIndex;
+        return Math.min(embedIndex, linkIndex);
       },
       tokenizer(src: string) {
-        const match = src.match(/^\[\[([^\]]+)\]\]/);
+        const match = src.match(/^!?\[\[[^\]\n]+\]\]/);
         if (match) {
-          return { type: "wikilink_mention", raw: match[0], id: match[1] };
+          const parsed = parseObsidianLink(match[0]);
+          if (!parsed) return undefined;
+          return { type: "obsidian_link", ...parsed };
         }
         return undefined;
       },
-      renderer(token: { id: string }) {
-        return `<a href="" data-type="mention" data-id="${token.id}" data-label="${token.id}" data-path="" class="mention" title="writeme-mention:${token.id}">${token.id}</a>`;
+      renderer(token: {
+        raw: string;
+        embed: boolean;
+        target: string;
+        alias: string | null;
+        subpath: string | null;
+        display: string;
+      }) {
+        const raw = htmlEscape(token.raw);
+        const target = htmlEscape(token.target);
+        const subpath = htmlEscape(token.subpath ?? "");
+        const alias = htmlEscape(token.alias ?? "");
+        const display = htmlEscape(token.display);
+        const embed = token.embed ? "true" : "false";
+
+        if (token.embed && isImageAttachmentTarget(token.target)) {
+          return `<img src="${target}" alt="${display}" data-obsidian-embed="true" data-obsidian-raw="${raw}" data-obsidian-target="${target}" data-obsidian-subpath="${subpath}" data-obsidian-alias="${alias}" />`;
+        }
+
+        if (token.embed && isPdfAttachmentTarget(token.target)) {
+          return `<div data-pdf-block data-src="${target}" data-title="${display}" data-obsidian-embed="true" data-obsidian-raw="${raw}" data-obsidian-target="${target}" data-obsidian-subpath="${subpath}" data-obsidian-alias="${alias}"></div>`;
+        }
+
+        if (token.embed && isVideoAttachmentTarget(token.target)) {
+          return `<video src="${target}" title="${display}" data-obsidian-embed="true" data-obsidian-raw="${raw}" data-obsidian-target="${target}" data-obsidian-subpath="${subpath}" data-obsidian-alias="${alias}"></video>`;
+        }
+
+        return `<a href="${target}" data-type="mention" data-id="${target}" data-label="${display}" data-path="${target}" data-obsidian-link="true" data-obsidian-embed="${embed}" data-obsidian-raw="${raw}" data-obsidian-target="${target}" data-obsidian-subpath="${subpath}" data-obsidian-alias="${alias}" class="mention" title="writeme-mention:${target}">${display}</a>`;
       },
     },
   ],

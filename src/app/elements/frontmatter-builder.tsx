@@ -22,7 +22,8 @@ type PropertyType =
   | "boolean"
   | "date"
   | "list"
-  | "multiline";
+  | "multiline"
+  | "object";
 
 type FrontmatterProperty = {
   id: string;
@@ -38,12 +39,20 @@ const TYPE_OPTIONS = [
   { value: "date", label: "Date" },
   { value: "list", label: "List" },
   { value: "multiline", label: "Multiline" },
+  { value: "object", label: "Object" },
 ];
 
 function inferType(value: unknown): PropertyType {
   if (typeof value === "boolean") return "boolean";
   if (typeof value === "number") return "number";
-  if (Array.isArray(value)) return "list";
+  if (Array.isArray(value)) {
+    return value.every((item) =>
+      ["boolean", "number", "string"].includes(typeof item),
+    )
+      ? "list"
+      : "object";
+  }
+  if (value && typeof value === "object") return "object";
   if (typeof value === "string") {
     if (/^\d{4}-\d{2}-\d{2}/.test(value)) return "date";
     if (value.includes("\n")) return "multiline";
@@ -53,6 +62,7 @@ function inferType(value: unknown): PropertyType {
 
 function valueToString(value: unknown, type: PropertyType): string {
   if (type === "list" && Array.isArray(value)) return value.join(", ");
+  if (type === "object") return YAML.stringify(value).trimEnd();
   if (type === "boolean") return String(value);
   if (value === null || value === undefined) return "";
   return String(value);
@@ -89,6 +99,13 @@ function propertiesToYaml(properties: FrontmatterProperty[]): string {
           .map((s) => s.trim())
           .filter(Boolean);
         break;
+      case "object":
+        try {
+          obj[p.key] = YAML.parse(p.value);
+        } catch {
+          obj[p.key] = p.value;
+        }
+        break;
       default:
         obj[p.key] = p.value;
     }
@@ -123,6 +140,7 @@ const ValueInput = ({
         </Checkbox>
       );
     case "multiline":
+    case "object":
       return (
         <Textarea
           required
