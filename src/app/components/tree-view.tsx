@@ -1,10 +1,5 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import type React from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { isElectron } from "@/lib/is-electron";
 import { Prompt } from "@/app/components/prompt";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
@@ -335,10 +330,17 @@ const flattenVisibleNodes = (
   });
 };
 
+export type TreeCreateRequest = {
+  id: number;
+  kind: "file" | "directory";
+  parentPath?: string | null;
+};
+
 interface TreeViewProps {
   rootPath: string;
   searchQuery?: string;
   map: Map<string, Note>;
+  createRequest?: TreeCreateRequest | null;
   onFileSelect: (node: TreeNode) => void;
   onDelete?: (node: TreeNode) => Promise<boolean>;
   onNewFile?: (targetPath: string) => Promise<boolean>;
@@ -352,6 +354,7 @@ export const TreeView = ({
   onNewFile,
   onNewFolder,
   rootPath,
+  createRequest,
   onFileSelect,
   onFocusChange,
   searchQuery = "",
@@ -618,6 +621,45 @@ export const TreeView = ({
     [loadChildren],
   );
 
+  const startPendingCreate = useCallback(
+    (
+      kind: TreeCreateRequest["kind"],
+      filePath: string,
+      isDirectory: boolean,
+      flatNode?: FlattenedNode,
+    ) => {
+      if (filePath === rootPath) {
+        setPendingCreate({ parentPath: rootPath, kind, depth: 0 });
+        setPendingName("");
+        return;
+      }
+
+      if (isDirectory) {
+        const depth = (flatNode?.depth ?? 0) + 1;
+        expandNode(filePath).then(() => {
+          setPendingCreate({ parentPath: filePath, kind, depth });
+          setPendingName("");
+        });
+        return;
+      }
+
+      const parentPath = filePath.substring(0, filePath.lastIndexOf("/"));
+      const depth = flatNode?.depth ?? 0;
+      setPendingCreate({ parentPath, kind, depth });
+      setPendingName("");
+    },
+    [expandNode, rootPath],
+  );
+
+  useEffect(() => {
+    if (!createRequest) return;
+    startPendingCreate(
+      createRequest.kind,
+      createRequest.parentPath ?? rootPath,
+      true,
+    );
+  }, [createRequest, rootPath, startPendingCreate]);
+
   useEffect(() => {
     if (!isElectron()) return;
     return window.electronAPI.onContextMenuAction(
@@ -644,25 +686,11 @@ export const TreeView = ({
           setRenamingPath(filePath);
         } else if (action === "new-file" || action === "new-folder") {
           const kind = action === "new-file" ? "file" : "directory";
-          if (isRoot) {
-            setPendingCreate({ parentPath: rootPath, kind, depth: 0 });
-            setPendingName("");
-          } else if (isDirectory) {
-            const depth = (flatNode?.depth ?? 0) + 1;
-            expandNode(filePath).then(() => {
-              setPendingCreate({ parentPath: filePath, kind, depth });
-              setPendingName("");
-            });
-          } else {
-            const parentPath = filePath.substring(0, filePath.lastIndexOf("/"));
-            const depth = flatNode?.depth ?? 0;
-            setPendingCreate({ parentPath, kind, depth });
-            setPendingName("");
-          }
+          startPendingCreate(kind, filePath, Boolean(isDirectory), flatNode);
         }
       },
     );
-  }, [rootPath, expandNode]);
+  }, [rootPath, startPendingCreate]);
 
   const collapseNode = useCallback((path: string) => {
     setExpandedPaths((prev) => {
@@ -868,7 +896,7 @@ export const TreeView = ({
     );
   }
 
-  if (!rootChildren || rootChildren.length === 0) {
+  if ((!rootChildren || rootChildren.length === 0) && pendingCreate === null) {
     return (
       <div className="p-8 text-center text-gray-500">
         No files found in this directory

@@ -103,6 +103,86 @@ describe("TreeView", () => {
     });
   });
 
+  it("handles root create requests for files and folders, including an empty tree", async () => {
+    directoryEntries["/workspace"] = [];
+    const onNewFile = vi.fn(async (targetPath: string) => {
+      directoryEntries["/workspace"] = [
+        {
+          name: "draft.md",
+          path: targetPath,
+          type: "file",
+          extension: ".md",
+        },
+      ];
+      return true;
+    });
+    const onNewFolder = vi.fn(async (targetPath: string) => {
+      directoryEntries["/workspace"] = [
+        ...directoryEntries["/workspace"]!,
+        {
+          name: "docs",
+          path: targetPath,
+          type: "directory",
+        },
+      ];
+      return true;
+    });
+
+    const { rerender } = render(
+      <TreeView
+        rootPath="/workspace"
+        map={new Map()}
+        onFileSelect={vi.fn()}
+        onNewFile={onNewFile}
+        onNewFolder={onNewFolder}
+      />,
+    );
+
+    expect(
+      await screen.findByText("No files found in this directory"),
+    ).toBeInTheDocument();
+
+    rerender(
+      <TreeView
+        rootPath="/workspace"
+        map={new Map()}
+        createRequest={{ id: 1, kind: "file" }}
+        onFileSelect={vi.fn()}
+        onNewFile={onNewFile}
+        onNewFolder={onNewFolder}
+      />,
+    );
+
+    const fileInput = await screen.findByRole("textbox");
+    fireEvent.change(fileInput, { target: { value: "draft" } });
+    fireEvent.keyDown(fileInput, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(onNewFile).toHaveBeenCalledWith("/workspace/draft.md");
+      expect(screen.getByText("draft.md")).toBeInTheDocument();
+    });
+
+    rerender(
+      <TreeView
+        rootPath="/workspace"
+        map={new Map()}
+        createRequest={{ id: 2, kind: "directory" }}
+        onFileSelect={vi.fn()}
+        onNewFile={onNewFile}
+        onNewFolder={onNewFolder}
+      />,
+    );
+
+    const folderInput = await screen.findByRole("textbox");
+    fireEvent.change(folderInput, { target: { value: "docs" } });
+    fireEvent.keyDown(folderInput, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(onNewFolder).toHaveBeenCalledWith("/workspace/docs");
+      expect(screen.getByText("docs")).toBeInTheDocument();
+    });
+  });
+
   it("indents a pending file input under the parent folder", async () => {
     directoryEntries["/workspace"] = [
       {

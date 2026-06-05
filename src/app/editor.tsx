@@ -25,6 +25,7 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
+import { applyPastedUrlToSelection } from "./extensions/link-paste";
 import { CircleNotchIcon } from "@phosphor-icons/react";
 import {
   getMarkdownWorker,
@@ -175,7 +176,9 @@ const TiptapEditorCore = memo(
         (currentEditor.storage as any).note = note;
         try {
           return void migrateMathStrings(currentEditor);
-        } catch (e) {}
+        } catch (error) {
+          console.warn("Failed to migrate math strings:", error);
+        }
       },
       onUpdate: ({ editor: currentEditor }) => {
         (currentEditor.storage as any).note = noteRef.current;
@@ -253,6 +256,11 @@ const TiptapEditorCore = memo(
 
           const cd = event.clipboardData;
           const text = cd?.getData("text/plain");
+
+          if (applyPastedUrlToSelection(editor, text)) {
+            event.preventDefault();
+            return true;
+          }
 
           if (text && text.length > LARGE_MARKDOWN_THRESHOLD) {
             triggerWorkerParseRef.current(text);

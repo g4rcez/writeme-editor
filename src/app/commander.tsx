@@ -16,6 +16,7 @@ import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { saveCursorIfActive } from "./save-cursor";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,
@@ -71,9 +72,34 @@ export const Commander = () => {
     [notesSig, navigate],
   );
 
+  const openedTabsGroup = useMemo(
+    (): CommandItemTypes[] =>
+      [...state.tabs]
+        .sort((a, b) => a.order - b.order)
+        .map((tab): CommandItemTypes => {
+          const note = state.notes.find((n: Note) => n.id === tab.noteId);
+          const title = note?.title || "Untitled";
+          return {
+            type: "shortcut",
+            title: `Tab: ${title}`,
+            action: async (args) => {
+              args.setOpen(false);
+              saveCursorIfActive();
+              await dispatch.selectNoteById(tab.noteId);
+              navigate(`/note/${tab.noteId}`);
+            },
+          };
+        }),
+    [state.tabs, state.notes, dispatch, navigate],
+  );
+
   const options = useMemo(() => {
     if (state.commander.type === CommanderType.Notes) {
       return noteGroup;
+    }
+
+    if (state.commander.type === CommanderType.OpenTabs) {
+      return openedTabsGroup;
     }
 
     const notesItem: CommandItemTypes = {
@@ -165,8 +191,8 @@ export const Commander = () => {
           shortcut: mapShortcutOS(x.bind),
           type: "shortcut",
           action: (args) => {
-            x.action();
             args.setOpen(false);
+            x.action();
           },
         }),
       );
@@ -407,6 +433,7 @@ export const Commander = () => {
     state.noteGroups,
     state.note,
     noteGroup,
+    openedTabsGroup,
     navigate,
     dispatch,
     commands,

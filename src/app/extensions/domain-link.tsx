@@ -10,7 +10,7 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import React from "react";
+import type React from "react";
 import { DomainLinkPreview, LinkPreview } from "@/app/elements/link-preview";
 
 type MarkdownSerializerState = { write: (value: string) => void };
@@ -24,7 +24,8 @@ type MarkdownSerializerNode = {
 
 export type DomainConfig = {
   regex: RegExp;
-  component: (match: RegExpMatchArray) => React.ReactNode;
+  icon: () => React.ReactNode;
+  title: (match: RegExpMatchArray) => string;
 };
 
 type DomainLinkDisplayProps<
@@ -38,76 +39,73 @@ const externalHttpInputRegex = /(?:^|\s)(https?:\/\/[^\s<>"')]+)\s$/i;
 
 export const DOMAIN_CONFIGS: DomainConfig[] = [
   {
-    regex: /^https?:\/\/(?:www\.)?instagram\.com\/([^\/?#\s]+)/,
-    component: (match) => (
-      <>
-        <InstagramLogoIcon aria-hidden="true" />
-        <span>{match[1]}</span>
-      </>
-    ),
+    regex: /^https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s]+)/,
+    icon: () => <InstagramLogoIcon aria-hidden="true" />,
+    title: (match) => match[1] ?? "",
   },
   {
-    regex: /^https?:\/\/(?:www\.)?github\.com\/([^\/?#\s]+)(?:\/([^\/?#\s]+))?/,
-    component: (match) => (
-      <>
-        <GithubLogoIcon aria-hidden="true" />
-        <span>
-          {match[1]}
-          {match[2] ? `/${match[2]}` : ""}
-        </span>
-      </>
-    ),
+    regex: /^https?:\/\/(?:www\.)?github\.com\/([^/?#\s]+)(?:\/([^/?#\s]+))?/,
+    icon: () => <GithubLogoIcon aria-hidden="true" />,
+    title: (match) => {
+      const owner = match[1] ?? "";
+      const repository = match[2];
+      return repository ? `${owner}/${repository}` : owner;
+    },
   },
   {
-    regex: /^https?:\/\/(?:www\.)?youtube\.com\/(?:@|c\/|user\/)?([^\/?#\s]+)/,
-    component: (match) => (
-      <>
-        <YoutubeLogoIcon weight="fill" />
-        <span>{match[1]}</span>
-      </>
-    ),
+    regex: /^https?:\/\/(?:www\.)?youtube\.com\/(?:@|c\/|user\/)?([^/?#\s]+)/,
+    icon: () => <YoutubeLogoIcon weight="fill" />,
+    title: (match) => match[1] ?? "",
   },
   {
-    regex: /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([^\/?#\s]+)/,
-    component: (match) => (
-      <>
-        <TwitterLogoIcon weight="fill" />
-        <span>@{match[1]}</span>
-      </>
-    ),
+    regex: /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([^/?#\s]+)/,
+    icon: () => <TwitterLogoIcon weight="fill" />,
+    title: (match) => `@${match[1] ?? ""}`,
   },
   {
-    regex: /^https?:\/\/(?:www\.)?linkedin\.com\/in\/([^\/?#\s]+)/,
-    component: (match) => (
-      <>
-        <LinkedinLogoIcon aria-hidden="true" />
-        <span>{match[1]}</span>
-      </>
-    ),
+    regex: /^https?:\/\/(?:www\.)?linkedin\.com\/in\/([^/?#\s]+)/,
+    icon: () => <LinkedinLogoIcon aria-hidden="true" />,
+    title: (match) => match[1] ?? "",
   },
 ];
+
+type DomainConfigMatch = {
+  config: DomainConfig;
+  match: RegExpMatchArray;
+};
+
+const getDomainConfigMatch = (url: string): DomainConfigMatch | null => {
+  for (const config of DOMAIN_CONFIGS) {
+    const match = url.match(config.regex);
+    if (match) return { config, match };
+  }
+  return null;
+};
+
+export const getLinkTitleDomain = (url: string): string => {
+  const matched = getDomainConfigMatch(url);
+  if (matched) return matched.config.title(matched.match);
+  return getGenericUrlLabel(url);
+};
 
 export function DomainLinkDisplay<As extends React.ElementType>({
   url,
   as,
 }: DomainLinkDisplayProps<As>) {
   const As = as || "a";
-  let displayContent: React.ReactNode = null;
-  for (const config of DOMAIN_CONFIGS) {
-    const match = url.match(config.regex);
-    if (match) {
-      displayContent = config.component(match);
-      break;
-    }
-  }
-  if (!displayContent) {
-    displayContent = (
-      <>
-        <LinkIcon />
-        <span>{getGenericUrlLabel(url)}</span>
-      </>
-    );
-  }
+  const matched = getDomainConfigMatch(url);
+  const title = getLinkTitleDomain(url);
+  const displayContent = matched ? (
+    <>
+      {matched.config.icon()}
+      <span>{title}</span>
+    </>
+  ) : (
+    <>
+      <LinkIcon />
+      <span>{title}</span>
+    </>
+  );
   return (
     <As
       href={url}
@@ -127,6 +125,14 @@ const getGenericUrlLabel = (url: string): string => {
   } catch {
     return url;
   }
+};
+
+const shouldRenderAsDomainLink = (
+  element: HTMLElement,
+  href: string,
+): boolean => {
+  const label = element.textContent?.trim() ?? "";
+  return !label || label === href.trim();
 };
 
 const DomainLinkView = (props: NodeViewProps) => {
@@ -166,7 +172,7 @@ export const DomainLink = Node.create({
         getAttrs: (element: HTMLElement | string) => {
           if (typeof element === "string") return false;
           const href = element.getAttribute("href");
-          if (!href) return false;
+          if (!href || !shouldRenderAsDomainLink(element, href)) return false;
           for (const config of DOMAIN_CONFIGS) {
             if (config.regex.test(href)) {
               return { href, text: element.textContent || href };

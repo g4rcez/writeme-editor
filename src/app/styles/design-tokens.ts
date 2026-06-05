@@ -1,6 +1,6 @@
-import type { ComponentTokens } from "@g4rcez/components";
+import { type ComponentTokens } from "@g4rcez/components";
 
-export const componentDesignTokens = {
+export const componentDesignTokens: ComponentTokens = {
   card: {
     radius: "0.15rem",
     "padding-x": "1.5rem",
@@ -396,4 +396,4 @@ export const componentDesignTokens = {
     "cell-gap-tight": "0.125rem",
     "nav-mr": "0.25rem",
   },
-} satisfies ComponentTokens;
+};

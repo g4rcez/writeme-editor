@@ -24,7 +24,7 @@ import { UniqueID } from "@tiptap/extension-unique-id";
 import { CharacterCount, Placeholder } from "@tiptap/extensions";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { type BundledTheme } from "shiki";
+import type { BundledTheme } from "shiki";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 import { ReplacerCommands } from "./commands/commands";
 import { Blockquote } from "./elements/blockquote";
@@ -45,6 +45,7 @@ import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { DomainLink } from "./extensions/domain-link";
+import { LinkMark } from "./extensions/link-mark";
 import {
   createAttachmentDirectory,
   createAttachmentRelativePath,
@@ -162,7 +163,7 @@ export const createExtensions = (
     Frontmatter,
     ColorCode,
     StarterKit.configure({
-      // @ts-ignore
+      // @ts-expect-error
       inlineMath: false,
       heading: false,
       codeBlock: false,
@@ -201,6 +202,7 @@ export const createExtensions = (
     ImageExtension,
     VideoExtension,
     DomainLink,
+    LinkMark,
     PdfExtension,
     FileHandler.configure({
       allowedMimeTypes: [

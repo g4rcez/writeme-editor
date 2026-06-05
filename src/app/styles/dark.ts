@@ -38,7 +38,7 @@ export const darkTheme: typeof defaultDarkTheme = {
     primary: {
       foreground: "hsla(0, 0%, 9%)",
       DEFAULT: "hsla(258, 100%, 80%)",
-      subtle: "hsla(258, 100%, 18%)",
+      subtle: "hsla(258, 40%, 25%)",
       hover: "hsla(258, 100%, 74%)",
     },
     secondary: {

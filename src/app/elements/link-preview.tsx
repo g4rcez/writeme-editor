@@ -1,9 +1,12 @@
 import { Tooltip } from "@g4rcez/components/tooltip";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-import { type Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { findCompatibleNote } from "@/lib/note-lookup";
-import { DomainLinkDisplay } from "../extensions/domain-link";
+import {
+  DomainLinkDisplay,
+  getLinkTitleDomain,
+} from "../extensions/domain-link";
 
 export type NoteLinkPreview = {
   title: string;
@@ -23,18 +26,43 @@ type LinkPreviewProps = {
   children: ReactNode;
 };
 
-export function LinkPreview({ trigger, children }: LinkPreviewProps) {
+export const LinkPreview = ({ trigger, children }: LinkPreviewProps) => {
   return (
     <Tooltip popover hover title={trigger} placement="top">
       {children}
     </Tooltip>
   );
-}
+};
+
+export const UrlLinkPreview = (props: { url: string; title: string }) => {
+  return (
+    <div className="flex max-w-96 flex-col gap-1 rounded-md px-3 py-2 text-sm">
+      <a
+        target="_blank"
+        href={props.url}
+        rel="noopener noreferrer"
+        className="break-all text-primary hover:underline"
+      >
+        {props.url}
+      </a>
+      <span className="text-xs font-medium text-muted-foreground">
+        {getLinkTitleDomain(props.title)}
+      </span>
+    </div>
+  );
+};
 
 export function DomainLinkPreview({ url }: { url: string }) {
   return (
-    <div className="max-w-96 flex flex-col items-center gap-1 rounded-md px-3 py-2 text-base">
-      <a className="text-primary cursor-pointer hover:underline">{url}</a>
+    <div className="flex max-w-96 flex-col items-center gap-1 rounded-md px-3 py-2 text-base">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="break-all text-primary hover:underline"
+      >
+        {url}
+      </a>
       <span className="text-xs !text-foreground">
         <DomainLinkDisplay as="span" url={url} />
       </span>
@@ -97,8 +125,8 @@ export function createNoteLinkPreview(
   };
 }
 
-function contentToPlainText(content: string): string {
-  return content
+const contentToPlainText = (content: string): string =>
+  content
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/^---[\s\S]*?---/g, " ")
@@ -109,4 +137,3 @@ function contentToPlainText(content: string): string {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}

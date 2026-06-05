@@ -6,17 +6,17 @@ import {
 } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { useUIStore, type MediaSource } from "@/store/ui.store";
-import { type TreeNode } from "@/types/tree";
-import { Button, negate } from "@g4rcez/components";
+import type { TreeNode } from "@/types/tree";
+import { Button } from "@g4rcez/components";
+import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
-import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
-import { TreeView } from "../tree-view";
-import { DbNotesTree } from "./db-notes-tree";
+import { TreeView, type TreeCreateRequest } from "../tree-view";
+
+type Mime = { mediaType: MediaSource["type"]; mimeType: string };
 
 const MEDIA_EXTENSION_MAP = {
   ".bmp": { mediaType: "image", mimeType: "image/bmp" },
@@ -31,19 +31,25 @@ const MEDIA_EXTENSION_MAP = {
   ".pdf": { mediaType: "pdf", mimeType: "application/pdf" },
   ".svg": { mediaType: "image", mimeType: "image/svg+xml" },
   ".mov": { mediaType: "video", mimeType: "video/quicktime" },
-} satisfies Record<
-  string,
-  { mediaType: MediaSource["type"]; mimeType: string }
->;
+} satisfies Record<string, Mime>;
 
 type EXTENSION_TYPE = keyof typeof MEDIA_EXTENSION_MAP;
 
 export const ExplorerPane = () => {
   const [state] = useGlobalStore();
   const [, uiDispatch] = useUIStore();
+  const [createRequest, setCreateRequest] = useState<TreeCreateRequest | null>(
+    null,
+  );
   const map = new Map(state.notes.map((x) => [x.filePath!, x]));
   const navigate = useNavigate();
-  const [showDbNotes, setShowDbNotes] = useState(false);
+
+  const requestRootCreate = useCallback((kind: TreeCreateRequest["kind"]) => {
+    setCreateRequest((previous) => ({
+      id: (previous?.id ?? 0) + 1,
+      kind,
+    }));
+  }, []);
 
   const handleNewFile = useCallback(
     async (targetPath: string): Promise<boolean> => {
@@ -225,23 +231,22 @@ export const ExplorerPane = () => {
         </span>
         <div className="flex gap-1">
           <button
+            type="button"
             className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="New Note"
+            title="Create file"
+            aria-label="Create file"
+            onClick={() => requestRootCreate("file")}
           >
-            <PlusIcon size={14} />
+            <FilePlusIcon size={14} />
           </button>
           <button
+            type="button"
             className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            title="New Folder"
+            title="Create folder"
+            aria-label="Create folder"
+            onClick={() => requestRootCreate("directory")}
           >
             <FolderPlusIcon size={14} />
-          </button>
-          <button
-            title="Notes in database"
-            onClick={() => setShowDbNotes(negate)}
-            className={`p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground ${showDbNotes ? "bg-muted text-foreground" : ""}`}
-          >
-            <GlobeSimpleIcon size={14} />
           </button>
         </div>
       </div>
@@ -250,18 +255,15 @@ export const ExplorerPane = () => {
         className="overflow-auto bg-background scrollbar-hide pb-6"
         onContextMenu={handleTreeRootContextMenu}
       >
-        {showDbNotes ? (
-          <DbNotesTree notes={state.notes} rootPath={state.explorerRoot} />
-        ) : (
-          <TreeView
-            map={map}
-            rootPath={state.explorerRoot}
-            onFileSelect={onFileSelect}
-            onDelete={handleDelete}
-            onNewFile={handleNewFile}
-            onNewFolder={handleNewFolder}
-          />
-        )}
+        <TreeView
+          map={map}
+          onDelete={handleDelete}
+          onNewFile={handleNewFile}
+          createRequest={createRequest}
+          onFileSelect={onFileSelect}
+          onNewFolder={handleNewFolder}
+          rootPath={state.explorerRoot}
+        />
       </div>
     </div>
   );

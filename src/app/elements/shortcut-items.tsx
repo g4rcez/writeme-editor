@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { shortcuts } from "@/lib/shortcuts";
-import { useGlobalStore } from "@/store/global.store";
+import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { isElectron } from "@/lib/is-electron";
 import {
@@ -63,6 +63,12 @@ export const useWritemeShortcuts = () => {
           type: Type.Shortcut,
           description: "Commander",
           action: () => dispatch.commander(true),
+        },
+        {
+          bind: "mod+t",
+          type: Type.Shortcut,
+          description: "Open Tabs",
+          action: () => dispatch.commander(true, CommanderType.OpenTabs),
         },
         {
           description: "Reload",
@@ -137,7 +143,7 @@ export const useWritemeShortcuts = () => {
                       lastSynced: new Date(writeResult.lastModified),
                       content: undefined,
                     };
-                    // @ts-ignore
+                    // @ts-expect-error
                     await repositories.notes.update(note.id, updatedNote);
                     console.log(
                       `Migrated note "${note.title}" to ${uniquePath}`,

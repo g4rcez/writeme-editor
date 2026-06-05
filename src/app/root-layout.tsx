@@ -1,8 +1,9 @@
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
-import { Fragment, Suspense, useEffect, useRef } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
+import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
 import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
@@ -118,9 +119,35 @@ export const RootLayout = () => {
     }
   }, [location.pathname]);
 
+  const cycleEditorTab = useCallback(
+    async (direction: TabCycleDirection): Promise<void> => {
+      const currentNoteId = location.pathname.startsWith("/note/")
+        ? (location.pathname.slice("/note/".length).split("/")[0] ?? null)
+        : null;
+      const nextNoteId = getCycledTabNoteId({
+        tabs: state.tabs,
+        currentNoteId,
+        activeTabId: state.activeTabId,
+        direction,
+      });
+      if (!nextNoteId) return;
+      saveCursorIfActive();
+      await dispatch.selectNoteById(nextNoteId);
+      navigate(`/note/${nextNoteId}`);
+    },
+    [dispatch, location.pathname, navigate, state.activeTabId, state.tabs],
+  );
+
   useEffect(
     function registerBindings() {
       const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.ctrlKey && e.key === "Tab") {
+          e.preventDefault();
+          e.stopPropagation();
+          void cycleEditorTab(e.shiftKey ? "backward" : "forward");
+          return;
+        }
+
         if ((e.metaKey || e.ctrlKey) && e.key === "n") {
           e.preventDefault();
           dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
@@ -158,7 +185,7 @@ export const RootLayout = () => {
         controller.abort();
       };
     },
-    [navigate],
+    [cycleEditorTab, dispatch, state.note, uiDispatch],
   );
 
   const isFloatingPanel =

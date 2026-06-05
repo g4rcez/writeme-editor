@@ -160,17 +160,17 @@
 
 /* writeme-layout */
 .writeme-layout {
-  @apply flex flex-col w-screen h-screen print:block print:h-auto print:w-auto print:overflow-visible bg-background;
+  @apply flex overflow-hidden flex-col w-screen h-screen min-h-0 print:block print:h-auto print:w-auto print:overflow-visible bg-background;
 }
 
 .writeme-layout-body {
-  @apply flex overflow-hidden flex-1 w-screen print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background;
+  @apply flex overflow-hidden flex-1 w-screen min-h-0 print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background;
 }
 
 .writeme-layout-main {
-  @apply flex relative flex-col flex-1 min-w-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible;
+  @apply flex overflow-hidden relative flex-col flex-1 min-w-0 min-h-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible;
 }
 
 .writeme-layout-scroll {
-  @apply overflow-y-auto w-full h-full print:block print:overflow-visible print:h-auto bg-background;
+  @apply overflow-y-auto overscroll-contain w-full h-full min-h-0 print:block print:overflow-visible print:h-auto bg-background;
 }

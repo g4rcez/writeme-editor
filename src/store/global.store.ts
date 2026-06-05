@@ -1,20 +1,21 @@
 import { createGlobalReducer } from "use-typed-reducer";
 import { uuid } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
-import { Note } from "./note";
+import type { Note } from "./note";
 import { repositories } from "./repositories";
-import { Tab } from "./repositories/entities/tab";
+import type { Tab } from "./repositories/entities/tab";
 import { NoteGroup } from "./repositories/entities/note-group";
 import { NoteGroupMember } from "./repositories/entities/note-group-member";
 import { uiDispatch } from "./ui.store";
 import { SettingsService } from "./settings";
-import { type Toggle } from "./types";
+import type { Toggle } from "./types";
 
 export type NoteCreationType = "note" | "quick";
 
 export enum CommanderType {
   All = "all",
   Notes = "Notes",
+  OpenTabs = "OpenTabs",
 }
 
 export type Commander = { enabled: boolean; type: CommanderType };
