@@ -169,6 +169,7 @@ export const createExtensions = (
       codeBlock: false,
       blockquote: false,
       orderedList: false,
+      link: false,
       undoRedo: { depth: 20 },
       code: { HTMLAttributes: { class: "inline-code" } },
       bulletList: { keepMarks: true, keepAttributes: true },

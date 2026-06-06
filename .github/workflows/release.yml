@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.16.0
+          node-version-file: .nvmrc
           cache: npm
 
       - uses: oven-sh/setup-bun@v2
@@ -36,7 +36,12 @@ jobs:
 
       - name: Stage artifacts
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+          fi
+          test -d out/make
           DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
           if [ "$DMG_COUNT" -ne 1 ]; then
             echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
@@ -48,11 +53,13 @@ jobs:
             --outfile "release-artifacts/writeme-darwin-arm64"
           test -f "release-artifacts/writeme-${VERSION}-arm64.dmg"
           test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
+          test -f "release-artifacts/writeme-darwin-arm64"
 
       - uses: actions/upload-artifact@v4
         with:
           name: mac-arm64
           path: release-artifacts/
+          if-no-files-found: error
 
   build-windows:
     runs-on: windows-latest
@@ -61,7 +68,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.16.0
+          node-version-file: .nvmrc
           cache: npm
 
       - uses: oven-sh/setup-bun@v2
@@ -76,7 +83,12 @@ jobs:
       - name: Stage artifacts
         shell: bash
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+          fi
+          test -d out/make
           mkdir -p release-artifacts
           find out/make -name "*.exe" -exec cp {} "release-artifacts/writeme-${VERSION}-setup.exe" \;
           find out/make -name "*.nupkg" -exec cp {} release-artifacts/ \;
@@ -86,11 +98,13 @@ jobs:
           test -f "release-artifacts/writeme-${VERSION}-setup.exe"
           test -n "$(find release-artifacts -name '*.nupkg' -print -quit)"
           test -f "release-artifacts/writeme-${VERSION}-win32-x64.zip"
+          test -f "release-artifacts/writeme-windows-x64.exe"
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows
           path: release-artifacts/
+          if-no-files-found: error
 
   build-linux:
     runs-on: ubuntu-latest
@@ -99,7 +113,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.16.0
+          node-version-file: .nvmrc
           cache: npm
 
       - uses: oven-sh/setup-bun@v2
@@ -116,7 +130,12 @@ jobs:
 
       - name: Stage artifacts
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${GITHUB_REF_NAME#v}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+          fi
+          test -d out/make
           mkdir -p release-artifacts
           find out/make -name "*.deb" -exec cp {} "release-artifacts/writeme-${VERSION}-amd64.deb" \;
           find out/make -name "*.rpm" -exec cp {} "release-artifacts/writeme-${VERSION}-x86_64.rpm" \;
@@ -126,11 +145,13 @@ jobs:
           test -f "release-artifacts/writeme-${VERSION}-amd64.deb"
           test -f "release-artifacts/writeme-${VERSION}-x86_64.rpm"
           test -f "release-artifacts/writeme-${VERSION}-linux-x64.zip"
+          test -f "release-artifacts/writeme-linux-x64"
 
       - uses: actions/upload-artifact@v4
         with:
           name: linux
           path: release-artifacts/
+          if-no-files-found: error
 
   release:
     needs: [build-mac-arm64, build-windows, build-linux]

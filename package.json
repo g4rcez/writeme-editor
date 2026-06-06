@@ -4,7 +4,7 @@
   "version": "1.0.6",
   "productName": "writeme",
   "main": ".vite/build/main.js",
-  "packageManager": "npm@11.16.0",
+  "packageManager": "npm@10.9.7",
   "description": "Writeme is an Electron and PWA note-taking app with a rich Markdown editor powered by Tiptap. Features syntax highlighting via Shiki, Mermaid and Graphviz diagrams, Excalidraw drawing, math rendering with KaTeX and mathjs, AI chat integration, SQLite and IndexedDB dual storage, and full keyboard-driven navigation.",
   "bin": {
     "writeme": "./packages/cli/dist/writeme"
@@ -19,8 +19,8 @@
     "url": "https://github.com/g4rcez/writeme-editor"
   },
   "engines": {
-    "node": ">=24",
-    "npm": ">=11"
+    "node": ">=22.22.2 <24",
+    "npm": ">=10"
   },
   "keywords": [
     "markdown",
@@ -155,7 +155,6 @@
     "motion": "12.40.0",
     "node-abi": "4.31.0",
     "node-pty": "1.1.0",
-    "npm": "11.16.0",
     "perfect-freehand": "^1.2.3",
     "prettier": "3.8.3",
     "puppeteer-core": "25.1.0",
@@ -219,12 +218,12 @@
     "@tiptap/extension-text-style": "3.25.0",
     "@types/better-sqlite3": "7.6.13",
     "@types/dagre": "0.7.54",
-    "@types/node": "25.9.1",
+    "@types/node": "22.19.19",
     "@types/raphael": "2.3.10",
     "@types/react": "19.2.16",
     "@types/react-dom": "19.2.3",
     "@vite-pwa/assets-generator": "1.0.2",
-    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-react": "5.2.0",
     "autoprefixer": "10.5.0",
     "babel-plugin-react-compiler": "1.0.0",
     "chalk": "5.6.2",
@@ -237,7 +236,7 @@
     "tailwindcss": "3.4.17",
     "tsx": "4.22.4",
     "typescript": "6.0.3",
-    "vite": "8.0.16",
+    "vite": "7.3.5",
     "vitest": "4.1.8"
   }
 }

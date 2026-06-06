@@ -1,7 +1,9 @@
 import mermaid from "mermaid";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useThemeChange } from "@/app/hooks/use-theme-change";
 import { createMermaidThemeVariables } from "./mermaid-theme";
+
+let nextMermaidRenderId = 0;
 
 mermaid.registerIconPacks([
   {
@@ -16,37 +18,90 @@ const getMermaidConfig = (): Parameters<typeof mermaid.initialize>[0] => ({
   markdownAutoWrap: true,
   securityLevel: "loose",
   arrowMarkerAbsolute: true,
+  suppressErrorRendering: true,
   themeVariables: createMermaidThemeVariables(),
 });
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getMermaidErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (isRecord(error)) {
+    const message = error.message ?? error.str ?? error.error;
+    if (typeof message === "string") return message;
+    if (message instanceof Error) return message.message;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Invalid Mermaid diagram";
+  }
+};
+
+const renderMermaidError = (
+  container: HTMLDivElement,
+  message: string,
+): void => {
+  const errorElement = document.createElement("pre");
+  errorElement.setAttribute("role", "alert");
+  errorElement.className = "text-destructive text-xs whitespace-pre-wrap";
+  errorElement.textContent = `Mermaid diagram error:\n${message}`;
+  container.replaceChildren(errorElement);
+};
+
 export const Mermaid = (props: { chart: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const renderGenerationRef = useRef(0);
 
-  const renderChart = async () => {
+  const renderChart = useCallback(async () => {
     const container = containerRef.current;
-    if (!container || !props.chart) return;
-    container.textContent = props.chart;
-    container.removeAttribute("data-processed");
-    await mermaid.run({ nodes: [container] });
-  };
+    if (!container) return;
 
-  useEffect(() => {
-    mermaid.initialize(getMermaidConfig());
-    renderChart();
-  }, []);
+    const renderGeneration = renderGenerationRef.current + 1;
+    renderGenerationRef.current = renderGeneration;
 
-  useThemeChange(() => {
-    mermaid.initialize(getMermaidConfig());
-    renderChart();
-  });
+    if (!props.chart.trim()) {
+      container.replaceChildren();
+      return;
+    }
 
-  useEffect(() => {
-    renderChart();
+    try {
+      mermaid.initialize(getMermaidConfig());
+      const renderId = `writeme-mermaid-${nextMermaidRenderId++}`;
+      const { svg, bindFunctions } = await mermaid.render(
+        renderId,
+        props.chart,
+        container,
+      );
+      if (renderGeneration !== renderGenerationRef.current) {
+        return;
+      }
+
+      container.innerHTML = svg;
+      bindFunctions?.(container);
+    } catch (error) {
+      if (renderGeneration !== renderGenerationRef.current) {
+        return;
+      }
+
+      const message = getMermaidErrorMessage(error);
+      renderMermaidError(container, message);
+    }
   }, [props.chart]);
 
-  return (
-    <div ref={containerRef} className="mermaid">
-      {props.chart}
-    </div>
-  );
+  useEffect(() => {
+    void renderChart();
+    return () => {
+      renderGenerationRef.current += 1;
+    };
+  }, [renderChart]);
+
+  useThemeChange(() => {
+    void renderChart();
+  });
+
+  return <div ref={containerRef} className="mermaid" />;
 };

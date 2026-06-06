@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.16.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install rpm (Linux only)
@@ -32,3 +32,4 @@ jobs:
         with:
           name: build-${{ matrix.os }}
           path: out/make/**
+          if-no-files-found: error

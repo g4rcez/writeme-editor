@@ -1,4 +1,4 @@
-import { type Event } from "electron";
+import type { Event } from "electron";
 
 type CloseableWindow = {
   hide(): void;

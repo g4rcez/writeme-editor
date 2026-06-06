@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { type Event } from "electron";
+import type { Event } from "electron";
 import { handleWindowClose, openQuickNote } from "./window-lifecycle";
 
 type CloseEvent = Pick<Event, "preventDefault" | "defaultPrevented">;
