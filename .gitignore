@@ -110,3 +110,6 @@ dist/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Yarn Plug-n-Play metadata (repo uses npm)
+.pnp.*

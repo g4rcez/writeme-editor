@@ -11,8 +11,7 @@ export function createMathInstance(props: Props): MathInstance {
   const math = create(all!);
   math.createUnit("px");
   math.createUnit("pt", "1.3333 px", { override: true });
-  math.createUnit("em", "16 px");
-  math.createUnit("em", `${props.emCss} px`, { override: true });
+  math.createUnit("em", `${props.emCss || 16} px`, { override: true });
   return math;
 }
 
@@ -28,7 +27,7 @@ function registerCurrencyUnits(
   ratesData: ExchangeRateData,
 ): void {
   try {
-    math.createUnit("EUR");
+    math.createUnit("EUR", { aliases: ["eur", "euro"] });
     Object.entries(ratesData.rates).forEach(([code, rate]) => {
       if (code !== "EUR") {
         try {

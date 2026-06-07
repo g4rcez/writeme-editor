@@ -1,23 +1,22 @@
-import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
-import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
-import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
-import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
-import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
-import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
-import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
-import { type Icon } from "@phosphor-icons/react";
 import {
   useLayoutStore,
   type ActivityType,
 } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
-import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { Note } from "@/store/note";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { css, Tooltip } from "@g4rcez/components";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { WritemeLogo } from "../logo";
+import { type Icon } from "@phosphor-icons/react";
+import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
+import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type ActivityIconProps = {
   icon: Icon;
@@ -78,13 +77,6 @@ export const ActivityBar = () => {
   return (
     <div className="writeme-aside-activity-bar">
       <div className="writeme-aside-activity-icons">
-        <Link
-          to="/"
-          aria-label="writeme — home"
-          className="w-full flex items-center justify-center"
-        >
-          <WritemeLogo className="size-8 aspect-square px-2" fill="white" />
-        </Link>
         <ActivityIcon
           icon={FilesIcon}
           label="Explorer"

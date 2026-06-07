@@ -1,4 +1,4 @@
-import Preset from "@g4rcez/components/preset.tailwind";
+import { config } from "@g4rcez/components/preset.tailwind";
 import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
 
@@ -6,7 +6,7 @@ export default {
   blocklist: ["[-:\\s\\|]"],
   plugins: [typography, forms],
   darkMode: "class",
-  presets: [Preset],
+  presets: [config],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

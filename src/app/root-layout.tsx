@@ -3,6 +3,7 @@ import { Fragment, Suspense, useCallback, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
+import { isCommanderShortcut } from "@/lib/keyboard-shortcuts";
 import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
@@ -162,6 +163,10 @@ export const RootLayout = () => {
           return;
         }
 
+        if (isCommanderShortcut(e)) {
+          e.preventDefault();
+          dispatch.commander(true);
+        }
         if ((e.metaKey || e.ctrlKey) && e.key === "n") {
           e.preventDefault();
           dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });

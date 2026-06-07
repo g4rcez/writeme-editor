@@ -113,8 +113,8 @@ export default function TemplatePage() {
       <div className="overflow-y-auto flex-1 py-4 px-8 bg-card-background">
         <Editor id={template.id} content={template.content} onSave={onSave} />
       </div>
-      <div className="p-4 border-t bg-muted/10 border-border/20 backdrop-blur-sm">
-        <p className="font-bold tracking-widest text-center uppercase opacity-60 text-[10px] text-muted-foreground">
+      <div className="p-4 border-t border-card-border backdrop-blur-sm">
+        <p className="font-bold text-center opacity-60 text-xs text-muted-foreground">
           Template Syntax
         </p>
         <p className="mt-1 text-xs text-center text-muted-foreground">

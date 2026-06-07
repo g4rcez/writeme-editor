@@ -2,7 +2,7 @@ import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { SYSTEM_VARIABLES, type SystemVariable } from "@/lib/template-utils";
 import { useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { Button, Input, Modal, Tag } from "@g4rcez/components";
 import { ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowsCounterClockwise";
@@ -105,7 +105,7 @@ export const TemplatesPane = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex h-full min-h-0 flex-col bg-background/50">
       <div>
         <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
           <span className="text-xs tracking-wider text-muted-foreground">
@@ -169,7 +169,7 @@ export const TemplatesPane = () => {
         </div>
       </div>
       <div className="flex border-t justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Templates
         </span>
         <div className="flex gap-1">
@@ -196,7 +196,7 @@ export const TemplatesPane = () => {
           </button>
         </div>
       </div>
-      <div className="overflow-y-auto flex-1 p-2 border-t border-border/20">
+      <div className="min-h-0 flex-1 overflow-y-auto border-t border-border/20 p-2">
         {loading ? (
           <div className="flex justify-center items-center h-20 text-xs text-muted-foreground">
             Loading...
@@ -279,7 +279,7 @@ export const TemplatesPane = () => {
                 onChange={(e) => setEditName(e.target.value)}
               />
               <div className="space-y-2">
-                <span className="font-bold tracking-widest uppercase opacity-70 text-[10px] text-muted-foreground">
+                <span className="opacity-70 text-xs text-muted-foreground">
                   JavaScript Expression
                 </span>
                 <div className="overflow-hidden overflow-y-auto rounded-md border bg-card-background border-border/20">

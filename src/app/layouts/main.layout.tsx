@@ -31,7 +31,7 @@ export const MainLayout = () => {
                 <Panel defaultSize={30} minSize={10} className="min-h-0">
                   <div className="flex flex-col h-full min-h-0 bg-[#1e1e1e] border-t border-border/20">
                     <div className="flex justify-between items-center px-3 py-1 bg-sidebar/50 border-b border-border/20">
-                      <span className="text-xs text-muted-foreground uppercase font-semibold">
+                      <span className="text-xs text-muted-foreground">
                         Terminal
                       </span>
                       <button

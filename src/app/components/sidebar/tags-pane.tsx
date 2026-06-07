@@ -45,12 +45,12 @@ export const TagsPane = () => {
 
   return (
     <Fragment>
-      <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
+      <div className="flex justify-between items-center py-2 px-4 border-b border-card-border">
+        <span className="text-xs text-muted-foreground">
           Tags
         </span>
       </div>
-      <div className="overflow-y-auto flex-1 p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {tags.length === 0 ? (
           <div className="flex justify-center items-center text-sm text-muted-foreground">
             No tags found

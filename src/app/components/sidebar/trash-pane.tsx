@@ -3,7 +3,7 @@ import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowC
 import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { Button } from "@g4rcez/components";
 import { globalDispatch, globalState } from "@/store/global.store";
-import { type Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { notificationRef } from "@/app/notification-ref";
 import { Confirm } from "../confirm";
@@ -51,11 +51,9 @@ export const TrashPane = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex h-full min-h-0 flex-col bg-background/50">
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-xs text-muted-foreground">
-          Trash
-        </span>
+        <span className="text-xs text-muted-foreground">Trash</span>
         {trashed.length > 0 && (
           <Button
             theme="ghost-danger"
@@ -67,7 +65,7 @@ export const TrashPane = () => {
         )}
       </div>
 
-      <div className="overflow-y-auto flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex justify-center items-center h-20 text-xs text-muted-foreground">
             Loading...

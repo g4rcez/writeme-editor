@@ -1,5 +1,4 @@
 import { css } from "@g4rcez/components";
-import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import {
   Fragment,
   useCallback,
@@ -8,13 +7,13 @@ import {
   type CSSProperties,
 } from "react";
 
-import { SidebarV2 } from "@/app/components/sidebar/sidebar-v2";
+import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
-import { SidebarContent } from "../components/sidebar/sidebar-content";
 import { ActivityBar } from "../components/sidebar/activity-bar";
 
 const SIDEBAR_MIN_WIDTH = 280;
+
 const SIDEBAR_MAX_WIDTH = 520;
 
 export const Sidebar = () => {
@@ -26,8 +25,6 @@ export const Sidebar = () => {
     SIDEBAR_MAX_WIDTH,
   );
   const [isResizing, setIsResizing] = useState(false);
-  const startResizing = useCallback(() => setIsResizing(true), []);
-  const stopResizing = useCallback(() => setIsResizing(false), []);
   const resize = useCallback(
     (e: MouseEvent) => {
       if (isResizing) {
@@ -43,16 +40,16 @@ export const Sidebar = () => {
   useEffect(() => {
     const controller = new AbortController();
     const opts = { signal: controller.signal };
+    const stopResizing = () => setIsResizing(false);
     window.addEventListener("mousemove", resize, opts);
     window.addEventListener("mouseup", stopResizing, opts);
     return () => void controller.abort();
-  }, [resize, stopResizing]);
+  }, [resize]);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
-    const onNarrow = (e: MediaQueryListEvent) => {
-      if (e.matches) uiDispatch.setSidebarOpen(false);
-    };
+    const onNarrow = (e: MediaQueryListEvent) =>
+      e.matches ? uiDispatch.setSidebarOpen(false) : undefined;
     if (mql.matches) uiDispatch.setSidebarOpen(false);
     mql.addEventListener("change", onNarrow);
     return () => mql.removeEventListener("change", onNarrow);
@@ -60,17 +57,6 @@ export const Sidebar = () => {
 
   return (
     <Fragment>
-      {collapsed ? (
-        <button
-          type="button"
-          title="Expand sidebar"
-          aria-label="Expand sidebar"
-          className="writeme-aside-collapsed-toggle"
-          onClick={() => uiDispatch.setSidebarOpen(true)}
-        >
-          <SidebarIcon size={18} />
-        </button>
-      ) : null}
       <ActivityBar />
       <div
         style={{ "--panel-w": `${sidebarWidth}px` } as CSSProperties}
@@ -89,8 +75,7 @@ export const Sidebar = () => {
             transform: collapsed ? "translateX(-100%)" : "translateX(0)",
           }}
         >
-          {/* {collapsed ? null : <SidebarV2 />} */}
-          <SidebarContent />
+          {collapsed ? null : <SidebarShell />}
         </div>
       </div>
       {!collapsed && (
@@ -99,11 +84,11 @@ export const Sidebar = () => {
           role="separator"
           aria-label="Resize sidebar"
           aria-orientation="vertical"
-          aria-valuemin={SIDEBAR_MIN_WIDTH}
-          aria-valuemax={SIDEBAR_MAX_WIDTH}
           aria-valuenow={sidebarWidth}
-          onMouseDown={startResizing}
           className="writeme-aside-resize"
+          aria-valuemax={SIDEBAR_MAX_WIDTH}
+          aria-valuemin={SIDEBAR_MIN_WIDTH}
+          onMouseDown={() => setIsResizing(true)}
           onKeyDown={(e) => {
             const step = e.shiftKey ? 32 : 16;
             if (e.key === "ArrowRight") {

@@ -23,6 +23,7 @@ import {
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
+import { NoteIcon } from "@phosphor-icons/react";
 
 export const CommanderPreview = (props: {
   command: CommandItemTypes;
@@ -60,8 +61,14 @@ export const Commander = () => {
     (): CommandItemTypes[] =>
       globalState().notes.map(
         (note: Note): CommandItemTypes => ({
+          Icon: (
+            <span className="text-primary text-xs flex items-center gap-1">
+              <NoteIcon />
+              Note
+            </span>
+          ),
           type: "shortcut",
-          title: `Note: ${note.title}`,
+          title: `${note.title}`,
           action: (args) => {
             args.setOpen(false);
             navigate(`/note/${note.id}`);

@@ -2,7 +2,7 @@ import { Input, Tooltip } from "@g4rcez/components";
 import { notificationRef } from "@/app/notification-ref";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
-import { type NoteWithTags } from "@/app/hooks/use-note-list";
+import type { NoteWithTags } from "@/app/hooks/use-note-list";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { Dates } from "@/lib/dates";
 import { globalDispatch } from "@/store/global.store";
@@ -159,7 +159,7 @@ const NoteListItems = (props: {
   };
 
   return (
-    <ul className="flex overflow-y-auto flex-col h-full divide-y max-h- divide-border/20 scrollbar-hide">
+    <ul className="flex min-h-0 flex-1 flex-col divide-y divide-border/20 overflow-y-auto scrollbar-hide">
       <li
         onClick={props.onCreateNewNote}
         className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-colors cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -223,25 +223,15 @@ export const NoteListSidebar = () => {
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-background">
+    <div
+      ref={containerRef}
+      className="flex h-full min-h-0 flex-col bg-background"
+    >
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
+        <span className="font-bold text-xs text-muted-foreground">
           {getHeaderTitle()}
         </span>
-        <div className="flex gap-0.5 items-center">
-          <Tooltip
-            placement="bottom"
-            title={
-              <button
-                onClick={() => setSortBy("updatedAt")}
-                className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <ClockCounterClockwiseIcon className="size-3.5" />
-              </button>
-            }
-          >
-            Last edited
-          </Tooltip>
+        <div className="flex gap-1 items-center">
           <Tooltip
             placement="bottom"
             title={
@@ -259,6 +249,19 @@ export const NoteListSidebar = () => {
             placement="bottom"
             title={
               <button
+                onClick={() => setSortBy("updatedAt")}
+                className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <ClockCounterClockwiseIcon className="size-3.5" />
+              </button>
+            }
+          >
+            Last edited
+          </Tooltip>
+          <Tooltip
+            placement="bottom"
+            title={
+              <button
                 onClick={() => setSortBy("alphabetical")}
                 className={`p-1 rounded transition-colors font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
               >
@@ -270,18 +273,16 @@ export const NoteListSidebar = () => {
           </Tooltip>
         </div>
       </div>
-      <div className="p-3 border-b border-border/20">
-        <div className="relative">
-          <Input
-            optionalText=" "
-            onChange={onSearch}
-            placeholder="Search..."
-            value={state.searchQuery}
-            right={
-              <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-            }
-          />
-        </div>
+      <div className="my-2">
+        <Input
+          optionalText=" "
+          onChange={onSearch}
+          placeholder="Search..."
+          value={state.searchQuery}
+          right={
+            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+          }
+        />
       </div>
       {notes.length === 0 ? (
         <div className="flex flex-col flex-1 gap-4 justify-center items-center py-4 h-full text-sm text-muted-foreground">

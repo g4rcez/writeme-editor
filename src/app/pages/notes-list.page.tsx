@@ -242,8 +242,8 @@ export default function NotesListPage() {
           </h1>
         </div>
         <Input
-          type="text"
           value={search}
+          optionalText=" "
           left={<MagnifyingGlassIcon size={16} />}
           title="Search notes or tags..."
           placeholder="Search notes or tags..."
@@ -255,7 +255,7 @@ export default function NotesListPage() {
         name="notes"
         reference="id"
         useControl={false}
-        rows={filteredNotes}
+        rows={filteredNotes as any[]}
       />
 
       {selectedIds.size > 0 && (
