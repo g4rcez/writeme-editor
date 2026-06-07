@@ -1,5 +1,6 @@
 import { createGlobalReducer } from "use-typed-reducer";
 import { uuid } from "@g4rcez/components";
+import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { isElectron } from "@/lib/is-electron";
 import type { Note } from "./note";
 import { repositories } from "./repositories";
@@ -319,11 +320,18 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
     },
     removeTab: async (id: string) => {
       const state = get.state();
+      const closedTab = state.tabs.find((tab) => tab.id === id);
       await repositories.tabs.delete(id);
-      const indexToDelete = state.tabs.findIndex((x) => x.id === id);
-      const tabs = state.tabs.filter((x) => x.id !== id);
-      const tab: Tab | null = tabs.at(indexToDelete - 1) ?? tabs[0] ?? null;
-      return { tabs, activeTabId: tab?.id ?? null };
+      const tabs = state.tabs.filter((tab) => tab.id !== id);
+      const isClosingActiveTab =
+        state.activeTabId === id ||
+        state.activeTabId === closedTab?.noteId ||
+        state.note?.id === closedTab?.noteId;
+      if (!isClosingActiveTab) {
+        return { tabs, activeTabId: state.activeTabId };
+      }
+      const tab = getPreviousTabAfterClose(state.tabs, id);
+      return { tabs, activeTabId: tab?.id ?? null, note: null };
     },
     removeTabByNoteId: async (noteId: string) => {
       const state = get.state();

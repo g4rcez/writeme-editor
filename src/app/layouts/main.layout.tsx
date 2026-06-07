@@ -2,10 +2,35 @@ import { TabsBar } from "@/app/components/tabs-bar";
 import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
 import { useGlobalStore } from "@/store/global.store";
 import { XIcon } from "@phosphor-icons/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { Outlet } from "react-router-dom";
+import { useLocation, useOutlet } from "react-router-dom";
 import { useJsonDrop } from "../hooks/use-json-drop";
 import { Sidebar } from "./sidebar";
+
+const routeTransition = {
+  duration: 0.12,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+function RouteTransitionOutlet() {
+  const location = useLocation();
+  const outlet = useOutlet();
+  const shouldReduceMotion = useReducedMotion();
+  const routeKey = `${location.pathname}${location.search}`;
+
+  return (
+    <motion.div
+      key={routeKey}
+      animate={{ opacity: 1 }}
+      className="w-full min-h-full"
+      initial={shouldReduceMotion ? false : { opacity: 0.2 }}
+      transition={shouldReduceMotion ? { duration: 0 } : routeTransition}
+    >
+      {outlet}
+    </motion.div>
+  );
+}
 
 export const MainLayout = () => {
   const [terminalVisible, dispatch] = useGlobalStore((s) => s.terminalVisible);
@@ -22,7 +47,7 @@ export const MainLayout = () => {
                 id="main-scroll-container"
                 className="writeme-layout-scroll py-8"
               >
-                <Outlet />
+                <RouteTransitionOutlet />
               </div>
             </Panel>
             {terminalVisible && (

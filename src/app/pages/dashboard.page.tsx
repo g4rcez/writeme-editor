@@ -202,10 +202,8 @@ export default function DashboardPage() {
           <div className="space-y-10">
             <section className="p-6 rounded-3xl border bg-muted/20 border-border/50">
               <div className="flex gap-2 items-center mb-6">
-                <StarIcon size={16} className="text-yellow-500 fill-current" />
-                <h2 className="text-sm font-bold tracking-widest uppercase">
-                  Favorites
-                </h2>
+                <StarIcon size={16} className="text-warn fill-current" />
+                <h2 className="text-sm tracking-widest uppercase">Favorites</h2>
               </div>
               <div className="space-y-4">
                 {favorites.map((note: Note) => (

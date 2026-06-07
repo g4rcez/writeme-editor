@@ -15,6 +15,7 @@ import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
+import { useReducedMotion } from "motion/react";
 import { FilmStripIcon } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { Tooltip, Button } from "@g4rcez/components";
@@ -140,6 +141,8 @@ interface TreeNodeItemProps {
   isFocused: boolean;
   isLoading: boolean;
   isExpanded: boolean;
+  isManuallyExpanded: boolean;
+  shouldReduceMotion: boolean | null;
   onHover?: () => void;
   isConfirming: boolean;
   onActivate: () => void;
@@ -150,12 +153,60 @@ interface TreeNodeItemProps {
   onContextMenu?: (e: React.MouseEvent, node: TreeNode) => void;
 }
 
+type AnimatedFolderIconProps = {
+  isExpanded: boolean;
+  isManuallyExpanded: boolean;
+  shouldReduceMotion: boolean | null;
+};
+
+function AnimatedFolderIcon({
+  isExpanded,
+  isManuallyExpanded,
+  shouldReduceMotion,
+}: AnimatedFolderIconProps) {
+  const previousManualExpandedRef = useRef(isManuallyExpanded);
+  const shouldAnimate =
+    previousManualExpandedRef.current !== isManuallyExpanded &&
+    !shouldReduceMotion;
+  const Icon = isExpanded ? FolderOpenIcon : FolderIcon;
+
+  useEffect(() => {
+    previousManualExpandedRef.current = isManuallyExpanded;
+  }, [isManuallyExpanded]);
+
+  return (
+    <Icon className="size-4 shrink-0 text-foreground/70">
+      {shouldAnimate && (
+        <rect
+          key={isExpanded ? "folder-open-pulse" : "folder-closed-pulse"}
+          x="36"
+          y="72"
+          width="184"
+          height="132"
+          rx="28"
+          fill="currentColor"
+          opacity="0"
+        >
+          <animate
+            attributeName="opacity"
+            values="0;0.14;0"
+            dur="0.18s"
+            repeatCount="1"
+          />
+        </rect>
+      )}
+    </Icon>
+  );
+}
+
 const TreeNodeItem = ({
   node,
   depth,
   isExpanded,
   isFocused,
   isLoading,
+  isManuallyExpanded,
+  shouldReduceMotion,
   onActivate,
   onDelete,
   onHover,
@@ -209,11 +260,11 @@ const TreeNodeItem = ({
           ) : (
             <CaretRightIcon className="size-4" />
           )}
-          {isExpanded ? (
-            <FolderOpenIcon className="size-4 text-foreground/70" />
-          ) : (
-            <FolderIcon className="size-4 text-foreground/70" />
-          )}
+          <AnimatedFolderIcon
+            isExpanded={isExpanded}
+            isManuallyExpanded={isManuallyExpanded}
+            shouldReduceMotion={shouldReduceMotion}
+          />
         </>
       ) : (
         <>
@@ -383,6 +434,7 @@ export const TreeView = ({
   const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
   const expandedPathsRef = useRef(new Set<string>());
   const flattenedNodesRef = useRef<FlattenedNode[]>([]);
+  const shouldReduceMotion = useReducedMotion();
 
   const loadRoot = useCallback(async () => {
     setIsLoading(true);
@@ -921,6 +973,8 @@ export const TreeView = ({
             key={flatNode.node.path}
             isExpanded={flatNode.isExpanded}
             isFocused={index === focusedIndex}
+            isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
+            shouldReduceMotion={shouldReduceMotion}
             note={map.get(flatNode.node.path)!}
             onHover={() => setFocusedIndex(index)}
             onConfirmCancel={() => setConfirmingPath(null)}
@@ -979,6 +1033,8 @@ export const TreeView = ({
               key={flatNode.node.path}
               isExpanded={flatNode.isExpanded}
               isFocused={index === focusedIndex}
+              isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
+              shouldReduceMotion={shouldReduceMotion}
               note={map.get(flatNode.node.path)!}
               onHover={() => setFocusedIndex(index)}
               onConfirmCancel={() => setConfirmingPath(null)}

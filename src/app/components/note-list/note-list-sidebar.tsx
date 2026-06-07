@@ -228,7 +228,7 @@ export const NoteListSidebar = () => {
       className="flex h-full min-h-0 flex-col bg-background"
     >
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {getHeaderTitle()}
         </span>
         <div className="flex gap-1 items-center">

@@ -113,9 +113,9 @@ export const SidebarShell = () => {
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
         <nav className="grid lg:grid-cols-2 gap-2 grid-cols-1">
           <SidebarNavItem
+            active={false}
             label="Search"
             icon={<FileSearchIcon size={14} />}
-            active={location.pathname.startsWith("/notes")}
             onClick={() => {
               dispatch.commander(true, CommanderType.Notes);
             }}

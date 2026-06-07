@@ -570,16 +570,14 @@ function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
                 className={`flex flex-col items-center justify-center h-32 border-2 border-dashed rounded-xl transition-[transform,background-color,border-color,color] duration-300 ${
                   isOver
                     ? "border-primary bg-primary/10 text-primary scale-[0.98]"
-                    : "border-neutral-200 dark:border-neutral-700 text-foreground/20"
+                    : "border-card-border text-muted"
                 }`}
               >
                 <motion.div
                   animate={isOver ? { y: [0, -4, 0] } : {}}
                   transition={{ repeat: Infinity, duration: 1.5 }}
                   className={`p-2 rounded-full mb-2 transition-colors ${
-                    isOver
-                      ? "bg-primary/20"
-                      : "bg-neutral-100 dark:bg-neutral-800"
+                    isOver ? "bg-primary/20" : "bg-card-border"
                   }`}
                 >
                   <DotsSixVerticalIcon className="size-5" />

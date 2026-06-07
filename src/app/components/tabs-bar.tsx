@@ -2,13 +2,15 @@ import { css } from "@g4rcez/components";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { useGlobalStore } from "@/store/global.store";
 import type { Tab } from "@/store/repositories/entities/tab";
 import { Note } from "@/store/note";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
+  const navigate = useNavigate();
   const params = useParams<{ noteId: string }>();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [renamingNoteId, setRenamingNoteId] = useState<string | null>(null);
@@ -16,17 +18,32 @@ export const TabsBar: React.FC = () => {
   const renameEscapedRef = useRef(false);
   const renameCommittedRef = useRef(false);
 
-  const onCloseTab = async (e: React.MouseEvent, tabId: string) => {
+  const onCloseTab = async (e: React.MouseEvent, tab: Tab) => {
     e.stopPropagation();
     e.preventDefault();
-    dispatch.removeTab(tabId);
+
+    const isClosingCurrentNote = params.noteId === tab.noteId;
+    const nextTab = getPreviousTabAfterClose(state.tabs, tab.id);
+
+    await dispatch.removeTab(tab.id);
+
+    if (!isClosingCurrentNote) return;
+
+    if (nextTab) {
+      await dispatch.selectNoteById(nextTab.noteId);
+      navigate(`/note/${nextTab.noteId}`);
+      return;
+    }
+
+    dispatch.setNote(null);
+    navigate("/");
   };
 
-  const onMiddleClick = (e: React.MouseEvent, tabId: string) => {
+  const onMiddleClick = (e: React.MouseEvent, tab: Tab) => {
     e.stopPropagation();
     e.preventDefault();
     if (e.button === 1) {
-      onCloseTab(e, tabId);
+      void onCloseTab(e, tab);
     }
   };
 
@@ -84,7 +101,7 @@ export const TabsBar: React.FC = () => {
             data-tab-id={tab.id}
             title={note?.filePath || title}
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
-            onMouseDown={(e) => onMiddleClick(e, tab.id)}
+            onMouseDown={(e) => onMiddleClick(e, tab)}
             onClick={(e) => {
               if (renamingNoteId === tab.noteId || isActive) {
                 e.preventDefault();
@@ -143,7 +160,7 @@ export const TabsBar: React.FC = () => {
             )}
             <button
               aria-label={`Close ${title}`}
-              onClick={(e) => onCloseTab(e, tab.id)}
+              onClick={(e) => void onCloseTab(e, tab)}
               className={css(
                 "p-0.5 rounded transition-opacity hover:bg-foreground/10",
                 isActive
