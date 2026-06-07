@@ -1,5 +1,24 @@
 # Tasks
 
+## Refactor editor scroll memory hook
+
+- [x] Inspect current hook, call sites, store contract, and legacy scroll-saver references.
+- [x] Refactor `useEditorScrollMemory` with null-safe restore/save lifecycle and minimal helpers.
+- [x] Remove unused legacy scroll-saver files/tests and any unused dispatch/import wiring.
+- [x] Add focused hook/store tests for the new implementation.
+- [x] Run targeted Vitest, LSP diagnostics, lint/type checks where practical.
+- [x] Self-review for simplicity, hook ordering, no hacky scroll behavior, and scope control.
+- [x] Document implementation results and close the task.
+
+## Add homedir to global state
+
+- [x] Inspect existing global-store initialization and Electron home-directory API.
+- [x] Add `homedir` to state with an Electron-only initialization path.
+- [x] Update the app initialization call if the dispatcher becomes asynchronous.
+- [x] Run diagnostics/type checks for touched files.
+- [x] Review for simplicity, browser safety, and scope control.
+- [x] Document verification and close out the task.
+
 ## getLinkTitleDomain helper
 
 - [x] Inspect current domain-link display/config structure.
@@ -93,3 +112,33 @@
 
 - [x] Locate tab UI, state, persistence, and keyboard shortcut entry points.
 - [x] Write scouting findings to `context.md`.
+
+## Persist editor tab scroll position
+
+- [x] Inspect current editor tab state, route selection, and scroll container ownership.
+- [x] Store per-tab scroll positions using the existing opened-file/tab state pattern.
+- [x] Capture scroll offsets before tab switches/closures and while scrolling the active editor.
+- [x] Restore saved scroll positions after editor content renders.
+- [x] Add or update focused regression coverage where practical.
+- [x] Run targeted validation and diagnostics.
+- [x] Complete self-review and document verification.
+
+## Fix editor tab scroll restoration
+
+- [x] Inspect current scroll save/restore lifecycle.
+- [x] Make restore retry after editor layout is scrollable.
+- [x] Preserve existing cursor selection restoration.
+- [x] Add focused regression coverage for restore helper behavior.
+- [x] Retarget scroll save/restore to `.writeme-layout-scroll`.
+- [x] Run diagnostics and targeted tests.
+- [x] Complete self-review and document verification.
+
+## Tiptap position scroll restoration
+
+- [x] Inspect Tiptap position APIs and current save/restore paths.
+- [x] Capture a visible Tiptap document position anchor from `.writeme-layout-scroll`.
+- [x] Restore by aligning the saved Tiptap position anchor.
+- [x] Preserve cursor selection and raw scroll fallback behavior.
+- [x] Add focused regression coverage where practical.
+- [x] Run diagnostics and targeted tests.
+- [x] Complete self-review and document verification.

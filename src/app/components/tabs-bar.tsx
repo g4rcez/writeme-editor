@@ -1,9 +1,10 @@
 import { css } from "@g4rcez/components";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useGlobalStore } from "@/store/global.store";
-import { Tab } from "@/store/repositories/entities/tab";
+import type { Tab } from "@/store/repositories/entities/tab";
 import { Note } from "@/store/note";
 
 export const TabsBar: React.FC = () => {
@@ -85,7 +86,10 @@ export const TabsBar: React.FC = () => {
             to={tab.noteId ? `/note/${tab.noteId}` : "#"}
             onMouseDown={(e) => onMiddleClick(e, tab.id)}
             onClick={(e) => {
-              if (renamingNoteId === tab.noteId || isActive) e.preventDefault();
+              if (renamingNoteId === tab.noteId || isActive) {
+                e.preventDefault();
+                return;
+              }
             }}
             className={css(
               "group flex border-r border-card-border items-center min-w-24 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-[color,background-color] relative",

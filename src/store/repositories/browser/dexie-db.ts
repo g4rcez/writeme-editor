@@ -11,6 +11,7 @@ import { uuid } from "@g4rcez/components";
 import type { AICredentials } from "../entities/ai";
 import type { AIChat, AIConfig, AIMessage } from "../electron/ai.repository";
 import type { View } from "../entities/view";
+import type { CursorPosition } from "../entities/cursor-position";
 
 export const db = new Dexie("writeme") as Dexie & {
   notes: EntityTable<Note, "id">;
@@ -26,6 +27,7 @@ export const db = new Dexie("writeme") as Dexie & {
   aiMessages: EntityTable<AIMessage, "id">;
   aiCredentials: EntityTable<AICredentials, "adapterId">;
   views: EntityTable<View, "id">;
+  cursorPositions: EntityTable<CursorPosition, "noteId">;
 };
 
 // Version 1 (original schema)
@@ -243,13 +245,10 @@ db.version(15)
           favorite: false,
         });
       }
-    } catch {
-      // templates table never existed for this user (fresh install at v15+), skip migration
-    }
+    } catch {}
     console.log("Schema migration to v15 complete");
   });
 
-// Version 17 (AI tables for browser PWA)
 db.version(17).stores({
   notes:
     "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
@@ -266,7 +265,6 @@ db.version(17).stores({
   aiCredentials: "&adapterId",
 });
 
-// Version 18 (Bases — query-driven note views)
 db.version(18).stores({
   notes:
     "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite",
@@ -284,7 +282,6 @@ db.version(18).stores({
   bases: "&id, title, viewType, createdAt, updatedAt",
 });
 
-// Version 19 (Rename bases → views)
 db.version(19)
   .stores({
     notes:
@@ -326,4 +323,23 @@ db.version(20).stores({
   aiMessages: "&id, chatId, role, createdAt",
   aiCredentials: "&adapterId",
   views: "&id, title, viewType, createdAt, updatedAt",
+});
+
+// Version 21 (Cursor positions)
+db.version(21).stores({
+  notes:
+    "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite, deletedAt",
+  projects: "&id, title, folderPath, description, createdAt, updatedAt",
+  tabs: "&id, noteId, order, createdAt",
+  hashtags: "&id, hashtag, filename, project",
+  settings: "&id, &name, value",
+  scripts: "&id, name, createdAt, updatedAt",
+  noteGroups: "&id, title, createdAt, updatedAt",
+  noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+  aiConfigs: "&id, adapterId, isDefault, createdAt",
+  aiChats: "&id, noteId, createdAt",
+  aiMessages: "&id, chatId, role, createdAt",
+  aiCredentials: "&adapterId",
+  views: "&id, title, viewType, createdAt, updatedAt",
+  cursorPositions: "&noteId, y, anchor",
 });

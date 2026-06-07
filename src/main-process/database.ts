@@ -92,7 +92,8 @@ class DatabaseManager {
         "order" INTEGER,
         project TEXT,
         createdAt TEXT,
-        updatedAt TEXT
+        updatedAt TEXT,
+        scrollY REAL DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS hashtags (
@@ -313,10 +314,13 @@ class DatabaseManager {
         }
 
         if (table === "tabs") {
-          if (!columns.some((c: any) => c.name === "updatedAt")) {
-            console.log(`Migrating table ${table}: adding 'updatedAt' column`);
+          const currentColumns = this.db
+            .prepare(`PRAGMA table_info(${table})`)
+            .all() as any[];
+          if (!currentColumns.some((c: any) => c.name === "scrollY")) {
+            console.log(`Migrating table ${table}: adding 'scrollY' column`);
             this.db
-              .prepare(`ALTER TABLE ${table} ADD COLUMN updatedAt TEXT`)
+              .prepare(`ALTER TABLE ${table} ADD COLUMN scrollY REAL DEFAULT 0`)
               .run();
           }
         }
@@ -346,27 +350,37 @@ class DatabaseManager {
     if (row.tags) {
       try {
         row.tags = JSON.parse(row.tags);
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Failed to parse row tags JSON:", error);
+      }
     }
     if (row.metadata) {
       try {
         row.metadata = JSON.parse(row.metadata);
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Failed to parse row metadata JSON:", error);
+      }
     }
     if (row.columns) {
       try {
         row.columns = JSON.parse(row.columns);
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Failed to parse row columns JSON:", error);
+      }
     }
     if (row.viewConfig) {
       try {
         row.viewConfig = JSON.parse(row.viewConfig);
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Failed to parse row view config JSON:", error);
+      }
     }
     if (row.selectionSlice) {
       try {
         row.selectionSlice = JSON.parse(row.selectionSlice);
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Failed to parse row selection slice JSON:", error);
+      }
     }
     if ("isDefault" in row) {
       row.isDefault = Boolean(row.isDefault);

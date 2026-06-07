@@ -16,7 +16,6 @@ import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { saveCursorIfActive } from "./save-cursor";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,
@@ -84,7 +83,6 @@ export const Commander = () => {
             title: `Tab: ${title}`,
             action: async (args) => {
               args.setOpen(false);
-              saveCursorIfActive();
               await dispatch.selectNoteById(tab.noteId);
               navigate(`/note/${tab.noteId}`);
             },

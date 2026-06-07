@@ -36,6 +36,7 @@ type State = {
   noteGroupMembers: NoteGroupMember[];
   theme: Theme;
   help: boolean;
+  homedir: string | null;
   notes: Note[];
   note: Note | null;
   editorFontSize: number;
@@ -66,31 +67,43 @@ type State = {
 
 const initialState: State = {
   help: false,
+  homedir: null,
   aiContext: null,
+  directory: null,
+  sidebarWidth: 320,
   tabs: [] as Tab[],
-  noteGroups: [] as NoteGroup[],
-  noteGroupMembers: [] as NoteGroupMember[],
+  editorFontSize: 16,
+  explorerRoot: null,
   notes: [] as Note[],
-  readItLaterDialog: false,
+  terminalVisible: false,
   addToGroupDialog: false,
-  recentNotesDialog: false,
   inspectJsonDialog: false,
-  inspectJsonInitialContent: null,
+  readItLaterDialog: false,
+  recentNotesDialog: false,
   note: null as Note | null,
   recentNotes: [] as Note[],
   directoryBrowserDialog: false,
-  directory: null,
-  explorerRoot: null,
+  noteGroups: [] as NoteGroup[],
+  inspectJsonInitialContent: null,
   theme: "dark" as "light" | "dark",
-  editorFontSize: 16,
-  sidebarWidth: 208,
   activeTabId: null as string | null,
-  aiDrawer: { isOpen: false, chatId: null },
-  terminalVisible: false,
-  commander: { enabled: false, type: CommanderType.All } as Commander,
   createTemplateDialog: { isOpen: false },
   createVariableDialog: { isOpen: false },
+  aiDrawer: { isOpen: false, chatId: null },
+  noteGroupMembers: [] as NoteGroupMember[],
+  commander: { enabled: false, type: CommanderType.All } as Commander,
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
+};
+
+export const loadHomedir = async (): Promise<string | null> => {
+  if (!isElectron() || typeof window === "undefined") return null;
+
+  try {
+    return (await window.electronAPI?.env?.getHome?.()) ?? null;
+  } catch (error) {
+    console.warn("Failed to load home directory:", error);
+    return null;
+  }
 };
 
 type Getter = { state: () => State };
@@ -132,6 +145,7 @@ export const useGlobalStore = createGlobalReducer(
         updatedAt: now,
         id: noteId,
         order: state.tabs.length,
+        scrollY: 0,
       };
     };
 
@@ -185,7 +199,7 @@ export const useGlobalStore = createGlobalReducer(
           notes: updatedNotes,
         };
       },
-      init: (
+      init: async (
         theme: Theme,
         notes: Note[],
         tabs: Tab[],
@@ -198,11 +212,13 @@ export const useGlobalStore = createGlobalReducer(
           document.documentElement.classList.remove(c),
         );
         if (theme !== "light") document.documentElement.classList.add(theme);
+        const homedir = await loadHomedir();
         return {
           tabs,
           theme,
           editorFontSize,
           sidebarWidth,
+          homedir,
           directory,
           explorerRoot,
           notes: setNotes(notes).notes,

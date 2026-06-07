@@ -94,7 +94,7 @@ export async function main() {
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
     const tabs = await repositories.tabs.getAll();
-    globalDispatch.init(
+    await globalDispatch.init(
       settings.theme,
       notes,
       tabs,
