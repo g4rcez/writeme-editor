@@ -17,16 +17,44 @@ vi.mock("../../store/settings", () => ({
   },
 }));
 
-// Mock @g4rcez/components
-vi.mock("@g4rcez/components", () => ({
-  Modal: ({ children, title, open }: any) =>
-    open ? (
-      <div data-testid="modal">
-        <h1>{title}</h1>
-        {children}
-      </div>
-    ) : null,
+vi.mock("@g4rcez/components/components/display/shortcut", () => ({
+  Shortcut: ({ value }: { value: string }) => <kbd>{value}</kbd>,
 }));
+
+// Mock @g4rcez/components
+vi.mock("@g4rcez/components", async () => {
+  const React = await vi.importActual<typeof import("react")>("react");
+
+  return {
+    css: (...classes: Array<string | false | null | undefined>) =>
+      classes.filter(Boolean).join(" "),
+    Empty: ({ message }: { message: string }) => <div>{message}</div>,
+    Input: React.forwardRef<HTMLInputElement, any>(function Input(
+      { left, right, title, hiddenLabel, ...props },
+      ref,
+    ) {
+      return (
+        <label>
+          {hiddenLabel ? null : <span>{title}</span>}
+          {left}
+          <input
+            ref={ref}
+            aria-label={hiddenLabel ? title : undefined}
+            {...props}
+          />
+          {right}
+        </label>
+      );
+    }),
+    Modal: ({ children, title, open }: any) =>
+      open ? (
+        <div data-testid="modal">
+          <h1>{title}</h1>
+          {children}
+        </div>
+      ) : null,
+  };
+});
 
 describe("RecentNotesDialog", () => {
   const mockDispatch = {
@@ -57,7 +85,7 @@ describe("RecentNotesDialog", () => {
     vi.clearAllMocks();
     (useGlobalStore as any).mockReturnValue([mockState, mockDispatch]);
     (SettingsService.load as any).mockReturnValue({
-      storageDirectory: "/path/to",
+      directory: "/path/to",
     });
   });
 

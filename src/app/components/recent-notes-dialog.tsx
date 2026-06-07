@@ -1,13 +1,18 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
-import { SettingsService } from "@/store/settings";
-import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
+import { Empty, Input, Modal, css } from "@g4rcez/components";
+import { Shortcut } from "@g4rcez/components/components/display/shortcut";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockCounterClockwise";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { Modal } from "@g4rcez/components";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { useListSearch } from "@/app/hooks/use-list-search";
 import { Dates } from "@/lib/dates";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
+import { useGlobalStore } from "@/store/global.store";
+import type { Note } from "@/store/note";
+import { SettingsService } from "@/store/settings";
 
 export const RecentNotesDialog = () => {
   const [state, dispatch] = useGlobalStore();
@@ -28,12 +33,10 @@ export const RecentNotesDialog = () => {
     [navigate, closeDialog],
   );
 
-  // Load recent notes when dialog opens
   useEffect(() => {
     if (state.recentNotesDialog) {
       dispatch.loadRecentNotes();
       setQuery("");
-      // Small delay to ensure render
       setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [state.recentNotesDialog, dispatch]);
@@ -41,19 +44,20 @@ export const RecentNotesDialog = () => {
   const settings = SettingsService.load();
   const storageDir = settings.directory || "";
 
-  // Filter notes
-  const filteredNotes = state.recentNotes.filter((note) => {
-    if (!query) return true;
-    const lowerQuery = query.toLowerCase();
-    const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+  const filteredNotes = useMemo(
+    () =>
+      state.recentNotes.filter((note: Note) => {
+        if (!query) return true;
+        const lowerQuery = query.toLowerCase();
+        const titleMatch = note.title.toLowerCase().includes(lowerQuery);
+        const pathMatch = note.filePath
+          ? note.filePath.toLowerCase().includes(lowerQuery)
+          : false;
 
-    let pathMatch = false;
-    if (note.filePath) {
-      pathMatch = note.filePath.toLowerCase().includes(lowerQuery);
-    }
-
-    return titleMatch || pathMatch;
-  });
+        return titleMatch || pathMatch;
+      }),
+    [query, state.recentNotes],
+  );
 
   const { selectedIndex, setSelectedIndex } = useListSearch({
     items: filteredNotes,
@@ -61,7 +65,6 @@ export const RecentNotesDialog = () => {
     isOpen: state.recentNotesDialog,
   });
 
-  // Scroll selected item into view
   useEffect(() => {
     if (listRef.current && filteredNotes.length > 0) {
       const selectedElement = listRef.current.children[
@@ -73,83 +76,129 @@ export const RecentNotesDialog = () => {
     }
   }, [selectedIndex, filteredNotes]);
 
+  const resultLabel = query
+    ? `${filteredNotes.length} of ${state.recentNotes.length} notes`
+    : `${state.recentNotes.length} recent notes`;
+
   return (
     <Modal
       open={state.recentNotesDialog}
       onChange={(val) => dispatch.recentNotesDialog(val)}
       title="Recent Notes"
+      className="max-w-5xl"
+      bodyClassName="overflow-hidden p-0"
     >
-      <div className="flex flex-col h-[60vh]">
-        <div className="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 mr-3" />
-          <input
+      <div className="flex h-[70vh] min-h-96 flex-col overflow-hidden">
+        <div className="border-b border-floating-border px-6 py-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Jump back into a note from this workspace.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>Move</span>
+              <Shortcut value="↑ + ↓" />
+              <span>Open</span>
+              <Shortcut value="Enter" />
+              <span>Close</span>
+              <Shortcut value="Esc" />
+            </div>
+          </div>
+
+          <Input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent outline-none text-lg placeholder-gray-400 dark:text-white"
+            title="Search recent notes"
+            hiddenLabel
+            left={
+              <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+            }
             placeholder="Search recent notes..."
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
             }}
           />
-          <div className="text-xs text-gray-400 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">
-            Esc to close
-          </div>
+
+          <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {resultLabel}
+          </p>
         </div>
 
-        <ul ref={listRef} className="overflow-y-auto flex-1 p-2 scrollbar-thin">
-          {filteredNotes.map((note, index) => {
-            const relativePath =
-              note.filePath && storageDir
-                ? getRelativePath(storageDir, note.filePath)
+        {filteredNotes.length === 0 ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-12">
+            <Empty
+              Icon={MagnifyingGlassIcon}
+              message={
+                query
+                  ? "No recent notes match your search"
+                  : "No recent notes yet"
+              }
+            />
+          </div>
+        ) : (
+          <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-3">
+            {filteredNotes.map((note: Note, index) => {
+              const relativePath =
+                note.filePath && storageDir
+                  ? getRelativePath(storageDir, note.filePath)
+                  : "";
+              const folderPath = relativePath.includes("/")
+                ? relativePath.substring(0, relativePath.lastIndexOf("/"))
                 : "";
+              const displayPath = formatSimplifiedPath(folderPath);
+              const selected = index === selectedIndex;
 
-            // Remove filename from path for display
-            const folderPath = relativePath.includes("/")
-              ? relativePath.substring(0, relativePath.lastIndexOf("/"))
-              : "";
-
-            const displayPath = formatSimplifiedPath(folderPath);
-
-            return (
-              <li
-                key={note.id}
-                className={`flex flex-col px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                  index === selectedIndex
-                    ? "bg-blue-50 dark:bg-blue-900/20"
-                    : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                }`}
-                onClick={() => openNote(note)}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`font-medium ${
-                      index === selectedIndex
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-gray-900 dark:text-gray-100"
-                    }`}
+              return (
+                <li key={note.id}>
+                  <button
+                    type="button"
+                    className={css(
+                      "group flex w-full items-center gap-3 rounded-card-radius border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      selected
+                        ? "border-primary/30 bg-primary/10"
+                        : "border-transparent hover:border-card-border hover:bg-muted/40",
+                    )}
+                    onClick={() => openNote(note)}
+                    onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    {note.title || "Untitled"}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {Dates.yearMonthDay(new Date(note.updatedAt))}
-                  </span>
-                </div>
+                    <span
+                      className={css(
+                        "flex size-9 shrink-0 items-center justify-center rounded-button-radius transition-colors",
+                        selected
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted/60 text-muted-foreground group-hover:text-foreground",
+                      )}
+                    >
+                      <FileTextIcon size={18} />
+                    </span>
 
-                {displayPath && (
-                  <div className="text-xs text-gray-500 mt-0.5 truncate">
-                    {displayPath}
-                  </div>
-                )}
-              </li>
-            );
-          })}
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={css(
+                          "block truncate text-sm font-semibold",
+                          selected ? "text-primary" : "text-foreground",
+                        )}
+                      >
+                        {note.title || "Untitled"}
+                      </span>
+                      {displayPath ? (
+                        <span className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                          <FolderSimpleIcon size={13} className="shrink-0" />
+                          <span className="truncate">{displayPath}</span>
+                        </span>
+                      ) : null}
+                    </span>
 
-          {filteredNotes.length === 0 && (
-            <div className="p-8 text-center text-gray-500">No notes found</div>
-          )}
-        </ul>
+                    <span className="ml-3 hidden shrink-0 items-center gap-1 rounded-button-radius border border-card-border px-2 py-1 text-xs text-muted-foreground sm:flex">
+                      <ClockCounterClockwiseIcon size={13} />
+                      {Dates.yearMonthDay(new Date(note.updatedAt))}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </Modal>
   );

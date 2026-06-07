@@ -4,7 +4,20 @@
     "emil-design-eng": {
       "source": "emilkowalski/skill",
       "sourceType": "github",
-      "computedHash": "32f63a1e56fc41f53497f7b19d6391b7c3e55bedd884c5a4d10bc4eacd2310e4"
+      "skillPath": "skills/emil-design-eng/SKILL.md",
+      "computedHash": "8bdf9e4e6de7a4969147bf4828a4ad2c5aacd9fba4b690b250a85e0467ca387d"
+    },
+    "transitions-dev": {
+      "source": "Jakubantalik/transitions.dev",
+      "sourceType": "github",
+      "skillPath": "skills/transitions-dev/SKILL.md",
+      "computedHash": "3849b47b846e2d49935487799c6eb9340dcfe3c1defb2e93fbc59d18df589af2"
+    },
+    "wcag-audit-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/accessibility-compliance/skills/wcag-audit-patterns/SKILL.md",
+      "computedHash": "3de7787d150fcbffdf6137180ea450bb676fca7ba1c7d70dc9a909c003795d5b"
     }
   }
 }
