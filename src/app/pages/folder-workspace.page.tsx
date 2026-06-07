@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { isElectron } from "@/lib/is-electron";
 import { useGlobalStore } from "@/store/global.store";
-import { saveCursorIfActive } from "@/app/save-cursor";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
 
@@ -54,7 +53,6 @@ export default function FolderWorkspacePage() {
         await repositories.notes.save(note);
         noteId = note.id;
       }
-      saveCursorIfActive();
       await dispatch.selectNoteById(noteId);
       navigate(`/note/${noteId}`);
     } catch (err) {

@@ -4,13 +4,23 @@ import {
   COPY_EVENT_STARTED,
 } from "@/ipc/copy-event";
 import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
+import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
+import { isRelativeLink } from "@/lib/link-utils";
+import {
+  getMarkdownWorker,
+  HARD_LIMIT,
+  LARGE_MARKDOWN_THRESHOLD,
+  WARN_THRESHOLD,
+} from "@/lib/markdown-worker";
+import { findCompatibleNote } from "@/lib/note-lookup";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
-import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { uuid } from "@g4rcez/components";
+import { CircleNotchIcon } from "@phosphor-icons/react";
 import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import {
   EditorContent,
@@ -20,27 +30,17 @@ import {
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
-import { YAML } from "@/lib/encoding";
-import { isRelativeLink } from "@/lib/link-utils";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
-import { CircleNotchIcon } from "@phosphor-icons/react";
-import {
-  getMarkdownWorker,
-  HARD_LIMIT,
-  LARGE_MARKDOWN_THRESHOLD,
-  WARN_THRESHOLD,
-} from "@/lib/markdown-worker";
-import { uiDispatch, useUIStore } from "@/store/ui.store";
-import { getScrollY, setScrollY } from "@/lib/scroll-utils";
-import { saveCursorIfActive } from "@/app/save-cursor";
-import { findCompatibleNote } from "@/lib/note-lookup";
+import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 
-const useCopyEvents = (editor: TipTapEditor) => {
+const useCopyEvents = (editor: TipTapEditor | null) => {
   const monitoring = useRef(false);
   useEffect(() => {
+    if (!editor) return;
+
     const controller = new AbortController();
     const opts = { signal: controller.signal };
     window.addEventListener(
@@ -165,30 +165,28 @@ const TiptapEditorCore = memo(
     const editor = useEditor({
       extensions,
       autofocus: true,
+      editable: !readonly,
+      content: content ?? "",
       immediatelyRender: true,
       enableContentCheck: true,
-      editable: !readonly,
       enableCoreExtensions: true,
-      content: content ?? "",
       shouldRerenderOnTransaction: false,
       parseOptions: { preserveWhitespace: "full" },
+      onUpdate: ({ editor: currentEditor }) =>
+        setEditorNote(currentEditor, noteRef.current),
       onCreate: ({ editor: currentEditor }) => {
-        (currentEditor.storage as any).note = note;
+        setEditorNote(currentEditor, note);
         try {
           return void migrateMathStrings(currentEditor);
         } catch (error) {
           console.warn("Failed to migrate math strings:", error);
         }
       },
-      onUpdate: ({ editor: currentEditor }) => {
-        (currentEditor.storage as any).note = noteRef.current;
-      },
       editorProps: {
         attributes: { class: "writeme-editor-content" },
         handleDOMEvents: {
           contextmenu: (view, event) => {
             if (!isElectron()) return false;
-
             const linkTarget = resolveLinkContextTarget(event.target);
             if (linkTarget && (linkTarget.text || linkTarget.url)) {
               event.preventDefault();
@@ -232,7 +230,6 @@ const TiptapEditorCore = memo(
                   isMentionLink ? mentionTarget : (fileName ?? href ?? ""),
                 );
                 if (target) {
-                  saveCursorIfActive();
                   dispatch.selectNoteById(target.id);
                   return true;
                 }
@@ -332,19 +329,26 @@ const TiptapEditorCore = memo(
       },
     });
 
-    editorGlobalRef.current = editor;
+    useEffect(() => {
+      if (!editor) return;
+      editorGlobalRef.current = editor;
+      return () => {
+        if (editorGlobalRef.current === editor) {
+          editorGlobalRef.current = null;
+        }
+      };
+    }, [editor]);
+
     useCopyEvents(editor);
 
     triggerWorkerParseRef.current = async (text: string) => {
       if (!editor) return;
-
       if (text.length > HARD_LIMIT) {
         console.error(
           `[writeme] Document exceeds ${HARD_LIMIT / 1_000_000}MB hard limit — import aborted.`,
         );
         return;
       }
-
       if (text.length > WARN_THRESHOLD) {
         const confirmed = await new Promise<boolean>((resolve) => {
           uiDispatch.setPrompt({
@@ -357,19 +361,16 @@ const TiptapEditorCore = memo(
         });
         if (!confirmed) return;
       }
-
       generationRef.current += 1;
       const myGen = generationRef.current;
       uiDispatch.setParsingContent(true);
       setParseProgress(0);
       editor.setEditable(false);
       isSettingContent.current = true;
-
       const worker = getMarkdownWorker();
       let totalChunks = 0;
       let receivedChunks = 0;
       let firstChunk = true;
-
       const recover = () => {
         if (generationRef.current !== myGen || editor.isDestroyed) return;
         generationRef.current += 1;
@@ -378,7 +379,6 @@ const TiptapEditorCore = memo(
         setParseProgress(0);
         editor.setEditable(true);
       };
-
       const finalize = () => {
         if (generationRef.current !== myGen || editor.isDestroyed) return;
         isSettingContent.current = false;
@@ -466,10 +466,6 @@ const TiptapEditorCore = memo(
     };
 
     useEffect(() => {
-      noteRef.current = note;
-    }, [note]);
-
-    useEffect(() => {
       if (!editor || content === undefined) return;
       const currentMarkdown = editor.getMarkdown();
       if (content !== currentMarkdown) {
@@ -483,23 +479,25 @@ const TiptapEditorCore = memo(
           parseOptions: { preserveWhitespace: "full" },
         });
         isSettingContent.current = false;
+        return;
       }
     }, [editor, content]);
 
     useEffect(() => {
       if (editor) setEditorNote(editor, note);
+      noteRef.current = note;
     }, [editor, note]);
 
     useEffect(() => {
       if (editor) setEditorAllNotes(editor, globalState.notes);
     }, [editor]);
 
+    useEditorScrollMemory(id, editor);
+
     useEffect(() => {
       if (editor === null) return;
       if (readonly) return;
-
       let saveTimeout: NodeJS.Timeout;
-
       const updateHandler = () => {
         if (isSettingContent.current) {
           clearTimeout(saveTimeout);
@@ -515,19 +513,12 @@ const TiptapEditorCore = memo(
             }
             if (!noteRef.current) return;
             await dispatch.updateNoteContent(noteRef.current.id, html);
-            CursorPositionStore.save(
-              noteRef.current.id,
-              editor.state.selection.anchor,
-              getScrollY(),
-            );
           } catch (error) {
             console.error("Failed to save document:", error);
           }
         }, 500);
       };
-
       editor.on("update", updateHandler);
-
       return () => {
         editor.off("update", updateHandler);
         clearTimeout(saveTimeout);
@@ -539,11 +530,6 @@ const TiptapEditorCore = memo(
           }
           if (noteRef.current) {
             dispatch.updateNoteContent(noteRef.current.id, html);
-            CursorPositionStore.save(
-              noteRef.current.id,
-              editor.state.selection.anchor,
-              getScrollY(),
-            );
           }
         } catch (error) {
           console.warn("Failed to perform final save on unmount:", error);
@@ -557,19 +543,6 @@ const TiptapEditorCore = memo(
         editor.view.dispatch(tr);
       }
     }, [theme, editor]);
-
-    useEffect(() => {
-      if (!editor || !note) return;
-      const position = CursorPositionStore.get(note.id);
-      if (!position) return;
-      const maxPos = editor.state.doc.content.size;
-      const safePos = Math.min(position.cursor, maxPos);
-      const raf = requestAnimationFrame ?? ((fn: Function) => fn());
-      raf(() => {
-        editor.chain().setTextSelection(safePos).run();
-        setScrollY(position.scroll);
-      });
-    }, [editor, note?.id]);
 
     useEffect(() => {
       return () => {

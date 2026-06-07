@@ -67,9 +67,7 @@ export const AITooltip = ({
     >
       <div className="flex flex-col gap-2 w-80">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold tracking-wider uppercase text-muted-foreground">
-            Ask AI
-          </span>
+          <span className="text-xs text-muted-foreground">Ask AI</span>
           <div className="flex gap-1">
             <button
               type="button"

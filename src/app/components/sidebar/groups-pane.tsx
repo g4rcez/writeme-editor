@@ -17,11 +17,9 @@ export const GroupsPane = () => {
     state.noteGroupMembers.filter((m) => m.groupId === groupId).length;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-        <span className="text-xs font-semibold uppercase text-foreground/50">
-          Groups
-        </span>
+        <span className="text-xs text-foreground/50">Groups</span>
         <Button
           size="small"
           theme="ghost-muted"
@@ -31,7 +29,7 @@ export const GroupsPane = () => {
           <PlusIcon className="w-3.5 h-3.5" />
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {state.noteGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-foreground/40 text-center">
             <FolderSimpleIcon className="w-7 h-7 mb-2 opacity-50" />

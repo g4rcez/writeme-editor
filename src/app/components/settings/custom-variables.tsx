@@ -108,7 +108,7 @@ export const CustomVariables = () => {
                   </Button>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-70 ml-1">
+                  <span className="text-xs text-muted-foreground opacity-70 ml-1">
                     JS Expression
                   </span>
                   <Textarea

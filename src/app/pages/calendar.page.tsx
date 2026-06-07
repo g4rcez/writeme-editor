@@ -1,5 +1,4 @@
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { saveCursorIfActive } from "@/app/save-cursor";
 import { Note, NoteType } from "@/store/note";
 import {
   Button,
@@ -94,7 +93,6 @@ export default function CalendarPage() {
   );
 
   const onEventClick = (event: CalendarEvent) => {
-    saveCursorIfActive();
     dispatch.selectNoteById(event.id);
     navigate("/note/" + event.id);
   };

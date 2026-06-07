@@ -3,8 +3,8 @@ import { Fragment, Suspense, useCallback, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
+import { isCommanderShortcut } from "@/lib/keyboard-shortcuts";
 import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
-import { CursorPositionStore } from "@/store/cursor-position.store";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
@@ -26,13 +26,19 @@ import { MediaPreview } from "@/app/components/media-preview";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { GitSyncDialog } from "@/app/components/git-sync-dialog";
 import { editorGlobalRef } from "@/app/editor-global-ref";
-import { saveCursorIfActive } from "@/app/save-cursor";
 import { notificationRef } from "@/app/notification-ref";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 
 const waitMap = new Map<string, string>();
+
+function getEditorNoteId(): string | null {
+  const editor = editorGlobalRef.current;
+  if (!editor || editor.isDestroyed) return null;
+  const storedNote = (editor.storage as { note?: { id?: string } }).note;
+  return storedNote?.id ?? null;
+}
 
 export const RootLayout = () => {
   const [state, dispatch] = useGlobalStore();
@@ -71,7 +77,6 @@ export const RootLayout = () => {
           if (wait) {
             waitMap.set(noteId, requestId);
           }
-          saveCursorIfActive();
           await dispatch.selectNoteById(noteId);
           navigate(`/note/${noteId}`);
         } catch (err) {
@@ -131,12 +136,22 @@ export const RootLayout = () => {
         direction,
       });
       if (!nextNoteId) return;
-      saveCursorIfActive();
       await dispatch.selectNoteById(nextNoteId);
       navigate(`/note/${nextNoteId}`);
     },
     [dispatch, location.pathname, navigate, state.activeTabId, state.tabs],
   );
+
+  useEffect(() => {
+    if (!state.note || !location.pathname.startsWith("/note/")) return;
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+    };
+    document.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [location.pathname, state.note?.id]);
 
   useEffect(
     function registerBindings() {
@@ -148,6 +163,10 @@ export const RootLayout = () => {
           return;
         }
 
+        if (isCommanderShortcut(e)) {
+          e.preventDefault();
+          dispatch.commander(true);
+        }
         if ((e.metaKey || e.ctrlKey) && e.key === "n") {
           e.preventDefault();
           dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
@@ -166,16 +185,11 @@ export const RootLayout = () => {
         }
       };
 
-      const handleBeforeUnload = () => {
-        if (state.note && editorGlobalRef.current) {
-          const container = document.getElementById("main-scroll-container");
-          const scrollY = container ? container.scrollTop : window.scrollY;
-          CursorPositionStore.save(
-            state.note.id,
-            editorGlobalRef.current.state.selection.anchor,
-            scrollY,
-          );
-        }
+      const handleBeforeUnload = (): void => {
+        const editor = editorGlobalRef.current;
+        if (!state.note || !editor || editor.isDestroyed) return;
+        if (!location.pathname.startsWith("/note/")) return;
+        if (getEditorNoteId() !== state.note.id) return;
       };
       const controller = new AbortController();
       const opts = { signal: controller.signal };
@@ -185,7 +199,7 @@ export const RootLayout = () => {
         controller.abort();
       };
     },
-    [cycleEditorTab, dispatch, state.note, uiDispatch],
+    [cycleEditorTab, dispatch, location.pathname, state.note, uiDispatch],
   );
 
   const isFloatingPanel =

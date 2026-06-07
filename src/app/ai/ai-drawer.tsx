@@ -229,7 +229,7 @@ export const AIDrawer = () => {
                       msg.content && (
                         <div className="mt-2 space-y-2 w-full">
                           <div className="flex justify-between items-center px-1">
-                            <span className="font-bold tracking-wider uppercase opacity-50 text-[10px]">
+                            <span className="opacity-50 text-xs">
                               Suggested Changes
                             </span>
                             {msg.selectionSlice && (

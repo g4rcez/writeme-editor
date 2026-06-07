@@ -6,7 +6,6 @@ import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { useListSearch } from "@/app/hooks/use-list-search";
-import { saveCursorIfActive } from "@/app/save-cursor";
 
 export const SearchBar = () => {
   const [, dispatch] = useGlobalStore();
@@ -34,7 +33,6 @@ export const SearchBar = () => {
 
   const selectNote = useCallback(
     (note: Note) => {
-      saveCursorIfActive();
       dispatch.selectNoteById(note.id);
       closeSearch();
     },

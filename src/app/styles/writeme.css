@@ -34,11 +34,15 @@
 }
 
 .writeme-aside-resize {
-  @apply z-10 flex-shrink-0 -ml-0.5 w-1 transition-colors cursor-col-resize print:hidden;
+  @apply z-10 flex-shrink-0 -ml-1 w-1 cursor-col-resize transition-colors focus-visible:bg-primary/50 focus-visible:outline-none print:hidden;
 }
 
 .writeme-aside-resize:hover {
   background-color: hsla(var(--primary-DEFAULT), 0.5);
+}
+
+.writeme-aside-collapsed-toggle {
+  @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
 }
 
 .writeme-aside-activity-bar {
@@ -131,6 +135,45 @@
 .writeme-aside-nav-footer {
   @apply p-2 border-t;
   border-color: hsla(var(--border), 0.4);
+}
+.writeme-sidebar-v2-tree [role="tree"] {
+  @apply px-2 py-2;
+}
+
+.writeme-sidebar-v2-tree [role="treeitem"] {
+  @apply min-w-0 text-muted-foreground hover:text-foreground;
+}
+
+.writeme-sidebar-v2-group-list {
+  @apply flex flex-col gap-2;
+}
+
+.writeme-sidebar-v2-legacy-pane {
+  @apply h-full min-h-0 overflow-hidden rounded-2xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
+}
+
+.writeme-sidebar-v2-group {
+  @apply rounded-2xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
+}
+
+.writeme-sidebar-v2-group-button {
+  @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
+}
+
+.writeme-sidebar-v2-file {
+  @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
+}
+
+.writeme-sidebar-v2-file--active {
+  @apply bg-primary/10 text-primary;
+}
+
+.writeme-sidebar-v2-footer-tab {
+  @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
+}
+
+.writeme-sidebar-v2-footer-tab--active {
+  @apply border-primary/20 bg-primary text-primary-foreground;
 }
 
 /* writeme-editor */

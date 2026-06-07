@@ -5,7 +5,7 @@ import { TextTIcon } from "@phosphor-icons/react/dist/csr/TextT";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { useNavigate } from "react-router-dom";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { Input } from "@g4rcez/components";
 
 export const SearchPane = () => {
@@ -29,23 +29,19 @@ export const SearchPane = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex h-full min-h-0 flex-col bg-background/50">
       <div className="py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-          Search
-        </span>
+        <span className="text-xs text-muted-foreground">Search</span>
       </div>
-
       <div className="p-4 space-y-4">
         <div className="space-y-2">
           <div className="relative">
             <Input
-              type="text"
+              optionalText=" "
               value={searchQuery}
+              title="Global search"
               onChange={handleGlobalSearch}
               placeholder="Search all notes..."
-              optionalText=" "
-              title="Global search"
               right={
                 <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
               }
@@ -65,7 +61,7 @@ export const SearchPane = () => {
           </div>
         </div>
       </div>
-      <div className="overflow-y-auto flex-1 px-2 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
         <div className="px-2 mb-2 font-medium uppercase text-[10px] text-muted-foreground">
           Results ({filteredNotes.length})
         </div>

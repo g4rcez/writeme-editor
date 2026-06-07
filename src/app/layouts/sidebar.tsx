@@ -1,7 +1,3 @@
-import { ActivityBar } from "@/app/components/sidebar/activity-bar";
-import { SidebarContent } from "@/app/components/sidebar/sidebar-content";
-import { useGlobalStore } from "@/store/global.store";
-import { useUIStore } from "@/store/ui.store";
 import { css } from "@g4rcez/components";
 import {
   Fragment,
@@ -11,50 +7,59 @@ import {
   type CSSProperties,
 } from "react";
 
+import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
+import { useGlobalStore } from "@/store/global.store";
+import { useUIStore } from "@/store/ui.store";
+import { ActivityBar } from "../components/sidebar/activity-bar";
+
+const SIDEBAR_MIN_WIDTH = 280;
+
+const SIDEBAR_MAX_WIDTH = 520;
+
 export const Sidebar = () => {
   const [state, dispatch] = useGlobalStore();
   const [uiState, uiDispatch] = useUIStore();
   const collapsed = !uiState.sidebarOpen;
+  const sidebarWidth = Math.min(
+    Math.max(state.sidebarWidth, SIDEBAR_MIN_WIDTH),
+    SIDEBAR_MAX_WIDTH,
+  );
   const [isResizing, setIsResizing] = useState(false);
-  const startResizing = useCallback(() => setIsResizing(true), []);
-  const stopResizing = useCallback(() => setIsResizing(false), []);
   const resize = useCallback(
     (e: MouseEvent) => {
       if (isResizing) {
-        const newWidth = e.clientX - 52;
-        if (newWidth >= 150 && newWidth <= 600) {
+        const newWidth = e.clientX;
+        if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= SIDEBAR_MAX_WIDTH) {
           dispatch.setSidebarWidth(newWidth);
         }
       }
     },
-    [isResizing],
+    [dispatch, isResizing],
   );
 
   useEffect(() => {
     const controller = new AbortController();
     const opts = { signal: controller.signal };
+    const stopResizing = () => setIsResizing(false);
     window.addEventListener("mousemove", resize, opts);
     window.addEventListener("mouseup", stopResizing, opts);
     return () => void controller.abort();
-  }, [resize, stopResizing]);
+  }, [resize]);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 767px)");
-    const onNarrow = (e: MediaQueryListEvent) => {
-      if (e.matches) uiDispatch.setSidebarOpen(false);
-    };
+    const onNarrow = (e: MediaQueryListEvent) =>
+      e.matches ? uiDispatch.setSidebarOpen(false) : undefined;
     if (mql.matches) uiDispatch.setSidebarOpen(false);
     mql.addEventListener("change", onNarrow);
     return () => mql.removeEventListener("change", onNarrow);
-  }, []);
+  }, [uiDispatch]);
 
   return (
     <Fragment>
-      <div className="writeme-aside-activity-wrapper">
-        <ActivityBar />
-      </div>
+      <ActivityBar />
       <div
-        style={{ "--panel-w": `${state.sidebarWidth}px` } as CSSProperties}
+        style={{ "--panel-w": `${sidebarWidth}px` } as CSSProperties}
         data-resizing={isResizing || undefined}
         className={css(
           "writeme-aside-panel",
@@ -66,11 +71,11 @@ export const Sidebar = () => {
         <div
           className="writeme-aside-panel-inner"
           style={{
-            width: `${state.sidebarWidth}px`,
+            width: `${sidebarWidth}px`,
             transform: collapsed ? "translateX(-100%)" : "translateX(0)",
           }}
         >
-          <SidebarContent />
+          {collapsed ? null : <SidebarShell />}
         </div>
       </div>
       {!collapsed && (
@@ -79,20 +84,23 @@ export const Sidebar = () => {
           role="separator"
           aria-label="Resize sidebar"
           aria-orientation="vertical"
-          onMouseDown={startResizing}
+          aria-valuenow={sidebarWidth}
           className="writeme-aside-resize"
+          aria-valuemax={SIDEBAR_MAX_WIDTH}
+          aria-valuemin={SIDEBAR_MIN_WIDTH}
+          onMouseDown={() => setIsResizing(true)}
           onKeyDown={(e) => {
             const step = e.shiftKey ? 32 : 16;
             if (e.key === "ArrowRight") {
               e.preventDefault();
               dispatch.setSidebarWidth(
-                Math.min(state.sidebarWidth + step, 600),
+                Math.min(sidebarWidth + step, SIDEBAR_MAX_WIDTH),
               );
             }
             if (e.key === "ArrowLeft") {
               e.preventDefault();
               dispatch.setSidebarWidth(
-                Math.max(state.sidebarWidth - step, 150),
+                Math.max(sidebarWidth - step, SIDEBAR_MIN_WIDTH),
               );
             }
           }}

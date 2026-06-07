@@ -40,20 +40,16 @@ export const QuickSettingsPane = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex h-full min-h-0 flex-col bg-background/50">
       <div className="flex items-center justify-between py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-          Settings
-        </span>
+        <span className="text-xs text-muted-foreground">Settings</span>
         {saving ? (
-          <span className="text-[10px] text-muted-foreground">Saving...</span>
+          <span className="text-xs text-muted-foreground">Saving...</span>
         ) : null}
       </div>
-      <div className="overflow-y-auto p-4 space-y-8">
+      <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-4">
         <section className="space-y-4">
-          <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-            Quick Actions
-          </span>
+          <span className="text-xs text-muted-foreground">Quick Actions</span>
           <QuickSettingsControls
             compact
             onPatch={onPatch}
@@ -61,7 +57,7 @@ export const QuickSettingsPane = () => {
           />
         </section>
         <nav className="space-y-1" aria-label="Settings sections">
-          <span className="block pb-1 font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
+          <span className="block pb-1 text-xs text-muted-foreground">
             Sections
           </span>
           {sections.map((section) => (

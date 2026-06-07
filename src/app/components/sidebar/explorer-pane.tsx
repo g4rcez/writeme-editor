@@ -224,10 +224,10 @@ export const ExplorerPane = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="font-bold tracking-wider uppercase text-[10px] text-muted-foreground">
-          Explorer
+        <span className="text-xs text-muted-foreground">
+          Files
         </span>
         <div className="flex gap-1">
           <button
@@ -252,7 +252,7 @@ export const ExplorerPane = () => {
       </div>
       <div
         data-treeroot="true"
-        className="overflow-auto bg-background scrollbar-hide pb-6"
+        className="min-h-0 flex-1 overflow-auto bg-background pb-6 scrollbar-hide"
         onContextMenu={handleTreeRootContextMenu}
       >
         <TreeView

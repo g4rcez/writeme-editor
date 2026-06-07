@@ -1,8 +1,3 @@
-/**
- * Currency expression parser
- * Parses user input like "100 USD to EUR" into structured data
- */
-
 import type { ParsedCurrency } from "./types";
 import { InvalidCurrencyError } from "./types";
 
@@ -129,29 +124,18 @@ const VALID_CURRENCY_CODES = new Set([
  * @returns Parsed currency data or null if invalid format
  */
 export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
-  // Normalize: trim, collapse multiple spaces
   const normalized = expr.trim().replace(/\s+/g, " ");
-
-  // Pattern: <number> <FROM_CURRENCY> <to|in> <TO_CURRENCY>
-  // Supports decimals and optional commas in numbers
   const pattern = /^([\d,]+\.?\d*)\s+([A-Z]{3})\s+(to|in)\s+([A-Z]{3})$/i;
   const match = normalized.match(pattern);
-
   if (!match) {
     return null;
   }
-
   const [, amountStr, from, , to] = match;
   if (!amountStr || !from || !to) return null;
-
-  // Parse amount (remove commas, convert to number)
   const amount = parseFloat(amountStr.replace(/,/g, ""));
-
   if (isNaN(amount) || amount <= 0) {
     return null;
   }
-
-  // Normalize currency codes to uppercase
   const fromCode = normalizeCurrencyCode(from);
   const toCode = normalizeCurrencyCode(to);
 
@@ -205,6 +189,5 @@ export function validateCurrencyCode(code: string): void {
  *
  * @returns Array of supported currency codes
  */
-export function getSupportedCurrencies(): string[] {
-  return Array.from(VALID_CURRENCY_CODES).sort();
-}
+export const getSupportedCurrencies = (): string[] =>
+  Array.from(VALID_CURRENCY_CODES).toSorted((a, b) => a.localeCompare(b));

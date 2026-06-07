@@ -49,7 +49,15 @@ const ENTITY_SCHEMA: Record<string, string[]> = {
   ],
   hashtags: ["id", "hashtag", "filename", "project", "createdAt", "updatedAt"],
   projects: ["id", "name", "createdAt", "updatedAt"],
-  tabs: ["id", "noteId", "order", "project", "createdAt", "updatedAt"],
+  tabs: [
+    "id",
+    "noteId",
+    "order",
+    "project",
+    "createdAt",
+    "updatedAt",
+    "scrollY",
+  ],
   noteGroups: ["id", "title", "description", "createdAt", "updatedAt"],
   noteGroupMembers: [
     "id",

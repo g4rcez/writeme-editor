@@ -44,7 +44,7 @@ const ActionCard = ({
     </h3>
     <div className="flex justify-between items-center mt-auto w-full">
       <span className="text-xs text-muted-foreground">Quick Action</span>
-      <kbd className="py-1 px-2 font-mono uppercase rounded bg-muted text-[10px] text-muted-foreground">
+      <kbd className="py-1 px-2 font-mono uppercase rounded bg-muted text-xs text-muted-foreground">
         {shortcut}
       </kbd>
     </div>

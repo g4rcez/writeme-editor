@@ -438,7 +438,7 @@ const SlashList = (props: any) => {
     >
       {Object.entries(grouped).map(([groupName, entries]) => (
         <Fragment key={groupName}>
-          <li className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wider uppercase pointer-events-none select-none text-foreground/50">
+          <li className="px-3 pt-2 pb-1 text-xs pointer-events-none select-none text-foreground/50">
             {groupName}
           </li>
           {(entries as { item: SlashCommandItem; index: number }[]).map(

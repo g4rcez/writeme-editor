@@ -16,7 +16,6 @@ import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
 import { Fragment, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { saveCursorIfActive } from "./save-cursor";
 import { editorGlobalRef } from "./editor-global-ref";
 import {
   mapShortcutOS,
@@ -24,6 +23,7 @@ import {
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
+import { NoteIcon } from "@phosphor-icons/react";
 
 export const CommanderPreview = (props: {
   command: CommandItemTypes;
@@ -61,8 +61,14 @@ export const Commander = () => {
     (): CommandItemTypes[] =>
       globalState().notes.map(
         (note: Note): CommandItemTypes => ({
+          Icon: (
+            <span className="text-primary text-xs flex items-center gap-1">
+              <NoteIcon />
+              Note
+            </span>
+          ),
           type: "shortcut",
-          title: `Note: ${note.title}`,
+          title: `${note.title}`,
           action: (args) => {
             args.setOpen(false);
             navigate(`/note/${note.id}`);
@@ -84,7 +90,6 @@ export const Commander = () => {
             title: `Tab: ${title}`,
             action: async (args) => {
               args.setOpen(false);
-              saveCursorIfActive();
               await dispatch.selectNoteById(tab.noteId);
               navigate(`/note/${tab.noteId}`);
             },
