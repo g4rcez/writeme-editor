@@ -18,6 +18,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Install rpm (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y rpm
