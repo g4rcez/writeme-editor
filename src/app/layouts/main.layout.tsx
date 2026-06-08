@@ -39,20 +39,23 @@ export const MainLayout = () => {
     <div className="writeme-layout">
       <div className="writeme-layout-body">
         <Sidebar />
-        <div className="writeme-layout-main">
+        <main className="writeme-layout-main" aria-label="Editor workspace">
           <TabsBar />
           <Group orientation="vertical" className="flex-1 min-h-0">
             <Panel defaultSize={70} minSize={30} className="min-h-0">
               <div
                 id="main-scroll-container"
-                className="writeme-layout-scroll py-8"
+                className="overflow-y-auto overscroll-contain w-full h-full min-h-0 print:block print:overflow-visible print:h-auto bg-background py-8"
               >
                 <RouteTransitionOutlet />
               </div>
             </Panel>
             {terminalVisible && (
               <>
-                <Separator className="h-1 bg-border/20 hover:bg-primary/50 transition-colors cursor-row-resize" />
+                <Separator
+                  aria-label="Resize terminal panel"
+                  className="h-1 bg-border/20 hover:bg-primary/50 transition-colors cursor-row-resize"
+                />
                 <Panel defaultSize={30} minSize={10} className="min-h-0">
                   <div className="flex flex-col h-full min-h-0 bg-[#1e1e1e] border-t border-border/20">
                     <div className="flex justify-between items-center px-3 py-1 bg-sidebar/50 border-b border-border/20">
@@ -75,7 +78,7 @@ export const MainLayout = () => {
               </>
             )}
           </Group>
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -45,6 +45,7 @@ const VideoView = (props: any) => {
         {isLoading && !isError && (
           <div className="flex absolute inset-0 justify-center items-center bg-muted/30">
             <CircleNotchIcon
+              aria-hidden="true"
               size={24}
               className="animate-spin text-muted-foreground"
             />
@@ -52,13 +53,14 @@ const VideoView = (props: any) => {
         )}
         {isError && (
           <div className="flex flex-col gap-2 justify-center items-center p-8 h-full text-muted-foreground">
-            <VideoIcon size={32} />
+            <VideoIcon aria-hidden="true" size={32} />
             <span className="text-sm">Failed to load video</span>
           </div>
         )}
         {!isError && displaySrc && (
           <video
             src={displaySrc}
+            aria-label={title || "Embedded video"}
             className={`w-full h-full ${isLoading ? "opacity-0" : "opacity-100"}`}
             onLoadedData={() => setImgLoading(false)}
             onError={() => {
@@ -70,20 +72,26 @@ const VideoView = (props: any) => {
         )}
 
         {!isError && !isLoading && (
-          <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex bg-black/50">
+          <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex group-focus-within:flex bg-black/50">
             <button
+              type="button"
+              aria-label={
+                title ? `Open video preview: ${title}` : "Open video preview"
+              }
               className="p-1 text-white rounded hover:bg-white/20"
               onClick={handleOpenPreview}
               title="Expand"
             >
-              <ArrowsOutIcon size={14} />
+              <ArrowsOutIcon aria-hidden="true" size={14} />
             </button>
             <button
+              type="button"
+              aria-label={title ? `Delete video: ${title}` : "Delete video"}
               title="Delete video"
               onClick={() => deleteNode()}
               className="p-1 text-red-400 rounded hover:bg-white/20"
             >
-              <TrashIcon size={14} />
+              <TrashIcon aria-hidden="true" size={14} />
             </button>
           </div>
         )}

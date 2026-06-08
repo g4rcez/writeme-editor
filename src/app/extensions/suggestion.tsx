@@ -120,6 +120,11 @@ const MentionList = (props: any) => {
   return (
     <ul
       ref={listRef}
+      role="listbox"
+      aria-label="Note suggestions"
+      aria-activedescendant={
+        props.items.length ? `note-suggestion-${selectedIndex}` : undefined
+      }
       className="flex overflow-y-auto relative flex-col p-1 w-80 max-h-64 rounded-lg border shadow-lg border-border bg-background z-50 animate-fade-in-scale"
     >
       {props.items.length ? (
@@ -132,17 +137,21 @@ const MentionList = (props: any) => {
             ? relativePath.substring(0, relativePath.lastIndexOf("/"))
             : "";
           const displayPath = formatSimplifiedPath(folderPath);
+          const isSelected = index === selectedIndex;
           return (
-            <li key={item.id}>
+            <li key={item.id} role="presentation">
               <button
                 type="button"
+                id={`note-suggestion-${index}`}
+                role="option"
+                aria-selected={isSelected}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   selectItem(index);
                 }}
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={`flex flex-col px-3 py-2 rounded-md w-full text-left transition-colors ${
-                  index === selectedIndex
+                  isSelected
                     ? "bg-primary/10 text-foreground"
                     : "hover:bg-muted/50 text-foreground"
                 }`}
@@ -160,13 +169,15 @@ const MentionList = (props: any) => {
           );
         })
       ) : (
-        <li className="flex flex-col gap-2 p-2">
+        <li role="presentation" className="flex flex-col gap-2 p-2">
           <div className="px-3 py-2 text-center text-sm text-foreground/50">
             No notes found
           </div>
           {String(props.query ?? "").trim() && (
             <button
               type="button"
+              role="option"
+              aria-selected={false}
               onMouseDown={(e) => {
                 e.preventDefault();
                 createNoteFromQuery();

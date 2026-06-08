@@ -164,6 +164,9 @@ export const FreehandCode = (props: {
           {COLORS.map((c) => (
             <button
               key={c.value}
+              type="button"
+              aria-label={`Select ${c.label} pen color`}
+              aria-pressed={color === c.value && tool === "pen"}
               title={c.label}
               onClick={() => {
                 setColor(c.value);
@@ -183,6 +186,9 @@ export const FreehandCode = (props: {
           {SIZES.map((s, i) => (
             <button
               key={s.label}
+              type="button"
+              aria-label={`Use ${s.label} stroke size`}
+              aria-pressed={sizeIndex === i}
               title={s.label}
               onClick={() => setSizeIndex(i)}
               className="flex items-center justify-center rounded transition-colors px-2 py-1 text-xs"
@@ -201,6 +207,8 @@ export const FreehandCode = (props: {
           theme={tool === "pen" ? "primary" : "ghost-primary"}
           onClick={() => setTool("pen")}
           title="Pen"
+          aria-label="Use pen tool"
+          aria-pressed={tool === "pen"}
         >
           <PencilSimpleIcon size={14} />
         </Button>
@@ -209,6 +217,8 @@ export const FreehandCode = (props: {
           theme={tool === "eraser" ? "primary" : "ghost-primary"}
           onClick={() => setTool("eraser")}
           title="Eraser"
+          aria-label="Use eraser tool"
+          aria-pressed={tool === "eraser"}
         >
           <EraserIcon size={14} />
         </Button>
@@ -218,6 +228,7 @@ export const FreehandCode = (props: {
           theme="ghost-primary"
           onClick={handleUndo}
           title="Undo"
+          aria-label="Undo last freehand stroke"
           disabled={strokes.length === 0}
         >
           <ArrowCounterClockwiseIcon size={14} />
@@ -227,6 +238,7 @@ export const FreehandCode = (props: {
           theme="ghost-danger"
           onClick={handleClear}
           title="Clear all"
+          aria-label="Clear all freehand strokes"
           disabled={strokes.length === 0}
         >
           Clear
@@ -236,16 +248,31 @@ export const FreehandCode = (props: {
             size="small"
             theme="ghost-primary"
             onClick={onRequestFullScreen}
+            title={isFullScreen ? "Exit full screen" : "Open full screen"}
+            aria-label={
+              isFullScreen
+                ? "Exit freehand full screen"
+                : "Open freehand full screen"
+            }
           >
             <FullScreenIcon size={14} />
           </Button>
-          <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
+          <Button
+            size="small"
+            theme="ghost-danger"
+            onClick={props.autoDelete}
+            title="Delete freehand drawing"
+            aria-label="Delete freehand drawing"
+          >
             <TrashIcon size={14} />
           </Button>
         </div>
       </div>
       <svg
         ref={svgRef}
+        role="img"
+        tabIndex={0}
+        aria-label="Freehand drawing surface"
         className="w-full touch-none"
         style={{
           height: 480,

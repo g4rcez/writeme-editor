@@ -202,9 +202,9 @@ export const RootLayout = () => {
     [cycleEditorTab, dispatch, location.pathname, state.note, uiDispatch],
   );
 
+  const isQuickNotePanel = window.location.hash.includes("quicknote");
   const isFloatingPanel =
-    window.location.hash.includes("quicknote") ||
-    window.location.hash.includes("mathnote");
+    isQuickNotePanel || window.location.hash.includes("mathnote");
 
   useEffect(() => {
     if (!isFloatingPanel) return;
@@ -214,7 +214,8 @@ export const RootLayout = () => {
 
   if (isFloatingPanel) {
     return (
-      <div className="flex overflow-hidden flex-col h-screen rounded-xl bg-background/[0.92] ring-1 ring-white/[0.06] p-4">
+      <div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background/[0.92] ring-1 ring-white/[0.06] p-4">
+        {isQuickNotePanel && <div className="quicknote-window-drag-strip" />}
         <Suspense fallback={null}>
           <div className="flex flex-col flex-1 min-h-0 h-full">
             <Outlet />

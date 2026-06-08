@@ -72,6 +72,33 @@ const ImageView = (props: any) => {
     ]);
   };
 
+  const handleOpenPreviewKeyDown: React.KeyboardEventHandler = (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    handleOpenPreview();
+  };
+
+  const resizeImageBy = (delta: number) => {
+    const current = containerRef.current?.offsetWidth ?? 0;
+    const newWidth = Math.max(80, current + delta);
+    updateAttributes({ width: `${newWidth}px` });
+  };
+
+  const makeResizeKeyDownHandler =
+    (): React.KeyboardEventHandler<HTMLButtonElement> => (e) => {
+      if (
+        e.key !== "ArrowRight" &&
+        e.key !== "ArrowLeft" &&
+        e.key !== "Enter" &&
+        e.key !== " "
+      )
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      const step = e.shiftKey ? 50 : 10;
+      resizeImageBy(e.key === "ArrowLeft" ? -step : step);
+    };
+
   const makeResizeHandler =
     (corner: "nw" | "ne" | "sw" | "se"): React.MouseEventHandler =>
     (e) => {
@@ -113,6 +140,7 @@ const ImageView = (props: any) => {
         {isLoading && !isError && (
           <div className="flex absolute inset-0 justify-center items-center rounded bg-muted/30">
             <CircleNotchIcon
+              aria-hidden="true"
               size={24}
               className="animate-spin text-muted-foreground"
             />
@@ -120,7 +148,7 @@ const ImageView = (props: any) => {
         )}
         {isError && (
           <div className="flex flex-col gap-2 justify-center items-center p-8 rounded bg-muted/30 text-muted-foreground">
-            <ImageBrokenIcon size={32} />
+            <ImageBrokenIcon aria-hidden="true" size={32} />
             <span className="text-sm">Failed to load image</span>
           </div>
         )}
@@ -128,7 +156,13 @@ const ImageView = (props: any) => {
           <img
             src={displaySrc}
             alt={alt}
+            role="button"
+            tabIndex={0}
+            aria-label={
+              alt ? `Open image preview: ${alt}` : "Open image preview"
+            }
             className={`block w-full rounded cursor-pointer ${isLoading ? "opacity-0" : "opacity-100"}`}
+            onKeyDown={handleOpenPreviewKeyDown}
             onLoad={() => setImgLoading(false)}
             onError={() => {
               if (displaySrc) {
@@ -142,42 +176,57 @@ const ImageView = (props: any) => {
 
         {/* Unified toolbar — top right */}
         {!isError && !isLoading && (
-          <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex bg-black/50">
+          <div className="hidden absolute top-2 right-2 gap-1 p-1 rounded group-hover:flex group-focus-within:flex bg-black/50">
             <button
+              type="button"
+              aria-label="Align image left"
+              aria-pressed={align === "left"}
               title="Align left"
               onClick={() => updateAttributes({ align: "left" })}
               className={`p-1 rounded text-white hover:bg-white/20 ${align === "left" ? "bg-white/30" : ""}`}
             >
-              <TextAlignLeftIcon size={14} />
+              <TextAlignLeftIcon aria-hidden="true" size={14} />
             </button>
             <button
+              type="button"
+              aria-label="Align image center"
+              aria-pressed={align === "center"}
               title="Align center"
               onClick={() => updateAttributes({ align: "center" })}
               className={`p-1 rounded text-white hover:bg-white/20 ${align === "center" ? "bg-white/30" : ""}`}
             >
-              <TextAlignCenterIcon size={14} />
+              <TextAlignCenterIcon aria-hidden="true" size={14} />
             </button>
             <button
+              type="button"
+              aria-label="Align image right"
+              aria-pressed={align === "right"}
               title="Align right"
               onClick={() => updateAttributes({ align: "right" })}
               className={`p-1 rounded text-white hover:bg-white/20 ${align === "right" ? "bg-white/30" : ""}`}
             >
-              <TextAlignRightIcon size={14} />
+              <TextAlignRightIcon aria-hidden="true" size={14} />
             </button>
-            <div className="mx-0.5 w-px bg-white/20" />
+            <div className="mx-0.5 w-px bg-white/20" aria-hidden="true" />
             <button
+              type="button"
+              aria-label={
+                alt ? `Open image preview: ${alt}` : "Open image preview"
+              }
               className="p-1 text-white rounded hover:bg-white/20"
               onClick={handleOpenPreview}
               title="Expand"
             >
-              <ArrowsOutIcon size={14} />
+              <ArrowsOutIcon aria-hidden="true" size={14} />
             </button>
             <button
+              type="button"
+              aria-label={alt ? `Delete image: ${alt}` : "Delete image"}
               title="Delete image"
               onClick={() => deleteNode()}
               className="p-1 text-red-400 rounded hover:bg-white/20"
             >
-              <TrashIcon size={14} />
+              <TrashIcon aria-hidden="true" size={14} />
             </button>
           </div>
         )}
@@ -185,40 +234,69 @@ const ImageView = (props: any) => {
         {/* Corner resize handles */}
         {!isError && !isLoading && (
           <>
-            <div
-              className="flex absolute -top-1 -left-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 border-black/30 cursor-nwse-resize"
+            <button
+              type="button"
+              aria-label="Resize image from top left. Use left and right arrow keys."
+              className="flex absolute -top-1 -left-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 focus:opacity-100 border-black/30 cursor-nwse-resize"
               onMouseDown={makeResizeHandler("nw")}
+              onKeyDown={makeResizeKeyDownHandler()}
             >
-              <ArrowUpLeftIcon size={10} className="text-black/70" />
-            </div>
-            <div
-              className="flex absolute -top-1 -right-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 border-black/30 cursor-nesw-resize"
+              <ArrowUpLeftIcon
+                aria-hidden="true"
+                size={10}
+                className="text-black/70"
+              />
+            </button>
+            <button
+              type="button"
+              aria-label="Resize image from top right. Use left and right arrow keys."
+              className="flex absolute -top-1 -right-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 focus:opacity-100 border-black/30 cursor-nesw-resize"
               onMouseDown={makeResizeHandler("ne")}
+              onKeyDown={makeResizeKeyDownHandler()}
             >
-              <ArrowUpRightIcon size={10} className="text-black/70" />
-            </div>
-            <div
-              className="flex absolute -bottom-1 -left-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 border-black/30 cursor-nesw-resize"
+              <ArrowUpRightIcon
+                aria-hidden="true"
+                size={10}
+                className="text-black/70"
+              />
+            </button>
+            <button
+              type="button"
+              aria-label="Resize image from bottom left. Use left and right arrow keys."
+              className="flex absolute -bottom-1 -left-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 focus:opacity-100 border-black/30 cursor-nesw-resize"
               onMouseDown={makeResizeHandler("sw")}
+              onKeyDown={makeResizeKeyDownHandler()}
             >
-              <ArrowDownLeftIcon size={10} className="text-black/70" />
-            </div>
-            <div
-              className="flex absolute -right-1 -bottom-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 border-black/30 cursor-nwse-resize"
+              <ArrowDownLeftIcon
+                aria-hidden="true"
+                size={10}
+                className="text-black/70"
+              />
+            </button>
+            <button
+              type="button"
+              aria-label="Resize image from bottom right. Use left and right arrow keys."
+              className="flex absolute -right-1 -bottom-1 justify-center items-center w-3 h-3 bg-white rounded-sm border shadow opacity-0 group-hover:opacity-100 focus:opacity-100 border-black/30 cursor-nwse-resize"
               onMouseDown={makeResizeHandler("se")}
+              onKeyDown={makeResizeKeyDownHandler()}
             >
-              <ArrowDownRightIcon size={10} className="text-black/70" />
-            </div>
+              <ArrowDownRightIcon
+                aria-hidden="true"
+                size={10}
+                className="text-black/70"
+              />
+            </button>
           </>
         )}
       </div>
 
       <input
         type="text"
+        aria-label="Image alt text"
         value={alt}
         onChange={(e) => updateAttributes({ alt: e.target.value })}
         placeholder="Add caption..."
-        className="mt-2 w-full max-w-sm text-sm text-center bg-transparent border-none outline-none focus:border-b text-muted-foreground placeholder:text-muted-foreground/50 focus:border-muted-foreground/30"
+        className="mt-2 w-full max-w-sm text-sm text-center bg-transparent border-none focus:border-b text-muted-foreground placeholder:text-muted-foreground/50 focus:border-muted-foreground/30"
       />
     </NodeViewWrapper>
   );

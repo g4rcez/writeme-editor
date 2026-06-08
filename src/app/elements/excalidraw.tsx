@@ -58,11 +58,23 @@ export const ExcalidrawCode = (props: {
           size="small"
           theme="ghost-primary"
           onClick={onRequestFullScreen}
+          title={isFullScreen ? "Exit full screen" : "Open full screen"}
+          aria-label={
+            isFullScreen
+              ? "Exit Excalidraw full screen"
+              : "Open Excalidraw full screen"
+          }
         >
-          <Icon size={16} />
+          <Icon aria-hidden="true" size={16} />
         </Button>
-        <Button size="small" theme="ghost-danger" onClick={props.autoDelete}>
-          <TrashIcon size={16} />
+        <Button
+          size="small"
+          theme="ghost-danger"
+          onClick={props.autoDelete}
+          title="Delete Excalidraw drawing"
+          aria-label="Delete Excalidraw drawing"
+        >
+          <TrashIcon aria-hidden="true" size={16} />
         </Button>
       </div>
     </div>

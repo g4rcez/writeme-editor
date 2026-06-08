@@ -251,10 +251,10 @@ export default function NotesListPage() {
         />
       </div>
       <Table
-        cols={cols}
         name="notes"
         reference="id"
         useControl={false}
+        cols={cols as any}
         rows={filteredNotes as any[]}
       />
 

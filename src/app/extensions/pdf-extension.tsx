@@ -22,39 +22,41 @@ const PdfView = (props: any) => {
 
   return (
     <NodeViewWrapper className="flex relative flex-col items-center my-4 group">
-      <div
-        className="flex items-center gap-3 p-4 w-full max-w-lg bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer group/card"
-        onClick={handleOpenPreview}
-      >
-        <div className="p-3 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-          <FilePdfIcon size={32} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{title}</div>
-          <div className="text-xs text-muted-foreground truncate">
-            PDF Document
-          </div>
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+      <div className="flex items-center gap-3 p-4 w-full max-w-lg bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow group/card">
+        <button
+          type="button"
+          aria-label={`Open PDF preview: ${title}`}
+          className="flex flex-1 items-center gap-3 min-w-0 text-left"
+          onClick={handleOpenPreview}
+        >
+          <span className="p-3 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+            <FilePdfIcon aria-hidden="true" size={32} />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-medium truncate">{title}</span>
+            <span className="block text-xs text-muted-foreground truncate">
+              PDF Document
+            </span>
+          </span>
+        </button>
+        <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 transition-opacity">
           <button
+            type="button"
+            aria-label={`Open PDF preview: ${title}`}
             className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPreview();
-            }}
+            onClick={handleOpenPreview}
             title="Expand"
           >
-            <ArrowsOutIcon size={18} />
+            <ArrowsOutIcon aria-hidden="true" size={18} />
           </button>
           <button
+            type="button"
+            aria-label={`Delete PDF: ${title}`}
             title="Delete PDF"
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteNode();
-            }}
+            onClick={deleteNode}
             className="p-1.5 hover:bg-accent rounded-md text-red-400 hover:text-red-500"
           >
-            <TrashIcon size={18} />
+            <TrashIcon aria-hidden="true" size={18} />
           </button>
         </div>
       </div>

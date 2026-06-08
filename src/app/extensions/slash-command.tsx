@@ -18,7 +18,7 @@ import {
   TreeStructureIcon,
 } from "@phosphor-icons/react";
 import { Button, Input, Modal } from "@g4rcez/components";
-import { Editor, Extension } from "@tiptap/core";
+import { type Editor, Extension } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
 import { updatePosition } from "@/app/extensions/update-position";
@@ -434,11 +434,17 @@ const SlashList = (props: any) => {
   return (
     <ul
       ref={listRef}
+      role="listbox"
+      aria-label="Slash command suggestions"
+      aria-activedescendant={`slash-command-${selectedIndex}`}
       className="flex overflow-y-auto relative z-50 flex-col p-1 w-80 max-h-64 rounded-lg border shadow-lg border-border bg-background animate-fade-in-scale"
     >
       {Object.entries(grouped).map(([groupName, entries]) => (
         <Fragment key={groupName}>
-          <li className="px-3 pt-2 pb-1 text-xs pointer-events-none select-none text-foreground/50">
+          <li
+            role="presentation"
+            className="px-3 pt-2 pb-1 text-xs pointer-events-none select-none text-foreground/50"
+          >
             {groupName}
           </li>
           {(entries as { item: SlashCommandItem; index: number }[]).map(
@@ -446,8 +452,12 @@ const SlashList = (props: any) => {
               const Icon = item.icon;
               const isSelected = index === selectedIndex;
               return (
-                <li key={item.label} data-index={index}>
+                <li key={item.label} data-index={index} role="presentation">
                   <button
+                    type="button"
+                    id={`slash-command-${index}`}
+                    role="option"
+                    aria-selected={isSelected}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       selectItem(index);
@@ -456,7 +466,7 @@ const SlashList = (props: any) => {
                     className={`flex text-left w-full items-center gap-3 px-3 py-2 rounded-md transition-colors ${isSelected ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-foreground"}`}
                   >
                     <span className="flex flex-shrink-0 justify-center items-center w-8 h-8 rounded">
-                      <Icon size={16} />
+                      <Icon aria-hidden="true" size={16} />
                     </span>
                     <span className="flex flex-col min-w-0">
                       <span className="text-sm font-medium leading-tight">

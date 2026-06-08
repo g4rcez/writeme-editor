@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ArrowDownIcon } from "@phosphor-icons/react/dist/csr/ArrowDown";
 import { ArrowUpIcon } from "@phosphor-icons/react/dist/csr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
@@ -15,6 +15,8 @@ export const FindReplaceBar = () => {
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [, forceUpdate] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const replaceId = useId();
+  const replaceControlsId = `${replaceId}-replace-controls`;
 
   const { isOpen } = uiState.findReplace;
 
@@ -90,20 +92,29 @@ export const FindReplaceBar = () => {
 
   return (
     <div
+      role="dialog"
+      aria-label="Find and replace"
       className="fixed top-12 right-4 z-50 flex flex-col gap-1 rounded-lg border border-border bg-background shadow-lg p-2 w-80 text-sm"
       onKeyDown={(e) => e.stopPropagation()}
     >
-      {/* Search row */}
       <div className="flex items-center gap-1">
         <button
+          aria-expanded={showReplace}
+          aria-controls={replaceControlsId}
           title={showReplace ? "Collapse replace" : "Expand replace"}
           onClick={() => setShowReplace((v) => !v)}
           className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60"
+          type="button"
+          aria-label={
+            showReplace
+              ? "Collapse replace controls"
+              : "Expand replace controls"
+          }
         >
           {showReplace ? (
-            <CaretDownIcon className="size-3.5" />
+            <CaretDownIcon aria-hidden="true" className="size-3.5" />
           ) : (
-            <CaretRightIcon className="size-3.5" />
+            <CaretRightIcon aria-hidden="true" className="size-3.5" />
           )}
         </button>
         <input
@@ -116,29 +127,41 @@ export const FindReplaceBar = () => {
               e.shiftKey ? onPrev() : onNext();
             }
           }}
+          aria-label="Find text"
           placeholder="Find"
-          className="flex-1 min-w-0 bg-muted rounded px-2 py-1 outline-none text-foreground placeholder:text-foreground/40 text-sm"
+          className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
         />
-        <span className="flex-shrink-0 text-foreground/50 tabular-nums text-xs min-w-[3.5rem] text-right">
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className="flex-shrink-0 text-foreground/50 tabular-nums text-xs min-w-[3.5rem] text-right"
+        >
           {searchTerm ? `${current} of ${total}` : ""}
         </span>
         <button
+          type="button"
+          aria-label="Previous match"
           title="Previous match (Shift+Enter)"
           onClick={onPrev}
           disabled={total === 0}
           className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60 disabled:opacity-40"
         >
-          <ArrowUpIcon className="size-3.5" />
+          <ArrowUpIcon aria-hidden="true" className="size-3.5" />
         </button>
         <button
+          type="button"
+          aria-label="Next match"
           title="Next match (Enter)"
           onClick={onNext}
           disabled={total === 0}
           className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60 disabled:opacity-40"
         >
-          <ArrowDownIcon className="size-3.5" />
+          <ArrowDownIcon aria-hidden="true" className="size-3.5" />
         </button>
         <button
+          type="button"
+          aria-label="Toggle case-sensitive search"
+          aria-pressed={caseSensitive}
           title="Toggle case-sensitive"
           onClick={() => setCaseSensitive((v) => !v)}
           className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs font-mono ${caseSensitive ? "bg-primary text-primary-foreground" : "hover:bg-accent text-foreground/60"}`}
@@ -146,25 +169,27 @@ export const FindReplaceBar = () => {
           Aa
         </button>
         <button
+          type="button"
+          aria-label="Close find and replace"
           title="Close (Escape)"
           onClick={close}
           className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60"
         >
-          <XIcon className="size-3.5" />
+          <XIcon aria-hidden="true" className="size-3.5" />
         </button>
       </div>
-
-      {/* Replace row */}
       {showReplace && (
-        <div className="flex items-center gap-1 pl-6">
+        <div id={replaceControlsId} className="flex items-center gap-1 pl-6">
           <input
             type="text"
             value={replaceTerm}
             onChange={(e) => setReplaceTerm(e.target.value)}
+            aria-label="Replace with"
             placeholder="Replace"
-            className="flex-1 min-w-0 bg-muted rounded px-2 py-1 outline-none text-foreground placeholder:text-foreground/40 text-sm"
+            className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
           />
           <button
+            type="button"
             onClick={onReplace}
             disabled={total === 0}
             className="flex-shrink-0 px-2 py-1 rounded text-xs hover:bg-accent text-foreground/70 disabled:opacity-40"
@@ -172,6 +197,7 @@ export const FindReplaceBar = () => {
             Replace
           </button>
           <button
+            type="button"
             onClick={onReplaceAll}
             disabled={total === 0}
             className="flex-shrink-0 px-2 py-1 rounded text-xs hover:bg-accent text-foreground/70 disabled:opacity-40"

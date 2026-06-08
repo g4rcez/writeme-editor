@@ -1,8 +1,3 @@
-/* writeme-aside */
-.writeme-aside-activity-wrapper {
-  @apply flex-shrink-0 print:hidden w-fit;
-}
-
 .writeme-aside-panel {
   @apply flex-shrink-0 print:hidden backdrop-blur-sm overflow-hidden;
   transition:
@@ -186,7 +181,11 @@
 }
 
 .writeme-editor-content {
-  @apply h-full outline-none focus-visible:outline-none print:h-auto print:block print:overflow-visible;
+  @apply h-full outline-none print:h-auto print:block print:overflow-visible;
+}
+
+.writeme-editor-content:focus-visible {
+  @apply outline-background outline;
 }
 
 .writeme-block {
@@ -201,6 +200,17 @@
   @apply flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48;
 }
 
+.quicknote-window-drag-region {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.quicknote-window-drag-strip {
+  -webkit-app-region: drag;
+  @apply absolute top-0 right-0 z-navbar h-12;
+  left: 72px;
+}
+
 /* writeme-layout */
 .writeme-layout {
   @apply flex overflow-hidden flex-col w-screen h-screen min-h-0 print:block print:h-auto print:w-auto print:overflow-visible bg-background;
@@ -212,8 +222,4 @@
 
 .writeme-layout-main {
   @apply flex overflow-hidden relative flex-col flex-1 min-w-0 min-h-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible;
-}
-
-.writeme-layout-scroll {
-  @apply overflow-y-auto overscroll-contain w-full h-full min-h-0 print:block print:overflow-visible print:h-auto bg-background;
 }

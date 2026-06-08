@@ -183,7 +183,13 @@ const TiptapEditorCore = memo(
         }
       },
       editorProps: {
-        attributes: { class: "writeme-editor-content" },
+        attributes: {
+          class: "writeme-editor-content",
+          role: "textbox",
+          "aria-multiline": "true",
+          "aria-readonly": readonly ? "true" : "false",
+          "aria-label": readonly ? "Read-only note editor" : "Note editor",
+        },
         handleDOMEvents: {
           contextmenu: (view, event) => {
             if (!isElectron()) return false;
@@ -555,12 +561,22 @@ const TiptapEditorCore = memo(
     return (
       <div
         id="editor-container"
+        aria-busy={uiState.parsingContent ? "true" : "false"}
         style={{ fontSize: `${settings.editorFontSize}px` }}
         className="writeme-editor relative"
       >
         {uiState.parsingContent && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-            <CircleNotchIcon size={32} className="animate-spin" />
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <CircleNotchIcon
+              aria-hidden="true"
+              size={32}
+              className="animate-spin"
+            />
             <span className="mt-2 text-sm text-foreground">
               {parseProgress > 0
                 ? `Parsing large document… ${parseProgress}%`

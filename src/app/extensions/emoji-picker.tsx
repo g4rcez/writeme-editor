@@ -2,10 +2,10 @@ import { Extension } from "@tiptap/core";
 import { PluginKey } from "@tiptap/pm/state";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
-
-const EmojiSuggestionKey = new PluginKey("emojiSuggestion");
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { updatePosition } from "@/app/extensions/update-position";
+
+const EmojiSuggestionKey = new PluginKey("emojiSuggestion");
 
 const EMOJI_GRID_COLUMNS = 4;
 
@@ -463,6 +463,9 @@ const EmojiList = (props: any) => {
     >
       <div ref={containerRef} className="overflow-y-auto p-1 max-h-56">
         <div
+          role="listbox"
+          aria-label="Emoji suggestions"
+          aria-activedescendant={`emoji-suggestion-${selectedIndex}`}
           className="grid gap-0.5"
           style={{
             gridTemplateColumns: `repeat(${EMOJI_GRID_COLUMNS}, minmax(0, 1fr))`,
@@ -471,6 +474,11 @@ const EmojiList = (props: any) => {
           {(props.items as EmojiItem[]).map((item, index) => (
             <button
               key={`${item.emoji}-${index}`}
+              type="button"
+              id={`emoji-suggestion-${index}`}
+              role="option"
+              aria-label={`Insert ${item.name} emoji`}
+              aria-selected={index === selectedIndex}
               data-index={index}
               title={item.name}
               onMouseDown={(e) => {
@@ -489,7 +497,11 @@ const EmojiList = (props: any) => {
           ))}
         </div>
       </div>
-      <div className="px-2 py-1 text-xs text-center truncate border-t border-border text-foreground/60">
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="px-2 py-1 text-xs text-center truncate border-t border-border text-foreground/60"
+      >
         {selectedName}
       </div>
     </div>
