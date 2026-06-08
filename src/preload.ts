@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   app: {
     openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
+    hideToTray: () => ipcRenderer.invoke("app:hideToTray"),
     chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
     notifyFileClosed: (requestId: string) =>
       ipcRenderer.invoke("app:file-closed", requestId),
@@ -30,6 +31,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onQuicknoteOpen: (callback: () => void) => {
     ipcRenderer.on("quicknote:open", callback);
     return () => ipcRenderer.removeListener("quicknote:open", callback);
+  },
+  onNavigate: (callback: (pathname: string) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, pathname: string) =>
+      callback(pathname);
+    ipcRenderer.on("app:navigate", handler);
+    return () => ipcRenderer.removeListener("app:navigate", handler);
   },
   onOpenFile: (
     callback: (data: {
@@ -308,6 +315,7 @@ declare global {
       };
       app: {
         openQuickNote(): Promise<void>;
+        hideToTray(): Promise<boolean>;
         chdir(dir: string): Promise<{ success: boolean; error?: string }>;
         notifyFileClosed(requestId: string): Promise<boolean>;
         updateShortcut(
@@ -319,6 +327,7 @@ declare global {
         openFolder(folderPath: string): Promise<boolean>;
       };
       onQuicknoteOpen(callback: () => void): () => void;
+      onNavigate(callback: (pathname: string) => void): () => void;
       onOpenFile(
         callback: (data: {
           filePath: string;
