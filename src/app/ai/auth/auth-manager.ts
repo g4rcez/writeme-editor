@@ -14,6 +14,8 @@ import {
 const ANTHROPIC_TOKEN_URL = "https://platform.claude.com/v1/oauth/token";
 const ANTHROPIC_CALLBACK_URL =
   "https://platform.claude.com/oauth/code/callback";
+const OPENAI_ISSUER = "https://auth.openai.com";
+const OPENAI_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const ANTHROPIC_TOKEN_HEADERS = {
   "Content-Type": "application/json",
   Accept: "application/json, text/plain, */*",
@@ -44,6 +46,30 @@ function base64urlEncode(bytes: Uint8Array): string {
 function generateState(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
+
+function parseJwtExpiresAt(token: string | undefined): number | undefined {
+  if (!token) return undefined;
+  const [, payload] = token.split(".");
+  if (!payload) return undefined;
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+    const claims = JSON.parse(atob(padded)) as { exp?: number };
+    return claims.exp ? claims.exp * 1000 : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+type OpenAIDeviceCode = {
+  verificationUrl: string;
+  userCode: string;
+  deviceAuthId: string;
+  interval: number;
+};
 
 /**
  * Parse the authorization code pasted by the user.
@@ -89,6 +115,7 @@ class AuthManager {
   private _pendingVerifier: string | null = null;
   private _pendingState: string | null = null;
   private _pendingAdapterId: string | null = null;
+  private _pendingOpenAIDeviceCode: OpenAIDeviceCode | null = null;
 
   async startOAuthFlow(adapterId: string): Promise<{ message: string }> {
     if (adapterId === "anthropic") {
@@ -96,6 +123,9 @@ class AuthManager {
     }
     if (adapterId === "gemini") {
       return this._openGeminiBrowser();
+    }
+    if (adapterId === "openai") {
+      return this._startOpenAIDeviceFlow();
     }
     throw new Error(`OAuth not supported for adapter: ${adapterId}`);
   }
@@ -131,6 +161,57 @@ class AuthManager {
     return {
       message:
         "Your browser opened. Sign in and paste the authorization code shown on the page.",
+    };
+  }
+
+  private async _startOpenAIDeviceFlow(): Promise<{ message: string }> {
+    const resp = await proxyFetch(
+      `${OPENAI_ISSUER}/api/accounts/deviceauth/usercode`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: OPENAI_CLIENT_ID }),
+      },
+    );
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`OpenAI device authorization failed: ${err}`);
+    }
+
+    const data = (await resp.json()) as {
+      verification_url?: string;
+      user_code?: string;
+      usercode?: string;
+      device_auth_id: string;
+      interval?: string | number;
+    };
+
+    const userCode = data.user_code ?? data.usercode;
+    if (!userCode) {
+      throw new Error(
+        "OpenAI device authorization did not return a user code.",
+      );
+    }
+
+    const deviceCode: OpenAIDeviceCode = {
+      verificationUrl: data.verification_url ?? `${OPENAI_ISSUER}/codex/device`,
+      userCode,
+      deviceAuthId: data.device_auth_id,
+      interval: Number(data.interval ?? 5),
+    };
+
+    this._pendingOpenAIDeviceCode = deviceCode;
+    this._pendingAdapterId = "openai";
+
+    if (isElectron()) {
+      await window.electronAPI.ai.startOAuth(deviceCode.verificationUrl);
+    } else {
+      window.open(deviceCode.verificationUrl, "_blank");
+    }
+
+    return {
+      message: `Your browser opened. Enter code ${deviceCode.userCode} on the OpenAI page, then return here and complete sign-in.`,
     };
   }
 
@@ -177,6 +258,18 @@ class AuthManager {
     adapterId: string,
     rawInput: string,
   ): Promise<AuthCredentials> {
+    if (adapterId === "openai") {
+      if (this._pendingAdapterId !== adapterId) {
+        throw new Error(
+          "No pending OAuth flow. Click the sign-in button first.",
+        );
+      }
+      const creds = await this.completeOpenAIDeviceFlow();
+      this._pendingAdapterId = null;
+      await this.saveCredentials(adapterId, creds);
+      return creds;
+    }
+
     const verifier = this._pendingVerifier;
     if (!verifier || this._pendingAdapterId !== adapterId) {
       throw new Error("No pending OAuth flow. Click the sign-in button first.");
@@ -206,6 +299,163 @@ class AuthManager {
 
     await this.saveCredentials(adapterId, creds);
     return creds;
+  }
+
+  async completeOpenAIDeviceFlow(): Promise<AuthCredentials> {
+    const deviceCode = this._pendingOpenAIDeviceCode;
+    if (!deviceCode) {
+      throw new Error("No pending OpenAI device authorization flow.");
+    }
+
+    const codeResp = await this.pollOpenAIDeviceCode(deviceCode);
+    this._pendingOpenAIDeviceCode = null;
+
+    const tokens = await this.exchangeOpenAICode(
+      codeResp.authorization_code,
+      codeResp.code_verifier,
+    );
+    const apiKey = await this.obtainOpenAIApiKey(tokens.id_token);
+
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      apiKey,
+      expiresAt: parseJwtExpiresAt(tokens.access_token),
+    };
+  }
+
+  private async pollOpenAIDeviceCode(deviceCode: OpenAIDeviceCode): Promise<{
+    authorization_code: string;
+    code_challenge: string;
+    code_verifier: string;
+  }> {
+    const startedAt = Date.now();
+    const maxWaitMs = 60 * 1000;
+
+    while (Date.now() - startedAt < maxWaitMs) {
+      const resp = await proxyFetch(
+        `${OPENAI_ISSUER}/api/accounts/deviceauth/token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            device_auth_id: deviceCode.deviceAuthId,
+            user_code: deviceCode.userCode,
+          }),
+        },
+      );
+
+      if (resp.ok) {
+        return (await resp.json()) as {
+          authorization_code: string;
+          code_challenge: string;
+          code_verifier: string;
+        };
+      }
+
+      if (resp.status !== 403 && resp.status !== 404) {
+        const err = await resp.text();
+        throw new Error(`OpenAI device authorization failed: ${err}`);
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(deviceCode.interval, 1) * 1000),
+      );
+    }
+
+    throw new Error(
+      "OpenAI device authorization is still pending. Finish sign-in and try again.",
+    );
+  }
+
+  async exchangeOpenAICode(
+    code: string,
+    codeVerifier: string,
+  ): Promise<{
+    id_token: string;
+    access_token: string;
+    refresh_token: string;
+  }> {
+    const resp = await proxyFetch(`${OPENAI_ISSUER}/oauth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: `${OPENAI_ISSUER}/deviceauth/callback`,
+        client_id: OPENAI_CLIENT_ID,
+        code_verifier: codeVerifier,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`OpenAI OAuth token exchange failed: ${err}`);
+    }
+
+    return (await resp.json()) as {
+      id_token: string;
+      access_token: string;
+      refresh_token: string;
+    };
+  }
+
+  async obtainOpenAIApiKey(idToken: string): Promise<string> {
+    const resp = await proxyFetch(`${OPENAI_ISSUER}/oauth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+        client_id: OPENAI_CLIENT_ID,
+        requested_token: "openai-api-key",
+        subject_token: idToken,
+        subject_token_type: "urn:ietf:params:oauth:token-type:id_token",
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`OpenAI API token exchange failed: ${err}`);
+    }
+
+    const data = (await resp.json()) as { access_token: string };
+    return data.access_token;
+  }
+
+  async refreshOpenAIToken(
+    credentials: AuthCredentials,
+  ): Promise<AuthCredentials> {
+    if (!credentials.refreshToken) return credentials;
+    try {
+      const resp = await proxyFetch(`${OPENAI_ISSUER}/oauth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "refresh_token",
+          refresh_token: credentials.refreshToken,
+          client_id: OPENAI_CLIENT_ID,
+        }),
+      });
+      if (!resp.ok) return credentials;
+      const data = (await resp.json()) as {
+        id_token?: string;
+        access_token?: string;
+        refresh_token?: string;
+      };
+      const apiKey = data.id_token
+        ? await this.obtainOpenAIApiKey(data.id_token)
+        : credentials.apiKey;
+      return {
+        ...credentials,
+        accessToken: data.access_token ?? credentials.accessToken,
+        refreshToken: data.refresh_token ?? credentials.refreshToken,
+        apiKey,
+        expiresAt:
+          parseJwtExpiresAt(data.access_token) ?? credentials.expiresAt,
+      };
+    } catch {
+      return credentials;
+    }
   }
 
   async exchangeAnthropicCode(
@@ -323,6 +573,7 @@ class AuthManager {
   ): Promise<AuthCredentials> {
     const creds = await this.loadCredentials(adapterId);
     if (!creds) {
+      if (adapterId === "ollama") return {};
       throw new Error("Not authenticated. Connect in Settings.");
     }
     if (adapter.isExpired(creds)) {

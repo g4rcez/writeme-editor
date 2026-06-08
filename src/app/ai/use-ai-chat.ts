@@ -169,6 +169,7 @@ export function useAIChat(noteId?: string) {
           {
             model: config.model,
             systemPrompt,
+            baseUrl: config.baseUrl,
             credentials,
             commandTemplate: config.commandTemplate,
           } as any,

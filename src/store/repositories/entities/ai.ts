@@ -1,8 +1,4 @@
-import {
-  type AIConfig,
-  type AIChat,
-  type AIMessage,
-} from "../electron/ai.repository";
+import type { AIConfig, AIChat, AIMessage } from "../electron/ai.repository";
 
 export type AICredentials = {
   adapterId: string;
@@ -10,6 +6,7 @@ export type AICredentials = {
   refreshToken?: string;
   expiresAt?: number;
   apiKey?: string;
+  baseUrl?: string;
 };
 
 export interface IAIRepository {

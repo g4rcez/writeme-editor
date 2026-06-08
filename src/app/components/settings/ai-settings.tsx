@@ -1,4 +1,4 @@
-import { Button, Card, Input, Textarea, css, uuid } from "@g4rcez/components";
+import { Button, Input, Select, Textarea, css, uuid } from "@g4rcez/components";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { XCircleIcon } from "@phosphor-icons/react/dist/csr/XCircle";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
@@ -16,6 +16,8 @@ import { isElectron } from "@/lib/is-electron";
 
 type CredentialStatus = "connected" | "disconnected" | "loading";
 type TestStatus = "idle" | "testing" | "success" | "error";
+
+const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
 
 const PROVIDER_META: Record<
   string,
@@ -46,11 +48,19 @@ const PROVIDER_META: Record<
   },
   openai: {
     color: "bg-[#10a37f]/10 border-[#10a37f]/40 hover:border-[#10a37f]",
-    description: "GPT and o-series models with vision support",
-    consoleUrl: "https://platform.openai.com/api-keys",
-    keyHint: "Starts with sk-",
+    description: "GPT and o-series models with ChatGPT OAuth",
+    consoleUrl: "",
+    keyHint: "",
+    oauthLabel: "Sign in with OpenAI",
+    disconnectLabel: "Disconnect OpenAI account",
+  },
+  ollama: {
+    color: "bg-muted/50 border-border hover:border-foreground/30",
+    description: "Local or cloud Ollama via OpenAI-compatible endpoints",
+    consoleUrl: "",
+    keyHint: "Optional cloud API key",
     oauthLabel: "",
-    disconnectLabel: "",
+    disconnectLabel: "Disconnect Ollama credentials",
   },
   cli: {
     color: "bg-muted/50 border-border hover:border-foreground/30",
@@ -68,6 +78,7 @@ export const AISettings = () => {
   const [model, setModel] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState(DEFAULT_OLLAMA_BASE_URL);
   const [commandTemplate, setCommandTemplate] = useState(
     "claude --dangerously-skip-permissions {{context}}",
   );
@@ -106,6 +117,7 @@ export const AISettings = () => {
         setAdapterId(def.adapterId ?? "anthropic");
         setModel(def.model ?? "");
         setSystemPrompt(def.systemPrompt ?? "");
+        setBaseUrl(def.baseUrl ?? DEFAULT_OLLAMA_BASE_URL);
         setCommandTemplate(
           def.commandTemplate ??
             "claude --dangerously-skip-permissions {{context}}",
@@ -125,6 +137,7 @@ export const AISettings = () => {
     setAdapterId(id);
     setModel(adapterRegistry.get(id)?.defaultModel ?? "");
     setApiKey("");
+    setBaseUrl(id === "ollama" ? DEFAULT_OLLAMA_BASE_URL : "");
     setTestStatus("idle");
     setTestError("");
     setAvailableModels([]);
@@ -138,29 +151,44 @@ export const AISettings = () => {
     setTestStatus("testing");
     setTestError("");
     try {
-      const creds = apiKey.trim()
-        ? { apiKey: apiKey.trim() }
-        : ((await repositories.ai.loadCredentials(adapterId)) ?? {});
-      if (!creds || (!("apiKey" in creds) && !("accessToken" in creds))) {
+      const savedCreds = await repositories.ai.loadCredentials(adapterId);
+      const creds = {
+        ...(savedCreds ?? {}),
+        ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+        ...(adapterId === "ollama" ? { baseUrl: baseUrl.trim() } : {}),
+      };
+      if (
+        adapterId !== "ollama" &&
+        !("apiKey" in creds) &&
+        !("accessToken" in creds)
+      ) {
         setTestStatus("error");
-        setTestError("No credentials found. Enter an API key first.");
+        setTestError("No credentials found. Connect first.");
         return;
       }
       const models = await adapter.listModels(creds);
       if (models.length > 0) {
         setTestStatus("success");
         setAvailableModels(models);
-        if (apiKey.trim()) {
+        if (adapterId === "ollama" && !models.some((m) => m.id === model)) {
+          setModel(models[0]?.id ?? "");
+        }
+        if (apiKey.trim() || adapterId === "ollama") {
           await repositories.ai.saveCredentials({
             adapterId,
-            apiKey: apiKey.trim(),
+            apiKey: apiKey.trim() || undefined,
+            baseUrl: adapterId === "ollama" ? baseUrl.trim() : undefined,
           });
           setApiKey("");
-          setCredentialStatus("connected");
         }
+        setCredentialStatus("connected");
       } else {
         setTestStatus("error");
-        setTestError("Could not reach the API. Check your key and try again.");
+        setTestError(
+          adapterId === "ollama"
+            ? "Could not reach Ollama or no models are installed. Check the base URL and try again."
+            : "Could not reach the API. Check your credentials and try again.",
+        );
       }
     } catch (err: any) {
       setTestStatus("error");
@@ -187,9 +215,9 @@ export const AISettings = () => {
     }
   };
 
-  // Phase 2: exchange the pasted code for tokens
+  // Phase 2: exchange the pasted code or complete device authorization
   const handleSubmitOAuthCode = async () => {
-    if (!oauthCode.trim()) return;
+    if (adapterId !== "openai" && !oauthCode.trim()) return;
     setAuthLoading(true);
     try {
       await authManager.completeOAuthFlow(adapterId, oauthCode.trim());
@@ -236,6 +264,7 @@ export const AISettings = () => {
         model: model || adapter?.defaultModel || "",
         systemPrompt,
         commandTemplate: adapterId === "cli" ? commandTemplate : undefined,
+        baseUrl: adapterId === "ollama" ? baseUrl.trim() : undefined,
         isDefault: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -336,6 +365,69 @@ export const AISettings = () => {
               onChange={(e: any) => setCommandTemplate(e.target.value)}
             />
           </div>
+        ) : adapterId === "ollama" ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">Base URL</span>
+              <Input
+                hiddenLabel
+                value={baseUrl}
+                placeholder={DEFAULT_OLLAMA_BASE_URL}
+                onChange={(e: any) => setBaseUrl(e.target.value)}
+                onKeyDown={(e: any) =>
+                  e.key === "Enter" && handleTestConnection()
+                }
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Use <code>{DEFAULT_OLLAMA_BASE_URL}</code> for local Ollama, or
+                a cloud Ollama OpenAI-compatible base URL. Running models load
+                from the same host via <code>/api/ps</code>.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">API Key (optional)</span>
+              <div className="flex gap-2">
+                <Input
+                  hiddenLabel
+                  type="password"
+                  value={apiKey}
+                  container="flex-1"
+                  placeholder={meta?.keyHint ?? "Optional API key"}
+                  onChange={(e: any) => setApiKey(e.target.value)}
+                  onKeyDown={(e: any) =>
+                    e.key === "Enter" && handleTestConnection()
+                  }
+                />
+                <Button
+                  size="small"
+                  disabled={!baseUrl.trim() || testStatus === "testing"}
+                  onClick={handleTestConnection}
+                >
+                  {testStatus === "testing" ? (
+                    <SpinnerIcon size={14} className="animate-spin" />
+                  ) : (
+                    <span className="flex gap-1.5 items-center">
+                      <PlugIcon size={14} />
+                      Load models
+                    </span>
+                  )}
+                </Button>
+              </div>
+              {testStatus === "success" && (
+                <span className="flex gap-1 items-center text-xs text-green-500">
+                  <CheckCircleIcon size={12} />
+                  Connected — {availableModels.length} model
+                  {availableModels.length !== 1 ? "s" : ""} available
+                </span>
+              )}
+              {testStatus === "error" && (
+                <span className="flex gap-1 items-center text-xs text-destructive">
+                  <XCircleIcon size={12} />
+                  {testError}
+                </span>
+              )}
+            </div>
+          </div>
         ) : adapter?.supportsOAuth ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -356,23 +448,30 @@ export const AISettings = () => {
                     {oauthInstruction}
                   </p>
                   <div className="flex gap-2">
-                    <Input
-                      hiddenLabel
-                      value={oauthCode}
-                      container="flex-1"
-                      placeholder="Paste authorization code here"
-                      onChange={(e: any) => setOauthCode(e.target.value)}
-                      onKeyDown={(e: any) =>
-                        e.key === "Enter" && handleSubmitOAuthCode()
-                      }
-                    />
+                    {adapterId !== "openai" && (
+                      <Input
+                        hiddenLabel
+                        value={oauthCode}
+                        container="flex-1"
+                        placeholder="Paste authorization code here"
+                        onChange={(e: any) => setOauthCode(e.target.value)}
+                        onKeyDown={(e: any) =>
+                          e.key === "Enter" && handleSubmitOAuthCode()
+                        }
+                      />
+                    )}
                     <Button
                       size="small"
-                      disabled={!oauthCode.trim() || authLoading}
+                      disabled={
+                        authLoading ||
+                        (adapterId !== "openai" && !oauthCode.trim())
+                      }
                       onClick={handleSubmitOAuthCode}
                     >
                       {authLoading ? (
                         <SpinnerIcon size={14} className="animate-spin" />
+                      ) : adapterId === "openai" ? (
+                        "Complete sign-in"
                       ) : (
                         "Submit"
                       )}
@@ -403,40 +502,42 @@ export const AISettings = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Or use API Key</span>
-              <div className="flex gap-2">
-                <Input
-                  hiddenLabel
-                  type="password"
-                  value={apiKey}
-                  container="flex-1"
-                  placeholder={meta?.keyHint ?? "API key"}
-                  onChange={(e: any) => setApiKey(e.target.value)}
-                  onKeyDown={(e: any) =>
-                    e.key === "Enter" && handleTestConnection()
-                  }
-                />
-                <Button
-                  size="small"
-                  disabled={!apiKey.trim()}
-                  onClick={handleTestConnection}
-                >
-                  Save
-                </Button>
+            {adapterId !== "openai" && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Or use API Key</span>
+                <div className="flex gap-2">
+                  <Input
+                    hiddenLabel
+                    type="password"
+                    value={apiKey}
+                    container="flex-1"
+                    placeholder={meta?.keyHint ?? "API key"}
+                    onChange={(e: any) => setApiKey(e.target.value)}
+                    onKeyDown={(e: any) =>
+                      e.key === "Enter" && handleTestConnection()
+                    }
+                  />
+                  <Button
+                    size="small"
+                    disabled={!apiKey.trim()}
+                    onClick={handleTestConnection}
+                  >
+                    Save
+                  </Button>
+                </div>
+                {meta?.consoleUrl && (
+                  <a
+                    href={meta.consoleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex gap-1 items-center text-[11px] text-primary hover:underline w-fit"
+                  >
+                    <ArrowSquareOutIcon size={11} />
+                    Get API key
+                  </a>
+                )}
               </div>
-              {meta?.consoleUrl && (
-                <a
-                  href={meta.consoleUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex gap-1 items-center text-[11px] text-primary hover:underline w-fit"
-                >
-                  <ArrowSquareOutIcon size={11} />
-                  Get API key
-                </a>
-              )}
-            </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -508,18 +609,35 @@ export const AISettings = () => {
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Model</span>
             {availableModels.length > 0 ? (
-              <select
+              <Select
+                hiddenLabel
                 value={model}
+                title="Model"
                 onChange={(e) => setModel(e.target.value)}
-                className="py-2 px-3 w-full text-sm rounded-md border transition-colors bg-background border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Default ({adapter?.defaultModel})</option>
-                {availableModels.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: `Default (${adapter?.defaultModel})` },
+                  ...availableModels.map((m) => ({
+                    value: m.id,
+                    label: m.name,
+                  })),
+                ]}
+              />
+            ) : adapterId === "ollama" ? (
+              <Select
+                hiddenLabel
+                value=""
+                title="Model"
+                disabled
+                options={[
+                  {
+                    value: "",
+                    label:
+                      testStatus === "testing"
+                        ? "Loading running models..."
+                        : "Load running models from Ollama first",
+                  },
+                ]}
+              />
             ) : (
               <Input
                 hiddenLabel

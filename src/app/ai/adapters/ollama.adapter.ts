@@ -12,47 +12,51 @@ import type {
   SendOptions,
 } from "./types";
 
-export class OpenAIAdapter implements AIAdapter {
-  readonly id = "openai";
-  readonly name = "OpenAI (GPT)";
+const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
+
+export class OllamaAdapter implements AIAdapter {
+  readonly id = "ollama";
+  readonly name = "Ollama";
   readonly supportsFiles = true;
-  readonly supportsOAuth = true;
-  readonly defaultModel = "gpt-4o";
+  readonly supportsOAuth = false;
+  readonly defaultModel = "llama3.2";
 
   async auth(
-    method: "oauth" | "api-key",
+    _method: "oauth" | "api-key",
     apiKey?: string,
   ): Promise<AuthCredentials> {
-    if (method === "oauth") {
-      const { authManager } = await import("@/app/ai/auth/auth-manager");
-      await authManager.startOAuthFlow("openai");
-      return {};
-    }
     return { apiKey };
   }
 
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
-    if (!credentials.refreshToken) return credentials;
-    const { authManager } = await import("@/app/ai/auth/auth-manager");
-    return authManager.refreshOpenAIToken(credentials);
+    return credentials;
   }
 
-  isExpired(credentials: AuthCredentials): boolean {
-    return credentials.expiresAt != null && Date.now() > credentials.expiresAt;
+  isExpired(_credentials: AuthCredentials): boolean {
+    return false;
   }
 
   async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
+    const apiHost = ollamaApiHostFromBaseUrl(credentials.baseUrl);
     try {
-      const resp = await proxyFetch("https://api.openai.com/v1/models", {
-        headers: {
-          Authorization: `Bearer ${credentials.apiKey ?? credentials.accessToken ?? ""}`,
-        },
-      });
+      const headers: Record<string, string> = {};
+      if (credentials.apiKey) {
+        headers.Authorization = `Bearer ${credentials.apiKey}`;
+      }
+      const resp = await proxyFetch(`${apiHost}/api/ps`, { headers });
       if (!resp.ok) return [];
-      const data = (await resp.json()) as { data: { id: string }[] };
-      return (data.data ?? [])
-        .filter((m) => /gpt|o1|o3/.test(m.id))
-        .map((m) => ({ id: m.id, name: m.id }));
+      const data = (await resp.json()) as {
+        models?: {
+          name: string;
+          model?: string;
+          context_length?: number;
+        }[];
+      };
+      return (data.models ?? []).map((model) => ({
+        id: model.model ?? model.name,
+        name: model.name,
+        contextWindow: model.context_length,
+      }));
     } catch {
       return [];
     }
@@ -75,10 +79,14 @@ export class OpenAIAdapter implements AIAdapter {
     options: SendOptions,
     signal?: AbortSignal,
   ): AsyncIterable<AIStreamEvent> {
-    const openai = createOpenAI({
-      apiKey:
-        options.credentials.apiKey ?? options.credentials.accessToken ?? "",
+    const baseURL = normalizeBaseUrl(
+      options.baseUrl ?? options.credentials.baseUrl,
+    );
+    const ollama = createOpenAI({
+      baseURL,
+      apiKey: options.credentials.apiKey || "ollama",
       fetch: proxyFetch,
+      name: "ollama",
     });
 
     const model = options.model ?? this.defaultModel;
@@ -107,7 +115,7 @@ export class OpenAIAdapter implements AIAdapter {
 
     try {
       const result = streamText({
-        model: openai(model),
+        model: ollama(model),
         messages: mapped,
         system: options.systemPrompt,
         abortSignal: signal,
@@ -127,6 +135,19 @@ export class OpenAIAdapter implements AIAdapter {
       }
     }
   }
+}
+
+export function normalizeBaseUrl(baseUrl?: string): string {
+  const trimmed = baseUrl?.trim() || DEFAULT_OLLAMA_BASE_URL;
+  const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
+  return withoutTrailingSlash.endsWith("/v1")
+    ? withoutTrailingSlash
+    : `${withoutTrailingSlash}/v1`;
+}
+
+function ollamaApiHostFromBaseUrl(baseUrl?: string): string {
+  const normalized = normalizeBaseUrl(baseUrl);
+  return normalized.endsWith("/v1") ? normalized.slice(0, -3) : normalized;
 }
 
 function bufferToBase64(buffer: ArrayBuffer): string {

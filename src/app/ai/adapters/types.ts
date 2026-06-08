@@ -3,6 +3,7 @@ export type AuthCredentials = {
   refreshToken?: string;
   expiresAt?: number;
   apiKey?: string;
+  baseUrl?: string;
 };
 
 export type AIFile = {
@@ -35,6 +36,7 @@ export type SendOptions = {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  baseUrl?: string;
   credentials: AuthCredentials;
 };
 

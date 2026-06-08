@@ -15,6 +15,7 @@ export type AIConfig = {
   isDefault: boolean;
   adapterId: string;
   model?: string;
+  baseUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 };

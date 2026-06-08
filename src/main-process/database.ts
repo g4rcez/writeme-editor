@@ -120,6 +120,9 @@ class DatabaseManager {
         commandTemplate TEXT,
         systemPrompt TEXT,
         isDefault INTEGER DEFAULT 0,
+        adapterId TEXT,
+        model TEXT,
+        baseUrl TEXT,
         createdAt TEXT,
         updatedAt TEXT
       );
@@ -251,7 +254,7 @@ class DatabaseManager {
       "originalFilePath",
     ];
     const aiMessageColumns = ["selectionSlice", "files"];
-    const aiConfigColumns = ["adapterId", "model"];
+    const aiConfigColumns = ["adapterId", "model", "baseUrl"];
 
     for (const table of tables) {
       try {
