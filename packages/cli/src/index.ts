@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util";
 import { openFile } from "./commands/open-file.ts";
+import { handleExpr, handleMathRepl } from "./commands/math.ts";
 import { openFolder } from "./commands/open-folder.ts";
 import { handleQuery } from "./commands/query.ts";
 
@@ -13,6 +14,21 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     await openFolder(argv[1]);
+    return;
+  }
+
+  if (argv[0] === "math") {
+    await handleMathRepl();
+    return;
+  }
+
+  if (argv[0] === "expr") {
+    const { positionals } = parseArgs({
+      args: argv.slice(1),
+      allowPositionals: true,
+      strict: false,
+    });
+    await handleExpr({ code: positionals.join(" ") });
     return;
   }
 
@@ -53,7 +69,7 @@ async function main(): Promise<void> {
   });
 
   const filePath = positionals[0] ?? null;
-  await openFile(filePath, values.wait ?? false);
+  await openFile(filePath, values.wait === true);
 }
 
 main().catch((err: unknown) => {

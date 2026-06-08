@@ -5,6 +5,7 @@ import { utf8ToBase64 } from "@/lib/encoding";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { notificationRef } from "@/app/notification-ref";
 import {
   CommanderType,
   globalState,
@@ -408,6 +409,34 @@ export const Commander = () => {
       ],
     };
 
+    const installerGroup: CommandItemTypes | null = isElectron()
+      ? {
+          title: "Installers",
+          type: "group",
+          items: [
+            {
+              title: "Install CLI",
+              type: "shortcut",
+              action: async (args) => {
+                args.setOpen(false);
+                const result = await window.electronAPI.app.installCli();
+                if (result.success) {
+                  notificationRef.current?.(
+                    <span>CLI installed at {result.installPath}</span>,
+                    { theme: "success", closable: true, timeout: 4000 },
+                  );
+                } else {
+                  notificationRef.current?.(
+                    <span>Failed to install CLI: {result.error}</span>,
+                    { theme: "danger", closable: true, timeout: 6000 },
+                  );
+                }
+              },
+            },
+          ],
+        }
+      : null;
+
     const gitDirectory = isElectron() ? SettingsService.load().directory : null;
     const gitGroup: CommandItemTypes | null = gitDirectory
       ? {
@@ -431,6 +460,7 @@ export const Commander = () => {
       templateItem,
       noteGroupsItem,
       ...(gitGroup ? [gitGroup] : []),
+      ...(installerGroup ? [installerGroup] : []),
       ...otherStuff,
     ];
   }, [

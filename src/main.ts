@@ -26,6 +26,7 @@ import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { gitIpcHandler } from "./ipc/git.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { dbManager } from "./main-process/database";
+import { installBundledCli } from "./main-process/cli-installer";
 import { FileWatcher } from "./main-process/file-watcher";
 import {
   createMathNoteWindow,
@@ -317,6 +318,25 @@ function openSettings(pathname: string = "/settings/quick"): void {
   sendNavigate(pathname);
 }
 
+async function installCliFromMenu(): Promise<void> {
+  try {
+    const result = await installBundledCli({ appPath: app.getAppPath() });
+    await dialog.showMessageBox({
+      type: "info",
+      title: "CLI installed",
+      message: "The writeme CLI was installed successfully.",
+      detail: `Installed at ${result.installPath}. Make sure ${path.dirname(
+        result.installPath,
+      )} is on your PATH.`,
+    });
+  } catch (error) {
+    dialog.showErrorBox(
+      "Failed to install CLI",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
 function parseAppCommand(argv: string[]): AppCommand | null {
   if (argv.includes("--quick-note")) return "quick-note";
   if (argv.includes("--math-note")) return "math-note";
@@ -362,6 +382,12 @@ function createOsMenuTemplate(
           click: () => openSettings("/settings/workspace"),
         },
       ],
+    },
+    {
+      label: "Install CLI",
+      click: () => {
+        void installCliFromMenu();
+      },
     },
     { type: "separator" },
     {

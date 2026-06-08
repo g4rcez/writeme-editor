@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("app:update-math-shortcut", shortcut),
     openFolder: (folderPath: string) =>
       ipcRenderer.invoke("app:open-folder", { folderPath }),
+    installCli: () => ipcRenderer.invoke("app:install-cli"),
   },
   onOpenFolder: (callback: (data: { folderPath: string }) => void) => {
     const handler = (
@@ -325,6 +326,15 @@ declare global {
           shortcut: string,
         ): Promise<{ success: boolean; error?: string }>;
         openFolder(folderPath: string): Promise<boolean>;
+        installCli(): Promise<
+          | {
+              success: true;
+              installPath: string;
+              sourcePath: string;
+              mode: "cmd" | "symlink";
+            }
+          | { success: false; error: string }
+        >;
       };
       onQuicknoteOpen(callback: () => void): () => void;
       onNavigate(callback: (pathname: string) => void): () => void;

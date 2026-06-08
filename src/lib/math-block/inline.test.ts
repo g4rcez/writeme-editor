@@ -3,7 +3,7 @@ import {
   INLINE_MATH_PATTERN,
   evaluateInlineMath,
   runInlineMath,
-} from "./inline";
+} from "solver";
 
 describe("INLINE_MATH_PATTERN", () => {
   it("matches >>math expr=", () => {

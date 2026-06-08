@@ -32,7 +32,9 @@
     "verbatimModuleSyntax": true,
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "solver": ["./packages/solver/src/index.ts"],
+      "solver/*": ["./packages/solver/src/*"]
     }
   }
 }

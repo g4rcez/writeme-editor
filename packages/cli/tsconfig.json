@@ -3,9 +3,15 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
     "strict": true,
-    "lib": ["ESNext"],
-    "types": ["bun-types"]
+    "lib": ["ESNext", "DOM"],
+    "types": ["bun-types", "node"],
+    "paths": {
+      "solver": ["../solver/src/index.ts"],
+      "solver/*": ["../solver/src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../solver/src"]
 }

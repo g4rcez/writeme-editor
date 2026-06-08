@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { classifyLine } from "./classifier";
-import { evaluateMathBlock } from "./evaluator";
-import { __resetMathInstanceCache, getMathInstance } from "./mathjs-extensions";
-import type { MathLine } from "./types";
+import {
+  __resetMathInstanceCache,
+  classifyLine,
+  evaluateMathBlock,
+  getMathInstance,
+  type MathLine,
+} from "solver";
 
 const lines = (...raws: string[]): MathLine[] => raws.map(classifyLine);
 

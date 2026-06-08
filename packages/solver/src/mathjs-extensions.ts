@@ -1,5 +1,5 @@
 import { all, create } from "mathjs";
-import type { ExchangeRateData } from "@/lib/currency";
+import type { ExchangeRateData } from "./types";
 
 export type MathInstance = ReturnType<typeof create>;
 
@@ -15,10 +15,12 @@ export function createMathInstance(props: Props): MathInstance {
   return math;
 }
 
-export function reconfigureEm(math: MathInstance, emPx: number) {
+export function reconfigureEm(math: MathInstance, emPx: number): MathInstance {
   try {
     math.createUnit("em", `${emPx} px`, { override: true });
-  } catch {}
+  } catch (error) {
+    console.warn("Failed to reconfigure math em unit", error);
+  }
   return math;
 }
 
@@ -32,10 +34,14 @@ function registerCurrencyUnits(
       if (code !== "EUR") {
         try {
           math.createUnit(code, math.unit(1 / rate, "EUR"));
-        } catch {}
+        } catch (error) {
+          console.warn(`Failed to register currency unit ${code}`, error);
+        }
       }
     });
-  } catch {}
+  } catch (error) {
+    console.warn("Failed to register base currency units", error);
+  }
 }
 
 let cached: MathInstance | null = null;

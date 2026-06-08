@@ -1,7 +1,6 @@
 import { format } from "mathjs";
-import type { ExchangeRateData } from "@/lib/currency";
-import { Dates } from "@/lib/dates";
-import { preprocessRule3 } from "@/lib/rule-of-three";
+import { Dates } from "./dates";
+import { preprocessRule3 } from "./rule-of-three";
 import { classifyLine } from "./classifier";
 import {
   getMathInstance,
@@ -21,6 +20,7 @@ import type {
   BlockScope,
   EvaluatedLine,
   EvaluatedResult,
+  ExchangeRateData,
   MathLine,
 } from "./types";
 

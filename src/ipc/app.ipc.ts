@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import { installBundledCli } from "../main-process/cli-installer";
 import { createQuickNoteWindow } from "../main-process/quicknote-window";
 
 export const appIpcHandler = (preloadPath: string) => {
@@ -7,6 +8,15 @@ export const appIpcHandler = (preloadPath: string) => {
   ipcMain.handle("app:hideToTray", (event) => {
     BrowserWindow.fromWebContents(event.sender)?.hide();
     return true;
+  });
+  ipcMain.handle("app:install-cli", async () => {
+    try {
+      const result = await installBundledCli({ appPath: app.getAppPath() });
+      return { success: true, ...result };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { success: false, error: message };
+    }
   });
   ipcMain.handle("app:chdir", (_, dir: string) => {
     try {
