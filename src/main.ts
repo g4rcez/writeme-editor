@@ -5,12 +5,15 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  type MenuItemConstructorOptions,
+  type NativeImage,
   nativeImage,
   net,
   shell,
   Tray,
 } from "electron";
 import started from "electron-squirrel-startup";
+import fs from "node:fs";
 import path from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { appIpcHandler } from "./ipc/app.ipc";
@@ -126,7 +129,6 @@ function registerAIHandlers() {
         "SELECT * FROM aiMessages WHERE chatId = ? ORDER BY createdAt ASC",
       );
       const results = stmt.all(chatId);
-      // @ts-ignore
       return results.map((r) => db.normalizeRow(r));
     } catch (e: any) {
       console.error("Error in ai:get-messages:", e);
@@ -247,6 +249,169 @@ let pendingFileOpen: string | null = null;
 let activeQuickNoteShortcut = "CommandOrControl+Alt+N";
 let activeMathNoteShortcut = "CommandOrControl+Alt+M";
 
+type AppCommand = "quick-note" | "math-note" | "settings";
+
+function getLogoSvgPath(): string {
+  return path.join(app.getAppPath(), "public", "logo.svg");
+}
+
+function getMacOsAppIconPath(): string {
+  return path.join(app.getAppPath(), "public", "icon.icns");
+}
+
+function getWindowsTaskIconPath(): string {
+  return path.join(app.getAppPath(), "public", "favicon.ico");
+}
+
+function getTrayIconPath(): string {
+  return path.join(app.getAppPath(), "public", "favicon-32x32.png");
+}
+
+function createNativeAppIcon(size?: number): NativeImage {
+  const resize = (icon: NativeImage): NativeImage => {
+    if (!size) return icon;
+    return icon.resize({ width: size, height: size });
+  };
+
+  if (process.platform === "darwin") {
+    const icon = nativeImage.createFromPath(getMacOsAppIconPath());
+    if (!icon.isEmpty()) return resize(icon);
+  }
+
+  try {
+    const svg = fs
+      .readFileSync(getLogoSvgPath(), "utf8")
+      .replace(/var\(--foreground\)/g, "#000000");
+    const icon = nativeImage.createFromDataURL(
+      `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`,
+    );
+    if (!icon.isEmpty()) return resize(icon);
+  } catch (error) {
+    console.warn("Failed to load logo.svg for native app icon:", error);
+  }
+
+  return nativeImage.createEmpty();
+}
+
+function getPreloadPath(): string {
+  return path.join(__dirname, "preload.js");
+}
+
+function showMainWindow(): void {
+  mainWindow?.show();
+  mainWindow?.focus();
+}
+
+function sendNavigate(pathname: string): void {
+  if (!mainWindow) return;
+  const navigate = () => mainWindow?.webContents.send("app:navigate", pathname);
+  if (mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.once("did-finish-load", navigate);
+  } else {
+    navigate();
+  }
+}
+
+function openSettings(pathname: string = "/settings/quick"): void {
+  showMainWindow();
+  sendNavigate(pathname);
+}
+
+function parseAppCommand(argv: string[]): AppCommand | null {
+  if (argv.includes("--quick-note")) return "quick-note";
+  if (argv.includes("--math-note")) return "math-note";
+  if (argv.includes("--settings")) return "settings";
+  return null;
+}
+
+function runAppCommand(command: AppCommand, preloadPath: string): void {
+  if (command === "quick-note") {
+    createQuickNoteWindow(preloadPath);
+    return;
+  }
+  if (command === "math-note") {
+    createMathNoteWindow(preloadPath);
+    return;
+  }
+  openSettings();
+}
+
+function createOsMenuTemplate(
+  preloadPath: string,
+): MenuItemConstructorOptions[] {
+  return [
+    {
+      label: "Show Writeme",
+      click: showMainWindow,
+    },
+    {
+      label: "Settings",
+      submenu: [
+        { label: "Quick settings", click: () => openSettings() },
+        {
+          label: "Appearance",
+          click: () => openSettings("/settings/appearance"),
+        },
+        { label: "Editor", click: () => openSettings("/settings/editor") },
+        {
+          label: "Shortcuts",
+          click: () => openSettings("/settings/shortcuts"),
+        },
+        {
+          label: "Workspace",
+          click: () => openSettings("/settings/workspace"),
+        },
+      ],
+    },
+    { type: "separator" },
+    {
+      label: "Quick note",
+      click: () => createQuickNoteWindow(preloadPath),
+    },
+    {
+      label: "Math note",
+      click: () => createMathNoteWindow(preloadPath),
+    },
+    { type: "separator" },
+    {
+      label: "Quit Writeme",
+      accelerator: "CommandOrControl+Shift+Q",
+      click: () => app.quit(),
+    },
+  ];
+}
+
+function registerOsTasks(): void {
+  if (process.platform !== "win32") return;
+  const iconPath = getWindowsTaskIconPath();
+  app.setUserTasks([
+    {
+      program: process.execPath,
+      arguments: "--settings",
+      iconPath,
+      iconIndex: 0,
+      title: "Quick settings",
+      description: "Open Writeme quick settings.",
+    },
+    {
+      program: process.execPath,
+      arguments: "--quick-note",
+      iconPath,
+      iconIndex: 0,
+      title: "Quick note",
+      description: "Open a Writeme quick note.",
+    },
+    {
+      program: process.execPath,
+      arguments: "--math-note",
+      iconPath,
+      iconIndex: 0,
+      title: "Math note",
+      description: "Open a Writeme math note.",
+    },
+  ]);
+}
+
 function parseCliArgs(
   argv: string[],
   workingDir?: string,
@@ -287,11 +452,14 @@ async function main() {
   }
 
   app.on("second-instance", (_, argv, workingDirectory) => {
-    const { filePath } = parseCliArgs(argv, workingDirectory);
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
+    const command = parseAppCommand(argv);
+    if (command) {
+      runAppCommand(command, getPreloadPath());
+      return;
     }
+
+    const { filePath } = parseCliArgs(argv, workingDirectory);
+    showMainWindow();
     if (filePath) {
       sendOpenFile(filePath, false, crypto.randomUUID());
     }
@@ -314,7 +482,7 @@ async function main() {
   });
   app.on("will-quit", () => globalShortcut.unregisterAll());
   app.on("ready", async () => {
-    const preload = path.join(__dirname, "preload.js");
+    const preload = getPreloadPath();
     console.log("Main process starting, registering AI handlers...");
     registerAIHandlers();
     await notesIpcHandler();
@@ -376,6 +544,7 @@ async function main() {
         height: 600,
         center: true,
         accentColor: "#000000",
+        icon: createNativeAppIcon(),
         webPreferences: {
           preload,
           defaultFontSize: 16,
@@ -434,30 +603,15 @@ async function main() {
     };
 
     const createTray = () => {
-      const iconPath = path.join(
-        app.getAppPath(),
-        "public",
-        "favicon-16x16.png",
-      );
       const icon = nativeImage
-        .createFromPath(iconPath)
+        .createFromPath(getTrayIconPath())
         .resize({ width: 16, height: 16 });
+      if (process.platform === "darwin") icon.setTemplateImage(true);
       tray = new Tray(icon);
       tray.setToolTip("Writeme");
-      const contextMenu = Menu.buildFromTemplate([
-        {
-          label: "Show Writeme",
-          click: () => {
-            mainWindow?.show();
-            mainWindow?.focus();
-          },
-        },
-        {
-          label: "Quick note",
-          click: () => createQuickNoteWindow(preload),
-        },
-      ]);
-      tray.setContextMenu(contextMenu);
+      tray.setContextMenu(
+        Menu.buildFromTemplate(createOsMenuTemplate(preload)),
+      );
       if (process.platform !== "darwin") {
         tray.on("click", () => {
           if (mainWindow?.isVisible()) {
@@ -471,12 +625,24 @@ async function main() {
     };
 
     Menu.setApplicationMenu(null);
+    if (process.platform === "darwin" && app.dock) {
+      try {
+        app.dock.setIcon(createNativeAppIcon());
+      } catch (error) {
+        console.warn("Failed to set dock icon:", error);
+      }
+      app.dock.setMenu(Menu.buildFromTemplate(createOsMenuTemplate(preload)));
+    }
+    registerOsTasks();
     createWindow();
     createTray();
     if (mainWindow) registerAIOAuthHandlers(mainWindow);
     if (mainWindow) startCliServer(mainWindow);
 
     if (mainWindow) {
+      const command = parseAppCommand(process.argv);
+      if (command) runAppCommand(command, preload);
+
       const { filePath } = parseCliArgs(process.argv);
       const fileToOpen = filePath ?? pendingFileOpen;
       if (fileToOpen) {

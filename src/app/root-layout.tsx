@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { isCommanderShortcut } from "@/lib/keyboard-shortcuts";
+import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
@@ -96,6 +97,13 @@ export const RootLayout = () => {
 
   useEffect(() => {
     if (!isElectron()) return;
+    return window.electronAPI.onNavigate((pathname) => {
+      navigate(pathname);
+    });
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!isElectron()) return;
     const prevTabs = prevTabsRef.current;
     const removedTabs = prevTabs.filter(
       (pt) => !state.tabs.find((ct) => ct.id === pt.id),
@@ -143,6 +151,33 @@ export const RootLayout = () => {
     [dispatch, location.pathname, navigate, state.activeTabId, state.tabs],
   );
 
+  const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
+    if (state.tabs.length === 0) {
+      if (isElectron()) await window.electronAPI.app.hideToTray();
+      return;
+    }
+
+    const currentNoteId = location.pathname.startsWith("/note/")
+      ? (location.pathname.slice("/note/".length).split("/")[0] ?? null)
+      : null;
+    const currentTab =
+      state.tabs.find((tab) => tab.noteId === currentNoteId) ??
+      state.tabs.find((tab) => tab.id === state.activeTabId);
+    if (!currentTab) return;
+
+    const nextTab = getPreviousTabAfterClose(state.tabs, currentTab.id);
+    await dispatch.removeTab(currentTab.id);
+
+    if (nextTab) {
+      await dispatch.selectNoteById(nextTab.noteId);
+      navigate(`/note/${nextTab.noteId}`);
+      return;
+    }
+
+    dispatch.setNote(null);
+    navigate("/");
+  }, [dispatch, location.pathname, navigate, state.activeTabId, state.tabs]);
+
   useEffect(() => {
     if (!state.note || !location.pathname.startsWith("/note/")) return;
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -161,6 +196,17 @@ export const RootLayout = () => {
           e.preventDefault();
           e.stopPropagation();
           void cycleEditorTab(e.shiftKey ? "backward" : "forward");
+          return;
+        }
+
+        if (
+          (e.metaKey || e.ctrlKey) &&
+          !e.shiftKey &&
+          e.key.toLowerCase() === "w"
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          void closeCurrentTabOrHide();
           return;
         }
 
@@ -205,6 +251,7 @@ export const RootLayout = () => {
       };
     },
     [
+      closeCurrentTabOrHide,
       cycleEditorTab,
       dispatch,
       location.pathname,

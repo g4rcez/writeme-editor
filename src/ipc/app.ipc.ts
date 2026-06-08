@@ -1,9 +1,13 @@
-import { app, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { createQuickNoteWindow } from "../main-process/quicknote-window";
 
 export const appIpcHandler = (preloadPath: string) => {
   ipcMain.handle("env:getHome", () => app.getPath("home"));
   ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preloadPath));
+  ipcMain.handle("app:hideToTray", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.hide();
+    return true;
+  });
   ipcMain.handle("app:chdir", (_, dir: string) => {
     try {
       process.chdir(dir);
