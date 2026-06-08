@@ -148,7 +148,7 @@ export default function DashboardPage() {
               <div className="flex gap-2 items-center mb-6">
                 <div className="w-0.5 h-4 rounded-full bg-primary" />
                 <h2 className="text-lg font-bold tracking-widest uppercase">
-                  Quick Actions
+                  Quick settings
                 </h2>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

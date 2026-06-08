@@ -18,7 +18,7 @@ const openTrashPane = async (page: Page) => {
 test.describe("Trash / soft-delete", () => {
   test.beforeEach(async ({ cleanPage }) => {
     await cleanPage.goto("/");
-    await expect(cleanPage.getByText("Quick Actions")).toBeVisible();
+    await expect(cleanPage.getByText("Quick settings")).toBeVisible();
   });
 
   test("deleting a note moves it to trash and hides it from the list", async ({

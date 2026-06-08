@@ -9,7 +9,7 @@ export function getDailyQuickNoteName(date: Date): string {
 }
 
 export function getDailyQuickNoteTitle(date: Date): string {
-  return `${Dates.isoDate(date)}-QuickNote`;
+  return `${getDailyQuickNoteName(date)}.md`;
 }
 
 export function getDailyQuickNotePath(directory: string, date: Date): string {

@@ -6,7 +6,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { css, Tooltip } from "@g4rcez/components";
-import { type Icon } from "@phosphor-icons/react";
+import { CalendarIcon, type Icon } from "@phosphor-icons/react";
 import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
 import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
@@ -107,6 +107,17 @@ export const ActivityBar = () => {
           icon={FolderSimpleIcon}
           onClick={() => onActivityClick("groups")}
           active={layout.activeActivity === "groups"}
+        />
+        <ActivityIcon
+          label="Calendar"
+          icon={CalendarIcon}
+          active={layout.activeActivity === "calendar"}
+          onClick={() => {
+            onActivityClick("calendar");
+            if (!location.pathname.startsWith("/calendar")) {
+              navigate("/calendar");
+            }
+          }}
         />
         <ActivityIcon
           label="Views"

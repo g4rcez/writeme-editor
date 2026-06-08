@@ -171,6 +171,10 @@ export const RootLayout = () => {
           e.preventDefault();
           dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
         }
+        if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+          e.preventDefault();
+          navigate("/settings");
+        }
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
           e.preventDefault();
           uiDispatch.toggleFocusMode();
@@ -199,7 +203,14 @@ export const RootLayout = () => {
         controller.abort();
       };
     },
-    [cycleEditorTab, dispatch, location.pathname, state.note, uiDispatch],
+    [
+      cycleEditorTab,
+      dispatch,
+      location.pathname,
+      navigate,
+      state.note,
+      uiDispatch,
+    ],
   );
 
   const isQuickNotePanel = window.location.hash.includes("quicknote");

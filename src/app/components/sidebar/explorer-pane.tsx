@@ -88,6 +88,54 @@ export const ExplorerPane = () => {
     [],
   );
 
+  const handleMove = useCallback(
+    async (
+      sourceNode: TreeNode,
+      _targetDirectoryPath: string,
+      destinationPath: string,
+    ): Promise<boolean> => {
+      try {
+        const result = await window.electronAPI.fs.moveFile(
+          sourceNode.path,
+          destinationPath,
+        );
+        if (!result?.success) return false;
+
+        const allNotes = await repositories.notes.getAll();
+        const movedNotes = allNotes.filter((note) => {
+          if (!note.filePath) return false;
+          return sourceNode.type === "directory"
+            ? note.filePath === sourceNode.path ||
+                note.filePath.startsWith(sourceNode.path + "/")
+            : note.filePath === sourceNode.path;
+        });
+
+        for (const note of movedNotes) {
+          note.filePath =
+            sourceNode.type === "directory"
+              ? destinationPath + note.filePath!.slice(sourceNode.path.length)
+              : destinationPath;
+          await repositories.notes.save(note);
+        }
+
+        const updatedNotes = await repositories.notes.getAll();
+        globalDispatch.notes(updatedNotes);
+        const activeNote = state.note;
+        if (activeNote?.filePath) {
+          const updatedActiveNote = updatedNotes.find(
+            (note) => note.id === activeNote.id,
+          );
+          if (updatedActiveNote) globalDispatch.setNote(updatedActiveNote);
+        }
+        return true;
+      } catch (error) {
+        console.error("Error moving:", error);
+        return false;
+      }
+    },
+    [state.note],
+  );
+
   const handleDelete = useCallback(async (node: TreeNode): Promise<boolean> => {
     const isDir = node.type === "directory";
     try {
@@ -226,9 +274,7 @@ export const ExplorerPane = () => {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-        <span className="text-xs text-muted-foreground">
-          Files
-        </span>
+        <span className="text-xs text-muted-foreground">Files</span>
         <div className="flex gap-1">
           <button
             type="button"
@@ -262,6 +308,7 @@ export const ExplorerPane = () => {
           createRequest={createRequest}
           onFileSelect={onFileSelect}
           onNewFolder={handleNewFolder}
+          onMove={handleMove}
           rootPath={state.explorerRoot}
         />
       </div>

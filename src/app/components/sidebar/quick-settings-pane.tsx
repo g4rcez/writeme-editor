@@ -49,7 +49,7 @@ export const QuickSettingsPane = () => {
       </div>
       <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-4">
         <section className="space-y-4">
-          <span className="text-xs text-muted-foreground">Quick Actions</span>
+          <span className="text-xs text-muted-foreground">Quick settings</span>
           <QuickSettingsControls
             compact
             onPatch={onPatch}

@@ -1,10 +1,10 @@
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
-import { Dates } from "@/lib/dates";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
+import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note, NoteType } from "@/store/note";
+import { Note, type NoteType } from "@/store/note";
 import { Autocomplete, Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
@@ -39,8 +39,7 @@ export const CreateNoteDialog = () => {
       if (type === "note") {
         setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
       } else {
-        const dateTitle = Dates.yearMonthDay(startOfDay(new Date()));
-        setTitle(`${dateTitle}-QuickNote`);
+        setTitle(getDailyQuickNoteTitle(startOfDay(new Date())));
       }
       setSelectedTemplateId(templateId || "");
       setVariableValues({});

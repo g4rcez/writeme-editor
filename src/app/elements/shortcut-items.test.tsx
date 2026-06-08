@@ -57,8 +57,20 @@ describe("shortcut-items", () => {
     expect(descriptions).toContain("Commander");
     expect(descriptions).toContain("Open Tabs");
     expect(descriptions).toContain("Open Recent");
+    expect(descriptions).toContain("Settings");
     expect(descriptions).toContain("Browse files");
     expect(descriptions).toContain("Open...");
+  });
+
+  it("includes the Settings shortcut binding", () => {
+    const { result } = renderHook(() => useWritemeShortcuts(), {
+      wrapper: MemoryRouter,
+    });
+    const settings = result.current.find((s) => s.description === "Settings");
+
+    expect(settings).toBeDefined();
+    expect(settings?.bind).toBe("mod+,");
+    expect(settings?.type).toBe(Type.Shortcut);
   });
 
   it("opens the commander in opened-tabs mode from the Open Tabs shortcut", () => {

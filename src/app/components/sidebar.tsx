@@ -109,7 +109,7 @@ export const Sidebar = () => {
     <Modal
       type="drawer"
       position="left"
-      title="Quick actions"
+      title="Quick settings"
       open={uiState.sidebarOpen}
       onChange={uiDispatch.toggleSidebar}
     >

@@ -124,6 +124,19 @@ const getFileConfig = (node: TreeNode) =>
   FILE_NAME_CONFIGS[node.name.toLowerCase()] ??
   FILE_EXTENSION_CONFIGS[node.extension?.toLowerCase() ?? ""];
 
+const TREE_NODE_DRAG_TYPE = "application/x-writeme-tree-node-path";
+
+const getPathBaseName = (path: string): string =>
+  path.substring(path.lastIndexOf("/") + 1);
+
+const getPathDirName = (path: string): string => {
+  const index = path.lastIndexOf("/");
+  return index === -1 ? "" : path.substring(0, index);
+};
+
+const joinPath = (dir: string, name: string): string =>
+  `${dir.replace(/\/$/, "")}/${name}`;
+
 const isEditableTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLElement)) return false;
   return (
@@ -141,12 +154,16 @@ interface TreeNodeItemProps {
   isFocused: boolean;
   isLoading: boolean;
   isExpanded: boolean;
+  isDropTarget: boolean;
   isManuallyExpanded: boolean;
   shouldReduceMotion: boolean | null;
   onHover?: () => void;
   isConfirming: boolean;
   onActivate: () => void;
   onConfirmCancel: () => void;
+  onDragStart: (e: React.DragEvent, node: TreeNode) => void;
+  onDropMove: (e: React.DragEvent, node: TreeNode) => void;
+  onDragOverMove: (e: React.DragEvent, node: TreeNode) => void;
   onConfirmDelete: () => void;
   onConfirmRequest: () => void;
   onDelete?: (node: TreeNode) => void;
@@ -206,10 +223,14 @@ const TreeNodeItem = ({
   isFocused,
   isLoading,
   isManuallyExpanded,
+  isDropTarget,
   shouldReduceMotion,
   onActivate,
   onDelete,
   onHover,
+  onDragStart,
+  onDropMove,
+  onDragOverMove,
   isConfirming,
   onConfirmRequest,
   onConfirmCancel,
@@ -238,8 +259,12 @@ const TreeNodeItem = ({
     <div
       ref={itemRef}
       role="treeitem"
+      draggable
       onClick={onActivate}
       onMouseEnter={onHover}
+      onDragStart={(e) => onDragStart(e, node)}
+      onDragOver={(e) => onDragOverMove(e, node)}
+      onDrop={(e) => onDropMove(e, node)}
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, node) : undefined}
       style={{ paddingLeft }}
       aria-selected={isFocused}
@@ -247,7 +272,7 @@ const TreeNodeItem = ({
       aria-expanded={isDirectory ? isExpanded : undefined}
       className={`
         group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition-colors
-        ${isFocused ? "bg-muted" : "hover:bg-muted/60"}
+        ${isDropTarget ? "bg-primary/15 ring-1 ring-primary/40" : isFocused ? "bg-muted" : "hover:bg-muted/60"}
         ${!isDirectory && !extConfig ? "opacity-50 cursor-default" : ""}
       `}
     >
@@ -396,6 +421,11 @@ interface TreeViewProps {
   onDelete?: (node: TreeNode) => Promise<boolean>;
   onNewFile?: (targetPath: string) => Promise<boolean>;
   onNewFolder?: (targetPath: string) => Promise<boolean>;
+  onMove?: (
+    sourceNode: TreeNode,
+    targetDirectoryPath: string,
+    destinationPath: string,
+  ) => Promise<boolean>;
   onFocusChange?: (node: TreeNode | null) => void;
 }
 
@@ -404,6 +434,7 @@ export const TreeView = ({
   onDelete,
   onNewFile,
   onNewFolder,
+  onMove,
   rootPath,
   createRequest,
   onFileSelect,
@@ -421,6 +452,9 @@ export const TreeView = ({
   const [loadingPaths, setLoadingPaths] = useState(new Set<string>());
   const [confirmingPath, setConfirmingPath] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [draggedPath, setDraggedPath] = useState<string | null>(null);
+  const draggedPathRef = useRef<string | null>(null);
+  const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [pendingCreate, setPendingCreate] = useState<{
     parentPath: string | null;
@@ -775,6 +809,138 @@ export const TreeView = ({
     [toggleNode, onFileSelect],
   );
 
+  const findNodeByPath = useCallback((path: string): TreeNode | null => {
+    for (const flatNode of flattenedNodesRef.current) {
+      if (flatNode.node.path === path) return flatNode.node;
+    }
+    return null;
+  }, []);
+
+  const getMoveTargetDirectory = useCallback(
+    (targetNode: TreeNode | null): string => {
+      if (!targetNode) return rootPath;
+      return targetNode.type === "directory"
+        ? targetNode.path
+        : getPathDirName(targetNode.path);
+    },
+    [rootPath],
+  );
+
+  const canMoveNode = useCallback(
+    (sourceNode: TreeNode, targetDirectoryPath: string): boolean => {
+      if (sourceNode.path === targetDirectoryPath) return false;
+      const sourceParent = getPathDirName(sourceNode.path);
+      if (sourceParent === targetDirectoryPath) return false;
+      if (
+        sourceNode.type === "directory" &&
+        targetDirectoryPath.startsWith(sourceNode.path + "/")
+      ) {
+        return false;
+      }
+      return true;
+    },
+    [],
+  );
+
+  const moveNodeToTarget = useCallback(
+    async (sourceNode: TreeNode, targetNode: TreeNode | null) => {
+      const targetDirectoryPath = getMoveTargetDirectory(targetNode);
+      if (!canMoveNode(sourceNode, targetDirectoryPath)) return;
+
+      const destinationPath = joinPath(
+        targetDirectoryPath,
+        getPathBaseName(sourceNode.path),
+      );
+      const existing = await window.electronAPI.fs.statFile(destinationPath);
+      if (!existing.success) {
+        setError(existing.error ?? "Failed to check destination");
+        return;
+      }
+      if (existing.exists) {
+        setError("A file or folder already exists at the drop target.");
+        return;
+      }
+
+      const success = onMove
+        ? await onMove(sourceNode, targetDirectoryPath, destinationPath)
+        : Boolean(
+            (
+              await window.electronAPI.fs.moveFile(
+                sourceNode.path,
+                destinationPath,
+              )
+            )?.success,
+          );
+      if (!success) return;
+
+      await refreshDirectory(getPathDirName(sourceNode.path) || rootPath);
+      await refreshDirectory(targetDirectoryPath);
+      if (sourceNode.type === "directory") {
+        setChildrenCache((prev) => {
+          const next = new Map(prev);
+          next.delete(sourceNode.path);
+          return next;
+        });
+      }
+    },
+    [canMoveNode, getMoveTargetDirectory, onMove, refreshDirectory, rootPath],
+  );
+
+  const handleDragStart = useCallback((e: React.DragEvent, node: TreeNode) => {
+    draggedPathRef.current = node.path;
+    setDraggedPath(node.path);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(TREE_NODE_DRAG_TYPE, node.path);
+    e.dataTransfer.setData("text/plain", node.path);
+  }, []);
+
+  const handleDragOverMove = useCallback(
+    (e: React.DragEvent, targetNode: TreeNode | null) => {
+      const sourcePath =
+        draggedPathRef.current ||
+        draggedPath ||
+        e.dataTransfer.getData(TREE_NODE_DRAG_TYPE);
+      if (!sourcePath) return;
+      const sourceNode = findNodeByPath(sourcePath);
+      if (!sourceNode) return;
+      const targetDirectoryPath = getMoveTargetDirectory(targetNode);
+      if (!canMoveNode(sourceNode, targetDirectoryPath)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      setDropTargetPath(targetNode?.path ?? rootPath);
+    },
+    [
+      canMoveNode,
+      draggedPath,
+      findNodeByPath,
+      getMoveTargetDirectory,
+      rootPath,
+    ],
+  );
+
+  const handleDropMove = useCallback(
+    async (e: React.DragEvent, targetNode: TreeNode | null) => {
+      const sourcePath = e.dataTransfer.getData(TREE_NODE_DRAG_TYPE);
+      if (!sourcePath) return;
+      e.preventDefault();
+      e.stopPropagation();
+      draggedPathRef.current = null;
+      setDropTargetPath(null);
+      setDraggedPath(null);
+      const sourceNode = findNodeByPath(sourcePath);
+      if (!sourceNode) return;
+      await moveNodeToTarget(sourceNode, targetNode);
+    },
+    [findNodeByPath, moveNodeToTarget],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    draggedPathRef.current = null;
+    setDraggedPath(null);
+    setDropTargetPath(null);
+  }, []);
+
   const handleNodeDelete = useCallback(
     async (node: TreeNode) => {
       if (!onDelete) return;
@@ -960,8 +1126,11 @@ export const TreeView = ({
     <div
       ref={containerRef}
       role="tree"
-      className="py-2 outline-none"
+      className={`py-2 outline-none ${dropTargetPath === rootPath ? "bg-primary/10" : ""}`}
       tabIndex={0}
+      onDragOver={(e) => handleDragOverMove(e, null)}
+      onDrop={(e) => handleDropMove(e, null)}
+      onDragEnd={handleDragEnd}
       onContextMenu={isElectron() ? handleRootContextMenu : undefined}
     >
       {flattenedNodes
@@ -973,10 +1142,14 @@ export const TreeView = ({
             key={flatNode.node.path}
             isExpanded={flatNode.isExpanded}
             isFocused={index === focusedIndex}
+            isDropTarget={dropTargetPath === flatNode.node.path}
             isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
             shouldReduceMotion={shouldReduceMotion}
             note={map.get(flatNode.node.path)!}
             onHover={() => setFocusedIndex(index)}
+            onDragStart={handleDragStart}
+            onDropMove={handleDropMove}
+            onDragOverMove={handleDragOverMove}
             onConfirmCancel={() => setConfirmingPath(null)}
             isLoading={loadingPaths.has(flatNode.node.path)}
             onDelete={onDelete ? handleNodeDelete : undefined}
@@ -1033,10 +1206,14 @@ export const TreeView = ({
               key={flatNode.node.path}
               isExpanded={flatNode.isExpanded}
               isFocused={index === focusedIndex}
+              isDropTarget={dropTargetPath === flatNode.node.path}
               isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
               shouldReduceMotion={shouldReduceMotion}
               note={map.get(flatNode.node.path)!}
               onHover={() => setFocusedIndex(index)}
+              onDragStart={handleDragStart}
+              onDropMove={handleDropMove}
+              onDragOverMove={handleDragOverMove}
               onConfirmCancel={() => setConfirmingPath(null)}
               isLoading={loadingPaths.has(flatNode.node.path)}
               onDelete={onDelete ? handleNodeDelete : undefined}

@@ -101,6 +101,12 @@ export const useWritemeShortcuts = () => {
           action: () => dispatch.help(true),
         },
         {
+          description: "Settings",
+          bind: "mod+,",
+          type: Type.Shortcut,
+          action: () => navigate("/settings"),
+        },
+        {
           description: "Browse files",
           bind: "mod+shift+e",
           type: Type.Shortcut,

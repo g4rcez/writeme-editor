@@ -5,11 +5,11 @@ test.describe("Dashboard", () => {
     await goHome(cleanPage);
   });
 
-  test("renders quick actions and empty recent state", async ({
+  test("renders Quick settings and empty recent state", async ({
     cleanPage: page,
   }) => {
     await expect(
-      page.getByRole("heading", { name: "Quick Actions" }),
+      page.getByRole("heading", { name: "Quick settings" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /New Document/ }),
