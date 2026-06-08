@@ -259,12 +259,12 @@ function getMacOsAppIconPath(): string {
   return path.join(app.getAppPath(), "public", "icon.icns");
 }
 
-function getAppIconFallbackPath(): string {
-  return path.join(app.getAppPath(), "public", "logo.png");
-}
-
 function getWindowsTaskIconPath(): string {
   return path.join(app.getAppPath(), "public", "favicon.ico");
+}
+
+function getTrayIconPath(): string {
+  return path.join(app.getAppPath(), "public", "favicon-32x32.png");
 }
 
 function createNativeAppIcon(size?: number): NativeImage {
@@ -290,7 +290,7 @@ function createNativeAppIcon(size?: number): NativeImage {
     console.warn("Failed to load logo.svg for native app icon:", error);
   }
 
-  return resize(nativeImage.createFromPath(getAppIconFallbackPath()));
+  return nativeImage.createEmpty();
 }
 
 function getPreloadPath(): string {
@@ -603,7 +603,9 @@ async function main() {
     };
 
     const createTray = () => {
-      const icon = createNativeAppIcon(16);
+      const icon = nativeImage
+        .createFromPath(getTrayIconPath())
+        .resize({ width: 16, height: 16 });
       if (process.platform === "darwin") icon.setTemplateImage(true);
       tray = new Tray(icon);
       tray.setToolTip("Writeme");
