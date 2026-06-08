@@ -25,6 +25,7 @@ import { InspectJsonDialog } from "@/app/components/inspect-json-dialog";
 import { MediaPreview } from "@/app/components/media-preview";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { GitSyncDialog } from "@/app/components/git-sync-dialog";
+import { KeyboardClickHints } from "@/app/components/keyboard-click-hints";
 import { editorGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
 import { MainLayout } from "@/app/layouts/main.layout";
@@ -253,6 +254,7 @@ export const RootLayout = () => {
         <GitSyncDialog />
         <MediaPreview />
         <AIDrawer />
+        <KeyboardClickHints />
       </Fragment>
       <MainLayout />
       {uiState.focusMode && (
