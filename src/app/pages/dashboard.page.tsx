@@ -125,7 +125,7 @@ export default function DashboardPage() {
               {greeting}
             </h1>
             <p className="max-w-md text-lg text-foreground/70">
-              Your digital garden is ready for today's thoughts.
+              Just you and your thoughts. Let's write.
             </p>
           </div>
           {cwd && (

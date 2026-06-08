@@ -11,7 +11,8 @@ import {
   globalState,
   useGlobalStore,
 } from "@/store/global.store";
-import type { Note } from "@/store/note";
+import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 import { type CommandItemTypes, CommandPalette } from "@g4rcez/components";
@@ -147,6 +148,46 @@ export const Commander = () => {
             }, 50);
           },
         },
+        ...(state.note && !state.note.favorite
+          ? [
+              {
+                title: "Add current note as favorite",
+                type: "shortcut" as const,
+                action: async (args: { setOpen: (v: boolean) => void }) => {
+                  args.setOpen(false);
+                  const updatedNote = Note.parse({
+                    ...state.note,
+                    favorite: true,
+                  });
+                  try {
+                    await repositories.notes.update(
+                      updatedNote.id,
+                      updatedNote,
+                    );
+                    const notes = state.notes.some(
+                      (n) => n.id === updatedNote.id,
+                    )
+                      ? state.notes.map((n) =>
+                          n.id === updatedNote.id ? updatedNote : n,
+                        )
+                      : state.notes.concat(updatedNote);
+                    dispatch.setNote(updatedNote);
+                    dispatch.notes(notes);
+                    notificationRef.current?.(
+                      <span>Added {updatedNote.title} to favorites</span>,
+                      { theme: "success", closable: true, timeout: 3000 },
+                    );
+                  } catch (error) {
+                    uiDispatch.setError(
+                      error instanceof Error
+                        ? error.message
+                        : "Failed to add note to favorites",
+                    );
+                  }
+                },
+              },
+            ]
+          : []),
         {
           title: "Share content",
           type: "shortcut",
@@ -467,6 +508,7 @@ export const Commander = () => {
     state.commander,
     state.noteGroups,
     state.note,
+    state.notes,
     noteGroup,
     openedTabsGroup,
     navigate,
