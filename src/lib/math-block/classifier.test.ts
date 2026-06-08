@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyLine } from "./classifier";
+import { classifyLine } from "solver";
 
 describe("classifyLine", () => {
   it("empty string → empty", () => {

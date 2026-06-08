@@ -26,7 +26,12 @@ export default defineConfig({
       },
     },
   },
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "solver": path.resolve(__dirname, "./packages/solver/src"),
+    },
+  },
   plugins: [
     react({
       babel: {

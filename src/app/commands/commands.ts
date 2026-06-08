@@ -1,16 +1,19 @@
 import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
-import { type ExtendedRegExpMatchArray } from "@tiptap/react";
+import type { ExtendedRegExpMatchArray } from "@tiptap/react";
 import { convertCurrency, formatConversionResult } from "../../lib/currency";
-import { solveRule3 } from "@/lib/rule-of-three";
+import {
+  INLINE_MATH_PATTERN,
+  runInlineMath,
+  solveRule3,
+} from "solver";
 import {
   ClipboardCloseListenerCommand,
   ClipboardListenerCommand,
 } from "./clipboard-listener.command";
 import { replacerRules } from "./replace-rules";
-import { type ReplacerHandlerParams } from "./types";
+import type { ReplacerHandlerParams } from "./types";
 import { Dates } from "@/lib/dates";
-import { INLINE_MATH_PATTERN, runInlineMath } from "@/lib/math-block";
 import { uiDispatch } from "@/store/ui.store";
 
 export type ReplacerCommand = {
@@ -26,7 +29,7 @@ export const CurrencyCommand: ReplacerCommand = {
   find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
   replace: (capture, _, editor) => {
     let from = capture?.groups?.from?.trim().toUpperCase();
-    let to = capture?.groups?.to?.trim().toUpperCase();
+    const to = capture?.groups?.to?.trim().toUpperCase();
     if (!from || !to) {
       return "";
     }

@@ -1,12 +1,11 @@
-import type { ExchangeRateData } from "@/lib/currency";
-import { Dates } from "@/lib/dates";
+import { Dates } from "./dates";
 import {
   applyBasePreprocessors,
   errorMessage,
   formatResult,
 } from "./evaluator";
 import { getMathInstance } from "./mathjs-extensions";
-import type { EvaluatedResult } from "./types";
+import type { EvaluatedResult, ExchangeRateData } from "./types";
 
 export const INLINE_MATH_PATTERN = />>math [^=]+ ?=$/;
 

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MathBlock } from "./math-block";
 import { fetchExchangeRates } from "../../lib/currency";
-import { __resetMathInstanceCache } from "@/lib/math-block/mathjs-extensions";
+import { __resetMathInstanceCache } from "solver";
 
 vi.mock("../../lib/currency", async () => {
   const actual =

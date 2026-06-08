@@ -5,7 +5,7 @@ import {
   setCachedRates,
   type ExchangeRateData,
 } from "@/lib/currency";
-import { evaluateCode, type EvaluatedResult } from "@/lib/math-block";
+import { evaluateCode, type EvaluatedResult } from "solver";
 
 const ResultCell = ({
   result,

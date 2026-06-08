@@ -25,7 +25,7 @@ const osxNotarize = hasAppleNotarizeCredentials
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: { unpack: "packages/cli/dist/**" },
     name: "writeme",
     executableName: "writeme",
     appBundleId: "dev.writeme.app",
