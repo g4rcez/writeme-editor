@@ -6,26 +6,6 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
   base: "/",
   appType: "spa",
-  build: {
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes("shiki")) return "shiki";
-          if (id.includes("mermaid")) return "mermaid";
-          if (id.includes("@excalidraw")) return "excalidraw";
-          if (id.includes("viz-js") || id.includes("graphviz"))
-            return "graphviz";
-          if (id.includes("flowchart.js") || id.includes("raphael"))
-            return "flowchart";
-          if (id.includes("mathjs")) return "mathjs";
-          if (id.includes("katex")) return "math";
-          if (id.includes("react-dom") || id.includes("node_modules/react/"))
-            return "react-vendor";
-        },
-      },
-    },
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -42,10 +22,27 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: true },
       workbox: {
-        cleanupOutdatedCaches: true,
         clientsClaim: true,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        navigateFallback: null,
+        navigationPreload: true,
+        cleanupOutdatedCaches: true,
+        globPatterns: ["**/*.{js,css,ico,png,svg}"],
         maximumFileSizeToCacheInBytes: Number.MAX_SAFE_INTEGER,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "writeme-pages",
+              cacheableResponse: { statuses: [200] },
+              expiration: {
+                maxAgeSeconds: 24 * 60 * 60,
+                maxEntries: 10,
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
         skipWaiting: true,
       },
       manifest: {
@@ -89,4 +86,24 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("shiki")) return "shiki";
+          if (id.includes("mermaid")) return "mermaid";
+          if (id.includes("@excalidraw")) return "excalidraw";
+          if (id.includes("viz-js") || id.includes("graphviz"))
+            return "graphviz";
+          if (id.includes("flowchart.js") || id.includes("raphael"))
+            return "flowchart";
+          if (id.includes("mathjs")) return "mathjs";
+          if (id.includes("katex")) return "math";
+          if (id.includes("react-dom") || id.includes("node_modules/react/"))
+            return "react-vendor";
+        },
+      },
+    },
+  },
 });
