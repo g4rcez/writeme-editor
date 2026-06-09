@@ -2,9 +2,11 @@ import { Dates } from "@/lib/dates";
 import { getReadingTime } from "@/lib/file-utils";
 import { isElectron } from "@/lib/is-electron";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { printDocument } from "@/lib/print-document";
+import { Note, NoteType } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
 import { Tag } from "@g4rcez/components";
+import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { NoteFooter } from "../components/note-footer";
@@ -84,6 +86,31 @@ const Wrapper = (props: PropsWithChildren) => {
   );
 };
 
+function PrintableNoteHeader({ note }: { note: Note }) {
+  return (
+    <header className="hidden print:block writeme-print-header">
+      <h1 className="writeme-print-title">{note.title}</h1>
+      <p className="writeme-print-meta">
+        Updated {Dates.yearMonthDay(note.updatedAt)}
+      </p>
+    </header>
+  );
+}
+
+function ExportNoteButton({ note }: { note: Note }) {
+  return (
+    <button
+      type="button"
+      aria-label={`Export ${note.title}`}
+      title="Export document (print or save as PDF)"
+      onClick={() => printDocument({ title: note.title })}
+      className="writeme-print-export-button fixed right-6 top-14 z-50 flex items-center justify-center p-2 rounded-xl transition-colors duration-300 bg-background/80 backdrop-blur-md border border-border shadow-sm text-muted-foreground hover:bg-muted/50 hover:border-primary/20 hover:text-foreground print:hidden"
+    >
+      <PrinterIcon aria-hidden="true" size={20} />
+    </button>
+  );
+}
+
 export default function NotePage() {
   const [uiState] = useUIStore();
   const [state, dispatch] = useGlobalStore();
@@ -134,12 +161,14 @@ export default function NotePage() {
     );
   }
 
-  const isJson = note.noteType === ("json" as any);
+  const isJson = note.noteType === NoteType.json;
 
   return (
     <Wrapper>
+      <ExportNoteButton note={note} />
+      <PrintableNoteHeader note={note} />
       {note.noteType === "read-it-later" ? (
-        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b bg-background max-w-safe border-card-border">
+        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b bg-background max-w-safe border-card-border print:hidden">
           <h1 className="text-xl font-medium">{note.title}</h1>
           {note.url ? (
             <a

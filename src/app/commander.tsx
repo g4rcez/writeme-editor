@@ -6,6 +6,7 @@ import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { notificationRef } from "@/app/notification-ref";
+import { printDocument } from "@/lib/print-document";
 import {
   CommanderType,
   globalState,
@@ -204,6 +205,20 @@ export const Commander = () => {
             args.setOpen(false);
           },
         },
+        ...(state.note
+          ? [
+              {
+                title: "Print/Export current note",
+                type: "shortcut" as const,
+                action: (args: { setOpen: (v: boolean) => void }) => {
+                  args.setOpen(false);
+                  window.requestAnimationFrame(() => {
+                    printDocument({ title: state.note?.title });
+                  });
+                },
+              },
+            ]
+          : []),
         {
           title: "Inspect Json",
           type: "shortcut",

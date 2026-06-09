@@ -1,0 +1,273 @@
+@page {
+  margin: 14mm 12mm;
+}
+
+html,
+body,
+#root {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+body {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+[data-panel-group],
+[data-panel],
+.writeme-layout,
+.writeme-layout-body,
+.writeme-layout-main,
+#main-scroll-container,
+.writeme-editor-page,
+.writeme-editor,
+.writeme-block,
+.writeme-editor-content,
+.ProseMirror {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  flex: none !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  transform: none !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+#main-scroll-container,
+.writeme-editor-page,
+.writeme-editor,
+.writeme-block,
+.writeme-editor-content,
+.ProseMirror {
+  padding: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.writeme-aside-activity-bar,
+.writeme-aside-panel,
+.writeme-aside-panel-inner,
+.writeme-aside-resize,
+.writeme-aside-collapsed-toggle,
+.tab-scrollbar,
+.writeme-editor-bubble,
+.writeme-print-export-button,
+.writeme-editor [role="status"],
+.drag-handle,
+[data-resize-handle],
+[data-panel-resize-handle-id],
+[aria-label="Resize terminal panel"],
+.xterm,
+[role="dialog"] {
+  display: none !important;
+}
+
+.writeme-print-header {
+  display: block !important;
+  margin: 0 0 1.25rem !important;
+  padding: 0 0 0.75rem !important;
+  border-bottom: 1px solid #d1d5db !important;
+}
+
+.writeme-print-title {
+  margin: 0 !important;
+  color: #111827 !important;
+  font-size: 1.75rem !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+}
+
+.writeme-print-meta {
+  margin-top: 0.35rem !important;
+  color: #4b5563 !important;
+  font-size: 0.85rem !important;
+}
+
+.writeme-editor-content,
+.writeme-editor-content * {
+  color: #111827 !important;
+  caret-color: transparent !important;
+}
+
+.writeme-editor-content {
+  font-size: 11pt !important;
+  line-height: 1.55 !important;
+  white-space: normal !important;
+}
+
+.writeme-editor-content p,
+.writeme-editor-content li,
+.writeme-editor-content li p {
+  line-height: 1.55 !important;
+}
+
+.writeme-editor-content h1,
+.writeme-editor-content h2,
+.writeme-editor-content h3,
+.writeme-editor-content h4,
+.writeme-editor-content h5,
+.writeme-editor-content h6 {
+  color: #111827 !important;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.writeme-editor-content h1 {
+  font-size: 1.8rem !important;
+}
+
+.writeme-editor-content h2 {
+  font-size: 1.45rem !important;
+}
+
+.writeme-editor-content h3 {
+  font-size: 1.2rem !important;
+}
+
+.writeme-editor-content a {
+  color: #1d4ed8 !important;
+  text-decoration: underline !important;
+}
+
+.writeme-editor-content pre,
+.writeme-editor-content blockquote,
+.writeme-editor-content table,
+.writeme-editor-content img,
+.writeme-code-block-frame,
+.tiptap-mathematics-render {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.writeme-editor-content pre,
+.writeme-code-block-frame {
+  overflow: visible !important;
+  border: 1px solid #d1d5db !important;
+  background: #f9fafb !important;
+  color: #111827 !important;
+}
+
+.writeme-editor-content pre {
+  white-space: pre-wrap !important;
+}
+
+.writeme-code-block-frame {
+  display: block !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 6px !important;
+}
+
+.writeme-code-block-header,
+.writeme-code-block-gutter {
+  display: none !important;
+}
+
+.writeme-code-block-print-content {
+  display: block !important;
+  margin: 0 !important;
+  padding: 12pt !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  background: transparent !important;
+  color: #111827 !important;
+  font-family:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, monospace !important;
+  font-size: 10pt !important;
+  line-height: 1.5 !important;
+}
+
+.writeme-code-block-frame[data-print-fallback="true"] .writeme-code-block-body {
+  display: none !important;
+}
+
+.writeme-code-block-body,
+.writeme-code-block-row,
+.writeme-code-block-scroll,
+.code-content-renderer,
+.code-content-renderer > div {
+  display: block !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.writeme-code-block-scroll {
+  padding: 12pt !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+.code-content-renderer,
+.code-content-renderer *,
+.writeme-code-block-print-content,
+.writeme-code-block-print-content *,
+.writeme-code-block-scroll,
+.writeme-code-block-scroll * {
+  color: #111827 !important;
+  background: transparent !important;
+  font-family:
+    "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, monospace !important;
+}
+
+.writeme-editor-content code,
+.writeme-editor-content code.inline-code {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.writeme-editor-content table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+.writeme-editor-content table th,
+.writeme-editor-content table td {
+  border-color: #d1d5db !important;
+}
+
+.writeme-editor-content table th {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.writeme-editor-content img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.ProseMirror-selectednode,
+.writeme-editor-content img.ProseMirror-selectednode {
+  outline: none !important;
+}

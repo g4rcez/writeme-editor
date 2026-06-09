@@ -10,7 +10,7 @@ import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindo
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
-import { Node as ProsemirrorNode } from "@tiptap/pm/model";
+import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
 import {
   Plugin,
   PluginKey,
@@ -78,6 +78,7 @@ export type CodeBlockFrameProps = {
   className?: string;
   footer?: ReactNode;
   header?: ReactNode;
+  printContent?: string;
   children: ReactNode;
   isBodyVisible?: boolean;
   isTransparent?: boolean;
@@ -87,6 +88,7 @@ export const CodeBlockFrame = ({
   id,
   footer,
   header,
+  printContent,
   children,
   className,
   lineCount,
@@ -103,32 +105,41 @@ export const CodeBlockFrame = ({
       id={id}
       as="div"
       aria-hidden={!isBodyVisible}
+      data-print-fallback={printContent !== undefined ? "true" : undefined}
       className={clsx(
-        "overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
+        "writeme-code-block-frame overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
         isTransparent ? "bg-transparent" : "bg-card-background",
         className,
       )}
     >
       {header}
+      {printContent !== undefined && (
+        <pre
+          className="writeme-code-block-print-content hidden"
+          aria-hidden="true"
+        >
+          <code>{printContent}</code>
+        </pre>
+      )}
       <div
         className={clsx(
-          "transition-opacity duration-200",
+          "writeme-code-block-body transition-opacity duration-200",
           isBodyVisible
             ? "h-auto opacity-100"
             : "h-0 opacity-0 pointer-events-none overflow-hidden",
         )}
       >
-        <div className="flex">
+        <div className="writeme-code-block-row flex">
           <div
             className={clsx(
-              "flex leading-6 flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
+              "writeme-code-block-gutter flex leading-6 flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
               isTransparent ? "bg-transparent" : "bg-card-background",
             )}
             aria-hidden="true"
           >
             {lineNumbers}
           </div>
-          <div className="overflow-x-auto relative p-4 w-full font-mono leading-6 whitespace-pre">
+          <div className="writeme-code-block-scroll overflow-x-auto relative p-4 w-full font-mono leading-6 whitespace-pre">
             {children}
           </div>
         </div>
@@ -623,7 +634,7 @@ const CodeBlockHeader = ({
   return (
     <div
       contentEditable={false}
-      className="flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background"
+      className="writeme-code-block-header flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background"
     >
       <div className="flex gap-2 items-center">
         <Select
@@ -968,6 +979,7 @@ const LanguageSelector = (props: ReactNodeViewProps) => {
     <CodeBlockFrame
       id={`code-block-${language}-${id}`}
       lineCount={props.node.textContent.split("\n").length}
+      printContent={code}
       header={
         <CodeBlockHeader
           code={code}

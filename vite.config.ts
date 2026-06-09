@@ -29,7 +29,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "solver": path.resolve(__dirname, "./packages/solver/src"),
+      solver: path.resolve(__dirname, "./packages/solver/src"),
     },
   },
   plugins: [
@@ -39,11 +39,14 @@ export default defineConfig({
       },
     }),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       devOptions: { enabled: true },
       workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
         maximumFileSizeToCacheInBytes: Number.MAX_SAFE_INTEGER,
+        skipWaiting: true,
       },
       manifest: {
         lang: "en-US",

@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { isCommanderShortcut } from "@/lib/keyboard-shortcuts";
+import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
 import { useGlobalStore } from "@/store/global.store";
@@ -221,6 +222,16 @@ export const RootLayout = () => {
         if ((e.metaKey || e.ctrlKey) && e.key === ",") {
           e.preventDefault();
           navigate("/settings");
+        }
+        if (
+          (e.metaKey || e.ctrlKey) &&
+          !e.shiftKey &&
+          e.key.toLowerCase() === "p" &&
+          state.note &&
+          location.pathname.startsWith("/note/")
+        ) {
+          e.preventDefault();
+          printDocument({ title: state.note.title });
         }
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
           e.preventDefault();

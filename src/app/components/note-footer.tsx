@@ -62,7 +62,7 @@ export function NoteFooter({ noteId }: { noteId: string }) {
   const title = `${formatSize(counts.chars)} of ${LIMIT_LABEL} used (${pct.toFixed(1)}%)${isNearHardLimit ? " — approaching hard limit" : ""}`;
 
   return (
-    <div className="fixed right-0 rounded-rb bottom-0 z-navbar flex items-center justify-end gap-4 px-3 py-1 text-xs text-muted-foreground bg-background">
+    <div className="fixed right-0 rounded-rb bottom-0 z-navbar flex items-center justify-end gap-4 px-3 py-1 text-xs text-muted-foreground bg-background print:hidden">
       <span title={title} className={`flex items-center gap-1.5 ${color}`}>
         <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-muted">
           <span

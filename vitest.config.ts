@@ -8,7 +8,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "solver": path.resolve(__dirname, "./packages/solver/src"),
+      solver: path.resolve(__dirname, "./packages/solver/src"),
+      "virtual:pwa-register/react": path.resolve(
+        __dirname,
+        "./src/lib/pwa-register-stub.ts",
+      ),
       "use-sync-external-store/shim/with-selector": path.resolve(
         __dirname,
         "node_modules/use-sync-external-store/shim/with-selector.js",
