@@ -41,10 +41,6 @@ const DEPS: Dep[] = [
   },
   { name: "@tanstack/ai", description: "TanStack AI integration utilities" },
   {
-    name: "@tanstack/ai-react",
-    description: "TanStack AI React bindings and hooks",
-  },
-  {
     name: "@tanstack/react-query",
     description: "Powerful async state management and data fetching for React",
   },

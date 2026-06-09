@@ -244,8 +244,8 @@ export const AIDrawer = () => {
                             )}
                           </div>
                           <AIDiffView
-                            oldContent={msg.diffOriginal}
                             newContent={msg.content}
+                            oldContent={msg.diffOriginal}
                           />
                         </div>
                       )}

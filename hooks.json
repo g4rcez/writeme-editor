@@ -1,0 +1,10 @@
+{
+  "hooks": [
+    {
+      "regex": ".*",
+      "name": "prettier",
+      "ext": ["ts", "tsx", "json", "md"],
+      "cmd": "npx prettier --write {files}"
+    }
+  ]
+}
