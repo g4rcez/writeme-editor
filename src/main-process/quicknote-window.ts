@@ -5,8 +5,7 @@ import path from "node:path";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-const quickNoteWindows = new Set<BrowserWindow>();
-let mathNoteWindow: BrowserWindow | null = null;
+const floatingNoteWindows = new Set<BrowserWindow>();
 
 const floatingPanelWidth = 620;
 const floatingPanelHeight = 480;
@@ -35,14 +34,14 @@ const floatingPanelTopLevel: NonNullable<
 > = process.platform === "darwin" ? "screen-saver" : "floating";
 
 type FloatingPanelOptions = {
-  hideOnBlur?: boolean;
+  boundsName?: "quicknote" | "mathnote";
   nativeWindowControls?: boolean;
   persistBounds?: boolean;
   resizable?: boolean;
 };
 
-function getQuickNoteBoundsPath(): string {
-  return path.join(app.getPath("userData"), "quicknote-window-bounds.json");
+function getFloatingPanelBoundsPath(boundsName: string): string {
+  return path.join(app.getPath("userData"), `${boundsName}-window-bounds.json`);
 }
 
 function isFloatingPanelBounds(value: unknown): value is FloatingPanelBounds {
@@ -53,10 +52,12 @@ function isFloatingPanelBounds(value: unknown): value is FloatingPanelBounds {
   );
 }
 
-function loadQuickNoteBounds(): FloatingPanelBounds | null {
+function loadFloatingPanelBounds(
+  boundsName: string,
+): FloatingPanelBounds | null {
   try {
     const parsed = JSON.parse(
-      fs.readFileSync(getQuickNoteBoundsPath(), "utf8"),
+      fs.readFileSync(getFloatingPanelBoundsPath(boundsName), "utf8"),
     );
     return isFloatingPanelBounds(parsed) ? parsed : null;
   } catch {
@@ -64,23 +65,23 @@ function loadQuickNoteBounds(): FloatingPanelBounds | null {
   }
 }
 
-function saveQuickNoteBounds(win: BrowserWindow): void {
+function saveFloatingPanelBounds(win: BrowserWindow, boundsName: string): void {
   try {
     fs.writeFileSync(
-      getQuickNoteBoundsPath(),
+      getFloatingPanelBoundsPath(boundsName),
       JSON.stringify(win.getBounds(), null, 2),
       "utf8",
     );
   } catch (error) {
-    console.warn("Failed to save quick note window bounds:", error);
+    console.warn(`Failed to save ${boundsName} window bounds:`, error);
   }
 }
 
 function getInitialPanelBounds(
   options: FloatingPanelOptions,
 ): FloatingPanelBounds {
-  return options.persistBounds
-    ? (loadQuickNoteBounds() ?? getFloatingPanelBounds())
+  return options.persistBounds && options.boundsName
+    ? (loadFloatingPanelBounds(options.boundsName) ?? getFloatingPanelBounds())
     : getFloatingPanelBounds();
 }
 
@@ -172,41 +173,39 @@ function createFloatingPanel(
   win.once("ready-to-show", () => {
     showFloatingPanel(win, options);
   });
-  if (options.hideOnBlur) {
-    win.on("blur", () => win.hide());
-  }
-  if (options.persistBounds) {
-    win.on("close", () => saveQuickNoteBounds(win));
+  if (options.persistBounds && options.boundsName) {
+    win.on("close", () => saveFloatingPanelBounds(win, options.boundsName!));
   }
   win.on("closed", onClosed);
   return win;
 }
 
-export const createQuickNoteWindow = (preloadPath: string) => {
-  const quickNoteWindow = createFloatingPanel(
+function createFloatingNoteWindow(
+  preloadPath: string,
+  title: string,
+  hash: "quicknote" | "mathnote",
+): void {
+  const floatingNoteWindow = createFloatingPanel(
     preloadPath,
-    "Quick Note",
-    "quicknote",
+    title,
+    hash,
     () => {
-      quickNoteWindows.delete(quickNoteWindow);
+      floatingNoteWindows.delete(floatingNoteWindow);
     },
-    { nativeWindowControls: true, persistBounds: true, resizable: true },
+    {
+      boundsName: hash,
+      nativeWindowControls: true,
+      persistBounds: true,
+      resizable: true,
+    },
   );
-  quickNoteWindows.add(quickNoteWindow);
+  floatingNoteWindows.add(floatingNoteWindow);
+}
+
+export const createQuickNoteWindow = (preloadPath: string) => {
+  createFloatingNoteWindow(preloadPath, "Quick Note", "quicknote");
 };
 
 export const createMathNoteWindow = (preloadPath: string) => {
-  if (mathNoteWindow && !mathNoteWindow.isDestroyed()) {
-    showFloatingPanel(mathNoteWindow, { resizable: false });
-    return;
-  }
-  mathNoteWindow = createFloatingPanel(
-    preloadPath,
-    "Math Note",
-    "mathnote",
-    () => {
-      mathNoteWindow = null;
-    },
-    { hideOnBlur: true },
-  );
+  createFloatingNoteWindow(preloadPath, "Math Scratchpad", "mathnote");
 };

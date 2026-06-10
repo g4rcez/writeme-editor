@@ -10,6 +10,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   app: {
     openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
     hideToTray: () => ipcRenderer.invoke("app:hideToTray"),
+    getSystemAccentColor: () =>
+      ipcRenderer.invoke("app:get-system-accent-color"),
+    onSystemAccentColorChange: (callback: (color: string) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, color: string) =>
+        callback(color);
+      ipcRenderer.on("app:system-accent-color-changed", handler);
+      return () =>
+        ipcRenderer.removeListener("app:system-accent-color-changed", handler);
+    },
     chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
     notifyFileClosed: (requestId: string) =>
       ipcRenderer.invoke("app:file-closed", requestId),
@@ -317,6 +326,10 @@ declare global {
       app: {
         openQuickNote(): Promise<void>;
         hideToTray(): Promise<boolean>;
+        getSystemAccentColor(): Promise<string | null>;
+        onSystemAccentColorChange(
+          callback: (color: string) => void,
+        ): () => void;
         chdir(dir: string): Promise<{ success: boolean; error?: string }>;
         notifyFileClosed(requestId: string): Promise<boolean>;
         updateShortcut(

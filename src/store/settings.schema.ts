@@ -10,7 +10,7 @@ export const SettingsSchema = z.object({
     .enum(["ask", "file-wins", "editor-wins"])
     .default("ask"),
   theme: z
-    .enum(["light", "dark", "catppuccin-mocha", "tokyonight-night"])
+    .enum(["light", "dark", "catppuccin-mocha", "tokyonight-night", "native"])
     .default("dark"),
   autosave: z.boolean().default(true),
   autosaveDelay: z.number().default(5000),

@@ -40,8 +40,8 @@ export const QuickSettingsPane = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background/50">
-      <div className="flex items-center justify-between py-2 px-4 border-b border-border/20">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-center justify-between py-2 px-4 borderr">
         <span className="text-xs text-muted-foreground">Settings</span>
         {saving ? (
           <span className="text-xs text-muted-foreground">Saving...</span>

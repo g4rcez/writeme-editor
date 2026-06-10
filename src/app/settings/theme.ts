@@ -5,4 +5,5 @@ export const GLOBAL_THEMES: OptionProps[] = [
   { value: "dark", label: "Dark" },
   { value: "catppuccin-mocha", label: "Catppuccin Mocha" },
   { value: "tokyonight-night", label: "Tokyo Night" },
+  { value: "native", label: "Native" },
 ];

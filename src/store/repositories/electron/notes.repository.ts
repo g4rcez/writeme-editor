@@ -2,11 +2,11 @@ import { endOfDay, startOfDay } from "date-fns";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
 import { type INoteRepository, Note } from "../../note";
-import { type EntityBase } from "../../repository";
+import type { EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { BaseRepository } from "../base.repository";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
-import { type ITabRepository } from "../entities/tab";
+import type { ITabRepository } from "../entities/tab";
 
 export class NotesRepository
   extends BaseRepository<Note>
@@ -27,7 +27,7 @@ export class NotesRepository
     if (mode === "filesystem") {
       if (!item.filePath) {
         const rootDir =
-          item.noteType === "quick"
+          item.noteType === "quick" || item.noteType === "math"
             ? (settings.quicknotesDirectory ??
               `${settings.directory!}/quicknotes`)
             : settings.directory!;

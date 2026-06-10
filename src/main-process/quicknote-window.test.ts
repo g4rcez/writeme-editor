@@ -298,40 +298,34 @@ describe("quick note floating panels", () => {
     );
   });
 
-  it("recenters and restacks a reused math note before showing it", async () => {
+  it("creates math scratchpads with the same floating-window behavior as quick notes", async () => {
     const { createMathNoteWindow } = await importQuickNoteWindowModule();
+    const expectedBounds = expectedBoundsFor(workArea);
 
     createMathNoteWindow("/preload.js");
     const mathNoteWindow = getCreatedWindow(0);
     mathNoteWindow.triggerReadyToShow();
 
-    mathNoteWindow.setBounds.mockClear();
-    mathNoteWindow.setFocusable.mockClear();
-    mathNoteWindow.setMovable.mockClear();
-    mathNoteWindow.setResizable.mockClear();
-    mathNoteWindow.setMaximizable.mockClear();
-    mathNoteWindow.setMinimizable.mockClear();
-    mathNoteWindow.setFullScreenable.mockClear();
-    mathNoteWindow.setAlwaysOnTop.mockClear();
-    mathNoteWindow.setVisibleOnAllWorkspaces.mockClear();
-    mathNoteWindow.moveTop.mockClear();
-    mathNoteWindow.show.mockClear();
-    mathNoteWindow.focus.mockClear();
-    mathNoteWindow.webContents.focus.mockClear();
-
-    workArea = { x: 0, y: 40, width: 1512, height: 902 };
-    const expectedBounds = expectedBoundsFor(workArea);
-
-    createMathNoteWindow("/preload.js");
-
     expect(createdWindows).toHaveLength(1);
+    expect(mathNoteWindow.options).toMatchObject({
+      ...expectedBounds,
+      title: "Math Scratchpad",
+      titleBarStyle: "hiddenInset",
+      trafficLightPosition: { x: 16, y: 16 },
+      focusable: true,
+      movable: true,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+    });
     expect(mathNoteWindow.setBounds).toHaveBeenCalledWith(
       expectedBounds,
       false,
     );
     expect(mathNoteWindow.setFocusable).toHaveBeenCalledWith(true);
     expect(mathNoteWindow.setMovable).toHaveBeenCalledWith(true);
-    expect(mathNoteWindow.setResizable).toHaveBeenCalledWith(false);
+    expect(mathNoteWindow.setResizable).toHaveBeenCalledWith(true);
     expect(mathNoteWindow.setMaximizable).toHaveBeenCalledWith(false);
     expect(mathNoteWindow.setMinimizable).toHaveBeenCalledWith(false);
     expect(mathNoteWindow.setFullScreenable).toHaveBeenCalledWith(false);
@@ -343,12 +337,23 @@ describe("quick note floating panels", () => {
       true,
       { visibleOnFullScreen: true },
     );
-    expect(mathNoteWindow.moveTop).toHaveBeenCalledTimes(1);
     expect(mathNoteWindow.show).toHaveBeenCalledTimes(1);
+    expect(mathNoteWindow.moveTop).toHaveBeenCalledTimes(1);
     expect(mathNoteWindow.focus).toHaveBeenCalledTimes(1);
     expect(mathNoteWindow.webContents.focus).toHaveBeenCalledTimes(1);
     expect(firstCallOrder(mathNoteWindow.setBounds)).toBeLessThan(
       firstCallOrder(mathNoteWindow.show),
     );
+  });
+
+  it("spawns independent math scratchpad windows", async () => {
+    const { createMathNoteWindow } = await importQuickNoteWindowModule();
+
+    createMathNoteWindow("/preload.js");
+    createMathNoteWindow("/preload.js");
+
+    expect(createdWindows).toHaveLength(2);
+    expect(getCreatedWindow(0).options.title).toBe("Math Scratchpad");
+    expect(getCreatedWindow(1).options.title).toBe("Math Scratchpad");
   });
 });

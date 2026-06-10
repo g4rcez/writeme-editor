@@ -5,6 +5,7 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  type BrowserWindowConstructorOptions,
   type MenuItemConstructorOptions,
   type NativeImage,
   nativeImage,
@@ -298,6 +299,18 @@ function getPreloadPath(): string {
   return path.join(__dirname, "preload.js");
 }
 
+function getMainWindowNativeOptions(): BrowserWindowConstructorOptions {
+  if (process.platform !== "darwin") return {};
+
+  return {
+    backgroundColor: "#00000000",
+    titleBarStyle: "default",
+    vibrancy: "under-window",
+    visualEffectState: "active",
+    roundedCorners: true,
+  };
+}
+
 function showMainWindow(): void {
   mainWindow?.show();
   mainWindow?.focus();
@@ -569,8 +582,9 @@ async function main() {
         width: 800,
         height: 600,
         center: true,
-        accentColor: "#000000",
+        accentColor: "#0a84ff",
         icon: createNativeAppIcon(),
+        ...getMainWindowNativeOptions(),
         webPreferences: {
           preload,
           defaultFontSize: 16,

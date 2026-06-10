@@ -27,9 +27,19 @@ export type AiContext = {
   selectionSlice: { from: number; to: number } | null;
 };
 
-export type Theme = "light" | "dark" | "catppuccin-mocha" | "tokyonight-night";
+export type Theme =
+  | "light"
+  | "dark"
+  | "catppuccin-mocha"
+  | "tokyonight-night"
+  | "native";
 
-const THEME_CLASSES = ["dark", "catppuccin-mocha", "tokyonight-night"] as const;
+const THEME_CLASSES = [
+  "dark",
+  "catppuccin-mocha",
+  "tokyonight-night",
+  "native",
+] as const;
 
 type State = {
   tabs: Tab[];
@@ -86,7 +96,7 @@ const initialState: State = {
   directoryBrowserDialog: false,
   noteGroups: [] as NoteGroup[],
   inspectJsonInitialContent: null,
-  theme: "dark" as "light" | "dark",
+  theme: "dark" as Theme,
   activeTabId: null as string | null,
   createTemplateDialog: { isOpen: false },
   createVariableDialog: { isOpen: false },

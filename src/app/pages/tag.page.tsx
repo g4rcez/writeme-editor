@@ -4,7 +4,7 @@ import { createColumns, Table, Tag, type TagProps } from "@g4rcez/components";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 
 type TagNoteResult = Note & { occurrences: number };
 
@@ -15,6 +15,7 @@ const tagThemeMap: Record<
   json: { theme: "warn", title: "Json" },
   note: { theme: "primary", title: "Note" },
   quick: { theme: "muted", title: "Quick note" },
+  math: { theme: "neutral", title: "Math" },
   template: { theme: "secondary", title: "Template" },
   "read-it-later": { theme: "info", title: "Read it later" },
   freehand: { theme: "secondary", title: "Freehand" },

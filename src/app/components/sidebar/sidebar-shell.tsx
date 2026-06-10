@@ -85,7 +85,7 @@ export const SidebarShell = () => {
   }, [dispatch]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-background px-4">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4">
       <header className="flex px-3 my-2 shrink-0 flex-nowrap justify-between">
         <div className="flex items-center gap-4">
           <WritemeLogo className="size-8" />

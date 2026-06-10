@@ -4,6 +4,7 @@
 @import "./app/styles/typography.css";
 @import "./app/styles/callout.css";
 @import "./app/styles/mermaid.css";
+@import "./app/styles/native.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,7 +21,8 @@
 
 html.dark,
 html.catppuccin-mocha,
-html.tokyonight-night {
+html.tokyonight-night,
+html.native {
   color-scheme: dark;
 }
 
@@ -112,8 +114,8 @@ code {
 }
 
 *:focus-visible {
-  outline: 2px solid hsla(var(--primary-DEFAULT), 1);
-  outline-offset: 2px;
+  outline: 1px solid hsla(var(--primary-DEFAULT), 0.1);
+  outline-offset: 0.1rem;
   transition: outline-offset var(--transition-fast);
 }
 

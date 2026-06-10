@@ -15,11 +15,11 @@ import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { FolderSimplePlusIcon } from "@phosphor-icons/react/dist/csr/FolderSimplePlus";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { Link } from "react-router-dom";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { useNoteList, type NoteWithTags } from "@/app/hooks/use-note-list";
 import { useGlobalStore } from "@/store/global.store";
 import { useEffect, useState } from "react";
-import { NoteGroup } from "@/store/repositories/entities/note-group";
+import type { NoteGroup } from "@/store/repositories/entities/note-group";
 
 const tag: Record<
   Note["noteType"],
@@ -28,6 +28,7 @@ const tag: Record<
   json: { theme: "warn", title: "Json" },
   note: { theme: "primary", title: "Note" },
   quick: { theme: "muted", title: "Quick note" },
+  math: { theme: "neutral", title: "Math" },
   template: { theme: "secondary", title: "Template" },
   "read-it-later": { theme: "info", title: "Read it later" },
   freehand: { theme: "secondary", title: "Freehand" },

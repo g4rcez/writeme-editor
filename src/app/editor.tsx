@@ -561,9 +561,9 @@ const TiptapEditorCore = memo(
     return (
       <div
         id="editor-container"
-        aria-busy={uiState.parsingContent ? "true" : "false"}
-        style={{ fontSize: `${settings.editorFontSize}px` }}
         className="writeme-editor relative"
+        style={{ fontSize: `${settings.editorFontSize}px` }}
+        aria-busy={uiState.parsingContent ? "true" : "false"}
       >
         {uiState.parsingContent && (
           <div

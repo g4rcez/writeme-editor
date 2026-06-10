@@ -171,7 +171,6 @@
   @apply border-primary/20 bg-primary text-primary-foreground;
 }
 
-/* writeme-editor */
 .writeme-editor-page {
   @apply flex relative flex-col gap-4 py-6 px-8 w-full h-full print:block print:h-auto print:overflow-visible;
 }
@@ -182,10 +181,6 @@
 
 .writeme-editor-content {
   @apply h-full outline-none print:h-auto print:block print:overflow-visible;
-}
-
-.writeme-editor-content:focus-visible {
-  @apply outline-background outline;
 }
 
 .writeme-block {

@@ -1,0 +1,121 @@
+html.native {
+  --native-liquid-glass-bg: hsla(var(--floating-background), 0.46);
+  --native-liquid-glass-bg-soft: hsla(var(--background), 0.18);
+  --native-liquid-glass-bg-strong: hsla(var(--card-background), 0.56);
+  --native-liquid-glass-border: hsla(var(--border), 0.42);
+  accent-color: hsla(var(--native-system-accent, 210, 100%, 52%));
+}
+
+html.native body,
+html.native button,
+html.native input,
+html.native select,
+html.native textarea,
+html.native h1,
+html.native h2,
+html.native h3,
+html.native h4,
+html.native h5,
+html.native h6 {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
+}
+
+html.native .writeme-editor,
+html.native .writeme-block,
+html.native .writeme-sidebar-v2-legacy-pane,
+html.native .writeme-sidebar-v2-group,
+html.native .writeme-sidebar-v2-footer-tab {
+  box-shadow: none;
+}
+
+html.native.platform-web,
+html.native.platform-web body,
+html.native.platform-web #root {
+  background-color: hsla(var(--background), 1);
+}
+
+html.native.platform-web .writeme-layout {
+  background-color: hsla(var(--background), 1);
+}
+
+html.native.platform-web .writeme-layout-body {
+  background-color: hsla(var(--floating-background), 1);
+}
+
+html.native.platform-web .writeme-layout-main,
+html.native.platform-web #main-scroll-container,
+html.native.platform-web .writeme-editor,
+html.native.platform-web .writeme-aside-activity-bar,
+html.native.platform-web .writeme-aside-panel-inner > div,
+html.native.platform-web [data-treeroot="true"] {
+  background-color: hsla(var(--background), 1);
+}
+
+html.native.platform-web .tab-scrollbar,
+html.native.platform-web .writeme-sidebar-v2-legacy-pane,
+html.native.platform-web .writeme-sidebar-v2-group,
+html.native.platform-web .writeme-sidebar-v2-footer-tab {
+  border-color: hsla(var(--border), 0.42);
+  background-color: hsla(var(--card-background), 1);
+}
+
+html.native.platform-electron,
+html.native.platform-electron body,
+html.native.platform-electron #root,
+html.native.platform-electron .writeme-layout,
+html.native.platform-electron .writeme-layout-body,
+html.native.platform-electron .writeme-layout-main,
+html.native.platform-electron #main-scroll-container,
+html.native.platform-electron .writeme-editor-page,
+html.native.platform-electron .writeme-editor,
+html.native.platform-electron .writeme-aside-panel-inner > div,
+html.native.platform-electron [data-treeroot="true"] {
+  background: transparent;
+  background-color: transparent;
+}
+
+html.native.platform-electron .writeme-aside-activity-bar,
+html.native.platform-electron .writeme-aside-panel,
+html.native.platform-electron .writeme-aside-nav,
+html.native.platform-electron .tab-scrollbar,
+html.native.platform-electron .writeme-editor-bubble-actions {
+  border-color: var(--native-liquid-glass-border);
+  background-color: var(--native-liquid-glass-bg);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+}
+
+html.native.platform-electron .writeme-aside-activity-bar,
+html.native.platform-electron .writeme-aside-panel,
+html.native.platform-electron .writeme-aside-nav {
+  background-color: var(--native-liquid-glass-bg-strong);
+}
+
+html.native.platform-electron .writeme-sidebar-v2-legacy-pane,
+html.native.platform-electron .writeme-sidebar-v2-group,
+html.native.platform-electron .writeme-sidebar-v2-footer-tab {
+  border-color: var(--native-liquid-glass-border);
+  background-color: var(--native-liquid-glass-bg-soft);
+}
+
+html.native.platform-electron .writeme-editor {
+  border: 0;
+  border-radius: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  html.native.platform-electron .writeme-aside-activity-bar,
+  html.native.platform-electron .writeme-aside-panel,
+  html.native.platform-electron .writeme-aside-nav,
+  html.native.platform-electron .tab-scrollbar,
+  html.native.platform-electron .writeme-editor-bubble-actions {
+    background-color: hsla(var(--card-background), 0.92);
+  }
+}

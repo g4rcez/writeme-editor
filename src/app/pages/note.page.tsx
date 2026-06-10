@@ -168,7 +168,7 @@ export default function NotePage() {
       <ExportNoteButton note={note} />
       <PrintableNoteHeader note={note} />
       {note.noteType === "read-it-later" ? (
-        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b bg-background max-w-safe border-card-border print:hidden">
+        <header className="flex flex-col gap-2 py-4 mx-auto w-full border-b max-w-safe border-card-border print:hidden">
           <h1 className="text-xl font-medium">{note.title}</h1>
           {note.url ? (
             <a

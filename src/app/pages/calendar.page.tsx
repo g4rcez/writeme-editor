@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 const NOTE_TYPE_COLORS: Record<NoteType, string> = {
   "read-it-later": "bg-tag-info-bg text-tag-info-text",
   [NoteType.quick]: "bg-tag-warn-bg text-tag-warn-text",
+  [NoteType.math]: "bg-tag-neutral-bg text-tag-neutral-text",
   [NoteType.note]: "bg-tag-primary-bg text-tag-primary-text",
   [NoteType.json]: "bg-tag-secondary-bg text-tag-secondary-text",
   [NoteType.freehand]: "bg-tag-success-bg text-tag-success-text",
@@ -27,6 +28,7 @@ const NOTE_TYPE_COLORS: Record<NoteType, string> = {
 const NOTE_TYPE_FILTER_THEMES: Record<NoteType, TagProps["theme"]> = {
   "read-it-later": "info",
   [NoteType.quick]: "warn",
+  [NoteType.math]: "neutral",
   [NoteType.note]: "primary",
   [NoteType.json]: "secondary",
   [NoteType.freehand]: "success",
@@ -36,6 +38,7 @@ const NOTE_TYPE_FILTER_THEMES: Record<NoteType, TagProps["theme"]> = {
 const NOTE_TYPE_LABELS: Record<NoteType, string> = {
   note: "Note",
   quick: "Quick",
+  math: "Math",
   "read-it-later": "Read Later",
   template: "Template",
   json: "JSON",

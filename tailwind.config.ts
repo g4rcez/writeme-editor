@@ -163,7 +163,7 @@ export default {
         72: "calc(var(--default-size) * 18)",
         80: "calc(var(--default-size) * 20)",
         96: "calc(var(--default-size) * 24)",
-        safe: "70vw",
+        safe: "85vw",
         navbar: "calc(var(--default-size) * 3)",
         editor: "calc(var(--default-size) * 6)",
       },

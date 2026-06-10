@@ -17,11 +17,13 @@ import { router } from "./router";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
 import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
+import { nativeTheme } from "./styles/native";
 import { tokyonightNightTheme } from "./styles/tokyonight-night";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
 import { sortByNewest } from "@/lib/array";
 import { setupAIAdapters } from "./ai/setup";
+import { isElectron } from "@/lib/is-electron";
 import { runPurge } from "@/lib/trash/purge";
 
 declare global {
@@ -45,6 +47,59 @@ const tokenRemap: TokenRemap = {
     t.value = t.value.replace("hsla(", "").replace(/\)$/, "");
     return t;
   },
+};
+
+const hexToHslaTuple = (hex: string): string | null => {
+  const normalized = hex.replace(/^#/, "").slice(0, 6);
+  if (!/^[\da-f]{6}$/i.test(normalized)) return null;
+
+  const red = Number.parseInt(normalized.slice(0, 2), 16) / 255;
+  const green = Number.parseInt(normalized.slice(2, 4), 16) / 255;
+  const blue = Number.parseInt(normalized.slice(4, 6), 16) / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const lightness = (max + min) / 2;
+
+  let hue = 0;
+  let saturation = 0;
+  const delta = max - min;
+  if (delta !== 0) {
+    saturation = delta / (1 - Math.abs(2 * lightness - 1));
+    if (max === red) hue = ((green - blue) / delta) % 6;
+    if (max === green) hue = (blue - red) / delta + 2;
+    if (max === blue) hue = (red - green) / delta + 4;
+    hue *= 60;
+    if (hue < 0) hue += 360;
+  }
+
+  return `${Math.round(hue)}, ${Math.round(saturation * 100)}%, ${Math.round(
+    lightness * 100,
+  )}%`;
+};
+
+const setSystemAccentColor = (accentColor: string | null): void => {
+  if (!accentColor) return;
+
+  const tuple = hexToHslaTuple(accentColor);
+  if (!tuple) return;
+  document.documentElement.style.setProperty("--native-system-accent", tuple);
+};
+
+const applySystemAccentColor = async (): Promise<void> => {
+  const accentColor = await window.electronAPI?.app
+    ?.getSystemAccentColor?.()
+    .catch(() => null);
+  setSystemAccentColor(accentColor ?? null);
+};
+
+const watchSystemAccentColor = (): void => {
+  window.electronAPI?.app?.onSystemAccentColorChange?.(setSystemAccentColor);
+};
+
+const platformConfiguration = (): void => {
+  const isDesktop = isElectron();
+  document.documentElement.classList.toggle("platform-electron", isDesktop);
+  document.documentElement.classList.toggle("platform-web", !isDesktop);
 };
 
 const themeConfiguration = () => {
@@ -76,6 +131,15 @@ const themeConfiguration = () => {
       }),
     ),
   );
+  head.append(
+    createStyle(
+      "native-theme",
+      createTokenStyles(nativeTheme, {
+        ...tokenRemap,
+        name: "native",
+      }),
+    ),
+  );
   if (globalState().theme !== "light") {
     document.documentElement.classList.add(globalState().theme);
   }
@@ -87,7 +151,10 @@ export async function main() {
     throw new Error("Root element not found");
   }
   setupAIAdapters();
+  platformConfiguration();
   themeConfiguration();
+  void applySystemAccentColor();
+  watchSystemAccentColor();
   try {
     await SettingsService.init();
     const settings = SettingsService.load();

@@ -1,9 +1,10 @@
 import { uuid } from "@g4rcez/components";
-import { type EntityBase, type Repository } from "./repository";
+import type { EntityBase, Repository } from "./repository";
 
 export enum NoteType {
   note = "note",
   quick = "quick",
+  math = "math",
   "read-it-later" = "read-it-later",
   template = "template",
   json = "json",
