@@ -7,12 +7,12 @@ Updates version and SHA256 values in:
   <tap-dir>/Formula/writeme.rb
 
 Expects these files in <artifacts-dir>:
-  writeme-<version>-arm64.dmg
+  writeme-<version>-arm64.dmg or writeme-<version>-arm64-unsigned.dmg
   writeme-darwin-arm64
 """
 
-import hashlib
 import glob
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -39,6 +39,42 @@ def update_rb(path: str, version: str, arm64_sha: str) -> None:
     Path(path).write_text(content, encoding="utf-8")
 
 
+def update_cask(path: str, version: str, arm64_sha: str, dmg_path: str) -> None:
+    content = Path(path).read_text(encoding="utf-8")
+    dmg_name = Path(dmg_path).name
+    dmg_name_template = dmg_name.replace(version, "#{version}")
+    arm_url = (
+        "https://github.com/g4rcez/writeme-editor/releases/download/"
+        f"v#{{version}}/{dmg_name_template}"
+    )
+
+    content = re.sub(r'version "[0-9a-zA-Z._-]+"', f'version "{version}"', content)
+    content = re.sub(
+        r'(on_arm do.*?url ")[^"]*(")',
+        lambda m: m.group(1) + arm_url + m.group(2),
+        content,
+        flags=re.DOTALL,
+    )
+    content = re.sub(
+        r'(on_arm do.*?sha256 ")[^"]*(")',
+        lambda m: m.group(1) + arm64_sha + m.group(2),
+        content,
+        flags=re.DOTALL,
+    )
+    content = re.sub(r"\n\s*on_intel do\n.*?\n\s*end\n", "\n", content, flags=re.DOTALL)
+    content = re.sub(r"\n\s*no_quarantine true\n", "\n", content)
+
+    if "-unsigned.dmg" in dmg_name:
+        content = re.sub(
+            r'(homepage "https://writeme.dev"\n)',
+            r"\1\n  no_quarantine true\n",
+            content,
+            count=1,
+        )
+
+    Path(path).write_text(content, encoding="utf-8")
+
+
 def main() -> None:
     if len(sys.argv) != 4:
         print(__doc__)
@@ -46,12 +82,12 @@ def main() -> None:
 
     version, artifacts_dir, tap_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    arm64_dmg_matches = glob.glob(f"{artifacts_dir}/writeme-*-arm64.dmg")
+    arm64_dmg_matches = glob.glob(f"{artifacts_dir}/writeme-*-arm64*.dmg")
     cli_arm64 = f"{artifacts_dir}/writeme-darwin-arm64"
 
     missing = []
     if not arm64_dmg_matches:
-        missing.append("writeme-*-arm64.dmg")
+        missing.append("writeme-*-arm64*.dmg")
     if not Path(cli_arm64).exists():
         missing.append("writeme-darwin-arm64")
     if missing:
@@ -81,7 +117,7 @@ def main() -> None:
     arm64_dmg_sha = sha256(arm64_dmg)
     cli_arm64_sha = sha256(cli_arm64)
 
-    update_rb(f"{tap_dir}/Casks/writeme.rb", version, arm64_dmg_sha)
+    update_cask(f"{tap_dir}/Casks/writeme.rb", version, arm64_dmg_sha, arm64_dmg)
     update_rb(f"{tap_dir}/Formula/writeme.rb", version, cli_arm64_sha)
 
     print(f"Bumped to v{version}")

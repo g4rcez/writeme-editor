@@ -12,6 +12,7 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 const appleId = process.env.APPLE_ID;
 const appleIdPassword = process.env.APPLE_APP_SPECIFIC_PASSWORD;
 const appleTeamId = process.env.APPLE_TEAM_ID;
+const appleSigningIdentity = process.env.APPLE_SIGNING_IDENTITY;
 const hasAppleNotarizeCredentials = Boolean(
   appleId && appleIdPassword && appleTeamId,
 );
@@ -22,6 +23,12 @@ const osxNotarize = hasAppleNotarizeCredentials
       teamId: appleTeamId as string,
     }
   : undefined;
+const osxSign = hasAppleNotarizeCredentials
+  ? {
+      ...(appleSigningIdentity ? { identity: appleSigningIdentity } : {}),
+      continueOnError: false,
+    }
+  : undefined;
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -30,7 +37,7 @@ const config: ForgeConfig = {
     executableName: "writeme",
     appBundleId: "dev.writeme.app",
     icon: "./public/icon",
-    osxSign: hasAppleNotarizeCredentials ? {} : { identity: "-" },
+    ...(osxSign ? { osxSign } : {}),
     ...(osxNotarize ? { osxNotarize } : {}),
   },
   rebuildConfig: {},

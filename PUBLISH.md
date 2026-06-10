@@ -6,10 +6,10 @@ This document covers the one-time setup required before the first release and th
 
 ## Prerequisites
 
-- Apple Developer Program membership ($99/year)
-- A Developer ID Application certificate and .p12 export (for DMG signing + notarization)
 - Access to the `g4rcez/writeme-editor` repository settings (to add secrets)
 - A GitHub account that can create repositories
+- Optional for signed macOS releases: Apple Developer Program membership ($99/year)
+- Optional for signed macOS releases: a Developer ID Application certificate and `.p12` export
 
 ---
 
@@ -25,6 +25,7 @@ https://github.com/new → name: `homebrew-writeme` → Public → Create
 In the new `homebrew-writeme` repo, create the following two files. The CI will overwrite the SHA256 and version values on first release.
 
 **`Casks/writeme.rb`**
+
 ```ruby
 cask "writeme" do
   version "1.0.0"
@@ -55,6 +56,7 @@ end
 ```
 
 **`Formula/writeme.rb`**
+
 ```ruby
 class Writeme < Formula
   desc "Writeme CLI — open notes and query Writeme from the command line"
@@ -88,6 +90,7 @@ Commit both files directly on `main` in `homebrew-writeme`.
 ### 3. Generate a GitHub Personal Access Token (PAT)
 
 Go to https://github.com/settings/tokens → Generate new token (classic)
+
 - Note: `writeme tap bump`
 - Expiration: 1 year (set a calendar reminder to rotate) — or No expiration for unattended automation
 - Scopes: check **`repo`** (full repository access)
@@ -97,18 +100,27 @@ Copy the token value.
 ### 4. Add `TAP_GITHUB_TOKEN` secret to `writeme-editor`
 
 Go to https://github.com/g4rcez/writeme-editor/settings/secrets/actions → New repository secret
+
 - Name: `TAP_GITHUB_TOKEN`
 - Value: the PAT from step 3
 
-### 5. Add Apple signing secrets to `writeme-editor`
+### 5. Optional: add Apple signing secrets to `writeme-editor`
 
-Add each of these at https://github.com/g4rcez/writeme-editor/settings/secrets/actions:
+The release workflow supports both unsigned and signed macOS artifacts.
+
+If you do not have an Apple Developer certificate, leave these secrets unset. CI will publish `writeme-<version>-arm64-unsigned.dmg` and append manual install instructions to the GitHub release notes.
+
+If you want signed and notarized macOS releases, add each of these at https://github.com/g4rcez/writeme-editor/settings/secrets/actions:
 
 - `APPLE_ID` — Your Apple ID email (e.g. `you@icloud.com`)
 - `APPLE_APP_SPECIFIC_PASSWORD` — App-specific password from https://appleid.apple.com → Sign-In and Security → App-Specific Passwords
 - `APPLE_TEAM_ID` — Your 10-character Apple Developer Team ID (visible at https://developer.apple.com/account)
-- `CSC_LINK` — Base64-encoded .p12 certificate: `base64 -i Developer_ID_Application.p12 | pbcopy`
-- `CSC_KEY_PASSWORD` — The password you set when exporting the .p12
+- `CSC_LINK` — Base64-encoded Developer ID Application `.p12` certificate: `base64 -i Developer_ID_Application.p12 | pbcopy`
+- `CSC_KEY_PASSWORD` — The password you set when exporting the `.p12`
+
+The macOS release job fails only when some Apple signing secrets are set and others are missing. This prevents accidentally publishing a broken partially configured release.
+
+Optional: set `APPLE_SIGNING_IDENTITY` to the exact Developer ID Application identity if the imported keychain contains more than one valid signing identity.
 
 **Note:** `scripts/tag.sh` uses a date-based tag format (`YYYYMMDD.hash.N`). The release workflow triggers on `v*` tags. Use **semver tags** for releases: `git tag v1.0.0 && git push origin v1.0.0`. Update `package.json` version to match before tagging.
 
@@ -144,10 +156,20 @@ brew audit --cask g4rcez/writeme/writeme
 brew audit --formula g4rcez/writeme/writeme
 ```
 
+If you install the unsigned DMG directly from GitHub instead of Homebrew, drag `writeme.app` to `/Applications`, then run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/writeme.app
+open /Applications/writeme.app
+```
+
+The tap bump script adds `no_quarantine true` to the cask when the release artifact is unsigned.
+
 ---
 
 ## Rotating the TAP_GITHUB_TOKEN
 
 When the PAT expires:
+
 1. Generate a new PAT at https://github.com/settings/tokens
 2. Update the `TAP_GITHUB_TOKEN` secret in `writeme-editor` repository settings

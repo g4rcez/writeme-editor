@@ -24,8 +24,47 @@ jobs:
 
       - run: npm ci
 
+      - name: Detect macOS signing mode
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          required=(APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID CSC_LINK CSC_KEY_PASSWORD)
+          present=0
+          for name in "${required[@]}"; do
+            if [ -n "${!name}" ]; then
+              present=$((present + 1))
+            fi
+          done
+
+          if [ "$present" -eq "${#required[@]}" ]; then
+            echo "MACOS_SIGNING_MODE=signed" >> "$GITHUB_ENV"
+            echo "macOS artifacts will be signed and notarized."
+          elif [ "$present" -eq 0 ]; then
+            echo "MACOS_SIGNING_MODE=unsigned" >> "$GITHUB_ENV"
+            echo "::notice::Apple signing secrets are not configured. Publishing unsigned macOS DMG."
+          else
+            echo "::error::Provide all Apple signing secrets, or leave all of them unset for an unsigned build."
+            for name in "${required[@]}"; do
+              if [ -z "${!name}" ]; then
+                echo "::error::Missing macOS signing secret: ${name}"
+              fi
+            done
+            exit 1
+          fi
+
+      - name: Import Apple Developer ID certificate
+        if: env.MACOS_SIGNING_MODE == 'signed'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: scripts/import-macos-signing-cert.sh
+
       - name: Build Electron app
-        run: npm run make
+        run: npm run make -- --arch=arm64
         env:
           NODE_OPTIONS: --max-old-space-size=4096
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -33,6 +72,25 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Verify macOS signature and notarization
+        if: env.MACOS_SIGNING_MODE == 'signed'
+        run: |
+          APP_PATH=$(find out -type d -name "writeme.app" -print -quit)
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::writeme.app was not found under out/"
+            exit 1
+          fi
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          xcrun stapler validate "$APP_PATH"
+          spctl --assess --type execute --verbose=4 "$APP_PATH"
+
+      - name: Delete signing keychain
+        if: always()
+        run: |
+          if [ -n "${KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
 
       - name: Stage artifacts
         run: |
@@ -47,11 +105,16 @@ jobs:
             echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
           fi
           mkdir -p release-artifacts
-          find out/make -name "*.dmg" -exec cp {} "release-artifacts/writeme-${VERSION}-arm64.dmg" \;
+          if [ "${MACOS_SIGNING_MODE}" = "signed" ]; then
+            DMG_NAME="writeme-${VERSION}-arm64.dmg"
+          else
+            DMG_NAME="writeme-${VERSION}-arm64-unsigned.dmg"
+          fi
+          find out/make -name "*.dmg" -exec cp {} "release-artifacts/${DMG_NAME}" \;
           find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-arm64.zip" \;
           bun build --compile packages/cli/src/index.ts \
             --outfile "release-artifacts/writeme-darwin-arm64"
-          test -f "release-artifacts/writeme-${VERSION}-arm64.dmg"
+          test -f "release-artifacts/${DMG_NAME}"
           test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
           test -f "release-artifacts/writeme-darwin-arm64"
 
@@ -167,7 +230,21 @@ jobs:
           merge-multiple: true
 
       - name: Extract release notes
-        run: awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
+        run: |
+          awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
+          if find artifacts -name "*-arm64-unsigned.dmg" -print -quit | grep -q .; then
+            cat >> release-notes.md <<'EOF'
+
+          ### macOS unsigned DMG
+
+          This release includes an unsigned macOS DMG because Apple signing credentials were not configured. After dragging `writeme.app` to `/Applications`, run:
+
+          ```bash
+          xattr -dr com.apple.quarantine /Applications/writeme.app
+          open /Applications/writeme.app
+          ```
+          EOF
+          fi
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -190,7 +267,7 @@ jobs:
         run: |
           gh release download "$REF_NAME" \
             --repo g4rcez/writeme-editor \
-            --pattern "writeme-*-arm64.dmg" \
+            --pattern "writeme-*-arm64*.dmg" \
             --pattern "writeme-darwin-arm64" \
             --dir ./artifacts
         env:
