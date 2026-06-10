@@ -298,7 +298,7 @@ export const RootLayout = () => {
 
   if (isFloatingPanel) {
     return (
-      <div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background/[0.92] ring-1 ring-white/[0.06] p-4">
+      <div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
         <div className="quicknote-window-drag-strip" />
         <Suspense fallback={null}>
           <div className="flex flex-col flex-1 min-h-0 h-full">
