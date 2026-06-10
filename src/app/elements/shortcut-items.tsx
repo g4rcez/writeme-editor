@@ -9,8 +9,8 @@ import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-work
 
 import { useNavigate } from "react-router-dom";
 
-// Shortcuts that require filesystem access (Electron only)
-const FILESYSTEM_SHORTCUTS = ["mod+o", "mod+shift+e"];
+// Shortcuts that only work in the Electron app
+const ELECTRON_ONLY_SHORTCUTS = ["mod+o", "mod+shift+e", "mod+/"];
 
 const noop = () => {};
 
@@ -22,6 +22,7 @@ export enum Type {
 export type Shortcut = {
   bind: string;
   hidden?: boolean;
+  hideInCommander?: boolean;
   action: () => any;
   description: string;
   type: Type;
@@ -56,7 +57,7 @@ export const useWritemeShortcuts = () => {
         },
         {
           hidden: true,
-          bind: "mod+k",
+          bind: "mod+shift+p",
           type: Type.Shortcut,
           description: "Commander",
           action: () => dispatch.commander(true),
@@ -94,8 +95,9 @@ export const useWritemeShortcuts = () => {
         {
           description: "Shortcut/Help menu",
           bind: "mod+/",
+          hideInCommander: true,
           type: Type.Shortcut,
-          action: () => dispatch.help(true),
+          action: () => navigate("/settings/shortcuts"),
         },
         {
           description: "Settings",
@@ -178,8 +180,10 @@ export const useWritemeShortcuts = () => {
           action: noop,
         },
       ]
-        // Filter out filesystem shortcuts in browser mode
-        .filter((s) => isElectron() || !FILESYSTEM_SHORTCUTS.includes(s.bind))
+        // Filter out Electron-only shortcuts in browser mode
+        .filter(
+          (s) => isElectron() || !ELECTRON_ONLY_SHORTCUTS.includes(s.bind),
+        )
         .toSorted((a, b) =>
           a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase()),
         ),
@@ -219,18 +223,28 @@ function iOS() {
   );
 }
 
-export const mapShortcutOS = (s: string) =>
-  s.replace("mod+", iOS() ? "⌘ + " : "Ctrl + ");
+type ShortcutDisplay = Pick<Shortcut, "bind" | "description">;
 
-export const ShortcutItem = (props: { shortcut: Shortcut }) => (
+const getShortcutKeyLabel = (key: string): string => {
+  const normalizedKey = key.toLocaleLowerCase();
+  if (normalizedKey === "mod") return iOS() ? "⌘" : "Ctrl";
+  if (normalizedKey === "control" || normalizedKey === "ctrl") return "Ctrl";
+  if (normalizedKey === "shift") return "Shift";
+  if (normalizedKey === "alt") return "Alt";
+  if (normalizedKey === "enter") return "Enter";
+  if (normalizedKey === "escape") return "Esc";
+  if (key.length === 1) return key.toLocaleUpperCase();
+  return key;
+};
+
+export const mapShortcutOS = (s: string) =>
+  s.split("+").map(getShortcutKeyLabel).join(" + ");
+
+export const ShortcutItem = (props: { shortcut: ShortcutDisplay }) => (
   <li className="flex flex-row gap-2 items-center">
     <kbd className="flex flex-row gap-2 items-center py-1 px-2 font-medium rounded-md bg-background">
       {props.shortcut.bind.split("+").map((x, i) => {
-        return (
-          <span key={`bind-${i}-${x}`}>
-            {x === "mod" ? (iOS() ? "⌘" : "Ctrl") : x}
-          </span>
-        );
+        return <span key={`bind-${i}-${x}`}>{getShortcutKeyLabel(x)}</span>;
       })}
     </kbd>
     <span>{props.shortcut.description}</span>

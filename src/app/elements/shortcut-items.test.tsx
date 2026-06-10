@@ -62,6 +62,17 @@ describe("shortcut-items", () => {
     expect(descriptions).toContain("Open...");
   });
 
+  it("includes the Commander shortcut binding", () => {
+    const { result } = renderHook(() => useWritemeShortcuts(), {
+      wrapper: MemoryRouter,
+    });
+    const commander = result.current.find((s) => s.description === "Commander");
+
+    expect(commander).toBeDefined();
+    expect(commander?.bind).toBe("mod+shift+p");
+    expect(commander?.type).toBe(Type.Shortcut);
+  });
+
   it("includes the Settings shortcut binding", () => {
     const { result } = renderHook(() => useWritemeShortcuts(), {
       wrapper: MemoryRouter,

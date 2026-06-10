@@ -8,6 +8,25 @@ import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
 import { elementFromString } from "./util/dom";
 
+type MarkdownOptions = {
+  html: boolean;
+  breaks: boolean;
+  tightLists: boolean;
+  inlineMath: boolean;
+  bulletListMarker: string;
+  tightListClass: string;
+  transformCopiedText: boolean;
+  transformPastedText: boolean;
+  onBeforePaste: (text: string) => string;
+};
+
+type MarkdownStorage = {
+  options: Record<string, unknown>;
+  parser: MarkdownParser | null;
+  serializer: MarkdownSerializer | null;
+  getMarkdown: (() => string) | null;
+};
+
 declare module "@tiptap/core" {
   interface Storage {
     markdown: {
@@ -25,7 +44,7 @@ declare module "@tiptap/core" {
   }
 }
 
-export const Markdown = Extension.create({
+export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
   name: "markdown",
   priority: 50,
   markdownOptions: { indentsContent: true },
@@ -151,11 +170,12 @@ export const Markdown = Extension.create({
     this.storage.options = { ...this.options };
     this.storage.parser = new MarkdownParser(this.editor, this.options);
     this.storage.serializer = new MarkdownSerializer(this.editor);
-    this.storage.getMarkdown = () => {
+    const getMarkdown = () => {
       if (!this.storage.serializer || !this.editor.state.doc) return "";
       return this.storage.serializer.serialize(this.editor.state.doc);
     };
-    this.editor.getMarkdown = this.storage.getMarkdown;
+    this.storage.getMarkdown = getMarkdown;
+    this.editor.getMarkdown = getMarkdown;
     if (this.editor.options.content && this.storage.parser) {
       this.editor.options.initialContent = this.editor.options.content;
       this.editor.options.content = this.storage.parser.parse(

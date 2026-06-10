@@ -6,6 +6,10 @@ import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { notificationRef } from "@/app/notification-ref";
+import {
+  getSettingsPath,
+  isSettingsSectionAvailable,
+} from "@/app/settings/settings-sections";
 import { printDocument } from "@/lib/print-document";
 import {
   CommanderType,
@@ -245,7 +249,7 @@ export const Commander = () => {
       ],
     };
     const actions = commands
-      .filter((x) => !x.hidden)
+      .filter((x) => !x.hidden && !x.hideInCommander)
       .filter((x) => x.type === Type.Shortcut)
       .map(
         (x): CommandItemTypes => ({
@@ -386,6 +390,18 @@ export const Commander = () => {
               navigate("/examples");
             },
           },
+          ...(isSettingsSectionAvailable("shortcuts")
+            ? [
+                {
+                  title: "Shortcut/Help menu",
+                  type: "shortcut" as const,
+                  action: (args: { setOpen: (v: boolean) => void }) => {
+                    args.setOpen(false);
+                    navigate(getSettingsPath("shortcuts"));
+                  },
+                },
+              ]
+            : []),
           {
             title: "Settings",
             type: "shortcut",

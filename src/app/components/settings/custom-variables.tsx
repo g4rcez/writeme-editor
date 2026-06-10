@@ -1,4 +1,4 @@
-import { Button, Card, Input, Textarea, uuid } from "@g4rcez/components";
+import { Button, Input, Textarea, uuid } from "@g4rcez/components";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";

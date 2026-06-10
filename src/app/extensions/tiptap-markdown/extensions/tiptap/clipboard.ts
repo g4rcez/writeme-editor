@@ -6,12 +6,19 @@ import { dedent } from "@/lib/markdown-worker/dedent";
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---(?:\n|$)/;
 
-export const MarkdownClipboard = Extension.create({
+type MarkdownClipboardOptions = {
+  transformPastedText: boolean;
+  transformCopiedText: boolean;
+  onBeforePaste: (text: string) => string;
+};
+
+export const MarkdownClipboard = Extension.create<MarkdownClipboardOptions>({
   name: "markdownClipboard",
   addOptions() {
     return {
       transformPastedText: false,
       transformCopiedText: false,
+      onBeforePaste: (text: string) => text,
     };
   },
   addProseMirrorPlugins() {

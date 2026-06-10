@@ -5,14 +5,34 @@ import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOu
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { Link } from "react-router-dom";
-import { useNoteList, type NoteWithTags } from "../hooks/use-note-list";
+import { useNoteList } from "../hooks/use-note-list";
 import { NoteType } from "@/store/note";
+
+type ReadItLaterTableRow = Record<string, unknown> & {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  favicon: string | null;
+  createdAt: Date;
+};
 
 export default function ReadItLaterPage() {
   const { loading, search, setSearch, filteredNotes, handleDelete } =
     useNoteList({ noteType: NoteType["read-it-later"] });
 
-  const cols = createColumns<NoteWithTags>((col) => {
+  const rows = filteredNotes.map(
+    (note): ReadItLaterTableRow => ({
+      id: note.id,
+      title: note.title,
+      description: note.description,
+      url: note.url,
+      favicon: note.favicon,
+      createdAt: note.createdAt,
+    }),
+  );
+
+  const cols = createColumns<ReadItLaterTableRow>((col) => {
     col.add("title", "Title", {
       Element: (props) => (
         <Link
@@ -116,7 +136,7 @@ export default function ReadItLaterPage() {
         reference="id"
         useControl={false}
         name="read-it-later"
-        rows={filteredNotes as NoteWithTags[]}
+        rows={rows}
       />
     </div>
   );

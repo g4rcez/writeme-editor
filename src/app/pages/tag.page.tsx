@@ -8,6 +8,13 @@ import type { Note } from "@/store/note";
 
 type TagNoteResult = Note & { occurrences: number };
 
+type TagTableRow = Record<string, unknown> & {
+  id: string;
+  title: string;
+  noteType: Note["noteType"];
+  occurrences: number;
+};
+
 const tagThemeMap: Record<
   Note["noteType"],
   { title: string; theme: TagProps["theme"] }
@@ -57,7 +64,16 @@ export default function TagPage() {
     loadData();
   }, [id, state.notes]);
 
-  const cols = createColumns<TagNoteResult>((col) => {
+  const rows = notes.map(
+    (note): TagTableRow => ({
+      id: note.id,
+      title: note.title,
+      noteType: note.noteType,
+      occurrences: note.occurrences,
+    }),
+  );
+
+  const cols = createColumns<TagTableRow>((col) => {
     col.add("title", "Title", {
       Element: (props) => (
         <Link
@@ -105,7 +121,7 @@ export default function TagPage() {
       ) : (
         <Table
           cols={cols}
-          rows={notes}
+          rows={rows}
           reference="id"
           name="tag-notes"
           useControl={false}
