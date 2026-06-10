@@ -137,27 +137,22 @@ function handleOpenFolderMessage(
   }
 
   const webContentsId = windowRef.webContents.id;
-  if (
-    !readyWebContentsIds.has(webContentsId) ||
-    windowRef.webContents.isLoading()
-  ) {
-    pendingRendererSends.push({
-      webContentsId,
-      send: () => handleOpenFolderMessage(null, folderPath),
-    });
-    finishOpenFolderSocket(socket);
-    return;
-  }
-
   const currentWorkspacePath =
     workspacePathByWebContentsId.get(webContentsId) ??
     cliServerOptions.getCurrentWorkspacePath?.() ??
     null;
+
   if (
     currentWorkspacePath &&
-    path.resolve(currentWorkspacePath) !== path.resolve(folderPath) &&
-    cliServerOptions.openWorkspaceInNewInstance
+    path.resolve(currentWorkspacePath) === path.resolve(folderPath)
   ) {
+    windowRef.show();
+    windowRef.focus();
+    finishOpenFolderSocket(socket);
+    return;
+  }
+
+  if (cliServerOptions.openWorkspaceInNewInstance) {
     cliServerOptions.openWorkspaceInNewInstance(folderPath);
     finishOpenFolderSocket(socket);
     return;

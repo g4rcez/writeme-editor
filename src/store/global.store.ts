@@ -13,6 +13,14 @@ import type { Toggle } from "./types";
 
 export type NoteCreationType = "note" | "quick";
 
+const LOCAL_WORKSPACE_KEY = "__local__";
+
+export function getWorkspaceKey(directory: string | null): string {
+  return directory && directory.trim().length > 0
+    ? directory
+    : LOCAL_WORKSPACE_KEY;
+}
+
 export enum CommanderType {
   All = "all",
   Notes = "Notes",
@@ -145,11 +153,11 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
     const now = new Date();
     return {
       noteId,
-      project: "",
+      project: getWorkspaceKey(state.directory),
       type: "tab",
       createdAt: now,
       updatedAt: now,
-      id: noteId,
+      id: uuid(),
       order: state.tabs.length,
       scrollY: 0,
     };
@@ -290,11 +298,13 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
       return { tabs: updatedTabs };
     },
     clearTabs: async () => {
-      await repositories.tabs.clear();
+      const state = get.state();
+      await Promise.all(
+        state.tabs.map((tab) => repositories.tabs.delete(tab.id)),
+      );
       return { tabs: [], activeTabId: null, note: null };
     },
     switchWorkspace: async (directory: string | null) => {
-      await repositories.tabs.clear();
       await SettingsService.save({
         directory,
         explorerRoot: directory,

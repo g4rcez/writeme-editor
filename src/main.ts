@@ -14,6 +14,7 @@ import {
   Tray,
 } from "electron";
 import started from "electron-squirrel-startup";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -521,6 +522,26 @@ function getInitialWorkspacePath(argv: string[]): string | null {
   return envWorkspace ? path.resolve(envWorkspace) : parseWorkspaceArg(argv);
 }
 
+function configureWorkspaceSessionData(
+  workspacePath: string | null,
+  isWorkspaceInstance: boolean,
+): void {
+  if (!workspacePath || !isWorkspaceInstance) return;
+
+  const workspaceHash = createHash("sha256")
+    .update(path.resolve(workspacePath))
+    .digest("hex")
+    .slice(0, 16);
+  const sessionDataPath = path.join(
+    app.getPath("userData"),
+    "workspace-sessions",
+    workspaceHash,
+  );
+
+  fs.mkdirSync(sessionDataPath, { recursive: true });
+  app.setPath("sessionData", sessionDataPath);
+}
+
 function spawnWorkspaceInstance(folderPath: string): void {
   const child = spawn(
     process.execPath,
@@ -558,6 +579,7 @@ async function main() {
     process.env[WORKSPACE_INSTANCE_ENV] === "1" ||
     process.argv.includes(WORKSPACE_INSTANCE_FLAG);
   let launchWorkspacePath = getInitialWorkspacePath(process.argv);
+  configureWorkspaceSessionData(launchWorkspacePath, isWorkspaceInstance);
 
   if (!isWorkspaceInstance) {
     const gotLock = app.requestSingleInstanceLock();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useGlobalStore } from "./global.store";
+import { getWorkspaceKey, useGlobalStore } from "./global.store";
 
 // Mock repositories
 vi.mock("./repositories", () => ({
@@ -36,31 +36,14 @@ describe("Tab Management Logic", () => {
     );
   });
 
-  it("should create a tab using noteId as id", async () => {
-    // Manually set initial state for test context if needed,
-    // but here we rely on the reducer's return value
-    // We need to simulate the state that 'addTab' reads from 'get.state()'
-    // Since we can't easily mock the internal 'get' of use-typed-reducer in this setup without a render loop,
-    // we will test the logic by invoking the dispatcher and checking the result object it returns.
-    // Note: The actual implementation of useGlobalStore uses `get.state()` inside.
-    // In a unit test without a component, `useGlobalStore.dispatchers` might not have access to the updated state
-    // unless we mock the hook mechanism or the state getter.
-    // However, for the purpose of verifying the logic structure we refactored:
-    // Let's verify the `createTab` logic indirectly via `selectOrAddTab` if possible,
-    // or acknowledge that integration tests might be better for this hook-based store.
-    // Ideally, we should unit test the pure functions if they were extracted.
-    // Given the constraints, we will verify the `activeTabId` behavior which we normalized.
+  it("should keep local-storage tabs in a stable local workspace bucket", () => {
+    expect(getWorkspaceKey(null)).toBe("__local__");
+    expect(getWorkspaceKey("")).toBe("__local__");
   });
 
-  // Since testing the hook directly is complex without a wrapper,
-  // we'll focus on ensuring the types and logic we changed are sound via static analysis
-  // and the manual verification we did.
+  it("should use the workspace directory as the tab isolation key", () => {
+    const workspace = "/Users/allangarcez/Documents/g4rcez/writeme-editor";
 
-  it("should normalize activeTabId to noteId", () => {
-    // This test acts as a placeholder for the logic verification
-    // confirming that we removed the uuid() generation.
-    const noteId = "test-note";
-    const tabId = noteId; // Logic assertion
-    expect(tabId).toBe(noteId);
+    expect(getWorkspaceKey(workspace)).toBe(workspace);
   });
 });

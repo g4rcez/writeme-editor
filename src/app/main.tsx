@@ -9,6 +9,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import {
+  getWorkspaceKey,
   globalDispatch,
   globalState,
   repositories,
@@ -172,7 +173,23 @@ export async function main() {
     }
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
-    const tabs = await repositories.tabs.getAll();
+    const allTabs = await repositories.tabs.getAll();
+    const workspaceKey = getWorkspaceKey(directory);
+    const shouldIncludeLegacyTabs = launchWorkspace === null;
+    const tabs = allTabs.filter(
+      (tab) =>
+        tab.project === workspaceKey ||
+        (shouldIncludeLegacyTabs && !tab.project),
+    );
+    if (shouldIncludeLegacyTabs) {
+      await Promise.all(
+        tabs
+          .filter((tab) => !tab.project)
+          .map((tab) =>
+            repositories.tabs.save({ ...tab, project: workspaceKey }),
+          ),
+      );
+    }
     await globalDispatch.init(
       settings.theme,
       notes,
@@ -183,7 +200,7 @@ export async function main() {
       explorerRoot,
     );
     const tab = sortByNewest(tabs)[0];
-    const find = notes.find((x) => x.id === tab?.id);
+    const find = notes.find((x) => x.id === tab?.noteId);
     if (find) {
       const note = await repositories.notes.getOne(find.id);
       globalDispatch.note(note!);

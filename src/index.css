@@ -114,7 +114,7 @@ code {
 }
 
 *:focus-visible {
-  outline: 1px solid hsla(var(--primary-DEFAULT), 0.1);
+  outline: 0px solid hsla(var(--primary-DEFAULT), 0.1);
   outline-offset: 0.1rem;
   transition: outline-offset var(--transition-fast);
 }
