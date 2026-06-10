@@ -26,9 +26,17 @@ async function waitForSocket(
   throw new Error("Timed out waiting for writeme to start");
 }
 
-export async function ensureAppRunning(socketPath: string): Promise<void> {
+export async function ensureAppRunning(
+  socketPath: string,
+  args: string[] = [],
+  env: NodeJS.ProcessEnv = {},
+): Promise<void> {
   const binary = getAppBinary();
-  const child = spawn(binary, [], { detached: true, stdio: "ignore" });
+  const child = spawn(binary, args, {
+    detached: true,
+    env: { ...process.env, ...env },
+    stdio: "ignore",
+  });
   child.unref();
   await waitForSocket(socketPath, 30, 300);
 }

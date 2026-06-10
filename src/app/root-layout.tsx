@@ -33,6 +33,7 @@ import { notificationRef } from "@/app/notification-ref";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
+import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 
 const waitMap = new Map<string, string>();
 
@@ -92,9 +93,17 @@ export const RootLayout = () => {
   useEffect(() => {
     if (!isElectron()) return;
     return window.electronAPI.onOpenFolder(({ folderPath }) => {
-      window.electronAPI.app.openFolder(folderPath);
+      if (state.directory === folderPath) return;
+      void (async () => {
+        try {
+          await migrateWebOnlyNotesToDirectory(folderPath);
+          await dispatch.switchWorkspace(folderPath);
+        } catch (err) {
+          console.error("Failed to open folder from CLI:", err);
+        }
+      })();
     });
-  }, []);
+  }, [dispatch, state.directory]);
 
   useEffect(() => {
     if (!isElectron()) return;
@@ -102,6 +111,11 @@ export const RootLayout = () => {
       navigate(pathname);
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (!isElectron()) return;
+    void window.electronAPI.app.rendererReady(state.directory);
+  }, [state.directory]);
 
   useEffect(() => {
     if (!isElectron()) return;

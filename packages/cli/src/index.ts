@@ -4,6 +4,7 @@ import { openFile } from "./commands/open-file.ts";
 import { handleExpr, handleMathRepl } from "./commands/math.ts";
 import { openFolder } from "./commands/open-folder.ts";
 import { handleQuery } from "./commands/query.ts";
+import { resolveOpenTarget } from "./lib/open-target.ts";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -68,8 +69,17 @@ async function main(): Promise<void> {
     strict: false,
   });
 
-  const filePath = positionals[0] ?? null;
-  await openFile(filePath, values.wait === true);
+  const target = await resolveOpenTarget(
+    positionals[0] ?? null,
+    values.wait === true,
+  );
+
+  if (target.type === "folder") {
+    await openFolder(target.folderPath);
+    return;
+  }
+
+  await openFile(target.filePath, target.wait);
 }
 
 main().catch((err: unknown) => {

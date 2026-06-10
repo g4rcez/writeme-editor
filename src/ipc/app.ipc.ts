@@ -6,6 +6,7 @@ import {
   systemPreferences,
 } from "electron";
 import { installBundledCli } from "../main-process/cli-installer";
+import { markCliRendererReady } from "../main-process/cli-server";
 import { createQuickNoteWindow } from "../main-process/quicknote-window";
 
 const getSystemAccentColor = (): string | null => {
@@ -35,7 +36,11 @@ const registerSystemAccentListener = (): void => {
   nativeTheme.on("updated", () => emitSystemAccentColor());
 };
 
-export const appIpcHandler = (preloadPath: string) => {
+export const appIpcHandler = (
+  preloadPath: string,
+  getLaunchWorkspacePath: () => string | null,
+  setLaunchWorkspacePath: (workspacePath: string | null) => void,
+) => {
   registerSystemAccentListener();
   ipcMain.handle("env:getHome", () => app.getPath("home"));
   ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preloadPath));
@@ -44,6 +49,22 @@ export const appIpcHandler = (preloadPath: string) => {
     return true;
   });
   ipcMain.handle("app:get-system-accent-color", () => getSystemAccentColor());
+  ipcMain.handle("app:get-launch-workspace", () => getLaunchWorkspacePath());
+  ipcMain.handle(
+    "app:set-launch-workspace",
+    (_, workspacePath: string | null) => {
+      setLaunchWorkspacePath(workspacePath);
+      return true;
+    },
+  );
+  ipcMain.handle(
+    "app:renderer-ready",
+    (event, workspacePath: string | null = null) => {
+      setLaunchWorkspacePath(workspacePath);
+      markCliRendererReady(event.sender, workspacePath);
+      return true;
+    },
+  );
   ipcMain.handle("app:install-cli", async () => {
     try {
       const result = await installBundledCli({ appPath: app.getAppPath() });

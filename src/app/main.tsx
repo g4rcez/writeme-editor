@@ -158,6 +158,18 @@ export async function main() {
   try {
     await SettingsService.init();
     const settings = SettingsService.load();
+    const launchWorkspace = isElectron()
+      ? await window.electronAPI.app.getLaunchWorkspace()
+      : null;
+    const directory = launchWorkspace ?? settings.directory;
+    const explorerRoot = launchWorkspace ?? settings.explorerRoot;
+    if (isElectron()) {
+      await window.electronAPI.app.setLaunchWorkspace(directory);
+    }
+    if (isElectron() && directory) {
+      await window.electronAPI.app.chdir(directory);
+      await window.electronAPI.fs.startWatcher(directory);
+    }
     await migrateDexieToSqlite();
     const notes = await repositories.notes.getAll();
     const tabs = await repositories.tabs.getAll();
@@ -167,8 +179,8 @@ export async function main() {
       tabs,
       settings.editorFontSize,
       settings.sidebarWidth,
-      settings.directory,
-      settings.explorerRoot,
+      directory,
+      explorerRoot,
     );
     const tab = sortByNewest(tabs)[0];
     const find = notes.find((x) => x.id === tab?.id);

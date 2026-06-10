@@ -3,12 +3,9 @@ import { shortcuts } from "@/lib/shortcuts";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { isElectron } from "@/lib/is-electron";
-import {
-  createStandaloneNote,
-  generateNotePath,
-  getUniqueFilePath,
-} from "@/lib/file-utils";
+import { createStandaloneNote } from "@/lib/file-utils";
 import { Note } from "@/store/note";
+import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 
 import { useNavigate } from "react-router-dom";
 
@@ -120,45 +117,7 @@ export const useWritemeShortcuts = () => {
             const result = await window.electronAPI.fs.openFileOrDirectory();
             if (!result) return;
             if (result.isDirectory) {
-              const allNotes = await repositories.notes.getAll();
-              const webOnlyNotes = allNotes.filter(
-                (n: any) => !n.filePath && n.content,
-              );
-
-              for (const noteData of webOnlyNotes) {
-                try {
-                  const note = Note.parse(noteData);
-                  const filePath = generateNotePath(result.path, note.title);
-                  const uniquePath = await getUniqueFilePath(
-                    filePath,
-                    async (p) => {
-                      const r = await window.electronAPI.fs.statFile(p);
-                      return r.exists;
-                    },
-                  );
-
-                  const writeResult = await window.electronAPI.fs.writeFile(
-                    uniquePath,
-                    note.content,
-                  );
-                  if (writeResult.success) {
-                    const updatedNote = {
-                      ...note,
-                      filePath: uniquePath,
-                      fileSize: writeResult.fileSize,
-                      lastSynced: new Date(writeResult.lastModified),
-                      content: undefined,
-                    };
-                    // @ts-expect-error
-                    await repositories.notes.update(note.id, updatedNote);
-                    console.log(
-                      `Migrated note "${note.title}" to ${uniquePath}`,
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to migrate note:", noteData.title, err);
-                }
-              }
+              await migrateWebOnlyNotesToDirectory(result.path);
               await dispatch.switchWorkspace(result.path);
             } else {
               const file = await window.electronAPI.fs.readFile(result.path);

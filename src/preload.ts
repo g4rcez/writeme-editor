@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     hideToTray: () => ipcRenderer.invoke("app:hideToTray"),
     getSystemAccentColor: () =>
       ipcRenderer.invoke("app:get-system-accent-color"),
+    getLaunchWorkspace: () => ipcRenderer.invoke("app:get-launch-workspace"),
+    setLaunchWorkspace: (workspacePath: string | null) =>
+      ipcRenderer.invoke("app:set-launch-workspace", workspacePath),
     onSystemAccentColorChange: (callback: (color: string) => void) => {
       const handler = (_: Electron.IpcRendererEvent, color: string) =>
         callback(color);
@@ -22,6 +25,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
     notifyFileClosed: (requestId: string) =>
       ipcRenderer.invoke("app:file-closed", requestId),
+    rendererReady: (workspacePath: string | null) =>
+      ipcRenderer.invoke("app:renderer-ready", workspacePath),
     updateShortcut: (shortcut: string) =>
       ipcRenderer.invoke("app:update-shortcut", shortcut),
     updateMathShortcut: (shortcut: string) =>
@@ -327,11 +332,14 @@ declare global {
         openQuickNote(): Promise<void>;
         hideToTray(): Promise<boolean>;
         getSystemAccentColor(): Promise<string | null>;
+        getLaunchWorkspace(): Promise<string | null>;
+        setLaunchWorkspace(workspacePath: string | null): Promise<boolean>;
         onSystemAccentColorChange(
           callback: (color: string) => void,
         ): () => void;
         chdir(dir: string): Promise<{ success: boolean; error?: string }>;
         notifyFileClosed(requestId: string): Promise<boolean>;
+        rendererReady(workspacePath: string | null): Promise<boolean>;
         updateShortcut(
           shortcut: string,
         ): Promise<{ success: boolean; error?: string }>;

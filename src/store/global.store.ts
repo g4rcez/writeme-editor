@@ -299,6 +299,9 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
         directory,
         explorerRoot: directory,
       });
+      if (isElectron()) {
+        await window.electronAPI.app.setLaunchWorkspace(directory);
+      }
       if (isElectron() && directory) {
         await window.electronAPI.app.chdir(directory);
         await window.electronAPI.fs.startWatcher(directory);

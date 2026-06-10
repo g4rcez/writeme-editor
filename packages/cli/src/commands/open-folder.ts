@@ -19,7 +19,9 @@ export async function openFolder(rawFolderPath: string): Promise<void> {
   } catch (err) {
     const e = err as NodeJS.ErrnoException;
     if (e.code === "ECONNREFUSED" || e.code === "ENOENT") {
-      await ensureAppRunning(socketPath);
+      await ensureAppRunning(socketPath, ["--workspace", args.folderPath], {
+        WRITEME_WORKSPACE: args.folderPath,
+      });
       await sendToSocket(socketPath, {
         action: "open-folder",
         folderPath: args.folderPath,

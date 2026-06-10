@@ -14,6 +14,7 @@ import {
   Tray,
 } from "electron";
 import started from "electron-squirrel-startup";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
@@ -451,21 +452,90 @@ function registerOsTasks(): void {
   ]);
 }
 
+const WORKSPACE_INSTANCE_FLAG = "--workspace-instance";
+const WORKSPACE_ARG = "--workspace";
+const WORKSPACE_INSTANCE_ENV = "WRITEME_WORKSPACE_INSTANCE";
+const WORKSPACE_ENV = "WRITEME_WORKSPACE";
+
+function resolveArgPath(rawPath: string, workingDir?: string): string {
+  return workingDir ? path.resolve(workingDir, rawPath) : path.resolve(rawPath);
+}
+
+function getUserArgs(argv: string[]): string[] {
+  const startIdx = app.isPackaged ? 1 : 2;
+  return argv.slice(startIdx);
+}
+
+function isDirectoryPath(filePath: string): boolean {
+  try {
+    return fs.statSync(filePath).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function parseWorkspaceArg(argv: string[], workingDir?: string): string | null {
+  const args = getUserArgs(argv);
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (!arg) continue;
+    if (arg === WORKSPACE_ARG) {
+      const workspacePath = args[index + 1];
+      return workspacePath ? resolveArgPath(workspacePath, workingDir) : null;
+    }
+    if (arg === WORKSPACE_INSTANCE_FLAG) continue;
+    if (!arg.startsWith("-")) {
+      const resolved = resolveArgPath(arg, workingDir);
+      return isDirectoryPath(resolved) ? resolved : null;
+    }
+  }
+  return null;
+}
+
 function parseCliArgs(
   argv: string[],
   workingDir?: string,
 ): { filePath: string | null } {
-  const startIdx = app.isPackaged ? 1 : 2;
-  const args = argv.slice(startIdx);
-  for (const arg of args) {
+  const args = getUserArgs(argv);
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index];
+    if (!arg) continue;
+    if (arg === WORKSPACE_ARG) {
+      index++;
+      continue;
+    }
+    if (arg === WORKSPACE_INSTANCE_FLAG) continue;
     if (!arg.startsWith("-")) {
-      const resolved = workingDir
-        ? path.resolve(workingDir, arg)
-        : path.resolve(arg);
-      return { filePath: resolved };
+      return { filePath: resolveArgPath(arg, workingDir) };
     }
   }
   return { filePath: null };
+}
+
+function getAppRelaunchArgs(args: string[]): string[] {
+  return app.isPackaged ? args : [app.getAppPath(), ...args];
+}
+
+function getInitialWorkspacePath(argv: string[]): string | null {
+  const envWorkspace = process.env[WORKSPACE_ENV];
+  return envWorkspace ? path.resolve(envWorkspace) : parseWorkspaceArg(argv);
+}
+
+function spawnWorkspaceInstance(folderPath: string): void {
+  const child = spawn(
+    process.execPath,
+    getAppRelaunchArgs([WORKSPACE_INSTANCE_FLAG, WORKSPACE_ARG, folderPath]),
+    {
+      detached: true,
+      env: {
+        ...process.env,
+        [WORKSPACE_INSTANCE_ENV]: "1",
+        [WORKSPACE_ENV]: folderPath,
+      },
+      stdio: "ignore",
+    },
+  );
+  child.unref();
 }
 
 function sendOpenFile(
@@ -484,16 +554,36 @@ async function main() {
     return;
   }
 
-  const gotLock = app.requestSingleInstanceLock();
-  if (!gotLock) {
-    app.quit();
-    return;
+  const isWorkspaceInstance =
+    process.env[WORKSPACE_INSTANCE_ENV] === "1" ||
+    process.argv.includes(WORKSPACE_INSTANCE_FLAG);
+  let launchWorkspacePath = getInitialWorkspacePath(process.argv);
+
+  if (!isWorkspaceInstance) {
+    const gotLock = app.requestSingleInstanceLock();
+    if (!gotLock) {
+      app.quit();
+      return;
+    }
   }
 
   app.on("second-instance", (_, argv, workingDirectory) => {
     const command = parseAppCommand(argv);
     if (command) {
       runAppCommand(command, getPreloadPath());
+      return;
+    }
+
+    const workspacePath = parseWorkspaceArg(argv, workingDirectory);
+    if (workspacePath) {
+      if (
+        launchWorkspacePath &&
+        path.resolve(launchWorkspacePath) === path.resolve(workspacePath)
+      ) {
+        showMainWindow();
+      } else {
+        spawnWorkspaceInstance(workspacePath);
+      }
       return;
     }
 
@@ -513,7 +603,9 @@ async function main() {
     }
   });
 
-  startProxyServer();
+  if (!isWorkspaceInstance) {
+    startProxyServer();
+  }
 
   app.on("before-quit", () => {
     isQuitting = true;
@@ -526,7 +618,13 @@ async function main() {
     registerAIHandlers();
     await notesIpcHandler();
     databaseIpcHandler();
-    appIpcHandler(preload);
+    appIpcHandler(
+      preload,
+      () => launchWorkspacePath,
+      (workspacePath) => {
+        launchWorkspacePath = workspacePath;
+      },
+    );
     executionIpcHandler();
     terminalIpcHandler();
     readItLaterIpcHandler();
@@ -577,8 +675,8 @@ async function main() {
       activeMathNoteShortcut = newShortcut;
       return { success: true };
     });
-    const createWindow = () => {
-      mainWindow = new BrowserWindow({
+    const createWindow = ({ primary = true }: { primary?: boolean } = {}) => {
+      const win = new BrowserWindow({
         width: 800,
         height: 600,
         center: true,
@@ -594,10 +692,13 @@ async function main() {
           accessibleTitle: "Writeme",
         },
       });
+      if (primary) {
+        mainWindow = win;
+      }
       if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-        mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+        win.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
       } else {
-        mainWindow.loadFile(
+        win.loadFile(
           path.join(
             __dirname,
             `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`,
@@ -605,41 +706,42 @@ async function main() {
         );
       }
       if (process.env.NODE_ENV === "development") {
-        mainWindow.webContents.openDevTools();
+        win.webContents.openDevTools();
       }
-      mainWindow.webContents.on(
+      win.webContents.on(
         "console-message",
         (_, level, message, line, sourceId) => {
           if (level >= 2)
             console.error(`[renderer] ${sourceId}:${line} ${message}`);
         },
       );
-      mainWindow.webContents.on("render-process-gone", (_, details) => {
+      win.webContents.on("render-process-gone", (_, details) => {
         console.error(
           "[renderer] process gone:",
           details.reason,
           details.exitCode,
         );
       });
-      mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      win.webContents.setWindowOpenHandler(({ url }) => {
         if (url.startsWith("http:") || url.startsWith("https:")) {
           shell.openExternal(url);
         }
         return { action: "deny" };
       });
-      mainWindow.webContents.on("will-navigate", (event, url) => {
+      win.webContents.on("will-navigate", (event, url) => {
         const requestedHost = new URL(url).host;
-        if (mainWindow) {
-          const currentHost = new URL(mainWindow.webContents.getURL()).host;
-          if (requestedHost && requestedHost !== currentHost) {
-            event.preventDefault();
-            shell.openExternal(url);
-          }
+        const currentHost = new URL(win.webContents.getURL()).host;
+        if (requestedHost && requestedHost !== currentHost) {
+          event.preventDefault();
+          shell.openExternal(url);
         }
       });
-      mainWindow.on("close", (e) => {
-        handleWindowClose(e, mainWindow!, isQuitting);
-      });
+      if (primary && !isWorkspaceInstance) {
+        win.on("close", (e) => {
+          handleWindowClose(e, win, isQuitting);
+        });
+      }
+      return win;
     };
 
     const createTray = () => {
@@ -665,7 +767,7 @@ async function main() {
     };
 
     Menu.setApplicationMenu(null);
-    if (process.platform === "darwin" && app.dock) {
+    if (!isWorkspaceInstance && process.platform === "darwin" && app.dock) {
       try {
         app.dock.setIcon(createNativeAppIcon());
       } catch (error) {
@@ -673,17 +775,28 @@ async function main() {
       }
       app.dock.setMenu(Menu.buildFromTemplate(createOsMenuTemplate(preload)));
     }
-    registerOsTasks();
+    if (!isWorkspaceInstance) {
+      registerOsTasks();
+    }
     createWindow();
-    createTray();
+    if (!isWorkspaceInstance) {
+      createTray();
+    }
     if (mainWindow) registerAIOAuthHandlers(mainWindow);
-    if (mainWindow) startCliServer(mainWindow);
+    if (mainWindow && !isWorkspaceInstance) {
+      startCliServer(mainWindow, {
+        getCurrentWorkspacePath: () => launchWorkspacePath,
+        openWorkspaceInNewInstance: spawnWorkspaceInstance,
+      });
+    }
 
     if (mainWindow) {
       const command = parseAppCommand(process.argv);
       if (command) runAppCommand(command, preload);
 
-      const { filePath } = parseCliArgs(process.argv);
+      const { filePath } = launchWorkspacePath
+        ? { filePath: null }
+        : parseCliArgs(process.argv);
       const fileToOpen = filePath ?? pendingFileOpen;
       if (fileToOpen) {
         pendingFileOpen = null;
@@ -693,7 +806,7 @@ async function main() {
       }
     }
 
-    if (app.isPackaged) {
+    if (!isWorkspaceInstance && app.isPackaged) {
       if (process.platform !== "linux") {
         updateElectronApp({
           updateSource: {
@@ -708,17 +821,18 @@ async function main() {
       }
     }
 
-    if (mainWindow) {
+    if (mainWindow && !isWorkspaceInstance) {
       try {
         const settings = dbManager().getAll<{ name: string; value: string }>(
           "settings",
         );
         const dirSetting = settings.find((s) => s.name === "directory");
-        if (dirSetting?.value) {
-          const directory = JSON.parse(dirSetting.value);
-          if (typeof directory === "string" && directory) {
-            FileWatcher.start(directory, mainWindow);
-          }
+        const savedDirectory = dirSetting?.value
+          ? JSON.parse(dirSetting.value)
+          : null;
+        const directory = launchWorkspacePath ?? savedDirectory;
+        if (typeof directory === "string" && directory) {
+          FileWatcher.start(directory, mainWindow);
         }
         const parseSetting = (name: string, fallback: string): string => {
           const s = settings.find((x) => x.name === name);
@@ -747,7 +861,7 @@ async function main() {
           createMathNoteWindow(preload),
         );
       }
-    } else {
+    } else if (!isWorkspaceInstance) {
       globalShortcut.register("CommandOrControl+Alt+N", () =>
         createQuickNoteWindow(preload),
       );
@@ -755,7 +869,9 @@ async function main() {
         createMathNoteWindow(preload),
       );
     }
-    globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());
+    if (!isWorkspaceInstance) {
+      globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());
+    }
     app.on("activate", () => {
       if (mainWindow) {
         mainWindow.show();
@@ -764,7 +880,9 @@ async function main() {
       }
     });
   });
-  app.on("window-all-closed", () => {});
+  app.on("window-all-closed", () => {
+    if (isWorkspaceInstance) app.quit();
+  });
 }
 
 main();
