@@ -820,7 +820,9 @@ export const Dates = {
   evaluateDaysUntil: (expr: string): string | null => {
     const match = expr
       .trim()
-      .match(/^days?\s+(until|till|before|since|after)\s+(.+)$/i);
+      .match(
+        /^(?:how\s+many\s+)?days?\s+(to|until|till|before|since|after)\s+(.+)$/i,
+      );
     if (!match) return null;
     const direction = match[1]!.toLowerCase();
     const dateStr = match[2]!.trim();
@@ -831,7 +833,7 @@ export const Dates = {
     if (!isValid(target)) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const isFuture = /until|till|before/.test(direction);
+    const isFuture = /to|until|till|before/.test(direction);
     if (isFuture && target < today && !result.start.isCertain("year")) {
       target = add(target, { years: 1 });
     }

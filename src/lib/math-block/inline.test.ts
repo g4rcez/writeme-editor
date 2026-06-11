@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import {
-  INLINE_MATH_PATTERN,
-  evaluateInlineMath,
-  runInlineMath,
-} from "solver";
+import { INLINE_MATH_PATTERN, evaluateInlineMath, runInlineMath } from "solver";
 
 describe("INLINE_MATH_PATTERN", () => {
   it("matches >>math expr=", () => {
@@ -46,6 +42,24 @@ describe("evaluateInlineMath", () => {
     });
   });
 
+  it("calculates days to a numeric date", () => {
+    vi.setSystemTime(new Date("2026-06-11T12:00:00.000Z"));
+
+    expect(evaluateInlineMath("days to 15/06/2026")).toEqual({
+      ok: true,
+      value: "4 days",
+    });
+  });
+
+  it("calculates how many days to a numeric date", () => {
+    vi.setSystemTime(new Date("2026-06-11T12:00:00.000Z"));
+
+    expect(evaluateInlineMath("how many days to 19/06/2026")).toEqual({
+      ok: true,
+      value: "8 days",
+    });
+  });
+
   it("applies large-number shorthand preprocessor", () => {
     expect(evaluateInlineMath("2k + 3")).toEqual({ ok: true, value: "2003" });
   });
@@ -73,6 +87,14 @@ describe("runInlineMath", () => {
   it("renders natural-language date", () => {
     expect(runInlineMath(">>math 12 days ago=")).toBe(
       "12 days ago = 2025-01-03",
+    );
+  });
+
+  it("renders days-to questions", () => {
+    vi.setSystemTime(new Date("2026-06-11T12:00:00.000Z"));
+
+    expect(runInlineMath(">>math how many days to 19/06/2026=")).toBe(
+      "how many days to 19/06/2026 = 8 days",
     );
   });
 

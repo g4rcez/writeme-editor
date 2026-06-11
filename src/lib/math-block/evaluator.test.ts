@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetMathInstanceCache,
   classifyLine,
@@ -11,6 +11,10 @@ const lines = (...raws: string[]): MathLine[] => raws.map(classifyLine);
 
 beforeEach(() => {
   __resetMathInstanceCache();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("evaluateMathBlock", () => {
@@ -198,6 +202,23 @@ describe("evaluateMathBlock", () => {
     expect(result[0]).toMatchObject({
       kind: "bare",
       result: { ok: true, value: "31" },
+    });
+  });
+
+  it("calculates days-to questions in math blocks", () => {
+    vi.useFakeTimers({ now: new Date("2026-06-11T12:00:00.000Z") });
+
+    const result = evaluateMathBlock(
+      lines("days to 15/06/2026", "how many days to 19/06/2026"),
+    );
+
+    expect(result[0]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "4 days" },
+    });
+    expect(result[1]).toMatchObject({
+      kind: "bare",
+      result: { ok: true, value: "8 days" },
     });
   });
 
