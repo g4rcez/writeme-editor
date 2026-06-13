@@ -74,13 +74,22 @@ export const ActivityBar = () => {
     uiDispatch.setSidebarOpen(!shouldCollapse);
   };
 
+  const onExplorerClick = () => {
+    if (layout.activeActivity === "explorer") {
+      uiDispatch.toggleSidebar();
+    } else {
+      dispatchLayout.setActivity("explorer");
+      uiDispatch.setSidebarOpen(true);
+    }
+  };
+
   return (
     <div className="writeme-aside-activity-bar">
       <div className="writeme-aside-activity-icons">
         <ActivityIcon
           icon={FilesIcon}
           label="Explorer"
-          onClick={() => onActivityClick("explorer")}
+          onClick={onExplorerClick}
           active={layout.activeActivity === "explorer"}
         />
         <ActivityIcon
