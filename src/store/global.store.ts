@@ -21,6 +21,44 @@ export function getWorkspaceKey(directory: string | null): string {
     : LOCAL_WORKSPACE_KEY;
 }
 
+const getTabCreatedTime = (tab: Tab): number =>
+  tab.createdAt instanceof Date
+    ? tab.createdAt.getTime()
+    : new Date(tab.createdAt).getTime();
+
+export function normalizeWorkspaceTabs(
+  tabs: Tab[],
+  workspaceKey: string,
+): { tabs: Tab[]; duplicateTabs: Tab[] } {
+  const sortedTabs = [...tabs].sort((a, b) => {
+    const projectDifference =
+      Number(b.project === workspaceKey) - Number(a.project === workspaceKey);
+    if (projectDifference !== 0) return projectDifference;
+    const orderDifference = a.order - b.order;
+    if (orderDifference !== 0) return orderDifference;
+    return getTabCreatedTime(a) - getTabCreatedTime(b);
+  });
+  const tabsByNoteId = new Map<string, Tab>();
+  const duplicateTabs: Tab[] = [];
+
+  for (const tab of sortedTabs) {
+    const normalizedTab = { ...tab, project: workspaceKey };
+    const existingTab = tabsByNoteId.get(tab.noteId);
+    if (!existingTab) {
+      tabsByNoteId.set(tab.noteId, normalizedTab);
+      continue;
+    }
+
+    duplicateTabs.push(tab);
+  }
+
+  const normalizedTabs = Array.from(tabsByNoteId.values()).map((tab, order) =>
+    tab.order === order ? tab : { ...tab, order },
+  );
+
+  return { tabs: normalizedTabs, duplicateTabs };
+}
+
 export enum CommanderType {
   All = "all",
   Notes = "Notes",
@@ -361,17 +399,23 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
       await repositories.tabs.deleteByNoteId(noteId);
       const tabs = state.tabs.filter((x) => x.noteId !== noteId);
       const activeTabId =
-        state.activeTabId === noteId
+        state.activeTabId &&
+        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId ===
+          noteId
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
-      return { tabs, activeTabId };
+      const note = state.note?.id === noteId ? null : state.note;
+      return { tabs, activeTabId, note };
     },
     deleteNote: async (id: string) => {
       const state = get.state();
       await repositories.notes.delete(id);
       const tabs = state.tabs.filter((x) => x.noteId !== id);
       const activeTabId =
-        state.activeTabId === id ? (tabs[0]?.id ?? null) : state.activeTabId;
+        state.activeTabId &&
+        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId === id
+          ? (tabs[0]?.id ?? null)
+          : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);
       const note = state.note?.id === id ? null : state.note;
       return { notes, tabs, activeTabId, note };
@@ -382,7 +426,10 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
       await repositories.noteGroupMembers.deleteByNoteId(id);
       const tabs = state.tabs.filter((x) => x.noteId !== id);
       const activeTabId =
-        state.activeTabId === id ? (tabs[0]?.id ?? null) : state.activeTabId;
+        state.activeTabId &&
+        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId === id
+          ? (tabs[0]?.id ?? null)
+          : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);
       const note = state.note?.id === id ? null : state.note;
       const noteGroupMembers = state.noteGroupMembers.filter(

@@ -1,15 +1,14 @@
 import type { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { useEffect, useRef } from "react";
-
 import { CursorPositionStore } from "@/store/cursor-position.store";
 
 const SCROLL_CONTAINER_ID = "main-scroll-container";
 
 type ScrollMemorySnapshot = {
+  y: number;
   id: string;
   anchor: number;
-  y: number;
   loaded: boolean;
 };
 
@@ -63,15 +62,13 @@ const restoreSelection = (editor: Editor, anchor: number): void => {
   try {
     const selection = TextSelection.create(editor.state.doc, safeAnchor);
     editor.view.dispatch(editor.state.tr.setSelection(selection));
-  } catch {
-    // Ignore invalid persisted positions from older document versions.
-  }
+  } catch {}
 };
 
 const restoreScrollY = (scroller: HTMLElement, y: number): void => {
   const top = normalizeScrollY(y);
   if (typeof scroller.scrollTo === "function") {
-    scroller.scrollTo({ top });
+    scroller.scrollTo({ top, behavior: "auto" });
     return;
   }
   scroller.scrollTop = top;
@@ -107,12 +104,10 @@ export const useEditorScrollMemory = (
     void CursorPositionStore.get(id)
       .then((memory) => {
         if (controller.signal.aborted || editor.isDestroyed) return;
-
         if (memory) {
           restoreSelection(editor, memory.anchor);
           restoreScrollY(scroller, memory.y);
         }
-
         snapshotRef.current = {
           ...readSnapshot(id, editor, scroller),
           loaded: true,

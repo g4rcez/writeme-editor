@@ -200,6 +200,14 @@ class DatabaseManager {
         createdAt TEXT,
         updatedAt TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS cursorPositions (
+        id TEXT PRIMARY KEY,
+        noteId TEXT UNIQUE,
+        anchor INTEGER DEFAULT 0,
+        y REAL DEFAULT 0,
+        updatedAt INTEGER
+      );
     `);
 
     // Migration for templates to notes
@@ -242,6 +250,7 @@ class DatabaseManager {
       "noteGroups",
       "noteGroupMembers",
       "views",
+      "cursorPositions",
     ];
     const commonColumns = ["type", "createdAt", "updatedAt"];
     const noteColumns = [

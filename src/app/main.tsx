@@ -12,6 +12,7 @@ import {
   getWorkspaceKey,
   globalDispatch,
   globalState,
+  normalizeWorkspaceTabs,
   repositories,
 } from "../store/global.store";
 import { router } from "./router";
@@ -176,19 +177,28 @@ export async function main() {
     const allTabs = await repositories.tabs.getAll();
     const workspaceKey = getWorkspaceKey(directory);
     const shouldIncludeLegacyTabs = launchWorkspace === null;
-    const tabs = allTabs.filter(
+    const workspaceTabs = allTabs.filter(
       (tab) =>
         tab.project === workspaceKey ||
         (shouldIncludeLegacyTabs && !tab.project),
     );
-    if (shouldIncludeLegacyTabs) {
-      await Promise.all(
-        tabs
-          .filter((tab) => !tab.project)
-          .map((tab) =>
-            repositories.tabs.save({ ...tab, project: workspaceKey }),
-          ),
-      );
+    const { tabs, duplicateTabs } = normalizeWorkspaceTabs(
+      workspaceTabs,
+      workspaceKey,
+    );
+    await Promise.all([
+      ...duplicateTabs.map((tab) => repositories.tabs.delete(tab.id)),
+      ...tabs
+        .filter((tab) => {
+          const originalTab = allTabs.find(
+            (existing) => existing.id === tab.id,
+          );
+          return originalTab?.project !== tab.project;
+        })
+        .map((tab) => repositories.tabs.save(tab)),
+    ]);
+    if (duplicateTabs.length > 0) {
+      await repositories.tabs.updateOrder(tabs);
     }
     await globalDispatch.init(
       settings.theme,
