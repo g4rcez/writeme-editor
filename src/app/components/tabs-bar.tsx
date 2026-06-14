@@ -1,12 +1,13 @@
 import { css } from "@g4rcez/components";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { useGlobalStore } from "@/store/global.store";
 import type { Tab } from "@/store/repositories/entities/tab";
 import { Note } from "@/store/note";
+import { useNoteTabs } from "../hooks/use-note-tabs";
 
 export const TabsBar: React.FC = () => {
   const [state, dispatch] = useGlobalStore();
@@ -17,7 +18,7 @@ export const TabsBar: React.FC = () => {
   const [renamingValue, setRenamingValue] = useState("");
   const renameEscapedRef = useRef(false);
   const renameCommittedRef = useRef(false);
-
+  const notesById = useNoteTabs(state.notes);
   const onCloseTab = async (e: React.MouseEvent, tab: Tab) => {
     e.stopPropagation();
     e.preventDefault();
@@ -55,7 +56,7 @@ export const TabsBar: React.FC = () => {
     }
     if (renameCommittedRef.current) return;
     renameCommittedRef.current = true;
-    const note = state.notes.find((n: Note) => n.id === noteId);
+    const note = notesById.get(noteId);
     if (!note) {
       renameCommittedRef.current = false;
       setRenamingNoteId(null);
@@ -92,7 +93,7 @@ export const TabsBar: React.FC = () => {
       className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-11 md:h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
     >
       {state.tabs.map((tab: Tab) => {
-        const note = state.notes.find((n: Note) => n.id === tab.noteId);
+        const note = notesById.get(tab.noteId);
         const isActive = params?.noteId === tab.noteId;
         const title = note?.title || "Untitled";
         return (

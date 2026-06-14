@@ -269,10 +269,7 @@ export class NotesRepository
 
   async getTemplates(): Promise<Note[]> {
     const metadataList = await window.electronAPI.db.notes.getTemplates();
-    const notes = metadataList.map((metadata: any) =>
-      Note.parse({ ...metadata, content: "" }),
-    );
-
+    const notes = metadataList.map((metadata: any) => Note.parse(metadata));
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
     if (mode === "filesystem") {
@@ -289,12 +286,7 @@ export class NotesRepository
       );
     }
 
-    return await Promise.all(
-      notes.map(async (n) => {
-        const full = await this.getOne(n.id);
-        return full || n;
-      }),
-    );
+    return notes;
   }
 
   override async delete(id: EntityBase["id"]): Promise<boolean> {

@@ -12,8 +12,10 @@ Writeme is an Electron-based note-taking application built with React, TypeScrip
 
 - `npm run dev` - Start Electron app in development mode (alias for `native:dev`)
 - `npm run browser:dev` - Start as browser app with Vite dev server
-- `npm run lint` - Run ESLint on TypeScript/TSX files
+- `npm run typecheck` - Run TypeScript type checking
 - `npm run test` - Run tests with Vitest
+- `npm run test:e2e` - Run Playwright e2e tests
+- `npm run test:e2e:ui` - Run Playwright UI mode
 - `npm run make` - Build Electron distributables via Electron Forge
 - `npm run pwa:build` - Build browser PWA version
 

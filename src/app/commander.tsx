@@ -31,6 +31,7 @@ import {
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
 import { NoteIcon } from "@phosphor-icons/react";
+import { useNoteTabs } from "./hooks/use-note-tabs";
 
 export const CommanderPreview = (props: {
   command: CommandItemTypes;
@@ -85,12 +86,14 @@ export const Commander = () => {
     [notesSig, navigate],
   );
 
+  const notesById = useNoteTabs(state.notes);
+
   const openedTabsGroup = useMemo(
     (): CommandItemTypes[] =>
       [...state.tabs]
         .sort((a, b) => a.order - b.order)
         .map((tab): CommandItemTypes => {
-          const note = state.notes.find((n: Note) => n.id === tab.noteId);
+          const note = notesById.get(tab.noteId);
           const title = note?.title || "Untitled";
           return {
             type: "shortcut",
@@ -102,7 +105,7 @@ export const Commander = () => {
             },
           };
         }),
-    [state.tabs, state.notes, dispatch, navigate],
+    [state.tabs, notesById, dispatch, navigate],
   );
 
   const options = useMemo(() => {

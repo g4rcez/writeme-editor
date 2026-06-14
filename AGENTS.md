@@ -8,11 +8,12 @@ Agent guidelines for the Writeme Electron application.
 
 - `npm run dev` / `npm start` - Start Electron app in development mode
 - `npm run browser:dev` - Start web version with Vite dev server
-- `npm run lint` - Run ESLint on TypeScript/TSX files
-- `npm run package` - Package application for distribution
+- `npm run typecheck` - Run TypeScript typecheck
+- `npm run build:package` - Package application for distribution
 - `npm run make` - Build distributables using Electron Forge
 - `npm run pwa:dev` - Generate PWA assets and start browser dev
-- No test framework configured - verify changes through manual testing
+- `npm run test` - Run unit tests (Vitest)
+- `npm run test:e2e` - Run e2e tests (Playwright)
 
 ## Code Style Guidelines
 
