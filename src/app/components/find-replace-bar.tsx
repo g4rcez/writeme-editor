@@ -118,18 +118,18 @@ export const FindReplaceBar = () => {
           )}
         </button>
         <input
-          ref={searchInputRef}
           type="text"
+          placeholder="Find"
           value={searchTerm}
+          ref={searchInputRef}
+          aria-label="Find text"
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.shiftKey ? onPrev() : onNext();
             }
           }}
-          aria-label="Find text"
-          placeholder="Find"
-          className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
         />
         <span
           aria-live="polite"

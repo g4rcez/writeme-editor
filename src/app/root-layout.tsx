@@ -312,7 +312,14 @@ export const RootLayout = () => {
   return (
     <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
       <Fragment>
-        <Commander />
+        <Commander
+          note={state.note}
+          tabs={state.tabs}
+          dispatch={dispatch}
+          notes={state.notes}
+          commander={state.commander}
+          noteGroups={state.noteGroups}
+        />
         <FindReplaceBar />
         <CreateNoteDialog />
         <CreateTemplateDialog />

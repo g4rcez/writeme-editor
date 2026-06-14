@@ -1,5 +1,5 @@
-import { createGlobalReducer } from "use-typed-reducer";
-import { type Toggle } from "./types";
+import type { Toggle } from "./types";
+import { createZustandCompatStore } from "./zustand-compat";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
 
@@ -75,7 +75,7 @@ const initialState: UISettings = {
   parsingContent: false,
 };
 
-export const useUIStore = createGlobalReducer(
+export const useUIStore = createZustandCompatStore(
   initialState,
   (get: { state: () => UISettings }) => ({
     setContentWidth: (width: ContentWidth) => ({ contentWidth: width }),

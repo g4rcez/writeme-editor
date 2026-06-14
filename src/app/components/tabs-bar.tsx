@@ -1,16 +1,23 @@
+import { getPreviousTabAfterClose } from "@/lib/tab-closing";
+import { type GlobalDispatchers } from "@/store/global.store";
+import { Note } from "@/store/note";
+import type { Tab } from "@/store/repositories/entities/tab";
 import { css } from "@g4rcez/components";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getPreviousTabAfterClose } from "@/lib/tab-closing";
-import { useGlobalStore } from "@/store/global.store";
-import type { Tab } from "@/store/repositories/entities/tab";
-import { Note } from "@/store/note";
 import { useNoteTabs } from "../hooks/use-note-tabs";
 
-export const TabsBar: React.FC = () => {
-  const [state, dispatch] = useGlobalStore();
+type Props = {
+  tabs: Tab[];
+  notes: Note[];
+  activeTabId: string | null;
+  dispatch: GlobalDispatchers;
+};
+
+export const TabsBar = (props: Props) => {
+  const dispatch = props.dispatch;
   const navigate = useNavigate();
   const params = useParams<{ noteId: string }>();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -18,13 +25,13 @@ export const TabsBar: React.FC = () => {
   const [renamingValue, setRenamingValue] = useState("");
   const renameEscapedRef = useRef(false);
   const renameCommittedRef = useRef(false);
-  const notesById = useNoteTabs(state.notes);
+  const notesById = useNoteTabs(props.notes);
   const onCloseTab = async (e: React.MouseEvent, tab: Tab) => {
     e.stopPropagation();
     e.preventDefault();
 
     const isClosingCurrentNote = params.noteId === tab.noteId;
-    const nextTab = getPreviousTabAfterClose(state.tabs, tab.id);
+    const nextTab = getPreviousTabAfterClose(props.tabs, tab.id);
 
     await dispatch.removeTab(tab.id);
 
@@ -73,9 +80,9 @@ export const TabsBar: React.FC = () => {
   };
 
   useEffect(() => {
-    if (state.activeTabId && scrollRef.current) {
+    if (props.activeTabId && scrollRef.current) {
       const activeElement = scrollRef.current.querySelector(
-        `[data-tab-id="${state.activeTabId}"]`,
+        `[data-tab-id="${props.activeTabId}"]`,
       );
       if (activeElement) {
         activeElement.scrollIntoView({
@@ -85,14 +92,14 @@ export const TabsBar: React.FC = () => {
         });
       }
     }
-  }, [state.activeTabId]);
+  }, [props.activeTabId]);
 
   return (
     <div
       ref={scrollRef}
       className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-11 md:h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
     >
-      {state.tabs.map((tab: Tab) => {
+      {props.tabs.map((tab: Tab) => {
         const note = notesById.get(tab.noteId);
         const isActive = params?.noteId === tab.noteId;
         const title = note?.title || "Untitled";

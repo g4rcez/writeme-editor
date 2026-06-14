@@ -14,7 +14,8 @@ import { printDocument } from "@/lib/print-document";
 import {
   CommanderType,
   globalState,
-  useGlobalStore,
+  type CommanderState,
+  type GlobalDispatchers,
 } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -32,6 +33,8 @@ import {
 } from "./elements/shortcut-items";
 import { NoteIcon } from "@phosphor-icons/react";
 import { useNoteTabs } from "./hooks/use-note-tabs";
+import type { Tab } from "@/store/repositories/entities/tab";
+import type { NoteGroup } from "@/store/repositories/entities/note-group";
 
 export const CommanderPreview = (props: {
   command: CommandItemTypes;
@@ -41,9 +44,18 @@ export const CommanderPreview = (props: {
   return <Fragment />;
 };
 
-export const Commander = () => {
+type Props = {
+  note: Note | null;
+  tabs: Tab[];
+  notes: Note[];
+  noteGroups: NoteGroup[];
+  commander: CommanderState;
+  dispatch: GlobalDispatchers;
+};
+
+export const Commander = (props: Props) => {
   useShortcuts();
-  const [state, dispatch] = useGlobalStore();
+  const dispatch = props.dispatch;
   const [, layoutDispatch] = useLayoutStore();
   const { templates } = useTemplates();
   const commands = useWritemeShortcuts();
@@ -57,8 +69,8 @@ export const Commander = () => {
   };
 
   const notesSig = useMemo(
-    () => state.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"),
-    [state.notes],
+    () => props.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"),
+    [props.notes],
   );
 
   useEffect(() => {
@@ -86,11 +98,11 @@ export const Commander = () => {
     [notesSig, navigate],
   );
 
-  const notesById = useNoteTabs(state.notes);
+  const notesById = useNoteTabs(props.notes);
 
   const openedTabsGroup = useMemo(
     (): CommandItemTypes[] =>
-      [...state.tabs]
+      [...props.tabs]
         .sort((a, b) => a.order - b.order)
         .map((tab): CommandItemTypes => {
           const note = notesById.get(tab.noteId);
@@ -105,15 +117,15 @@ export const Commander = () => {
             },
           };
         }),
-    [state.tabs, notesById, dispatch, navigate],
+    [props.tabs, notesById, dispatch, navigate],
   );
 
   const options = useMemo(() => {
-    if (state.commander.type === CommanderType.Notes) {
+    if (props.commander.type === CommanderType.Notes) {
       return noteGroup;
     }
 
-    if (state.commander.type === CommanderType.OpenTabs) {
+    if (props.commander.type === CommanderType.OpenTabs) {
       return openedTabsGroup;
     }
 
@@ -156,7 +168,7 @@ export const Commander = () => {
             }, 50);
           },
         },
-        ...(state.note && !state.note.favorite
+        ...(props.note && !props.note.favorite
           ? [
               {
                 title: "Add current note as favorite",
@@ -164,7 +176,7 @@ export const Commander = () => {
                 action: async (args: { setOpen: (v: boolean) => void }) => {
                   args.setOpen(false);
                   const updatedNote = Note.parse({
-                    ...state.note,
+                    ...props.note,
                     favorite: true,
                   });
                   try {
@@ -172,13 +184,13 @@ export const Commander = () => {
                       updatedNote.id,
                       updatedNote,
                     );
-                    const notes = state.notes.some(
+                    const notes = props.notes.some(
                       (n) => n.id === updatedNote.id,
                     )
-                      ? state.notes.map((n) =>
+                      ? props.notes.map((n) =>
                           n.id === updatedNote.id ? updatedNote : n,
                         )
-                      : state.notes.concat(updatedNote);
+                      : props.notes.concat(updatedNote);
                     dispatch.setNote(updatedNote);
                     dispatch.notes(notes);
                     notificationRef.current?.(
@@ -212,7 +224,7 @@ export const Commander = () => {
             args.setOpen(false);
           },
         },
-        ...(state.note
+        ...(props.note
           ? [
               {
                 title: "Print/Export current note",
@@ -220,7 +232,7 @@ export const Commander = () => {
                 action: (args: { setOpen: (v: boolean) => void }) => {
                   args.setOpen(false);
                   window.requestAnimationFrame(() => {
-                    printDocument({ title: state.note?.title });
+                    printDocument({ title: props.note?.title });
                   });
                 },
               },
@@ -308,7 +320,7 @@ export const Commander = () => {
               args.setOpen(false);
             },
           },
-          ...(state.note
+          ...(props.note
             ? [
                 {
                   type: "shortcut" as const,
@@ -451,7 +463,7 @@ export const Commander = () => {
       title: "Note Groups",
       type: "group",
       items: [
-        ...(state.note
+        ...(props.note
           ? [
               {
                 title: "Add current note to group",
@@ -471,7 +483,7 @@ export const Commander = () => {
             navigate("/groups");
           },
         },
-        ...state.noteGroups.map(
+        ...props.noteGroups.map(
           (g): CommandItemTypes => ({
             title: `Group: ${g.title}`,
             type: "shortcut",
@@ -539,10 +551,10 @@ export const Commander = () => {
       ...otherStuff,
     ];
   }, [
-    state.commander,
-    state.noteGroups,
-    state.note,
-    state.notes,
+    props.commander,
+    props.noteGroups,
+    props.note,
+    props.notes,
     noteGroup,
     openedTabsGroup,
     navigate,
@@ -554,7 +566,7 @@ export const Commander = () => {
   return (
     <CommandPalette
       commands={options}
-      open={state.commander.enabled}
+      open={props.commander.enabled}
       onChangeVisibility={dispatch.commander}
       footer={
         <div className="flex justify-between items-center min-w-full text-sm text-disabled">

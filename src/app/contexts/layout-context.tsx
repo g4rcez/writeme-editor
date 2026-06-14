@@ -1,4 +1,4 @@
-import { createGlobalReducer } from "use-typed-reducer";
+import { createZustandCompatStore } from "@/store/zustand-compat";
 
 export type ActivityType =
   | "json"
@@ -36,7 +36,7 @@ const initialState: LayoutState = {
   activeView: { type: "all" },
 };
 
-export const useLayoutStore = createGlobalReducer(initialState, () => ({
+export const useLayoutStore = createZustandCompatStore(initialState, () => ({
   setSearch: (searchQuery: string) => ({ searchQuery }),
   setActivity: (activeActivity: ActivityType) => ({ activeActivity }),
   setView: (activeView: LayoutView) => ({ activeView, searchQuery: "" }),

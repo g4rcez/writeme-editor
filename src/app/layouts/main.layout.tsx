@@ -3,6 +3,7 @@ import { TerminalPanel } from "@/app/components/terminal/terminal-panel";
 import { useGlobalStore } from "@/store/global.store";
 import { XIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
+import { Fragment } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { useLocation, useOutlet } from "react-router-dom";
 import { useJsonDrop } from "../hooks/use-json-drop";
@@ -24,7 +25,7 @@ function RouteTransitionOutlet() {
       key={routeKey}
       animate={{ opacity: 1 }}
       className="w-full min-h-full"
-      initial={shouldReduceMotion ? false : { opacity: 0.2 }}
+      initial={shouldReduceMotion ? false : { opacity: 0.4 }}
       transition={shouldReduceMotion ? { duration: 0 } : routeTransition}
     >
       {outlet}
@@ -33,14 +34,24 @@ function RouteTransitionOutlet() {
 }
 
 export const MainLayout = () => {
-  const [terminalVisible, dispatch] = useGlobalStore((s) => s.terminalVisible);
   useJsonDrop();
+  const [state, dispatch] = useGlobalStore((s) => ({
+    tabs: s.tabs,
+    notes: s.notes,
+    activeTabId: s.activeTabId,
+    terminalVisible: s.terminalVisible,
+  }));
   return (
     <div className="writeme-layout">
       <div className="writeme-layout-body">
         <Sidebar />
         <main className="writeme-layout-main" aria-label="Editor workspace">
-          <TabsBar />
+          <TabsBar
+            tabs={state.tabs}
+            dispatch={dispatch}
+            notes={state.notes}
+            activeTabId={state.activeTabId}
+          />
           <Group orientation="vertical" className="flex-1 min-h-0">
             <Panel defaultSize={70} minSize={30} className="min-h-0">
               <div
@@ -50,8 +61,8 @@ export const MainLayout = () => {
                 <RouteTransitionOutlet />
               </div>
             </Panel>
-            {terminalVisible && (
-              <>
+            {state.terminalVisible && (
+              <Fragment>
                 <Separator
                   aria-label="Resize terminal panel"
                   className="h-1 bg-border/20 hover:bg-primary/50 transition-colors cursor-row-resize"
@@ -75,7 +86,7 @@ export const MainLayout = () => {
                     </div>
                   </div>
                 </Panel>
-              </>
+              </Fragment>
             )}
           </Group>
         </main>

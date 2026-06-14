@@ -1,4 +1,4 @@
-import { createGlobalReducer } from "use-typed-reducer";
+import { createZustandCompatStore } from "./zustand-compat";
 import { uuid } from "@g4rcez/components";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { isElectron } from "@/lib/is-electron";
@@ -65,7 +65,7 @@ export enum CommanderType {
   OpenTabs = "OpenTabs",
 }
 
-export type Commander = { enabled: boolean; type: CommanderType };
+export type CommanderState = { enabled: boolean; type: CommanderType };
 
 export type AiContext = {
   context: string;
@@ -94,7 +94,7 @@ type State = {
   notes: Note[];
   note: Note | null;
   recentNotes: Note[];
-  commander: Commander;
+  commander: CommanderState;
   sidebarWidth: number;
   editorFontSize: number;
   homedir: string | null;
@@ -148,7 +148,7 @@ const initialState: State = {
   createVariableDialog: { isOpen: false },
   aiDrawer: { isOpen: false, chatId: null },
   noteGroupMembers: [] as NoteGroupMember[],
-  commander: { enabled: false, type: CommanderType.All } as Commander,
+  commander: { enabled: false, type: CommanderType.All } as CommanderState,
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
 };
 
@@ -161,9 +161,9 @@ export const loadHomedir = async (): Promise<string | null> => {
     return null;
   }
 };
-
-export const useGlobalStore = createGlobalReducer(initialState, (get) => {
+export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
   const setNotes = (notes: Note[]) => {
+
     const state = get.state();
     const existingNotesMap = new Map<string, Note>(
       state.notes.map((n) => [n.id, n]),
@@ -580,5 +580,7 @@ export const useGlobalStore = createGlobalReducer(initialState, (get) => {
 export const globalState = useGlobalStore.getState;
 
 export const globalDispatch = useGlobalStore.dispatchers;
+
+export type GlobalDispatchers = typeof globalDispatch;
 
 export { repositories };

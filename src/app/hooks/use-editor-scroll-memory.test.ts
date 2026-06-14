@@ -121,7 +121,7 @@ describe("useEditorScrollMemory", () => {
 
     expect(textSelectionCreate).toHaveBeenCalledWith(editor.state.doc, 40);
     expect(editor.state.tr.setSelection).toHaveBeenCalledWith({ position: 40 });
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
     expect(editor.chain).not.toHaveBeenCalled();
   });
 
