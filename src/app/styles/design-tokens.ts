@@ -2,7 +2,7 @@ import { type ComponentTokens } from "@g4rcez/components";
 
 export const componentDesignTokens: ComponentTokens = {
   card: {
-    radius: "0.15rem",
+    radius: "0.0rem",
     "padding-x": "1.5rem",
     "padding-y": "0.75rem",
     gap: "1rem",

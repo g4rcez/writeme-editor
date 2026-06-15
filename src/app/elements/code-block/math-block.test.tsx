@@ -1,14 +1,13 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MathBlock } from "./math-block";
-import { fetchExchangeRates } from "../../lib/currency";
+import { fetchExchangeRates } from "../../../lib/currency";
 import { __resetMathInstanceCache } from "solver";
 
-vi.mock("../../lib/currency", async () => {
-  const actual =
-    await vi.importActual<typeof import("../../lib/currency")>(
-      "../../lib/currency",
-    );
+vi.mock("../../../lib/currency", async () => {
+  const actual = await vi.importActual<typeof import("../../../lib/currency")>(
+    "../../../lib/currency",
+  );
   return {
     ...actual,
     fetchExchangeRates: vi.fn(),

@@ -120,7 +120,7 @@ export const MathBlock = (props: { code: string }) => {
   );
 
   return (
-    <div className="pt-4 font-mono border-t border-card-border">
+    <div contentEditable={false} className="pt-4 font-mono border-t border-card-border">
       <ul className="list-none list-outside mx-0 flex flex-col gap-0">
         {evaluated.map((line, i) => {
           switch (line.kind) {

@@ -47,7 +47,7 @@ describe("createMermaidThemeVariables", () => {
 
   it("keeps Mermaid CSS overrides token-backed", () => {
     const css = readFileSync(
-      resolve(__dirname, "../styles/mermaid.css"),
+      resolve(__dirname, "../../styles/mermaid.css"),
       "utf8",
     );
 

@@ -140,7 +140,16 @@ describe("Commander", () => {
   });
 
   it("opens the shortcuts page from the help command without showing the old shortcut binding", () => {
-    render(<Commander />);
+    render(
+      <Commander
+        note={mocks.state.note}
+        tabs={mocks.state.tabs}
+        notes={mocks.state.notes}
+        noteGroups={mocks.state.noteGroups}
+        commander={mocks.state.commander as never}
+        dispatch={mocks.dispatch as never}
+      />,
+    );
 
     const shortcutHelpCommands = getFlattenedCommands().filter(
       (item) => item.title === "Shortcut/Help menu",

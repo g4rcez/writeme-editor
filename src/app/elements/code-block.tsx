@@ -1,13 +1,6 @@
-import { getCurrentElementName, updateNodeContent } from "@/lib/editor-utils";
-import { EXECUTION_CONFIG } from "@/lib/execution-config";
+import { getCurrentElementName } from "@/lib/editor-utils";
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
-import { Select, Button } from "@g4rcez/components";
-import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
-import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
-import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
-import { TerminalWindowIcon } from "@phosphor-icons/react/dist/csr/TerminalWindow";
-import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
 import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
@@ -18,59 +11,47 @@ import {
   type PluginView,
 } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import {
-  NodeViewContent,
-  NodeViewWrapper,
-  type ReactNodeViewProps,
-  ReactNodeViewRenderer,
-} from "@tiptap/react";
-import Convert from "ansi-to-html";
+import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { clsx } from "clsx";
+import { useMemo, type ReactNode } from "react";
 import {
-  Fragment,
-  type ReactNode,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from "react";
-import {
-  type BundledLanguage,
-  type BundledTheme,
-  type Highlighter,
   bundledLanguages,
   bundledThemes,
   createHighlighter,
+  type BundledLanguage,
+  type BundledTheme,
+  type Highlighter,
 } from "shiki";
-import { canFormat, formatCode } from "./code-block-formatting";
 import { handlePasteImage } from "../extensions";
-import { shikiMathGrammer } from "./shiki-math-grammar";
-import { sanitizeAnsi } from "@/lib/encoding";
+import { CodeBlockRenderer } from "./code-block/code-block-rendered.tsx";
+import { shikiMathGrammer } from "./code-block/shiki-math-grammar";
 
-const ExcalidrawCode = lazy(() =>
-  import("./excalidraw").then((m) => ({ default: m.ExcalidrawCode })),
-);
-const FreehandCode = lazy(() =>
-  import("./freehand").then((m) => ({ default: m.FreehandCode })),
-);
-const Flowchart = lazy(() =>
-  import("./flowchart").then((m) => ({ default: m.Flowchart })),
-);
-const Graphviz = lazy(() =>
-  import("./graphviz").then((m) => ({ default: m.Graphviz })),
-);
-const MathBlock = lazy(() =>
-  import("./math-block").then((m) => ({ default: m.MathBlock })),
-);
-const Mermaid = lazy(() =>
-  import("./mermaid").then((m) => ({ default: m.Mermaid })),
-);
-const LatexBlock = lazy(() =>
-  import("./latex-block").then((m) => ({ default: m.LatexBlock })),
-);
+type CustomShikiLanguage = "math";
+
+type SupportedShikiLanguage = BundledLanguage | CustomShikiLanguage;
+
+const CUSTOM_SHIKI_LANGUAGES: Record<
+  CustomShikiLanguage,
+  typeof shikiMathGrammer
+> = {
+  math: shikiMathGrammer,
+};
+
+function isBundledShikiLanguage(
+  language: string | null | undefined,
+): language is BundledLanguage {
+  return !!language && language in bundledLanguages;
+}
+
+function isCustomShikiLanguage(
+  language: string | null | undefined,
+): language is CustomShikiLanguage {
+  return !!language && language in CUSTOM_SHIKI_LANGUAGES;
+}
+
+function isLoadedLanguage(language: string): boolean {
+  return highlighter?.getLoadedLanguages().includes(language) ?? false;
+}
 
 export type CodeBlockFrameProps = {
   id: string;
@@ -107,7 +88,7 @@ export const CodeBlockFrame = ({
       aria-hidden={!isBodyVisible}
       data-print-fallback={printContent !== undefined ? "true" : undefined}
       className={clsx(
-        "writeme-code-block-frame overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border",
+        "writeme-code-block-frame overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug border border-card-border",
         isTransparent ? "bg-transparent" : "bg-card-background",
         className,
       )}
@@ -115,8 +96,8 @@ export const CodeBlockFrame = ({
       {header}
       {printContent !== undefined && (
         <pre
-          className="writeme-code-block-print-content hidden"
           aria-hidden="true"
+          className="writeme-code-block-print-content hidden"
         >
           <code>{printContent}</code>
         </pre>
@@ -131,11 +112,12 @@ export const CodeBlockFrame = ({
       >
         <div className="writeme-code-block-row flex">
           <div
+            aria-hidden="true"
+            contentEditable={false}
             className={clsx(
               "writeme-code-block-gutter flex leading-6 flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
               isTransparent ? "bg-transparent" : "bg-card-background",
             )}
-            aria-hidden="true"
           >
             {lineNumbers}
           </div>
@@ -151,12 +133,12 @@ export const CodeBlockFrame = ({
 
 let highlighter: Highlighter | undefined;
 let highlighterPromise: Promise<Highlighter | undefined> | undefined;
-const loadingLanguages = new Set<BundledLanguage>();
+const loadingLanguages = new Set<SupportedShikiLanguage>();
 const loadingThemes = new Set<BundledTheme>();
 
 type HighlighterOptions = {
   themes: (BundledTheme | null | undefined)[];
-  languages: (BundledLanguage | null | undefined)[];
+  languages: (string | null | undefined)[];
 };
 
 const THEME_MAP = {
@@ -175,11 +157,15 @@ export function loadHighlighter(
   opts: HighlighterOptions,
 ): Promise<Highlighter | undefined> | undefined {
   if (!highlighter && !highlighterPromise) {
-    const langs = opts.languages.filter(
-      (lang): lang is BundledLanguage => !!lang && lang in bundledLanguages,
-    );
+    const bundledLangs = opts.languages.filter(isBundledShikiLanguage);
+    const customLangs = [
+      ...new Set<CustomShikiLanguage>([
+        ...opts.languages.filter(isCustomShikiLanguage),
+        "math",
+      ]),
+    ].map((language) => CUSTOM_SHIKI_LANGUAGES[language]);
     highlighterPromise = createHighlighter({
-      langs: [...langs, shikiMathGrammer],
+      langs: [...bundledLangs, ...customLangs],
       themes: ["catppuccin-mocha", "catppuccin-latte"],
     }).then((h: Highlighter) => {
       return ((highlighter = h), h) as Highlighter | undefined;
@@ -207,18 +193,24 @@ export async function loadTheme(theme: BundledTheme) {
   return false;
 }
 
-export async function loadLanguage(language: BundledLanguage) {
-  if (
-    highlighter &&
-    !highlighter.getLoadedLanguages().includes(language) &&
-    !loadingLanguages.has(language) &&
-    language in bundledLanguages
-  ) {
+export async function loadLanguage(language: string | null | undefined) {
+  if (!highlighter || !language || isLoadedLanguage(language)) return false;
+  if (loadingLanguages.has(language as SupportedShikiLanguage)) return false;
+
+  if (isCustomShikiLanguage(language)) {
+    loadingLanguages.add(language);
+    await highlighter.loadLanguage(CUSTOM_SHIKI_LANGUAGES[language]);
+    loadingLanguages.delete(language);
+    return true;
+  }
+
+  if (isBundledShikiLanguage(language)) {
     loadingLanguages.add(language);
     await highlighter.loadLanguage(language);
     loadingLanguages.delete(language);
     return true;
   }
+
   return false;
 }
 
@@ -557,461 +549,6 @@ export interface CodeBlockShikiOptions extends CodeBlockOptions {
   getCurrentTheme?: () => BundledTheme;
 }
 
-const SUPPORTED_LANGUAGES = [
-  "bash",
-  "c",
-  "cpp",
-  "css",
-  "diff",
-  "dockerfile",
-  "go",
-  "graphql",
-  "html",
-  "http",
-  "java",
-  "javascript",
-  "json",
-  "kotlin",
-  "lua",
-  "markdown",
-  "mermaid",
-  "php",
-  "powershell",
-  "prisma",
-  "python",
-  "ruby",
-  "rust",
-  "scss",
-  "shell",
-  "sql",
-  "swift",
-  "toml",
-  "tsx",
-  "typescript",
-  "xml",
-  "yaml",
-];
-
-const LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "plaintext", label: "Plain text" },
-  ...[
-    ...SUPPORTED_LANGUAGES,
-    "math",
-    "excalidraw",
-    "freehand",
-    "graphviz",
-    "flowchart",
-    "latex",
-  ]
-    .sort()
-    .map((lang) => ({
-      value: lang,
-      label: lang.charAt(0).toUpperCase() + lang.slice(1),
-    })),
-];
-
-const CodeBlockHeader = ({
-  language,
-  code,
-  title,
-  handleLanguageChange: onChangeLanguage,
-  handleFormat,
-  isFormatting,
-  canRun,
-  handleRun,
-  isRunning,
-}: {
-  language: string;
-  code: string;
-  title?: string | null;
-  handleLanguageChange: (lang: string) => void;
-  handleFormat: () => void;
-  isFormatting: boolean;
-  canRun: boolean;
-  handleRun: () => void;
-  isRunning: boolean;
-}) => {
-  return (
-    <div
-      contentEditable={false}
-      className="writeme-code-block-header flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background"
-    >
-      <div className="flex gap-2 items-center">
-        <Select
-          hiddenLabel
-          value={language}
-          className="h-8 text-xs"
-          aria-description="Language"
-          placeholder="Select a language"
-          onChange={(e) => onChangeLanguage(e.target.value)}
-          options={LANGUAGE_OPTIONS}
-        />
-        {title && (
-          <span
-            title={title}
-            className="!text-xs text-muted font-mono px-2 py-1"
-          >
-            {title}
-          </span>
-        )}
-      </div>
-      <div className="text-xs text-foreground flex items-center gap-2">
-        {canFormat(language) && (
-          <Button
-            size="small"
-            theme="ghost-primary"
-            title="Format code"
-            onClick={handleFormat}
-            disabled={isFormatting}
-          >
-            {isFormatting ? (
-              <CircleNotchIcon className="animate-spin size-4" />
-            ) : (
-              <span className="flex gap-1 items-center text-xs">
-                <MagicWandIcon className="size-4" />
-                Format
-              </span>
-            )}
-          </Button>
-        )}
-        {canRun && (
-          <Button
-            size="small"
-            onClick={handleRun}
-            disabled={isRunning}
-            theme="ghost-success"
-            title={`Run with ${EXECUTION_CONFIG[language as BundledLanguage]?.label}`}
-          >
-            {isRunning ? (
-              <CircleNotchIcon className="animate-spin size-4" />
-            ) : (
-              <span className="flex gap-1 items-center text-sm">
-                <PlayIcon className="fill-current size-4" />
-                Run
-              </span>
-            )}
-          </Button>
-        )}
-        {code.split("\n").length} lines - {code.length} characters
-      </div>
-    </div>
-  );
-};
-
-type ExecutionProps = {
-  html?: string;
-  output: string;
-  stderr: string;
-  onClose: () => void;
-};
-
-const ExecutionOutput = ({ output, stderr, html, onClose }: ExecutionProps) => {
-  const converter = useMemo(
-    () => new Convert({ newline: true, escapeXML: true, stream: false }),
-    [],
-  );
-  if (!output && !stderr && !html) return null;
-  const htmlOutput = output ? converter.toHtml(sanitizeAnsi(output)) : "";
-  const htmlStderr = stderr ? converter.toHtml(sanitizeAnsi(stderr)) : "";
-  return (
-    <div className="border-t border-card-border bg-card-background">
-      <div className="flex justify-between items-center py-1 px-3 border-b border-card-border bg-muted/30">
-        <span className="flex gap-2 items-center text-xs font-medium text-muted-foreground">
-          <TerminalWindowIcon className="size-3" />
-          Output
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          title="Clear output"
-          className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <XIcon className="size-3" />
-        </button>
-      </div>
-      <div
-        className="overflow-auto p-3 min-h-48 font-mono text-xs whitespace-pre-wrap resize-y"
-        style={{
-          fontFamily:
-            "'Symbols Nerd Font', 'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-        }}
-      >
-        {html && (
-          <iframe
-            srcDoc={html}
-            title="HTML Output"
-            className="mb-2 w-full bg-transparent border border-card-border"
-            onLoad={(e) => {
-              const iframe = e.currentTarget;
-              const doc = iframe.contentDocument;
-              if (doc) {
-                iframe.style.height = `${doc.documentElement.scrollHeight}px`;
-              }
-            }}
-          />
-        )}
-        {htmlOutput && (
-          <div
-            className="text-green-600 dark:text-green-400"
-            dangerouslySetInnerHTML={{ __html: htmlOutput }}
-          />
-        )}
-        {htmlStderr && (
-          <div
-            className="text-red-600 dark:text-red-400"
-            dangerouslySetInnerHTML={{ __html: htmlStderr }}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-const CodeBlockAddons = ({
-  language,
-  code,
-}: {
-  language: string;
-  code: string;
-}) => {
-  if (language === "math" && code) {
-    return (
-      <Suspense fallback={null}>
-        <MathBlock code={code} />
-      </Suspense>
-    );
-  }
-  if (language === "latex" && code) {
-    return (
-      <Suspense fallback={null}>
-        <LatexBlock code={code} />
-      </Suspense>
-    );
-  }
-  if (language === "mermaid" && code) {
-    return (
-      <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-card-border">
-          <Suspense fallback={null}>
-            <Mermaid chart={code} />
-          </Suspense>
-        </div>
-      </div>
-    );
-  }
-  if (language === "graphviz" && code) {
-    return (
-      <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-card-border">
-          <Suspense fallback={null}>
-            <Graphviz dot={code} />
-          </Suspense>
-        </div>
-      </div>
-    );
-  }
-  if (language === "flowchart" && code) {
-    return (
-      <div className="px-4 pb-4">
-        <div className="pt-4 border-t border-card-border">
-          <Suspense fallback={null}>
-            <Flowchart code={code} />
-          </Suspense>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-type OutputState = {
-  stdout: string;
-  stderr: string;
-  html?: string;
-};
-
-const LanguageSelector = (props: ReactNodeViewProps) => {
-  const id = useId();
-  const language = props.node.attrs.language || "plaintext";
-  const title = props.node.attrs.title as string | null;
-  const code = props.node.textContent.trim();
-  const [isFormatting, setIsFormatting] = useState(false);
-  const [executablePath, setExecutablePath] = useState<string | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState<OutputState | null>(null);
-
-  useEffect(() => {
-    if (!isElectron()) return;
-    const checkExecutable = async () => {
-      const config = EXECUTION_CONFIG[language as BundledLanguage];
-      if (config && config.command !== "browser") {
-        const path = await window.electronAPI.execution.resolve(config.command);
-        setExecutablePath(path);
-      } else {
-        setExecutablePath(null);
-      }
-    };
-    checkExecutable();
-  }, [language]);
-
-  useEffect(() => {
-    const pos = props.getPos();
-    if (typeof pos !== "number") return;
-    const dom = props.editor.view.nodeDOM(pos);
-    if (!(dom instanceof Element)) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return;
-        const currentPos = props.getPos();
-        if (typeof currentPos !== "number") return;
-        props.editor.view.dispatch(
-          props.editor.state.tr.setMeta("shikiHighlightPos", currentPos),
-        );
-      },
-      { rootMargin: "200px" },
-    );
-    observer.observe(dom);
-    return () => observer.disconnect();
-  }, []);
-
-  const handleLanguageChange = (newLanguage: string) => {
-    const { view, getPos } = props;
-    const pos = getPos();
-    if (typeof pos !== "number") return;
-    view.dispatch(
-      view.state.tr.setNodeMarkup(pos, undefined, {
-        ...props.node.attrs,
-        language: newLanguage,
-      }),
-    );
-    setOutput(null);
-  };
-
-  const handleFormat = async () => {
-    if (!canFormat(language)) return;
-    setIsFormatting(true);
-    try {
-      const formatted = await formatCode(code, language);
-      if (formatted === code) return;
-      const pos = props.getPos();
-      if (typeof pos !== "number") return;
-      const targetNode = props.editor.state.doc.nodeAt(pos);
-      updateNodeContent(props.editor, targetNode, formatted);
-    } finally {
-      setIsFormatting(false);
-    }
-  };
-
-  const config = EXECUTION_CONFIG[language as BundledLanguage];
-  const canRun = !!(
-    config?.browserRuntimeExec ||
-    (isElectron() && executablePath)
-  );
-
-  const handleRun = async () => {
-    if (!config) return;
-    setIsRunning(true);
-    setOutput(null);
-    try {
-      if (
-        config.browserRuntimeExec &&
-        (!isElectron() || config.command === "browser")
-      ) {
-        const result = await config.browserRuntimeExec(code);
-        setOutput(result);
-      } else if (isElectron() && executablePath) {
-        const result = await window.electronAPI.execution.run(
-          config.command,
-          config.args,
-          code,
-        );
-        setOutput({ stdout: result.stdout, stderr: result.stderr });
-      }
-    } catch (e) {
-      setOutput({ stdout: "", stderr: `Error: ${e}` });
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const onChangeDraw = useCallback((nextState: any) => {
-    const pos = props.getPos();
-    if (typeof pos !== "number") return;
-    const targetNode = props.editor.state.doc.nodeAt(pos);
-    updateNodeContent(props.editor, targetNode, nextState);
-  }, []);
-
-  if (language === "excalidraw") {
-    return (
-      <NodeViewWrapper
-        as="div"
-        className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
-      >
-        <Suspense fallback={null}>
-          <ExcalidrawCode
-            code={code}
-            onChange={onChangeDraw}
-            autoDelete={props.deleteNode}
-          />
-        </Suspense>
-      </NodeViewWrapper>
-    );
-  }
-
-  if (language === "freehand") {
-    return (
-      <NodeViewWrapper
-        as="div"
-        className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
-      >
-        <Suspense fallback={null}>
-          <FreehandCode
-            code={code}
-            onChange={onChangeDraw}
-            autoDelete={props.deleteNode}
-          />
-        </Suspense>
-      </NodeViewWrapper>
-    );
-  }
-
-  return (
-    <CodeBlockFrame
-      id={`code-block-${language}-${id}`}
-      lineCount={props.node.textContent.split("\n").length}
-      printContent={code}
-      header={
-        <CodeBlockHeader
-          code={code}
-          title={title}
-          canRun={canRun}
-          language={language}
-          handleRun={handleRun}
-          isRunning={isRunning}
-          handleFormat={handleFormat}
-          isFormatting={isFormatting}
-          handleLanguageChange={handleLanguageChange}
-        />
-      }
-      footer={
-        <Fragment>
-          <CodeBlockAddons language={language} code={code} />
-          {output && (
-            <ExecutionOutput
-              html={output.html}
-              output={output.stdout}
-              stderr={output.stderr}
-              onClose={() => setOutput(null)}
-            />
-          )}
-        </Fragment>
-      }
-    >
-      <NodeViewContent className="font-mono outline-none content is-editable code-content-renderer" />
-    </CodeBlockFrame>
-  );
-};
-
 const PastePlugin = (name: string) =>
   new Plugin({
     key: new PluginKey("codeBlockPaste"),
@@ -1052,7 +589,15 @@ const PastePlugin = (name: string) =>
 export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
   priority: 1000,
   addNodeView() {
-    return ReactNodeViewRenderer(LanguageSelector);
+    return ReactNodeViewRenderer(CodeBlockRenderer, {
+      stopEvent: ({ event }) => {
+        const target = event.target;
+        return (
+          target instanceof Element &&
+          Boolean(target.closest('[data-code-mirror-editor="true"]'))
+        );
+      },
+    });
   },
   addAttributes() {
     return {

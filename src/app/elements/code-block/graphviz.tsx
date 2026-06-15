@@ -7,7 +7,7 @@ import { MinusIcon } from "@phosphor-icons/react/dist/csr/Minus";
 import { type Viz, instance } from "@viz-js/viz";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useThemeChange } from "@/app/hooks/use-theme-change";
-import { darkTheme } from "../styles/dark";
+import { darkTheme } from "../../styles/dark";
 import { parseHslaToHex } from "@/lib/color-utils";
 import { motion, AnimatePresence } from "motion/react";
 import { Button, Tooltip, css } from "@g4rcez/components";
