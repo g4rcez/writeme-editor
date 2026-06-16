@@ -2,7 +2,6 @@ import { Button, Modal, Textarea, css } from "@g4rcez/components";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import {
-  CheckIcon,
   PlusIcon,
   TrashIcon,
   NoteIcon,
@@ -11,11 +10,10 @@ import {
   ArrowsCounterClockwiseIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { editorGlobalRef } from "../editor-global-ref";
-import { AIDiffView } from "./ai-diff-view";
+import { AIChatMessageItem, AI_CHAT_LOADING_MESSAGES } from "./ai-message-item";
 import { useAIChat } from "./use-ai-chat";
 import { useNavigate } from "react-router-dom";
 import { AIFileAttachment } from "./ai-file-attachment";
@@ -38,6 +36,7 @@ export const AIDrawer = () => {
   } = useAIChat(note?.id);
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<AIFile[]>([]);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
   const adapter = config
     ? adapterRegistry.get(config.adapterId ?? "cli")
@@ -68,6 +67,21 @@ export const AIDrawer = () => {
     }
   }, [messages.length, isStreaming]);
 
+  useEffect(() => {
+    if (!isStreaming) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setLoadingMessageIndex(
+        (current) => (current + 1) % AI_CHAT_LOADING_MESSAGES.length,
+      );
+    }, 4000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isStreaming]);
+
   const onSend = () => {
     if (!input.trim() || isStreaming) return;
     const editor = editorGlobalRef.current;
@@ -85,16 +99,6 @@ export const AIDrawer = () => {
     send(input, { selection, context, selectionSlice }, pendingFiles);
     setInput("");
     setPendingFiles([]);
-  };
-
-  const onApply = (msg: any) => {
-    if (!msg.selectionSlice || !editorGlobalRef.current) return;
-    editorGlobalRef.current
-      .chain()
-      .focus()
-      .insertContentAt(msg.selectionSlice.to, "\n" + msg.content)
-      .run();
-    globalDispatch.setAiDrawer({ isOpen: false, chatId: null });
   };
 
   const modelLabel = config
@@ -193,6 +197,10 @@ export const AIDrawer = () => {
                 if (!msg) return null;
                 const isUser = msg.role === "user";
                 const isSystem = msg.role === "system";
+                const showAssistantLoading =
+                  msg.role === "assistant" &&
+                  isStreaming &&
+                  virtualRow.index === messages.length - 1;
                 return (
                   <div
                     key={virtualRow.key}
@@ -208,67 +216,18 @@ export const AIDrawer = () => {
                           : "items-start",
                     )}
                   >
-                    {isSystem ? (
-                      <span className="text-[11px] text-muted-foreground/70 bg-muted/50 px-3 py-1 rounded-full border border-floating-border/40">
-                        {msg.content}
-                      </span>
-                    ) : (
-                      <div
-                        className={css(
-                          "max-w-[85%] px-4 py-2.5 text-sm leading-relaxed",
-                          isUser
-                            ? "bg-primary text-primary-foreground border border-card-border shadow-sm rounded-2xl rounded-tr-sm mr-10"
-                            : "bg-secondary-background border border-card-border text-foreground shadow-sm rounded-2xl rounded-tl-sm mr-10",
-                        )}
-                      >
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                    )}
-                    {msg.role === "assistant" &&
-                      msg.diffOriginal &&
-                      msg.content && (
-                        <div className="mt-2 space-y-2 w-full">
-                          <div className="flex justify-between items-center px-1">
-                            <span className="opacity-50 text-xs">
-                              Suggested Changes
-                            </span>
-                            {msg.selectionSlice && (
-                              <Button
-                                size="small"
-                                theme="primary"
-                                onClick={() => onApply(msg)}
-                              >
-                                <CheckIcon size={12} className="mr-1" />
-                                Apply
-                              </Button>
-                            )}
-                          </div>
-                          <AIDiffView
-                            newContent={msg.content}
-                            oldContent={msg.diffOriginal}
-                          />
-                        </div>
-                      )}
+                    <AIChatMessageItem
+                      message={msg}
+                      isStreaming={showAssistantLoading}
+                      loadingIndex={loadingMessageIndex}
+                    />
                   </div>
                 );
               })}
             </div>
           </div>
         )}
-        {isStreaming && (
-          <div className="flex gap-2 items-center px-4 py-2 text-xs text-muted-foreground border-t border-floating-border animate-pulse">
-            <ArrowsCounterClockwiseIcon size={12} className="animate-spin" />
-            AI is thinking...
-          </div>
-        )}
-        <div className="py-4 border-t border-floating-border">
-          {adapter && adapter.supportsFiles && (
-            <AIFileAttachment
-              files={pendingFiles}
-              onFilesChange={setPendingFiles}
-              adapter={adapter}
-            />
-          )}
+        <div className="flex flex-col py-4 gap-1 border-t border-floating-border">
           <Textarea
             value={input}
             optionalText=" "
@@ -281,7 +240,7 @@ export const AIDrawer = () => {
               }
             }}
             right={
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 {isStreaming ? (
                   <button
                     type="button"
@@ -303,6 +262,13 @@ export const AIDrawer = () => {
               </div>
             }
           />
+          {adapter && adapter.supportsFiles && (
+            <AIFileAttachment
+              files={pendingFiles}
+              onFilesChange={setPendingFiles}
+              adapter={adapter}
+            />
+          )}
         </div>
       </div>
     </Modal>

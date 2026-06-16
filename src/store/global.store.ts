@@ -1,6 +1,13 @@
 import { createZustandCompatStore } from "./zustand-compat";
 import { uuid } from "@g4rcez/components";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
+import {
+  AI_CHAT_TAB_TYPE,
+  NOTE_TAB_TYPE,
+  getTabTargetKeyForTab,
+  isAiChatTab,
+  isNoteTabForNoteId,
+} from "@/lib/tab-target";
 import { isElectron } from "@/lib/is-electron";
 import type { Note } from "./note";
 import { repositories } from "./repositories";
@@ -11,7 +18,7 @@ import { uiDispatch } from "./ui.store";
 import { SettingsService } from "./settings";
 import type { Toggle } from "./types";
 
-export type NoteCreationType = "note" | "quick";
+export type NoteCreationType = "note" | "quick" | "excalidraw";
 
 const LOCAL_WORKSPACE_KEY = "__local__";
 
@@ -38,21 +45,22 @@ export function normalizeWorkspaceTabs(
     if (orderDifference !== 0) return orderDifference;
     return getTabCreatedTime(a) - getTabCreatedTime(b);
   });
-  const tabsByNoteId = new Map<string, Tab>();
+  const tabsByTarget = new Map<string, Tab>();
   const duplicateTabs: Tab[] = [];
 
   for (const tab of sortedTabs) {
     const normalizedTab = { ...tab, project: workspaceKey };
-    const existingTab = tabsByNoteId.get(tab.noteId);
+    const targetKey = getTabTargetKeyForTab(normalizedTab);
+    const existingTab = tabsByTarget.get(targetKey);
     if (!existingTab) {
-      tabsByNoteId.set(tab.noteId, normalizedTab);
+      tabsByTarget.set(targetKey, normalizedTab);
       continue;
     }
 
     duplicateTabs.push(tab);
   }
 
-  const normalizedTabs = Array.from(tabsByNoteId.values()).map((tab, order) =>
+  const normalizedTabs = Array.from(tabsByTarget.values()).map((tab, order) =>
     tab.order === order ? tab : { ...tab, order },
   );
 
@@ -163,7 +171,6 @@ export const loadHomedir = async (): Promise<string | null> => {
 };
 export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
   const setNotes = (notes: Note[]) => {
-
     const state = get.state();
     const existingNotesMap = new Map<string, Note>(
       state.notes.map((n) => [n.id, n]),
@@ -186,13 +193,13 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       : state.notes.concat(note);
   };
 
-  const createTab = (noteId: string): Tab => {
+  const createTab = (noteId: string, type = NOTE_TAB_TYPE): Tab => {
     const state = get.state();
     const now = new Date();
     return {
       noteId,
       project: getWorkspaceKey(state.directory),
-      type: "tab",
+      type,
       createdAt: now,
       updatedAt: now,
       id: uuid(),
@@ -209,7 +216,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     if (state.activeTabId === note.id && state.note === note) {
       return state;
     }
-    const existingTab = state.tabs.find((t) => t.noteId === note.id);
+    const existingTab = state.tabs.find((t) => isNoteTabForNoteId(t, note.id));
     const updatedNotes = updateNoteInList(note);
     if (existingTab) {
       return {
@@ -371,11 +378,25 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     },
     addTab: async (noteId: string) => {
       const currentTabs = get.state().tabs;
-      const existingTab = currentTabs.find((t) => t.noteId === noteId);
+      const existingTab = currentTabs.find((t) =>
+        isNoteTabForNoteId(t, noteId),
+      );
       if (existingTab) {
         return { activeTabId: existingTab.id };
       }
       const newTab = createTab(noteId);
+      await repositories.tabs.save(newTab);
+      return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
+    },
+    addAiChatTab: async (chatId: string) => {
+      const currentTabs = get.state().tabs;
+      const existingTab = currentTabs.find(
+        (tab) => isAiChatTab(tab) && tab.noteId === chatId,
+      );
+      if (existingTab) {
+        return { activeTabId: existingTab.id };
+      }
+      const newTab = createTab(chatId, AI_CHAT_TAB_TYPE);
       await repositories.tabs.save(newTab);
       return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
     },
@@ -386,8 +407,13 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const tabs = state.tabs.filter((tab) => tab.id !== id);
       const isClosingActiveTab =
         state.activeTabId === id ||
-        state.activeTabId === closedTab?.noteId ||
-        state.note?.id === closedTab?.noteId;
+        (!closedTab
+          ? false
+          : isAiChatTab(closedTab)
+            ? state.activeTabId === closedTab.noteId
+            : state.activeTabId === closedTab.noteId ||
+              (state.activeTabId === null &&
+                state.note?.id === closedTab.noteId));
       if (!isClosingActiveTab) {
         return { tabs, activeTabId: state.activeTabId };
       }
@@ -397,11 +423,13 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     removeTabByNoteId: async (noteId: string) => {
       const state = get.state();
       await repositories.tabs.deleteByNoteId(noteId);
-      const tabs = state.tabs.filter((x) => x.noteId !== noteId);
+      const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, noteId));
       const activeTabId =
         state.activeTabId &&
-        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId ===
-          noteId
+        state.tabs.find(
+          (tab) =>
+            tab.id === state.activeTabId && isNoteTabForNoteId(tab, noteId),
+        )
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const note = state.note?.id === noteId ? null : state.note;
@@ -410,10 +438,12 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     deleteNote: async (id: string) => {
       const state = get.state();
       await repositories.notes.delete(id);
-      const tabs = state.tabs.filter((x) => x.noteId !== id);
+      const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
-        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId === id
+        state.tabs.find(
+          (tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id),
+        )
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);
@@ -424,10 +454,12 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const state = get.state();
       await repositories.notes.hardDelete(id);
       await repositories.noteGroupMembers.deleteByNoteId(id);
-      const tabs = state.tabs.filter((x) => x.noteId !== id);
+      const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
-        state.tabs.find((tab) => tab.id === state.activeTabId)?.noteId === id
+        state.tabs.find(
+          (tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id),
+        )
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);

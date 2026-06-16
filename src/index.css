@@ -1,10 +1,10 @@
 @import "@fontsource-variable/jetbrains-mono";
-@import "./app/styles/writeme.css";
 @import "./app/styles/code.css";
 @import "./app/styles/typography.css";
 @import "./app/styles/callout.css";
 @import "./app/styles/mermaid.css";
 @import "./app/styles/native.css";
+@import "./app/styles/writeme.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,6 +17,11 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --shimmer-dur: 2000ms;
+  --shimmer-base: hsla(var(--muted-foreground), 0.8);
+  --shimmer-highlight: hsl(var(--foreground));
+  --shimmer-band: 400%;
+  --shimmer-ease: linear;
 }
 
 html.dark,
@@ -30,6 +35,10 @@ select,
 select option {
   background-color: Canvas;
   color: CanvasText;
+}
+
+textarea {
+  @apply border border-transparent;
 }
 
 html,
@@ -101,6 +110,50 @@ code {
   }
 }
 
+.t-shimmer {
+  position: relative;
+  display: inline-block;
+  color: var(--shimmer-base);
+}
+
+.t-shimmer::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: var(--shimmer-band) 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) var(--shimmer-ease) infinite;
+}
+
+@keyframes t-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-shimmer::before {
+    animation: none !important;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn var(--transition-normal) ease-out;
 }
@@ -111,6 +164,185 @@ code {
 
 .transition-smooth {
   transition: all var(--transition-normal);
+}
+
+.ai-markdown.ai-markdown--inherit,
+.ai-markdown.ai-markdown--inherit h1,
+.ai-markdown.ai-markdown--inherit h2,
+.ai-markdown.ai-markdown--inherit h3,
+.ai-markdown.ai-markdown--inherit a,
+.ai-markdown.ai-markdown--inherit blockquote,
+.ai-markdown.ai-markdown--inherit code {
+  color: inherit;
+}
+
+.ai-markdown.ai-markdown--inherit a {
+  text-decoration-color: currentColor;
+}
+
+.ai-markdown.ai-markdown--inherit code {
+  background-color: hsla(var(--background), 0.18);
+}
+
+.ai-markdown > :first-child {
+  @apply mt-0;
+}
+
+.ai-markdown > :last-child {
+  @apply mb-0;
+}
+
+.ai-markdown h1,
+.ai-markdown h2,
+.ai-markdown h3 {
+  @apply mt-4 mb-2 font-semibold leading-tight text-foreground;
+}
+
+.ai-markdown h1 {
+  @apply text-base;
+}
+
+.ai-markdown h2,
+.ai-markdown h3 {
+  @apply text-sm;
+}
+
+.ai-markdown p {
+  @apply my-2;
+}
+
+.ai-markdown ul,
+.ai-markdown ol {
+  @apply my-2 pl-5 space-y-1;
+}
+
+.ai-markdown ul {
+  @apply list-disc;
+}
+
+.ai-markdown ol {
+  @apply list-decimal;
+}
+
+.ai-markdown li > p {
+  @apply my-1;
+}
+
+.ai-markdown a {
+  @apply text-primary underline underline-offset-2 hover:text-primary-hover;
+}
+
+.ai-markdown blockquote {
+  @apply my-3 border-l-2 border-primary/40 pl-3 text-muted-foreground;
+}
+
+.ai-markdown code {
+  @apply rounded bg-muted px-1 py-0.5 text-[0.85em] text-foreground;
+}
+
+.ai-markdown pre {
+  @apply my-3 overflow-x-auto rounded-lg border border-card-border bg-muted p-3;
+}
+
+.ai-markdown pre code {
+  @apply bg-transparent p-0 text-xs leading-relaxed;
+}
+
+.ai-markdown table {
+  @apply my-3 w-full border-collapse overflow-hidden rounded-lg text-left text-xs;
+}
+
+.ai-markdown th,
+.ai-markdown td {
+  @apply border border-card-border px-2 py-1.5 align-top;
+}
+
+.ai-markdown th {
+  @apply bg-muted font-medium text-foreground;
+}
+
+.ai-markdown hr {
+  @apply my-4 border-card-border;
+}
+
+.ai-markdown input[type="checkbox"] {
+  @apply mr-2 align-middle accent-primary;
+}
+
+.writeme-chat-composer-content {
+  @apply min-h-10 outline-none text-sm leading-6 text-typography-paragraph;
+}
+
+.writeme-chat-composer-content .ProseMirror {
+  @apply min-h-10 outline-none;
+}
+
+.writeme-chat-composer-content .ProseMirror > :first-child {
+  @apply mt-0;
+}
+
+.writeme-chat-composer-content .ProseMirror > :last-child {
+  @apply mb-0;
+}
+
+.writeme-chat-composer-content .ProseMirror p {
+  @apply my-1;
+}
+
+.writeme-chat-composer-content .ProseMirror h1,
+.writeme-chat-composer-content .ProseMirror h2,
+.writeme-chat-composer-content .ProseMirror h3 {
+  @apply my-1 font-semibold leading-snug text-typography-title;
+}
+
+.writeme-chat-composer-content .ProseMirror ul,
+.writeme-chat-composer-content .ProseMirror ol {
+  @apply my-1 pl-5;
+}
+
+.writeme-chat-composer-content .ProseMirror ul {
+  @apply list-disc;
+}
+
+.writeme-chat-composer-content .ProseMirror ol {
+  @apply list-decimal;
+}
+
+.writeme-chat-composer-content .ProseMirror a,
+.writeme-chat-composer-content .ProseMirror .mention {
+  @apply text-typography-link underline decoration-typography-link underline-offset-2;
+}
+
+.writeme-chat-composer-content .ProseMirror code {
+  @apply rounded bg-muted px-1 py-0.5 text-[0.85em] text-typography-paragraph;
+}
+
+.writeme-chat-composer-content .ProseMirror pre {
+  @apply my-2 overflow-x-auto rounded-lg border border-card-border bg-muted p-3;
+}
+
+.writeme-chat-composer-content .ProseMirror pre code {
+  @apply bg-transparent p-0 text-xs leading-relaxed;
+}
+
+.writeme-chat-composer-content .ProseMirror table {
+  @apply my-2 w-full border-collapse text-xs;
+}
+
+.writeme-chat-composer-content .ProseMirror th,
+.writeme-chat-composer-content .ProseMirror td {
+  @apply border border-card-border px-2 py-1 align-top;
+}
+
+.writeme-chat-composer-content .ProseMirror blockquote {
+  @apply my-2 rounded-lg border border-card-border px-3 py-2 text-typography-paragraph;
+}
+
+.writeme-chat-composer-content
+  .ProseMirror
+  p.is-editor-empty:first-child::before {
+  @apply pointer-events-none float-left h-0 text-muted-foreground;
+  content: attr(data-placeholder);
 }
 
 *:focus-visible {

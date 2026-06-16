@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { proxyFetch } from "@/lib/proxy-fetch";
 import { v4 as uuidv4 } from "uuid";
 import type {
@@ -13,6 +13,25 @@ import type {
 } from "./types";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
+
+type ModelTag = {
+  name: string;
+  size: number;
+  model: string;
+  digest: string;
+  modified_at: string;
+  capabilities: string[];
+  details: {
+    family: string;
+    format: string;
+    families: string[];
+    parent_model: string;
+    context_length: number;
+    parameter_size: string;
+    embedding_length: number;
+    quantization_level: string;
+  };
+};
 
 export class OllamaAdapter implements AIAdapter {
   readonly id = "ollama";
@@ -43,19 +62,13 @@ export class OllamaAdapter implements AIAdapter {
       if (credentials.apiKey) {
         headers.Authorization = `Bearer ${credentials.apiKey}`;
       }
-      const resp = await proxyFetch(`${apiHost}/api/ps`, { headers });
-      if (!resp.ok) return [];
-      const data = (await resp.json()) as {
-        models?: {
-          name: string;
-          model?: string;
-          context_length?: number;
-        }[];
-      };
+      const response = await proxyFetch(`${apiHost}/api/tags`, { headers });
+      if (!response.ok) return [];
+      const data = (await response.json()) as { models?: ModelTag[] };
       return (data.models ?? []).map((model) => ({
-        id: model.model ?? model.name,
         name: model.name,
-        contextWindow: model.context_length,
+        id: model.model ?? model.name,
+        contextWindow: model.details.context_length,
       }));
     } catch {
       return [];
@@ -115,12 +128,15 @@ export class OllamaAdapter implements AIAdapter {
 
     try {
       const result = streamText({
-        model: ollama(model),
+        model: ollama.chat(model),
         messages: mapped,
         system: options.systemPrompt,
         abortSignal: signal,
         temperature: options.temperature,
         maxOutputTokens: options.maxTokens,
+        tools: options.tools,
+        toolChoice: options.toolChoice,
+        stopWhen: options.tools ? stepCountIs(5) : undefined,
       });
 
       for await (const chunk of result.textStream) {

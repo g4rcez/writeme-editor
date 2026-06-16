@@ -24,7 +24,7 @@ import "@xyflow/react/dist/style.css";
 import { toPng, toSvg } from "html-to-image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { JsonNode } from "./json-node";
-import { transformJsonToGraph } from "./layout-utils";
+import { getDefaultExpandedPaths, transformJsonToGraph } from "./layout-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { darkTheme } from "@/app/styles/dark";
 import { lightTheme } from "@/app/styles/light";
@@ -86,8 +86,8 @@ const JsonGraphInner = ({
   json: any;
   onChange?: (newJson: any) => void;
 }) => {
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
-    new Set(["$"]),
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() =>
+    getDefaultExpandedPaths(json),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [direction, setDirection] = useState<"LR" | "TB">("LR");
@@ -222,7 +222,10 @@ const JsonGraphInner = ({
       try {
         const parsed = JSON.parse(v);
         onChange?.(parsed);
-      } catch {}
+      } catch (error) {
+        if (error instanceof SyntaxError) return;
+        throw error;
+      }
     },
     [onChange],
   );
@@ -332,15 +335,25 @@ const JsonGraphInner = ({
         </div>
       </div>
 
-      <div className="relative flex-1 min-h-0 overflow-hidden">
+      <div
+        className="relative flex-1 min-h-0 overflow-hidden"
+        onTouchMoveCapture={(event) => event.stopPropagation()}
+        onWheelCapture={(event) => event.stopPropagation()}
+      >
         {view === "graph" ? (
           <ReactFlow
+            className="h-full w-full"
             fitView
+            fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
             maxZoom={2}
             edges={edges}
             nodes={nodes}
             minZoom={0.05}
             nodeTypes={nodeTypes}
+            panOnDrag
+            preventScrolling
+            zoomOnPinch
+            zoomOnScroll
             onEdgesChange={onEdgesChange}
             onNodesChange={onNodesChange}
             defaultEdgeOptions={{

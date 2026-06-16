@@ -21,7 +21,7 @@ import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { Tooltip, Button } from "@g4rcez/components";
 import type { TreeNode, FlattenedNode } from "@/types/tree";
 import { NoteType, type Note } from "@/store/note";
-import { BracketsCurlyIcon } from "@phosphor-icons/react";
+import { BracketsCurlyIcon, PencilRulerIcon } from "@phosphor-icons/react";
 
 interface FileExtensionConfig {
   icon: React.ElementType;
@@ -103,26 +103,37 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
+  excalidraw: {
+    selectable: true,
+    icon: PencilRulerIcon,
+    iconClass: "text-info size-4",
+  },
   "agents.md": {
     icon: RobotIcon,
-    iconClass: "text-primary size-4",
     selectable: true,
+    iconClass: "text-primary size-4",
   },
   "claude.md": {
     icon: RobotIcon,
-    iconClass: "text-primary size-4",
     selectable: true,
+    iconClass: "text-primary size-4",
   },
   "readme.md": {
+    selectable: true,
     icon: BookmarkIcon,
     iconClass: "text-warn size-4",
-    selectable: true,
   },
 };
 
-const getFileConfig = (node: TreeNode) =>
-  FILE_NAME_CONFIGS[node.name.toLowerCase()] ??
-  FILE_EXTENSION_CONFIGS[node.extension?.toLowerCase() ?? ""];
+const getFileConfig = (node: TreeNode, note: Note | null) => {
+  if (note?.noteType === NoteType.excalidraw) {
+    return FILE_NAME_CONFIGS.excalidraw;
+  }
+  return (
+    FILE_NAME_CONFIGS[node.name.toLowerCase()] ??
+    FILE_EXTENSION_CONFIGS[node.extension?.toLowerCase() ?? ""]
+  );
+};
 
 const TREE_NODE_DRAG_TYPE = "application/x-writeme-tree-node-path";
 
@@ -239,7 +250,7 @@ const TreeNodeItem = ({
   note,
 }: TreeNodeItemProps) => {
   const isDirectory = node.type === "directory";
-  const extConfig = getFileConfig(node);
+  const extConfig = getFileConfig(node, note);
   const itemRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -802,7 +813,7 @@ export const TreeView = ({
       const { node } = flatNode;
       if (node.type === "directory") {
         await toggleNode(node.path);
-      } else if (getFileConfig(node)?.selectable) {
+      } else if (getFileConfig(node, null)?.selectable) {
         onFileSelect(node);
       }
     },

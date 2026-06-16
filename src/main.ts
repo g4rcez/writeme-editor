@@ -147,10 +147,12 @@ function registerAIHandlers() {
   ipcMain.handle("ai:get-chats", (_, noteId) => {
     try {
       const db = dbManager();
-      const stmt = db.db.prepare(
-        "SELECT * FROM aiChats WHERE noteId = ? ORDER BY createdAt DESC",
-      );
-      const results = stmt.all(noteId);
+      const stmt = noteId
+        ? db.db.prepare(
+            "SELECT * FROM aiChats WHERE noteId = ? ORDER BY createdAt DESC",
+          )
+        : db.db.prepare("SELECT * FROM aiChats ORDER BY createdAt DESC");
+      const results = noteId ? stmt.all(noteId) : stmt.all();
       return results.map((r) => db.normalizeRow(r));
     } catch (e: any) {
       console.error("Error in ai:get-chats:", e);

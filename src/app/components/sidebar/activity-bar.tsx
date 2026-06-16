@@ -3,10 +3,11 @@ import {
   type ActivityType,
 } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
+import type { Note } from "@/store/note";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { css, Tooltip } from "@g4rcez/components";
 import { CalendarIcon, type Icon } from "@phosphor-icons/react";
+import { ChatCircleDotsIcon } from "@phosphor-icons/react/dist/csr/ChatCircleDots";
 import { FilesIcon } from "@phosphor-icons/react/dist/csr/Files";
 import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
@@ -144,6 +145,20 @@ export const ActivityBar = () => {
           icon={TrashSimpleIcon}
           onClick={() => onActivityClick("trash")}
           active={layout.activeActivity === "trash"}
+        />
+        <ActivityIcon
+          icon={ChatCircleDotsIcon}
+          label="Workspace AI"
+          active={
+            location.pathname.startsWith("/chat") ||
+            layout.activeActivity === "ai"
+          }
+          onClick={() => {
+            onActivityClick("ai");
+            if (!location.pathname.startsWith("/chat")) {
+              navigate("/chat");
+            }
+          }}
         />
       </div>
       <div className="writeme-aside-activity-bottom">

@@ -7,6 +7,7 @@ import { SearchPane } from "./search-pane";
 import { TagsPane } from "./tags-pane";
 import { TemplatesPane } from "./templates-pane";
 import { TrashPane } from "./trash-pane";
+import { ChatSidebarContent } from "./chat-sidebar-content";
 
 export const SidebarContent = () => {
   const [state] = useLayoutStore();
@@ -30,6 +31,8 @@ export const SidebarContent = () => {
       return <TrashPane />;
     case "settings":
       return <QuickSettingsPane />;
+    case "ai":
+      return <ChatSidebarContent />;
     default:
       return <ExplorerPane />;
   }

@@ -98,6 +98,7 @@ vi.mock("@/store/global.store", () => ({
     Notes: "Notes",
     OpenTabs: "OpenTabs",
   },
+  getWorkspaceKey: (directory: string | null) => directory ?? "__local__",
   globalState: () => mocks.state,
   useGlobalStore: () => [mocks.state, mocks.dispatch],
 }));
@@ -137,6 +138,36 @@ function getFlattenedCommands(): CommandItem[] {
 describe("Commander", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("opens the create note dialog for the new excalidraw command", () => {
+    render(
+      <Commander
+        note={mocks.state.note}
+        tabs={mocks.state.tabs}
+        notes={mocks.state.notes}
+        noteGroups={mocks.state.noteGroups}
+        commander={mocks.state.commander as never}
+        dispatch={mocks.dispatch as never}
+      />,
+    );
+
+    const command = getFlattenedCommands().find(
+      (item) => item.title === "New excalidraw",
+    );
+    expect(command).toBeDefined();
+
+    const setOpen = vi.fn();
+    vi.useFakeTimers();
+    command?.action?.({ setOpen });
+    vi.runAllTimers();
+    vi.useRealTimers();
+
+    expect(setOpen).toHaveBeenCalledWith(false);
+    expect(mocks.dispatch.setCreateNoteDialog).toHaveBeenCalledWith({
+      isOpen: true,
+      type: "excalidraw",
+    });
   });
 
   it("opens the shortcuts page from the help command without showing the old shortcut binding", () => {

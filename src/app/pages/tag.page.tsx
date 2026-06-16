@@ -26,6 +26,7 @@ const tagThemeMap: Record<
   template: { theme: "secondary", title: "Template" },
   "read-it-later": { theme: "info", title: "Read it later" },
   freehand: { theme: "secondary", title: "Freehand" },
+  excalidraw: { theme: "neutral", title: "Excalidraw" },
 };
 
 export default function TagPage() {

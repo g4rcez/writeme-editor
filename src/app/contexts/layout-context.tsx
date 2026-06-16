@@ -1,19 +1,21 @@
 import { createZustandCompatStore } from "@/store/zustand-compat";
 
 export type ActivityType =
+  | "ai"
   | "json"
   | "tags"
+  | "trash"
+  | "views"
   | "groups"
   | "search"
   | "calendar"
   | "explorer"
   | "settings"
   | "favorites"
-  | "templates"
-  | "views"
-  | "trash";
+  | "templates";
 
 export type LayoutView =
+  | { type: "ai" }
   | { type: "all" }
   | { type: "quick" }
   | { type: "trash" }

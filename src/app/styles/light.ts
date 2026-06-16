@@ -1,220 +1,244 @@
 import { defaultLightTheme } from "@g4rcez/components";
 import { componentDesignTokens } from "./design-tokens";
 
+const foreground = "hsla(131, 20%, 16%)";
+const mutedForeground = "hsla(131, 10%, 30%)";
+const background = "hsla(245, 20%, 99%)";
+const surface = "hsla(245, 24%, 96%)";
+const surfaceRaised = "hsla(245, 20%, 99%)";
+const border = "hsla(245, 14%, 72%)";
+const primary = "hsla(258, 58%, 38%)";
+const primaryHover = "hsla(258, 62%, 32%)";
+const primarySubtle = "hsla(258, 65%, 94%)";
+const secondary = "hsla(245, 44%, 34%)";
+const secondaryHover = "hsla(245, 44%, 28%)";
+const secondarySubtle = "hsla(245, 55%, 94%)";
+const emphasis = "hsla(90, 60%, 22%)";
+const info = "hsla(185, 90%, 20%)";
+const warn = "hsla(45, 100%, 20%)";
+const danger = "hsla(0, 72%, 36%)";
+const success = "hsla(150, 70%, 20%)";
+const onDark = background;
+const onWarn = "hsla(45, 20%, 8%)";
+
 export const lightTheme: typeof defaultLightTheme = {
-  ...defaultLightTheme,
-  zIndex: { ...defaultLightTheme.zIndex, tooltip: "30" },
-  components: componentDesignTokens,
-  spacing: {
-    ...defaultLightTheme.spacing,
-    sm: "0.875rem",
-    lg: "1.125rem",
-  },
-  custom: {
-    "json-bg": "hsla(0, 0%, 100%)",
-    "json-key": "hsla(213, 100%, 35%)",
-    "json-string": "hsla(150, 70%, 28%)",
-    "json-number": "hsla(25, 90%, 45%)",
-    "json-boolean": "hsla(270, 55%, 40%)",
-    "json-null": "hsla(220, 10%, 55%)",
-    "json-separator": "hsla(220, 10%, 35%)",
-    "json-hover": "hsla(220, 15%, 94%)",
-    "json-caret": "hsla(220, 10%, 55%)",
-  },
-  colors: {
-    ...defaultLightTheme.colors,
-    foreground: "hsla(220, 30%, 15%)",
-    background: "hsla(220, 20%, 98%)",
-    border: "hsla(220, 15%, 85%)",
-    disabled: "hsla(220, 10%, 60%)",
-    emphasis: {
-      foreground: "hsla(220, 30%, 10%)",
-      DEFAULT: "hsla(35, 100%, 55%)",
-      subtle: "hsla(35, 100%, 85%)",
-      hover: "hsla(35, 100%, 45%)",
-    },
-    primary: {
-      foreground: "hsla(220, 20%, 98%)",
-      DEFAULT: "hsla(215, 100%, 35%)",
-      subtle: "hsla(215, 100%, 90%)",
-      hover: "hsla(215, 100%, 25%)",
-    },
-    secondary: {
-      background: "hsla(195, 80%, 30%)",
-      DEFAULT: "hsla(195, 100%, 30%)",
-      subtle: "hsla(195, 50%, 90%)",
-      hover: "hsla(195, 100%, 25%)",
-      foreground: "hsla(220, 20%, 98%)",
-    },
-    info: {
-      DEFAULT: "hsla(185, 90%, 40%)",
-      subtle: "hsla(185, 50%, 90%)",
-      hover: "hsla(185, 90%, 30%)",
-      foreground: "hsla(220, 20%, 98%)",
-      notification: "hsla(185, 90%, 40%)",
-    },
-    danger: {
-      DEFAULT: "hsla(0, 80%, 50%)",
-      subtle: "hsla(0, 50%, 90%)",
-      hover: "hsla(0, 80%, 40%)",
-      foreground: "hsla(220, 20%, 98%)",
-      notification: "hsla(0, 80%, 50%)",
-    },
-    warn: {
-      DEFAULT: "hsla(45, 100%, 45%)",
-      subtle: "hsla(45, 50%, 90%)",
-      hover: "hsla(45, 100%, 35%)",
-      foreground: "hsla(220, 30%, 10%)",
-      notification: "hsla(45, 100%, 45%)",
-    },
-    success: {
-      DEFAULT: "hsla(150, 80%, 35%)",
-      subtle: "hsla(150, 50%, 90%)",
-      hover: "hsla(150, 80%, 25%)",
-      foreground: "hsla(220, 20%, 98%)",
-      notification: "hsla(150, 80%, 35%)",
-    },
-    input: {
-      border: "hsla(220, 15%, 85%)",
-      placeholder: "hsla(220, 10%, 60%)",
-      "mask-error": "hsla(0, 80%, 70%)",
-      "switch-bg": "hsla(220, 10%, 80%)",
-      switch: "hsla(0, 0%, 100%)",
-      slider: "hsla(0, 0%, 100%)",
-    },
-    card: {
-      muted: "hsla(220, 10%, 96%)",
-      border: "hsla(220, 15%, 90%)",
-      background: "hsla(220, 10%, 99.5%)",
-    },
-    floating: {
-      foreground: "hsla(220, 30%, 15%)",
-      background: "hsla(0, 0%, 100%)",
-      hover: "hsla(220, 10%, 96%)",
-      border: "hsla(220, 15%, 90%)",
-      overlay: "hsla(0, 0%, 0%)",
-    },
-    tooltip: {
-      foreground: "hsla(220, 30%, 15%)",
-      background: "hsla(220, 20%, 98%)",
-      hover: "hsla(220, 20%, 94%)",
-      border: "hsla(220, 15%, 90%)",
-      overlay: "hsla(0, 0%, 0%)",
-    },
-    table: {
-      background: "hsla(240,20%,100%)",
-      header: "hsla(220,10%,98.4%)",
-      border: "hsla(240,15%,95%)",
-    },
-    button: {
-      muted: {
-        bg: "hsla(220, 10%, 92%)",
-        text: "hsla(220, 20%, 40%)",
-      },
-      primary: {
-        bg: "hsla(215, 100%, 35%)",
-        text: "hsla(220, 20%, 98%)",
-      },
-      warn: {
-        text: "hsla(220, 30%, 10%)",
-        bg: "hsla(45, 100%, 45%)",
-      },
-      info: {
-        bg: "hsla(185, 90%, 40%)",
-        text: "hsla(220, 20%, 98%)",
-      },
-      success: {
-        text: "hsla(220, 20%, 98%)",
-        bg: "hsla(150, 80%, 35%)",
-      },
-      danger: {
-        bg: "hsla(0, 80%, 50%)",
-        text: "hsla(220, 20%, 98%)",
-      },
-      neutral: {
-        text: "hsla(200,98%,60%)",
-        bg: "hsla(200,28%,19%)",
-      },
-      secondary: {
-        text: "hsla(220, 20%, 98%)",
-        bg: "hsla(195, 100%, 30%)",
-      },
-    },
-    tag: {
-      muted: {
-        bg: "hsla(220, 10%, 92%)",
-        text: "hsla(220, 20%, 40%)",
-      },
-      primary: {
-        bg: "hsla(215, 100%, 90%)",
-        text: "hsla(215, 100%, 30%)",
-      },
-      warn: {
-        text: "hsla(45, 100%, 30%)",
-        bg: "hsla(45, 100%, 90%)",
-      },
-      info: {
-        bg: "hsla(185, 50%, 92%)",
-        text: "hsla(185, 92%, 37%)",
-      },
-      success: {
-        text: "hsla(150, 80%, 25%)",
-        bg: "hsla(150, 50%, 90%)",
-      },
-      danger: {
-        bg: "hsla(0, 80%, 90%)",
-        text: "hsla(0, 80%, 40%)",
-      },
-      neutral: {
-        text: "hsla(200,98%,60%)",
-        bg: "hsla(200,28%,19%)",
-      },
-      secondary: {
-        text: "hsla(195, 100%, 30%)",
-        bg: "hsla(195, 50%, 90%)",
-      },
-    },
-    alert: {
-      muted: {
-        bg: "hsla(220, 10%, 96%)",
-        text: "hsla(220, 20%, 40%)",
-        border: "hsla(220, 15%, 85%)",
-      },
-      primary: {
-        text: "hsla(215, 100%, 30%)",
-        border: "hsla(215, 50%, 80%)",
-        bg: "hsla(215, 100%, 97%)",
-      },
-      warn: {
-        bg: "hsla(45, 100%, 96%)",
-        text: "hsla(45, 100%, 35%)",
-        border: "hsla(45, 100%, 80%)",
-      },
-      info: {
-        text: "hsla(185, 90%, 40%)",
-        bg: "hsla(185, 100%, 98%)",
-        border: "hsla(185, 80%, 80%)",
-      },
-      success: {
-        text: "hsla(160, 84%, 29%)",
-        border: "hsla(158, 64%, 90%)",
-        bg: "hsla(160, 100%, 96%)",
-      },
-      danger: {
-        text: "hsla(0, 84%, 45%)",
-        border: "hsla(0, 93%, 54%)",
-        bg: "hsla(0, 100%, 96%)",
-      },
-      neutral: {
-        text: "hsla(200,98%,60%)",
-        bg: "hsla(200,28%,19%)",
-        border: "hsla(200,90%,89%)",
-      },
-      secondary: {
-        text: "hsla(216,10%,10%)",
-        bg: "hsla(214,7%,92%)",
-        border: "hsla(216,22%,78%)",
-      },
-    },
-  },
+	...defaultLightTheme,
+	zIndex: { ...defaultLightTheme.zIndex, tooltip: "30" },
+	components: componentDesignTokens,
+	spacing: {
+		...defaultLightTheme.spacing,
+		sm: "0.875rem",
+		lg: "1.125rem",
+	},
+	custom: {
+		"json-bg": background,
+		"json-key": primary,
+		"json-string": foreground,
+		"json-number": emphasis,
+		"json-boolean": primaryHover,
+		"json-null": mutedForeground,
+		"json-separator": secondary,
+		"json-hover": surface,
+		"json-caret": mutedForeground,
+	},
+	colors: {
+		...defaultLightTheme.colors,
+		foreground,
+		background,
+		border,
+		disabled: "hsla(131, 8%, 38%)",
+		muted: {
+			...defaultLightTheme.colors.muted,
+			DEFAULT: surface,
+		},
+		emphasis: {
+			foreground: onWarn,
+			DEFAULT: emphasis,
+			subtle: "hsla(90, 60%, 92%)",
+			hover: "hsla(90, 64%, 18%)",
+		},
+		primary: {
+			foreground: onDark,
+			DEFAULT: primary,
+			subtle: primarySubtle,
+			hover: primaryHover,
+		},
+		secondary: {
+			foreground: onDark,
+			DEFAULT: secondary,
+			subtle: secondarySubtle,
+			hover: secondaryHover,
+			background: "hsla(245, 48%, 92%)",
+		},
+		info: {
+			DEFAULT: info,
+			subtle: "hsla(185, 80%, 92%)",
+			hover: "hsla(185, 90%, 16%)",
+			foreground: onDark,
+			notification: info,
+		},
+		danger: {
+			DEFAULT: danger,
+			subtle: "hsla(0, 72%, 94%)",
+			hover: "hsla(0, 75%, 30%)",
+			foreground: onDark,
+			notification: danger,
+		},
+		warn: {
+			DEFAULT: warn,
+			subtle: "hsla(45, 95%, 90%)",
+			hover: "hsla(45, 100%, 16%)",
+			foreground: onWarn,
+			notification: "hsla(45, 100%, 70%)",
+		},
+		success: {
+			DEFAULT: success,
+			subtle: "hsla(150, 65%, 91%)",
+			hover: "hsla(150, 76%, 16%)",
+			foreground: onDark,
+			notification: success,
+		},
+		input: {
+			border: "hsla(245, 16%, 55%)",
+			placeholder: mutedForeground,
+			"mask-error": "hsla(0, 72%, 42%)",
+			"switch-bg": "hsla(245, 14%, 72%)",
+			switch: surfaceRaised,
+			slider: surfaceRaised,
+		},
+		card: {
+			muted: surface,
+			border: "hsla(245, 16%, 78%)",
+			background: surfaceRaised,
+		},
+		floating: {
+			foreground,
+			background: surfaceRaised,
+			hover: surface,
+			border: "hsla(245, 16%, 72%)",
+			overlay: "hsla(245, 20%, 6%)",
+		},
+		tooltip: {
+			foreground,
+			background: "hsla(245, 22%, 97%)",
+			hover: surface,
+			border: "hsla(245, 16%, 72%)",
+			overlay: "hsla(245, 20%, 6%)",
+		},
+		table: {
+			background,
+			header: surface,
+			border: "hsla(245, 16%, 78%)",
+		},
+		button: {
+			muted: {
+				bg: surface,
+				text: mutedForeground,
+			},
+			primary: {
+				bg: primary,
+				text: onDark,
+			},
+			warn: {
+				text: onWarn,
+				bg: "hsla(45, 100%, 70%)",
+			},
+			info: {
+				bg: info,
+				text: onDark,
+			},
+			success: {
+				text: onDark,
+				bg: success,
+			},
+			danger: {
+				bg: danger,
+				text: onDark,
+			},
+			neutral: {
+				text: secondary,
+				bg: secondarySubtle,
+			},
+			secondary: {
+				text: onDark,
+				bg: secondary,
+			},
+		},
+		tag: {
+			muted: {
+				bg: surface,
+				text: mutedForeground,
+			},
+			primary: {
+				bg: primarySubtle,
+				text: primary,
+			},
+			warn: {
+				text: warn,
+				bg: "hsla(45, 95%, 90%)",
+			},
+			info: {
+				bg: "hsla(185, 80%, 92%)",
+				text: info,
+			},
+			success: {
+				text: success,
+				bg: "hsla(150, 65%, 91%)",
+			},
+			danger: {
+				bg: "hsla(0, 72%, 94%)",
+				text: danger,
+			},
+			neutral: {
+				text: secondary,
+				bg: secondarySubtle,
+			},
+			secondary: {
+				text: secondary,
+				bg: secondarySubtle,
+			},
+		},
+		alert: {
+			muted: {
+				bg: surface,
+				text: mutedForeground,
+				border,
+			},
+			primary: {
+				text: primary,
+				border: "hsla(258, 42%, 70%)",
+				bg: primarySubtle,
+			},
+			warn: {
+				bg: "hsla(45, 95%, 90%)",
+				text: warn,
+				border: "hsla(45, 80%, 55%)",
+			},
+			info: {
+				text: info,
+				bg: "hsla(185, 80%, 92%)",
+				border: "hsla(185, 58%, 55%)",
+			},
+			success: {
+				text: success,
+				border: "hsla(150, 48%, 55%)",
+				bg: "hsla(150, 65%, 91%)",
+			},
+			danger: {
+				text: danger,
+				border: "hsla(0, 62%, 58%)",
+				bg: "hsla(0, 72%, 94%)",
+			},
+			neutral: {
+				text: secondary,
+				bg: secondarySubtle,
+				border: "hsla(245, 34%, 68%)",
+			},
+			secondary: {
+				text: secondary,
+				bg: secondarySubtle,
+				border: "hsla(245, 34%, 68%)",
+			},
+		},
+	},
 };

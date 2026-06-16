@@ -22,6 +22,7 @@ const NOTE_TYPE_COLORS: Record<NoteType, string> = {
   [NoteType.note]: "bg-tag-primary-bg text-tag-primary-text",
   [NoteType.json]: "bg-tag-secondary-bg text-tag-secondary-text",
   [NoteType.freehand]: "bg-tag-success-bg text-tag-success-text",
+  [NoteType.excalidraw]: "bg-tag-neutral-bg text-tag-neutral-text",
   [NoteType.template]: "bg-tag-danger-bg text-tag-danger-text",
 };
 
@@ -32,6 +33,7 @@ const NOTE_TYPE_FILTER_THEMES: Record<NoteType, TagProps["theme"]> = {
   [NoteType.note]: "primary",
   [NoteType.json]: "secondary",
   [NoteType.freehand]: "success",
+  [NoteType.excalidraw]: "neutral",
   [NoteType.template]: "danger",
 };
 
@@ -43,6 +45,7 @@ const NOTE_TYPE_LABELS: Record<NoteType, string> = {
   template: "Template",
   json: "JSON",
   freehand: "Freehand",
+  excalidraw: "Excalidraw",
 };
 
 const CALENDAR_FILTERS: CalendarFilter[] = Object.values(NoteType).map(

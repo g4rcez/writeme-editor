@@ -1,5 +1,29 @@
 import { describe, it, expect, vi } from "vitest";
-import { transformJsonToGraph } from "./layout-utils";
+import { getDefaultExpandedPaths, transformJsonToGraph } from "./layout-utils";
+
+describe("getDefaultExpandedPaths", () => {
+  it("expands nested containers by default so graph mode shows visible values", () => {
+    const json = {
+      user: { name: "Ada", meta: { active: true, details: { role: "admin" } } },
+    };
+
+    const expandedPaths = getDefaultExpandedPaths(json);
+
+    expect(expandedPaths.has("$")).toBe(true);
+    expect(expandedPaths.has("$.user")).toBe(true);
+    expect(expandedPaths.has("$.user.meta")).toBe(true);
+    expect(expandedPaths.has("$.user.meta.details")).toBe(false);
+  });
+
+  it("expands array item containers by default", () => {
+    const json = [{ name: "Ada" }, { name: "Grace" }];
+
+    const expandedPaths = getDefaultExpandedPaths(json);
+
+    expect(expandedPaths.has("$[0]")).toBe(true);
+    expect(expandedPaths.has("$[1]")).toBe(true);
+  });
+});
 
 describe("transformJsonToGraph", () => {
   it("transforms a simple object correctly", () => {

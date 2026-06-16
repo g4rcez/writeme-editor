@@ -1,8 +1,23 @@
 import type { Tab } from "@/store/repositories/entities/tab";
+import {
+  getTabTarget,
+  getTabTargetKey,
+  isAiChatTab,
+  type TabTarget,
+} from "./tab-target";
 
 export type TabCycleDirection = "forward" | "backward";
 
-type TabCycleCandidate = Pick<Tab, "id" | "noteId" | "order">;
+type TabCycleCandidate = Pick<Tab, "id" | "noteId" | "order"> & {
+  type?: string | null;
+};
+
+type GetCycledTabTargetOptions = {
+  tabs: TabCycleCandidate[];
+  currentTarget: TabTarget | null;
+  activeTabId: string | null;
+  direction: TabCycleDirection;
+};
 
 type GetCycledTabNoteIdOptions = {
   tabs: TabCycleCandidate[];
@@ -11,26 +26,63 @@ type GetCycledTabNoteIdOptions = {
   direction: TabCycleDirection;
 };
 
+function getCurrentTabIndex(
+  orderedTabs: TabCycleCandidate[],
+  currentTarget: TabTarget | null,
+  activeTabId: string | null,
+): number {
+  const currentTargetKey = currentTarget
+    ? getTabTargetKey(currentTarget)
+    : null;
+  const routeIndex = currentTargetKey
+    ? orderedTabs.findIndex(
+        (tab) => getTabTargetKey(getTabTarget(tab)) === currentTargetKey,
+      )
+    : -1;
+  if (routeIndex !== -1) return routeIndex;
+
+  if (!activeTabId) return -1;
+  return orderedTabs.findIndex(
+    (tab) =>
+      tab.id === activeTabId ||
+      (!isAiChatTab(tab) && tab.noteId === activeTabId),
+  );
+}
+
+export function getCycledTabTarget({
+  tabs,
+  currentTarget,
+  activeTabId,
+  direction,
+}: GetCycledTabTargetOptions): TabTarget | null {
+  if (tabs.length < 2) return null;
+  const orderedTabs = tabs.toSorted((a, b) => a.order - b.order);
+  const currentIndex = getCurrentTabIndex(
+    orderedTabs,
+    currentTarget,
+    activeTabId,
+  );
+  if (currentIndex === -1) return null;
+
+  const step = direction === "forward" ? 1 : -1;
+  const nextIndex =
+    (currentIndex + step + orderedTabs.length) % orderedTabs.length;
+  const nextTab = orderedTabs[nextIndex];
+  return nextTab ? getTabTarget(nextTab) : null;
+}
+
 export function getCycledTabNoteId({
   tabs,
   currentNoteId,
   activeTabId,
   direction,
 }: GetCycledTabNoteIdOptions): string | null {
-  if (tabs.length < 2) return null;
-  const orderedTabs = tabs.toSorted((a, b) => a.order - b.order);
-  const routeIndex = currentNoteId
-    ? orderedTabs.findIndex((tab) => tab.noteId === currentNoteId)
-    : -1;
-  const activeIndex = activeTabId
-    ? orderedTabs.findIndex(
-        (tab) => tab.id === activeTabId || tab.noteId === activeTabId,
-      )
-    : -1;
-  const currentIndex = routeIndex === -1 ? activeIndex : routeIndex;
-  if (currentIndex === -1) return null;
-  const step = direction === "forward" ? 1 : -1;
-  const nextIndex =
-    (currentIndex + step + orderedTabs.length) % orderedTabs.length;
-  return orderedTabs[nextIndex]?.noteId ?? null;
+  const target = getCycledTabTarget({
+    tabs,
+    currentTarget: currentNoteId ? { type: "note", id: currentNoteId } : null,
+    activeTabId,
+    direction,
+  });
+
+  return target?.type === "note" ? target.id : null;
 }

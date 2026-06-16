@@ -47,6 +47,11 @@ const APP_SHORTCUT_REFERENCE: ReadonlyShortcut[] = [
     description: "Create a blank note.",
   },
   {
+    bind: "mod+shift+n",
+    title: "New AI chat",
+    description: "Create and open a new workspace AI chat.",
+  },
+  {
     bind: "mod+p",
     title: "Print current note",
     description: "Open print or export for the active note.",

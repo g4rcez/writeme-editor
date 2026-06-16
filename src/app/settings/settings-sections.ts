@@ -32,6 +32,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     platform: "all",
   },
   {
+    id: "ai",
+    label: "AI",
+    description: "Providers, credentials, models, and prompts.",
+    path: "/settings/ai",
+    platform: "all",
+  },
+  {
     id: "appearance",
     label: "Appearance",
     description: "Theme and visual preferences.",
@@ -57,13 +64,6 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Trash",
     description: "Trash retention and auto-purge behavior.",
     path: "/settings/trash",
-    platform: "all",
-  },
-  {
-    id: "ai",
-    label: "AI",
-    description: "Providers, credentials, models, and prompts.",
-    path: "/settings/ai",
     platform: "all",
   },
   {

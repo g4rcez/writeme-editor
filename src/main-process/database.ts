@@ -551,7 +551,9 @@ class DatabaseManager {
   }
 
   public deleteTabsByNoteId(noteId: string): void {
-    const stmt = this.db.prepare("DELETE FROM tabs WHERE noteId = ?");
+    const stmt = this.db.prepare(
+      "DELETE FROM tabs WHERE noteId = ? AND (type IS NULL OR type != 'ai-chat-tab')",
+    );
     stmt.run(noteId);
   }
 

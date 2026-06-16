@@ -3,8 +3,9 @@ import { useTemplates } from "@/app/hooks/use-templates";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
 import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
+import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
 import { repositories, useGlobalStore } from "@/store/global.store";
-import { Note, type NoteType } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { Autocomplete, Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
@@ -36,10 +37,10 @@ export const CreateNoteDialog = () => {
 
   useEffect(() => {
     if (isOpen) {
-      if (type === "note") {
-        setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
-      } else {
+      if (type === "quick") {
         setTitle(getDailyQuickNoteTitle(startOfDay(new Date())));
+      } else {
+        setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
       }
       setSelectedTemplateId(templateId || "");
       setVariableValues({});
@@ -58,8 +59,8 @@ export const CreateNoteDialog = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    let content = "";
-    if (selectedTemplateId) {
+    let content = type === "excalidraw" ? buildExcalidrawNoteContent() : "";
+    if (type === "note" && selectedTemplateId) {
       const latestTemplate =
         await repositories.notes.getOne(selectedTemplateId);
       if (latestTemplate) {
@@ -74,14 +75,20 @@ export const CreateNoteDialog = () => {
       }
     }
 
-    const note = Note.new(title, content, type as NoteType);
+    const noteType =
+      type === "excalidraw"
+        ? NoteType.excalidraw
+        : type === "quick"
+          ? NoteType.quick
+          : NoteType.note;
+    const note = Note.new(title, content, noteType);
     await repositories.notes.save(note);
     dispatch.note(note);
     onClose();
-    if (type === "note") {
-      navigate(`/note/${note.id}`);
-    } else {
+    if (type === "quick") {
       navigate(`/quicknote/${note.id}`);
+    } else {
+      navigate(`/note/${note.id}`);
     }
   };
 
@@ -90,7 +97,13 @@ export const CreateNoteDialog = () => {
       open={isOpen}
       onChange={onClose}
       className="max-w-md"
-      title={type === "note" ? "Create new note" : "Create quick note"}
+      title={
+        type === "quick"
+          ? "Create quick note"
+          : type === "excalidraw"
+            ? "Create Excalidraw note"
+            : "Create new note"
+      }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <Input

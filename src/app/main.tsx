@@ -24,6 +24,7 @@ import { tokyonightNightTheme } from "./styles/tokyonight-night";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
 import { sortByNewest } from "@/lib/array";
+import { isAiChatTab } from "@/lib/tab-target";
 import { setupAIAdapters } from "./ai/setup";
 import { isElectron } from "@/lib/is-electron";
 import { runPurge } from "@/lib/trash/purge";
@@ -210,10 +211,14 @@ export async function main() {
       explorerRoot,
     );
     const tab = sortByNewest(tabs)[0];
-    const find = notes.find((x) => x.id === tab?.noteId);
-    if (find) {
-      const note = await repositories.notes.getOne(find.id);
-      globalDispatch.note(note!);
+    if (tab && isAiChatTab(tab)) {
+      globalDispatch.activeTabId(tab.id);
+    } else {
+      const find = notes.find((x) => x.id === tab?.noteId);
+      if (find) {
+        const note = await repositories.notes.getOne(find.id);
+        globalDispatch.note(note!);
+      }
     }
     runPurge().catch(console.error);
     setInterval(() => runPurge().catch(console.error), 60 * 60 * 1000);

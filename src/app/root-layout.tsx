@@ -3,10 +3,22 @@ import { Fragment, Suspense, useCallback, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
-import { isCommanderShortcut } from "@/lib/keyboard-shortcuts";
+import { createWorkspaceAiChat } from "@/app/ai/create-ai-chat";
+import {
+  isCommanderShortcut,
+  isNewAiChatShortcut,
+  isNewNoteShortcut,
+} from "@/lib/keyboard-shortcuts";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
-import { getCycledTabNoteId, type TabCycleDirection } from "@/lib/tab-cycling";
+import { getCycledTabTarget, type TabCycleDirection } from "@/lib/tab-cycling";
+import {
+  findTabByTarget,
+  getCurrentRouteTabTarget,
+  getRouteForTab,
+  getTabTarget,
+  isAiChatTab,
+} from "@/lib/tab-target";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 import { Note } from "@/store/note";
@@ -53,6 +65,25 @@ export const RootLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prevTabsRef = useRef(state.tabs);
+
+  const navigateToTab = useCallback(
+    async (tab: (typeof state.tabs)[number]): Promise<void> => {
+      const target = getTabTarget(tab);
+      if (target.type === "note") {
+        await dispatch.selectNoteById(target.id);
+      } else {
+        await dispatch.addAiChatTab(target.id);
+      }
+      navigate(getRouteForTab(tab));
+    },
+    [dispatch, navigate],
+  );
+
+  const createNewAiChat = useCallback(async (): Promise<void> => {
+    const chat = await createWorkspaceAiChat(state.directory);
+    await dispatch.addAiChatTab(chat.id);
+    navigate(`/chat?chatId=${encodeURIComponent(chat.id)}`);
+  }, [dispatch, navigate, state.directory]);
 
   useEffect(() => {
     if (!isElectron()) return;
@@ -124,6 +155,7 @@ export const RootLayout = () => {
       (pt) => !state.tabs.find((ct) => ct.id === pt.id),
     );
     for (const tab of removedTabs) {
+      if (isAiChatTab(tab)) continue;
       const requestId = waitMap.get(tab.noteId);
       if (requestId) {
         window.electronAPI.app.notifyFileClosed(requestId);
@@ -134,10 +166,16 @@ export const RootLayout = () => {
   }, [state.tabs]);
 
   useEffect(() => {
-    if (location.pathname === "/" && state.activeTabId !== null) {
-      navigate(`/note/${state.activeTabId}`, { replace: true });
+    if (location.pathname !== "/" || state.activeTabId === null) return;
+    const activeTab = state.tabs.find(
+      (tab) =>
+        tab.id === state.activeTabId ||
+        (!isAiChatTab(tab) && tab.noteId === state.activeTabId),
+    );
+    if (activeTab) {
+      navigate(getRouteForTab(activeTab), { replace: true });
     }
-  }, []);
+  }, [location.pathname, navigate, state.activeTabId, state.tabs]);
 
   useEffect(() => {
     if (!location.pathname.startsWith("/settings")) return;
@@ -150,20 +188,28 @@ export const RootLayout = () => {
 
   const cycleEditorTab = useCallback(
     async (direction: TabCycleDirection): Promise<void> => {
-      const currentNoteId = location.pathname.startsWith("/note/")
-        ? (location.pathname.slice("/note/".length).split("/")[0] ?? null)
-        : null;
-      const nextNoteId = getCycledTabNoteId({
+      const currentTarget = getCurrentRouteTabTarget(
+        location.pathname,
+        location.search,
+      );
+      const nextTarget = getCycledTabTarget({
         tabs: state.tabs,
-        currentNoteId,
+        currentTarget,
         activeTabId: state.activeTabId,
         direction,
       });
-      if (!nextNoteId) return;
-      await dispatch.selectNoteById(nextNoteId);
-      navigate(`/note/${nextNoteId}`);
+      if (!nextTarget) return;
+      const nextTab = findTabByTarget(state.tabs, nextTarget);
+      if (!nextTab) return;
+      await navigateToTab(nextTab);
     },
-    [dispatch, location.pathname, navigate, state.activeTabId, state.tabs],
+    [
+      location.pathname,
+      location.search,
+      navigateToTab,
+      state.activeTabId,
+      state.tabs,
+    ],
   );
 
   const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
@@ -172,11 +218,12 @@ export const RootLayout = () => {
       return;
     }
 
-    const currentNoteId = location.pathname.startsWith("/note/")
-      ? (location.pathname.slice("/note/".length).split("/")[0] ?? null)
-      : null;
+    const currentTarget = getCurrentRouteTabTarget(
+      location.pathname,
+      location.search,
+    );
     const currentTab =
-      state.tabs.find((tab) => tab.noteId === currentNoteId) ??
+      findTabByTarget(state.tabs, currentTarget) ??
       state.tabs.find((tab) => tab.id === state.activeTabId);
     if (!currentTab) return;
 
@@ -184,14 +231,21 @@ export const RootLayout = () => {
     await dispatch.removeTab(currentTab.id);
 
     if (nextTab) {
-      await dispatch.selectNoteById(nextTab.noteId);
-      navigate(`/note/${nextTab.noteId}`);
+      await navigateToTab(nextTab);
       return;
     }
 
     dispatch.setNote(null);
     navigate("/");
-  }, [dispatch, location.pathname, navigate, state.activeTabId, state.tabs]);
+  }, [
+    dispatch,
+    location.pathname,
+    location.search,
+    navigate,
+    navigateToTab,
+    state.activeTabId,
+    state.tabs,
+  ]);
 
   useEffect(() => {
     if (!state.note || !location.pathname.startsWith("/note/")) return;
@@ -229,7 +283,13 @@ export const RootLayout = () => {
           e.preventDefault();
           dispatch.commander(true);
         }
-        if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        if (isNewAiChatShortcut(e)) {
+          e.preventDefault();
+          e.stopPropagation();
+          void createNewAiChat();
+          return;
+        }
+        if (isNewNoteShortcut(e)) {
           e.preventDefault();
           dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
         }
@@ -277,6 +337,7 @@ export const RootLayout = () => {
     },
     [
       closeCurrentTabOrHide,
+      createNewAiChat,
       cycleEditorTab,
       dispatch,
       location.pathname,

@@ -61,6 +61,7 @@ const GroupDetailPage = lazy(() => import("./pages/group-detail.page"));
 const CalendarPage = lazy(() => import("./pages/calendar.page"));
 const ViewsListPage = lazy(() => import("./pages/views-list.page"));
 const ViewDetailPage = lazy(() => import("./pages/view-detail.page"));
+const ChatPage = lazy(() => import("./pages/chat.page"));
 const OAuthCallbackPage = lazy(() => import("./pages/oauth-callback.page"));
 const FolderWorkspacePage = lazy(() => import("./pages/folder-workspace.page"));
 const SettingsPlatformGate = lazy(() =>
@@ -201,22 +202,11 @@ export const router = createRouter([
         path: "calendar",
         element: <CalendarPage />,
       },
-      {
-        path: "views",
-        element: <ViewsListPage />,
-      },
-      {
-        path: "views/:viewId",
-        element: <ViewDetailPage />,
-      },
-      {
-        path: "oauth/callback",
-        element: <OAuthCallbackPage />,
-      },
-      {
-        path: "folder",
-        element: <FolderWorkspacePage />,
-      },
+      { path: "views", element: <ViewsListPage /> },
+      { path: "views/:viewId", element: <ViewDetailPage /> },
+      { path: "oauth/callback", element: <OAuthCallbackPage /> },
+      { path: "chat", element: <ChatPage /> },
+      { path: "folder", element: <FolderWorkspacePage /> },
       {
         path: "examples",
         children: [

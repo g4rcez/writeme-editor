@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isCommanderShortcut } from "./keyboard-shortcuts";
+import {
+  isCommanderShortcut,
+  isNewAiChatShortcut,
+  isNewNoteShortcut,
+} from "./keyboard-shortcuts";
 
 const event = (
   overrides: Partial<Parameters<typeof isCommanderShortcut>[0]>,
@@ -32,6 +36,22 @@ describe("keyboard shortcuts", () => {
   it("does not match a different key", () => {
     expect(
       isCommanderShortcut(event({ ctrlKey: true, shiftKey: true, key: "k" })),
+    ).toBe(false);
+  });
+
+  it("matches Ctrl/Cmd+Shift+N for a new AI chat", () => {
+    expect(
+      isNewAiChatShortcut(event({ ctrlKey: true, shiftKey: true, key: "N" })),
+    ).toBe(true);
+    expect(
+      isNewAiChatShortcut(event({ metaKey: true, shiftKey: true, key: "n" })),
+    ).toBe(true);
+  });
+
+  it("does not match new note when Shift is pressed", () => {
+    expect(isNewNoteShortcut(event({ ctrlKey: true, key: "n" }))).toBe(true);
+    expect(
+      isNewNoteShortcut(event({ ctrlKey: true, shiftKey: true, key: "n" })),
     ).toBe(false);
   });
 });

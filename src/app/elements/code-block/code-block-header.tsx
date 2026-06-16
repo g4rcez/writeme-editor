@@ -1,9 +1,9 @@
-import { EXECUTION_CONFIG } from "@/lib/execution-config";
-import { Button, Select } from "@g4rcez/components";
+import { Button } from "@g4rcez/components";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
 import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
 import { type BundledLanguage } from "shiki";
+import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { canFormat } from "../code-block-formatting";
 
 const SUPPORTED_LANGUAGES = [
@@ -59,61 +59,41 @@ const LANGUAGE_OPTIONS: Opt[] = [
   ),
 ];
 
-export const CodeBlockHeader = ({
-  language,
-  code,
-  title,
-  handleLanguageChange: onChangeLanguage,
-  handleFormat,
-  isFormatting,
-  canRun,
-  handleRun,
-  isRunning,
-}: {
-  language: string;
+type Props = {
   code: string;
-  title?: string | null;
-  handleLanguageChange: (lang: string) => void;
-  handleFormat: () => void;
-  isFormatting: boolean;
+  lines: number;
   canRun: boolean;
-  handleRun: () => void;
+  language: string;
   isRunning: boolean;
-}) => {
+  onFormat: () => void;
+  handleRun: () => void;
+  isFormatting: boolean;
+  title?: string | null;
+  onChangeLanguage: (lang: string) => void;
+};
+
+export const CodeBlockHeader = (props: Props) => {
   return (
     <div
       contentEditable={false}
-      className="writeme-code-block-header flex justify-between items-center py-2 px-3 border-b border-card-border bg-card-background"
+      style={{ zIndex: "999999" }}
+      className="absolute isolate top-0 right-0 z-[max] flex justify-between items-center p-2 bg-card-background"
     >
-      <div className="flex gap-2 items-center">
-        <Select
-          hiddenLabel
-          value={language}
-          className="h-8 text-xs"
-          aria-description="Language"
-          placeholder="Select a language"
-          onChange={(e) => onChangeLanguage(e.target.value)}
-          options={LANGUAGE_OPTIONS}
-        />
-        {title && (
-          <span
-            title={title}
-            className="!text-xs text-muted font-mono px-2 py-1"
-          >
-            {title}
-          </span>
-        )}
-      </div>
+      {props.title && (
+        <span title={props.title} className="!text-xs text-muted font-mono px-2 py-1">
+          {props.title}
+        </span>
+      )}
       <div className="text-xs text-foreground flex items-center gap-2">
-        {canFormat(language) && (
+        {canFormat(props.language) && (
           <Button
             size="small"
             theme="ghost-primary"
             title="Format code"
-            onClick={handleFormat}
-            disabled={isFormatting}
+            onClick={props.onFormat}
+            disabled={props.isFormatting}
           >
-            {isFormatting ? (
+            {props.isFormatting ? (
               <CircleNotchIcon className="animate-spin size-4" />
             ) : (
               <span className="flex gap-1 items-center text-xs">
@@ -123,15 +103,15 @@ export const CodeBlockHeader = ({
             )}
           </Button>
         )}
-        {canRun && (
+        {props.canRun && (
           <Button
             size="small"
-            onClick={handleRun}
-            disabled={isRunning}
+            onClick={props.handleRun}
+            disabled={props.isRunning}
             theme="ghost-success"
-            title={`Run with ${EXECUTION_CONFIG[language as BundledLanguage]?.label}`}
+            title={`Run with ${EXECUTION_CONFIG[props.language as BundledLanguage]?.label}`}
           >
-            {isRunning ? (
+            {props.isRunning ? (
               <CircleNotchIcon className="animate-spin size-4" />
             ) : (
               <span className="flex gap-1 items-center text-sm">
@@ -141,8 +121,18 @@ export const CodeBlockHeader = ({
             )}
           </Button>
         )}
-        {code.split("\n").length} lines - {code.length} characters
       </div>
+      <select
+        value={props.language}
+        className="text-right h-auto bg-card-background text-xs w-fit"
+        onChange={(e) => props.onChangeLanguage(e.target.value)}
+      >
+        {LANGUAGE_OPTIONS.map((x) => (
+          <option value={x.value} key={`language-select-${x.value}`}>
+            {x.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import type { Tab } from "@/store/repositories/entities/tab";
 
-type TabCloseCandidate = Pick<Tab, "id" | "noteId">;
+type TabCloseCandidate = Pick<Tab, "id">;
 
 export function getPreviousTabAfterClose<T extends TabCloseCandidate>(
   tabs: T[],

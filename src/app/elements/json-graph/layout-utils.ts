@@ -15,8 +15,42 @@ export type JsonNodeData = {
   isPathToMatch: boolean;
 };
 
+const ROOT_NAME = "$";
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 80;
+
+export const getDefaultExpandedPaths = (
+  data: unknown,
+  maxDepth = 2,
+): Set<string> => {
+  const paths = new Set<string>([ROOT_NAME]);
+
+  const visit = (value: unknown, path: string, depth: number) => {
+    if (depth >= maxDepth) return;
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        const childPath = `${path}[${index}]`;
+        if (typeof item === "object" && item !== null) {
+          paths.add(childPath);
+          visit(item, childPath, depth + 1);
+        }
+      });
+      return;
+    }
+    if (typeof value === "object" && value !== null) {
+      Object.entries(value).forEach(([key, item]) => {
+        const childPath = `${path}.${key}`;
+        if (typeof item === "object" && item !== null) {
+          paths.add(childPath);
+          visit(item, childPath, depth + 1);
+        }
+      });
+    }
+  };
+
+  visit(data, ROOT_NAME, 0);
+  return paths;
+};
 
 export const getLayoutedElements = (
   nodes: Node[],

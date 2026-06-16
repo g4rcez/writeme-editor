@@ -9,6 +9,7 @@ export enum NoteType {
   template = "template",
   json = "json",
   freehand = "freehand",
+  excalidraw = "excalidraw",
 }
 
 export class Note implements EntityBase {

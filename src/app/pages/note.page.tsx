@@ -9,6 +9,7 @@ import { Tag } from "@g4rcez/components";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { NoteFooter } from "../components/note-footer";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
@@ -120,14 +121,14 @@ export default function NotePage() {
   const isLoading = note === null;
 
   useEffect(() => {
+    if (!id) return;
+    void dispatch.addTab(id);
     if (id === state.note?.id) return;
-    repositories.notes.getOne(id!).then((x) => {
+    repositories.notes.getOne(id).then((x) => {
       const n = x || null;
       dispatch.setNote(n);
     });
-    const hasTab = state.tabs.some((x) => x.noteId === id);
-    if (!hasTab) dispatch.addTab(id!);
-  }, [id]);
+  }, [dispatch, id, state.note?.id]);
 
   useEffect(() => {
     if (!isElectron() || !note?.filePath) return;
@@ -162,6 +163,33 @@ export default function NotePage() {
   }
 
   const isJson = note.noteType === NoteType.json;
+  const isExcalidraw = note.noteType === NoteType.excalidraw;
+
+  if (isJson || isExcalidraw) {
+    return (
+      <div className="-my-8 flex h-[calc(100%+4rem)] min-h-0 w-full bg-background">
+        {isJson ? (
+          <JsonGraph
+            key={note.id}
+            json={(() => {
+              try {
+                return JSON.parse(note.content);
+              } catch {
+                return { error: "Failed to parse JSON", raw: note.content };
+              }
+            })()}
+            onChange={(newJson) => {
+              const content = JSON.stringify(newJson, null, 2);
+              repositories.notes.updateContent(note.id, content);
+              dispatch.updateNoteContent(note.id, content);
+            }}
+          />
+        ) : (
+          <ExcalidrawNoteView note={note} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <Wrapper>
@@ -190,29 +218,9 @@ export default function NotePage() {
         </header>
       ) : null}
 
-      {isJson ? (
-        <div className="flex-1 h-[calc(100vh-160px)]">
-          <JsonGraph
-            key={note.id}
-            json={(() => {
-              try {
-                return JSON.parse(note.content);
-              } catch {
-                return { error: "Failed to parse JSON", raw: note.content };
-              }
-            })()}
-            onChange={(newJson) => {
-              const content = JSON.stringify(newJson, null, 2);
-              repositories.notes.updateContent(note.id, content);
-              dispatch.updateNoteContent(note.id, content);
-            }}
-          />
-        </div>
-      ) : (
-        <Editor note={note} key={note.id} content={note.content || ""} />
-      )}
+      <Editor note={note} key={note.id} content={note.content || ""} />
       <NoteReferences note={note} />
-      {!isJson && <NoteFooter noteId={note.id} />}
+      <NoteFooter noteId={note.id} />
     </Wrapper>
   );
 }

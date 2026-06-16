@@ -3,10 +3,10 @@ import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
 
 export default {
-  blocklist: ["[-:\\s\\|]"],
-  plugins: [typography, forms],
   darkMode: "class",
   presets: [config],
+  blocklist: ["[-:\\s\\|]"],
+  plugins: [typography, forms],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

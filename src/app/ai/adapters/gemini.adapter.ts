@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { proxyFetch } from "@/lib/proxy-fetch";
 import { v4 as uuidv4 } from "uuid";
 import type {
@@ -155,6 +155,9 @@ export class GeminiAdapter implements AIAdapter {
         abortSignal: signal,
         temperature: options.temperature,
         maxOutputTokens: options.maxTokens,
+        tools: options.tools,
+        toolChoice: options.toolChoice,
+        stopWhen: options.tools ? stepCountIs(5) : undefined,
       });
 
       for await (const chunk of result.textStream) {

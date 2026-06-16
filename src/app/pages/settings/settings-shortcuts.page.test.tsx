@@ -69,9 +69,13 @@ describe("SettingsShortcutsPage", () => {
     expect(screen.getByText("Editable shortcut controls")).toBeInTheDocument();
     expect(screen.getByText("Commander")).toBeInTheDocument();
     expect(screen.getByText("New note")).toBeInTheDocument();
+    expect(screen.getByText("New AI chat")).toBeInTheDocument();
     expect(screen.getByText("Shortcut/Help menu")).toBeInTheDocument();
     expect(screen.getByText("Open the command palette.")).toBeInTheDocument();
     expect(screen.getByText("Create a blank note.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Create and open a new workspace AI chat."),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Open the shortcut reference."),
     ).toBeInTheDocument();

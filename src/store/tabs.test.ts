@@ -4,6 +4,8 @@ import {
   normalizeWorkspaceTabs,
   useGlobalStore,
 } from "./global.store";
+import { AI_CHAT_TAB_TYPE } from "@/lib/tab-target";
+
 import type { Tab } from "./repositories/entities/tab";
 
 // Mock repositories
@@ -33,12 +35,13 @@ const createTab = (
   noteId: string,
   order: number,
   project = "workspace-a",
+  type = "tab",
 ): Tab => ({
   id,
   noteId,
   order,
   project,
-  type: "tab",
+  type,
   createdAt: new Date(`2024-01-01T00:00:0${order}.000Z`),
   updatedAt: new Date(`2024-01-01T00:00:0${order}.000Z`),
   scrollY: 0,
@@ -105,6 +108,49 @@ describe("Tab Management Logic", () => {
       { id: "second-tab", order: 1 },
     ]);
     expect(result.duplicateTabs).toStrictEqual([duplicateTab]);
+  });
+
+  it("keeps note and AI chat tabs with the same target id separate", () => {
+    const workspace = "workspace-a";
+    const noteTab = createTab("note-tab", "shared-id", 0, workspace);
+    const chatTab = createTab(
+      "chat-tab",
+      "shared-id",
+      1,
+      workspace,
+      AI_CHAT_TAB_TYPE,
+    );
+
+    const result = normalizeWorkspaceTabs([noteTab, chatTab], workspace);
+
+    expect(result.tabs).toStrictEqual([noteTab, chatTab]);
+    expect(result.duplicateTabs).toStrictEqual([]);
+  });
+
+  it("deduplicates AI chat tabs independently from note tabs", () => {
+    const workspace = "workspace-a";
+    const firstChatTab = createTab(
+      "chat-tab-1",
+      "chat-1",
+      0,
+      workspace,
+      AI_CHAT_TAB_TYPE,
+    );
+    const duplicateChatTab = createTab(
+      "chat-tab-2",
+      "chat-1",
+      1,
+      workspace,
+      AI_CHAT_TAB_TYPE,
+    );
+
+    const result = normalizeWorkspaceTabs(
+      [duplicateChatTab, firstChatTab],
+      workspace,
+    );
+
+    expect(result.tabs).toStrictEqual([firstChatTab]);
+    expect(result.duplicateTabs).toStrictEqual([duplicateChatTab]);
   });
 
   it("does not collapse tabs for different workspaces when normalized separately", () => {

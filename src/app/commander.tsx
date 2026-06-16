@@ -11,6 +11,7 @@ import {
   isSettingsSectionAvailable,
 } from "@/app/settings/settings-sections";
 import { printDocument } from "@/lib/print-document";
+import { getRouteForTab, isAiChatTab } from "@/lib/tab-target";
 import {
   CommanderType,
   globalState,
@@ -31,7 +32,8 @@ import {
   useShortcuts,
   useWritemeShortcuts,
 } from "./elements/shortcut-items";
-import { NoteIcon } from "@phosphor-icons/react";
+import { ChatCircleDotsIcon, NoteIcon } from "@phosphor-icons/react";
+import { useAiChatTabs } from "./hooks/use-ai-chat-tabs";
 import { useNoteTabs } from "./hooks/use-note-tabs";
 import type { Tab } from "@/store/repositories/entities/tab";
 import type { NoteGroup } from "@/store/repositories/entities/note-group";
@@ -99,25 +101,40 @@ export const Commander = (props: Props) => {
   );
 
   const notesById = useNoteTabs(props.notes);
+  const chatsById = useAiChatTabs(globalState().directory, props.tabs);
 
   const openedTabsGroup = useMemo(
     (): CommandItemTypes[] =>
       [...props.tabs]
         .sort((a, b) => a.order - b.order)
         .map((tab): CommandItemTypes => {
-          const note = notesById.get(tab.noteId);
-          const title = note?.title || "Untitled";
+          const isChatTab = isAiChatTab(tab);
+          const note = isChatTab ? undefined : notesById.get(tab.noteId);
+          const chat = isChatTab ? chatsById.get(tab.noteId) : undefined;
+          const title = isChatTab
+            ? chat?.title?.trim() || "AI Chat"
+            : note?.title || "Untitled";
           return {
+            Icon: isChatTab ? (
+              <span className="text-primary text-xs flex items-center gap-1">
+                <ChatCircleDotsIcon />
+                Chat
+              </span>
+            ) : undefined,
             type: "shortcut",
-            title: `Tab: ${title}`,
+            title: `${isChatTab ? "Chat" : "Tab"}: ${title}`,
             action: async (args) => {
               args.setOpen(false);
-              await dispatch.selectNoteById(tab.noteId);
-              navigate(`/note/${tab.noteId}`);
+              if (isChatTab) {
+                await dispatch.addAiChatTab(tab.noteId);
+              } else {
+                await dispatch.selectNoteById(tab.noteId);
+              }
+              navigate(getRouteForTab(tab));
             },
           };
         }),
-    [props.tabs, notesById, dispatch, navigate],
+    [props.tabs, notesById, chatsById, dispatch, navigate],
   );
 
   const options = useMemo(() => {
@@ -140,6 +157,19 @@ export const Commander = (props: Props) => {
             args.setOpen(false);
             setTimeout(() => {
               dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+            }, 50);
+          },
+        },
+        {
+          title: "New excalidraw",
+          type: "shortcut",
+          action: (args) => {
+            args.setOpen(false);
+            setTimeout(() => {
+              dispatch.setCreateNoteDialog({
+                isOpen: true,
+                type: "excalidraw",
+              });
             }, 50);
           },
         },

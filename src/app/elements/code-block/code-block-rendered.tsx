@@ -1,25 +1,16 @@
+import { TextSelection } from "@tiptap/pm/state";
+import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
+import { type BundledLanguage } from "shiki";
 import { updateNodeContent } from "@/lib/editor-utils";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { isElectron } from "@/lib/is-electron";
 import { useGlobalStore } from "@/store/global.store";
-import { TextSelection } from "@tiptap/pm/state";
-import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import {
-  Fragment,
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
-import { type BundledLanguage } from "shiki";
-import { canFormat, formatCode } from "../code-block-formatting";
 import { CodeBlockFrame } from "../code-block";
+import { canFormat, formatCode } from "../code-block-formatting";
 import { CodeBlockHeader } from "./code-block-header";
-import { ExecutionOutput } from "./execution-output";
 import { CodeMirrorNodeCodeEditor } from "./codemirror-node-code-editor";
+import { ExecutionOutput } from "./execution-output";
 
 const ExcalidrawCode = lazy(() =>
   import("./excalidraw").then((m) => ({
@@ -27,37 +18,19 @@ const ExcalidrawCode = lazy(() =>
   })),
 );
 
-const Flowchart = lazy(() =>
-  import("./flowchart").then((m) => ({ default: m.Flowchart })),
-);
+const Flowchart = lazy(() => import("./flowchart").then((m) => ({ default: m.Flowchart })));
 
-const Graphviz = lazy(() =>
-  import("./graphviz").then((m) => ({ default: m.Graphviz })),
-);
+const Graphviz = lazy(() => import("./graphviz").then((m) => ({ default: m.Graphviz })));
 
-const MathBlock = lazy(() =>
-  import("./math-block").then((m) => ({ default: m.MathBlock })),
-);
+const MathBlock = lazy(() => import("./math-block").then((m) => ({ default: m.MathBlock })));
 
-const Mermaid = lazy(() =>
-  import("./mermaid").then((m) => ({ default: m.Mermaid })),
-);
+const Mermaid = lazy(() => import("./mermaid").then((m) => ({ default: m.Mermaid })));
 
-const LatexBlock = lazy(() =>
-  import("./latex-block").then((m) => ({ default: m.LatexBlock })),
-);
+const LatexBlock = lazy(() => import("./latex-block").then((m) => ({ default: m.LatexBlock })));
 
-const FreehandCode = lazy(() =>
-  import("./freehand").then((m) => ({ default: m.FreehandCode })),
-);
+const FreehandCode = lazy(() => import("./freehand").then((m) => ({ default: m.FreehandCode })));
 
-const CodeBlockAddons = ({
-  language,
-  code,
-}: {
-  language: string;
-  code: string;
-}) => {
+const CodeBlockAddons = ({ language, code }: { language: string; code: string }) => {
   if (language === "math" && code) {
     return (
       <Suspense fallback={null}>
@@ -158,9 +131,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
         if (!entries[0]?.isIntersecting) return;
         const currentPos = props.getPos();
         if (typeof currentPos !== "number") return;
-        props.editor.view.dispatch(
-          props.editor.state.tr.setMeta("shikiHighlightPos", currentPos),
-        );
+        props.editor.view.dispatch(props.editor.state.tr.setMeta("shikiHighlightPos", currentPos));
       },
       { rootMargin: "200px" },
     );
@@ -204,10 +175,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
       tr = tr.insert(pos, paragraph.create());
       selectionPosition = pos + 1;
     }
-    const selection = TextSelection.near(
-      tr.doc.resolve(selectionPosition),
-      pos <= 0 ? 1 : -1,
-    );
+    const selection = TextSelection.near(tr.doc.resolve(selectionPosition), pos <= 0 ? 1 : -1);
     view.dispatch(tr.setSelection(selection).scrollIntoView());
     view.focus();
   };
@@ -254,28 +222,18 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
   };
 
   const config = EXECUTION_CONFIG[language as BundledLanguage];
-  const canRun = !!(
-    config?.browserRuntimeExec ||
-    (isElectron() && executablePath)
-  );
+  const canRun = !!(config?.browserRuntimeExec || (isElectron() && executablePath));
 
   const handleRun = async () => {
     if (!config) return;
     setIsRunning(true);
     setOutput(null);
     try {
-      if (
-        config.browserRuntimeExec &&
-        (!isElectron() || config.command === "browser")
-      ) {
+      if (config.browserRuntimeExec && (!isElectron() || config.command === "browser")) {
         const result = await config.browserRuntimeExec(code);
         setOutput(result);
       } else if (isElectron() && executablePath) {
-        const result = await window.electronAPI.execution.run(
-          config.command,
-          config.args,
-          code,
-        );
+        const result = await window.electronAPI.execution.run(config.command, config.args, code);
         setOutput({ stdout: result.stdout, stderr: result.stderr });
       }
     } catch (e) {
@@ -299,11 +257,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
         <Suspense fallback={null}>
-          <ExcalidrawCode
-            code={code}
-            onChange={onChangeDraw}
-            autoDelete={props.deleteNode}
-          />
+          <ExcalidrawCode code={code} onChange={onChangeDraw} autoDelete={props.deleteNode} />
         </Suspense>
       </NodeViewWrapper>
     );
@@ -316,32 +270,31 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
         className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
       >
         <Suspense fallback={null}>
-          <FreehandCode
-            code={code}
-            onChange={onChangeDraw}
-            autoDelete={props.deleteNode}
-          />
+          <FreehandCode code={code} onChange={onChangeDraw} autoDelete={props.deleteNode} />
         </Suspense>
       </NodeViewWrapper>
     );
   }
 
+  const lines = code.split("\n").length;
+
   return (
     <CodeBlockFrame
-      id={`code-block-${language}-${id}`}
-      lineCount={code.split("\n").length}
+      lineCount={lines}
       printContent={code}
+      id={`code-block-${language}-${id}`}
       header={
         <CodeBlockHeader
           code={code}
+          lines={lines}
           title={title}
           canRun={canRun}
           language={language}
           handleRun={handleRun}
           isRunning={isRunning}
-          handleFormat={handleFormat}
+          onFormat={handleFormat}
           isFormatting={isFormatting}
-          handleLanguageChange={handleLanguageChange}
+          onChangeLanguage={handleLanguageChange}
         />
       }
       footer={

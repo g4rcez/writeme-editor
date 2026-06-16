@@ -5,33 +5,97 @@ import type {
   AIChat,
   AIMessage,
   AttachedFile,
+  AIConfig,
 } from "../../store/repositories/electron/ai.repository";
 import { adapterRegistry } from "./adapters/registry";
 import { authManager } from "./auth/auth-manager";
 import type { AIConversationMessage, AIFile } from "./adapters/types";
+import type { ToolChoice, ToolSet } from "ai";
+import { AI_CHATS_CHANGED_EVENT } from "./events";
 
-export function useAIChat(noteId?: string) {
+export { AI_CHATS_CHANGED_EVENT } from "./events";
+
+const MARKDOWN_CHAT_SYSTEM_PROMPT = [
+  "You are Writeme Workspace AI, an assistant for the current notes workspace.",
+  "Always reply in readable markdown. Following the Github Flavoured Markdown.",
+  "Do not return JSON, JSONL, UI specs, or structured renderer payloads.",
+  "Use tables, headings, bullets, and code fences when they make the answer clearer.",
+  "Keep responses concise and practical for note and writing workflows.",
+].join("\n");
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
+function createSystemMessage(chatId: string, content: string): AIMessage {
+  const now = new Date().toISOString();
+  return {
+    id: uuid(),
+    chatId,
+    role: "system",
+    content,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function removeEmptyAssistantPlaceholder(
+  messages: AIMessage[],
+  assistantMessageId: string,
+): AIMessage[] {
+  return messages.filter(
+    (message) =>
+      message.id !== assistantMessageId || message.content.trim().length > 0,
+  );
+}
+
+function notifyChatsChanged(): void {
+  window.dispatchEvent(new Event(AI_CHATS_CHANGED_EVENT));
+}
+
+function createChatTitle(prompt: string): string {
+  const normalized = prompt.replace(/\s+/g, " ").trim();
+  if (!normalized) return "New Chat";
+  return normalized.length > 48 ? `${normalized.slice(0, 45)}...` : normalized;
+}
+
+export function useAIChat(
+  noteId?: string,
+  chatScopeId?: string | null,
+  selectedChatId?: string | null,
+) {
   const [chat, setChat] = useState<AIChat | null>(null);
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<AIConfig | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+
+  const effectiveChatScope = chatScopeId ?? noteId;
 
   useEffect(() => {
     setIsLoading(true);
 
     const loadChat = async () => {
-      if (!noteId) return;
-      const chats = await repositories.ai.getChats(noteId);
-      if (chats.length > 0) {
-        setChat(chats[0]!);
-        const msgs = await repositories.ai.getMessages(chats[0]?.id!);
+      if (!effectiveChatScope) {
+        setChat(null);
+        setMessages([]);
+        return;
+      }
+      const chats = await repositories.ai.getChats(effectiveChatScope);
+      const selectedChat = selectedChatId
+        ? (chats.find((item) => item.id === selectedChatId) ?? null)
+        : null;
+      const lastChat = selectedChat ?? chats[0] ?? null;
+      if (lastChat) {
+        setChat(lastChat);
+        const msgs = await repositories.ai.getMessages(lastChat.id);
         setMessages(msgs);
       } else {
         const now = new Date().toISOString();
         const newChat: AIChat = {
-          noteId,
+          noteId: effectiveChatScope,
           id: uuid(),
           createdAt: now,
           updatedAt: now,
@@ -45,12 +109,12 @@ export function useAIChat(noteId?: string) {
 
     const loadConfig = async () => {
       const configs = await repositories.ai.getConfigs();
-      const def = configs.find((c) => c.isDefault) || configs[0];
+      const def = configs.find((c) => c.isDefault) || configs[0] || null;
       setConfig(def);
     };
 
     Promise.all([loadChat(), loadConfig()]).finally(() => setIsLoading(false));
-  }, [noteId]);
+  }, [effectiveChatScope, selectedChatId]);
 
   const send = useCallback(
     async (
@@ -61,8 +125,10 @@ export function useAIChat(noteId?: string) {
         selectionSlice?: { from: number; to: number };
       },
       files?: AIFile[],
+      tools?: ToolSet,
+      toolChoice?: ToolChoice<ToolSet>,
     ) => {
-      if (!chat || !config) return;
+      if (!chat || !config) return false;
 
       const attachedFiles: AttachedFile[] = (files ?? []).map((f) => ({
         id: f.id,
@@ -91,24 +157,33 @@ export function useAIChat(noteId?: string) {
         diffOriginal: options.selection,
         selectionSlice: options.selectionSlice,
       };
+      const assistantMessageId = assistantMsg.id;
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setIsStreaming(true);
       await repositories.ai.saveMessage(userMsg);
+      const updatedChat: AIChat = {
+        ...chat,
+        title: chat.title === "New Chat" ? createChatTitle(prompt) : chat.title,
+        updatedAt: now,
+      };
+      await repositories.ai.saveChat(updatedChat);
+      setChat(updatedChat);
+      notifyChatsChanged();
       const adapterId: string = config.adapterId ?? "cli";
       const adapter = adapterRegistry.get(adapterId);
       if (!adapter) {
-        const errMsg: AIMessage = {
-          id: uuid(),
-          createdAt: now,
-          role: "system",
-          updatedAt: now,
-          chatId: chat.id,
-          content: `Error: No adapter found for "${adapterId}". Please configure AI in Settings.`,
-        };
-        setMessages((prev) => [...prev, errMsg]);
+        const errMsg = createSystemMessage(
+          chat.id,
+          `Error: No adapter found for "${adapterId}". Please configure AI in Settings.`,
+        );
+        setMessages((prev) => [
+          ...removeEmptyAssistantPlaceholder(prev, assistantMessageId),
+          errMsg,
+        ]);
+        await repositories.ai.saveMessage(errMsg);
         setIsStreaming(false);
-        return;
+        return true;
       }
 
       let credentials = {};
@@ -116,21 +191,20 @@ export function useAIChat(noteId?: string) {
         credentials = await authManager.getCredentials(adapterId, adapter);
       } catch {
         if (adapterId !== "cli") {
-          const errMsg: AIMessage = {
-            id: uuid(),
-            chatId: chat.id,
-            role: "system",
-            content: "Error: Not authenticated. Connect in Settings.",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          setMessages((prev) => [...prev, errMsg]);
+          const errMsg = createSystemMessage(
+            chat.id,
+            "Error: Not authenticated. Connect in Settings.",
+          );
+          setMessages((prev) => [
+            ...removeEmptyAssistantPlaceholder(prev, assistantMessageId),
+            errMsg,
+          ]);
+          await repositories.ai.saveMessage(errMsg);
           setIsStreaming(false);
-          return;
+          return true;
         }
       }
 
-      // Build conversation history
       const history: AIConversationMessage[] = messages
         .filter((m) => m.role !== "system")
         .map((m) => ({
@@ -148,12 +222,13 @@ export function useAIChat(noteId?: string) {
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
+      cancelledRef.current = false;
 
-      const systemPromptParts: string[] = [];
+      const systemPromptParts: string[] = [MARKDOWN_CHAT_SYSTEM_PROMPT];
       if (config.systemPrompt) systemPromptParts.push(config.systemPrompt);
       if (options.context) {
         systemPromptParts.push(
-          `\n\nThe user is currently editing a note. Here is the full content:\n\n---\n${options.context}\n---`,
+          `\n\nContext and constraints:\n\n---\n${options.context}\n---`,
         );
       }
       if (options.selection) {
@@ -162,6 +237,8 @@ export function useAIChat(noteId?: string) {
         );
       }
       const systemPrompt = systemPromptParts.join("") || undefined;
+
+      let assistantContent = "";
 
       try {
         const stream = adapter.sendMessage(
@@ -172,71 +249,121 @@ export function useAIChat(noteId?: string) {
             baseUrl: config.baseUrl,
             credentials,
             commandTemplate: config.commandTemplate,
-          } as any,
+            tools,
+            toolChoice,
+          },
           abortController.signal,
         );
 
         for await (const event of stream) {
           if (event.type === "text") {
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === "assistant") {
-                return [
-                  ...prev.slice(0, -1),
-                  { ...last, content: last.content + event.delta },
-                ];
-              }
-              return prev;
-            });
+            assistantContent += event.delta;
+            const updatedAt = new Date().toISOString();
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      content: message.content + event.delta,
+                      updatedAt,
+                    }
+                  : message,
+              ),
+            );
           } else if (event.type === "done") {
             setIsStreaming(false);
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === "assistant") {
-                repositories.ai.saveMessage(last);
+            if (cancelledRef.current) {
+              if (!assistantContent.trim()) {
+                setMessages((prev) =>
+                  removeEmptyAssistantPlaceholder(prev, assistantMessageId),
+                );
+                return true;
               }
-              return prev;
-            });
-            break;
+
+              const partialAssistant: AIMessage = {
+                ...assistantMsg,
+                content: assistantContent,
+                updatedAt: new Date().toISOString(),
+              };
+              setMessages((prev) =>
+                prev.map((message) =>
+                  message.id === assistantMessageId
+                    ? partialAssistant
+                    : message,
+                ),
+              );
+              await repositories.ai.saveMessage(partialAssistant);
+              return true;
+            }
+
+            const assistantToSave: AIMessage = {
+              ...assistantMsg,
+              content: assistantContent.trim()
+                ? assistantContent
+                : "No assistant response was returned.",
+              updatedAt: new Date().toISOString(),
+            };
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId ? assistantToSave : message,
+              ),
+            );
+            await repositories.ai.saveMessage(assistantToSave);
+            notifyChatsChanged();
+            return true;
           } else if (event.type === "error") {
             setIsStreaming(false);
+            const errMsg = createSystemMessage(
+              chat.id,
+              `Error: ${event.message}`,
+            );
             setMessages((prev) => [
-              ...prev,
-              {
-                id: uuid(),
-                chatId: chat?.id || "",
-                role: "system",
-                content: `Error: ${event.message}`,
-                createdAt: new Date().toISOString(),
-              },
+              ...removeEmptyAssistantPlaceholder(prev, assistantMessageId),
+              errMsg,
             ]);
-            break;
+            await repositories.ai.saveMessage(errMsg);
+            return true;
           }
         }
-      } catch (err: any) {
         setIsStreaming(false);
+        const fallbackMessage = {
+          ...assistantMsg,
+          content: "No assistant response was returned.",
+          updatedAt: new Date().toISOString(),
+        };
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantMessageId ? fallbackMessage : message,
+          ),
+        );
+        await repositories.ai.saveMessage(fallbackMessage);
+        notifyChatsChanged();
+        return true;
+      } catch (err: unknown) {
+        setIsStreaming(false);
+        const errMsg = createSystemMessage(
+          chat?.id || "",
+          `Error: ${getErrorMessage(err)}`,
+        );
         setMessages((prev) => [
-          ...prev,
-          {
-            id: uuid(),
-            chatId: chat?.id || "",
-            role: "system",
-            content: `Error: ${err?.message ?? "Unknown error"}`,
-            createdAt: new Date().toISOString(),
-          },
+          ...removeEmptyAssistantPlaceholder(prev, assistantMessageId),
+          errMsg,
         ]);
+        if (chat) await repositories.ai.saveMessage(errMsg);
+        return Boolean(chat);
       } finally {
         abortControllerRef.current = null;
+        cancelledRef.current = false;
       }
     },
     [chat, config, messages],
   );
 
-  const newChat = useCallback(async () => {
-    if (!noteId) return;
+  const newChat = useCallback(async (): Promise<AIChat | null> => {
+    if (!effectiveChatScope) return null;
     const freshChat: AIChat = {
       id: uuid(),
-      noteId,
+      noteId: effectiveChatScope,
       title: "New Chat",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -244,32 +371,32 @@ export function useAIChat(noteId?: string) {
     await repositories.ai.saveChat(freshChat);
     setChat(freshChat);
     setMessages([]);
-  }, [noteId]);
+    notifyChatsChanged();
+    return freshChat;
+  }, [effectiveChatScope]);
 
   const clearChat = useCallback(async () => {
     if (!chat) return;
     await repositories.ai.clearMessages(chat.id);
     setMessages([]);
+    notifyChatsChanged();
   }, [chat]);
 
   const cancel = useCallback(() => {
+    cancelledRef.current = true;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setIsStreaming(false);
-    const now = new Date().toISOString();
-    const systemMsg: AIMessage = {
-      id: uuid(),
-      createdAt: now,
-      role: "system",
-      updatedAt: now,
-      chatId: chat?.id || "",
-      content: "--- Conversation finished ---",
-    };
+    const systemMsg = createSystemMessage(
+      chat?.id || "",
+      "Generation stopped.",
+    );
     setMessages((prev) => [...prev, systemMsg]);
-    if (chat) repositories.ai.saveMessage(systemMsg);
+    if (chat) void repositories.ai.saveMessage(systemMsg);
   }, [chat]);
 
   return {
+    chat,
     messages,
     isStreaming,
     isLoading,

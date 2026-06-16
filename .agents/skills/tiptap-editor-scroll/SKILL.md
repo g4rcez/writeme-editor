@@ -1,6 +1,6 @@
 ---
 name: tiptap-editor-scroll
-description: Correct patterns for text selection dispatch and scroll in the writeme-editor Tiptap instance. Use when implementing selection navigation, find/replace, search result highlighting, or any code that scrolls to a ProseMirror position in this editor. Trigger on: editor.commands.setTextSelection, scrollIntoView, scrollTo, coordsAtPos, or any navigation to a match/result in the editor.
+description: "Correct patterns for text selection dispatch and scroll in the writeme-editor Tiptap instance. Use when implementing selection navigation, find/replace, search result highlighting, or any code that scrolls to a ProseMirror position in this editor. Trigger on editor.commands.setTextSelection, scrollIntoView, scrollTo, coordsAtPos, or any navigation to a match/result in the editor."
 ---
 
 # Tiptap text selection and scroll in writeme-editor

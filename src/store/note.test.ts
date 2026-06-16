@@ -37,10 +37,16 @@ describe("Note", () => {
   });
 
   it("should create a new json note", () => {
-    const note = Note.new("My JSON", '{"a":1}', "json" as any);
+    const note = Note.new("My JSON", '{"a":1}', NoteType.json);
     expect(note.title).toBe("My JSON");
     expect(note.content).toBe('{"a":1}');
     expect(note.noteType).toBe("json");
+  });
+
+  it("should create a new excalidraw note", () => {
+    const note = Note.new("My Drawing", "", NoteType.excalidraw);
+    expect(note.title).toBe("My Drawing");
+    expect(note.noteType).toBe("excalidraw");
   });
 
   it("should parse a note object", () => {

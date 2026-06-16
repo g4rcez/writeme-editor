@@ -5,7 +5,7 @@ import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { TerminalIcon } from "@phosphor-icons/react/dist/csr/Terminal";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { PlugIcon } from "@phosphor-icons/react/dist/csr/Plug";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { repositories } from "@/store/repositories";
 import { adapterRegistry } from "@/app/ai/adapters/registry";
 import { authManager } from "@/app/ai/auth/auth-manager";
@@ -90,12 +90,14 @@ export const AISettings = () => {
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testError, setTestError] = useState("");
   const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+  const [ollamaModelsLoading, setOllamaModelsLoading] = useState(false);
   const [oauthPending, setOauthPending] = useState(false);
   const [oauthCode, setOauthCode] = useState("");
   const [oauthInstruction, setOauthInstruction] = useState("");
 
   const adapter = adapterRegistry.get(adapterId);
   const meta = PROVIDER_META[adapterId];
+  const ollamaModelRequestId = useRef(0);
 
   const checkCredentials = async (id: string) => {
     setCredentialStatus("loading");
@@ -146,8 +148,92 @@ export const AISettings = () => {
     await checkCredentials(id);
   };
 
+  const loadOllamaModels = async (silent = false): Promise<boolean> => {
+    const ollamaAdapter = adapterRegistry.get("ollama");
+    if (!ollamaAdapter || adapterId !== "ollama" || !baseUrl.trim()) {
+      return false;
+    }
+
+    const requestId = ++ollamaModelRequestId.current;
+    setOllamaModelsLoading(true);
+    if (!silent) {
+      setTestStatus("testing");
+      setTestError("");
+    }
+
+    try {
+      const savedCreds = await repositories.ai.loadCredentials("ollama");
+      const models = await ollamaAdapter.listModels({
+        ...(savedCreds ?? {}),
+        ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+        baseUrl: baseUrl.trim(),
+      });
+
+      if (requestId !== ollamaModelRequestId.current) {
+        return false;
+      }
+
+      setAvailableModels(models);
+      if (models.length > 0) {
+        if (!models.some((m) => m.id === model)) {
+          setModel(models[0]?.id ?? "");
+        }
+        setCredentialStatus("connected");
+        if (!silent) {
+          setTestStatus("success");
+        }
+        return true;
+      }
+
+      if (!silent) {
+        setTestStatus("error");
+        setTestError(
+          "Could not reach Ollama or no models are installed. Check the base URL and try again.",
+        );
+      }
+      return false;
+    } catch (err: unknown) {
+      if (!silent) {
+        setTestStatus("error");
+        setTestError(err instanceof Error ? err.message : "Connection failed.");
+      }
+      return false;
+    } finally {
+      if (requestId === ollamaModelRequestId.current) {
+        setOllamaModelsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (adapterId !== "ollama") return;
+    ollamaModelRequestId.current += 1;
+    setAvailableModels([]);
+    setOllamaModelsLoading(false);
+    if (!baseUrl.trim()) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void loadOllamaModels(true);
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [adapterId, baseUrl]);
+
   const handleTestConnection = async () => {
     if (!adapter) return;
+    if (adapterId === "ollama") {
+      const loaded = await loadOllamaModels(false);
+      if (loaded && apiKey.trim()) {
+        await repositories.ai.saveCredentials({
+          adapterId,
+          apiKey: apiKey.trim(),
+          baseUrl: baseUrl.trim(),
+        });
+        setApiKey("");
+      }
+      return;
+    }
+
     setTestStatus("testing");
     setTestError("");
     try {
@@ -155,13 +241,8 @@ export const AISettings = () => {
       const creds = {
         ...(savedCreds ?? {}),
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
-        ...(adapterId === "ollama" ? { baseUrl: baseUrl.trim() } : {}),
       };
-      if (
-        adapterId !== "ollama" &&
-        !("apiKey" in creds) &&
-        !("accessToken" in creds)
-      ) {
+      if (!("apiKey" in creds) && !("accessToken" in creds)) {
         setTestStatus("error");
         setTestError("No credentials found. Connect first.");
         return;
@@ -170,14 +251,10 @@ export const AISettings = () => {
       if (models.length > 0) {
         setTestStatus("success");
         setAvailableModels(models);
-        if (adapterId === "ollama" && !models.some((m) => m.id === model)) {
-          setModel(models[0]?.id ?? "");
-        }
-        if (apiKey.trim() || adapterId === "ollama") {
+        if (apiKey.trim()) {
           await repositories.ai.saveCredentials({
             adapterId,
-            apiKey: apiKey.trim() || undefined,
-            baseUrl: adapterId === "ollama" ? baseUrl.trim() : undefined,
+            apiKey: apiKey.trim(),
           });
           setApiKey("");
         }
@@ -400,10 +477,14 @@ export const AISettings = () => {
                 />
                 <Button
                   size="small"
-                  disabled={!baseUrl.trim() || testStatus === "testing"}
+                  disabled={
+                    !baseUrl.trim() ||
+                    testStatus === "testing" ||
+                    ollamaModelsLoading
+                  }
                   onClick={handleTestConnection}
                 >
-                  {testStatus === "testing" ? (
+                  {testStatus === "testing" || ollamaModelsLoading ? (
                     <SpinnerIcon size={14} className="animate-spin" />
                   ) : (
                     <span className="flex gap-1.5 items-center">
@@ -614,13 +695,10 @@ export const AISettings = () => {
                 value={model}
                 title="Model"
                 onChange={(e) => setModel(e.target.value)}
-                options={[
-                  { value: "", label: `Default (${adapter?.defaultModel})` },
-                  ...availableModels.map((m) => ({
-                    value: m.id,
-                    label: m.name,
-                  })),
-                ]}
+                options={availableModels.map((m) => ({
+                  value: m.id,
+                  label: m.name,
+                }))}
               />
             ) : adapterId === "ollama" ? (
               <Select
@@ -632,7 +710,7 @@ export const AISettings = () => {
                   {
                     value: "",
                     label:
-                      testStatus === "testing"
+                      testStatus === "testing" || ollamaModelsLoading
                         ? "Loading running models..."
                         : "Load running models from Ollama first",
                   },
@@ -646,9 +724,16 @@ export const AISettings = () => {
                 onChange={(e: any) => setModel(e.target.value)}
               />
             )}
-            <p className="text-[10px] text-muted-foreground">
-              Default: <code>{adapter?.defaultModel}</code>
-            </p>
+            {adapterId === "ollama" && ollamaModelsLoading ? (
+              <p className="text-[10px] text-muted-foreground">
+                Loading running models from <code>{baseUrl.trim()}</code> via{" "}
+                <code>/api/ps</code>...
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">
+                Default: <code>{adapter?.defaultModel}</code>
+              </p>
+            )}
           </div>
         )}
 

@@ -1,19 +1,11 @@
-import { getCurrentElementName } from "@/lib/editor-utils";
-import { isElectron } from "@/lib/is-electron";
-import { globalState } from "@/store/global.store";
+import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
-import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
-import {
-  Plugin,
-  PluginKey,
-  TextSelection,
-  type PluginView,
-} from "@tiptap/pm/state";
+import { Plugin, PluginKey, TextSelection, type PluginView } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { clsx } from "clsx";
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import {
   bundledLanguages,
   bundledThemes,
@@ -22,6 +14,9 @@ import {
   type BundledTheme,
   type Highlighter,
 } from "shiki";
+import { getCurrentElementName } from "@/lib/editor-utils";
+import { isElectron } from "@/lib/is-electron";
+import { globalState } from "@/store/global.store";
 import { handlePasteImage } from "../extensions";
 import { CodeBlockRenderer } from "./code-block/code-block-rendered.tsx";
 import { shikiMathGrammer } from "./code-block/shiki-math-grammar";
@@ -30,22 +25,15 @@ type CustomShikiLanguage = "math";
 
 type SupportedShikiLanguage = BundledLanguage | CustomShikiLanguage;
 
-const CUSTOM_SHIKI_LANGUAGES: Record<
-  CustomShikiLanguage,
-  typeof shikiMathGrammer
-> = {
+const CUSTOM_SHIKI_LANGUAGES: Record<CustomShikiLanguage, typeof shikiMathGrammer> = {
   math: shikiMathGrammer,
 };
 
-function isBundledShikiLanguage(
-  language: string | null | undefined,
-): language is BundledLanguage {
+function isBundledShikiLanguage(language: string | null | undefined): language is BundledLanguage {
   return !!language && language in bundledLanguages;
 }
 
-function isCustomShikiLanguage(
-  language: string | null | undefined,
-): language is CustomShikiLanguage {
+function isCustomShikiLanguage(language: string | null | undefined): language is CustomShikiLanguage {
   return !!language && language in CUSTOM_SHIKI_LANGUAGES;
 }
 
@@ -72,15 +60,9 @@ export const CodeBlockFrame = ({
   printContent,
   children,
   className,
-  lineCount,
   isBodyVisible = true,
   isTransparent = false,
 }: CodeBlockFrameProps) => {
-  const lineNumbers = useMemo(
-    () =>
-      Array.from({ length: lineCount }, (_, i) => <span key={i}>{i + 1}</span>),
-    [lineCount],
-  );
   return (
     <NodeViewWrapper
       id={id}
@@ -88,43 +70,24 @@ export const CodeBlockFrame = ({
       aria-hidden={!isBodyVisible}
       data-print-fallback={printContent !== undefined ? "true" : undefined}
       className={clsx(
-        "writeme-code-block-frame overflow-hidden min-w-full relative p-0 my-4 font-mono text-sm leading-snug border border-card-border",
+        "relative w-full my-4 font-mono text-sm leading-snug border border-card-border",
         isTransparent ? "bg-transparent" : "bg-card-background",
         className,
       )}
     >
       {header}
       {printContent !== undefined && (
-        <pre
-          aria-hidden="true"
-          className="writeme-code-block-print-content hidden"
-        >
+        <pre aria-hidden="true" className="writeme-code-block-print-content hidden">
           <code>{printContent}</code>
         </pre>
       )}
       <div
         className={clsx(
           "writeme-code-block-body transition-opacity duration-200",
-          isBodyVisible
-            ? "h-auto opacity-100"
-            : "h-0 opacity-0 pointer-events-none overflow-hidden",
+          isBodyVisible ? "h-auto opacity-100" : "h-0 opacity-0 pointer-events-none overflow-hidden",
         )}
       >
-        <div className="writeme-code-block-row flex">
-          <div
-            aria-hidden="true"
-            contentEditable={false}
-            className={clsx(
-              "writeme-code-block-gutter flex leading-6 flex-col py-4 px-3 text-right border-r select-none shrink-0 text-muted-foreground border-card-border",
-              isTransparent ? "bg-transparent" : "bg-card-background",
-            )}
-          >
-            {lineNumbers}
-          </div>
-          <div className="writeme-code-block-scroll overflow-x-auto relative p-4 w-full font-mono leading-6 whitespace-pre">
-            {children}
-          </div>
-        </div>
+        <div className="overflow-x-auto relative p-2 w-full font-mono leading-loose whitespace-pre">{children}</div>
       </div>
       {footer}
     </NodeViewWrapper>
@@ -146,23 +109,17 @@ const THEME_MAP = {
   light: "github-light" as BundledTheme,
 };
 
-export const getThemeForMode = (mode: string): BundledTheme =>
-  mode === "light" ? THEME_MAP.light : THEME_MAP.dark;
+export const getThemeForMode = (mode: string): BundledTheme => (mode === "light" ? THEME_MAP.light : THEME_MAP.dark);
 
 export function getShiki() {
   return highlighter;
 }
 
-export function loadHighlighter(
-  opts: HighlighterOptions,
-): Promise<Highlighter | undefined> | undefined {
+export function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter | undefined> | undefined {
   if (!highlighter && !highlighterPromise) {
     const bundledLangs = opts.languages.filter(isBundledShikiLanguage);
     const customLangs = [
-      ...new Set<CustomShikiLanguage>([
-        ...opts.languages.filter(isCustomShikiLanguage),
-        "math",
-      ]),
+      ...new Set<CustomShikiLanguage>([...opts.languages.filter(isCustomShikiLanguage), "math"]),
     ].map((language) => CUSTOM_SHIKI_LANGUAGES[language]);
     highlighterPromise = createHighlighter({
       langs: [...bundledLangs, ...customLangs],
@@ -226,12 +183,8 @@ export async function initHighlighter({
   defaultTheme: BundledTheme;
 }) {
   const codeBlocks = findChildren(doc, (node) => node.type.name === name);
-  const themes = codeBlocks
-    .map((block) => block.node.attrs.theme as BundledTheme)
-    .concat(defaultTheme);
-  const languages = codeBlocks
-    .map((block) => block.node.attrs.language as BundledLanguage)
-    .concat(defaultLanguage!);
+  const themes = codeBlocks.map((block) => block.node.attrs.theme as BundledTheme).concat(defaultTheme);
+  const languages = codeBlocks.map((block) => block.node.attrs.language as BundledLanguage).concat(defaultLanguage!);
   if (!highlighter) {
     try {
       const loader = loadHighlighter({ languages, themes });
@@ -244,11 +197,7 @@ export async function initHighlighter({
       await Promise.all(
         themes
           .flatMap((theme) => loadTheme(theme))
-          .concat(
-            languages.flatMap(
-              (language) => !!language && loadLanguage(language),
-            ),
-          ),
+          .concat(languages.flatMap((language) => !!language && loadLanguage(language))),
       );
     } catch (e) {
       console.warn("Failed to load Shiki themes/languages:", e);
@@ -289,9 +238,7 @@ function getDecorations({
     if (!highlighter.getLoadedLanguages().includes(language)) {
       language = "plaintext";
     }
-    const themeToApply = highlighter.getLoadedThemes().includes(theme)
-      ? theme
-      : highlighter.getLoadedThemes()[0];
+    const themeToApply = highlighter.getLoadedThemes().includes(theme) ? theme : highlighter.getLoadedThemes()[0];
     const themeResolved = highlighter.getTheme(themeToApply);
     if (renderBackground) {
       decorations.push(
@@ -319,10 +266,7 @@ function getDecorations({
   return DecorationSet.create(doc, decorations);
 }
 
-function remapPositions(
-  positions: Set<number>,
-  mapping: { map(pos: number): number },
-): Set<number> {
+function remapPositions(positions: Set<number>, mapping: { map(pos: number): number }): Set<number> {
   const next = new Set<number>();
   for (const pos of positions) {
     next.add(mapping.map(pos));
@@ -345,23 +289,20 @@ export function ShikiPlugin({
     key: new PluginKey("shiki"),
     view(view) {
       class ShikiPluginView implements PluginView {
-        private debouncedCheckTimer: ReturnType<typeof setTimeout> | null =
-          null;
+        private debouncedCheckTimer: number | null = null;
 
         constructor() {
           this.initDecorations();
         }
         update() {
-          if (this.debouncedCheckTimer !== null)
-            clearTimeout(this.debouncedCheckTimer);
-          this.debouncedCheckTimer = setTimeout(() => {
+          if (this.debouncedCheckTimer !== null) window.clearTimeout(this.debouncedCheckTimer);
+          this.debouncedCheckTimer = window.setTimeout(() => {
             this.debouncedCheckTimer = null;
             this.checkUndecoratedBlocks();
           }, 300);
         }
         destroy() {
-          if (this.debouncedCheckTimer !== null)
-            clearTimeout(this.debouncedCheckTimer);
+          if (this.debouncedCheckTimer !== null) window.clearTimeout(this.debouncedCheckTimer);
         }
         async initDecorations() {
           const doc = view.state.doc;
@@ -373,38 +314,23 @@ export function ShikiPlugin({
             defaultTheme: currentTheme,
           });
           if (getCurrentTheme) {
-            await Promise.all([
-              loadTheme(THEME_MAP.light),
-              loadTheme(THEME_MAP.dark),
-            ]);
+            await Promise.all([loadTheme(THEME_MAP.light), loadTheme(THEME_MAP.dark)]);
           }
           try {
-            const tr = view.state.tr.setMeta(
-              "shikiPluginForceDecoration",
-              true,
-            );
+            const tr = view.state.tr.setMeta("shikiPluginForceDecoration", true);
             view.dispatch(tr);
           } catch (e) {
             console.warn("[code-block]", e);
           }
         }
         async checkUndecoratedBlocks() {
-          const codeBlocks = findChildren(
-            view.state.doc,
-            (node) => node.type.name === name,
-          );
+          const codeBlocks = findChildren(view.state.doc, (node) => node.type.name === name);
           const loadStates = await Promise.all(
-            codeBlocks.flatMap((block) => [
-              loadTheme(block.node.attrs.theme),
-              loadLanguage(block.node.attrs.language),
-            ]),
+            codeBlocks.flatMap((block) => [loadTheme(block.node.attrs.theme), loadLanguage(block.node.attrs.language)]),
           );
           const didLoadSomething = loadStates.includes(true);
           if (didLoadSomething) {
-            const tr = view.state.tr.setMeta(
-              "shikiPluginForceDecoration",
-              true,
-            );
+            const tr = view.state.tr.setMeta("shikiPluginForceDecoration", true);
             view.dispatch(tr);
           }
         }
@@ -419,39 +345,21 @@ export function ShikiPlugin({
         visiblePositions: new Set(),
         suspended: false,
       }),
-      apply: (
-        transaction,
-        pluginState: ShikiState,
-        oldState,
-        newState,
-      ): ShikiState => {
+      apply: (transaction, pluginState: ShikiState, oldState, newState): ShikiState => {
         const suspendMeta = transaction.getMeta("shikiSuspended");
-        const isSuspended =
-          suspendMeta === true
-            ? true
-            : suspendMeta === false
-              ? false
-              : pluginState.suspended;
+        const isSuspended = suspendMeta === true ? true : suspendMeta === false ? false : pluginState.suspended;
 
         if (isSuspended) {
           return {
             decorations: DecorationSet.empty,
-            visiblePositions: remapPositions(
-              pluginState.visiblePositions,
-              transaction.mapping,
-            ),
+            visiblePositions: remapPositions(pluginState.visiblePositions, transaction.mapping),
             suspended: true,
           };
         }
 
-        const highlightPos = transaction.getMeta("shikiHighlightPos") as
-          | number
-          | undefined;
+        const highlightPos = transaction.getMeta("shikiHighlightPos") as number | undefined;
         if (highlightPos !== undefined) {
-          const newVisible = remapPositions(
-            pluginState.visiblePositions,
-            transaction.mapping,
-          );
+          const newVisible = remapPositions(pluginState.visiblePositions, transaction.mapping);
           newVisible.add(highlightPos);
           const currentTheme = getCurrentTheme!();
           return {
@@ -470,14 +378,8 @@ export function ShikiPlugin({
 
         const oldNodeName = oldState.selection.$head.parent.type.name;
         const newNodeName = newState.selection.$head.parent.type.name;
-        const oldNodes = findChildren(
-          oldState.doc,
-          (node) => node.type.name === name,
-        );
-        const newNodes = findChildren(
-          newState.doc,
-          (node) => node.type.name === name,
-        );
+        const oldNodes = findChildren(oldState.doc, (node) => node.type.name === name);
+        const newNodes = findChildren(newState.doc, (node) => node.type.name === name);
         const didChangeSomeCodeBlock =
           transaction.docChanged &&
           ([oldNodeName, newNodeName].includes(name) ||
@@ -487,22 +389,13 @@ export function ShikiPlugin({
                 step.from !== undefined &&
                 step.to !== undefined &&
                 oldNodes.some((node) => {
-                  return (
-                    node.pos >= step.from &&
-                    node.pos + node.node.nodeSize <= step.to
-                  );
+                  return node.pos >= step.from && node.pos + node.node.nodeSize <= step.to;
                 })
               );
             }));
 
-        if (
-          transaction.getMeta("shikiPluginForceDecoration") ||
-          didChangeSomeCodeBlock
-        ) {
-          const remappedPositions = remapPositions(
-            pluginState.visiblePositions,
-            transaction.mapping,
-          );
+        if (transaction.getMeta("shikiPluginForceDecoration") || didChangeSomeCodeBlock) {
+          const remappedPositions = remapPositions(pluginState.visiblePositions, transaction.mapping);
           const currentTheme = getCurrentTheme!();
           const forceAll = !!transaction.getMeta("shikiPluginForceDecoration");
           return {
@@ -520,14 +413,8 @@ export function ShikiPlugin({
         }
 
         return {
-          decorations: pluginState.decorations.map(
-            transaction.mapping,
-            transaction.doc,
-          ),
-          visiblePositions: remapPositions(
-            pluginState.visiblePositions,
-            transaction.mapping,
-          ),
+          decorations: pluginState.decorations.map(transaction.mapping, transaction.doc),
+          visiblePositions: remapPositions(pluginState.visiblePositions, transaction.mapping),
           suspended: false,
         };
       },
@@ -576,9 +463,7 @@ const PastePlugin = (name: string) =>
         const text = event.clipboardData?.getData("text/plain");
         if (text) {
           const normalizedText = text.replace(/\r\n/g, "\n");
-          view.dispatch(
-            state.tr.insertText(normalizedText, $from.pos, $to.pos),
-          );
+          view.dispatch(state.tr.insertText(normalizedText, $from.pos, $to.pos));
           return true;
         }
         return false;
@@ -592,10 +477,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
     return ReactNodeViewRenderer(CodeBlockRenderer, {
       stopEvent: ({ event }) => {
         const target = event.target;
-        return (
-          target instanceof Element &&
-          Boolean(target.closest('[data-code-mirror-editor="true"]'))
-        );
+        return target instanceof Element && Boolean(target.closest('[data-code-mirror-editor="true"]'));
       },
     });
   },
@@ -605,8 +487,7 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
       title: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute("data-title"),
-        renderHTML: (attrs: Record<string, unknown>) =>
-          attrs.title ? { "data-title": attrs.title } : {},
+        renderHTML: (attrs: Record<string, unknown>) => (attrs.title ? { "data-title": attrs.title } : {}),
       },
     };
   },
@@ -648,15 +529,12 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
         key: new PluginKey("codeBlockSelectAll"),
         props: {
           handleKeyDown(view, event) {
-            if (!(event.key === "a" && (event.metaKey || event.ctrlKey)))
-              return false;
+            if (!(event.key === "a" && (event.metaKey || event.ctrlKey))) return false;
             const { state } = view;
             const { $from } = state.selection;
             if ($from.parent.type.name !== nodeName) return false;
             event.preventDefault();
-            const tr = state.tr.setSelection(
-              TextSelection.create(state.doc, $from.start(), $from.end()),
-            );
+            const tr = state.tr.setSelection(TextSelection.create(state.doc, $from.start(), $from.end()));
             view.dispatch(tr);
             return true;
           },

@@ -1,4 +1,6 @@
-import { type ITabRepository, Tab } from "../entities/tab";
+import { isNoteTabForNoteId } from "@/lib/tab-target";
+
+import type { ITabRepository, Tab } from "../entities/tab";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { db } from "./dexie-db";
@@ -24,6 +26,10 @@ export class TabsRepository
   }
 
   async deleteByNoteId(noteId: string): Promise<void> {
-    await db.tabs.where("noteId").equals(noteId).delete();
+    const tabs = await db.tabs.where("noteId").equals(noteId).toArray();
+    const noteTabIds = tabs
+      .filter((tab) => isNoteTabForNoteId(tab, noteId))
+      .map((tab) => tab.id);
+    await db.tabs.bulkDelete(noteTabIds);
   }
 }

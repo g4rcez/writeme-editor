@@ -24,7 +24,7 @@ function RouteTransitionOutlet() {
     <motion.div
       key={routeKey}
       animate={{ opacity: 1 }}
-      className="w-full min-h-full"
+      className="w-full h-full min-h-0"
       initial={shouldReduceMotion ? false : { opacity: 0.4 }}
       transition={shouldReduceMotion ? { duration: 0 } : routeTransition}
     >
@@ -40,6 +40,7 @@ export const MainLayout = () => {
     notes: s.notes,
     activeTabId: s.activeTabId,
     terminalVisible: s.terminalVisible,
+    directory: s.directory,
   }));
   return (
     <div className="writeme-layout">
@@ -50,6 +51,7 @@ export const MainLayout = () => {
             tabs={state.tabs}
             dispatch={dispatch}
             notes={state.notes}
+            directory={state.directory}
             activeTabId={state.activeTabId}
           />
           <Group orientation="vertical" className="flex-1 min-h-0">
