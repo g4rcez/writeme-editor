@@ -7,86 +7,89 @@ import { app } from "electron";
 const activeSessions = new Map<string, pty.IPty>();
 
 export const terminalIpcHandler = () => {
-  ipcMain.on(
-    "terminal:spawn",
-    (event: IpcMainEvent, id: string, providedCwd?: string) => {
-      try {
-        if (activeSessions.has(id)) {
-          return;
-        }
+	ipcMain.on(
+		"terminal:spawn",
+		(event: IpcMainEvent, id: string, providedCwd?: string) => {
+			try {
+				const existingSession = activeSessions.get(id);
+				if (existingSession) {
+					existingSession.kill();
+					activeSessions.delete(id);
+				}
 
-        // Determine shell
-        const shell =
-          os.platform() === "win32"
-            ? "powershell.exe"
-            : process.env.SHELL || "bash";
+				// Determine shell
+				const shell =
+					os.platform() === "win32"
+						? "powershell.exe"
+						: process.env.SHELL || "bash";
 
-        // Get a safe working directory
-        const cwd = providedCwd || process.env.HOME || app.getPath("userData");
+				// Get a safe working directory
+				const cwd = providedCwd || process.env.HOME || app.getPath("userData");
 
-        const ptyProcess = pty.spawn(shell, [], {
-          name: "xterm-color",
-          cols: 80,
-          rows: 24,
-          cwd: cwd,
-          env: process.env as any,
-          useConpty: false, // Needed for older node-pty versions on some macs, but false is fine
-        });
+				const ptyProcess = pty.spawn(shell, [], {
+					name: "xterm-color",
+					cols: 80,
+					rows: 24,
+					cwd: cwd,
+					env: process.env as any,
+					useConpty: false, // Needed for older node-pty versions on some macs, but false is fine
+				});
 
-        ptyProcess.onData((data) => {
-          event.sender.send("terminal:data", { id, data });
-        });
+				ptyProcess.onData((data) => {
+					event.sender.send("terminal:data", { id, data });
+				});
 
-        ptyProcess.onExit(() => {
-          activeSessions.delete(id);
-          event.sender.send("terminal:data", {
-            id,
-            data: "\r\n\x1b[31m[Process exited]\x1b[0m\r\n",
-          });
-        });
+				ptyProcess.onExit(({ exitCode, signal }) => {
+					activeSessions.delete(id);
+					event.sender.send("terminal:data", {
+						id,
+						data: "\r\n\x1b[31m[Process exited]\x1b[0m\r\n",
+					});
+					event.sender.send("terminal:exit", { id, exitCode, signal });
+				});
 
-        activeSessions.set(id, ptyProcess);
-      } catch (e: any) {
-        console.error("Failed to spawn terminal:", e);
-        event.sender.send("terminal:data", {
-          id,
-          data: `\r\n\x1b[31mError spawning terminal: ${e.message}\x1b[0m\r\n`,
-        });
-      }
-    },
-  );
+				activeSessions.set(id, ptyProcess);
+			} catch (e: any) {
+				console.error("Failed to spawn terminal:", e);
+				event.sender.send("terminal:data", {
+					id,
+					data: `\r\n\x1b[31mError spawning terminal: ${e.message}\x1b[0m\r\n`,
+				});
+			}
+		},
+	);
 
-  ipcMain.on("terminal:write", (_, id: string, data: string) => {
-    const session = activeSessions.get(id);
-    if (session) {
-      try {
-        session.write(data);
-      } catch (e) {
-        console.error("Failed to write to terminal:", e);
-      }
-    }
-  });
+	ipcMain.on("terminal:write", (_, id: string, data: string) => {
+		const session = activeSessions.get(id);
+		if (session) {
+			try {
+				session.write(data);
+			} catch (e) {
+				console.error("Failed to write to terminal:", e);
+			}
+		}
+	});
 
-  ipcMain.on("terminal:resize", (_, id: string, cols: number, rows: number) => {
-    const session = activeSessions.get(id);
-    if (session) {
-      try {
-        session.resize(cols, rows);
-      } catch (e) {
-        console.error("Failed to resize terminal:", e);
-      }
-    }
-  });
+	ipcMain.on("terminal:resize", (_, id: string, cols: number, rows: number) => {
+		const session = activeSessions.get(id);
+		if (session) {
+			try {
+				session.resize(cols, rows);
+			} catch (e) {
+				console.error("Failed to resize terminal:", e);
+			}
+		}
+	});
 
-  ipcMain.on("terminal:kill", (_, id: string) => {
-    const session = activeSessions.get(id);
-    if (session) {
-      try {
-        session.kill();
-        activeSessions.delete(id);
-      } catch (e) {
-        console.error("Failed to kill terminal:", e);
-      }
-    }
-  });
+	ipcMain.on("terminal:kill", (_, id: string) => {
+		const session = activeSessions.get(id);
+		if (session) {
+			try {
+				session.kill();
+				activeSessions.delete(id);
+			} catch (e) {
+				console.error("Failed to kill terminal:", e);
+			}
+		}
+	});
 };

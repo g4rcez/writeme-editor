@@ -5,19 +5,20 @@ import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { createWorkspaceAiChat } from "@/app/ai/create-ai-chat";
 import {
-  isCommanderShortcut,
-  isNewAiChatShortcut,
-  isNewNoteShortcut,
+	isCommanderShortcut,
+	isNewAiChatShortcut,
+	isNewNoteShortcut,
 } from "@/lib/keyboard-shortcuts";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { getCycledTabTarget, type TabCycleDirection } from "@/lib/tab-cycling";
 import {
-  findTabByTarget,
-  getCurrentRouteTabTarget,
-  getRouteForTab,
-  getTabTarget,
-  isAiChatTab,
+	findTabByTarget,
+	getCurrentRouteTabTarget,
+	getRouteForTab,
+	getTabTarget,
+	isAiChatTab,
+	isTerminalTab,
 } from "@/lib/tab-target";
 import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
@@ -27,6 +28,7 @@ import { useLayoutStore } from "@/app/contexts/layout-context";
 import { FindReplaceBar } from "@/app/components/find-replace-bar";
 import { Commander } from "@/app/commander";
 import { Alert } from "@/app/components/alert";
+import { Confirm } from "@/app/components/confirm";
 import { Prompt } from "@/app/components/prompt";
 import { CreateNoteDialog } from "@/app/components/create-note-dialog";
 import { CreateVariableDialog } from "@/app/components/create-variable-dialog";
@@ -50,389 +52,448 @@ import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-work
 const waitMap = new Map<string, string>();
 
 function getEditorNoteId(): string | null {
-  const editor = editorGlobalRef.current;
-  if (!editor || editor.isDestroyed) return null;
-  const storedNote = (editor.storage as { note?: { id?: string } }).note;
-  return storedNote?.id ?? null;
+	const editor = editorGlobalRef.current;
+	if (!editor || editor.isDestroyed) return null;
+	const storedNote = (editor.storage as { note?: { id?: string } }).note;
+	return storedNote?.id ?? null;
 }
 
 export const RootLayout = () => {
-  const [state, dispatch] = useGlobalStore();
-  const [uiState, uiDispatch] = useUIStore();
-  const [, layoutDispatch] = useLayoutStore();
-  notificationRef.current = useNotification();
-  usePwaUpdate();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const prevTabsRef = useRef(state.tabs);
+	const [state, dispatch] = useGlobalStore();
+	const [uiState, uiDispatch] = useUIStore();
+	const [, layoutDispatch] = useLayoutStore();
+	notificationRef.current = useNotification();
+	usePwaUpdate();
+	const navigate = useNavigate();
+	const location = useLocation();
+	const prevTabsRef = useRef(state.tabs);
 
-  const navigateToTab = useCallback(
-    async (tab: (typeof state.tabs)[number]): Promise<void> => {
-      const target = getTabTarget(tab);
-      if (target.type === "note") {
-        await dispatch.selectNoteById(target.id);
-      } else {
-        await dispatch.addAiChatTab(target.id);
-      }
-      navigate(getRouteForTab(tab));
-    },
-    [dispatch, navigate],
-  );
+	const navigateToTab = useCallback(
+		async (tab: (typeof state.tabs)[number]): Promise<void> => {
+			const target = getTabTarget(tab);
+			if (target.type === "note") {
+				await dispatch.selectNoteById(target.id);
+			} else if (target.type === "ai-chat") {
+				await dispatch.addAiChatTab(target.id);
+			} else {
+				await dispatch.addTerminalTab(target.id);
+			}
+			navigate(getRouteForTab(tab));
+		},
+		[dispatch, navigate],
+	);
 
-  const createNewAiChat = useCallback(async (): Promise<void> => {
-    const chat = await createWorkspaceAiChat(state.directory);
-    await dispatch.addAiChatTab(chat.id);
-    navigate(`/chat?chatId=${encodeURIComponent(chat.id)}`);
-  }, [dispatch, navigate, state.directory]);
+	const createNewAiChat = useCallback(async (): Promise<void> => {
+		const chat = await createWorkspaceAiChat(state.directory);
+		await dispatch.addAiChatTab(chat.id);
+		navigate(`/chat?chatId=${encodeURIComponent(chat.id)}`);
+	}, [dispatch, navigate, state.directory]);
 
-  useEffect(() => {
-    if (!isElectron()) return;
-    return window.electronAPI.onOpenFile(
-      async ({ filePath, wait, requestId }) => {
-        try {
-          const existing =
-            await window.electronAPI.db.notes.getByFilePath(filePath);
-          let noteId: string;
-          if (existing) {
-            noteId = existing.id;
-          } else {
-            const content = await window.electronAPI.fs
-              .readFile(filePath)
-              .catch(() => "");
-            const basename = filePath.split(/[\\/]/).pop() ?? filePath;
-            const title = basename.replace(/\.[^.]+$/, "");
-            const note = Note.new(
-              title,
-              typeof content === "string" ? content : "",
-            );
-            note.setFilePath(filePath, new Date());
-            await repositories.notes.save(note);
-            noteId = note.id;
-          }
-          if (wait) {
-            waitMap.set(noteId, requestId);
-          }
-          await dispatch.selectNoteById(noteId);
-          navigate(`/note/${noteId}`);
-        } catch (err) {
-          console.error("Failed to open file from CLI:", err);
-        }
-      },
-    );
-  }, []);
+	const getTerminalTitle = useCallback(
+		(sessionId: string): string =>
+			state.terminalSessions.find((session) => session.id === sessionId)
+				?.title ?? "Terminal",
+		[state.terminalSessions],
+	);
 
-  useEffect(() => {
-    if (!isElectron()) return;
-    return window.electronAPI.onOpenFolder(({ folderPath }) => {
-      if (state.directory === folderPath) return;
-      void (async () => {
-        try {
-          await migrateWebOnlyNotesToDirectory(folderPath);
-          await dispatch.switchWorkspace(folderPath);
-        } catch (err) {
-          console.error("Failed to open folder from CLI:", err);
-        }
-      })();
-    });
-  }, [dispatch, state.directory]);
+	const confirmTerminalClose = useCallback(
+		(sessionId: string, onConfirm: () => void): void => {
+			const title = getTerminalTitle(sessionId);
+			uiDispatch.setConfirm({
+				open: true,
+				type: "danger",
+				title: `Close ${title}?`,
+				message: `Closing terminal "${title}" will kill its running shell session.`,
+				confirmText: "Close Terminal",
+				onConfirm: () => {
+					uiDispatch.clearConfirm();
+					onConfirm();
+				},
+				onCancel: () => uiDispatch.clearConfirm(),
+			});
+		},
+		[getTerminalTitle, uiDispatch],
+	);
 
-  useEffect(() => {
-    if (!isElectron()) return;
-    return window.electronAPI.onNavigate((pathname) => {
-      navigate(pathname);
-    });
-  }, [navigate]);
+	useEffect(() => {
+		if (!isElectron()) return;
+		return window.electronAPI.onOpenFile(
+			async ({ filePath, wait, requestId }) => {
+				try {
+					const existing =
+						await window.electronAPI.db.notes.getByFilePath(filePath);
+					let noteId: string;
+					if (existing) {
+						noteId = existing.id;
+					} else {
+						const content = await window.electronAPI.fs
+							.readFile(filePath)
+							.catch(() => "");
+						const basename = filePath.split(/[\\/]/).pop() ?? filePath;
+						const title = basename.replace(/\.[^.]+$/, "");
+						const note = Note.new(
+							title,
+							typeof content === "string" ? content : "",
+						);
+						note.setFilePath(filePath, new Date());
+						await repositories.notes.save(note);
+						noteId = note.id;
+					}
+					if (wait) {
+						waitMap.set(noteId, requestId);
+					}
+					await dispatch.selectNoteById(noteId);
+					navigate(`/note/${noteId}`);
+				} catch (err) {
+					console.error("Failed to open file from CLI:", err);
+				}
+			},
+		);
+	}, []);
 
-  useEffect(() => {
-    if (!isElectron()) return;
-    void window.electronAPI.app.rendererReady(state.directory);
-  }, [state.directory]);
+	useEffect(() => {
+		if (!isElectron()) return;
+		return window.electronAPI.onOpenFolder(({ folderPath }) => {
+			if (state.directory === folderPath) return;
+			void (async () => {
+				try {
+					await migrateWebOnlyNotesToDirectory(folderPath);
+					await dispatch.switchWorkspace(folderPath);
+				} catch (err) {
+					console.error("Failed to open folder from CLI:", err);
+				}
+			})();
+		});
+	}, [dispatch, state.directory]);
 
-  useEffect(() => {
-    if (!isElectron()) return;
-    const prevTabs = prevTabsRef.current;
-    const removedTabs = prevTabs.filter(
-      (pt) => !state.tabs.find((ct) => ct.id === pt.id),
-    );
-    for (const tab of removedTabs) {
-      if (isAiChatTab(tab)) continue;
-      const requestId = waitMap.get(tab.noteId);
-      if (requestId) {
-        window.electronAPI.app.notifyFileClosed(requestId);
-        waitMap.delete(tab.noteId);
-      }
-    }
-    prevTabsRef.current = state.tabs;
-  }, [state.tabs]);
+	useEffect(() => {
+		if (!isElectron()) return;
+		return window.electronAPI.onNavigate((pathname) => {
+			navigate(pathname);
+		});
+	}, [navigate]);
 
-  useEffect(() => {
-    if (location.pathname !== "/" || state.activeTabId === null) return;
-    const activeTab = state.tabs.find(
-      (tab) =>
-        tab.id === state.activeTabId ||
-        (!isAiChatTab(tab) && tab.noteId === state.activeTabId),
-    );
-    if (activeTab) {
-      navigate(getRouteForTab(activeTab), { replace: true });
-    }
-  }, [location.pathname, navigate, state.activeTabId, state.tabs]);
+	useEffect(() => {
+		if (!isElectron()) return;
+		void window.electronAPI.app.rendererReady(state.directory);
+	}, [state.directory]);
 
-  useEffect(() => {
-    if (!location.pathname.startsWith("/settings")) return;
+	useEffect(() => {
+		if (!isElectron()) return;
+		const prevTabs = prevTabsRef.current;
+		const removedTabs = prevTabs.filter(
+			(pt) => !state.tabs.find((ct) => ct.id === pt.id),
+		);
+		for (const tab of removedTabs) {
+			if (isAiChatTab(tab) || isTerminalTab(tab)) continue;
+			const requestId = waitMap.get(tab.noteId);
+			if (requestId) {
+				window.electronAPI.app.notifyFileClosed(requestId);
+				waitMap.delete(tab.noteId);
+			}
+		}
+		prevTabsRef.current = state.tabs;
+	}, [state.tabs]);
 
-    layoutDispatch.setActivity("settings");
-    if (window.matchMedia("(min-width: 768px)").matches) {
-      uiDispatch.setSidebarOpen(true);
-    }
-  }, [location.pathname]);
+	useEffect(() => {
+		if (location.pathname !== "/" || state.activeTabId === null) return;
+		const activeTab = state.tabs.find(
+			(tab) =>
+				tab.id === state.activeTabId ||
+				(!isAiChatTab(tab) &&
+					!isTerminalTab(tab) &&
+					tab.noteId === state.activeTabId),
+		);
+		if (activeTab) {
+			navigate(getRouteForTab(activeTab), { replace: true });
+		}
+	}, [location.pathname, navigate, state.activeTabId, state.tabs]);
 
-  const cycleEditorTab = useCallback(
-    async (direction: TabCycleDirection): Promise<void> => {
-      const currentTarget = getCurrentRouteTabTarget(
-        location.pathname,
-        location.search,
-      );
-      const nextTarget = getCycledTabTarget({
-        tabs: state.tabs,
-        currentTarget,
-        activeTabId: state.activeTabId,
-        direction,
-      });
-      if (!nextTarget) return;
-      const nextTab = findTabByTarget(state.tabs, nextTarget);
-      if (!nextTab) return;
-      await navigateToTab(nextTab);
-    },
-    [
-      location.pathname,
-      location.search,
-      navigateToTab,
-      state.activeTabId,
-      state.tabs,
-    ],
-  );
+	useEffect(() => {
+		if (!location.pathname.startsWith("/settings")) return;
 
-  const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
-    if (state.tabs.length === 0) {
-      if (isElectron()) await window.electronAPI.app.hideToTray();
-      return;
-    }
+		layoutDispatch.setActivity("settings");
+		if (window.matchMedia("(min-width: 768px)").matches) {
+			uiDispatch.setSidebarOpen(true);
+		}
+	}, [location.pathname]);
 
-    const currentTarget = getCurrentRouteTabTarget(
-      location.pathname,
-      location.search,
-    );
-    const currentTab =
-      findTabByTarget(state.tabs, currentTarget) ??
-      state.tabs.find((tab) => tab.id === state.activeTabId);
-    if (!currentTab) return;
+	const cycleEditorTab = useCallback(
+		async (direction: TabCycleDirection): Promise<void> => {
+			const currentTarget = getCurrentRouteTabTarget(
+				location.pathname,
+				location.search,
+			);
+			const nextTarget = getCycledTabTarget({
+				tabs: state.tabs,
+				currentTarget,
+				activeTabId: state.activeTabId,
+				direction,
+			});
+			if (!nextTarget) return;
+			const nextTab = findTabByTarget(state.tabs, nextTarget);
+			if (!nextTab) return;
+			await navigateToTab(nextTab);
+		},
+		[
+			location.pathname,
+			location.search,
+			navigateToTab,
+			state.activeTabId,
+			state.tabs,
+		],
+	);
 
-    const nextTab = getPreviousTabAfterClose(state.tabs, currentTab.id);
-    await dispatch.removeTab(currentTab.id);
+	const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
+		if (state.tabs.length === 0) {
+			if (isElectron()) await window.electronAPI.app.hideToTray();
+			return;
+		}
 
-    if (nextTab) {
-      await navigateToTab(nextTab);
-      return;
-    }
+		const currentTarget = getCurrentRouteTabTarget(
+			location.pathname,
+			location.search,
+		);
+		const currentTab =
+			findTabByTarget(state.tabs, currentTarget) ??
+			state.tabs.find((tab) => tab.id === state.activeTabId);
+		if (!currentTab) return;
 
-    dispatch.setNote(null);
-    navigate("/");
-  }, [
-    dispatch,
-    location.pathname,
-    location.search,
-    navigate,
-    navigateToTab,
-    state.activeTabId,
-    state.tabs,
-  ]);
+		const closeTab = async (): Promise<void> => {
+			const nextTab = getPreviousTabAfterClose(state.tabs, currentTab.id);
+			await dispatch.removeTab(currentTab.id);
 
-  useEffect(() => {
-    if (!state.note || !location.pathname.startsWith("/note/")) return;
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-    };
-    document.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown, { capture: true });
-    };
-  }, [location.pathname, state.note?.id]);
+			if (nextTab) {
+				await navigateToTab(nextTab);
+				return;
+			}
 
-  useEffect(
-    function registerBindings() {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.ctrlKey && e.key === "Tab") {
-          e.preventDefault();
-          e.stopPropagation();
-          void cycleEditorTab(e.shiftKey ? "backward" : "forward");
-          return;
-        }
+			dispatch.setNote(null);
+			navigate("/");
+		};
 
-        if (
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey &&
-          e.key.toLowerCase() === "w"
-        ) {
-          e.preventDefault();
-          e.stopPropagation();
-          void closeCurrentTabOrHide();
-          return;
-        }
+		if (isTerminalTab(currentTab)) {
+			confirmTerminalClose(currentTab.noteId, () => {
+				void closeTab();
+			});
+			return;
+		}
 
-        if (isCommanderShortcut(e)) {
-          e.preventDefault();
-          dispatch.commander(true);
-        }
-        if (isNewAiChatShortcut(e)) {
-          e.preventDefault();
-          e.stopPropagation();
-          void createNewAiChat();
-          return;
-        }
-        if (isNewNoteShortcut(e)) {
-          e.preventDefault();
-          dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
-        }
-        if ((e.metaKey || e.ctrlKey) && e.key === ",") {
-          e.preventDefault();
-          navigate("/settings");
-        }
-        if (
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey &&
-          e.key.toLowerCase() === "p" &&
-          state.note &&
-          location.pathname.startsWith("/note/")
-        ) {
-          e.preventDefault();
-          printDocument({ title: state.note.title });
-        }
-        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
-          e.preventDefault();
-          uiDispatch.toggleFocusMode();
-        }
-        if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "f") {
-          e.preventDefault();
-          uiDispatch.toggleFindReplace();
-        }
-        if ((e.metaKey || e.ctrlKey) && e.key === "b") {
-          e.preventDefault();
-          uiDispatch.toggleSidebar();
-        }
-      };
+		await closeTab();
+	}, [
+		confirmTerminalClose,
+		dispatch,
+		location.pathname,
+		location.search,
+		navigate,
+		navigateToTab,
+		state.activeTabId,
+		state.tabs,
+	]);
 
-      const handleBeforeUnload = (): void => {
-        const editor = editorGlobalRef.current;
-        if (!state.note || !editor || editor.isDestroyed) return;
-        if (!location.pathname.startsWith("/note/")) return;
-        if (getEditorNoteId() !== state.note.id) return;
-      };
-      const controller = new AbortController();
-      const opts = { signal: controller.signal };
-      window.addEventListener("keydown", handleKeyDown, opts);
-      window.addEventListener("beforeunload", handleBeforeUnload, opts);
-      return () => {
-        controller.abort();
-      };
-    },
-    [
-      closeCurrentTabOrHide,
-      createNewAiChat,
-      cycleEditorTab,
-      dispatch,
-      location.pathname,
-      navigate,
-      state.note,
-      uiDispatch,
-    ],
-  );
+	useEffect(() => {
+		if (!state.note || !location.pathname.startsWith("/note/")) return;
+		const handleKeyDown = (event: KeyboardEvent): void => {
+			if (event.key !== "Enter" && event.key !== " ") return;
+		};
+		document.addEventListener("keydown", handleKeyDown, { capture: true });
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown, { capture: true });
+		};
+	}, [location.pathname, state.note?.id]);
 
-  const isFloatingPanel =
-    window.location.hash.includes("quicknote") ||
-    window.location.hash.includes("mathnote");
+	useEffect(
+		function registerBindings() {
+			const handleKeyDown = (e: KeyboardEvent) => {
+				if (e.ctrlKey && e.key === "Tab") {
+					e.preventDefault();
+					e.stopPropagation();
+					void cycleEditorTab(e.shiftKey ? "backward" : "forward");
+					return;
+				}
 
-  useEffect(() => {
-    if (!isFloatingPanel) return;
-    document.documentElement.style.background = "transparent";
-    document.body.style.background = "transparent";
-  }, [isFloatingPanel]);
+				if (
+					(e.metaKey || e.ctrlKey) &&
+					!e.shiftKey &&
+					e.key.toLowerCase() === "w"
+				) {
+					e.preventDefault();
+					e.stopPropagation();
+					void closeCurrentTabOrHide();
+					return;
+				}
 
-  if (isFloatingPanel) {
-    return (
-      <div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
-        <div className="quicknote-window-drag-strip" />
-        <Suspense fallback={null}>
-          <div className="flex flex-col flex-1 min-h-0 h-full">
-            <Outlet />
-          </div>
-        </Suspense>
-      </div>
-    );
-  }
+				if (isCommanderShortcut(e)) {
+					e.preventDefault();
+					dispatch.commander(true);
+				}
+				if (isNewAiChatShortcut(e)) {
+					e.preventDefault();
+					e.stopPropagation();
+					void createNewAiChat();
+					return;
+				}
+				if (isNewNoteShortcut(e)) {
+					e.preventDefault();
+					dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+				}
+				if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+					e.preventDefault();
+					navigate("/settings");
+				}
+				if (
+					(e.metaKey || e.ctrlKey) &&
+					!e.shiftKey &&
+					e.key.toLowerCase() === "p" &&
+					state.note &&
+					location.pathname.startsWith("/note/")
+				) {
+					e.preventDefault();
+					printDocument({ title: state.note.title });
+				}
+				if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
+					e.preventDefault();
+					uiDispatch.toggleFocusMode();
+				}
+				if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === "f") {
+					e.preventDefault();
+					uiDispatch.toggleFindReplace();
+				}
+				if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+					e.preventDefault();
+					uiDispatch.toggleSidebar();
+				}
+			};
 
-  return (
-    <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
-      <Fragment>
-        <Commander
-          note={state.note}
-          tabs={state.tabs}
-          dispatch={dispatch}
-          notes={state.notes}
-          commander={state.commander}
-          noteGroups={state.noteGroups}
-        />
-        <FindReplaceBar />
-        <CreateNoteDialog />
-        <CreateTemplateDialog />
-        <CreateVariableDialog />
-        <RecentNotesDialog />
-        <ReadItLaterDialog />
-        <AddToGroupDialog />
-        <DirectoryBrowserDialog />
-        <InspectJsonDialog />
-        <TasksDialog />
-        <GitSyncDialog />
-        <MediaPreview />
-        <AIDrawer />
-        <KeyboardClickHints />
-      </Fragment>
-      <MainLayout />
-      {uiState.focusMode && (
-        <button
-          title="Exit focus mode (⌘⇧F)"
-          onClick={() => uiDispatch.toggleFocusMode()}
-          className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-[transform,color,background-color,border-color] hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
-        >
-          <CornersOutIcon className="size-4" />
-          <span>Exit Focus</span>
-        </button>
-      )}
-      {uiState.alert && (
-        <Alert
-          open={uiState.alert.open}
-          title={uiState.alert.title}
-          message={uiState.alert.message}
-          type={uiState.alert.type}
-          onClose={() => uiDispatch.clearAlert()}
-        />
-      )}
-      {uiState.prompt && (
-        <Prompt
-          open={uiState.prompt.open}
-          title={uiState.prompt.title}
-          message={uiState.prompt.message}
-          initialValue={uiState.prompt.initialValue}
-          placeholder={uiState.prompt.placeholder}
-          onConfirm={(val) => {
-            uiState.prompt?.onConfirm(val);
-            uiDispatch.clearPrompt();
-          }}
-          onCancel={() => {
-            uiState.prompt?.onCancel?.();
-            uiDispatch.clearPrompt();
-          }}
-        />
-      )}
-    </div>
-  );
+			const handleBeforeUnload = (): void => {
+				const editor = editorGlobalRef.current;
+				if (!state.note || !editor || editor.isDestroyed) return;
+				if (!location.pathname.startsWith("/note/")) return;
+				if (getEditorNoteId() !== state.note.id) return;
+			};
+			const controller = new AbortController();
+			const opts = { signal: controller.signal };
+			window.addEventListener("keydown", handleKeyDown, opts);
+			window.addEventListener("beforeunload", handleBeforeUnload, opts);
+			return () => {
+				controller.abort();
+			};
+		},
+		[
+			closeCurrentTabOrHide,
+			createNewAiChat,
+			cycleEditorTab,
+			dispatch,
+			location.pathname,
+			navigate,
+			state.note,
+			uiDispatch,
+		],
+	);
+
+	const isFloatingPanel =
+		window.location.hash.includes("quicknote") ||
+		window.location.hash.includes("mathnote");
+
+	useEffect(() => {
+		if (!isFloatingPanel) return;
+		document.documentElement.style.background = "transparent";
+		document.body.style.background = "transparent";
+	}, [isFloatingPanel]);
+
+	if (isFloatingPanel) {
+		return (
+			<div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
+				<div className="quicknote-window-drag-strip" />
+				<Suspense fallback={null}>
+					<div className="flex flex-col flex-1 min-h-0 h-full">
+						<Outlet />
+					</div>
+				</Suspense>
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
+			<Fragment>
+				<Commander
+					note={state.note}
+					tabs={state.tabs}
+					dispatch={dispatch}
+					notes={state.notes}
+					commander={state.commander}
+					noteGroups={state.noteGroups}
+					terminalSessions={state.terminalSessions}
+				/>
+				<FindReplaceBar />
+				<CreateNoteDialog />
+				<CreateTemplateDialog />
+				<CreateVariableDialog />
+				<RecentNotesDialog />
+				<ReadItLaterDialog />
+				<AddToGroupDialog />
+				<DirectoryBrowserDialog />
+				<InspectJsonDialog />
+				<TasksDialog />
+				<GitSyncDialog />
+				<MediaPreview />
+				<AIDrawer />
+				<KeyboardClickHints />
+			</Fragment>
+			<MainLayout />
+			{uiState.focusMode && (
+				<button
+					type="button"
+					title="Exit focus mode (⌘⇧F)"
+					onClick={() => uiDispatch.toggleFocusMode()}
+					className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-lg transition-[transform,color,background-color,border-color] hover:scale-105 bg-background/80 border-border backdrop-blur-md text-foreground/70 animate-fade-in hover:text-foreground"
+				>
+					<CornersOutIcon className="size-4" />
+					<span>Exit Focus</span>
+				</button>
+			)}
+			{uiState.alert && (
+				<Alert
+					open={uiState.alert.open}
+					title={uiState.alert.title}
+					message={uiState.alert.message}
+					type={uiState.alert.type}
+					onClose={() => uiDispatch.clearAlert()}
+				/>
+			)}
+			{uiState.confirm && (
+				<Confirm
+					open={uiState.confirm.open}
+					title={uiState.confirm.title}
+					message={uiState.confirm.message}
+					type={uiState.confirm.type}
+					confirmText={uiState.confirm.confirmText}
+					cancelText={uiState.confirm.cancelText}
+					onConfirm={uiState.confirm.onConfirm}
+					onCancel={() => {
+						uiState.confirm?.onCancel?.();
+						uiDispatch.clearConfirm();
+					}}
+				/>
+			)}
+			{uiState.prompt && (
+				<Prompt
+					open={uiState.prompt.open}
+					title={uiState.prompt.title}
+					message={uiState.prompt.message}
+					initialValue={uiState.prompt.initialValue}
+					placeholder={uiState.prompt.placeholder}
+					onConfirm={(val) => {
+						uiState.prompt?.onConfirm(val);
+						uiDispatch.clearPrompt();
+					}}
+					onCancel={() => {
+						uiState.prompt?.onCancel?.();
+						uiDispatch.clearPrompt();
+					}}
+				/>
+			)}
+		</div>
+	);
 };
