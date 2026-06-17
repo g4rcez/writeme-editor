@@ -11,6 +11,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { GlobalDispatchers } from "@/store/global.store";
 import type { Tab } from "@/store/repositories/entities/tab";
 import type { TerminalSession } from "@/store/repositories/entities/terminal-session";
+import { suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import {
 	getCurrentRouteTabTarget,
@@ -99,14 +100,24 @@ export const TabsBar = (props: Props) => {
 	const closeTab = async (tab: Tab): Promise<void> => {
 		const isClosingCurrentTab = isCurrentTab(tab);
 		const nextTab = getPreviousTabAfterClose(props.tabs, tab.id);
-		await dispatch.removeTab(tab.id);
-		if (!isClosingCurrentTab) return;
-		if (nextTab) {
-			await navigateToTab(nextTab);
+		if (isClosingCurrentTab && !isAiChatTab(tab) && !isTerminalTab(tab)) {
+			suppressNoteRouteTabOpen(tab.noteId);
+		}
+
+		if (!isClosingCurrentTab) {
+			await dispatch.removeTab(tab.id);
 			return;
 		}
-		dispatch.setNote(null);
-		navigate("/");
+
+		if (nextTab) {
+			await navigateToTab(nextTab);
+			await dispatch.removeTab(tab.id);
+			return;
+		}
+
+		dispatch.activeTabId(null);
+		navigate("/", { replace: true });
+		await dispatch.removeTab(tab.id);
 	};
 
 	const onCloseTab = async (e: React.MouseEvent, tab: Tab) => {

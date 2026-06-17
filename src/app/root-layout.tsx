@@ -9,6 +9,10 @@ import {
 	isNewAiChatShortcut,
 	isNewNoteShortcut,
 } from "@/lib/keyboard-shortcuts";
+import {
+	clearSuppressedNoteRouteTabOpens,
+	suppressNoteRouteTabOpen,
+} from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { getCycledTabTarget, type TabCycleDirection } from "@/lib/tab-cycling";
@@ -67,6 +71,10 @@ export const RootLayout = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const prevTabsRef = useRef(state.tabs);
+
+	useEffect(() => {
+		clearSuppressedNoteRouteTabOpens();
+	}, [location.pathname, location.search]);
 
 	const navigateToTab = useCallback(
 		async (tab: (typeof state.tabs)[number]): Promise<void> => {
@@ -261,15 +269,19 @@ export const RootLayout = () => {
 
 		const closeTab = async (): Promise<void> => {
 			const nextTab = getPreviousTabAfterClose(state.tabs, currentTab.id);
-			await dispatch.removeTab(currentTab.id);
+			if (!isAiChatTab(currentTab) && !isTerminalTab(currentTab)) {
+				suppressNoteRouteTabOpen(currentTab.noteId);
+			}
 
 			if (nextTab) {
 				await navigateToTab(nextTab);
+				await dispatch.removeTab(currentTab.id);
 				return;
 			}
 
-			dispatch.setNote(null);
-			navigate("/");
+			dispatch.activeTabId(null);
+			navigate("/", { replace: true });
+			await dispatch.removeTab(currentTab.id);
 		};
 
 		if (isTerminalTab(currentTab)) {

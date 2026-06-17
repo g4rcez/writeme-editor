@@ -298,17 +298,17 @@ export const ExplorerPane = () => {
       </div>
       <div
         data-treeroot="true"
-        className="min-h-0 flex-1 overflow-auto bg-background pb-6 scrollbar-hide"
         onContextMenu={handleTreeRootContextMenu}
+        className="min-h-0 flex-1 overflow-auto pb-0 scrollbar-hide"
       >
         <TreeView
           map={map}
+          onMove={handleMove}
           onDelete={handleDelete}
           onNewFile={handleNewFile}
-          createRequest={createRequest}
           onFileSelect={onFileSelect}
+          createRequest={createRequest}
           onNewFolder={handleNewFolder}
-          onMove={handleMove}
           rootPath={state.explorerRoot}
         />
       </div>

@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+	clearSuppressedNoteRouteTabOpens,
+	isNoteRouteTabOpenSuppressed,
+} from "@/lib/note-route-tab-open-suppression";
 import { TERMINAL_TAB_TYPE } from "@/lib/tab-target";
 import { uiDispatch } from "@/store/ui.store";
 import type { Tab } from "@/store/repositories/entities/tab";
@@ -40,6 +44,7 @@ const createTerminalSession = (
 
 function createDispatch() {
 	return {
+		activeTabId: vi.fn(),
 		addAiChatTab: vi.fn(),
 		addTerminalTab: vi.fn(),
 		note: vi.fn(),
@@ -86,6 +91,7 @@ function renderTabsBar({
 
 describe("TabsBar terminal tabs", () => {
 	beforeEach(() => {
+		clearSuppressedNoteRouteTabOpens();
 		vi.clearAllMocks();
 	});
 
@@ -171,5 +177,23 @@ describe("TabsBar terminal tabs", () => {
 
 		expect(uiDispatch.clearConfirm).toHaveBeenCalled();
 		expect(dispatch.removeTab).toHaveBeenCalledWith("terminal-tab");
+	});
+
+	it("clears the active tab and suppresses route reopening before removing the last active tab", async () => {
+		const dispatch = renderTabsBar({
+			initialRoute: "/note/note-1",
+			activeTabId: "note-tab",
+			tabs: [createTab({ id: "note-tab", noteId: "note-1", order: 0 })],
+			terminalSessions: [],
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Close Untitled" }));
+
+		await waitFor(() => {
+			expect(dispatch.removeTab).toHaveBeenCalledWith("note-tab");
+		});
+		expect(dispatch.activeTabId).toHaveBeenCalledWith(null);
+		expect(dispatch.setNote).not.toHaveBeenCalled();
+		expect(isNoteRouteTabOpenSuppressed("note-1")).toBe(true);
 	});
 });

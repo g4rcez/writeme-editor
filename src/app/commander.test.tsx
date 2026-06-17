@@ -310,7 +310,7 @@ describe("Commander", () => {
 		await Promise.resolve();
 
 		expect(mocks.dispatch.removeTab).toHaveBeenCalledWith("terminal-tab-2");
-		expect(mocks.navigate).toHaveBeenCalledWith("/");
+		expect(mocks.navigate).toHaveBeenCalledWith("/", { replace: true });
 	});
 
 	it("opens the shortcuts page from the help command without showing the old shortcut binding", () => {

@@ -10,6 +10,7 @@ import {
 	getSettingsPath,
 	isSettingsSectionAvailable,
 } from "@/app/settings/settings-sections";
+import { suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getRouteForTab, isAiChatTab, isTerminalTab } from "@/lib/tab-target";
 import {
@@ -196,11 +197,17 @@ export const Commander = (props: Props) => {
 
 	const closeTabsSequentially = useCallback(
 		(tabsToClose: Tab[]): void => {
+			for (const tab of tabsToClose) {
+				if (!isAiChatTab(tab) && !isTerminalTab(tab)) {
+					suppressNoteRouteTabOpen(tab.noteId);
+				}
+			}
+
 			const closeAt = (index: number): void => {
 				const tab = tabsToClose[index];
 				if (!tab) {
 					dispatch.setNote(null);
-					navigate("/");
+					navigate("/", { replace: true });
 					return;
 				}
 
