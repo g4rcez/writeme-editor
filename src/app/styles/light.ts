@@ -16,7 +16,7 @@ const secondarySubtle = "hsla(245, 55%, 94%)";
 const emphasis = "hsla(90, 60%, 22%)";
 const info = "hsla(185, 90%, 20%)";
 const warn = "hsla(45, 100%, 20%)";
-const danger = "hsla(0, 72%, 36%)";
+const danger = "hsla(0, 72%, 32%)";
 const success = "hsla(150, 70%, 20%)";
 const onDark = background;
 const onWarn = "hsla(45, 20%, 8%)";
@@ -46,10 +46,14 @@ export const lightTheme: typeof defaultLightTheme = {
 		foreground,
 		background,
 		border,
+		ring: primary,
 		disabled: "hsla(131, 8%, 38%)",
 		muted: {
 			...defaultLightTheme.colors.muted,
 			DEFAULT: surface,
+			foreground: mutedForeground,
+			subtle: mutedForeground,
+			hover: surface,
 		},
 		emphasis: {
 			foreground: onWarn,
@@ -80,7 +84,7 @@ export const lightTheme: typeof defaultLightTheme = {
 		danger: {
 			DEFAULT: danger,
 			subtle: "hsla(0, 72%, 94%)",
-			hover: "hsla(0, 75%, 30%)",
+			hover: "hsla(0, 75%, 27%)",
 			foreground: onDark,
 			notification: danger,
 		},
@@ -101,7 +105,7 @@ export const lightTheme: typeof defaultLightTheme = {
 		input: {
 			border: "hsla(245, 16%, 55%)",
 			placeholder: mutedForeground,
-			"mask-error": "hsla(0, 72%, 42%)",
+			"mask-error": "hsla(0, 72%, 38%)",
 			"switch-bg": "hsla(245, 14%, 72%)",
 			switch: surfaceRaised,
 			slider: surfaceRaised,

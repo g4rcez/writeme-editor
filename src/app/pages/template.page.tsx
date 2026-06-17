@@ -8,126 +8,126 @@ import { useParams } from "react-router-dom";
 import { Editor } from "../editor";
 
 export default function TemplatePage() {
-  const { templateId } = useParams();
-  const [template, setTemplate] = useState<Note | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState("");
+	const { templateId } = useParams();
+	const [template, setTemplate] = useState<Note | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [saving, setSaving] = useState(false);
+	const [title, setTitle] = useState("");
 
-  const templateRef = useRef<Note | null>(null);
-  const titleRef = useRef("");
+	const templateRef = useRef<Note | null>(null);
+	const titleRef = useRef("");
 
-  useEffect(() => {
-    templateRef.current = template;
-  }, [template]);
+	useEffect(() => {
+		templateRef.current = template;
+	}, [template]);
 
-  useEffect(() => {
-    titleRef.current = title;
-  }, [title]);
+	useEffect(() => {
+		titleRef.current = title;
+	}, [title]);
 
-  useEffect(() => {
-    const loadTemplate = async () => {
-      if (!templateId) return;
-      setLoading(true);
-      const data = await repositories.notes.getOne(templateId);
-      if (data) {
-        setTemplate(data);
-        setTitle(data.title);
-      }
-      setLoading(false);
-    };
-    loadTemplate();
-  }, [templateId]);
+	useEffect(() => {
+		const loadTemplate = async () => {
+			if (!templateId) return;
+			setLoading(true);
+			const data = await repositories.notes.getOne(templateId);
+			if (data) {
+				setTemplate(data);
+				setTitle(data.title);
+			}
+			setLoading(false);
+		};
+		loadTemplate();
+	}, [templateId]);
 
-  const onSave = useCallback(async (content: string) => {
-    const currentTemplate = templateRef.current;
-    if (!currentTemplate) return;
+	const onSave = useCallback(async (content: string) => {
+		const currentTemplate = templateRef.current;
+		if (!currentTemplate) return;
 
-    setSaving(true);
-    try {
-      const updated = Note.parse({
-        ...currentTemplate,
-        content,
-        title: titleRef.current || currentTemplate.title,
-        updatedAt: new Date(),
-      });
+		setSaving(true);
+		try {
+			const updated = Note.parse({
+				...currentTemplate,
+				content,
+				title: titleRef.current || currentTemplate.title,
+				updatedAt: new Date(),
+			});
 
-      if (isElectron() && updated.filePath) {
-        await window.electronAPI.fs.writeFile(updated.filePath, content);
-      }
+			if (isElectron() && updated.filePath) {
+				await window.electronAPI.fs.writeFile(updated.filePath, content);
+			}
 
-      await repositories.notes.update(updated.id, updated);
-      templateRef.current = updated;
-    } catch (error) {
-      console.error("Failed to save template:", error);
-    } finally {
-      setTimeout(() => setSaving(false), 500);
-    }
-  }, []);
+			await repositories.notes.update(updated.id, updated);
+			templateRef.current = updated;
+		} catch (error) {
+			console.error("Failed to save template:", error);
+		} finally {
+			setTimeout(() => setSaving(false), 500);
+		}
+	}, []);
 
-  const updateTitle = async (newTitle: string) => {
-    setTitle(newTitle);
-    const currentTemplate = templateRef.current;
-    if (!currentTemplate) return;
+	const updateTitle = async (newTitle: string) => {
+		setTitle(newTitle);
+		const currentTemplate = templateRef.current;
+		if (!currentTemplate) return;
 
-    const updated = Note.parse({
-      ...currentTemplate,
-      title: newTitle,
-      updatedAt: new Date(),
-    });
-    await repositories.notes.update(updated.id, updated);
-    setTemplate(updated);
-    templateRef.current = updated;
-  };
+		const updated = Note.parse({
+			...currentTemplate,
+			title: newTitle,
+			updatedAt: new Date(),
+		});
+		await repositories.notes.update(updated.id, updated);
+		setTemplate(updated);
+		templateRef.current = updated;
+	};
 
-  if (loading) return <div className="p-8">Loading template...</div>;
-  if (!template)
-    return <div className="p-8 mt-20 text-center">Template not found</div>;
+	if (loading) return <div className="p-8">Loading template...</div>;
+	if (!template)
+		return <div className="p-8 mt-20 text-center">Template not found</div>;
 
-  return (
-    <div className="flex flex-col h-full duration-300 bg-background animate-in fade-in">
-      <header className="flex sticky top-0 z-10 gap-4 items-center py-2 px-4 border-b border-border/40 bg-card-background/50 backdrop-blur-sm">
-        <Input
-          hiddenLabel
-          value={title}
-          placeholder="Template Name"
-          container="w-full"
-          onChange={(e) => updateTitle(e.target.value)}
-          feedback={
-            <div className="flex gap-1.5 items-center px-0.5 text-xs">
-              {saving ? (
-                <span className="flex gap-1 items-center animate-pulse text-primary">
-                  <FloppyDiskIcon size={8} />
-                  Saving...
-                </span>
-              ) : (
-                <span className="flex gap-1 items-center text-green-500/70">
-                  <FloppyDiskIcon size={8} />
-                  Saved
-                </span>
-              )}
-            </div>
-          }
-        />
-      </header>
-      <div className="overflow-y-auto flex-1 py-4 px-8 bg-card-background">
-        <Editor id={template.id} content={template.content} onSave={onSave} />
-      </div>
-      <div className="p-4 border-t border-card-border backdrop-blur-sm">
-        <p className="font-bold text-center opacity-60 text-xs text-muted-foreground">
-          Template Syntax
-        </p>
-        <p className="mt-1 text-xs text-center text-muted-foreground">
-          Use{" "}
-          <code className="px-1 rounded bg-primary/5">
-            {"{{VARIABLE_NAME}}"}
-          </code>{" "}
-          for placeholders. Standard:{" "}
-          <code className="px-1 rounded bg-muted">{"{{DATE}}"}</code>,
-          <code className="px-1 rounded bg-muted">{"{{TIME}}"}</code>,
-          <code className="px-1 rounded bg-muted">{"{{TITLE}}"}</code>.
-        </p>
-      </div>
-    </div>
-  );
+	return (
+		<div className="flex flex-col h-full duration-300 bg-background animate-in fade-in">
+			<header className="flex sticky top-0 z-10 gap-4 items-center py-2 px-4 border-b border-border/40 bg-card-background">
+				<Input
+					hiddenLabel
+					value={title}
+					placeholder="Template Name"
+					container="w-full"
+					onChange={(e) => updateTitle(e.target.value)}
+					feedback={
+						<div className="flex gap-1.5 items-center px-0.5 text-xs">
+							{saving ? (
+								<span className="flex gap-1 items-center animate-pulse text-primary">
+									<FloppyDiskIcon size={8} />
+									Saving...
+								</span>
+							) : (
+								<span className="flex gap-1 items-center text-success">
+									<FloppyDiskIcon size={8} />
+									Saved
+								</span>
+							)}
+						</div>
+					}
+				/>
+			</header>
+			<div className="overflow-y-auto flex-1 py-4 px-8 bg-card-background">
+				<Editor id={template.id} content={template.content} onSave={onSave} />
+			</div>
+			<div className="p-4 border-t border-card-border bg-card-background">
+				<p className="font-bold text-center opacity-60 text-xs text-muted-foreground">
+					Template Syntax
+				</p>
+				<p className="mt-1 text-xs text-center text-muted-foreground">
+					Use{" "}
+					<code className="px-1 rounded bg-primary/5">
+						{"{{VARIABLE_NAME}}"}
+					</code>{" "}
+					for placeholders. Standard:{" "}
+					<code className="px-1 rounded bg-muted">{"{{DATE}}"}</code>,
+					<code className="px-1 rounded bg-muted">{"{{TIME}}"}</code>,
+					<code className="px-1 rounded bg-muted">{"{{TITLE}}"}</code>.
+				</p>
+			</div>
+		</div>
+	);
 }

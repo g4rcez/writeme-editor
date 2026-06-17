@@ -45,6 +45,9 @@ const SettingsAIPage = lazy(() => import("./pages/settings/settings-ai.page"));
 const SettingsWorkspacePage = lazy(
 	() => import("./pages/settings/settings-workspace.page"),
 );
+const SettingsTemplatesPage = lazy(
+	() => import("./pages/settings/settings-templates.page"),
+);
 const SettingsVariablesPage = lazy(
 	() => import("./pages/settings/settings-variables.page"),
 );
@@ -164,6 +167,10 @@ export const router = createRouter([
 								<SettingsWorkspacePage />
 							</SettingsPlatformGate>
 						),
+					},
+					{
+						path: "templates",
+						element: <SettingsTemplatesPage />,
 					},
 					{
 						path: "variables",
