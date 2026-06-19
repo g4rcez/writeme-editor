@@ -90,7 +90,7 @@
     "@elysiajs/node": "1.4.5",
     "@excalidraw/excalidraw": "0.18.1",
     "@fontsource-variable/jetbrains-mono": "5.2.8",
-    "@g4rcez/components": "5.0.7",
+    "@g4rcez/components": "5.0.8-4-beta",
     "@git-diff-view/core": "0.1.5",
     "@git-diff-view/react": "0.1.5",
     "@iconify-json/logos": "1.2.11",

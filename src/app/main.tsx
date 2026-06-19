@@ -1,6 +1,7 @@
 import {
 	ComponentsProvider,
 	Notifications,
+	createThemeCss,
 	createTokenStyles,
 	type TokenRemap,
 	type Tweaks,
@@ -21,6 +22,7 @@ import { lightTheme } from "./styles/light";
 import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
 import { nativeTheme } from "./styles/native";
 import { tokyonightNightTheme } from "./styles/tokyonight-night";
+import { createThemeTokens } from "./styles/theme-runtime-tokens";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import { SettingsService } from "../store/settings";
 import { sortByNewest } from "@/lib/array";
@@ -112,8 +114,20 @@ const themeConfiguration = () => {
 	);
 	head.append(
 		createStyle(
+			"default-theme-runtime",
+			createThemeCss(createThemeTokens(lightTheme), { selector: ":root" }),
+		),
+	);
+	head.append(
+		createStyle(
 			"dark-theme",
 			createTokenStyles(darkTheme, { ...tokenRemap, name: "dark" }),
+		),
+	);
+	head.append(
+		createStyle(
+			"dark-theme-runtime",
+			createThemeCss(createThemeTokens(darkTheme), { selector: "html.dark" }),
 		),
 	);
 	head.append(
@@ -122,6 +136,14 @@ const themeConfiguration = () => {
 			createTokenStyles(catppuccinMochaTheme, {
 				...tokenRemap,
 				name: "catppuccin-mocha",
+			}),
+		),
+	);
+	head.append(
+		createStyle(
+			"catppuccin-mocha-theme-runtime",
+			createThemeCss(createThemeTokens(catppuccinMochaTheme), {
+				selector: "html.catppuccin-mocha",
 			}),
 		),
 	);
@@ -136,10 +158,26 @@ const themeConfiguration = () => {
 	);
 	head.append(
 		createStyle(
+			"tokyonight-night-theme-runtime",
+			createThemeCss(createThemeTokens(tokyonightNightTheme), {
+				selector: "html.tokyonight-night",
+			}),
+		),
+	);
+	head.append(
+		createStyle(
 			"native-theme",
 			createTokenStyles(nativeTheme, {
 				...tokenRemap,
 				name: "native",
+			}),
+		),
+	);
+	head.append(
+		createStyle(
+			"native-theme-runtime",
+			createThemeCss(createThemeTokens(nativeTheme), {
+				selector: "html.native",
 			}),
 		),
 	);

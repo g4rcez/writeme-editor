@@ -1,12 +1,8 @@
-import { Tooltip } from "@g4rcez/components/tooltip";
 import type { ReactNode } from "react";
-
+import { Tooltip } from "@g4rcez/components";
 import type { Note } from "@/store/note";
 import { findCompatibleNote } from "@/lib/note-lookup";
-import {
-  DomainLinkDisplay,
-  getLinkTitleDomain,
-} from "../extensions/domain-link";
+import { DomainLinkDisplay, getLinkTitleDomain } from "../extensions/domain-link";
 
 export type NoteLinkPreview = {
   title: string;
@@ -37,17 +33,10 @@ export const LinkPreview = ({ trigger, children }: LinkPreviewProps) => {
 export const UrlLinkPreview = (props: { url: string; title: string }) => {
   return (
     <div className="flex max-w-96 flex-col gap-1 rounded-md px-3 py-2 text-sm">
-      <a
-        target="_blank"
-        href={props.url}
-        rel="noopener noreferrer"
-        className="break-all text-primary hover:underline"
-      >
+      <a target="_blank" href={props.url} rel="noopener noreferrer" className="break-all text-primary hover:underline">
         {props.url}
       </a>
-      <span className="text-xs font-medium text-muted-foreground">
-        {getLinkTitleDomain(props.title)}
-      </span>
+      <span className="text-xs font-medium text-muted-foreground">{getLinkTitleDomain(props.title)}</span>
     </div>
   );
 };
@@ -55,12 +44,7 @@ export const UrlLinkPreview = (props: { url: string; title: string }) => {
 export function DomainLinkPreview({ url }: { url: string }) {
   return (
     <div className="flex max-w-96 flex-col items-center gap-1 rounded-md px-3 py-2 text-base">
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="break-all text-primary hover:underline"
-      >
+      <a href={url} target="_blank" rel="noopener noreferrer" className="break-all text-primary hover:underline">
         {url}
       </a>
       <span className="text-xs !text-foreground">
@@ -73,27 +57,17 @@ export function DomainLinkPreview({ url }: { url: string }) {
 export function NoteMentionPreview({ preview }: { preview: NoteLinkPreview }) {
   return (
     <div className="flex max-w-80 flex-col gap-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground shadow-lg">
-      <div className="font-medium leading-snug text-foreground">
-        {preview.title}
-      </div>
-      <div className="line-clamp-4 leading-relaxed text-muted-foreground">
-        {preview.excerpt}
-      </div>
+      <div className="font-medium leading-snug text-foreground">{preview.title}</div>
+      <div className="line-clamp-4 leading-relaxed text-muted-foreground">{preview.excerpt}</div>
     </div>
   );
 }
 
-export function findMentionNote(
-  notes: Note[],
-  target: MentionLookupTarget | string,
-): Note | undefined {
+export function findMentionNote(notes: Note[], target: MentionLookupTarget | string): Note | undefined {
   return findCompatibleNote(notes, target);
 }
 
-export function createPlainTextExcerpt(
-  content: string,
-  maxLength: number = 180,
-): string {
+export function createPlainTextExcerpt(content: string, maxLength: number = 180): string {
   const plaintext = contentToPlainText(content);
   if (!plaintext) {
     return "No content yet.";

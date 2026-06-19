@@ -105,16 +105,16 @@ export const CodeBlockHeader = (props: Props) => {
         )}
         {props.canRun && (
           <Button
-            size="small"
+            size="tiny"
+            theme="ghost-success"
             onClick={props.handleRun}
             disabled={props.isRunning}
-            theme="ghost-success"
             title={`Run with ${EXECUTION_CONFIG[props.language as BundledLanguage]?.label}`}
           >
             {props.isRunning ? (
               <CircleNotchIcon className="animate-spin size-4" />
             ) : (
-              <span className="flex gap-1 items-center text-sm">
+              <span className="flex gap-2 items-center text-sm">
                 <PlayIcon className="fill-current size-4" />
                 Run
               </span>
