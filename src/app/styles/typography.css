@@ -4,7 +4,7 @@
 
 .writeme-editor-content p {
   @apply text-pretty proportional-nums text-typography-paragraph;
-  line-height: 2.15;
+  line-height: 1.82;
   word-spacing: normal;
   white-space-collapse: preserve-breaks;
   white-space: pre-line;
@@ -56,7 +56,7 @@
 .writeme-editor-content h4,
 .writeme-editor-content h5,
 .writeme-editor-content h6 {
-  @apply text-typography-title mb-2 leading-loose font-medium tracking-wide text-pretty;
+  @apply mb-3 font-semibold leading-tight tracking-normal text-pretty text-typography-title;
 }
 
 .writeme-editor-content h1:first-child,
@@ -69,27 +69,27 @@
 }
 
 .writeme-editor-content h1 {
-  @apply text-4xl mt-10 font-bold tracking-wide;
+  @apply mt-12 text-4xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h2 {
-  @apply text-3xl mt-8 font-bold tracking-wide;
+  @apply mt-10 text-3xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h3 {
-  @apply text-2xl mt-6 font-bold tracking-wide;
+  @apply mt-8 text-2xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h4 {
-  @apply text-xl mt-4;
+  @apply mt-6 text-xl;
 }
 
 .writeme-editor-content h5 {
-  @apply text-lg mt-2;
+  @apply mt-4 text-lg;
 }
 
 .writeme-editor-content h6 {
-  @apply text-base mt-1;
+  @apply mt-3 text-base;
 }
 
 .writeme-editor-content blockquote {
@@ -156,7 +156,7 @@
 
 .writeme-editor-content li,
 .writeme-editor-content li p {
-  line-height: 2;
+  line-height: 1.82;
 }
 
 .writeme-editor-content input[type="checkbox"] {

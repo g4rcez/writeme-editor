@@ -1,253 +1,311 @@
-import { Dates } from "@/lib/dates";
-import { tildaDir } from "@/lib/file-utils";
-import { CommanderType, useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
 import { Tag } from "@g4rcez/components";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TagIcon } from "@phosphor-icons/react/dist/csr/Tag";
-import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { type ComponentType, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Dates } from "@/lib/dates";
+import { tildaDir } from "@/lib/file-utils";
+import { CommanderType, useGlobalStore } from "@/store/global.store";
+import type { Note } from "@/store/note";
 
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+type DashboardIcon = ComponentType<{
+	size?: number;
+	className?: string;
+	strokeWidth?: number;
+}>;
+
+type ActionCardProps = {
+	icon: DashboardIcon;
+	title: string;
+	description: string;
+	shortcut: string;
+	onClick: () => void;
+	className?: string;
 };
 
-const item = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } };
-
-const ActionCard = ({
-  title,
-  icon: Icon,
-  onClick,
-  shortcut,
+function SectionHeading({
+	title,
+	description,
 }: {
-  icon: any;
-  title: string;
-  shortcut: string;
-  onClick: () => void;
-}) => (
-  <motion.button
-    variants={item}
-    onClick={onClick}
-    className="flex relative flex-col items-start p-6 text-left rounded-2xl border transition-[box-shadow,border-color] duration-300 hover:shadow-2xl group bg-card-background border-card-border hover:border-primary/50 hover:shadow-primary/5"
-  >
-    <div className="p-3 mb-4 rounded-xl transition-transform duration-300 group-hover:scale-110 bg-primary/10 text-primary">
-      <Icon size={24} strokeWidth={1.5} />
-    </div>
-    <h3 className="mb-1 text-lg font-semibold transition-colors group-hover:text-primary">
-      {title}
-    </h3>
-    <div className="flex justify-between items-center mt-auto w-full">
-      <span className="text-xs text-muted-foreground">Quick Action</span>
-      <kbd className="py-1 px-2 font-mono uppercase rounded bg-muted text-xs text-muted-foreground">
-        {shortcut}
-      </kbd>
-    </div>
-  </motion.button>
-);
+	title: string;
+	description?: string;
+}) {
+	return (
+		<div className="space-y-1">
+			<h2 className="text-base font-semibold text-foreground">{title}</h2>
+			{description ? (
+				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+					{description}
+				</p>
+			) : null}
+		</div>
+	);
+}
 
-const RecentNoteCard = ({ note }: { note: Note }) => {
-  return (
-    <motion.div variants={item}>
-      <Link
-        to={`/note/${note.id}`}
-        className="flex gap-2 items-center p-4 rounded-xl border border-transparent transition-[background-color,border-color] duration-200 group hover:bg-muted/30 hover:border-border/50"
-      >
-        <div className="p-2 rounded-lg transition-colors bg-primary/5 text-disabled group-hover:bg-primary/10 group-hover:text-primary">
-          <FileTextIcon size={32} />
-        </div>
-        <div className="flex-1 mr-4 min-w-0">
-          <h4 className="transition-colors truncate group-hover:text-primary">
-            {note.title || "Untitled"}
-          </h4>
-          <div className="flex gap-3 items-center mt-1 text-foreground/70">
-            <span className="flex gap-1 items-center text-sm">
-              {Dates.yearMonthDay(new Date(note.updatedAt))}
-            </span>
-            {note.tags.length > 0 && (
-              <span className="flex gap-1 items-center text-xs">
-                <TagIcon size={12} />
-                {note.tags[0]}
-              </span>
-            )}
-          </div>
-        </div>
-        <ArrowRightIcon
-          size={16}
-          className="opacity-0 transition-[transform,opacity] -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-muted-foreground"
-        />
-      </Link>
-    </motion.div>
-  );
-};
+function ActionCard({
+	title,
+	description,
+	icon: Icon,
+	onClick,
+	shortcut,
+	className,
+}: ActionCardProps) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={`group flex min-h-28 items-start gap-4 rounded-xl border border-border/40 bg-card-background p-4 text-left transition-colors hover:border-primary/30 hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${className ?? ""}`}
+		>
+			<span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+				<Icon size={20} strokeWidth={1.6} />
+			</span>
+			<span className="flex min-w-0 flex-1 flex-col gap-2">
+				<span>
+					<span className="block text-sm font-semibold text-foreground group-hover:text-primary">
+						{title}
+					</span>
+					<span className="mt-1 block text-sm leading-5 text-muted-foreground">
+						{description}
+					</span>
+				</span>
+				<kbd className="mt-auto w-fit rounded bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
+					{shortcut}
+				</kbd>
+			</span>
+		</button>
+	);
+}
+
+function RecentNoteCard({ note }: { note: Note }) {
+	return (
+		<li>
+			<Link
+				to={`/note/${note.id}`}
+				className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+			>
+				<span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+					<FileTextIcon size={18} />
+				</span>
+				<span className="min-w-0 flex-1">
+					<span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">
+						{note.title || "Untitled"}
+					</span>
+					<span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+						<time dateTime={new Date(note.updatedAt).toISOString()}>
+							{Dates.yearMonthDay(new Date(note.updatedAt))}
+						</time>
+						{note.tags.length > 0 ? (
+							<span className="flex min-w-0 items-center gap-1">
+								<TagIcon size={12} />
+								<span className="truncate">{note.tags[0]}</span>
+							</span>
+						) : null}
+					</span>
+				</span>
+				<ArrowRightIcon
+					size={14}
+					className="shrink-0 text-muted-foreground opacity-0 transition-[opacity,transform] group-hover:translate-x-0.5 group-hover:opacity-100"
+				/>
+			</Link>
+		</li>
+	);
+}
 
 export default function DashboardPage() {
-  const [state, dispatch] = useGlobalStore();
-  const [cwd, setCwd] = useState<string | null>(null);
-  const [greeting, setGreeting] = useState("");
+	const [state, dispatch] = useGlobalStore();
+	const navigate = useNavigate();
+	const [cwd, setCwd] = useState<string | null>(null);
+	const [greeting, setGreeting] = useState("");
 
-  useEffect(() => {
-    if (state.directory) {
-      window.electronAPI.env.getHome().then((home) => {
-        setCwd(tildaDir(home, state.directory ?? home));
-      });
-    } else if (window.electronAPI)
-      window.electronAPI.env.getHome().then(setCwd);
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
-    else if (hour < 18) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
-  }, [state.directory]);
+	useEffect(() => {
+		if (state.directory) {
+			window.electronAPI.env.getHome().then((home) => {
+				setCwd(tildaDir(home, state.directory ?? home));
+			});
+		} else if (window.electronAPI) {
+			window.electronAPI.env.getHome().then(setCwd);
+		}
 
-  const onSearch = () => dispatch.commander(true, CommanderType.Notes);
+		const hour = new Date().getHours();
+		if (hour < 12) setGreeting("Good morning");
+		else if (hour < 18) setGreeting("Good afternoon");
+		else setGreeting("Good evening");
+	}, [state.directory]);
 
-  const createNewNote = () =>
-    dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+	const onSearch = () => dispatch.commander(true, CommanderType.Notes);
 
-  const favorites = state.notes.filter((n: Note) => n.favorite).slice(0, 3);
-  const recent = state.notes.slice(0, 6);
+	const createNewNote = () =>
+		dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
 
-  return (
-    <div className="flex flex-col min-h-full bg-background selection:bg-primary/20">
-      <main className="flex-1 py-12 px-6 mx-auto w-full max-w-6xl">
-        <motion.header
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: -20 }}
-          className="flex justify-between items-end mb-16"
-        >
-          <div>
-            <h1 className="mb-2 text-4xl font-bold tracking-tight">
-              {greeting}
-            </h1>
-            <p className="max-w-md text-lg text-foreground/70">
-              Just you and your thoughts. Let's write.
-            </p>
-          </div>
-          {cwd && (
-            <div>
-              <p className="text-xs font-bold text-right text-muted-foreground">
-                Workspace
-              </p>
-              <p className="text-xs text-right">{cwd}</p>
-            </div>
-          )}
-        </motion.header>
-        <motion.div
-          animate="show"
-          initial="hidden"
-          variants={container}
-          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
-        >
-          <div className="space-y-10 lg:col-span-2">
-            <section>
-              <div className="flex gap-2 items-center mb-6">
-                <div className="w-0.5 h-4 rounded-full bg-primary" />
-                <h2 className="text-lg font-bold tracking-widest uppercase">
-                  Quick settings
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <ActionCard
-                  title="New Document"
-                  icon={FilePlusIcon}
-                  shortcut="⌘ N"
-                  onClick={createNewNote}
-                />
-                <ActionCard
-                  title="Quick Search"
-                  icon={MagnifyingGlassIcon}
-                  shortcut="⌘ K"
-                  onClick={onSearch}
-                />
-              </div>
-            </section>
-            <section>
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex gap-2 items-center">
-                  <div className="w-0.5 h-4 rounded-full bg-primary" />
-                  <h2 className="text-lg font-bold tracking-widest uppercase">
-                    Recent Documents
-                  </h2>
-                </div>
-                <Link
-                  to="/notes"
-                  className="flex gap-1 items-center text-xs hover:underline text-primary group"
-                >
-                  View all
-                  <ArrowRightIcon
-                    size={12}
-                    className="transition-transform group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {recent.map((note: Note) => (
-                  <RecentNoteCard key={note.id} note={note} />
-                ))}
-                {recent.length === 0 && (
-                  <div className="col-span-full py-12 text-center rounded-2xl border-2 border-dashed opacity-50 border-border">
-                    <p className="text-sm">
-                      No documents found. Start by creating one!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
-          <div className="space-y-10">
-            <section className="p-6 rounded-3xl border bg-muted/20 border-border/50">
-              <div className="flex gap-2 items-center mb-6">
-                <StarIcon size={16} className="text-warn fill-current" />
-                <h2 className="text-sm tracking-widest uppercase">Favorites</h2>
-              </div>
-              <div className="space-y-4">
-                {favorites.map((note: Note) => (
-                  <Link
-                    key={note.id}
-                    to={`/note/${note.id}`}
-                    className="block pb-2 mb-1 border-b shadow-sm transition-[border-color] border-border group hover:border-primary/30"
-                  >
-                    <h4 className="text-sm font-medium transition-colors truncate group-hover:text-primary">
-                      {note.title}
-                    </h4>
-                    <p className="overflow-hidden mt-1 text-xs text-ellipsis line-clamp-1 max-w-64 text-muted-foreground truncate">
-                      {note.content.substring(0, 60).replace(/[#*`]/g, "") ||
-                        "No content"}
-                    </p>
-                  </Link>
-                ))}
-                {favorites.length === 0 && (
-                  <div className="py-8 text-center opacity-40">
-                    <p className="text-xs">
-                      Mark notes as favorites to see them here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-            <section className="relative p-6 rounded-3xl shadow-md overflow-clip text-foreground shadow-primary/20">
-              <div className="absolute inset-0 bg-primary/70 mix-blend-overlay"></div>
-              <div className="relative">
-                <h3 className="mb-2 text-xl font-bold">Keep Writing</h3>
-                <p className="mb-4 text-sm leading-relaxed text-foreground/80">
-                  "The first draft is just you telling yourself the story."
-                </p>
-                <Tag size="small" theme="primary">
-                  {state.notes.length} Total Documents
-                </Tag>
-              </div>
-              <div className="absolute -right-4 -bottom-4 opacity-10 transform rotate-12">
-                <FileTextIcon size={120} />
-              </div>
-            </section>
-          </div>
-        </motion.div>
-      </main>
-    </div>
-  );
+	const openAiAssistant = () => navigate("/chat");
+
+	const favorites = state.notes
+		.filter((note: Note) => note.favorite)
+		.slice(0, 4);
+	const recent = state.notes.slice(0, 6);
+
+	return (
+		<div className="min-h-full bg-background selection:bg-primary/20">
+			<main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-10 lg:px-8">
+				<header className="flex flex-col gap-5 border-b border-border/30 pb-8 lg:flex-row lg:items-end lg:justify-between">
+					<div className="max-w-2xl">
+						<p className="mb-2 font-mono text-sm text-primary">
+							{greeting} · a place for your thoughts
+						</p>
+						<h1 className="text-4xl font-bold tracking-tight text-foreground">
+							Just you and your thoughts.
+						</h1>
+						<p className="mt-3 max-w-xl text-base leading-7 text-muted-foreground">
+							A zero-distraction workspace for your mind. Privacy by design,
+							focus by nature, integrated with AI by default.
+						</p>
+					</div>
+					{cwd ? (
+						<div className="rounded-xl border border-border/40 bg-card-background px-3 py-2 lg:max-w-xs">
+							<p className="text-xs font-medium text-muted-foreground">
+								Local-first workspace
+							</p>
+							<p className="mt-1 truncate text-sm text-foreground" title={cwd}>
+								{cwd}
+							</p>
+						</div>
+					) : null}
+				</header>
+
+				<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+					<div className="space-y-10">
+						<section className="space-y-4">
+							<SectionHeading
+								title="Focused writing with power one gesture away."
+								description="Start writing, search the workspace, or ask for structure without leaving the flow."
+							/>
+							<div className="grid gap-3 sm:grid-cols-2">
+								<ActionCard
+									title="Start writing"
+									description="There is no blank page. Open a clean writing column."
+									icon={FilePlusIcon}
+									shortcut="⌘ N"
+									onClick={createNewNote}
+								/>
+								<ActionCard
+									title="Keyboard driven"
+									description="Move through notes, tabs, search, and actions without leaving the keyboard."
+									icon={MagnifyingGlassIcon}
+									shortcut="⌘ K"
+									onClick={onSearch}
+								/>
+								<ActionCard
+									title="AI assistant"
+									description="Ask for structure, summaries, or help while staying inside your note."
+									icon={RobotIcon}
+									shortcut="AI"
+									className="sm:col-span-2"
+									onClick={openAiAssistant}
+								/>
+							</div>
+						</section>
+
+						<section className="space-y-4">
+							<div className="flex flex-wrap items-end justify-between gap-3">
+								<SectionHeading
+									title="Personal note taker"
+									description="Daily notes, project ideas, snippets, tasks, and drafts in one place."
+								/>
+								<Link
+									to="/notes"
+									className="group flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+								>
+									View all
+									<ArrowRightIcon
+										size={13}
+										className="transition-transform group-hover:translate-x-0.5"
+									/>
+								</Link>
+							</div>
+							<div className="overflow-hidden rounded-xl border border-border/40 bg-card-background">
+								{recent.length > 0 ? (
+									<ul className="divide-y divide-border/30">
+										{recent.map((note: Note) => (
+											<RecentNoteCard key={note.id} note={note} />
+										))}
+									</ul>
+								) : (
+									<div className="flex min-h-36 flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+										<FileTextIcon
+											size={24}
+											className="text-muted-foreground/60"
+										/>
+										<p className="text-sm font-medium text-foreground">
+											There is no blank page.
+										</p>
+										<p className="max-w-sm text-sm leading-6 text-muted-foreground">
+											Every thought you sit down to write already exists
+											somewhere in your head.
+										</p>
+									</div>
+								)}
+							</div>
+						</section>
+					</div>
+
+					<aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
+						<section className="rounded-xl border border-border/40 bg-card-background p-4">
+							<div className="mb-4 flex items-center gap-2">
+								<StarIcon size={16} className="fill-current text-warn" />
+								<h2 className="text-sm font-semibold text-foreground">
+									Power one gesture away
+								</h2>
+							</div>
+							{favorites.length > 0 ? (
+								<div className="space-y-1">
+									{favorites.map((note: Note) => (
+										<Link
+											key={note.id}
+											to={`/note/${note.id}`}
+											className="block rounded-lg px-2 py-2 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+										>
+											<h3 className="truncate text-sm font-medium text-foreground">
+												{note.title || "Untitled"}
+											</h3>
+											<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+												{note.content.substring(0, 90).replace(/[#*`]/g, "") ||
+													"No content"}
+											</p>
+										</Link>
+									))}
+								</div>
+							) : (
+								<p className="py-4 text-sm leading-6 text-muted-foreground">
+									Star notes you return to often and keep them exactly where you
+									expect them.
+								</p>
+							)}
+						</section>
+
+						<section className="rounded-xl border border-primary/20 bg-primary/10 p-4">
+							<h2 className="text-sm font-semibold text-foreground">
+								Privacy first
+							</h2>
+							<p className="mt-2 text-sm leading-6 text-muted-foreground">
+								Write Me is local-first. Your notes stay in formats you control.
+							</p>
+							<div className="mt-4 flex items-center justify-between gap-3">
+								<span className="text-xs text-muted-foreground">
+									Workspace notes
+								</span>
+								<Tag size="small" theme="primary">
+									{state.notes.length}
+								</Tag>
+							</div>
+						</section>
+					</aside>
+				</div>
+			</main>
+		</div>
+	);
 }

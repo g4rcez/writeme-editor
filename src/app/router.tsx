@@ -5,6 +5,7 @@ import {
 } from "react-router-dom";
 import { lazy } from "react";
 import { RootLayout } from "./root-layout";
+import { RouteErrorBoundary } from "./components/route-error-boundary";
 import { isElectron } from "../lib/is-electron";
 
 const DashboardPage = lazy(() => import("./pages/dashboard.page"));
@@ -80,6 +81,7 @@ export const router = createRouter([
 	{
 		path: "/",
 		element: <RootLayout />,
+		errorElement: <RouteErrorBoundary />,
 		children: [
 			{
 				index: true,
@@ -211,7 +213,11 @@ export const router = createRouter([
 				element: <CalendarPage />,
 			},
 			{ path: "views", element: <ViewsListPage /> },
-			{ path: "views/:viewId", element: <ViewDetailPage /> },
+			{
+				path: "views/:viewId",
+				element: <ViewDetailPage />,
+				errorElement: <RouteErrorBoundary />,
+			},
 			{ path: "oauth/callback", element: <OAuthCallbackPage /> },
 			{ path: "chat", element: <ChatPage /> },
 			{ path: "terminal/:sessionId", element: <TerminalPage /> },

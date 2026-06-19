@@ -107,9 +107,9 @@ function ExportNoteButton({ note }: { note: Note }) {
 			aria-label={`Export ${note.title}`}
 			title="Export document (print or save as PDF)"
 			onClick={() => printDocument({ title: note.title })}
-			className="writeme-print-export-button fixed right-6 top-14 z-50 flex items-center justify-center p-2 rounded-xl transition-colors duration-300 bg-background border border-border shadow-soft text-muted-foreground hover:bg-muted/50 hover:border-primary/20 hover:text-foreground print:hidden"
+			className="writeme-print-export-button fixed right-5 top-6 z-50 flex size-11 items-center justify-center rounded-button-radius border border-card-border bg-card-background text-muted-foreground shadow-soft transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring print:hidden"
 		>
-			<PrinterIcon aria-hidden="true" size={20} />
+			<PrinterIcon aria-hidden="true" size={21} />
 		</button>
 	);
 }

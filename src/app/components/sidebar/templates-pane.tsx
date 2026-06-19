@@ -180,9 +180,9 @@ export const TemplatesPane = () => {
 						<ArrowsCounterClockwiseIcon className="size-3" />
 					</button>
 					<button
+						title="New template"
 						onClick={onCreateTemplate}
 						className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
-						title="New template"
 					>
 						<PlusIcon className="size-3" />
 					</button>
