@@ -46,6 +46,7 @@ vi.mock("@g4rcez/components", async () => {
 				</label>
 			);
 		}),
+		Shortcut: ({ value }: { value: string }) => <kbd>{value}</kbd>,
 		Modal: ({ children, title, open }: any) =>
 			open ? (
 				<div data-testid="modal">
