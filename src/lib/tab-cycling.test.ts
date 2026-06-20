@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { AI_CHAT_TAB_TYPE, TERMINAL_TAB_TYPE } from "./tab-target";
-import { getCycledTabNoteId, getCycledTabTarget } from "./tab-cycling";
+import {
+	getCycledTabNoteId,
+	getCycledTabTarget,
+	getTabTargetAtIndex,
+} from "./tab-cycling";
 
 const tabs = [
 	{ id: "tab-2", noteId: "note-2", order: 2, type: "tab" },
@@ -76,6 +80,53 @@ describe("getCycledTabTarget", () => {
 				direction: "forward",
 			}),
 		).toStrictEqual({ type: "terminal", id: "terminal-1" });
+	});
+});
+
+describe("getTabTargetAtIndex", () => {
+	it("selects tabs by sorted tab order", () => {
+		expect(getTabTargetAtIndex({ tabs, index: 0 })).toStrictEqual({
+			type: "note",
+			id: "note-1",
+		});
+		expect(getTabTargetAtIndex({ tabs, index: 1 })).toStrictEqual({
+			type: "note",
+			id: "note-2",
+		});
+		expect(getTabTargetAtIndex({ tabs, index: 2 })).toStrictEqual({
+			type: "note",
+			id: "note-3",
+		});
+	});
+
+	it("selects the last ordered tab", () => {
+		expect(
+			getTabTargetAtIndex({ tabs: mixedTabs, index: "last" }),
+		).toStrictEqual({
+			type: "note",
+			id: "note-2",
+		});
+	});
+
+	it("supports note, AI chat, and terminal tab targets", () => {
+		expect(getTabTargetAtIndex({ tabs: mixedTabs, index: 0 })).toStrictEqual({
+			type: "note",
+			id: "note-1",
+		});
+		expect(getTabTargetAtIndex({ tabs: mixedTabs, index: 1 })).toStrictEqual({
+			type: "ai-chat",
+			id: "chat-1",
+		});
+		expect(getTabTargetAtIndex({ tabs: mixedTabs, index: 2 })).toStrictEqual({
+			type: "terminal",
+			id: "terminal-1",
+		});
+	});
+
+	it("returns null for missing indexes and empty tabs", () => {
+		expect(getTabTargetAtIndex({ tabs, index: -1 })).toBeNull();
+		expect(getTabTargetAtIndex({ tabs, index: 3 })).toBeNull();
+		expect(getTabTargetAtIndex({ tabs: [], index: "last" })).toBeNull();
 	});
 });
 

@@ -26,6 +26,11 @@ type GetCycledTabNoteIdOptions = {
 	direction: TabCycleDirection;
 };
 
+type GetTabTargetAtIndexOptions = {
+	tabs: TabCycleCandidate[];
+	index: number | "last";
+};
+
 function getCurrentTabIndex(
 	orderedTabs: TabCycleCandidate[],
 	currentTarget: TabTarget | null,
@@ -84,4 +89,18 @@ export function getCycledTabNoteId({
 	});
 
 	return target?.type === "note" ? target.id : null;
+}
+
+export function getTabTargetAtIndex({
+	tabs,
+	index,
+}: GetTabTargetAtIndexOptions): TabTarget | null {
+	if (tabs.length === 0) return null;
+
+	const orderedTabs = tabs.toSorted((a, b) => a.order - b.order);
+	const tabIndex = index === "last" ? orderedTabs.length - 1 : index;
+	if (tabIndex < 0 || tabIndex >= orderedTabs.length) return null;
+
+	const tab = orderedTabs[tabIndex];
+	return tab ? getTabTarget(tab) : null;
 }

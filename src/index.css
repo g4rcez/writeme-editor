@@ -512,3 +512,7 @@ a:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+.__floating-command-palette__container {
+  max-width: 60vw;
+}

@@ -5,9 +5,11 @@ import { useNotification } from "@g4rcez/components";
 import { isElectron } from "@/lib/is-electron";
 import { createWorkspaceAiChat } from "@/app/ai/create-ai-chat";
 import {
+	getTabNavigationShortcut,
 	isCommanderShortcut,
 	isNewAiChatShortcut,
 	isNewNoteShortcut,
+	type TabNavigationShortcut,
 } from "@/lib/keyboard-shortcuts";
 import {
 	clearSuppressedNoteRouteTabOpens,
@@ -15,7 +17,11 @@ import {
 } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
-import { getCycledTabTarget, type TabCycleDirection } from "@/lib/tab-cycling";
+import {
+	getCycledTabTarget,
+	getTabTargetAtIndex,
+	type TabCycleDirection,
+} from "@/lib/tab-cycling";
 import {
 	findTabByTarget,
 	getCurrentRouteTabTarget,
@@ -252,6 +258,22 @@ export const RootLayout = () => {
 		],
 	);
 
+	const selectEditorTabByShortcut = useCallback(
+		async (shortcut: TabNavigationShortcut): Promise<void> => {
+			const nextTarget = getTabTargetAtIndex({
+				tabs: state.tabs,
+				index: shortcut.type === "last" ? "last" : shortcut.index,
+			});
+			if (!nextTarget) return;
+
+			const nextTab = findTabByTarget(state.tabs, nextTarget);
+			if (!nextTab) return;
+
+			await navigateToTab(nextTab);
+		},
+		[navigateToTab, state.tabs],
+	);
+
 	const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
 		if (state.tabs.length === 0) {
 			if (isElectron()) await window.electronAPI.app.hideToTray();
@@ -317,6 +339,14 @@ export const RootLayout = () => {
 	useEffect(
 		function registerBindings() {
 			const handleKeyDown = (e: KeyboardEvent) => {
+				const tabNavigationShortcut = getTabNavigationShortcut(e);
+				if (tabNavigationShortcut) {
+					e.preventDefault();
+					e.stopPropagation();
+					void selectEditorTabByShortcut(tabNavigationShortcut);
+					return;
+				}
+
 				if (e.ctrlKey && e.key === "Tab") {
 					e.preventDefault();
 					e.stopPropagation();
@@ -398,6 +428,7 @@ export const RootLayout = () => {
 			dispatch,
 			location.pathname,
 			navigate,
+			selectEditorTabByShortcut,
 			state.note,
 			uiDispatch,
 		],

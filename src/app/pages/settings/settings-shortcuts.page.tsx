@@ -22,6 +22,16 @@ type ReadonlyShortcut = {
 
 const APP_SHORTCUT_REFERENCE: ReadonlyShortcut[] = [
 	{
+		bind: "mod+1-8",
+		title: "Go to tab 1-8",
+		description: "Switch directly to one of the first eight open tabs.",
+	},
+	{
+		bind: "mod+9",
+		title: "Go to last tab",
+		description: "Switch directly to the last open tab.",
+	},
+	{
 		bind: "control+tab",
 		title: "Next tab",
 		description: "Move to the next open editor tab.",
