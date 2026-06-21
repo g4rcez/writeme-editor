@@ -6,139 +6,195 @@ import { CursorPositionStore } from "@/store/cursor-position.store";
 const SCROLL_CONTAINER_ID = "main-scroll-container";
 
 type ScrollMemorySnapshot = {
-  y: number;
-  id: string;
-  anchor: number;
-  loaded: boolean;
+	y: number;
+	id: string;
+	anchor: number;
+	loaded: boolean;
 };
 
 const createEmptySnapshot = (id: string): ScrollMemorySnapshot => ({
-  id,
-  anchor: 0,
-  y: 0,
-  loaded: false,
+	id,
+	anchor: 0,
+	y: 0,
+	loaded: false,
 });
 
 const getScrollContainer = (): HTMLElement | null =>
-  document.getElementById(SCROLL_CONTAINER_ID);
+	document.getElementById(SCROLL_CONTAINER_ID);
 
 const normalizeScrollY = (y: number): number => {
-  if (!Number.isFinite(y)) return 0;
-  return Math.max(0, Math.round(y));
+	if (!Number.isFinite(y)) return 0;
+	return Math.max(0, Math.round(y));
 };
 
 const getSafeAnchor = (editor: Editor, anchor: number): number => {
-  if (!Number.isFinite(anchor)) return 0;
-  return Math.max(
-    0,
-    Math.min(Math.round(anchor), editor.state.doc.content.size),
-  );
+	if (!Number.isFinite(anchor)) return 0;
+	return Math.max(
+		0,
+		Math.min(Math.round(anchor), editor.state.doc.content.size),
+	);
 };
 
 const getCurrentAnchor = (editor: Editor): number => {
-  if (editor.isDestroyed) return 0;
-  return getSafeAnchor(editor, editor.state.selection.$anchor.pos);
+	if (editor.isDestroyed) return 0;
+	return getSafeAnchor(editor, editor.state.selection.$anchor.pos);
 };
 
 const getCurrentScrollY = (scroller: HTMLElement): number =>
-  normalizeScrollY(scroller.scrollTop);
+	normalizeScrollY(scroller.scrollTop);
 
 const readSnapshot = (
-  id: string,
-  editor: Editor,
-  scroller: HTMLElement,
+	id: string,
+	editor: Editor,
+	scroller: HTMLElement,
 ): Omit<ScrollMemorySnapshot, "loaded"> => ({
-  id,
-  anchor: getCurrentAnchor(editor),
-  y: getCurrentScrollY(scroller),
+	id,
+	anchor: getCurrentAnchor(editor),
+	y: getCurrentScrollY(scroller),
 });
 
 const restoreSelection = (editor: Editor, anchor: number): void => {
-  if (editor.isDestroyed) return;
+	if (editor.isDestroyed) return;
 
-  const safeAnchor = getSafeAnchor(editor, anchor);
-  if (safeAnchor <= 0) return;
+	const safeAnchor = getSafeAnchor(editor, anchor);
+	if (safeAnchor <= 0) return;
 
-  try {
-    const selection = TextSelection.create(editor.state.doc, safeAnchor);
-    editor.view.dispatch(editor.state.tr.setSelection(selection));
-  } catch {}
+	try {
+		const selection = TextSelection.create(editor.state.doc, safeAnchor);
+		editor.view.dispatch(editor.state.tr.setSelection(selection));
+	} catch {
+		// Ignore invalid restore positions for out-of-date snapshots.
+	}
 };
 
 const restoreScrollY = (scroller: HTMLElement, y: number): void => {
-  const top = normalizeScrollY(y);
-  if (typeof scroller.scrollTo === "function") {
-    scroller.scrollTo({ top, behavior: "auto" });
-    return;
-  }
-  scroller.scrollTop = top;
+	const top = normalizeScrollY(y);
+	if (typeof scroller.scrollTo === "function") {
+		scroller.scrollTo({ top, behavior: "auto" });
+		return;
+	}
+	scroller.scrollTop = top;
+};
+
+const createInteractionTracker = (editor: Editor) => {
+	const handlers: Array<() => void> = [];
+	let interacted = false;
+
+	const setInteracted = (): void => {
+		interacted = true;
+	};
+
+	const register = (): void => {
+		const domRoot = editor.view.dom;
+		const domEventNames = [
+			"pointerdown",
+			"mousedown",
+			"touchstart",
+			"keydown",
+			"paste",
+			"drop",
+			"input",
+			"compositionstart",
+		];
+
+		for (const eventName of domEventNames) {
+			domRoot.addEventListener(eventName, setInteracted, true);
+			handlers.push(() => {
+				domRoot.removeEventListener(eventName, setInteracted, true);
+			});
+		}
+
+		editor.on("selectionUpdate", setInteracted);
+		handlers.push(() => {
+			editor.off("selectionUpdate", setInteracted);
+		});
+
+		editor.on("focus", setInteracted);
+		handlers.push(() => {
+			editor.off("focus", setInteracted);
+		});
+	};
+
+	const unregister = (): void => {
+		while (handlers.length > 0) {
+			handlers.pop()?.();
+		}
+	};
+
+	const hasInteracted = (): boolean => interacted;
+
+	return { register, unregister, hasInteracted };
 };
 
 export const useEditorScrollMemory = (
-  id: string,
-  editor: Editor | null,
+	id: string,
+	editor: Editor | null,
 ): void => {
-  const snapshotRef = useRef<ScrollMemorySnapshot>(createEmptySnapshot(id));
+	const snapshotRef = useRef<ScrollMemorySnapshot>(createEmptySnapshot(id));
 
-  useEffect(() => {
-    if (!editor) {
-      snapshotRef.current = createEmptySnapshot(id);
-      return;
-    }
+	useEffect(() => {
+		if (!editor) {
+			snapshotRef.current = createEmptySnapshot(id);
+			return;
+		}
 
-    const scroller = getScrollContainer();
-    if (!scroller) {
-      snapshotRef.current = createEmptySnapshot(id);
-      return;
-    }
+		const scroller = getScrollContainer();
+		if (!scroller) {
+			snapshotRef.current = createEmptySnapshot(id);
+			return;
+		}
 
-    const controller = new AbortController();
+		const interactionTracker = createInteractionTracker(editor);
+		interactionTracker.register();
 
-    const handleScroll = (): void => {
-      snapshotRef.current = {
-        ...readSnapshot(id, editor, scroller),
-        loaded: true,
-      };
-    };
+		const controller = new AbortController();
 
-    void CursorPositionStore.get(id)
-      .then((memory) => {
-        if (controller.signal.aborted || editor.isDestroyed) return;
-        if (memory) {
-          restoreSelection(editor, memory.anchor);
-          restoreScrollY(scroller, memory.y);
-        }
-        snapshotRef.current = {
-          ...readSnapshot(id, editor, scroller),
-          loaded: true,
-        };
-        scroller.addEventListener("scroll", handleScroll, {
-          signal: controller.signal,
-        });
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          console.warn("Failed to restore editor scroll memory:", error);
-        }
-      });
+		const handleScroll = (): void => {
+			snapshotRef.current = {
+				...readSnapshot(id, editor, scroller),
+				loaded: true,
+			};
+		};
 
-    return () => {
-      const wasLoaded =
-        snapshotRef.current.loaded && snapshotRef.current.id === id;
-      const snapshot = {
-        ...readSnapshot(id, editor, scroller),
-        loaded: false,
-      };
-      snapshotRef.current = snapshot;
-      controller.abort();
+		void CursorPositionStore.get(id)
+			.then((memory) => {
+				if (controller.signal.aborted || editor.isDestroyed) return;
+				if (!interactionTracker.hasInteracted() && memory) {
+					restoreSelection(editor, memory.anchor);
+					restoreScrollY(scroller, memory.y);
+				}
+				snapshotRef.current = {
+					...readSnapshot(id, editor, scroller),
+					loaded: true,
+				};
+				scroller.addEventListener("scroll", handleScroll, {
+					signal: controller.signal,
+				});
+			})
+			.catch((error: unknown) => {
+				if (!controller.signal.aborted) {
+					console.warn("Failed to restore editor scroll memory:", error);
+				}
+			});
 
-      if (wasLoaded) {
-        void CursorPositionStore.save(id, snapshot.anchor, snapshot.y).catch(
-          (error: unknown) => {
-            console.warn("Failed to save editor scroll memory:", error);
-          },
-        );
-      }
-    };
-  }, [id, editor]);
+		return () => {
+			const wasLoaded =
+				snapshotRef.current.loaded && snapshotRef.current.id === id;
+			const snapshot = {
+				...readSnapshot(id, editor, scroller),
+				loaded: false,
+			};
+			snapshotRef.current = snapshot;
+			interactionTracker.unregister();
+			controller.abort();
+
+			if (wasLoaded) {
+				void CursorPositionStore.save(id, snapshot.anchor, snapshot.y).catch(
+					(error: unknown) => {
+						console.warn("Failed to save editor scroll memory:", error);
+					},
+				);
+			}
+		};
+	}, [id, editor]);
 };

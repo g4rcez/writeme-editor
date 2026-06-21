@@ -160,6 +160,7 @@ const TiptapEditorCore = memo(
 		);
 		const [uiState] = useUIStore();
 		const isSettingContent = useRef(false);
+		const lastEditorContentRef = useRef(content ?? "");
 		const [parseProgress, setParseProgress] = useState(0);
 
 		const editor = useEditor({
@@ -172,10 +173,13 @@ const TiptapEditorCore = memo(
 			enableCoreExtensions: true,
 			shouldRerenderOnTransaction: false,
 			parseOptions: { preserveWhitespace: "full" },
-			onUpdate: ({ editor: currentEditor }) =>
-				setEditorNote(currentEditor, noteRef.current),
+			onUpdate: ({ editor: currentEditor }) => {
+				setEditorNote(currentEditor, noteRef.current);
+				lastEditorContentRef.current = currentEditor.getMarkdown();
+			},
 			onCreate: ({ editor: currentEditor }) => {
 				setEditorNote(currentEditor, note);
+				lastEditorContentRef.current = currentEditor.getMarkdown();
 				try {
 					return void migrateMathStrings(currentEditor);
 				} catch (error) {
@@ -483,19 +487,25 @@ const TiptapEditorCore = memo(
 		useEffect(() => {
 			if (!editor || content === undefined) return;
 			const currentMarkdown = editor.getMarkdown();
-			if (content !== currentMarkdown) {
-				if (content.length > LARGE_MARKDOWN_THRESHOLD) {
-					triggerWorkerParseRef.current(content);
-					return;
-				}
-				isSettingContent.current = true;
-				(editor.commands as any).setContent(content, {
-					contentType: "markdown",
-					parseOptions: { preserveWhitespace: "full" },
-				});
-				isSettingContent.current = false;
+			if (
+				content === currentMarkdown ||
+				content === lastEditorContentRef.current
+			) {
+				lastEditorContentRef.current = currentMarkdown;
 				return;
 			}
+
+			if (content.length > LARGE_MARKDOWN_THRESHOLD) {
+				triggerWorkerParseRef.current(content);
+				return;
+			}
+			isSettingContent.current = true;
+			(editor.commands as any).setContent(content, {
+				contentType: "markdown",
+				parseOptions: { preserveWhitespace: "full" },
+			});
+			lastEditorContentRef.current = content;
+			isSettingContent.current = false;
 		}, [editor, content]);
 
 		useEffect(() => {
