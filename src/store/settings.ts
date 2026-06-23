@@ -7,6 +7,7 @@ import { ElectronStorageAdapter } from "./repositories/adapters/electron.adapter
 import { uuid } from "@g4rcez/components";
 
 export type { AppSettings };
+export type EditorMode = AppSettings["editorMode"];
 
 export class SettingsService {
   private static cache: AppSettings = SettingsSchema.parse({});

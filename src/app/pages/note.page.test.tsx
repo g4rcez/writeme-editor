@@ -1,4 +1,5 @@
-import { render, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -8,6 +9,7 @@ import {
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
+import { SettingsService } from "@/store/settings";
 import NotePage from "./note.page";
 
 vi.mock("@/store/global.store", () => ({
@@ -24,12 +26,34 @@ vi.mock("@/store/ui.store", () => ({
 	useUIStore: vi.fn(),
 }));
 
+vi.mock("@/store/settings", () => ({
+	SettingsService: {
+		load: vi.fn(() => ({ editorMode: "rich", rawEditorVimMode: false })),
+		save: vi.fn().mockResolvedValue({
+			editorMode: "raw",
+			rawEditorVimMode: true,
+		}),
+	},
+}));
+
 vi.mock("@/lib/is-electron", () => ({
 	isElectron: () => false,
 }));
 
 vi.mock("../editor", () => ({
-	Editor: () => <div data-testid="editor" />,
+	Editor: ({
+		mode,
+		rawEditorVimMode,
+	}: {
+		mode?: string;
+		rawEditorVimMode?: boolean;
+	}) => (
+		<div
+			data-editor-mode={mode}
+			data-editor-vim-mode={String(Boolean(rawEditorVimMode))}
+			data-testid="editor"
+		/>
+	),
 }));
 
 vi.mock("../components/excalidraw-note-view", () => ({
@@ -114,7 +138,10 @@ describe("NotePage route loading", () => {
 	it("does not reopen a route note that already has a tab", () => {
 		const dispatch = createDispatch();
 		vi.mocked(useGlobalStore).mockReturnValue([
-			{ note: createNote("note-1", NoteType.excalidraw), tabs: [createNoteTab()] },
+			{
+				note: createNote("note-1", NoteType.excalidraw),
+				tabs: [createNoteTab()],
+			},
 			dispatch,
 		] as never);
 		vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
@@ -123,6 +150,44 @@ describe("NotePage route loading", () => {
 
 		expect(repositories.notes.getOne).not.toHaveBeenCalled();
 		expect(dispatch.addTab).not.toHaveBeenCalled();
+	});
+
+	it("switches to raw mode and persists the editor mode preference", async () => {
+		const user = userEvent.setup();
+		const dispatch = createDispatch();
+		vi.mocked(useGlobalStore).mockReturnValue([
+			{ note: createNote(), tabs: [createNoteTab()] },
+			dispatch,
+		] as never);
+		vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+		renderNoteRoute();
+
+		expect(screen.getByTestId("editor")).toHaveAttribute(
+			"data-editor-mode",
+			"rich",
+		);
+		await user.click(screen.getByRole("button", { name: "Raw" }));
+
+		expect(screen.getByTestId("editor")).toHaveAttribute(
+			"data-editor-mode",
+			"raw",
+		);
+		expect(screen.getByTestId("editor")).toHaveAttribute(
+			"data-editor-vim-mode",
+			"false",
+		);
+
+		await user.click(screen.getByRole("checkbox", { name: "Vim mode" }));
+
+		expect(screen.getByTestId("editor")).toHaveAttribute(
+			"data-editor-vim-mode",
+			"true",
+		);
+		expect(SettingsService.save).toHaveBeenCalledWith({ editorMode: "raw" });
+		expect(SettingsService.save).toHaveBeenCalledWith({
+			rawEditorVimMode: true,
+		});
 	});
 
 	it("does not open a suppressed note route while closing its tab", () => {

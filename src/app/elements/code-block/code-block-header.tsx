@@ -1,8 +1,10 @@
+import type { BundledLanguage } from "shiki";
 import { Button } from "@g4rcez/components";
+import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { MagicWandIcon } from "@phosphor-icons/react/dist/csr/MagicWand";
 import { PlayIcon } from "@phosphor-icons/react/dist/csr/Play";
-import { type BundledLanguage } from "shiki";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
 import { canFormat } from "../code-block-formatting";
 
@@ -66,7 +68,9 @@ type Props = {
   language: string;
   isRunning: boolean;
   onFormat: () => void;
+  onCopy: () => void;
   handleRun: () => void;
+  isCopied: boolean;
   isFormatting: boolean;
   title?: string | null;
   onChangeLanguage: (lang: string) => void;
@@ -76,8 +80,7 @@ export const CodeBlockHeader = (props: Props) => {
   return (
     <div
       contentEditable={false}
-      style={{ zIndex: "999999" }}
-      className="absolute isolate top-0 right-0 z-[max] flex justify-between items-center p-2 bg-card-background"
+      className="absolute z-10 isolate top-0 right-0 flex justify-between items-center p-2 bg-card-background"
     >
       {props.title && (
         <span title={props.title} className="!text-xs text-muted font-mono px-2 py-1">
@@ -85,9 +88,31 @@ export const CodeBlockHeader = (props: Props) => {
         </span>
       )}
       <div className="text-xs text-foreground flex items-center gap-2">
+        <select
+          value={props.language}
+          onChange={(e) => props.onChangeLanguage(e.target.value)}
+          className="text-right cursor-pointer h-auto bg-card-background text-xs w-fit"
+        >
+          {LANGUAGE_OPTIONS.map((x) => (
+            <option value={x.value} key={`language-select-${x.value}`}>
+              {x.label}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="tiny"
+          onClick={props.onCopy}
+          title="Copy code to clipboard"
+          theme={props.isCopied ? "ghost-success" : "ghost-muted"}
+        >
+          <span className="flex gap-1 items-center text-xs">
+            {props.isCopied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
+            {props.isCopied ? "Copied" : "Copy"}
+          </span>
+        </Button>
         {canFormat(props.language) && (
           <Button
-            size="small"
+            size="tiny"
             theme="ghost-primary"
             title="Format code"
             onClick={props.onFormat}
@@ -114,7 +139,7 @@ export const CodeBlockHeader = (props: Props) => {
             {props.isRunning ? (
               <CircleNotchIcon className="animate-spin size-4" />
             ) : (
-              <span className="flex gap-2 items-center text-sm">
+              <span className="flex gap-2 items-center text-xs">
                 <PlayIcon className="fill-current size-4" />
                 Run
               </span>
@@ -122,17 +147,6 @@ export const CodeBlockHeader = (props: Props) => {
           </Button>
         )}
       </div>
-      <select
-        value={props.language}
-        className="text-right h-auto bg-card-background text-xs w-fit"
-        onChange={(e) => props.onChangeLanguage(e.target.value)}
-      >
-        {LANGUAGE_OPTIONS.map((x) => (
-          <option value={x.value} key={`language-select-${x.value}`}>
-            {x.label}
-          </option>
-        ))}
-      </select>
     </div>
   );
 };

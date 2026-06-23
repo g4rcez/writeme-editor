@@ -29,9 +29,18 @@ import {
 	type Editor as TipTapEditor,
 } from "@tiptap/react";
 import "katex/dist/katex.min.css";
-import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Fragment,
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { editorGlobalRef } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
+import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
@@ -89,11 +98,12 @@ type WorkerOutMessage =
 	| { type: "error"; gen: number; error: string };
 
 const ric: (cb: () => void) => void =
-	typeof requestIdleCallback !== "undefined"
-		? (cb) => requestIdleCallback(cb)
-		: (cb) => setTimeout(cb, 0);
+	typeof requestIdleCallback === "undefined"
+		? (cb) => setTimeout(cb, 0)
+		: (cb) => requestIdleCallback(cb);
 
 type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
+export type EditorMode = "rich" | "raw";
 
 type LinkContextTarget = {
 	text: string;
@@ -278,7 +288,7 @@ const TiptapEditorCore = memo(
 						const match = text.match(/^---\n([\s\S]*?)\n---/);
 						if (match) {
 							try {
-								const parsed = YAML.parse(match?.[1]!);
+								const parsed = YAML.parse(match[1] ?? "");
 								if (parsed && typeof parsed === "object") {
 									const n = Note.parse(noteRef.current);
 									let changed = false;
@@ -617,11 +627,105 @@ const TiptapEditorCore = memo(
 		prev.note?.id === next.note?.id,
 );
 
+const RawEditorCore = memo(
+	function RawEditorCore(props: {
+		id: string;
+		note?: Note;
+		content?: string;
+		readonly?: boolean;
+		theme: string;
+		rawEditorVimMode: boolean;
+		dispatch: GlobalDispatch;
+		onSaveRef: React.MutableRefObject<
+			((content: string) => Promise<void>) | undefined
+		>;
+	}) {
+		const noteRef = useRef(props.note);
+		const latestContentRef = useRef(props.content ?? "");
+		const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+		const settings = useMemo(() => SettingsService.load(), []);
+
+		const saveContent = useCallback(
+			async (content: string): Promise<void> => {
+				try {
+					if (props.onSaveRef.current) {
+						await props.onSaveRef.current(content);
+						return;
+					}
+					if (!noteRef.current) return;
+					await props.dispatch.updateNoteContent(noteRef.current.id, content);
+				} catch (error) {
+					console.error("Failed to save raw document:", error);
+				}
+			},
+			[props.dispatch, props.onSaveRef],
+		);
+
+		useEffect(() => {
+			noteRef.current = props.note;
+		}, [props.note]);
+
+		useEffect(() => {
+			latestContentRef.current = props.content ?? "";
+		}, [props.content]);
+
+		useEffect(() => {
+			if (editorGlobalRef.current) {
+				editorGlobalRef.current = null;
+			}
+		}, []);
+
+		useEffect(() => {
+			return () => {
+				if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+				if (!props.readonly) {
+					void saveContent(latestContentRef.current);
+				}
+			};
+		}, [props.readonly, saveContent]);
+
+		const handleChange = (nextContent: string): void => {
+			latestContentRef.current = nextContent;
+			if (props.readonly) return;
+			if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+			saveTimeoutRef.current = setTimeout(() => {
+				void saveContent(nextContent);
+			}, 500);
+		};
+
+		return (
+			<div
+				id="editor-container"
+				className="writeme-editor relative"
+				style={{ fontSize: `${settings.editorFontSize}px` }}
+			>
+				<RawMarkdownEditor
+					value={props.content ?? ""}
+					onChange={handleChange}
+					readonly={props.readonly}
+					theme={props.theme}
+					fontSize={settings.editorFontSize}
+					vimMode={props.rawEditorVimMode}
+				/>
+			</div>
+		);
+	},
+	(prev, next) =>
+		prev.id === next.id &&
+		prev.theme === next.theme &&
+		prev.rawEditorVimMode === next.rawEditorVimMode &&
+		prev.content === next.content &&
+		prev.readonly === next.readonly &&
+		prev.note?.id === next.note?.id,
+);
+
 const InnerEditor = (props: {
 	id: string;
 	note?: Note;
 	content?: string;
 	readonly?: boolean;
+	mode: EditorMode;
+	rawEditorVimMode: boolean;
 	onSave?: (content: string) => Promise<void>;
 }) => {
 	const [state, dispatch] = useGlobalStore();
@@ -631,10 +735,26 @@ const InnerEditor = (props: {
 	}, [props.onSave]);
 
 	useEffect(() => {
+		if (props.mode !== "rich") return;
 		if (editorGlobalRef.current) {
 			setEditorAllNotes(editorGlobalRef.current, state.notes);
 		}
-	}, [state.notes]);
+	}, [props.mode, state.notes]);
+
+	if (props.mode === "raw") {
+		return (
+			<RawEditorCore
+				id={props.id}
+				note={props.note}
+				dispatch={dispatch}
+				theme={state.theme}
+				rawEditorVimMode={props.rawEditorVimMode}
+				onSaveRef={onSaveRef}
+				content={props.content}
+				readonly={props.readonly}
+			/>
+		);
+	}
 
 	return (
 		<TiptapEditorCore
@@ -654,27 +774,34 @@ export const Editor = (props: {
 	note?: Note;
 	id?: string;
 	readonly?: boolean;
+	mode?: EditorMode;
+	rawEditorVimMode?: boolean;
 	onSave?: (content: string) => Promise<void>;
 }) => {
 	const id = useMemo(
 		() => props.id || props.note?.id || uuid(),
 		[props.note, props.id],
 	);
+	const settings = SettingsService.load();
+	const mode = props.mode ?? settings.editorMode;
+	const rawEditorVimMode = props.rawEditorVimMode ?? settings.rawEditorVimMode;
+
+	if (props.content === undefined) {
+		return <div className="flex justify-center items-center">Loading...</div>;
+	}
 
 	return (
-		<Fragment key={props.note?.id || props.id}>
-			{props.content !== undefined ? (
-				<InnerEditor
-					id={id}
-					note={props.note}
-					onSave={props.onSave}
-					content={props.content}
-					readonly={props.readonly}
-					key={props.note?.id || props.id}
-				/>
-			) : (
-				<div className="flex justify-center items-center">Loading...</div>
-			)}
+		<Fragment key={`${props.note?.id || props.id}:${mode}`}>
+			<InnerEditor
+				id={id}
+				note={props.note}
+				onSave={props.onSave}
+				content={props.content}
+				readonly={props.readonly}
+				mode={mode}
+				rawEditorVimMode={rawEditorVimMode}
+				key={`${props.note?.id || props.id}:${mode}`}
+			/>
 		</Fragment>
 	);
 };

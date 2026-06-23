@@ -14,6 +14,8 @@ export const SettingsSchema = z.object({
     .default("dark"),
   autosave: z.boolean().default(true),
   autosaveDelay: z.number().default(5000),
+  editorMode: z.enum(["rich", "raw"]).default("rich"),
+  rawEditorVimMode: z.boolean().default(false),
   editorFontSize: z.number().min(12).max(96).default(16),
   sidebarWidth: z.number().min(150).max(600).default(320),
   explorerRoot: z.string().nullable().default(null),

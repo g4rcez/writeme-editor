@@ -6,10 +6,16 @@ import { isNoteTabForNoteId } from "@/lib/tab-target";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { printDocument } from "@/lib/print-document";
 import { Note, NoteType } from "@/store/note";
+import { type EditorMode, SettingsService } from "@/store/settings";
 import { useUIStore } from "@/store/ui.store";
-import { Tag } from "@g4rcez/components";
+import { Checkbox, Tag } from "@g4rcez/components";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
-import { type PropsWithChildren, useEffect, useState } from "react";
+import {
+	type PropsWithChildren,
+	useCallback,
+	useEffect,
+	useState,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { NoteFooter } from "../components/note-footer";
@@ -100,6 +106,60 @@ function PrintableNoteHeader({ note }: { note: Note }) {
 	);
 }
 
+function EditorModeToggle({
+	mode,
+	vimMode,
+	onChange,
+	onVimModeChange,
+}: {
+	mode: EditorMode;
+	vimMode: boolean;
+	onChange: (mode: EditorMode) => void;
+	onVimModeChange: (vimMode: boolean) => void;
+}) {
+	const modes: Array<{ value: EditorMode; label: string }> = [
+		{ value: "rich", label: "Rich" },
+		{ value: "raw", label: "Raw" },
+	];
+
+	return (
+		<div className="mx-auto flex w-full max-w-safe flex-wrap items-center justify-end gap-3 print:hidden">
+			<fieldset
+				aria-label="Editor mode"
+				className="inline-flex rounded-lg border border-border bg-card-background p-0.5 shadow-soft"
+			>
+				{modes.map((item) => {
+					const active = item.value === mode;
+					return (
+						<button
+							key={item.value}
+							type="button"
+							aria-pressed={active}
+							onClick={() => onChange(item.value)}
+							className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+								active
+									? "bg-primary text-primary-foreground"
+									: "text-muted-foreground hover:bg-muted hover:text-foreground"
+							}`}
+						>
+							{item.label}
+						</button>
+					);
+				})}
+			</fieldset>
+			{mode === "raw" ? (
+				<label className="flex items-center gap-2 rounded-lg border border-border bg-card-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-soft">
+					<Checkbox
+						checked={vimMode}
+						onChange={(event) => onVimModeChange(event.target.checked)}
+					/>
+					<span>Vim mode</span>
+				</label>
+			) : null}
+		</div>
+	);
+}
+
 function ExportNoteButton({ note }: { note: Note }) {
 	return (
 		<button
@@ -124,6 +184,32 @@ export default function NotePage() {
 		? state.tabs.some((tab) => isNoteTabForNoteId(tab, id))
 		: false;
 	const isLoading = note === null;
+	const [editorMode, setEditorMode] = useState<EditorMode>(
+		() => SettingsService.load().editorMode,
+	);
+	const [rawEditorVimMode, setRawEditorVimMode] = useState<boolean>(
+		() => SettingsService.load().rawEditorVimMode,
+	);
+	const changeEditorMode = useCallback((nextMode: EditorMode): void => {
+		setEditorMode((currentMode) => {
+			if (currentMode === nextMode) return currentMode;
+			void SettingsService.save({ editorMode: nextMode }).catch((error) => {
+				console.error("Failed to save editor mode:", error);
+			});
+			return nextMode;
+		});
+	}, []);
+	const changeRawEditorVimMode = useCallback((nextVimMode: boolean): void => {
+		setRawEditorVimMode((currentVimMode) => {
+			if (currentVimMode === nextVimMode) return currentVimMode;
+			void SettingsService.save({ rawEditorVimMode: nextVimMode }).catch(
+				(error) => {
+					console.error("Failed to save raw editor Vim mode:", error);
+				},
+			);
+			return nextVimMode;
+		});
+	}, []);
 
 	useEffect(() => {
 		if (!id || isNoteRouteTabOpenSuppressed(id)) return;
@@ -244,9 +330,24 @@ export default function NotePage() {
 				</header>
 			) : null}
 
-			<Editor note={note} key={note.id} content={note.content || ""} />
+			<EditorModeToggle
+				mode={editorMode}
+				vimMode={rawEditorVimMode}
+				onChange={changeEditorMode}
+				onVimModeChange={changeRawEditorVimMode}
+			/>
+			<Editor
+				note={note}
+				key={note.id}
+				content={note.content || ""}
+				mode={editorMode}
+				rawEditorVimMode={rawEditorVimMode}
+			/>
 			<NoteReferences note={note} />
-			<NoteFooter noteId={note.id} />
+			<NoteFooter
+				noteId={note.id}
+				content={editorMode === "raw" ? note.content || "" : undefined}
+			/>
 		</Wrapper>
 	);
 }

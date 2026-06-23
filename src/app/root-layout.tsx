@@ -395,7 +395,12 @@ export const RootLayout = () => {
 				},
 				{
 					hotkey: "Mod+F",
-					callback: () => uiDispatch.toggleFindReplace(),
+					options: { preventDefault: false },
+					callback: (event) => {
+						if (!editorGlobalRef.current) return;
+						event.preventDefault();
+						uiDispatch.toggleFindReplace();
+					},
 				},
 				{
 					hotkey: "Mod+B",

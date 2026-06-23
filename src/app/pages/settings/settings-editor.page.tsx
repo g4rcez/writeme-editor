@@ -18,6 +18,8 @@ export default function SettingsEditorPage() {
       await saveSettingsPatch({
         autosave: settings.autosave,
         autosaveDelay: settings.autosaveDelay,
+        editorMode: settings.editorMode,
+        rawEditorVimMode: settings.rawEditorVimMode,
         editorFontSize: settings.editorFontSize,
       });
       globalDispatch.setEditorFontSize(settings.editorFontSize);
@@ -36,7 +38,7 @@ export default function SettingsEditorPage() {
   return (
     <SettingsPageShell
       title="Editor"
-      description="Tune autosave behavior and the editor reading size."
+      description="Tune autosave behavior, raw editing, and the editor reading size."
       actions={
         <Button size="small" disabled={saving} onClick={onSave}>
           {saving ? "Saving..." : "Save Editor"}

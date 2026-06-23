@@ -27,6 +27,11 @@ const TRASH_RETENTION_OPTIONS = [
   { label: "Never", value: "never" },
 ];
 
+const EDITOR_MODE_OPTIONS = [
+  { label: "Rich", value: "rich" },
+  { label: "Raw Markdown", value: "raw" },
+];
+
 function SettingsField({
   label,
   description,
@@ -180,6 +185,33 @@ export function EditorSettingsControls({
           />
         </SettingsField>
       ) : null}
+      <SettingsField
+        label="Default editor mode"
+        description="Choose whether notes open in the rich editor or raw Markdown."
+      >
+        <Select
+          optionalText=" "
+          hiddenLabel
+          value={settings.editorMode}
+          options={EDITOR_MODE_OPTIONS}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            onPatch({
+              editorMode: event.target.value as AppSettings["editorMode"],
+            })
+          }
+        />
+      </SettingsField>
+      <SettingsField
+        label="Raw editor Vim mode"
+        description="Enable Vim keybindings when editing raw Markdown."
+      >
+        <Checkbox
+          checked={settings.rawEditorVimMode}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            onPatch({ rawEditorVimMode: event.target.checked })
+          }
+        />
+      </SettingsField>
       <SettingsField
         label="Editor font size"
         description="Base font size used by the note editor."

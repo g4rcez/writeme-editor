@@ -6,6 +6,15 @@ type Counts = { chars: number; words: number; lines: number };
 
 const INITIAL: Counts = { chars: 0, words: 0, lines: 1 };
 
+function getMarkdownCounts(content: string): Counts {
+	const trimmed = content.trim();
+	return {
+		chars: content.length,
+		words: trimmed ? trimmed.split(/\s+/).length : 0,
+		lines: content.length === 0 ? 1 : content.split("\n").length,
+	};
+}
+
 function formatSize(chars: number): string {
 	if (chars < 1_000) return `${chars} B`;
 	if (chars < 1_000_000) return `${(chars / 1_000).toFixed(1)} KB`;
@@ -20,10 +29,19 @@ function usageColor(chars: number): string {
 
 const LIMIT_LABEL = `${WARN_THRESHOLD / 1_000_000} MB`;
 
-export function NoteFooter({ noteId }: { noteId: string }) {
-	const [counts, setCounts] = useState<Counts>(INITIAL);
+export function NoteFooter({
+	noteId,
+	content,
+}: {
+	noteId: string;
+	content?: string;
+}) {
+	const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
+	const counts =
+		content === undefined ? editorCounts : getMarkdownCounts(content);
 
 	useEffect(() => {
+		if (content !== undefined) return;
 		let cleanup: (() => void) | undefined;
 
 		const subscribe = () => {
@@ -31,7 +49,7 @@ export function NoteFooter({ noteId }: { noteId: string }) {
 			if (!editor) return false;
 
 			const compute = () =>
-				setCounts({
+				setEditorCounts({
 					chars: editor.storage.characterCount.characters(),
 					words: editor.storage.characterCount.words(),
 					lines: editor.state.doc.textContent.split("\n").length,
@@ -54,7 +72,7 @@ export function NoteFooter({ noteId }: { noteId: string }) {
 		}
 
 		return () => cleanup?.();
-	}, [noteId]);
+	}, [content, noteId]);
 
 	const pct = Math.min((counts.chars / WARN_THRESHOLD) * 100, 100);
 	const color = usageColor(counts.chars);

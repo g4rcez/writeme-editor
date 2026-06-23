@@ -347,14 +347,14 @@ export const Commander = (props: Props) => {
 					type: "shortcut",
 					action: (args) => {
 						const editor = editorGlobalRef.current;
-						if (editor) {
-							const content = getEditorMarkdown(editor);
-							const encoded = utf8ToBase64(content);
-							const url = isElectron()
-								? `${window.location.origin}/#/share?q=${encoded}`
-								: `${window.location.origin}/share?q=${encoded}`;
-							navigator.clipboard.writeText(url);
-						}
+						const content = editor
+							? getEditorMarkdown(editor)
+							: (props.note?.content ?? "");
+						const encoded = utf8ToBase64(content);
+						const url = isElectron()
+							? `${window.location.origin}/#/share?q=${encoded}`
+							: `${window.location.origin}/share?q=${encoded}`;
+						navigator.clipboard.writeText(url);
 						args.setOpen(false);
 					},
 				},
