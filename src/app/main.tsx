@@ -1,14 +1,16 @@
 import {
 	ComponentsProvider,
 	Notifications,
-	createThemeCss,
-	createTokenStyles,
-	type TokenRemap,
 	type Tweaks,
 } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
+import { sortByNewest } from "@/lib/array";
+import { isElectron } from "@/lib/is-electron";
+import { isAiChatTab } from "@/lib/tab-target";
+import { runPurge } from "@/lib/trash/purge";
+import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import {
 	getWorkspaceKey,
 	globalDispatch,
@@ -16,20 +18,15 @@ import {
 	normalizeWorkspaceTabs,
 	repositories,
 } from "../store/global.store";
+import { SettingsService } from "../store/settings";
+import { setupAIAdapters } from "./ai/setup";
 import { router } from "./router";
+import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
-import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
 import { nativeTheme } from "./styles/native";
+import { createWritemeThemeCss } from "./styles/theme-css";
 import { tokyonightNightTheme } from "./styles/tokyonight-night";
-import { createThemeTokens } from "./styles/theme-runtime-tokens";
-import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
-import { SettingsService } from "../store/settings";
-import { sortByNewest } from "@/lib/array";
-import { isAiChatTab } from "@/lib/tab-target";
-import { setupAIAdapters } from "./ai/setup";
-import { isElectron } from "@/lib/is-electron";
-import { runPurge } from "@/lib/trash/purge";
 
 declare global {
 	interface Window {
@@ -46,13 +43,6 @@ const tweaks: Tweaks = {
 
 const createStyle = (id: string, innerText: string) =>
 	Object.assign(document.createElement("style"), { id, innerText });
-
-const tokenRemap: TokenRemap = {
-	colors: (t) => {
-		t.value = t.value.replace("hsla(", "").replace(/\)$/, "");
-		return t;
-	},
-};
 
 const hexToHslaTuple = (hex: string): string | null => {
 	const normalized = hex.replace(/^#/, "").slice(0, 6);
@@ -77,9 +67,7 @@ const hexToHslaTuple = (hex: string): string | null => {
 		if (hue < 0) hue += 360;
 	}
 
-	return `${Math.round(hue)}, ${Math.round(saturation * 100)}%, ${Math.round(
-		lightness * 100,
-	)}%`;
+	return `${Math.round(hue)}, ${Math.round(saturation * 100)}%, ${Math.round(lightness * 100)}%`;
 };
 
 const setSystemAccentColor = (accentColor: string | null): void => {
@@ -108,77 +96,43 @@ const platformConfiguration = (): void => {
 };
 
 const themeConfiguration = () => {
-	const head = document.getElementsByTagName("head")[0]!;
-	head.append(
-		createStyle("default-theme", createTokenStyles(lightTheme, tokenRemap)),
-	);
+	const head = globalThis.document.getElementsByTagName("head")[0]!;
 	head.append(
 		createStyle(
-			"default-theme-runtime",
-			createThemeCss(createThemeTokens(lightTheme), { selector: ":root" }),
+			"default-theme",
+			createWritemeThemeCss(":root", lightTheme, "light"),
 		),
 	);
 	head.append(
 		createStyle(
 			"dark-theme",
-			createTokenStyles(darkTheme, { ...tokenRemap, name: "dark" }),
-		),
-	);
-	head.append(
-		createStyle(
-			"dark-theme-runtime",
-			createThemeCss(createThemeTokens(darkTheme), { selector: "html.dark" }),
+			createWritemeThemeCss("html.dark", darkTheme, "dark"),
 		),
 	);
 	head.append(
 		createStyle(
 			"catppuccin-mocha-theme",
-			createTokenStyles(catppuccinMochaTheme, {
-				...tokenRemap,
-				name: "catppuccin-mocha",
-			}),
-		),
-	);
-	head.append(
-		createStyle(
-			"catppuccin-mocha-theme-runtime",
-			createThemeCss(createThemeTokens(catppuccinMochaTheme), {
-				selector: "html.catppuccin-mocha",
-			}),
+			createWritemeThemeCss(
+				"html.catppuccin-mocha",
+				catppuccinMochaTheme,
+				"dark",
+			),
 		),
 	);
 	head.append(
 		createStyle(
 			"tokyonight-night-theme",
-			createTokenStyles(tokyonightNightTheme, {
-				...tokenRemap,
-				name: "tokyonight-night",
-			}),
-		),
-	);
-	head.append(
-		createStyle(
-			"tokyonight-night-theme-runtime",
-			createThemeCss(createThemeTokens(tokyonightNightTheme), {
-				selector: "html.tokyonight-night",
-			}),
+			createWritemeThemeCss(
+				"html.tokyonight-night",
+				tokyonightNightTheme,
+				"dark",
+			),
 		),
 	);
 	head.append(
 		createStyle(
 			"native-theme",
-			createTokenStyles(nativeTheme, {
-				...tokenRemap,
-				name: "native",
-			}),
-		),
-	);
-	head.append(
-		createStyle(
-			"native-theme-runtime",
-			createThemeCss(createThemeTokens(nativeTheme), {
-				selector: "html.native",
-			}),
+			createWritemeThemeCss("html.native", nativeTheme, "dark"),
 		),
 	);
 	if (globalState().theme !== "light") {

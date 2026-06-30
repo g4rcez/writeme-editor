@@ -1,20 +1,13 @@
-import { defaultDarkTheme } from "@g4rcez/components";
-import { componentDesignTokens } from "./design-tokens";
+import type { WritemeThemeTokens } from "./theme-css";
 
-export const catppuccinMochaTheme: typeof defaultDarkTheme = {
-	...defaultDarkTheme,
-	components: componentDesignTokens,
-	spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
-	zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
+export const catppuccinMochaTheme = {
 	colors: {
-		...defaultDarkTheme.colors,
 		background: "hsla(240, 21%, 15%)",
 		foreground: "hsla(226, 64%, 88%)",
 		border: "hsla(234, 13%, 31%)",
 		ring: "hsla(267, 84%, 81%)",
 		disabled: "hsla(231, 11%, 47%)",
 		muted: {
-			...defaultDarkTheme.colors.muted,
 			DEFAULT: "hsla(237, 16%, 23%)",
 			foreground: "hsla(230, 13%, 78%)",
 			subtle: "hsla(230, 13%, 78%)",
@@ -99,39 +92,5 @@ export const catppuccinMochaTheme: typeof defaultDarkTheme = {
 			header: "hsla(237, 16%, 23%)",
 			border: "hsla(237, 16%, 23%)",
 		},
-		button: {
-			primary: {
-				bg: "hsla(267, 84%, 81%)",
-				text: "hsla(240, 24%, 9%)",
-			},
-			warn: {
-				text: "hsla(240, 24%, 9%)",
-				bg: "hsla(41, 86%, 83%)",
-			},
-			info: {
-				bg: "hsla(199, 76%, 69%)",
-				text: "hsla(240, 24%, 9%)",
-			},
-			success: {
-				text: "hsla(240, 24%, 9%)",
-				bg: "hsla(115, 54%, 76%)",
-			},
-			danger: {
-				bg: "hsla(343, 81%, 79%)",
-				text: "hsla(240, 24%, 9%)",
-			},
-			muted: {
-				text: "hsla(226, 64%, 92%)",
-				bg: "hsla(234, 13%, 31%)",
-			},
-			neutral: {
-				text: "hsla(217, 92%, 78%)",
-				bg: "hsla(237, 16%, 23%)",
-			},
-			secondary: {
-				text: "hsla(217, 92%, 78%)",
-				bg: "hsla(217, 40%, 20%)",
-			},
-		},
 	},
-};
+} satisfies WritemeThemeTokens;

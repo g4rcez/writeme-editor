@@ -1,6 +1,5 @@
-import { defaultDarkTheme } from "@g4rcez/components";
-import { componentDesignTokens } from "./design-tokens";
 import { isElectron } from "@/lib/is-electron";
+import type { WritemeThemeTokens } from "./theme-css";
 
 const appleLabel = "hsla(240, 24%, 96%)";
 const appleBlack = isElectron() ? "hsla(0, 0%, 0%)" : "hsla(192, 2%, 10%)";
@@ -20,11 +19,7 @@ const appleSystemRed = "hsla(3, 100%, 61%)";
 const appleSystemTeal = "hsla(197, 100%, 70%)";
 const appleSystemYellow = "hsla(50, 100%, 52%)";
 
-export const nativeTheme: typeof defaultDarkTheme = {
-	...defaultDarkTheme,
-	components: componentDesignTokens,
-	spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
-	zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
+export const nativeTheme = {
 	custom: {
 		"json-bg": appleSystemGray6,
 		"json-key": appleSystemAccent,
@@ -37,16 +32,16 @@ export const nativeTheme: typeof defaultDarkTheme = {
 		"json-caret": appleSystemGray,
 	},
 	colors: {
-		...defaultDarkTheme.colors,
 		background: appleBlack,
 		foreground: appleLabel,
 		border: appleSystemGray4,
 		ring: appleSystemAccent,
 		disabled: appleSystemGray,
 		muted: {
-			...defaultDarkTheme.colors.muted,
 			DEFAULT: appleSystemGray5,
 			foreground: appleSecondaryLabel,
+			subtle: appleSecondaryLabel,
+			hover: appleSystemGray4,
 		},
 		emphasis: {
 			foreground: appleBlack,
@@ -127,39 +122,5 @@ export const nativeTheme: typeof defaultDarkTheme = {
 			header: appleSystemGray6,
 			border: appleSystemGray4,
 		},
-		button: {
-			primary: {
-				bg: appleSystemAccent,
-				text: appleBlack,
-			},
-			warn: {
-				text: appleBlack,
-				bg: appleSystemYellow,
-			},
-			info: {
-				bg: appleSystemTeal,
-				text: appleBlack,
-			},
-			success: {
-				text: appleBlack,
-				bg: appleSystemGreen,
-			},
-			danger: {
-				bg: appleSystemRed,
-				text: appleBlack,
-			},
-			muted: {
-				text: appleLabel,
-				bg: appleSystemGray4,
-			},
-			neutral: {
-				text: appleSystemTeal,
-				bg: appleSystemGray5,
-			},
-			secondary: {
-				text: appleLabel,
-				bg: appleSystemIndigo,
-			},
-		},
 	},
-};
+} satisfies WritemeThemeTokens;

@@ -1,20 +1,13 @@
-import { defaultDarkTheme } from "@g4rcez/components";
-import { componentDesignTokens } from "./design-tokens";
+import type { WritemeThemeTokens } from "./theme-css";
 
-export const tokyonightNightTheme: typeof defaultDarkTheme = {
-	...defaultDarkTheme,
-	components: componentDesignTokens,
-	spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
-	zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
+export const tokyonightNightTheme = {
 	colors: {
-		...defaultDarkTheme.colors,
 		background: "hsla(230, 24%, 19%)",
 		foreground: "hsla(229, 73%, 86%)",
 		border: "hsla(229, 23%, 33%)",
 		ring: "hsla(261, 86%, 80%)",
 		disabled: "hsla(229, 23%, 44%)",
 		muted: {
-			...defaultDarkTheme.colors.muted,
 			DEFAULT: "hsla(228, 23%, 21%)",
 			foreground: "hsla(229, 30%, 88%)",
 			subtle: "hsla(229, 30%, 88%)",
@@ -99,39 +92,5 @@ export const tokyonightNightTheme: typeof defaultDarkTheme = {
 			header: "hsla(228, 23%, 21%)",
 			border: "hsla(228, 23%, 21%)",
 		},
-		button: {
-			primary: {
-				bg: "hsla(261, 86%, 80%)",
-				text: "hsla(229, 26%, 16%)",
-			},
-			warn: {
-				text: "hsla(229, 26%, 16%)",
-				bg: "hsla(35, 66%, 76%)",
-			},
-			info: {
-				bg: "hsla(202, 100%, 75%)",
-				text: "hsla(229, 26%, 16%)",
-			},
-			success: {
-				text: "hsla(229, 26%, 16%)",
-				bg: "hsla(89, 51%, 72%)",
-			},
-			danger: {
-				bg: "hsla(349, 89%, 81%)",
-				text: "hsla(229, 26%, 16%)",
-			},
-			muted: {
-				text: "hsla(229, 73%, 94%)",
-				bg: "hsla(229, 23%, 33%)",
-			},
-			neutral: {
-				text: "hsla(221, 89%, 82%)",
-				bg: "hsla(228, 23%, 21%)",
-			},
-			secondary: {
-				text: "hsla(221, 89%, 79%)",
-				bg: "hsla(221, 40%, 20%)",
-			},
-		},
 	},
-};
+} satisfies WritemeThemeTokens;

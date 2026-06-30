@@ -1,14 +1,9 @@
-import { defaultDarkTheme } from "@g4rcez/components";
-import { componentDesignTokens } from "./design-tokens";
+import type { WritemeThemeTokens } from "./theme-css";
 
 const foreground = "hsla(131, 20%, 80%)";
 const mutedForeground = "hsla(131, 20%, 74%)";
 
-export const darkTheme: typeof defaultDarkTheme = {
-	...defaultDarkTheme,
-	spacing: { ...defaultDarkTheme.spacing, sm: "0.875rem", lg: "1.125rem" },
-	zIndex: { ...defaultDarkTheme.zIndex, tooltip: "30" },
-	components: componentDesignTokens,
+export const darkTheme = {
 	custom: {
 		"json-bg": "hsla(0, 0%, 10%)",
 		"json-key": "hsla(258, 100%, 80%)",
@@ -21,14 +16,12 @@ export const darkTheme: typeof defaultDarkTheme = {
 		"json-caret": "hsla(0, 0%, 45%)",
 	},
 	colors: {
-		...defaultDarkTheme.colors,
 		foreground,
 		background: "hsla(0, 0%, 9%)",
 		border: "hsla(245, 12%, 15%)",
 		ring: "hsla(258, 100%, 80%)",
 		disabled: "hsla(245, 20%, 40%)",
 		muted: {
-			...defaultDarkTheme.colors.muted,
 			DEFAULT: "hsla(0, 0%, 20%)",
 			foreground: mutedForeground,
 			subtle: mutedForeground,
@@ -47,7 +40,7 @@ export const darkTheme: typeof defaultDarkTheme = {
 			hover: "hsla(258, 100%, 74%)",
 		},
 		secondary: {
-			foreground: foreground,
+			foreground,
 			DEFAULT: "hsla(245, 43%, 75%)",
 			subtle: "hsla(245, 44%, 18%)",
 			hover: "hsla(245, 44%, 68%)",
@@ -95,14 +88,14 @@ export const darkTheme: typeof defaultDarkTheme = {
 			background: "hsla(245, 2%, 9%)",
 		},
 		floating: {
-			foreground: foreground,
+			foreground,
 			background: "hsla(245, 2%, 9%)",
 			hover: "hsla(0, 0%, 16%)",
 			border: "hsla(245, 12%, 18%)",
 			overlay: "hsla(0, 0%, 0%)",
 		},
 		tooltip: {
-			foreground: foreground,
+			foreground,
 			background: "hsla(0, 0%, 10%)",
 			hover: "hsla(0, 0%, 13%)",
 			border: "hsla(245, 12%, 15%)",
@@ -113,39 +106,5 @@ export const darkTheme: typeof defaultDarkTheme = {
 			header: "hsla(0, 0%, 11%)",
 			border: "hsla(245, 12%, 15%)",
 		},
-		button: {
-			primary: {
-				bg: "hsla(258, 100%, 80%)",
-				text: "hsla(0, 0%, 9%)",
-			},
-			warn: {
-				text: "hsla(45, 10%, 10%)",
-				bg: "hsla(45, 100%, 60%)",
-			},
-			info: {
-				bg: "hsla(185, 90%, 65%)",
-				text: "hsla(0, 0%, 9%)",
-			},
-			success: {
-				text: "hsla(0, 0%, 9%)",
-				bg: "hsla(150, 80%, 48%)",
-			},
-			danger: {
-				bg: "hsla(0, 85%, 76%)",
-				text: "hsla(0, 0%, 9%)",
-			},
-			muted: {
-				text: "hsla(131, 37%, 65%)",
-				bg: "hsla(0, 0%, 16%)",
-			},
-			neutral: {
-				text: foreground,
-				bg: "hsla(245, 44%, 30%)",
-			},
-			secondary: {
-				text: foreground,
-				bg: "hsla(245, 44%, 36%)",
-			},
-		},
 	},
-};
+} satisfies WritemeThemeTokens;
