@@ -29,7 +29,13 @@ import { readItLaterIpcHandler } from "./ipc/read-it-later.ipc";
 import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { gitIpcHandler } from "./ipc/git.ipc";
 import { AIRunner } from "./main-process/ai-runner";
+import {
+  migrateCredentialRow,
+  persistCredentialRow,
+  withStoredCredentials,
+} from "./main-process/credential-storage";
 import { dbManager } from "./main-process/database";
+import { parseAiCredentials } from "./main-process/database-schema";
 import { installBundledCli } from "./main-process/cli-installer";
 import { FileWatcher } from "./main-process/file-watcher";
 import {
@@ -44,50 +50,6 @@ import {
   stopCliServer,
 } from "./main-process/cli-server";
 import { startProxyServer } from "./server/proxy";
-
-const CREDENTIAL_KEYS = ["accessToken", "refreshToken", "apiKey"] as const;
-
-function protectSecret(secret: string | null): string | null {
-  if (!secret) return null;
-  if (!safeStorage.isEncryptionAvailable()) return secret;
-  return safeStorage.encryptString(secret).toString("base64");
-}
-
-function revealSecret(secret: string | null): string | null {
-  if (!secret) return null;
-  if (!safeStorage.isEncryptionAvailable()) return secret;
-
-  try {
-    return safeStorage.decryptString(Buffer.from(secret, "base64"));
-  } catch {
-    return secret;
-  }
-}
-
-function withStoredCredentials(
-  row: Record<string, unknown> | null,
-): Record<string, unknown> | null {
-  if (!row) return null;
-  const out: Record<string, unknown> = { ...row };
-  for (const key of CREDENTIAL_KEYS) {
-    const value = row[key];
-    if (typeof value === "string") {
-      out[key] = revealSecret(value);
-    }
-  }
-  return out;
-}
-
-function persistCredentialRow(creds: { [key: string]: unknown }) {
-  const output = { ...creds } as Record<string, unknown>;
-  for (const key of CREDENTIAL_KEYS) {
-    const value = output[key];
-    if (typeof value === "string" && value.trim()) {
-      output[key] = protectSecret(value);
-    }
-  }
-  return output;
-}
 
 function registerAIHandlers() {
   console.log("Registering AI IPC handlers...");
@@ -212,16 +174,17 @@ function registerAIHandlers() {
     }
   });
 
-  ipcMain.handle("ai:save-credentials", (_, creds) => {
+  ipcMain.handle("ai:save-credentials", (_, value: unknown) => {
     try {
+      const creds = parseAiCredentials(value);
       const now = new Date().toISOString();
       const db = dbManager().db;
-      const encrypted = persistCredentialRow(creds);
+      const encrypted = persistCredentialRow(creds, safeStorage);
       db.prepare(
         `
         INSERT OR REPLACE INTO aiCredentials
-          (adapterId, accessToken, refreshToken, expiresAt, apiKey, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, COALESCE((SELECT createdAt FROM aiCredentials WHERE adapterId = ?), ?), ?)
+          (adapterId, accessToken, refreshToken, expiresAt, apiKey, baseUrl, accountId, idToken, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT createdAt FROM aiCredentials WHERE adapterId = ?), ?), ?)
       `,
       ).run(
         creds.adapterId,
@@ -229,6 +192,9 @@ function registerAIHandlers() {
         encrypted.refreshToken ?? null,
         creds.expiresAt ?? null,
         encrypted.apiKey ?? null,
+        creds.baseUrl ?? null,
+        creds.accountId ?? null,
+        encrypted.idToken ?? null,
         creds.adapterId,
         now,
         now,
@@ -240,12 +206,19 @@ function registerAIHandlers() {
     }
   });
 
+  ipcMain.handle("ai:migrate-credentials", (_, value: unknown) =>
+    migrateCredentialRow(value, dbManager(), safeStorage),
+  );
+
   ipcMain.handle("ai:load-credentials", (_, adapterId: string) => {
     try {
       const row = dbManager()
         .db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?")
         .get(adapterId) as any;
-      return withStoredCredentials(row as Record<string, unknown>) ?? null;
+      return (
+        withStoredCredentials(row as Record<string, unknown>, safeStorage) ??
+        null
+      );
     } catch (e: any) {
       console.error("Error in ai:load-credentials:", e);
       return null;

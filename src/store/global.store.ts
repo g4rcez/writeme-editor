@@ -1,5 +1,5 @@
 import { createZustandCompatStore } from "./zustand-compat";
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import {
 	AI_CHAT_TAB_TYPE,
@@ -108,6 +108,7 @@ type State = {
 	notes: Note[];
 	note: Note | null;
 	recentNotes: Note[];
+	trashOutcome: { deleted: number; failed: number };
 	commander: CommanderState;
 	sidebarWidth: number;
 	editorFontSize: number;
@@ -155,6 +156,7 @@ const initialState: State = {
 	recentNotesDialog: false,
 	note: null as Note | null,
 	recentNotes: [] as Note[],
+	trashOutcome: { deleted: 0, failed: 0 },
 	directoryBrowserDialog: false,
 	noteGroups: [] as NoteGroup[],
 	terminalSessions: [] as TerminalSession[],
@@ -589,8 +591,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
 		},
 		hardDeleteNote: async (id: string) => {
 			const state = get.state();
-			await repositories.notes.hardDelete(id);
-			await repositories.noteGroupMembers.deleteByNoteId(id);
+			if (!(await repositories.notes.hardDelete(id))) return state;
 			const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
 			const activeTabId =
 				state.activeTabId &&
@@ -613,9 +614,8 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
 			return { notes: state.notes.concat(restored) };
 		},
 		emptyTrash: async () => {
-			const state = get.state();
-			await repositories.notes.emptyTrash();
-			return state;
+			const trashOutcome = await repositories.notes.emptyTrash();
+			return { trashOutcome };
 		},
 		updateNoteContent: async (id: string, content: string) => {
 			try {

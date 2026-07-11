@@ -46,8 +46,19 @@ export const TrashPane = () => {
 
   const handleEmptyTrash = async () => {
     await globalDispatch.emptyTrash();
-    setTrashed([]);
+    const { deleted, failed } = globalState().trashOutcome;
+    await load();
     setConfirmEmpty(false);
+    notificationRef.current?.(
+      <span>
+        {deleted} deleted, {failed} failed.
+      </span>,
+      {
+        theme: failed ? "danger" : "success",
+        closable: true,
+        timeout: 4000,
+      },
+    );
   };
 
   return (

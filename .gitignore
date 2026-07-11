@@ -5,6 +5,7 @@ docs/superpowers/
 .ai/plans/
 .omo/
 .pi-lens
+.pi-subagents/
 
 # Logs
 logs

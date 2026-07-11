@@ -4,7 +4,7 @@ import { SettingsRepository } from "./repositories/shared/settings.repository";
 import { type ISettingsRepository } from "./repositories/entities/settings";
 import { DexieStorageAdapter } from "./repositories/adapters/dexie.adapter";
 import { ElectronStorageAdapter } from "./repositories/adapters/electron.adapter";
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 
 export type { AppSettings };
 export type EditorMode = AppSettings["editorMode"];

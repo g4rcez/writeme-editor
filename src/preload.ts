@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { DatabaseCollection, DatabaseRecord } from "./main-process/database-schema";
 import type { ReadDirResult } from "./types/tree";
 import type { Note } from "./store/note";
 import type { GitPushResult, GitStatusResult } from "./types/git";
@@ -141,20 +142,25 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			ipcRenderer.invoke("fs:watcher:start", directory),
 	},
 	db: {
-		get: (table: string, id: string) => ipcRenderer.invoke("db:get", table, id),
-		getAll: (table: string) => ipcRenderer.invoke("db:getAll", table),
-		save: (table: string, item: any) =>
+		get: (table: DatabaseCollection, id: string) =>
+			ipcRenderer.invoke("db:get", table, id),
+		getAll: (table: DatabaseCollection) => ipcRenderer.invoke("db:getAll", table),
+		save: (table: DatabaseCollection, item: unknown) =>
 			ipcRenderer.invoke("db:save", table, item),
-		delete: (table: string, id: string) =>
+		migrateCollection: (table: DatabaseCollection, records: unknown[]) =>
+			ipcRenderer.invoke("db:migrateCollection", table, records),
+		verifyCollection: (table: DatabaseCollection, records: unknown[]) =>
+			ipcRenderer.invoke("db:verifyCollection", table, records),
+		delete: (table: DatabaseCollection, id: string) =>
 			ipcRenderer.invoke("db:delete", table, id),
-		count: (table: string) => ipcRenderer.invoke("db:count", table),
+		count: (table: DatabaseCollection) => ipcRenderer.invoke("db:count", table),
 		notes: {
 			getLatestQuicknote: () =>
 				ipcRenderer.invoke("db:notes:getLatestQuicknote"),
 			getQuicknoteByDate: (start: string, end: string) =>
 				ipcRenderer.invoke("db:notes:getQuicknoteByDate", start, end),
-			getRecentNotes: (limit: number) =>
-				ipcRenderer.invoke("db:notes:getRecentNotes", limit),
+			getRecentNotes: (limit: number, workspacePath: string | null) =>
+				ipcRenderer.invoke("db:notes:getRecentNotes", limit, workspacePath),
 			getTemplates: () => ipcRenderer.invoke("db:notes:getTemplates"),
 			getByFilePath: (filePath: string) =>
 				ipcRenderer.invoke("db:notes:getByFilePath", filePath),
@@ -210,6 +216,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		noteGroups: {
 			getByNoteId: (noteId: string) =>
 				ipcRenderer.invoke("db:noteGroups:getByNoteId", noteId),
+			delete: (id: string) => ipcRenderer.invoke("db:noteGroups:delete", id),
 		},
 		noteGroupMembers: {
 			getByGroupId: (groupId: string) =>
@@ -269,6 +276,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		test: () => ipcRenderer.invoke("ai:test"),
 		saveCredentials: (creds: any) =>
 			ipcRenderer.invoke("ai:save-credentials", creds),
+		migrateCredentials: (creds: unknown) =>
+			ipcRenderer.invoke("ai:migrate-credentials", creds),
 		loadCredentials: (adapterId: string) =>
 			ipcRenderer.invoke("ai:load-credentials", adapterId),
 		clearCredentials: (adapterId: string) =>
@@ -419,15 +428,39 @@ declare global {
 				startWatcher(directory: string): Promise<void>;
 			};
 			db: {
-				get<T>(table: string, id: string): Promise<T | undefined>;
-				getAll<T>(table: string): Promise<T[]>;
-				save<T>(table: string, item: T): Promise<void>;
-				delete(table: string, id: string): Promise<void>;
-				count(table: string): Promise<number>;
+				get<T>(table: DatabaseCollection, id: string): Promise<T | undefined>;
+				getAll<T>(table: DatabaseCollection): Promise<T[]>;
+				save<C extends DatabaseCollection>(
+					table: C,
+					item: unknown,
+				): Promise<DatabaseRecord<C>>;
+				migrateCollection(
+					table: DatabaseCollection,
+					records: unknown[],
+				): Promise<{
+					found: number;
+					imported: number;
+					updated: number;
+					identical: number;
+					skipped: number;
+				}>;
+				verifyCollection(
+					table: DatabaseCollection,
+					records: unknown[],
+				): Promise<{
+					sourceCount: number;
+					destinationCount: number;
+					matched: number;
+				}>;
+				delete(table: DatabaseCollection, id: string): Promise<void>;
+				count(table: DatabaseCollection): Promise<number>;
 				notes: {
 					getLatestQuicknote(): Promise<any>;
 					getQuicknoteByDate(start: string, end: string): Promise<any>;
-					getRecentNotes(limit: number): Promise<Note[]>;
+					getRecentNotes(
+						limit: number,
+						workspacePath: string | null,
+					): Promise<Note[]>;
 					getTemplates(): Promise<any[]>;
 					getByFilePath(filePath: string): Promise<Note | null>;
 					softDelete(id: string, deletedAt: string): Promise<void>;
@@ -460,6 +493,7 @@ declare global {
 				};
 				noteGroups: {
 					getByNoteId(noteId: string): Promise<any[]>;
+					delete(id: string): Promise<void>;
 				};
 				noteGroupMembers: {
 					getByGroupId(groupId: string): Promise<any[]>;
@@ -502,6 +536,9 @@ declare global {
 				saveMessage(message: any): Promise<void>;
 				clearMessages(chatId: string): Promise<void>;
 				saveCredentials(creds: any): Promise<void>;
+				migrateCredentials(creds: unknown): Promise<{
+					status: "imported" | "updated" | "identical" | "skipped";
+				}>;
 				loadCredentials(adapterId: string): Promise<any | null>;
 				clearCredentials(adapterId: string): Promise<void>;
 				startOAuth(authUrl: string): Promise<void>;

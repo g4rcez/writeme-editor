@@ -1,5 +1,5 @@
 import { endOfDay, startOfDay } from "date-fns";
-import { type INoteRepository, Note } from "../../note";
+import { type INoteRepository, Note, type NoteDeletionOutcome } from "../../note";
 import { type EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { db } from "./dexie-db";
@@ -26,11 +26,33 @@ export class NotesRepository
   }
 
   async hardDelete(id: EntityBase["id"]): Promise<boolean> {
-    const result = await super.delete(id);
-    if (result) {
-      await this.tabsRepository.deleteByNoteId(id);
-    }
-    return result;
+    if (!(await db.notes.get(id))) return false;
+    await db.transaction(
+      "rw",
+      [
+        db.notes,
+        db.tabs,
+        db.noteGroupMembers,
+        db.cursorPositions,
+        db.aiChats,
+        db.aiMessages,
+      ],
+      async () => {
+        const chatIds = (await db.aiChats
+          .where("noteId")
+          .equals(id)
+          .primaryKeys()) as string[];
+        if (chatIds.length) {
+          await db.aiMessages.where("chatId").anyOf(chatIds).delete();
+        }
+        await db.aiChats.where("noteId").equals(id).delete();
+        await db.tabs.where("noteId").equals(id).delete();
+        await db.noteGroupMembers.where("noteId").equals(id).delete();
+        await db.cursorPositions.where("noteId").equals(id).delete();
+        await db.notes.delete(id);
+      },
+    );
+    return true;
   }
 
   async restore(id: string): Promise<Note | null> {
@@ -49,7 +71,7 @@ export class NotesRepository
       );
   }
 
-  async purgeBefore(cutoff: Date): Promise<void> {
+  async purgeBefore(cutoff: Date): Promise<NoteDeletionOutcome> {
     const all = await db.notes.toArray();
     const ids = all
       .filter((n) => {
@@ -57,21 +79,23 @@ export class NotesRepository
         return deletedAt != null && new Date(deletedAt) < cutoff;
       })
       .map((n) => n.id);
-    await db.notes.bulkDelete(ids);
+    const outcome = { deleted: 0, failed: 0 };
     for (const id of ids) {
-      await this.tabsRepository.deleteByNoteId(id);
+      outcome[(await this.hardDelete(id)) ? "deleted" : "failed"]++;
     }
+    return outcome;
   }
 
-  async emptyTrash(): Promise<void> {
+  async emptyTrash(): Promise<NoteDeletionOutcome> {
     const trashed = await db.notes.toArray();
     const ids = trashed
       .filter((n) => (n as any).deletedAt != null)
       .map((n) => n.id);
-    await db.notes.bulkDelete(ids);
+    const outcome = { deleted: 0, failed: 0 };
     for (const id of ids) {
-      await this.tabsRepository.deleteByNoteId(id);
+      outcome[(await this.hardDelete(id)) ? "deleted" : "failed"]++;
     }
+    return outcome;
   }
 
   override async save(item: Note): Promise<Note> {

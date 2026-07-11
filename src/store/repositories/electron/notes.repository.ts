@@ -1,7 +1,7 @@
 import { endOfDay, startOfDay } from "date-fns";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
-import { type INoteRepository, Note } from "../../note";
+import { type INoteRepository, Note, type NoteDeletionOutcome } from "../../note";
 import type { EntityBase } from "../../repository";
 import { SettingsService } from "../../settings";
 import { BaseRepository } from "../base.repository";
@@ -202,20 +202,18 @@ export class NotesRepository
   }
 
   async getRecentNotes(limit?: number): Promise<Note[]> {
-    const notes = await window.electronAPI.db.notes.getRecentNotes(
-      Number.MAX_SAFE_INTEGER,
-    );
+    const ipcLimit = Number.isFinite(limit)
+      ? Math.min(10_000, Math.max(1, Math.trunc(limit!)))
+      : 10_000;
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
-
-    let filtered = notes;
-    if (mode === "filesystem" && settings.directory) {
-      filtered = notes.filter(
-        (n) => !n.filePath || n.filePath.startsWith(settings.directory!),
-      );
-    }
-
-    const parsed = filtered.map((note) => Note.parse({ ...note, content: "" }));
+    const workspacePath =
+      mode === "filesystem" && settings.directory ? settings.directory : null;
+    const notes = await window.electronAPI.db.notes.getRecentNotes(
+      ipcLimit,
+      workspacePath,
+    );
+    const parsed = notes.map((note) => Note.parse({ ...note, content: "" }));
 
     if (limit) {
       return parsed.slice(0, limit);
@@ -339,18 +337,23 @@ export class NotesRepository
     const settings = SettingsService.load();
     const mode = getStorageMode(settings.directory);
     if (mode === "filesystem" && note.filePath) {
-      const deleteResult = await window.electronAPI.fs.deleteFile(
-        note.filePath,
-      );
-      if (!deleteResult.success) {
-        console.warn(
-          `Failed to delete file ${note.filePath}:`,
-          deleteResult.error,
+      try {
+        const deleteResult = await window.electronAPI.fs.deleteFile(
+          note.filePath,
         );
+        if (deleteResult.success) {
+          await window.electronAPI.db.notes.hardDelete(id);
+          return true;
+        }
+      } catch {
+        // The row is intentionally retained so Empty Trash can retry it.
       }
+      console.warn(
+        "Failed to permanently delete a note file; metadata was retained.",
+      );
+      return false;
     }
     await window.electronAPI.db.notes.hardDelete(id);
-    await this.tabsRepository.deleteByNoteId(id);
     return true;
   }
 
@@ -394,45 +397,25 @@ export class NotesRepository
     return rows.map((r: any) => Note.parse({ ...r, content: "" }));
   }
 
-  async emptyTrash(): Promise<void> {
+  async emptyTrash(): Promise<NoteDeletionOutcome> {
     const trashed = await window.electronAPI.db.notes.getTrashed();
-    const settings = SettingsService.load();
-    const mode = getStorageMode(settings.directory);
+    const outcome = { deleted: 0, failed: 0 };
     for (const note of trashed) {
-      if (mode === "filesystem" && note.filePath) {
-        const result = await window.electronAPI.fs.deleteFile(note.filePath);
-        if (!result.success) {
-          console.warn(
-            `Failed to delete trashed file ${note.filePath}:`,
-            result.error,
-          );
-        }
-      }
-      await this.tabsRepository.deleteByNoteId(note.id);
+      outcome[(await this.hardDelete(note.id)) ? "deleted" : "failed"]++;
     }
-    await window.electronAPI.db.notes.emptyTrash();
+    return outcome;
   }
 
-  async purgeBefore(cutoff: Date): Promise<void> {
-    const cutoffIso = cutoff.toISOString();
+  async purgeBefore(cutoff: Date): Promise<NoteDeletionOutcome> {
     const trashed = await window.electronAPI.db.notes.getTrashed();
-    const settings = SettingsService.load();
-    const mode = getStorageMode(settings.directory);
+    const outcome = { deleted: 0, failed: 0 };
     for (const note of trashed) {
       const deletedAt = (note as any).deletedAt;
-      if (!deletedAt || new Date(deletedAt) >= cutoff) continue;
-      if (mode === "filesystem" && note.filePath) {
-        const result = await window.electronAPI.fs.deleteFile(note.filePath);
-        if (!result.success) {
-          console.warn(
-            `Failed to delete purged file ${note.filePath}:`,
-            result.error,
-          );
-        }
+      if (deletedAt && new Date(deletedAt) < cutoff) {
+        outcome[(await this.hardDelete(note.id)) ? "deleted" : "failed"]++;
       }
-      await this.tabsRepository.deleteByNoteId(note.id);
     }
-    await window.electronAPI.db.notes.purgeBefore(cutoffIso);
+    return outcome;
   }
 
   async updateContent(id: string, content: string): Promise<void> {

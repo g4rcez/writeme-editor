@@ -7,7 +7,7 @@ import type { Project } from "../entities/project";
 import type { Script } from "../entities/script";
 import type { NoteGroup } from "../entities/note-group";
 import type { NoteGroupMember } from "../entities/note-group-member";
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 import type { AICredentials } from "../entities/ai";
 import type { AIChat, AIConfig, AIMessage } from "../electron/ai.repository";
 import type { View } from "../entities/view";

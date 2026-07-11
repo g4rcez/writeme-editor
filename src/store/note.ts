@@ -1,4 +1,4 @@
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 import type { EntityBase, Repository } from "./repository";
 
 export enum NoteType {
@@ -127,6 +127,8 @@ export class Note implements EntityBase {
   }
 }
 
+export type NoteDeletionOutcome = { deleted: number; failed: number };
+
 export interface INoteRepository extends Repository<Note> {
   getRecentNotes: (limit?: number) => Promise<Note[]>;
   getLatestQuicknote: () => Promise<Note | null>;
@@ -136,6 +138,6 @@ export interface INoteRepository extends Repository<Note> {
   getTrashed: () => Promise<Note[]>;
   hardDelete: (id: string) => Promise<boolean>;
   restore: (id: string) => Promise<Note | null>;
-  emptyTrash: () => Promise<void>;
-  purgeBefore: (cutoff: Date) => Promise<void>;
+  emptyTrash: () => Promise<NoteDeletionOutcome>;
+  purgeBefore: (cutoff: Date) => Promise<NoteDeletionOutcome>;
 }

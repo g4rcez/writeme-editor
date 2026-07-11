@@ -2,7 +2,7 @@ import { db } from "./dexie-db";
 import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
 import { BaseRepository } from "../base.repository";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 
 export class HashtagsRepository
   extends BaseRepository<Hashtag>

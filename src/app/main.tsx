@@ -151,6 +151,14 @@ export async function main() {
 	void applySystemAccentColor();
 	watchSystemAccentColor();
 	try {
+		try {
+			await migrateDexieToSqlite();
+		} catch (error) {
+			console.error(
+				"Dexie to SQLite migration failed; continuing normal startup:",
+				error,
+			);
+		}
 		await SettingsService.init();
 		const settings = SettingsService.load();
 		const launchWorkspace = isElectron()
@@ -165,7 +173,6 @@ export async function main() {
 			await window.electronAPI.app.chdir(directory);
 			await window.electronAPI.fs.startWatcher(directory);
 		}
-		await migrateDexieToSqlite();
 		const notes = await repositories.notes.getAll();
 		const allTabs = await repositories.tabs.getAll();
 		const allTerminalSessions = await repositories.terminalSessions.getAll();

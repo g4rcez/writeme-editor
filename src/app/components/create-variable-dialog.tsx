@@ -1,4 +1,5 @@
-import { Button, Input, Modal, uuid } from "@g4rcez/components";
+import { Button, Input, Modal } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 import { useState } from "react";
 import { useGlobalStore, repositories } from "@/store/global.store";
 import { Script } from "@/store/repositories/entities/script";

@@ -1,8 +1,9 @@
-import { Button, Input, Select, Textarea, css, uuid } from "@g4rcez/components";
+import { Button, Input, Select, Textarea, css } from "@g4rcez/components";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { XCircleIcon } from "@phosphor-icons/react/dist/csr/XCircle";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { TerminalIcon } from "@phosphor-icons/react/dist/csr/Terminal";
+import { v7 as uuid } from "uuid";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { PlugIcon } from "@phosphor-icons/react/dist/csr/Plug";
 import { useEffect, useRef, useState } from "react";

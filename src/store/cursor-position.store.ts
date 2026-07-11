@@ -53,7 +53,7 @@ export const CursorPositionStore = {
     };
 
     if (isElectron()) {
-      await window.electronAPI.db.save<ElectronCursorPosition>(COLLECTION, {
+      await window.electronAPI.db.save(COLLECTION, {
         ...position,
         id,
       });
@@ -67,7 +67,7 @@ export const CursorPositionStore = {
   async get(noteId: string): Promise<CursorPosition | null> {
     if (isElectron()) {
       return toCursorPosition(
-        await window.electronAPI.db.get<ElectronCursorPosition>(
+        await window.electronAPI.db.get(
           COLLECTION,
           noteId,
         ),

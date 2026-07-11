@@ -1,15 +1,35 @@
-import { uuid } from "@g4rcez/components";
+import { v7 as uuid } from "uuid";
 import Database from "better-sqlite3";
 import { app } from "electron";
 import path from "node:path";
 
-class DatabaseManager {
+import {
+	type DatabaseCollection,
+	isDatabaseCollection,
+	parseDatabaseRecord,
+} from "./database-schema";
+
+export type MigrationCounts = {
+	found: number;
+	imported: number;
+	updated: number;
+	identical: number;
+	skipped: number;
+};
+
+const GENERIC_DELETE_DENYLIST = new Set<DatabaseCollection>([
+	"notes",
+	"noteGroups",
+	"aiChats",
+]);
+
+export class DatabaseManager {
 	private static instance: DatabaseManager;
 	public db: Database.Database;
 
-	private constructor() {
-		const dbPath = path.join(app.getPath("userData"), "writeme.sqlite");
-		console.log(dbPath);
+	public constructor(
+		dbPath = path.join(app.getPath("userData"), "writeme.sqlite"),
+	) {
 		console.log("Initializing SQLite database at:", dbPath);
 		this.db = new Database(dbPath);
 		this.init();
@@ -173,6 +193,9 @@ class DatabaseManager {
         refreshToken TEXT,
         expiresAt INTEGER,
         apiKey TEXT,
+        baseUrl TEXT,
+        accountId TEXT,
+        idToken TEXT,
         createdAt TEXT,
         updatedAt TEXT
       );
@@ -255,6 +278,7 @@ class DatabaseManager {
 			"aiConfigs",
 			"aiChats",
 			"aiMessages",
+			"aiCredentials",
 			"scripts",
 			"noteGroups",
 			"noteGroupMembers",
@@ -274,6 +298,7 @@ class DatabaseManager {
 		];
 		const aiMessageColumns = ["selectionSlice", "files"];
 		const aiConfigColumns = ["adapterId", "model", "baseUrl"];
+		const aiCredentialColumns = ["baseUrl", "accountId", "idToken"];
 
 		for (const table of tables) {
 			try {
@@ -332,6 +357,16 @@ class DatabaseManager {
 							.run();
 					} catch (error) {
 						console.warn("Failed to backfill default AI adapter:", error);
+					}
+				}
+
+				if (table === "aiCredentials") {
+					for (const col of aiCredentialColumns) {
+						if (!columns.some((c: any) => c.name === col)) {
+							this.db
+								.prepare(`ALTER TABLE aiCredentials ADD COLUMN ${col} TEXT`)
+								.run();
+						}
 					}
 				}
 
@@ -404,6 +439,13 @@ class DatabaseManager {
 				console.warn("Failed to parse row selection slice JSON:", error);
 			}
 		}
+		if (row.files) {
+			try {
+				row.files = JSON.parse(row.files);
+			} catch (error) {
+				console.warn("Failed to parse row files JSON:", error);
+			}
+		}
 		if ("isDefault" in row) {
 			row.isDefault = Boolean(row.isDefault);
 		}
@@ -413,21 +455,144 @@ class DatabaseManager {
 		return row;
 	}
 
+	private collection(table: string): DatabaseCollection {
+		if (!isDatabaseCollection(table))
+			throw new TypeError(`Unknown database collection: ${table}`);
+		return table;
+	}
+
+	public close(): void {
+		this.db.close();
+	}
+
+	public migrateCollection(table: string, records: unknown[]): MigrationCounts {
+		const collection = this.collection(table);
+		const counts: MigrationCounts = {
+			found: records.length,
+			imported: 0,
+			updated: 0,
+			identical: 0,
+			skipped: 0,
+		};
+		const find =
+			collection === "settings"
+				? this.db.prepare("SELECT * FROM settings WHERE name = ?")
+				: collection === "cursorPositions"
+					? this.db.prepare("SELECT * FROM cursorPositions WHERE noteId = ?")
+					: this.db.prepare(`SELECT * FROM ${collection} WHERE id = ?`);
+
+		this.db.transaction(() => {
+			for (const record of records) {
+				const source = parseDatabaseRecord(collection, record);
+				const sourceRecord = source as Record<string, unknown>;
+				const identity =
+					collection === "settings"
+						? sourceRecord.name
+						: collection === "cursorPositions"
+							? sourceRecord.noteId
+							: source.id;
+				const destination = find.get(identity) as
+					| Record<string, unknown>
+					| undefined;
+				if (!destination) {
+					this.save(collection, source);
+					counts.imported++;
+					continue;
+				}
+				if (collection === "settings" || collection === "cursorPositions")
+					source.id = String(destination.id);
+				const sourceEntries = Object.entries(source).filter(
+					([, value]) => value !== undefined,
+				);
+				const identical = sourceEntries.every(([key, value]) => {
+					const serialized =
+						value instanceof Date
+							? value.toISOString()
+							: typeof value === "boolean"
+								? Number(value)
+								: value;
+					const stored = destination[key];
+					return (
+						JSON.stringify(serialized) === JSON.stringify(stored) ||
+						JSON.stringify(serialized) === stored
+					);
+				});
+				if (identical) {
+					counts.identical++;
+					continue;
+				}
+				const sourceTime = Date.parse(String(source.updatedAt ?? ""));
+				const destinationTime = Date.parse(String(destination.updatedAt ?? ""));
+				if (
+					(collection === "settings" && !Number.isFinite(destinationTime)) ||
+					(Number.isFinite(sourceTime) &&
+						Number.isFinite(destinationTime) &&
+						sourceTime > destinationTime)
+				) {
+					this.save(collection, source);
+					counts.updated++;
+				} else {
+					counts.skipped++;
+				}
+			}
+		})();
+		return counts;
+	}
+
+	public verifyCollection(
+		table: string,
+		records: unknown[],
+	): { sourceCount: number; destinationCount: number; matched: number } {
+		const collection = this.collection(table);
+		const find =
+			collection === "settings"
+				? this.db.prepare("SELECT 1 FROM settings WHERE name = ?")
+				: collection === "cursorPositions"
+					? this.db.prepare("SELECT 1 FROM cursorPositions WHERE noteId = ?")
+					: this.db.prepare(`SELECT 1 FROM ${collection} WHERE id = ?`);
+		let matched = 0;
+		for (const record of records) {
+			const source = parseDatabaseRecord(collection, record, () => undefined);
+			const sourceRecord = source as Record<string, unknown>;
+			const identity =
+				collection === "settings"
+					? sourceRecord.name
+					: collection === "cursorPositions"
+						? sourceRecord.noteId
+						: source.id;
+			if (find.get(identity)) matched++;
+		}
+		return {
+			sourceCount: records.length,
+			destinationCount: this.count(collection),
+			matched,
+		};
+	}
+
 	public get<T>(table: string, id: string): T | undefined {
-		const stmt = this.db.prepare(`SELECT * FROM ${table} WHERE id = ?`);
+		const collection = this.collection(table);
+		const stmt = this.db.prepare(`SELECT * FROM ${collection} WHERE id = ?`);
 		const result = stmt.get(id) as any;
 		return this.normalizeRow(result) as T;
 	}
 
 	public getAll<T>(table: string): T[] {
-		const stmt = this.db.prepare(`SELECT * FROM ${table}`);
+		const collection = this.collection(table);
+		const stmt = this.db.prepare(`SELECT * FROM ${collection}`);
 		const results = stmt.all() as any[];
 		return results.map((row) => this.normalizeRow(row));
 	}
 
-	public save<T extends { id: string }>(table: string, item: T): void {
-		const keys = Object.keys(item);
-		const values = Object.values(item).map((v: any) => {
+	public save(
+		table: string,
+		item: unknown,
+	): Record<string, unknown> & {
+		id: string;
+	} {
+		const collection = this.collection(table);
+		const parsed = parseDatabaseRecord(collection, item);
+		const keys = Object.keys(parsed);
+		const values = Object.values(parsed).map((v: unknown) => {
 			if (typeof v === "boolean") {
 				return v ? 1 : 0;
 			}
@@ -445,18 +610,26 @@ class DatabaseManager {
 		const columns = keys.map((k) => `"${k}"`).join(","); // Quote columns for safety/reserved words
 
 		const stmt = this.db.prepare(
-			`INSERT OR REPLACE INTO ${table} (${columns}) VALUES (${placeholders})`,
+			`INSERT OR REPLACE INTO ${collection} (${columns}) VALUES (${placeholders})`,
 		);
 		stmt.run(...values);
+		return parsed;
 	}
 
 	public delete(table: string, id: string): void {
-		const stmt = this.db.prepare(`DELETE FROM ${table} WHERE id = ?`);
+		const collection = this.collection(table);
+		if (GENERIC_DELETE_DENYLIST.has(collection)) {
+			throw new TypeError(
+				`Generic deletion is not allowed for collection: ${collection}`,
+			);
+		}
+		const stmt = this.db.prepare(`DELETE FROM ${collection} WHERE id = ?`);
 		stmt.run(id);
 	}
 
 	public count(table: string): number {
-		const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM ${table}`);
+		const collection = this.collection(table);
+		const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM ${collection}`);
 		const result = stmt.get() as { count: number };
 		return result.count;
 	}
@@ -478,11 +651,25 @@ class DatabaseManager {
 		return this.normalizeRow(result);
 	}
 
-	public getRecentNotes(limit: number): any[] {
+	public getRecentNotes(limit: number, workspacePath: string | null): any[] {
+		const workspacePrefix = workspacePath
+			? `${workspacePath.replace(/[\\/]+$/, "")}${path.sep}`
+			: null;
 		const stmt = this.db.prepare(
-			`SELECT * FROM notes WHERE noteType != 'template' AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT ?`,
+			`SELECT * FROM notes
+			 WHERE noteType != 'template'
+			   AND deletedAt IS NULL
+			   AND (? IS NULL OR filePath IS NULL OR filePath = ? OR substr(filePath, 1, length(?)) = ?)
+			 ORDER BY updatedAt DESC
+			 LIMIT ?`,
 		);
-		const results = stmt.all(limit) as any[];
+		const results = stmt.all(
+			workspacePath,
+			workspacePath,
+			workspacePrefix,
+			workspacePrefix,
+			limit,
+		) as any[];
 		return results.map((row) => this.normalizeRow(row));
 	}
 
@@ -495,13 +682,31 @@ class DatabaseManager {
 	}
 
 	public softDeleteNote(id: string, deletedAt: string): void {
-		this.db
-			.prepare("UPDATE notes SET deletedAt = ? WHERE id = ?")
-			.run(deletedAt, id);
+		this.db.transaction(() => {
+			this.db
+				.prepare("UPDATE notes SET deletedAt = ? WHERE id = ?")
+				.run(deletedAt, id);
+			this.db
+				.prepare(
+					"DELETE FROM tabs WHERE noteId = ? AND (type IS NULL OR type != 'ai-chat-tab')",
+				)
+				.run(id);
+		})();
 	}
 
 	public hardDeleteNote(id: string): void {
-		this.db.prepare("DELETE FROM notes WHERE id = ?").run(id);
+		this.db.transaction(() => {
+			this.db
+				.prepare(
+					"DELETE FROM aiMessages WHERE chatId IN (SELECT id FROM aiChats WHERE noteId = ?)",
+				)
+				.run(id);
+			this.db.prepare("DELETE FROM aiChats WHERE noteId = ?").run(id);
+			this.db.prepare("DELETE FROM tabs WHERE noteId = ?").run(id);
+			this.db.prepare("DELETE FROM noteGroupMembers WHERE noteId = ?").run(id);
+			this.db.prepare("DELETE FROM cursorPositions WHERE noteId = ?").run(id);
+			this.db.prepare("DELETE FROM notes WHERE id = ?").run(id);
+		})();
 	}
 
 	public restoreNote(id: string): void {
@@ -609,6 +814,13 @@ class DatabaseManager {
 			"UPDATE notes SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ? WHERE id = ?",
 		);
 		stmt.run(content, fileSize, updatedAt, updatedBy, id);
+	}
+
+	public deleteNoteGroup(id: string): void {
+		this.db.transaction(() => {
+			this.db.prepare("DELETE FROM noteGroupMembers WHERE groupId = ?").run(id);
+			this.db.prepare("DELETE FROM noteGroups WHERE id = ?").run(id);
+		})();
 	}
 
 	public getNoteGroupsByNoteId(noteId: string): any[] {
