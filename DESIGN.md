@@ -2,108 +2,108 @@
 name: writeme
 description: An AI-native markdown editor and knowledge tool for builders who think by writing.
 colors:
-  primary: "#B899FF"
-  primary-hover: "#9B77F5"
-  primary-surface: "#F0EAFF"
-  foreground: "#323843"
-  foreground-muted: "#717178"
-  background: "#FFFFFF"
-  surface: "#F4F4F5"
-  surface-raised: "#FFFFFF"
-  border: "#E4E4E8"
-  danger: "#F16161"
-  warn: "#F59E0B"
-  success: "#22C55E"
-  info: "#0EA5E9"
-  background-dark: "#111117"
-  surface-dark: "#10131B"
-  border-dark: "#27272C"
-  foreground-dark: "#F4F4F5"
-  foreground-muted-dark: "#A1A1AA"
+    primary: "#B899FF"
+    primary-hover: "#9B77F5"
+    primary-surface: "#F0EAFF"
+    foreground: "#323843"
+    foreground-muted: "#717178"
+    background: "#FFFFFF"
+    surface: "#F4F4F5"
+    surface-raised: "#FFFFFF"
+    border: "#E4E4E8"
+    danger: "#F16161"
+    warn: "#F59E0B"
+    success: "#22C55E"
+    info: "#0EA5E9"
+    background-dark: "#111117"
+    surface-dark: "#10131B"
+    border-dark: "#27272C"
+    foreground-dark: "#F4F4F5"
+    foreground-muted-dark: "#A1A1AA"
 typography:
-  body:
-    fontFamily: "'IBM Plex Sans', sans-serif"
-    fontSize: "16px"
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: "normal"
-    fontFeature: "'cv01', 'cv02', 'cv03', 'cv04', 'ss01'"
-  headline:
-    fontFamily: "'IBM Plex Sans', sans-serif"
-    fontSize: "18px"
-    fontWeight: 700
-    lineHeight: 1.4
-    letterSpacing: "normal"
-  title:
-    fontFamily: "'IBM Plex Sans', sans-serif"
-    fontSize: "14px"
-    fontWeight: 600
-    lineHeight: 1.4
-    letterSpacing: "normal"
-  label:
-    fontFamily: "'IBM Plex Sans', sans-serif"
-    fontSize: "12px"
-    fontWeight: 500
-    lineHeight: 1.0
-    letterSpacing: "0.04em"
-  mono:
-    fontFamily: "'JetBrains Mono Variable', monospace"
-    fontSize: "14px"
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: "normal"
-    fontFeature: "common-ligatures"
+    body:
+        fontFamily: "'IBM Plex Sans', sans-serif"
+        fontSize: "16px"
+        fontWeight: 400
+        lineHeight: 1.5
+        letterSpacing: "normal"
+        fontFeature: "'cv01', 'cv02', 'cv03', 'cv04', 'ss01'"
+    headline:
+        fontFamily: "'IBM Plex Sans', sans-serif"
+        fontSize: "18px"
+        fontWeight: 700
+        lineHeight: 1.4
+        letterSpacing: "normal"
+    title:
+        fontFamily: "'IBM Plex Sans', sans-serif"
+        fontSize: "14px"
+        fontWeight: 600
+        lineHeight: 1.4
+        letterSpacing: "normal"
+    label:
+        fontFamily: "'IBM Plex Sans', sans-serif"
+        fontSize: "12px"
+        fontWeight: 500
+        lineHeight: 1.0
+        letterSpacing: "0.04em"
+    mono:
+        fontFamily: "'JetBrains Mono Variable', monospace"
+        fontSize: "14px"
+        fontWeight: 400
+        lineHeight: 1.5
+        letterSpacing: "normal"
+        fontFeature: "common-ligatures"
 rounded:
-  button: "0.55rem"
-  card: "0.75rem"
-  pill: "2rem"
+    button: "0.55rem"
+    card: "0.75rem"
+    pill: "2rem"
 spacing:
-  base: "1rem"
-  input-height: "2.5rem"
-  field-label: "0.875rem"
-  sm: "0.75rem"
-  lg: "1.125rem"
+    base: "1rem"
+    input-height: "2.5rem"
+    field-label: "0.875rem"
+    sm: "0.75rem"
+    lg: "1.125rem"
 components:
-  button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "#FFFFFF"
-    rounded: "{rounded.button}"
-    padding: "6px 16px"
-  button-primary-hover:
-    backgroundColor: "{colors.primary-hover}"
-    textColor: "#FFFFFF"
-    rounded: "{rounded.button}"
-    padding: "6px 16px"
-  button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.foreground}"
-    rounded: "{rounded.button}"
-    padding: "6px 16px"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.foreground-muted}"
-    rounded: "{rounded.button}"
-    padding: "6px 16px"
-  nav-item-active:
-    backgroundColor: "{colors.primary-surface}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.button}"
-    padding: "6px 8px"
-  nav-item-inactive:
-    backgroundColor: "transparent"
-    textColor: "{colors.foreground-muted}"
-    rounded: "{rounded.button}"
-    padding: "6px 8px"
-  tab-active:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.foreground}"
-    height: "36px"
-    padding: "0 10px"
-  tab-inactive:
-    backgroundColor: "transparent"
-    textColor: "{colors.foreground-muted}"
-    height: "36px"
-    padding: "0 10px"
+    button-primary:
+        backgroundColor: "{colors.primary}"
+        textColor: "#FFFFFF"
+        rounded: "{rounded.button}"
+        padding: "6px 16px"
+    button-primary-hover:
+        backgroundColor: "{colors.primary-hover}"
+        textColor: "#FFFFFF"
+        rounded: "{rounded.button}"
+        padding: "6px 16px"
+    button-secondary:
+        backgroundColor: "{colors.surface}"
+        textColor: "{colors.foreground}"
+        rounded: "{rounded.button}"
+        padding: "6px 16px"
+    button-ghost:
+        backgroundColor: "transparent"
+        textColor: "{colors.foreground-muted}"
+        rounded: "{rounded.button}"
+        padding: "6px 16px"
+    nav-item-active:
+        backgroundColor: "{colors.primary-surface}"
+        textColor: "{colors.primary}"
+        rounded: "{rounded.button}"
+        padding: "6px 8px"
+    nav-item-inactive:
+        backgroundColor: "transparent"
+        textColor: "{colors.foreground-muted}"
+        rounded: "{rounded.button}"
+        padding: "6px 8px"
+    tab-active:
+        backgroundColor: "{colors.surface}"
+        textColor: "{colors.foreground}"
+        height: "36px"
+        padding: "0 10px"
+    tab-inactive:
+        backgroundColor: "transparent"
+        textColor: "{colors.foreground-muted}"
+        height: "36px"
+        padding: "0 10px"
 ---
 
 # Design System: writeme

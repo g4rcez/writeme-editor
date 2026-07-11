@@ -127,7 +127,12 @@ function RefTour() {
                 Primary Action
             </Button>
 
-            <Wizard active={active} steps={steps} onClose={() => setActive(false)} labels={{ finish: "Got it!", skip: "No thanks" }} />
+            <Wizard
+                active={active}
+                steps={steps}
+                onClose={() => setActive(false)}
+                labels={{ finish: "Got it!", skip: "No thanks" }}
+            />
         </>
     );
 }

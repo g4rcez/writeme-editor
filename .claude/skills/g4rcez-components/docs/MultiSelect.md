@@ -132,7 +132,9 @@ export default function RolePicker() {
 import { MultiSelect } from "@g4rcez/components";
 
 export default function TagInput() {
-    return <MultiSelect title="Tags" dynamicOption options={existingTags} onChangeOptions={(tags) => console.log(tags)} />;
+    return (
+        <MultiSelect title="Tags" dynamicOption options={existingTags} onChangeOptions={(tags) => console.log(tags)} />
+    );
 }
 ```
 

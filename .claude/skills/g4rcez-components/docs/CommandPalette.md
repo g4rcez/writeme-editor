@@ -200,7 +200,9 @@ function GroupedCommandPalette() {
         },
     ];
 
-    return <CommandPalette open={open} commands={commands} onChangeVisibility={setOpen} emptyMessage="No commands found" />;
+    return (
+        <CommandPalette open={open} commands={commands} onChangeVisibility={setOpen} emptyMessage="No commands found" />
+    );
 }
 ```
 

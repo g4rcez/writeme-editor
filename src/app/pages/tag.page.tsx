@@ -1,133 +1,117 @@
+import { createColumns, Table, Tag, type TagProps } from "@g4rcez/components";
+import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
+import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { createColumns, Table, Tag, type TagProps } from "@g4rcez/components";
-import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
-import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
-import { repositories, useGlobalStore } from "@/store/global.store";
 import type { Note } from "@/store/note";
+import { repositories, useGlobalStore } from "@/store/global.store";
 
 type TagNoteResult = Note & { occurrences: number };
 
 type TagTableRow = Record<string, unknown> & {
-  id: string;
-  title: string;
-  noteType: Note["noteType"];
-  occurrences: number;
+    id: string;
+    title: string;
+    noteType: Note["noteType"];
+    occurrences: number;
 };
 
-const tagThemeMap: Record<
-  Note["noteType"],
-  { title: string; theme: TagProps["theme"] }
-> = {
-  json: { theme: "warn", title: "Json" },
-  note: { theme: "primary", title: "Note" },
-  quick: { theme: "muted", title: "Quick note" },
-  math: { theme: "neutral", title: "Math" },
-  template: { theme: "secondary", title: "Template" },
-  "read-it-later": { theme: "info", title: "Read it later" },
-  freehand: { theme: "secondary", title: "Freehand" },
-  excalidraw: { theme: "neutral", title: "Excalidraw" },
+const tagThemeMap: Record<Note["noteType"], { title: string; theme: TagProps["theme"] }> = {
+    json: { theme: "warn", title: "Json" },
+    note: { theme: "primary", title: "Note" },
+    quick: { theme: "muted", title: "Quick note" },
+    math: { theme: "neutral", title: "Math" },
+    template: { theme: "secondary", title: "Template" },
+    "read-it-later": { theme: "info", title: "Read it later" },
+    freehand: { theme: "secondary", title: "Freehand" },
+    excalidraw: { theme: "neutral", title: "Excalidraw" },
 };
 
 export default function TagPage() {
-  const { id } = useParams<{ id: string }>();
-  const [loading, setLoading] = useState(true);
-  const [notes, setNotes] = useState<TagNoteResult[]>([]);
-  const [state] = useGlobalStore();
+    const { id } = useParams<{ id: string }>();
+    const [loading, setLoading] = useState(true);
+    const [notes, setNotes] = useState<TagNoteResult[]>([]);
+    const [state] = useGlobalStore();
 
-  useEffect(() => {
-    if (!id) return;
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [allNotes] = await Promise.all([repositories.notes.getAll()]);
-        const matchedNotes: TagNoteResult[] = [];
-        const regex = new RegExp(`#${id}\\b`, "gi");
-        for (const note of allNotes) {
-          const matches = note.content.match(regex);
-          if (matches && matches.length > 0) {
-            const copy = Object.assign(
-              Object.create(Object.getPrototypeOf(note)),
-              note,
-            ) as TagNoteResult;
-            copy.occurrences = matches.length;
-            matchedNotes.push(copy);
-          }
-        }
-        matchedNotes.sort((a, b) => b.occurrences - a.occurrences);
-        setNotes(matchedNotes);
-      } catch (error) {
-        console.error("Failed to load tag data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [id, state.notes]);
+    useEffect(() => {
+        if (!id) return;
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [allNotes] = await Promise.all([repositories.notes.getAll()]);
+                const matchedNotes: TagNoteResult[] = [];
+                const regex = new RegExp(`#${id}\\b`, "gi");
+                for (const note of allNotes) {
+                    const matches = note.content.match(regex);
+                    if (matches && matches.length > 0) {
+                        const copy = Object.assign(Object.create(Object.getPrototypeOf(note)), note) as TagNoteResult;
+                        copy.occurrences = matches.length;
+                        matchedNotes.push(copy);
+                    }
+                }
+                matchedNotes.sort((a, b) => b.occurrences - a.occurrences);
+                setNotes(matchedNotes);
+            } catch (error) {
+                console.error("Failed to load tag data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [id, state.notes]);
 
-  const rows = notes.map(
-    (note): TagTableRow => ({
-      id: note.id,
-      title: note.title,
-      noteType: note.noteType,
-      occurrences: note.occurrences,
-    }),
-  );
-
-  const cols = createColumns<TagTableRow>((col) => {
-    col.add("title", "Title", {
-      Element: (props) => (
-        <Link
-          to={`/note/${props.row.id}`}
-          className="flex gap-1.5 items-baseline transition-colors duration-300 ease-linear hover:underline text-primary hover:text-primary-hover"
-        >
-          <LinkIcon className="min-w-4" size={12} />
-          {props.row.title}
-        </Link>
-      ),
-    });
-    col.add("noteType", "Type", {
-      Element: (props) => (
-        <Tag size="small" theme={tagThemeMap[props.value].theme}>
-          {tagThemeMap[props.value].title}
-        </Tag>
-      ),
-    });
-    col.add("occurrences", "Occurrences", {
-      Element: (props) => props.row.occurrences,
-    });
-  });
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center w-full h-full">
-        Loading...
-      </div>
+    const rows = notes.map(
+        (note): TagTableRow => ({
+            id: note.id,
+            title: note.title,
+            noteType: note.noteType,
+            occurrences: note.occurrences,
+        }),
     );
-  }
 
-  return (
-    <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="flex gap-2 items-center text-2xl font-bold">
-          <HashIcon className="w-6 h-6 text-primary" />
-          {id}
-        </h1>
-      </div>
+    const cols = createColumns<TagTableRow>((col) => {
+        col.add("title", "Title", {
+            Element: (props) => (
+                <Link
+                    to={`/note/${props.row.id}`}
+                    className="flex gap-1.5 items-baseline transition-colors duration-300 ease-linear hover:underline text-primary hover:text-primary-hover"
+                >
+                    <LinkIcon className="min-w-4" size={12} />
+                    {props.row.title}
+                </Link>
+            ),
+        });
+        col.add("noteType", "Type", {
+            Element: (props) => (
+                <Tag size="small" theme={tagThemeMap[props.value].theme}>
+                    {tagThemeMap[props.value].title}
+                </Tag>
+            ),
+        });
+        col.add("occurrences", "Occurrences", {
+            Element: (props) => props.row.occurrences,
+        });
+    });
 
-      {notes.length === 0 ? (
-        <div className="p-8 text-center rounded-lg border border-dashed border-border text-muted-foreground">
-          <p>No notes found containing the tag #{id}</p>
+    if (loading) {
+        return <div className="flex justify-center items-center w-full h-full">Loading...</div>;
+    }
+
+    return (
+        <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="flex gap-2 items-center text-2xl font-bold">
+                    <HashIcon className="w-6 h-6 text-primary" />
+                    {id}
+                </h1>
+            </div>
+
+            {notes.length === 0 ? (
+                <div className="p-8 text-center rounded-lg border border-dashed border-border text-muted-foreground">
+                    <p>No notes found containing the tag #{id}</p>
+                </div>
+            ) : (
+                <Table cols={cols} rows={rows} reference="id" name="tag-notes" useControl={false} />
+            )}
         </div>
-      ) : (
-        <Table
-          cols={cols}
-          rows={rows}
-          reference="id"
-          name="tag-notes"
-          useControl={false}
-        />
-      )}
-    </div>
-  );
+    );
 }

@@ -12,29 +12,30 @@ description: Diagnose and fix image paste/drop in Tiptap editors. Use when image
 `FileReader.onload` fires asynchronously. Any `await` before the insert makes it worse (Electron IPC adds hundreds of ms). By the time the callback runs, the selection has moved.
 
 **Wrong** (broken in both browser and Electron):
+
 ```js
 fileReader.onload = async () => {
-  // BAD: reads selection state after async delay
-  editor.chain()
-    .insertContentAt(editor.state.selection.anchor, { type: 'image', attrs: { src } })
-    .focus().run();
+    // BAD: reads selection state after async delay
+    editor.chain().insertContentAt(editor.state.selection.anchor, { type: "image", attrs: { src } }).focus().run();
 };
 ```
 
 **Wrong** (same problem, different order):
+
 ```js
 fileReader.onload = async () => {
-  editor.chain().focus().insertContent({ type: 'image', attrs: { src } }).run();
+    editor.chain().focus().insertContent({ type: "image", attrs: { src } }).run();
 };
 ```
 
 **Right** — capture position synchronously, before `readAsDataURL`:
+
 ```js
 const insertPos = pos ?? editor.state.selection.anchor; // synchronous
 fileReader.readAsDataURL(file);
 fileReader.onload = async () => {
-  // ... awaits here are fine, insertPos is stable
-  editor.chain().insertContentAt(insertPos, { type: 'image', attrs: { src } }).focus().run();
+    // ... awaits here are fine, insertPos is stable
+    editor.chain().insertContentAt(insertPos, { type: "image", attrs: { src } }).focus().run();
 };
 ```
 
@@ -50,6 +51,7 @@ If you add image handling only in `editorProps.handlePaste`, browser-copied imag
 ## Correct patterns
 
 ### FileHandler.onDrop
+
 `pos` is provided synchronously by the drop event. Use it directly.
 
 ```js
@@ -68,6 +70,7 @@ FileHandler.configure({
 ```
 
 ### FileHandler.onPaste
+
 No stable position is available (the paste happened in the past). Insert as a markdown string with `applyPasteRules: true` — this lets Tiptap's markdown pipeline place it at the current selection, which is more robust than `insertContentAt` with a captured anchor.
 
 ```js
@@ -88,6 +91,7 @@ No stable position is available (the paste happened in the past). Insert as a ma
 ```
 
 ### editorProps.handlePaste (for items-only screenshots)
+
 Capture the anchor synchronously before calling any async helper:
 
 ```js
@@ -113,6 +117,7 @@ handlePaste: (view, event) => {
 ```
 
 ### Shared helper with Electron IPC (handleImageFile)
+
 When async work (IPC calls, fetch, etc.) precedes the insert, the position MUST be captured before any of it.
 
 ```js

@@ -37,13 +37,13 @@ brew install g4rcez/writeme/writeme
 
 Download the latest release for your platform from the [releases page](https://github.com/g4rcez/writeme-editor/releases):
 
-| Platform | File |
-| --- | --- |
-| macOS (Apple Silicon) | `writeme-<version>-arm64.dmg` |
-| macOS (Intel) | `writeme-<version>-x64.dmg` |
-| Windows | `writeme-setup.exe` |
-| Linux (Debian/Ubuntu) | `writeme_<version>_amd64.deb` |
-| Linux (Fedora/RHEL) | `writeme-<version>.x86_64.rpm` |
+| Platform              | File                           |
+| --------------------- | ------------------------------ |
+| macOS (Apple Silicon) | `writeme-<version>-arm64.dmg`  |
+| macOS (Intel)         | `writeme-<version>-x64.dmg`    |
+| Windows               | `writeme-setup.exe`            |
+| Linux (Debian/Ubuntu) | `writeme_<version>_amd64.deb`  |
+| Linux (Fedora/RHEL)   | `writeme-<version>.x86_64.rpm` |
 
 ---
 
@@ -62,14 +62,15 @@ npm install
 
 - For Electron:
 
-  ```bash
-  npm run dev
-  ```
+    ```bash
+    npm run dev
+    ```
+
 - For Browser/Web version:
 
-  ```bash
-  npm run browser:dev
-  ```
+    ```bash
+    npm run browser:dev
+    ```
 
 ## How to build
 

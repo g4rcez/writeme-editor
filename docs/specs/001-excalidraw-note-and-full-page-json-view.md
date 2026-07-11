@@ -31,9 +31,9 @@ schemaVersion: 1
 
 ```json
 {
-  "elements": [],
-  "appState": {},
-  "files": {}
+    "elements": [],
+    "appState": {},
+    "files": {}
 }
 ```
 ````

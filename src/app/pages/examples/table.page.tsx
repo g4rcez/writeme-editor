@@ -9,5 +9,5 @@ The first number is columns and the second is rows.
 `;
 
 export default function EditorPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

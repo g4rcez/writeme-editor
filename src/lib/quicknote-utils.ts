@@ -1,17 +1,17 @@
 import { Dates } from "@/lib/dates";
 
 function joinPath(...segments: string[]): string {
-  return segments.join("/").replace(/\/+/g, "/").replace(/\/$/, "");
+    return segments.join("/").replace(/\/+/g, "/").replace(/\/$/, "");
 }
 
 export function getDailyQuickNoteName(date: Date): string {
-  return `${Dates.isoDate(date)}-quicknote`;
+    return `${Dates.isoDate(date)}-quicknote`;
 }
 
 export function getDailyQuickNoteTitle(date: Date): string {
-  return `${getDailyQuickNoteName(date)}.md`;
+    return `${getDailyQuickNoteName(date)}.md`;
 }
 
 export function getDailyQuickNotePath(directory: string, date: Date): string {
-  return joinPath(directory, "quicknotes", `${getDailyQuickNoteName(date)}.md`);
+    return joinPath(directory, "quicknotes", `${getDailyQuickNoteName(date)}.md`);
 }

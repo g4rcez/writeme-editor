@@ -22,5 +22,5 @@ UUIDs are useful for:
 `;
 
 export default function UuidPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

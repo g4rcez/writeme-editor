@@ -111,7 +111,12 @@ const docMask = (value: string) => (value.replace(/\D/g, "").length <= 11 ? "999
 ```tsx
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 
-<Input name="search" title="Search" left={<MagnifyingGlassIcon size={16} className="text-muted-foreground" />} placeholder="Type to search..." />;
+<Input
+    name="search"
+    title="Search"
+    left={<MagnifyingGlassIcon size={16} className="text-muted-foreground" />}
+    placeholder="Type to search..."
+/>;
 ```
 
 ### Input with error and feedback

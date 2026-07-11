@@ -1,7 +1,7 @@
 export type DomainIdentification = {
-  id: string;
-  url: string;
-  domain: string;
+    id: string;
+    url: string;
+    domain: string;
 };
 
 /**
@@ -12,51 +12,42 @@ export type DomainIdentification = {
  * @returns DomainIdentification object or null if not identified
  */
 export function identifyDomain(url: string): DomainIdentification | null {
-  try {
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) return null;
+    try {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) return null;
 
-    const parsed = new URL(trimmedUrl);
-    const host = parsed.hostname.replace(/^www\./, "");
-    const youtubeHosts = [
-      "youtube.com",
-      "m.youtube.com",
-      "youtu.be",
-      "youtube.com.br",
-      "www.youtube.com.br",
-    ];
+        const parsed = new URL(trimmedUrl);
+        const host = parsed.hostname.replace(/^www\./, "");
+        const youtubeHosts = ["youtube.com", "m.youtube.com", "youtu.be", "youtube.com.br", "www.youtube.com.br"];
 
-    if (
-      youtubeHosts.includes(host) ||
-      parsed.hostname.endsWith(".youtube.com")
-    ) {
-      let id: string | null = null;
-      const pathname = parsed.pathname;
+        if (youtubeHosts.includes(host) || parsed.hostname.endsWith(".youtube.com")) {
+            let id: string | null = null;
+            const pathname = parsed.pathname;
 
-      if (host === "youtu.be") {
-        id = pathname.slice(1);
-      } else if (pathname.startsWith("/live/")) {
-        id = pathname.split("/")[2] ?? null;
-      } else if (pathname.startsWith("/embed/")) {
-        id = pathname.split("/")[2] ?? null;
-      } else if (pathname.startsWith("/v/")) {
-        id = pathname.split("/")[2] ?? null;
-      } else if (pathname.startsWith("/shorts/")) {
-        id = pathname.split("/")[2] ?? null;
-      } else if (pathname === "/watch") {
-        id = parsed.searchParams.get("v");
-      } else if (parsed.searchParams.has("v")) {
-        id = parsed.searchParams.get("v");
-      }
-      if (id) {
-        id = id.split(/[?&#]/)[0] ?? null;
-      }
-      if (id && id.length >= 10) {
-        return { id, url: trimmedUrl, domain: "youtube" };
-      }
+            if (host === "youtu.be") {
+                id = pathname.slice(1);
+            } else if (pathname.startsWith("/live/")) {
+                id = pathname.split("/")[2] ?? null;
+            } else if (pathname.startsWith("/embed/")) {
+                id = pathname.split("/")[2] ?? null;
+            } else if (pathname.startsWith("/v/")) {
+                id = pathname.split("/")[2] ?? null;
+            } else if (pathname.startsWith("/shorts/")) {
+                id = pathname.split("/")[2] ?? null;
+            } else if (pathname === "/watch") {
+                id = parsed.searchParams.get("v");
+            } else if (parsed.searchParams.has("v")) {
+                id = parsed.searchParams.get("v");
+            }
+            if (id) {
+                id = id.split(/[?&#]/)[0] ?? null;
+            }
+            if (id && id.length >= 10) {
+                return { id, url: trimmedUrl, domain: "youtube" };
+            }
+        }
+        return null;
+    } catch (e) {
+        return null;
     }
-    return null;
-  } catch (e) {
-    return null;
-  }
 }

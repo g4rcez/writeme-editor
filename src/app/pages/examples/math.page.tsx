@@ -9,5 +9,5 @@ Try to type \`>>math 10 * 10 =\`
 `;
 
 export default function EditorPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

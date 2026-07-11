@@ -28,5 +28,5 @@ Only evaluate trusted code. The eval command executes JavaScript in your browser
 `;
 
 export default function EvalPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

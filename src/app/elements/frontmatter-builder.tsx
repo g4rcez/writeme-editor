@@ -1,301 +1,238 @@
-import { Dates } from "@/lib/dates";
-import {
-  Autocomplete,
-  Button,
-  Checkbox,
-  DatePicker,
-  Input,
-  Modal,
-  Textarea,
-  uuid,
-} from "@g4rcez/components";
+import { Autocomplete, Button, Checkbox, DatePicker, Input, Modal, Textarea, uuid } from "@g4rcez/components";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { parse, stringify } from "yaml";
+import { Dates } from "@/lib/dates";
 
 const YAML = { parse, stringify };
 
-type PropertyType =
-  | "text"
-  | "number"
-  | "boolean"
-  | "date"
-  | "list"
-  | "multiline"
-  | "object";
+type PropertyType = "text" | "number" | "boolean" | "date" | "list" | "multiline" | "object";
 
 type FrontmatterProperty = {
-  id: string;
-  key: string;
-  value: string;
-  type: PropertyType;
+    id: string;
+    key: string;
+    value: string;
+    type: PropertyType;
 };
 
 const TYPE_OPTIONS = [
-  { value: "text", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "boolean", label: "Boolean" },
-  { value: "date", label: "Date" },
-  { value: "list", label: "List" },
-  { value: "multiline", label: "Multiline" },
-  { value: "object", label: "Object" },
+    { value: "text", label: "Text" },
+    { value: "number", label: "Number" },
+    { value: "boolean", label: "Boolean" },
+    { value: "date", label: "Date" },
+    { value: "list", label: "List" },
+    { value: "multiline", label: "Multiline" },
+    { value: "object", label: "Object" },
 ];
 
 function inferType(value: unknown): PropertyType {
-  if (typeof value === "boolean") return "boolean";
-  if (typeof value === "number") return "number";
-  if (Array.isArray(value)) {
-    return value.every((item) =>
-      ["boolean", "number", "string"].includes(typeof item),
-    )
-      ? "list"
-      : "object";
-  }
-  if (value && typeof value === "object") return "object";
-  if (typeof value === "string") {
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) return "date";
-    if (value.includes("\n")) return "multiline";
-  }
-  return "text";
+    if (typeof value === "boolean") return "boolean";
+    if (typeof value === "number") return "number";
+    if (Array.isArray(value)) {
+        return value.every((item) => ["boolean", "number", "string"].includes(typeof item)) ? "list" : "object";
+    }
+    if (value && typeof value === "object") return "object";
+    if (typeof value === "string") {
+        if (/^\d{4}-\d{2}-\d{2}/.test(value)) return "date";
+        if (value.includes("\n")) return "multiline";
+    }
+    return "text";
 }
 
 function valueToString(value: unknown, type: PropertyType): string {
-  if (type === "list" && Array.isArray(value)) return value.join(", ");
-  if (type === "object") return YAML.stringify(value).trimEnd();
-  if (type === "boolean") return String(value);
-  if (value === null || value === undefined) return "";
-  return String(value);
+    if (type === "list" && Array.isArray(value)) return value.join(", ");
+    if (type === "object") return YAML.stringify(value).trimEnd();
+    if (type === "boolean") return String(value);
+    if (value === null || value === undefined) return "";
+    return String(value);
 }
 
 const parseFrontMatter = (content: string): FrontmatterProperty[] => {
-  try {
-    const parsed = YAML.parse(content);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-      return [];
-    return Object.entries(parsed).map(([key, val]) => {
-      const type = inferType(val);
-      return { id: uuid(), key, value: valueToString(val, type), type };
-    });
-  } catch {
-    return [];
-  }
+    try {
+        const parsed = YAML.parse(content);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
+        return Object.entries(parsed).map(([key, val]) => {
+            const type = inferType(val);
+            return { id: uuid(), key, value: valueToString(val, type), type };
+        });
+    } catch {
+        return [];
+    }
 };
 
 function propertiesToYaml(properties: FrontmatterProperty[]): string {
-  const obj: Record<string, unknown> = {};
-  for (const p of properties) {
-    if (!p.key.trim()) continue;
-    switch (p.type) {
-      case "number":
-        obj[p.key] = parseFloat(p.value) || 0;
-        break;
-      case "boolean":
-        obj[p.key] = p.value === "true";
-        break;
-      case "list":
-        obj[p.key] = p.value
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        break;
-      case "object":
-        try {
-          obj[p.key] = YAML.parse(p.value);
-        } catch {
-          obj[p.key] = p.value;
+    const obj: Record<string, unknown> = {};
+    for (const p of properties) {
+        if (!p.key.trim()) continue;
+        switch (p.type) {
+            case "number":
+                obj[p.key] = parseFloat(p.value) || 0;
+                break;
+            case "boolean":
+                obj[p.key] = p.value === "true";
+                break;
+            case "list":
+                obj[p.key] = p.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                break;
+            case "object":
+                try {
+                    obj[p.key] = YAML.parse(p.value);
+                } catch {
+                    obj[p.key] = p.value;
+                }
+                break;
+            default:
+                obj[p.key] = p.value;
         }
-        break;
-      default:
-        obj[p.key] = p.value;
     }
-  }
-  return YAML.stringify(obj);
+    return YAML.stringify(obj);
 }
 
 interface FrontmatterBuilderProps {
-  open: boolean;
-  content: string;
-  onClose: () => void;
-  onSave: (yaml: string) => void;
+    open: boolean;
+    content: string;
+    onClose: () => void;
+    onSave: (yaml: string) => void;
 }
 
-const ValueInput = ({
-  property,
-  onChange,
-}: {
-  property: FrontmatterProperty;
-  onChange: (value: string) => void;
-}) => {
-  switch (property.type) {
-    case "boolean":
-      return (
-        <Checkbox
-          required
-          checked={property.value === "true"}
-          className="rounded cursor-pointer size-4 border-border accent-primary"
-          onChange={(e) => onChange(e.target.checked ? "true" : "false")}
-        >
-          Checked?
-        </Checkbox>
-      );
-    case "multiline":
-    case "object":
-      return (
-        <Textarea
-          required
-          value={property.value}
-          placeholder="Multiline text..."
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-            onChange(e.target.value)
-          }
-        />
-      );
-    case "number":
-      return (
-        <Input
-          required
-          type="number"
-          value={property.value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-    case "date":
-      return (
-        <DatePicker
-          required
-          type="datetime"
-          onChange={(e: any) => onChange((e as Date).toISOString())}
-          date={
-            property.value
-              ? Dates.valid(new Date(property.value))
-                ? new Date(property.value)
-                : undefined
-              : undefined
-          }
-        />
-      );
-    case "list":
-      return (
-        <Input
-          required
-          value={property.value}
-          placeholder="item1, item2, item3"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-    default:
-      return (
-        <Input
-          required
-          value={property.value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      );
-  }
+const ValueInput = ({ property, onChange }: { property: FrontmatterProperty; onChange: (value: string) => void }) => {
+    switch (property.type) {
+        case "boolean":
+            return (
+                <Checkbox
+                    required
+                    checked={property.value === "true"}
+                    className="rounded cursor-pointer size-4 border-border accent-primary"
+                    onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+                >
+                    Checked?
+                </Checkbox>
+            );
+        case "multiline":
+        case "object":
+            return (
+                <Textarea
+                    required
+                    value={property.value}
+                    placeholder="Multiline text..."
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
+                />
+            );
+        case "number":
+            return <Input required type="number" value={property.value} onChange={(e) => onChange(e.target.value)} />;
+        case "date":
+            return (
+                <DatePicker
+                    required
+                    type="datetime"
+                    onChange={(e: any) => onChange((e as Date).toISOString())}
+                    date={
+                        property.value
+                            ? Dates.valid(new Date(property.value))
+                                ? new Date(property.value)
+                                : undefined
+                            : undefined
+                    }
+                />
+            );
+        case "list":
+            return (
+                <Input
+                    required
+                    value={property.value}
+                    placeholder="item1, item2, item3"
+                    onChange={(e) => onChange(e.target.value)}
+                />
+            );
+        default:
+            return <Input required value={property.value} onChange={(e) => onChange(e.target.value)} />;
+    }
 };
 
-export const FrontmatterBuilder = ({
-  open,
-  content,
-  onClose,
-  onSave,
-}: FrontmatterBuilderProps) => {
-  const [properties, setProperties] = useState<FrontmatterProperty[]>([]);
-  useEffect(() => {
-    if (open) setProperties(parseFrontMatter(content));
-  }, [open]);
+export const FrontmatterBuilder = ({ open, content, onClose, onSave }: FrontmatterBuilderProps) => {
+    const [properties, setProperties] = useState<FrontmatterProperty[]>([]);
+    useEffect(() => {
+        if (open) setProperties(parseFrontMatter(content));
+    }, [open]);
 
-  const updateProperty = (id: string, patch: Partial<FrontmatterProperty>) => {
-    setProperties((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-    );
-  };
+    const updateProperty = (id: string, patch: Partial<FrontmatterProperty>) => {
+        setProperties((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    };
 
-  const removeProperty = (id: string) => {
-    setProperties((prev) => prev.filter((p) => p.id !== id));
-  };
+    const removeProperty = (id: string) => {
+        setProperties((prev) => prev.filter((p) => p.id !== id));
+    };
 
-  const addProperty = () => {
-    setProperties((prev) => [
-      ...prev,
-      { id: uuid(), key: "", value: "", type: "text" },
-    ]);
-  };
+    const addProperty = () => {
+        setProperties((prev) => [...prev, { id: uuid(), key: "", value: "", type: "text" }]);
+    };
 
-  const handleSave = () => {
-    onSave(propertiesToYaml(properties));
-    onClose();
-  };
+    const handleSave = () => {
+        onSave(propertiesToYaml(properties));
+        onClose();
+    };
 
-  return (
-    <Modal
-      open={open}
-      animate={false}
-      onChange={onClose}
-      title="Properties"
-      className="max-w-2xl"
-    >
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-y-6">
-          {properties.map((item) => (
-            <div key={item.id} className="flex flex-col gap-2">
-              <div className="flex flex-nowrap gap-2">
-                <Input
-                  required
-                  value={item.key}
-                  title="Key/Label"
-                  container="w-full"
-                  placeholder="Property name"
-                  onChange={(e) =>
-                    updateProperty(item.id, { key: e.target.value })
-                  }
-                />
-                <Autocomplete
-                  title="Value"
-                  value={item.type}
-                  container="w-full"
-                  options={TYPE_OPTIONS}
-                  optionalText=" "
-                  right={
-                    <button
-                      type="button"
-                      title="Delete property"
-                      className="text-danger size-5"
-                      onClick={() => removeProperty(item.id)}
-                    >
-                      <TrashIcon size={14} />
-                    </button>
-                  }
-                  onChange={(e) =>
-                    updateProperty(item.id, {
-                      type: e.target.value as PropertyType,
-                    })
-                  }
-                />
-              </div>
-              <ValueInput
-                property={item}
-                onChange={(value) => updateProperty(item.id, { value })}
-              />
+    return (
+        <Modal open={open} animate={false} onChange={onClose} title="Properties" className="max-w-2xl">
+            <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-y-6">
+                    {properties.map((item) => (
+                        <div key={item.id} className="flex flex-col gap-2">
+                            <div className="flex flex-nowrap gap-2">
+                                <Input
+                                    required
+                                    value={item.key}
+                                    title="Key/Label"
+                                    container="w-full"
+                                    placeholder="Property name"
+                                    onChange={(e) => updateProperty(item.id, { key: e.target.value })}
+                                />
+                                <Autocomplete
+                                    title="Value"
+                                    value={item.type}
+                                    container="w-full"
+                                    options={TYPE_OPTIONS}
+                                    optionalText=" "
+                                    right={
+                                        <button
+                                            type="button"
+                                            title="Delete property"
+                                            className="text-danger size-5"
+                                            onClick={() => removeProperty(item.id)}
+                                        >
+                                            <TrashIcon size={14} />
+                                        </button>
+                                    }
+                                    onChange={(e) =>
+                                        updateProperty(item.id, {
+                                            type: e.target.value as PropertyType,
+                                        })
+                                    }
+                                />
+                            </div>
+                            <ValueInput property={item} onChange={(value) => updateProperty(item.id, { value })} />
+                        </div>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    onClick={addProperty}
+                    className="flex gap-1 items-center py-1 text-xs transition-colors text-muted-foreground w-fit hover:text-foreground"
+                >
+                    <PlusIcon size={14} />
+                    Add property
+                </button>
+                <div className="flex gap-2 justify-end pt-2 border-t border-card-border">
+                    <Button theme="ghost-muted" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSave}>Save</Button>
+                </div>
             </div>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={addProperty}
-          className="flex gap-1 items-center py-1 text-xs transition-colors text-muted-foreground w-fit hover:text-foreground"
-        >
-          <PlusIcon size={14} />
-          Add property
-        </button>
-        <div className="flex gap-2 justify-end pt-2 border-t border-card-border">
-          <Button theme="ghost-muted" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>Save</Button>
-        </div>
-      </div>
-    </Modal>
-  );
+        </Modal>
+    );
 };

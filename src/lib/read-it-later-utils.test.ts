@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { parseReadItLaterHtml } from "./read-it-later-utils";
 
 describe("parseReadItLaterHtml", () => {
-  it("should extract the title and content", () => {
-    const html = `
+    it("should extract the title and content", () => {
+        const html = `
       <html>
         <head><title>Test Title</title></head>
         <body>
@@ -18,31 +18,23 @@ describe("parseReadItLaterHtml", () => {
       </html>
     `;
 
-    const result = parseReadItLaterHtml(
-      html,
-      "https://example.com",
-      "https://mysite.com",
-    );
-    expect(result.title).toBe("Test Title");
-    expect(result.html).toContain("Main Heading");
-    expect(result.html).toContain("Some content.");
-    expect(result.html).not.toContain("Navigation");
-    expect(result.html).not.toContain("Footer");
-    expect(result.html).not.toContain("console.log");
-  });
+        const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
+        expect(result.title).toBe("Test Title");
+        expect(result.html).toContain("Main Heading");
+        expect(result.html).toContain("Some content.");
+        expect(result.html).not.toContain("Navigation");
+        expect(result.html).not.toContain("Footer");
+        expect(result.html).not.toContain("console.log");
+    });
 
-  it("should use a fallback title if none is found", () => {
-    const html = "<body><article>Content</article></body>";
-    const result = parseReadItLaterHtml(
-      html,
-      "https://example.com",
-      "https://mysite.com",
-    );
-    expect(result.title).toBe("Read It Later Note");
-  });
+    it("should use a fallback title if none is found", () => {
+        const html = "<body><article>Content</article></body>";
+        const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
+        expect(result.title).toBe("Read It Later Note");
+    });
 
-  it("should extract description and favicon", () => {
-    const html = `
+    it("should extract description and favicon", () => {
+        const html = `
       <html>
         <head>
           <meta name="description" content="Test Description">
@@ -51,14 +43,14 @@ describe("parseReadItLaterHtml", () => {
         <body></body>
       </html>
     `;
-    const baseUrl = "https://example.com";
-    const result = parseReadItLaterHtml(html, baseUrl, baseUrl);
-    expect(result.description).toBe("Test Description");
-    expect(result.favicon).toBe("https://example.com/favicon.ico");
-  });
+        const baseUrl = "https://example.com";
+        const result = parseReadItLaterHtml(html, baseUrl, baseUrl);
+        expect(result.description).toBe("Test Description");
+        expect(result.favicon).toBe("https://example.com/favicon.ico");
+    });
 
-  it("should extract og:description if meta description is missing", () => {
-    const html = `
+    it("should extract og:description if meta description is missing", () => {
+        const html = `
       <html>
         <head>
           <meta property="og:description" content="OG Description">
@@ -66,16 +58,12 @@ describe("parseReadItLaterHtml", () => {
         <body></body>
       </html>
     `;
-    const result = parseReadItLaterHtml(
-      html,
-      "https://example.com",
-      "https://mysite.com",
-    );
-    expect(result.description).toBe("OG Description");
-  });
+        const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
+        expect(result.description).toBe("OG Description");
+    });
 
-  it("should normalize code blocks", () => {
-    const html = `
+    it("should normalize code blocks", () => {
+        const html = `
       <html>
         <body>
           <pre class="javascript"><code>console.log('line 1');\nconsole.log('line 2');</code></pre>
@@ -83,27 +71,23 @@ describe("parseReadItLaterHtml", () => {
         </body>
       </html>
     `;
-    const result = parseReadItLaterHtml(
-      html,
-      "https://example.com",
-      "https://mysite.com",
-    );
-    expect(result.html).toContain('class="language-javascript"');
-    // Ensure <br> are converted to newlines or preserved in a way TipTap likes?
-    // Actually TipTap likes text nodes with newlines inside pre.
-    // If it's <br>, we should probably convert to newline.
-  });
+        const result = parseReadItLaterHtml(html, "https://example.com", "https://mysite.com");
+        expect(result.html).toContain('class="language-javascript"');
+        // Ensure <br> are converted to newlines or preserved in a way TipTap likes?
+        // Actually TipTap likes text nodes with newlines inside pre.
+        // If it's <br>, we should probably convert to newline.
+    });
 
-  it("should handle mixed case language classes", () => {
-    const html = `<html><body><pre class="JavaScript"><code>console.log('hi')</code></pre></body></html>`;
-    const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
-    expect(result.html).toContain("language-javascript");
-  });
+    it("should handle mixed case language classes", () => {
+        const html = `<html><body><pre class="JavaScript"><code>console.log('hi')</code></pre></body></html>`;
+        const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
+        expect(result.html).toContain("language-javascript");
+    });
 
-  it("should normalize div and p tags in code blocks", () => {
-    const html = `<html><body><pre><div>line 1</div><div>line 2</div><p>line 3</p></pre></body></html>`;
-    const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
-    // Expect divs and p tags to be replaced by newlines
-    expect(result.html).toContain("line 1\nline 2\nline 3\n");
-  });
+    it("should normalize div and p tags in code blocks", () => {
+        const html = `<html><body><pre><div>line 1</div><div>line 2</div><p>line 3</p></pre></body></html>`;
+        const result = parseReadItLaterHtml(html, "http://ex.com", "http://ex.com");
+        // Expect divs and p tags to be replaced by newlines
+        expect(result.html).toContain("line 1\nline 2\nline 3\n");
+    });
 });

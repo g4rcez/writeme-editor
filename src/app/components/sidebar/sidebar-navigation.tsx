@@ -1,135 +1,124 @@
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { SquaresFourIcon } from "@phosphor-icons/react/dist/csr/SquaresFour";
-import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useGlobalStore } from "@/store/global.store";
-import { useLayoutStore } from "@/app/contexts/layout-context";
-import { repositories } from "@/store/repositories";
 import { useEffect, useState } from "react";
-import { Hashtag } from "@/store/repositories/entities/hashtag";
+import { useLayoutStore } from "@/app/contexts/layout-context";
+import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { Hashtag } from "@/store/repositories/entities/hashtag";
 
 type SidebarItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  active?: boolean;
-  onClick: () => void;
-  depth?: number;
+    icon: React.ReactNode;
+    label: string;
+    count?: number;
+    active?: boolean;
+    onClick: () => void;
+    depth?: number;
 };
 
-const SidebarItem = ({
-  icon,
-  label,
-  count,
-  active,
-  onClick,
-  depth = 0,
-}: SidebarItemProps) => (
-  <button
-    onClick={onClick}
-    className={`writeme-aside-nav-item ${active ? "writeme-aside-nav-item--active" : "writeme-aside-nav-item--inactive"}`}
-    style={{ paddingLeft: `${8 + depth * 12}px` }}
-  >
-    <span className="shrink-0">{icon}</span>
-    <span className="flex-1 truncate text-left">{label}</span>
-    {count !== undefined && <span className="text-xs opacity-50">{count}</span>}
-  </button>
+const SidebarItem = ({ icon, label, count, active, onClick, depth = 0 }: SidebarItemProps) => (
+    <button
+        onClick={onClick}
+        className={`writeme-aside-nav-item ${active ? "writeme-aside-nav-item--active" : "writeme-aside-nav-item--inactive"}`}
+        style={{ paddingLeft: `${8 + depth * 12}px` }}
+    >
+        <span className="shrink-0">{icon}</span>
+        <span className="flex-1 truncate text-left">{label}</span>
+        {count !== undefined && <span className="text-xs opacity-50">{count}</span>}
+    </button>
 );
 
-const SectionHeader = ({ label }: { label: string }) => (
-  <div className="writeme-aside-nav-section">{label}</div>
-);
+const SectionHeader = ({ label }: { label: string }) => <div className="writeme-aside-nav-section">{label}</div>;
 
 export const SidebarNavigation = () => {
-  const [{ activeView }, layoutDispatch] = useLayoutStore((s) => ({
-    activeView: s.activeView,
-  }));
-  const [{ notes }] = useGlobalStore((state) => ({ notes: state.notes }));
-  const [tags, setTags] = useState<Hashtag[]>([]);
+    const [{ activeView }, layoutDispatch] = useLayoutStore((s) => ({
+        activeView: s.activeView,
+    }));
+    const [{ notes }] = useGlobalStore((state) => ({ notes: state.notes }));
+    const [tags, setTags] = useState<Hashtag[]>([]);
 
-  // Load tags
-  useEffect(() => {
-    repositories.hashtags.getAll().then(setTags);
-  }, []);
+    // Load tags
+    useEffect(() => {
+        repositories.hashtags.getAll().then(setTags);
+    }, []);
 
-  // Calculate counts
-  const allNotesCount = notes.filter((n: Note) => n.noteType === "note").length;
-  const favoritesCount = notes.filter((n: Note) => n.favorite).length;
-  const trashCount = 0; // TODO: Implement trash
+    // Calculate counts
+    const allNotesCount = notes.filter((n: Note) => n.noteType === "note").length;
+    const favoritesCount = notes.filter((n: Note) => n.favorite).length;
+    const trashCount = 0; // TODO: Implement trash
 
-  // Unique tags with counts
-  const uniqueTags = Array.from(new Set(tags.map((t) => t.hashtag))).map(
-    (tag) => {
-      return {
-        tag,
-        count: tags.filter((t) => t.hashtag === tag).length,
-      };
-    },
-  );
+    // Unique tags with counts
+    const uniqueTags = Array.from(new Set(tags.map((t) => t.hashtag))).map((tag) => {
+        return {
+            tag,
+            count: tags.filter((t) => t.hashtag === tag).length,
+        };
+    });
 
-  return (
-    <div className="writeme-aside-nav">
-      <div className="writeme-aside-nav-header">
-        <div className="writeme-aside-nav-title">
-          <SquaresFourIcon className="size-4" />
-          <span>Writeme</span>
-        </div>
-      </div>
+    return (
+        <div className="writeme-aside-nav">
+            <div className="writeme-aside-nav-header">
+                <div className="writeme-aside-nav-title">
+                    <SquaresFourIcon className="size-4" />
+                    <span>Writeme</span>
+                </div>
+            </div>
 
-      <div className="writeme-aside-nav-content">
-        <SidebarItem
-          icon={<FileTextIcon className="size-4" />}
-          label="All Notes"
-          count={allNotesCount}
-          active={activeView.type === "all"}
-          onClick={() => layoutDispatch.setView({ type: "all" })}
-        />
-        <SidebarItem
-          icon={<StarIcon className="size-4" />}
-          label="Favorites"
-          count={favoritesCount}
-          active={activeView.type === "favorites"}
-          onClick={() => layoutDispatch.setView({ type: "favorites" })}
-        />
-        <SidebarItem
-          icon={<TrashIcon className="size-4" />}
-          label="Trash"
-          count={trashCount}
-          active={activeView.type === "trash"}
-          onClick={() => layoutDispatch.setView({ type: "trash" })}
-        />
+            <div className="writeme-aside-nav-content">
+                <SidebarItem
+                    icon={<FileTextIcon className="size-4" />}
+                    label="All Notes"
+                    count={allNotesCount}
+                    active={activeView.type === "all"}
+                    onClick={() => layoutDispatch.setView({ type: "all" })}
+                />
+                <SidebarItem
+                    icon={<StarIcon className="size-4" />}
+                    label="Favorites"
+                    count={favoritesCount}
+                    active={activeView.type === "favorites"}
+                    onClick={() => layoutDispatch.setView({ type: "favorites" })}
+                />
+                <SidebarItem
+                    icon={<TrashIcon className="size-4" />}
+                    label="Trash"
+                    count={trashCount}
+                    active={activeView.type === "trash"}
+                    onClick={() => layoutDispatch.setView({ type: "trash" })}
+                />
 
-        <SectionHeader label="Tags" />
-        {uniqueTags.map(({ tag, count }) => (
-          <SidebarItem
-            key={tag}
-            icon={<HashIcon className="size-3" />}
-            label={tag}
-            count={count}
-            active={activeView.type === "tag" && activeView.id === tag}
-            onClick={() => layoutDispatch.setView({ type: "tag", id: tag })}
-          />
-        ))}
+                <SectionHeader label="Tags" />
+                {uniqueTags.map(({ tag, count }) => (
+                    <SidebarItem
+                        key={tag}
+                        icon={<HashIcon className="size-3" />}
+                        label={tag}
+                        count={count}
+                        active={activeView.type === "tag" && activeView.id === tag}
+                        onClick={() => layoutDispatch.setView({ type: "tag", id: tag })}
+                    />
+                ))}
 
-        {/* 
+                {/*
             TODO: Implement Folder/Notebook Tree structure here.
             For now, we can list top-level folders or integrate the TreeView component if needed.
         */}
-      </div>
+            </div>
 
-      <div className="writeme-aside-nav-footer">
-        <SidebarItem
-          icon={<GearIcon className="size-4" />}
-          label="Settings"
-          active={false}
-          onClick={() => {
-            /* Navigate to settings */
-          }}
-        />
-      </div>
-    </div>
-  );
+            <div className="writeme-aside-nav-footer">
+                <SidebarItem
+                    icon={<GearIcon className="size-4" />}
+                    label="Settings"
+                    active={false}
+                    onClick={() => {
+                        /* Navigate to settings */
+                    }}
+                />
+            </div>
+        </div>
+    );
 };

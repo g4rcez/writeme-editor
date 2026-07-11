@@ -3,45 +3,42 @@ import { useNavigate } from "react-router-dom";
 import { type NoteWithTags } from "./use-note-list";
 
 export function useKeyboardNavigation(
-  notes: NoteWithTags[],
-  selectedNoteId: string | undefined,
-  containerRef: React.RefObject<HTMLElement>,
+    notes: NoteWithTags[],
+    selectedNoteId: string | undefined,
+    containerRef: React.RefObject<HTMLElement>,
 ) {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        notes.length === 0 ||
-        !containerRef.current?.contains(e.target as Node)
-      ) {
-        return;
-      }
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (notes.length === 0 || !containerRef.current?.contains(e.target as Node)) {
+                return;
+            }
 
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
 
-        const currentIndex = notes.findIndex((n) => n.id === selectedNoteId);
-        let nextIndex = 0;
+                const currentIndex = notes.findIndex((n) => n.id === selectedNoteId);
+                let nextIndex = 0;
 
-        if (currentIndex === -1) {
-          nextIndex = 0;
-        } else {
-          if (e.key === "ArrowDown") {
-            nextIndex = Math.min(currentIndex + 1, notes.length - 1);
-          } else {
-            nextIndex = Math.max(currentIndex - 1, 0);
-          }
-        }
+                if (currentIndex === -1) {
+                    nextIndex = 0;
+                } else {
+                    if (e.key === "ArrowDown") {
+                        nextIndex = Math.min(currentIndex + 1, notes.length - 1);
+                    } else {
+                        nextIndex = Math.max(currentIndex - 1, 0);
+                    }
+                }
 
-        const nextNote = notes[nextIndex];
-        if (nextNote) {
-          navigate(`/note/${nextNote.id}`);
-        }
-      }
-    };
+                const nextNote = notes[nextIndex];
+                if (nextNote) {
+                    navigate(`/note/${nextNote.id}`);
+                }
+            }
+        };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [notes, selectedNoteId, navigate, containerRef]);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [notes, selectedNoteId, navigate, containerRef]);
 }

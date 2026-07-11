@@ -8,7 +8,7 @@ A panel that slides into view inside an existing container — e.g. detail panel
 
 ```html
 <div class="t-panel-slide" data-open="false">
-  <!-- your panel contents -->
+    <!-- your panel contents -->
 </div>
 ```
 
@@ -23,23 +23,23 @@ the panel's own height).
 
 ## Tunable variables
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `--panel-open-dur` | `400ms` | sourced from `--p3-open-dur` |
-| `--panel-close-dur` | `350ms` | sourced from `--p3-close-dur` |
-| `--panel-translate-y` | `100px` | sourced from `--p3-translate-y` |
-| `--panel-blur` | `2px` | sourced from `--p3-blur` |
-| `--panel-ease` | `cubic-bezier(0.22, 1, 0.36, 1)` | sourced from `--p3-ease` |
+| Variable              | Default                          | Notes                           |
+| --------------------- | -------------------------------- | ------------------------------- |
+| `--panel-open-dur`    | `400ms`                          | sourced from `--p3-open-dur`    |
+| `--panel-close-dur`   | `350ms`                          | sourced from `--p3-close-dur`   |
+| `--panel-translate-y` | `100px`                          | sourced from `--p3-translate-y` |
+| `--panel-blur`        | `2px`                            | sourced from `--p3-blur`        |
+| `--panel-ease`        | `cubic-bezier(0.22, 1, 0.36, 1)` | sourced from `--p3-ease`        |
 
 The `:root` defaults below match the live tuning on [transitions.dev](https://transitions.dev). Drop them into your global stylesheet once — every transition in this skill reads from semantic names like these, so multiple transitions can share a single `:root` block.
 
 ```css
 :root {
-  --panel-open-dur: 400ms;
-  --panel-close-dur: 350ms;
-  --panel-translate-y: 100px;
-  --panel-blur: 2px;
-  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --panel-open-dur: 400ms;
+    --panel-close-dur: 350ms;
+    --panel-translate-y: 100px;
+    --panel-blur: 2px;
+    --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 ```
 
@@ -47,29 +47,31 @@ The `:root` defaults below match the live tuning on [transitions.dev](https://tr
 
 ```css
 .t-panel-slide {
-  transform: translateY(var(--panel-translate-y));
-  opacity: 0;
-  filter: blur(var(--panel-blur));
-  pointer-events: none;
-  transition:
-    transform var(--panel-close-dur) var(--panel-ease),
-    opacity   var(--panel-close-dur) var(--panel-ease),
-    filter    var(--panel-close-dur) var(--panel-ease);
-  will-change: transform, opacity, filter;
+    transform: translateY(var(--panel-translate-y));
+    opacity: 0;
+    filter: blur(var(--panel-blur));
+    pointer-events: none;
+    transition:
+        transform var(--panel-close-dur) var(--panel-ease),
+        opacity var(--panel-close-dur) var(--panel-ease),
+        filter var(--panel-close-dur) var(--panel-ease);
+    will-change: transform, opacity, filter;
 }
 .t-panel-slide[data-open="true"] {
-  transform: translateY(0);
-  opacity: 1;
-  filter: blur(0);
-  pointer-events: auto;
-  transition:
-    transform var(--panel-open-dur) var(--panel-ease),
-    opacity   var(--panel-open-dur) var(--panel-ease),
-    filter    var(--panel-open-dur) var(--panel-ease);
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+    pointer-events: auto;
+    transition:
+        transform var(--panel-open-dur) var(--panel-ease),
+        opacity var(--panel-open-dur) var(--panel-ease),
+        filter var(--panel-open-dur) var(--panel-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-panel-slide { transition: none !important; }
+    .t-panel-slide {
+        transition: none !important;
+    }
 }
 ```
 
@@ -78,4 +80,3 @@ The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet
 ## JavaScript orchestration
 
 None — pure CSS. Toggle the documented HTML attributes or class names from whatever already drives state in your app.
-

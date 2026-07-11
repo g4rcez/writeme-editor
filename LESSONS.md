@@ -19,37 +19,27 @@ ReferenceError: Cannot access 'flattenedNodes' before initialization
 ```tsx
 // BAD — useEffect referencing flattenedNodes appears before its useMemo
 useEffect(() => {
-  return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
-    const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
-    // ...
-  });
+    return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
+        const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
+        // ...
+    });
 }, [flattenedNodes]);
 
 const flattenedNodes = useMemo(() => {
-  // ← declared AFTER the effect above
-  return flattenVisibleNodes(
-    rootChildren,
-    expandedPaths,
-    childrenCache,
-    searchQuery,
-  );
+    // ← declared AFTER the effect above
+    return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, searchQuery);
 }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
 
 // GOOD — declare useMemo first, then the effects that use it
 const flattenedNodes = useMemo(() => {
-  return flattenVisibleNodes(
-    rootChildren,
-    expandedPaths,
-    childrenCache,
-    searchQuery,
-  );
+    return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, searchQuery);
 }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
 
 useEffect(() => {
-  return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
-    const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
-    // ...
-  });
+    return window.electronAPI.onContextMenuAction(({ action, filePath }) => {
+        const flatNode = flattenedNodes.find((n) => n.node.path === filePath);
+        // ...
+    });
 }, [flattenedNodes]);
 ```
 

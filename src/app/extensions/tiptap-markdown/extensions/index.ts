@@ -1,3 +1,9 @@
+import Bold from "./marks/bold";
+import Code from "./marks/code";
+import HTMLMark from "./marks/html";
+import Italic from "./marks/italic";
+import Link from "./marks/link";
+import Strike from "./marks/strike";
 import Blockquote from "./nodes/blockquote";
 import BulletList from "./nodes/bullet-list";
 import CodeBlock from "./nodes/code-block";
@@ -14,34 +20,27 @@ import TaskItem from "./nodes/task-item";
 import TaskList from "./nodes/task-list";
 import Text from "./nodes/text";
 
-import Bold from "./marks/bold";
-import Code from "./marks/code";
-import HTMLMark from "./marks/html";
-import Italic from "./marks/italic";
-import Link from "./marks/link";
-import Strike from "./marks/strike";
-
 export default [
-  Blockquote,
-  BulletList,
-  CodeBlock,
-  HardBreak,
-  Heading,
-  HorizontalRule,
-  HTMLNode,
-  Image,
-  ListItem,
-  OrderedList,
-  Paragraph,
-  Table,
-  TaskItem,
-  TaskList,
-  Text,
+    Blockquote,
+    BulletList,
+    CodeBlock,
+    HardBreak,
+    Heading,
+    HorizontalRule,
+    HTMLNode,
+    Image,
+    ListItem,
+    OrderedList,
+    Paragraph,
+    Table,
+    TaskItem,
+    TaskList,
+    Text,
 
-  Bold,
-  Code,
-  HTMLMark,
-  Italic,
-  Link,
-  Strike,
+    Bold,
+    Code,
+    HTMLMark,
+    Italic,
+    Link,
+    Strike,
 ];

@@ -1,84 +1,80 @@
-import { type AppSettings, SettingsSchema } from "./settings.schema";
+import { v7 as uuid } from "uuid";
 import { isElectron } from "../lib/is-electron";
-import { SettingsRepository } from "./repositories/shared/settings.repository";
-import { type ISettingsRepository } from "./repositories/entities/settings";
 import { DexieStorageAdapter } from "./repositories/adapters/dexie.adapter";
 import { ElectronStorageAdapter } from "./repositories/adapters/electron.adapter";
-import { v7 as uuid } from "uuid";
+import { type ISettingsRepository } from "./repositories/entities/settings";
+import { SettingsRepository } from "./repositories/shared/settings.repository";
+import { type AppSettings, SettingsSchema } from "./settings.schema";
 
 export type { AppSettings };
 export type EditorMode = AppSettings["editorMode"];
 
 export class SettingsService {
-  private static cache: AppSettings = SettingsSchema.parse({});
-  private static initialized = false;
-  private static _repo: ISettingsRepository | null = null;
+    private static cache: AppSettings = SettingsSchema.parse({});
+    private static initialized = false;
+    private static _repo: ISettingsRepository | null = null;
 
-  private static get repo(): ISettingsRepository {
-    if (!this._repo) {
-      this._repo = new SettingsRepository(
-        isElectron() ? new ElectronStorageAdapter() : new DexieStorageAdapter(),
-      );
-    }
-    return this._repo;
-  }
-
-  static async init(): Promise<void> {
-    if (this.initialized) return;
-    try {
-      const settings = await this.repo.getAll();
-      const settingsMap: Record<string, any> = {};
-      settings.forEach((s) => {
-        try {
-          settingsMap[s.name] = JSON.parse(s.value);
-        } catch (e) {
-          console.warn(`Failed to parse setting ${s.name}:`, e);
-          settingsMap[s.name] = s.value; // Fallback
+    private static get repo(): ISettingsRepository {
+        if (!this._repo) {
+            this._repo = new SettingsRepository(
+                isElectron() ? new ElectronStorageAdapter() : new DexieStorageAdapter(),
+            );
         }
-      });
-      this.cache = SettingsSchema.parse(settingsMap);
-      this.initialized = true;
-    } catch (error) {
-      console.error("Failed to load settings from DB:", error);
+        return this._repo;
     }
-  }
 
-  static load(): AppSettings {
-    if (!this.initialized) {
-      console.warn(
-        "SettingsService.load() called before init(). Returning defaults.",
-      );
+    static async init(): Promise<void> {
+        if (this.initialized) return;
+        try {
+            const settings = await this.repo.getAll();
+            const settingsMap: Record<string, any> = {};
+            settings.forEach((s) => {
+                try {
+                    settingsMap[s.name] = JSON.parse(s.value);
+                } catch (e) {
+                    console.warn(`Failed to parse setting ${s.name}:`, e);
+                    settingsMap[s.name] = s.value; // Fallback
+                }
+            });
+            this.cache = SettingsSchema.parse(settingsMap);
+            this.initialized = true;
+        } catch (error) {
+            console.error("Failed to load settings from DB:", error);
+        }
     }
-    return { ...this.cache };
-  }
 
-  static async save(settings: Partial<AppSettings>): Promise<AppSettings> {
-    const updated = SettingsSchema.parse({ ...this.cache, ...settings });
-    this.cache = updated;
-    const promises = Object.entries(settings).map(([key, value]) =>
-      this.persistSetting(key, value),
-    );
-    await Promise.all(promises);
-    return updated;
-  }
+    static load(): AppSettings {
+        if (!this.initialized) {
+            console.warn("SettingsService.load() called before init(). Returning defaults.");
+        }
+        return { ...this.cache };
+    }
 
-  private static async persistSetting(name: string, value: any): Promise<void> {
-    const stringValue = JSON.stringify(value);
-    const all = await this.repo.getAll();
-    const existing = all.find((s) => s.name === name);
-    const id = existing ? existing.id : uuid();
-    const now = new Date();
-    await this.repo.save({
-      id,
-      name,
-      value: stringValue,
-      type: existing?.type || "setting",
-      updatedAt: now,
-      createdAt: existing?.createdAt ? new Date(existing.createdAt) : now,
-    } as any);
-  }
+    static async save(settings: Partial<AppSettings>): Promise<AppSettings> {
+        const updated = SettingsSchema.parse({ ...this.cache, ...settings });
+        this.cache = updated;
+        const promises = Object.entries(settings).map(([key, value]) => this.persistSetting(key, value));
+        await Promise.all(promises);
+        return updated;
+    }
 
-  static get(): AppSettings {
-    return this.load();
-  }
+    private static async persistSetting(name: string, value: any): Promise<void> {
+        const stringValue = JSON.stringify(value);
+        const all = await this.repo.getAll();
+        const existing = all.find((s) => s.name === name);
+        const id = existing ? existing.id : uuid();
+        const now = new Date();
+        await this.repo.save({
+            id,
+            name,
+            value: stringValue,
+            type: existing?.type || "setting",
+            updatedAt: now,
+            createdAt: existing?.createdAt ? new Date(existing.createdAt) : now,
+        } as any);
+    }
+
+    static get(): AppSettings {
+        return this.load();
+    }
 }

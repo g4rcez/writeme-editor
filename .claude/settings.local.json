@@ -1,7 +1,5 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(rtk lint *)"
-    ]
-  }
+    "permissions": {
+        "allow": ["Bash(rtk lint *)"]
+    }
 }

@@ -118,7 +118,10 @@ function BasicDialog() {
     <form className="space-y-4">
         <div>
             <label className="text-sm font-medium text-foreground">Name</label>
-            <input type="text" className="w-full p-2 rounded-button-radius border border-border bg-background text-foreground" />
+            <input
+                type="text"
+                className="w-full p-2 rounded-button-radius border border-border bg-background text-foreground"
+            />
         </div>
     </form>
 </Modal>

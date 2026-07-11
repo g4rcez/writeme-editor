@@ -6,111 +6,111 @@ import { InvalidCurrencyError } from "./types";
  * Expanded list beyond the type-safe subset
  */
 const VALID_CURRENCY_CODES = new Set([
-  "USD",
-  "EUR",
-  "GBP",
-  "JPY",
-  "CNY",
-  "BRL",
-  "CAD",
-  "AUD",
-  "INR",
-  "MXN",
-  "CHF",
-  "SEK",
-  "NZD",
-  "SGD",
-  "HKD",
-  "KRW",
-  "TRY",
-  "RUB",
-  "ZAR",
-  "AED",
-  "ARS",
-  "CLP",
-  "COP",
-  "CZK",
-  "DKK",
-  "HUF",
-  "IDR",
-  "ILS",
-  "MYR",
-  "NOK",
-  "PHP",
-  "PLN",
-  "THB",
-  "VND",
-  "SAR",
-  "QAR",
-  "KWD",
-  "BHD",
-  "OMR",
-  "JOD",
-  "EGP",
-  "MAD",
-  "NGN",
-  "KES",
-  "GHS",
-  "XOF",
-  "XAF",
-  "PKR",
-  "BDT",
-  "LKR",
-  "NPR",
-  "MMK",
-  "KHR",
-  "LAK",
-  "TWD",
-  "BGN",
-  "RON",
-  "HRK",
-  "ISK",
-  "UAH",
-  "GEL",
-  "AMD",
-  "AZN",
-  "KZT",
-  "UZS",
-  "TJS",
-  "KGS",
-  "TMT",
-  "BYN",
-  "MDL",
-  "ALL",
-  "MKD",
-  "RSD",
-  "BAM",
-  "TND",
-  "LYD",
-  "DZD",
-  "IQD",
-  "SYP",
-  "LBP",
-  "YER",
-  "AFN",
-  "IRR",
-  "ANG",
-  "AWG",
-  "BBD",
-  "BMD",
-  "BSD",
-  "BZD",
-  "DOP",
-  "GTQ",
-  "HTG",
-  "JMD",
-  "KYD",
-  "PAB",
-  "TTD",
-  "UYU",
-  "VES",
-  "BOB",
-  "PYG",
-  "PEN",
-  "CRC",
-  "NIO",
-  "HNL",
-  "SVC",
+    "USD",
+    "EUR",
+    "GBP",
+    "JPY",
+    "CNY",
+    "BRL",
+    "CAD",
+    "AUD",
+    "INR",
+    "MXN",
+    "CHF",
+    "SEK",
+    "NZD",
+    "SGD",
+    "HKD",
+    "KRW",
+    "TRY",
+    "RUB",
+    "ZAR",
+    "AED",
+    "ARS",
+    "CLP",
+    "COP",
+    "CZK",
+    "DKK",
+    "HUF",
+    "IDR",
+    "ILS",
+    "MYR",
+    "NOK",
+    "PHP",
+    "PLN",
+    "THB",
+    "VND",
+    "SAR",
+    "QAR",
+    "KWD",
+    "BHD",
+    "OMR",
+    "JOD",
+    "EGP",
+    "MAD",
+    "NGN",
+    "KES",
+    "GHS",
+    "XOF",
+    "XAF",
+    "PKR",
+    "BDT",
+    "LKR",
+    "NPR",
+    "MMK",
+    "KHR",
+    "LAK",
+    "TWD",
+    "BGN",
+    "RON",
+    "HRK",
+    "ISK",
+    "UAH",
+    "GEL",
+    "AMD",
+    "AZN",
+    "KZT",
+    "UZS",
+    "TJS",
+    "KGS",
+    "TMT",
+    "BYN",
+    "MDL",
+    "ALL",
+    "MKD",
+    "RSD",
+    "BAM",
+    "TND",
+    "LYD",
+    "DZD",
+    "IQD",
+    "SYP",
+    "LBP",
+    "YER",
+    "AFN",
+    "IRR",
+    "ANG",
+    "AWG",
+    "BBD",
+    "BMD",
+    "BSD",
+    "BZD",
+    "DOP",
+    "GTQ",
+    "HTG",
+    "JMD",
+    "KYD",
+    "PAB",
+    "TTD",
+    "UYU",
+    "VES",
+    "BOB",
+    "PYG",
+    "PEN",
+    "CRC",
+    "NIO",
+    "HNL",
+    "SVC",
 ]);
 
 /**
@@ -124,31 +124,31 @@ const VALID_CURRENCY_CODES = new Set([
  * @returns Parsed currency data or null if invalid format
  */
 export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
-  const normalized = expr.trim().replace(/\s+/g, " ");
-  const pattern = /^([\d,]+\.?\d*)\s+([A-Z]{3})\s+(to|in)\s+([A-Z]{3})$/i;
-  const match = normalized.match(pattern);
-  if (!match) {
-    return null;
-  }
-  const [, amountStr, from, , to] = match;
-  if (!amountStr || !from || !to) return null;
-  const amount = parseFloat(amountStr.replace(/,/g, ""));
-  if (isNaN(amount) || amount <= 0) {
-    return null;
-  }
-  const fromCode = normalizeCurrencyCode(from);
-  const toCode = normalizeCurrencyCode(to);
+    const normalized = expr.trim().replace(/\s+/g, " ");
+    const pattern = /^([\d,]+\.?\d*)\s+([A-Z]{3})\s+(to|in)\s+([A-Z]{3})$/i;
+    const match = normalized.match(pattern);
+    if (!match) {
+        return null;
+    }
+    const [, amountStr, from, , to] = match;
+    if (!amountStr || !from || !to) return null;
+    const amount = parseFloat(amountStr.replace(/,/g, ""));
+    if (isNaN(amount) || amount <= 0) {
+        return null;
+    }
+    const fromCode = normalizeCurrencyCode(from);
+    const toCode = normalizeCurrencyCode(to);
 
-  // Validate currency codes
-  if (!isValidCurrencyCode(fromCode) || !isValidCurrencyCode(toCode)) {
-    return null;
-  }
+    // Validate currency codes
+    if (!isValidCurrencyCode(fromCode) || !isValidCurrencyCode(toCode)) {
+        return null;
+    }
 
-  return {
-    amount,
-    from: fromCode,
-    to: toCode,
-  };
+    return {
+        amount,
+        from: fromCode,
+        to: toCode,
+    };
 }
 
 /**
@@ -158,8 +158,8 @@ export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
  * @returns true if valid, false otherwise
  */
 export function isValidCurrencyCode(code: string): boolean {
-  const normalized = normalizeCurrencyCode(code);
-  return VALID_CURRENCY_CODES.has(normalized);
+    const normalized = normalizeCurrencyCode(code);
+    return VALID_CURRENCY_CODES.has(normalized);
 }
 
 /**
@@ -169,7 +169,7 @@ export function isValidCurrencyCode(code: string): boolean {
  * @returns Normalized currency code
  */
 export function normalizeCurrencyCode(code: string): string {
-  return code.trim().toUpperCase();
+    return code.trim().toUpperCase();
 }
 
 /**
@@ -179,9 +179,9 @@ export function normalizeCurrencyCode(code: string): string {
  * @throws InvalidCurrencyError if code is invalid
  */
 export function validateCurrencyCode(code: string): void {
-  if (!isValidCurrencyCode(code)) {
-    throw new InvalidCurrencyError(code);
-  }
+    if (!isValidCurrencyCode(code)) {
+        throw new InvalidCurrencyError(code);
+    }
 }
 
 /**
@@ -190,4 +190,4 @@ export function validateCurrencyCode(code: string): void {
  * @returns Array of supported currency codes
  */
 export const getSupportedCurrencies = (): string[] =>
-  Array.from(VALID_CURRENCY_CODES).toSorted((a, b) => a.localeCompare(b));
+    Array.from(VALID_CURRENCY_CODES).toSorted((a, b) => a.localeCompare(b));

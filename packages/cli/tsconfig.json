@@ -1,17 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "lib": ["ESNext", "DOM"],
-    "types": ["bun-types", "node"],
-    "paths": {
-      "solver": ["../solver/src/index.ts"],
-      "solver/*": ["../solver/src/*"]
-    }
-  },
-  "include": ["src", "../solver/src"]
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "lib": ["ESNext", "DOM"],
+        "types": ["bun-types", "node"],
+        "paths": {
+            "solver": ["../solver/src/index.ts"],
+            "solver/*": ["../solver/src/*"]
+        }
+    },
+    "include": ["src", "../solver/src"]
 }

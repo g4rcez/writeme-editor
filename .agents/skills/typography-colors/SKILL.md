@@ -12,6 +12,7 @@ description: Use when styling editor content elements — paragraphs, headings/t
 ## When to Use
 
 **Use for:** Any color applied to editor-rendered content elements:
+
 - Body text / prose → `paragraph`
 - Headings, prominent labels → `title`
 - Callout blocks → `callout`
@@ -22,22 +23,22 @@ description: Use when styling editor content elements — paragraphs, headings/t
 
 ## Token Table
 
-| Element | Resolved Token | Use Case |
-|---------|---------------|----------|
-| `paragraph` | `foreground` | Body text, default prose |
-| `title` | `emphasis.DEFAULT` | Headings, prominent labels |
-| `callout` | `secondary.DEFAULT` | Callout blocks |
-| `hashtag` | `primary.DEFAULT` | Inline hashtag tags |
-| `link` | `primary.DEFAULT` | Hyperlinks |
+| Element     | Resolved Token      | Use Case                   |
+| ----------- | ------------------- | -------------------------- |
+| `paragraph` | `foreground`        | Body text, default prose   |
+| `title`     | `emphasis.DEFAULT`  | Headings, prominent labels |
+| `callout`   | `secondary.DEFAULT` | Callout blocks             |
+| `hashtag`   | `primary.DEFAULT`   | Inline hashtag tags        |
+| `link`      | `primary.DEFAULT`   | Hyperlinks                 |
 
 Each element supports five states:
 
-| State | Suffix | Example |
-|-------|--------|---------|
-| Default | *(none)* | `text-typography-paragraph` |
-| Danger | `-danger` | `text-typography-callout-danger` |
-| Warning | `-warn` | `bg-typography-callout-warn` |
-| Info | `-info` | `border-typography-link-info` |
+| State   | Suffix     | Example                           |
+| ------- | ---------- | --------------------------------- |
+| Default | _(none)_   | `text-typography-paragraph`       |
+| Danger  | `-danger`  | `text-typography-callout-danger`  |
+| Warning | `-warn`    | `bg-typography-callout-warn`      |
+| Info    | `-info`    | `border-typography-link-info`     |
 | Success | `-success` | `text-typography-hashtag-success` |
 
 ## Class Pattern

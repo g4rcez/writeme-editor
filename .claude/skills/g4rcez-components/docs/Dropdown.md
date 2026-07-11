@@ -57,7 +57,9 @@ function SimpleDropdown() {
         <Dropdown trigger={<Button theme="primary">Actions</Button>}>
             <div className="flex min-w-48 flex-col py-1">
                 <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">Edit</button>
-                <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">Duplicate</button>
+                <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">
+                    Duplicate
+                </button>
                 <hr className="border-border my-1" />
                 <button className="w-full px-4 py-2 text-left text-danger hover:bg-floating-hover">Delete</button>
             </div>
@@ -86,7 +88,9 @@ function AccountDropdown() {
             arrow
         >
             <div className="flex min-w-48 flex-col py-1">
-                <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">Profile Settings</button>
+                <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">
+                    Profile Settings
+                </button>
                 <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">Billing</button>
                 <button className="w-full px-4 py-2 text-left text-foreground hover:bg-floating-hover">Sign Out</button>
             </div>
@@ -106,13 +110,20 @@ function ControlledDropdown() {
 
     return (
         <Dropdown
-            trigger={<button className="px-4 py-2 rounded-button-radius bg-muted text-foreground">{isOpen ? "Close" : "Open"} Menu</button>}
+            trigger={
+                <button className="px-4 py-2 rounded-button-radius bg-muted text-foreground">
+                    {isOpen ? "Close" : "Open"} Menu
+                </button>
+            }
             open={isOpen}
             onChange={setIsOpen}
         >
             <div className="min-w-48 p-4">
                 <p className="text-foreground">Controlled dropdown content</p>
-                <button onClick={() => setIsOpen(false)} className="mt-2 px-3 py-1 bg-primary text-primary-foreground rounded-button-radius text-sm">
+                <button
+                    onClick={() => setIsOpen(false)}
+                    className="mt-2 px-3 py-1 bg-primary text-primary-foreground rounded-button-radius text-sm"
+                >
                     Close
                 </button>
             </div>
@@ -155,10 +166,15 @@ function FilterDropdown() {
                     </select>
                 </div>
                 <div className="flex gap-2 pt-2">
-                    <button onClick={() => setStatus("")} className="px-3 py-1 text-sm rounded-button-radius border border-border text-foreground">
+                    <button
+                        onClick={() => setStatus("")}
+                        className="px-3 py-1 text-sm rounded-button-radius border border-border text-foreground"
+                    >
                         Clear
                     </button>
-                    <button className="px-3 py-1 text-sm rounded-button-radius bg-primary text-primary-foreground">Apply</button>
+                    <button className="px-3 py-1 text-sm rounded-button-radius bg-primary text-primary-foreground">
+                        Apply
+                    </button>
                 </div>
             </div>
         </Dropdown>

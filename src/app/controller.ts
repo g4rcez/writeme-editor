@@ -1,25 +1,23 @@
 import { isElectron } from "../lib/is-electron";
 
 interface IController {
-  clipboard: () => Promise<string>;
+    clipboard: () => Promise<string>;
 }
 
 class BrowserController implements IController {
-  public constructor() {}
+    public constructor() {}
 
-  public async clipboard() {
-    const text = await navigator.clipboard.readText();
-    return text;
-  }
+    public async clipboard() {
+        const text = await navigator.clipboard.readText();
+        return text;
+    }
 }
 
 class NativeController implements IController {
-  public async clipboard() {
-    const content = await window.electronAPI.notes.clipboard();
-    return content;
-  }
+    public async clipboard() {
+        const content = await window.electronAPI.notes.clipboard();
+        return content;
+    }
 }
 
-export const controller = isElectron()
-  ? new NativeController()
-  : new BrowserController();
+export const controller = isElectron() ? new NativeController() : new BrowserController();

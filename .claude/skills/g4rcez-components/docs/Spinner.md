@@ -65,7 +65,11 @@ Tokens this component reads. Customize by overriding these CSS variables in your
 ### Spinner Inside a Button
 
 ```tsx
-<button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-button-radius">
+<button
+    type="submit"
+    disabled={isSubmitting}
+    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-button-radius"
+>
     {isSubmitting && <Spinner className="size-4 border-2 border-primary-foreground border-b-transparent" />}
     {isSubmitting ? "Saving…" : "Save"}
 </button>

@@ -1,187 +1,177 @@
-import React, { useEffect, useState } from "react";
-import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
+import { Modal } from "@g4rcez/components";
 import { ClockIcon } from "@phosphor-icons/react/dist/csr/Clock";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
+import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { clsx } from "clsx";
-import { useUIStore } from "@/store/ui.store";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { useGlobalStore, repositories } from "@/store/global.store";
 import { Note } from "@/store/note";
-import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { Modal } from "@g4rcez/components";
-import { useNavigate } from "react-router-dom";
+import { useUIStore } from "@/store/ui.store";
 
 type SidebarSection = "recent" | "all";
 
 type NoteListProps = {
-  notes: Note[];
-  currentNoteId?: string;
-  onSelect: (note: Note) => void;
-  getDisplayPath: (note: Note) => string;
+    notes: Note[];
+    currentNoteId?: string;
+    onSelect: (note: Note) => void;
+    getDisplayPath: (note: Note) => string;
 };
 
-const NoteList = React.memo(
-  ({ notes, currentNoteId, onSelect, getDisplayPath }: NoteListProps) => (
+const NoteList = React.memo(({ notes, currentNoteId, onSelect, getDisplayPath }: NoteListProps) => (
     <ul className="space-y-0.5">
-      {notes.map((note) => {
-        const isActive = note.id === currentNoteId;
-        const displayPath = getDisplayPath(note);
-        return (
-          <li key={note.id}>
-            <button
-              onClick={() => onSelect(note)}
-              className={clsx(
-                "w-full flex flex-col px-2 py-1.5 rounded-md text-left transition-colors",
-                isActive
-                  ? "bg-primary/10 text-foreground"
-                  : "text-foreground/70 hover:bg-muted/30 hover:text-foreground",
-              )}
-            >
-              <span className="text-sm truncate">
-                {note.title || "Untitled"}
-              </span>
-              {displayPath && (
-                <span className="text-xs text-foreground/40 truncate">
-                  {displayPath}
-                </span>
-              )}
-            </button>
-          </li>
-        );
-      })}
+        {notes.map((note) => {
+            const isActive = note.id === currentNoteId;
+            const displayPath = getDisplayPath(note);
+            return (
+                <li key={note.id}>
+                    <button
+                        onClick={() => onSelect(note)}
+                        className={clsx(
+                            "w-full flex flex-col px-2 py-1.5 rounded-md text-left transition-colors",
+                            isActive
+                                ? "bg-primary/10 text-foreground"
+                                : "text-foreground/70 hover:bg-muted/30 hover:text-foreground",
+                        )}
+                    >
+                        <span className="text-sm truncate">{note.title || "Untitled"}</span>
+                        {displayPath && <span className="text-xs text-foreground/40 truncate">{displayPath}</span>}
+                    </button>
+                </li>
+            );
+        })}
     </ul>
-  ),
-);
+));
 
 NoteList.displayName = "NoteList";
 
 export const Sidebar = () => {
-  const [uiState, uiDispatch] = useUIStore();
-  const [state, dispatch] = useGlobalStore();
-  const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
-  const [isResizing, setIsResizing] = useState(false);
-  const navigate = useNavigate();
+    const [uiState, uiDispatch] = useUIStore();
+    const [state, dispatch] = useGlobalStore();
+    const [activeSection, setActiveSection] = useState<SidebarSection>("recent");
+    const [isResizing, setIsResizing] = useState(false);
+    const navigate = useNavigate();
 
-  const storageDir = state.directory || "";
+    const storageDir = state.directory || "";
 
-  useEffect(() => {
-    const loadNotes = async () => {
-      const allNotes = await repositories.notes.getAll();
-      dispatch.notes(allNotes);
-      dispatch.loadRecentNotes(10);
+    useEffect(() => {
+        const loadNotes = async () => {
+            const allNotes = await repositories.notes.getAll();
+            dispatch.notes(allNotes);
+            dispatch.loadRecentNotes(10);
+        };
+        loadNotes();
+    }, [dispatch, state.directory]);
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = e.clientX;
+            dispatch.setSidebarWidth(newWidth);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizing, uiDispatch]);
+
+    const openNote = (note: Note) => {
+        navigate(`/note/${note.id}`);
     };
-    loadNotes();
-  }, [dispatch, state.directory]);
 
-  useEffect(() => {
-    if (!isResizing) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = e.clientX;
-      dispatch.setSidebarWidth(newWidth);
+    const getDisplayPath = (note: Note) => {
+        if (!note.filePath || !storageDir) return "";
+        const relativePath = getRelativePath(storageDir, note.filePath);
+        const folderPath = relativePath.includes("/") ? relativePath.substring(0, relativePath.lastIndexOf("/")) : "";
+        return formatSimplifiedPath(folderPath);
     };
 
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing, uiDispatch]);
-
-  const openNote = (note: Note) => {
-    navigate(`/note/${note.id}`);
-  };
-
-  const getDisplayPath = (note: Note) => {
-    if (!note.filePath || !storageDir) return "";
-    const relativePath = getRelativePath(storageDir, note.filePath);
-    const folderPath = relativePath.includes("/")
-      ? relativePath.substring(0, relativePath.lastIndexOf("/"))
-      : "";
-    return formatSimplifiedPath(folderPath);
-  };
-
-  return (
-    <Modal
-      type="drawer"
-      position="left"
-      title="Quick settings"
-      open={uiState.sidebarOpen}
-      onChange={uiDispatch.toggleSidebar}
-    >
-      <aside className="flex flex-col h-full">
-        <div className="flex border-b border-border/50">
-          <button
-            onClick={() => setActiveSection("recent")}
-            className={clsx(
-              "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
-              activeSection === "recent"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-foreground/50 hover:text-foreground",
-            )}
-            title="Recent notes"
-          >
-            <ClockIcon className="w-3.5 h-3.5" />
-            <span>Recent</span>
-          </button>
-          <button
-            onClick={() => setActiveSection("all")}
-            className={clsx(
-              "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
-              activeSection === "all"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-foreground/50 hover:text-foreground",
-            )}
-            title="All notes"
-          >
-            <FileTextIcon className="w-3.5 h-3.5" />
-            <span>All</span>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto flex-1 p-2">
-          {activeSection === "recent" && (
-            <NoteList
-              onSelect={openNote}
-              notes={state.recentNotes}
-              currentNoteId={state.note?.id}
-              getDisplayPath={getDisplayPath}
-            />
-          )}
-
-          {activeSection === "all" && (
-            <NoteList
-              notes={state.notes}
-              onSelect={openNote}
-              currentNoteId={state.note?.id}
-              getDisplayPath={getDisplayPath}
-            />
-          )}
-          {state.notes.length === 0 && (
-            <div className="flex flex-col justify-center items-center p-4 h-full text-center text-foreground/50">
-              <FileTextIcon className="mb-2 w-8 h-8 opacity-50" />
-              <p className="text-sm">No notes yet</p>
-              <p className="text-xs">Create one with ⌘N</p>
-            </div>
-          )}
-        </div>
-        <div
-          onMouseDown={() => setIsResizing(true)}
-          className={clsx(
-            "absolute top-0 right-0 w-1 h-full cursor-col-resize group",
-            isResizing && "bg-primary/50",
-          )}
+    return (
+        <Modal
+            type="drawer"
+            position="left"
+            title="Quick settings"
+            open={uiState.sidebarOpen}
+            onChange={uiDispatch.toggleSidebar}
         >
-          <div className="absolute right-0 top-1/2 opacity-0 transition-opacity -translate-y-1/2 group-hover:opacity-100">
-            <DotsSixVerticalIcon className="w-3 h-3 text-foreground/30" />
-          </div>
-        </div>
-      </aside>
-    </Modal>
-  );
+            <aside className="flex flex-col h-full">
+                <div className="flex border-b border-border/50">
+                    <button
+                        onClick={() => setActiveSection("recent")}
+                        className={clsx(
+                            "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
+                            activeSection === "recent"
+                                ? "text-foreground border-b-2 border-primary"
+                                : "text-foreground/50 hover:text-foreground",
+                        )}
+                        title="Recent notes"
+                    >
+                        <ClockIcon className="w-3.5 h-3.5" />
+                        <span>Recent</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveSection("all")}
+                        className={clsx(
+                            "flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs transition-colors",
+                            activeSection === "all"
+                                ? "text-foreground border-b-2 border-primary"
+                                : "text-foreground/50 hover:text-foreground",
+                        )}
+                        title="All notes"
+                    >
+                        <FileTextIcon className="w-3.5 h-3.5" />
+                        <span>All</span>
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="overflow-y-auto flex-1 p-2">
+                    {activeSection === "recent" && (
+                        <NoteList
+                            onSelect={openNote}
+                            notes={state.recentNotes}
+                            currentNoteId={state.note?.id}
+                            getDisplayPath={getDisplayPath}
+                        />
+                    )}
+
+                    {activeSection === "all" && (
+                        <NoteList
+                            notes={state.notes}
+                            onSelect={openNote}
+                            currentNoteId={state.note?.id}
+                            getDisplayPath={getDisplayPath}
+                        />
+                    )}
+                    {state.notes.length === 0 && (
+                        <div className="flex flex-col justify-center items-center p-4 h-full text-center text-foreground/50">
+                            <FileTextIcon className="mb-2 w-8 h-8 opacity-50" />
+                            <p className="text-sm">No notes yet</p>
+                            <p className="text-xs">Create one with ⌘N</p>
+                        </div>
+                    )}
+                </div>
+                <div
+                    onMouseDown={() => setIsResizing(true)}
+                    className={clsx(
+                        "absolute top-0 right-0 w-1 h-full cursor-col-resize group",
+                        isResizing && "bg-primary/50",
+                    )}
+                >
+                    <div className="absolute right-0 top-1/2 opacity-0 transition-opacity -translate-y-1/2 group-hover:opacity-100">
+                        <DotsSixVerticalIcon className="w-3 h-3 text-foreground/30" />
+                    </div>
+                </div>
+            </aside>
+        </Modal>
+    );
 };

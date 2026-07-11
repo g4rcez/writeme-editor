@@ -138,7 +138,9 @@ const stylesDark = createTokenStyles(defaultDarkTheme, { ...tokenRemap, name: "d
 `TokenRemap` transforms each design token value before it is emitted as a CSS custom property.
 
 ```ts
-export type TokenRemap = Partial<Record<"colors" | "spacing" | "rounded" | "customTokens" | "zIndex", (t: Token) => Token> & { name: string }>;
+export type TokenRemap = Partial<
+    Record<"colors" | "spacing" | "rounded" | "customTokens" | "zIndex", (t: Token) => Token> & { name: string }
+>;
 ```
 
 Stripping `hsla(…)` in the colors transformer is required for Tailwind opacity utilities (`bg-primary/50`) — they expect raw channel values (`210 40% 60%`), not a wrapped `hsla(210 40% 60%)`.

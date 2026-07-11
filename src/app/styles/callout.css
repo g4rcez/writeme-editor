@@ -1,51 +1,53 @@
+@reference "../../tailwind.css";
+
 .callout {
-  @apply border p-4 my-4 rounded relative bg-card-background;
+    @apply relative my-4 rounded border bg-card-background p-4;
 }
 
 .callout-info {
-  @apply bg-alert-info-bg text-alert-info-text border-alert-info-border;
+    @apply border-alert-info-border bg-alert-info-bg text-alert-info-text;
 }
 
 .callout-warning {
-  @apply bg-alert-warn-bg text-alert-warn-text border-alert-warn-border;
+    @apply border-alert-warn-border bg-alert-warn-bg text-alert-warn-text;
 }
 
 .callout-danger {
-  @apply bg-alert-danger-bg text-alert-danger-text border-alert-danger-border;
+    @apply border-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
 }
 
 .callout-note {
-  @apply bg-alert-info-bg text-alert-info-text border-alert-info-border;
+    @apply border-alert-info-border bg-alert-info-bg text-alert-info-text;
 }
 
 .callout-tip {
-  @apply bg-alert-success-bg text-alert-success-text border-alert-success-border;
+    @apply border-alert-success-border bg-alert-success-bg text-alert-success-text;
 }
 
 .callout-important {
-  @apply bg-alert-primary-bg text-alert-primary-text border-alert-primary-border;
+    @apply border-alert-primary-border bg-alert-primary-bg text-alert-primary-text;
 }
 
 .callout-caution {
-  @apply bg-alert-danger-bg text-alert-danger-text border-alert-danger-border;
+    @apply border-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
 }
 
 .callout-success {
-  @apply bg-alert-success-bg text-alert-success-text border-alert-success-border;
+    @apply border-alert-success-border bg-alert-success-bg text-alert-success-text;
 }
 
 .callout-primary {
-  @apply bg-alert-primary-bg text-alert-primary-text border-alert-primary-border;
+    @apply border-alert-primary-border bg-alert-primary-bg text-alert-primary-text;
 }
 
 .callout-default {
-  @apply bg-alert-muted-bg text-alert-muted-text border-alert-muted-border;
+    @apply border-alert-muted-border bg-alert-muted-bg text-alert-muted-text;
 }
 
 .callout p:first-child {
-  @apply mt-0;
+    @apply mt-0;
 }
 
 .callout p:last-child {
-  @apply mb-0;
+    @apply mb-0;
 }

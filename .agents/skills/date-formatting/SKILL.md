@@ -15,22 +15,21 @@ All dates displayed to the user must use `Dates.yearMonthDay()` from `@/lib/date
 import { Dates } from "@/lib/dates";
 
 // Date object
-Dates.yearMonthDay(note.createdAt)          // "2026-03-30"
+Dates.yearMonthDay(note.createdAt); // "2026-03-30"
 
 // String field (repository returns strings for date columns)
 Dates.yearMonthDay(new Date(note.updatedAt)) // "2026-03-30"
-
 // Combined date + time
-`${Dates.yearMonthDay(d)} ${Dates.time(d)}`  // "2026-03-30 14:22"
+`${Dates.yearMonthDay(d)} ${Dates.time(d)}`; // "2026-03-30 14:22"
 ```
 
 ## Available formatters in `Dates`
 
-| Method | Output | Use for |
-|---|---|---|
-| `Dates.yearMonthDay(d)` | `2026-03-30` | Any date-only display |
-| `Dates.isoDate(d)` | `2026-03-30` | Same as above (aliases) |
-| `Dates.time(d)` | `14:22` | Time-only display |
+| Method                  | Output       | Use for                 |
+| ----------------------- | ------------ | ----------------------- |
+| `Dates.yearMonthDay(d)` | `2026-03-30` | Any date-only display   |
+| `Dates.isoDate(d)`      | `2026-03-30` | Same as above (aliases) |
+| `Dates.time(d)`         | `14:22`      | Time-only display       |
 
 Both `yearMonthDay` and `isoDate` produce identical output — prefer `yearMonthDay` in UI and `isoDate` in filenames/exports.
 
@@ -38,12 +37,12 @@ Both `yearMonthDay` and `isoDate` produce identical output — prefer `yearMonth
 
 ```ts
 // BAD — locale-dependent
-new Date(note.updatedAt).toLocaleDateString()
-d.toLocaleDateString()
-d.toLocaleString()
+new Date(note.updatedAt).toLocaleDateString();
+d.toLocaleDateString();
+d.toLocaleString();
 
 // BAD — verbose, reinvents what Dates already does
-format(d, "yyyy-MM-dd")  // use Dates.yearMonthDay(d) instead
+format(d, "yyyy-MM-dd"); // use Dates.yearMonthDay(d) instead
 ```
 
 ## When the value might be a string
@@ -51,11 +50,11 @@ format(d, "yyyy-MM-dd")  // use Dates.yearMonthDay(d) instead
 Repository date fields come back as strings from SQLite. Always wrap before formatting:
 
 ```ts
-Dates.yearMonthDay(new Date(row.createdAt))
+Dates.yearMonthDay(new Date(row.createdAt));
 ```
 
 If the value might be null/undefined, guard first:
 
 ```ts
-row.lastSynced ? Dates.yearMonthDay(new Date(row.lastSynced)) : "—"
+row.lastSynced ? Dates.yearMonthDay(new Date(row.lastSynced)) : "—";
 ```

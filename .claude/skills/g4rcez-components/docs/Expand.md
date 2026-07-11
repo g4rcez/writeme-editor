@@ -54,10 +54,14 @@ import { Expand } from "@g4rcez/components/expand";
         <h3 className="font-bold mb-2 text-foreground">Create New</h3>
         <ul className="space-y-2">
             <li>
-                <button className="w-full rounded-button-radius p-2 text-left text-foreground hover:bg-muted">Project</button>
+                <button className="w-full rounded-button-radius p-2 text-left text-foreground hover:bg-muted">
+                    Project
+                </button>
             </li>
             <li>
-                <button className="w-full rounded-button-radius p-2 text-left text-foreground hover:bg-muted">Task</button>
+                <button className="w-full rounded-button-radius p-2 text-left text-foreground hover:bg-muted">
+                    Task
+                </button>
             </li>
         </ul>
     </div>

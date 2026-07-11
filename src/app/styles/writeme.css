@@ -1,228 +1,230 @@
+@reference "../../tailwind.css";
+
 .writeme-aside-panel {
-  @apply flex-shrink-0 print:hidden backdrop-blur-sm overflow-hidden;
-  background-color: var(--var-color-background);
-  transition:
-    width 300ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    @apply flex-shrink-0 overflow-hidden backdrop-blur-sm print:hidden;
+    background-color: var(--var-color-background);
+    transition:
+        width 300ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .writeme-aside-panel[data-resizing] {
-  transition: none;
+    transition: none;
 }
 
 .writeme-aside-panel--open {
-  @apply border-r opacity-100;
-  width: var(--panel-w);
-  border-color: hsla(var(--border), 0.2);
+    @apply border-r opacity-100;
+    width: var(--panel-w);
+    border-color: hsla(var(--border), 0.2);
 }
 
 .writeme-aside-panel--collapsed {
-  @apply w-0 border-r-0 opacity-0;
+    @apply w-0 border-r-0 opacity-0;
 }
 
 .writeme-aside-panel-inner {
-  @apply flex flex-col flex-1 h-full min-h-full print:hidden;
-  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    @apply flex h-full min-h-full flex-1 flex-col print:hidden;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .writeme-aside-panel[data-resizing] .writeme-aside-panel-inner {
-  transition: none;
+    transition: none;
 }
 
 .writeme-aside-resize {
-  @apply z-10 flex-shrink-0 -ml-1 w-1 cursor-col-resize transition-colors focus-visible:bg-primary/50 focus-visible:outline-none print:hidden;
+    @apply z-10 -ml-1 w-1 flex-shrink-0 cursor-col-resize transition-colors focus-visible:bg-primary/50 focus-visible:outline-none print:hidden;
 }
 
 .writeme-aside-resize:hover {
-  background-color: hsla(var(--primary-DEFAULT), 0.5);
+    background-color: hsla(var(--primary-DEFAULT), 0.5);
 }
 
 .writeme-aside-collapsed-toggle {
-  @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
+    @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
 }
 
 .writeme-aside-activity-bar {
-  @apply flex flex-col items-center py-2 h-full border-r bg-background w-10;
-  border-color: hsla(var(--border), 0.4);
+    @apply flex h-full w-10 flex-col items-center border-r bg-background py-2;
+    border-color: hsla(var(--border), 0.4);
 }
 
 .writeme-aside-activity-icons {
-  @apply flex flex-col flex-1 gap-1 w-full;
+    @apply flex w-full flex-1 flex-col gap-1;
 }
 
 .writeme-aside-activity-icon {
-  @apply relative flex items-center justify-center size-10 transition-colors duration-200;
+    @apply relative flex size-10 items-center justify-center transition-colors duration-200;
 }
 
 .writeme-aside-activity-icon--active {
-  @apply text-primary;
+    @apply text-primary;
 }
 
 .writeme-aside-activity-icon--inactive {
-  @apply text-foreground/50 hover:text-foreground;
+    @apply text-foreground/50 hover:text-foreground;
 }
 
 .writeme-aside-activity-indicator {
-  @apply absolute left-0 w-0.5 h-8 bg-primary;
+    @apply absolute left-0 h-8 w-0.5 bg-primary;
 }
 
 .writeme-aside-activity-badge {
-  @apply flex absolute top-2 right-2 justify-center items-center px-1 h-4 font-bold rounded-full shadow-sm min-w-[16px] bg-primary text-[10px] text-primary-foreground;
+    @apply absolute top-2 right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm;
 }
 
 .writeme-aside-activity-bottom {
-  @apply flex flex-col gap-1 mt-auto w-full;
+    @apply mt-auto flex w-full flex-col gap-1;
 }
 
 @media (pointer: coarse) {
-  .writeme-aside-activity-bar {
-    @apply w-11;
-  }
+    .writeme-aside-activity-bar {
+        @apply w-11;
+    }
 
-  .writeme-aside-activity-icon {
-    @apply size-11;
-  }
+    .writeme-aside-activity-icon {
+        @apply size-11;
+    }
 }
 
 .writeme-aside-nav {
-  @apply flex flex-col h-full w-full backdrop-blur-xl border-r;
-  border-color: hsla(var(--border), 0.4);
+    @apply flex h-full w-full flex-col border-r backdrop-blur-xl;
+    border-color: hsla(var(--border), 0.4);
 }
 
 .writeme-aside-nav-header {
-  @apply p-3;
+    @apply p-3;
 }
 
 .writeme-aside-nav-title {
-  @apply flex items-center gap-2 px-2 py-2 text-foreground font-semibold;
+    @apply flex items-center gap-2 px-2 py-2 font-semibold text-foreground;
 }
 
 .writeme-aside-nav-content {
-  @apply flex-1 overflow-y-auto px-2 pb-4;
-  scrollbar-width: none;
+    @apply flex-1 overflow-y-auto px-2 pb-4;
+    scrollbar-width: none;
 }
 
 .writeme-aside-nav-content::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .writeme-aside-nav-item {
-  @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
+    @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
 }
 
 .writeme-aside-nav-item--active {
-  @apply text-primary font-medium;
-  background-color: hsla(var(--primary-DEFAULT), 0.1);
+    @apply font-medium text-primary;
+    background-color: hsla(var(--primary-DEFAULT), 0.1);
 }
 
 .writeme-aside-nav-item--inactive {
-  @apply text-foreground/55 hover:text-foreground;
+    @apply text-foreground/55 hover:text-foreground;
 }
 
 .writeme-aside-nav-item--inactive:hover {
-  background-color: hsla(var(--muted-DEFAULT), 0.5);
+    background-color: hsla(var(--muted-DEFAULT), 0.5);
 }
 
 .writeme-aside-nav-section {
-  @apply px-2 py-1.5 text-xs font-semibold uppercase tracking-wider mt-4 mb-1;
-  color: hsla(var(--foreground), 0.35);
+    @apply mt-4 mb-1 px-2 py-1.5 text-xs font-semibold tracking-wider uppercase;
+    color: hsla(var(--foreground), 0.35);
 }
 
 .writeme-aside-nav-footer {
-  @apply p-2 border-t;
-  border-color: hsla(var(--border), 0.4);
+    @apply border-t p-2;
+    border-color: hsla(var(--border), 0.4);
 }
 .writeme-sidebar-v2-tree [role="tree"] {
-  @apply px-2 py-2;
+    @apply px-2 py-2;
 }
 
 .writeme-sidebar-v2-tree [role="treeitem"] {
-  @apply min-w-0 text-muted-foreground hover:text-foreground;
+    @apply min-w-0 text-muted-foreground hover:text-foreground;
 }
 
 .writeme-sidebar-v2-group-list {
-  @apply flex flex-col gap-2;
+    @apply flex flex-col gap-2;
 }
 
 .writeme-sidebar-v2-legacy-pane {
-  @apply h-full min-h-0 overflow-hidden rounded-2xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
+    @apply h-full min-h-0 overflow-hidden rounded-2xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group {
-  @apply rounded-2xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
+    @apply rounded-2xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group-button {
-  @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
+    @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
 }
 
 .writeme-sidebar-v2-file {
-  @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
+    @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
 }
 
 .writeme-sidebar-v2-file--active {
-  @apply bg-primary/10 text-primary;
+    @apply bg-primary/10 text-primary;
 }
 
 .writeme-sidebar-v2-footer-tab {
-  @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
+    @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
 }
 
 .writeme-sidebar-v2-footer-tab--active {
-  @apply border-primary/20 bg-primary text-primary-foreground;
+    @apply border-primary/20 bg-primary text-primary-foreground;
 }
 
 .writeme-editor-page {
-  @apply relative flex h-full w-full flex-col gap-6 px-4 py-2 print:block print:h-auto print:overflow-visible sm:px-8 lg:px-12;
+    @apply relative flex h-full w-full flex-col gap-6 px-4 py-2 sm:px-8 lg:px-12 print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-editor {
-  @apply mx-auto flex w-full flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
-  max-width: min(84ch, 100%);
-  padding-bottom: 6rem;
+    @apply mx-auto flex w-full flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
+    max-width: min(84ch, 100%);
+    padding-bottom: 6rem;
 }
 
 .writeme-editor-content {
-  @apply h-full w-full outline-none print:block print:h-auto print:overflow-visible;
+    @apply h-full w-full outline-none print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-editor-content:focus,
 .writeme-editor-content:focus-visible {
-  outline: none;
+    outline: none;
 }
 
 .writeme-block {
-  @apply w-full print:block print:h-auto print:overflow-visible xl:text-lg;
+    @apply w-full xl:text-lg print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-editor-bubble {
-  @apply z-navbar isolate print:hidden;
+    @apply isolate z-navbar print:hidden;
 }
 
 .writeme-editor-bubble-actions {
-  @apply flex overflow-y-auto gap-1 p-2 rounded-lg shadow-lg bg-floating-background border-floating-border max-w-48;
+    @apply flex max-w-48 gap-1 overflow-y-auto rounded-lg border-floating-border bg-floating-background p-2 shadow-lg;
 }
 
 .quicknote-window-drag-region {
-  -webkit-app-region: drag;
-  user-select: none;
+    -webkit-app-region: drag;
+    user-select: none;
 }
 
 .quicknote-window-drag-strip {
-  -webkit-app-region: drag;
-  @apply absolute top-0 right-0 z-navbar h-12;
-  left: 72px;
+    -webkit-app-region: drag;
+    @apply absolute top-0 right-0 z-navbar h-12;
+    left: 72px;
 }
 
 /* writeme-layout */
 .writeme-layout {
-  @apply flex overflow-hidden flex-col w-screen h-screen min-h-0 print:block print:h-auto print:w-auto print:overflow-visible bg-background;
+    @apply flex h-screen min-h-0 w-screen flex-col overflow-hidden bg-background print:block print:h-auto print:w-auto print:overflow-visible;
 }
 
 .writeme-layout-body {
-  @apply flex overflow-hidden flex-1 w-screen min-h-0 print:block print:overflow-visible print:h-auto print:w-auto bg-floating-background;
+    @apply flex min-h-0 w-screen flex-1 overflow-hidden bg-floating-background print:block print:h-auto print:w-auto print:overflow-visible;
 }
 
 .writeme-layout-main {
-  @apply flex overflow-hidden relative flex-col flex-1 min-w-0 min-h-0 bg-background print:block print:w-auto print:h-auto print:overflow-visible;
+    @apply relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background print:block print:h-auto print:w-auto print:overflow-visible;
 }

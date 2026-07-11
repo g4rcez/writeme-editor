@@ -59,7 +59,9 @@ Supports all Floating UI placements: `"top"`, `"top-start"`, `"top-end"`, `"bott
 ```tsx
 import { Tooltip } from "@g4rcez/components/tooltip";
 
-<Tooltip title={<button className="px-4 py-2 bg-primary text-primary-foreground rounded-button-radius">Hover me</button>}>
+<Tooltip
+    title={<button className="px-4 py-2 bg-primary text-primary-foreground rounded-button-radius">Hover me</button>}
+>
     This is a helpful tooltip
 </Tooltip>;
 ```
@@ -102,7 +104,12 @@ import { Tooltip } from "@g4rcez/components/tooltip";
     /* Focus only — keyboard accessible */
 }
 <Tooltip
-    title={<input placeholder="Focus me with tab" className="px-3 py-2 rounded-button-radius border border-border bg-background text-foreground" />}
+    title={
+        <input
+            placeholder="Focus me with tab"
+            className="px-3 py-2 rounded-button-radius border border-border bg-background text-foreground"
+        />
+    }
     hover={false}
     popover={false}
 >
@@ -112,7 +119,11 @@ import { Tooltip } from "@g4rcez/components/tooltip";
 {
     /* Click only — acts like a popover */
 }
-<Tooltip title={<button className="px-4 py-2 bg-primary text-primary-foreground rounded-button-radius">Click me</button>} hover={false} focus={false}>
+<Tooltip
+    title={<button className="px-4 py-2 bg-primary text-primary-foreground rounded-button-radius">Click me</button>}
+    hover={false}
+    focus={false}
+>
     Shown on click
 </Tooltip>;
 ```
@@ -147,7 +158,11 @@ function ControlledTooltip() {
     return (
         <>
             <Tooltip
-                title={<button className="px-4 py-2 rounded-button-radius border border-border text-foreground">Target</button>}
+                title={
+                    <button className="px-4 py-2 rounded-button-radius border border-border text-foreground">
+                        Target
+                    </button>
+                }
                 open={isOpen}
                 onChange={setIsOpen}
                 hover={false}
@@ -158,10 +173,16 @@ function ControlledTooltip() {
             </Tooltip>
 
             <div className="mt-4 flex gap-2">
-                <button onClick={() => setIsOpen(true)} className="px-3 py-1 bg-primary text-primary-foreground rounded-button-radius text-sm">
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="px-3 py-1 bg-primary text-primary-foreground rounded-button-radius text-sm"
+                >
                     Show
                 </button>
-                <button onClick={() => setIsOpen(false)} className="px-3 py-1 bg-muted text-foreground rounded-button-radius text-sm">
+                <button
+                    onClick={() => setIsOpen(false)}
+                    className="px-3 py-1 bg-muted text-foreground rounded-button-radius text-sm"
+                >
                     Hide
                 </button>
             </div>
@@ -178,7 +199,10 @@ import { Tooltip } from "@g4rcez/components/tooltip";
 {
     /* Render as <div> */
 }
-<Tooltip as="div" title={<span className="p-3 bg-muted rounded-button-radius inline-block text-foreground">Div with tooltip</span>}>
+<Tooltip
+    as="div"
+    title={<span className="p-3 bg-muted rounded-button-radius inline-block text-foreground">Div with tooltip</span>}
+>
     Tooltip on a div
 </Tooltip>;
 

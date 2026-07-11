@@ -160,7 +160,9 @@ const columns = createColumns<Product>((c) => {
     c.add("price", "Price", {
         type: ColType.Number,
         Element: ({ value }) => (
-            <span className="font-mono tabular-nums">{value.toLocaleString("en-US", { style: "currency", currency: "USD" })}</span>
+            <span className="font-mono tabular-nums">
+                {value.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+            </span>
         ),
     });
     c.add("active", "Status", {

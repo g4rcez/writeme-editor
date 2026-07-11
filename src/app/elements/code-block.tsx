@@ -405,11 +405,11 @@ export function ShikiPlugin({
                     const forceAll = !!transaction.getMeta("shikiPluginForceDecoration");
                     return {
                         decorations: getDecorations({
-                            doc: transaction.doc,
                             name,
                             defaultLanguage,
-                            defaultTheme: currentTheme,
                             renderBackground,
+                            doc: transaction.doc,
+                            defaultTheme: currentTheme,
                             positions: forceAll ? undefined : remappedPositions,
                         }),
                         visiblePositions: remappedPositions,

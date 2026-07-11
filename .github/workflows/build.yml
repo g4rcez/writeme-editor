@@ -1,37 +1,37 @@
 name: Build
 
 on:
-  push:
-    branches: [main]
+    push:
+        branches: [main]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
+    build:
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - uses: oven-sh/setup-bun@v2
+            - uses: oven-sh/setup-bun@v2
 
-      - name: Install rpm (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y rpm
+            - name: Install rpm (Linux only)
+              if: matrix.os == 'ubuntu-latest'
+              run: sudo apt-get install -y rpm
 
-      - run: npm ci
+            - run: npm ci
 
-      - run: npm run make
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
+            - run: npm run make
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ matrix.os }}
-          path: out/make/**
-          if-no-files-found: error
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: build-${{ matrix.os }}
+                  path: out/make/**
+                  if-no-files-found: error

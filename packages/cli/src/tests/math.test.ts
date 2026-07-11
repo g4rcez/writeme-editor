@@ -8,41 +8,39 @@ const logSpy = spyOn(console, "log").mockImplementation(() => {});
 const errorSpy = spyOn(console, "error").mockImplementation(() => {});
 
 afterEach(() => {
-  logSpy.mockClear();
-  errorSpy.mockClear();
-  process.exitCode = undefined;
+    logSpy.mockClear();
+    errorSpy.mockClear();
+    process.exitCode = undefined;
 });
 
 describe("handleExpr", () => {
-  test("prints only the evaluated expression result", async () => {
-    await handleExpr({ code: "1 + 1" });
+    test("prints only the evaluated expression result", async () => {
+        await handleExpr({ code: "1 + 1" });
 
-    expect(logSpy).toHaveBeenCalledWith("2");
-    expect(process.exitCode).toBeUndefined();
-  });
+        expect(logSpy).toHaveBeenCalledWith("2");
+        expect(process.exitCode).toBeUndefined();
+    });
 
-  test("sets a failing exit code for invalid expressions", async () => {
-    await handleExpr({ code: "totally bogus &&&" });
+    test("sets a failing exit code for invalid expressions", async () => {
+        await handleExpr({ code: "totally bogus &&&" });
 
-    expect(errorSpy).toHaveBeenCalled();
-    expect(process.exitCode).toBe(1);
-  });
+        expect(errorSpy).toHaveBeenCalled();
+        expect(process.exitCode).toBe(1);
+    });
 });
 
 describe("appendMathHistory", () => {
-  test("appends expressions to the history file", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "writeme-math-"));
-    const historyPath = path.join(dir, "math-repl");
+    test("appends expressions to the history file", async () => {
+        const dir = await mkdtemp(path.join(tmpdir(), "writeme-math-"));
+        const historyPath = path.join(dir, "math-repl");
 
-    try {
-      await appendMathHistory("1 + 1", historyPath);
-      await appendMathHistory("2 + 2", historyPath);
+        try {
+            await appendMathHistory("1 + 1", historyPath);
+            await appendMathHistory("2 + 2", historyPath);
 
-      await expect(readFile(historyPath, "utf8")).resolves.toBe(
-        "1 + 1\n2 + 2\n",
-      );
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
-  });
+            await expect(readFile(historyPath, "utf8")).resolves.toBe("1 + 1\n2 + 2\n");
+        } finally {
+            await rm(dir, { recursive: true, force: true });
+        }
+    });
 });

@@ -97,7 +97,7 @@ export function HexagonBackground({
                   key={`${rowIndex}-${colIndex}`}
                   className={cn(
                     "relative shrink-0 transition-colors duration-700",
-                    "[clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)] ease-out",
+                    "ease-out [clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]",
                     "before:absolute before:inset-0 before:bg-[var(--border-color)] before:transition-colors before:duration-700",
                     "after:absolute after:inset-(--margin) after:bg-background after:transition-colors after:duration-500",
                     "after:[clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]",

@@ -1,8 +1,4 @@
-import type {
-  ExchangeRateData,
-  ExchangeRateAPIResponse,
-  FrankfurterAPIResponse,
-} from "./types";
+import type { ExchangeRateData, ExchangeRateAPIResponse, FrankfurterAPIResponse } from "./types";
 import { NetworkError, APIError, RateLimitError } from "./types";
 
 /**
@@ -31,23 +27,18 @@ const EXCHANGERATE_API_BASE = "https://open.er-api.com/v6/latest";
  * @throws APIError if API returns invalid data
  * @throws RateLimitError if rate limit is exceeded
  */
-export async function fetchExchangeRates(
-  baseCurrency: string,
-): Promise<ExchangeRateData> {
-  try {
-    return await fetchFromFrankfurter(baseCurrency);
-  } catch (primaryError) {
-    console.warn(
-      "Primary API (Frankfurter) failed, trying fallback:",
-      primaryError,
-    );
+export async function fetchExchangeRates(baseCurrency: string): Promise<ExchangeRateData> {
     try {
-      return await fetchFromExchangeRateAPI(baseCurrency);
-    } catch (fallbackError) {
-      console.error("Both APIs failed:", { primaryError, fallbackError });
-      throw primaryError; // Throw original error
+        return await fetchFromFrankfurter(baseCurrency);
+    } catch (primaryError) {
+        console.warn("Primary API (Frankfurter) failed, trying fallback:", primaryError);
+        try {
+            return await fetchFromExchangeRateAPI(baseCurrency);
+        } catch (fallbackError) {
+            console.error("Both APIs failed:", { primaryError, fallbackError });
+            throw primaryError; // Throw original error
+        }
     }
-  }
 }
 
 /**
@@ -57,51 +48,45 @@ export async function fetchExchangeRates(
  * @param baseCurrency - The base currency code
  * @returns Exchange rate data
  */
-async function fetchFromExchangeRateAPI(
-  baseCurrency: string,
-): Promise<ExchangeRateData> {
-  const url = `${EXCHANGERATE_API_BASE}/${baseCurrency}`;
+async function fetchFromExchangeRateAPI(baseCurrency: string): Promise<ExchangeRateData> {
+    const url = `${EXCHANGERATE_API_BASE}/${baseCurrency}`;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
-    const response = await fetch(url, {
-      signal: controller.signal,
-    });
+        const response = await fetch(url, {
+            signal: controller.signal,
+        });
 
-    clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new RateLimitError();
-      }
-      throw new APIError(`API returned status ${response.status}`);
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new RateLimitError();
+            }
+            throw new APIError(`API returned status ${response.status}`);
+        }
+
+        const data: ExchangeRateAPIResponse = await response.json();
+
+        if (data.result !== "success") {
+            if (data["error-type"] === "unsupported-code") {
+                throw new APIError(`Unsupported currency: ${baseCurrency}`);
+            }
+            throw new APIError(data["error-type"] || "Unknown API error");
+        }
+
+        return transformExchangeRateAPIResponse(data);
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new NetworkError("Request timeout - check your connection");
+        }
+        if (error instanceof NetworkError || error instanceof APIError || error instanceof RateLimitError) {
+            throw error;
+        }
+        throw new NetworkError("Failed to fetch exchange rates");
     }
-
-    const data: ExchangeRateAPIResponse = await response.json();
-
-    if (data.result !== "success") {
-      if (data["error-type"] === "unsupported-code") {
-        throw new APIError(`Unsupported currency: ${baseCurrency}`);
-      }
-      throw new APIError(data["error-type"] || "Unknown API error");
-    }
-
-    return transformExchangeRateAPIResponse(data);
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout - check your connection");
-    }
-    if (
-      error instanceof NetworkError ||
-      error instanceof APIError ||
-      error instanceof RateLimitError
-    ) {
-      throw error;
-    }
-    throw new NetworkError("Failed to fetch exchange rates");
-  }
 }
 
 /**
@@ -111,44 +96,38 @@ async function fetchFromExchangeRateAPI(
  * @param baseCurrency - The base currency code
  * @returns Exchange rate data
  */
-async function fetchFromFrankfurter(
-  baseCurrency: string,
-): Promise<ExchangeRateData> {
-  const url = `${FRANKFURTER_API_BASE}?from=${baseCurrency}`;
+async function fetchFromFrankfurter(baseCurrency: string): Promise<ExchangeRateData> {
+    const url = `${FRANKFURTER_API_BASE}?from=${baseCurrency}`;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
-    const response = await fetch(url, {
-      signal: controller.signal,
-    });
+        const response = await fetch(url, {
+            signal: controller.signal,
+        });
 
-    clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw new RateLimitError();
-      }
-      throw new APIError(`API returned status ${response.status}`);
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new RateLimitError();
+            }
+            throw new APIError(`API returned status ${response.status}`);
+        }
+
+        const data: FrankfurterAPIResponse = await response.json();
+
+        return transformFrankfurterResponse(data);
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new NetworkError("Request timeout - check your connection");
+        }
+        if (error instanceof NetworkError || error instanceof APIError || error instanceof RateLimitError) {
+            throw error;
+        }
+        throw new NetworkError("Failed to fetch exchange rates");
     }
-
-    const data: FrankfurterAPIResponse = await response.json();
-
-    return transformFrankfurterResponse(data);
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new NetworkError("Request timeout - check your connection");
-    }
-    if (
-      error instanceof NetworkError ||
-      error instanceof APIError ||
-      error instanceof RateLimitError
-    ) {
-      throw error;
-    }
-    throw new NetworkError("Failed to fetch exchange rates");
-  }
 }
 
 /**
@@ -157,18 +136,13 @@ async function fetchFromFrankfurter(
  * @param response - Raw API response
  * @returns Normalized exchange rate data
  */
-function transformExchangeRateAPIResponse(
-  response: ExchangeRateAPIResponse,
-): ExchangeRateData {
-  return {
-    base: response.base_code,
-    date:
-      new Date(response.time_last_update_unix * 1000)
-        .toISOString()
-        .split("T")[0] ?? "",
-    rates: response.rates,
-    timestamp: response.time_last_update_unix,
-  };
+function transformExchangeRateAPIResponse(response: ExchangeRateAPIResponse): ExchangeRateData {
+    return {
+        base: response.base_code,
+        date: new Date(response.time_last_update_unix * 1000).toISOString().split("T")[0] ?? "",
+        rates: response.rates,
+        timestamp: response.time_last_update_unix,
+    };
 }
 
 /**
@@ -177,13 +151,11 @@ function transformExchangeRateAPIResponse(
  * @param response - Raw API response
  * @returns Normalized exchange rate data
  */
-function transformFrankfurterResponse(
-  response: FrankfurterAPIResponse,
-): ExchangeRateData {
-  return {
-    base: response.base,
-    date: response.date,
-    rates: response.rates,
-    timestamp: Math.floor(new Date(response.date).getTime() / 1000),
-  };
+function transformFrankfurterResponse(response: FrankfurterAPIResponse): ExchangeRateData {
+    return {
+        base: response.base,
+        date: response.date,
+        rates: response.rates,
+        timestamp: Math.floor(new Date(response.date).getTime() / 1000),
+    };
 }

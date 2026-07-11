@@ -1,203 +1,193 @@
 import { type Content, Extension, createNodeFromContent } from "@tiptap/core";
 import { DOMParser, Fragment } from "@tiptap/pm/model";
-import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
-import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
-import { MarkdownParser } from "./parse/MarkdownParser";
-import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
 import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
+import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
+import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
+import { MarkdownParser } from "./parse/MarkdownParser";
+import { MarkdownSerializer } from "./serialize/MarkdownSerializer";
 import { elementFromString } from "./util/dom";
 
 type MarkdownOptions = {
-  html: boolean;
-  breaks: boolean;
-  tightLists: boolean;
-  inlineMath: boolean;
-  bulletListMarker: string;
-  tightListClass: string;
-  transformCopiedText: boolean;
-  transformPastedText: boolean;
-  onBeforePaste: (text: string) => string;
+    html: boolean;
+    breaks: boolean;
+    tightLists: boolean;
+    inlineMath: boolean;
+    bulletListMarker: string;
+    tightListClass: string;
+    transformCopiedText: boolean;
+    transformPastedText: boolean;
+    onBeforePaste: (text: string) => string;
 };
 
 type MarkdownStorage = {
-  options: Record<string, unknown>;
-  parser: MarkdownParser | null;
-  serializer: MarkdownSerializer | null;
-  getMarkdown: (() => string) | null;
+    options: Record<string, unknown>;
+    parser: MarkdownParser | null;
+    serializer: MarkdownSerializer | null;
+    getMarkdown: (() => string) | null;
 };
 
 declare module "@tiptap/core" {
-  interface Storage {
-    markdown: {
-      options: Record<string, unknown>;
-      parser: MarkdownParser | null;
-      serializer: MarkdownSerializer | null;
-      getMarkdown: (() => string) | null;
-    };
-  }
-  interface Editor {
-    getMarkdown(): string;
-  }
-  interface EditorOptions {
-    initialContent?: Content;
-  }
+    interface Storage {
+        markdown: {
+            options: Record<string, unknown>;
+            parser: MarkdownParser | null;
+            serializer: MarkdownSerializer | null;
+            getMarkdown: (() => string) | null;
+        };
+    }
+    interface Editor {
+        getMarkdown(): string;
+    }
+    interface EditorOptions {
+        initialContent?: Content;
+    }
 }
 
 export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
-  name: "markdown",
-  priority: 50,
-  markdownOptions: { indentsContent: true },
-  addOptions() {
-    return {
-      html: true,
-      breaks: true,
-      tightLists: true,
-      inlineMath: true,
-      bulletListMarker: "-",
-      tightListClass: "tight",
-      transformCopiedText: true,
-      transformPastedText: true,
-      onBeforePaste: (text: string) => {
-        return linkify(safeMarkdown(text));
-      },
-    };
-  },
-  addStorage() {
-    return {
-      options: {},
-      parser: null,
-      serializer: null,
-      getMarkdown: null,
-    };
-  },
-  addCommands() {
-    return {
-      setContent:
-        (content, options) =>
-        ({ editor, tr, dispatch }) => {
-          if (typeof content !== "string") {
-            return false;
-          }
-          const storage = (this as any).storage || editor.storage.markdown;
-          if (!storage || !storage.parser) {
-            return false;
-          }
-          try {
-            const html = storage.parser.parse(content);
-            if (dispatch) {
-              const element = elementFromString(html);
-              const doc = DOMParser.fromSchema(editor.schema).parse(element);
-              const transaction = tr
-                .setMeta("preventUpdate", true)
-                .replaceWith(0, tr.doc.content.size, doc);
-              if (options?.emitUpdate) {
-                transaction.setMeta("preventUpdate", false);
-              }
-            }
-            return true;
-          } catch (e) {
-            console.error("Markdown setContent error:", e);
-            return false;
-          }
-        },
-      insertContentAt:
-        (position, content) =>
-        ({ editor, tr, dispatch }) => {
-          if (typeof content !== "string") {
-            try {
-              const node = createNodeFromContent(content, editor.schema, {
-                parseOptions: {
-                  preserveWhitespace: "full",
-                  ...editor.options.parseOptions,
+    name: "markdown",
+    priority: 50,
+    markdownOptions: { indentsContent: true },
+    addOptions() {
+        return {
+            html: true,
+            breaks: true,
+            tightLists: true,
+            inlineMath: true,
+            bulletListMarker: "-",
+            tightListClass: "tight",
+            transformCopiedText: true,
+            transformPastedText: true,
+            onBeforePaste: (text: string) => {
+                return linkify(safeMarkdown(text));
+            },
+        };
+    },
+    addStorage() {
+        return {
+            options: {},
+            parser: null,
+            serializer: null,
+            getMarkdown: null,
+        };
+    },
+    addCommands() {
+        return {
+            setContent:
+                (content, options) =>
+                ({ editor, tr, dispatch }) => {
+                    if (typeof content !== "string") {
+                        return false;
+                    }
+                    const storage = (this as any).storage || editor.storage.markdown;
+                    if (!storage || !storage.parser) {
+                        return false;
+                    }
+                    try {
+                        const html = storage.parser.parse(content);
+                        if (dispatch) {
+                            const element = elementFromString(html);
+                            const doc = DOMParser.fromSchema(editor.schema).parse(element);
+                            const transaction = tr
+                                .setMeta("preventUpdate", true)
+                                .replaceWith(0, tr.doc.content.size, doc);
+                            if (options?.emitUpdate) {
+                                transaction.setMeta("preventUpdate", false);
+                            }
+                        }
+                        return true;
+                    } catch (e) {
+                        console.error("Markdown setContent error:", e);
+                        return false;
+                    }
                 },
-              });
-              if (dispatch) {
-                let from =
-                  typeof position === "number" ? position : position.from;
-                let to = typeof position === "number" ? position : position.to;
-                const nodes =
-                  node instanceof Fragment
-                    ? Array.from({ length: node.childCount }, (_, i) =>
-                        node.child(i),
-                      )
-                    : [node];
-                const isOnlyBlockContent = nodes.every((n) => n.isBlock);
-                if (from === to && isOnlyBlockContent) {
-                  const { parent } = tr.doc.resolve(from);
-                  if (
-                    parent.isTextblock &&
-                    !parent.type.spec.code &&
-                    !parent.childCount
-                  ) {
-                    from -= 1;
-                    to += 1;
-                  }
-                }
-                tr.replaceWith(from, to, node);
-              }
-              return true;
-            } catch (e) {
-              console.error("Markdown insertContentAt error:", e);
-              return false;
-            }
-          }
-          const storage = (this as any).storage || editor.storage.markdown;
-          if (!storage || !storage.parser) {
-            return false;
-          }
-          try {
-            const html = storage.parser.parse(content, {
-              inline: true,
-            });
-            if (dispatch) {
-              const element = elementFromString(html);
-              const doc = DOMParser.fromSchema(editor.schema).parse(element);
-              const from =
-                typeof position === "number" ? position : position.from;
-              const to = typeof position === "number" ? position : position.to;
-              tr.replaceWith(from, to, doc);
-            }
-            return true;
-          } catch (e) {
-            console.error("Markdown insertContentAt error:", e);
-            return false;
-          }
-        },
-    };
-  },
-  onBeforeCreate() {
-    this.storage.options = { ...this.options };
-    this.storage.parser = new MarkdownParser(this.editor, this.options);
-    this.storage.serializer = new MarkdownSerializer(this.editor);
-    const getMarkdown = () => {
-      if (!this.storage.serializer || !this.editor.state.doc) return "";
-      return this.storage.serializer.serialize(this.editor.state.doc);
-    };
-    this.storage.getMarkdown = getMarkdown;
-    this.editor.getMarkdown = getMarkdown;
-    if (this.editor.options.content && this.storage.parser) {
-      this.editor.options.initialContent = this.editor.options.content;
-      this.editor.options.content = this.storage.parser.parse(
-        this.editor.options.content,
-      );
-    }
-  },
-  onCreate() {
-    this.editor.options.content = this.editor.options.initialContent ?? null;
-    delete this.editor.options.initialContent;
-  },
-  addExtensions() {
-    return [
-      MarkdownTightLists.configure({
-        tight: this.options.tightLists,
-        tightClass: this.options.tightListClass,
-      }),
-      MarkdownClipboard.configure({
-        onBeforePaste: this.options.onBeforePaste,
-        transformCopiedText: this.options.transformCopiedText,
-        transformPastedText: this.options.transformPastedText,
-      }),
-    ];
-  },
+            insertContentAt:
+                (position, content) =>
+                ({ editor, tr, dispatch }) => {
+                    if (typeof content !== "string") {
+                        try {
+                            const node = createNodeFromContent(content, editor.schema, {
+                                parseOptions: {
+                                    preserveWhitespace: "full",
+                                    ...editor.options.parseOptions,
+                                },
+                            });
+                            if (dispatch) {
+                                let from = typeof position === "number" ? position : position.from;
+                                let to = typeof position === "number" ? position : position.to;
+                                const nodes =
+                                    node instanceof Fragment
+                                        ? Array.from({ length: node.childCount }, (_, i) => node.child(i))
+                                        : [node];
+                                const isOnlyBlockContent = nodes.every((n) => n.isBlock);
+                                if (from === to && isOnlyBlockContent) {
+                                    const { parent } = tr.doc.resolve(from);
+                                    if (parent.isTextblock && !parent.type.spec.code && !parent.childCount) {
+                                        from -= 1;
+                                        to += 1;
+                                    }
+                                }
+                                tr.replaceWith(from, to, node);
+                            }
+                            return true;
+                        } catch (e) {
+                            console.error("Markdown insertContentAt error:", e);
+                            return false;
+                        }
+                    }
+                    const storage = (this as any).storage || editor.storage.markdown;
+                    if (!storage || !storage.parser) {
+                        return false;
+                    }
+                    try {
+                        const html = storage.parser.parse(content, {
+                            inline: true,
+                        });
+                        if (dispatch) {
+                            const element = elementFromString(html);
+                            const doc = DOMParser.fromSchema(editor.schema).parse(element);
+                            const from = typeof position === "number" ? position : position.from;
+                            const to = typeof position === "number" ? position : position.to;
+                            tr.replaceWith(from, to, doc);
+                        }
+                        return true;
+                    } catch (e) {
+                        console.error("Markdown insertContentAt error:", e);
+                        return false;
+                    }
+                },
+        };
+    },
+    onBeforeCreate() {
+        this.storage.options = { ...this.options };
+        this.storage.parser = new MarkdownParser(this.editor, this.options);
+        this.storage.serializer = new MarkdownSerializer(this.editor);
+        const getMarkdown = () => {
+            if (!this.storage.serializer || !this.editor.state.doc) return "";
+            return this.storage.serializer.serialize(this.editor.state.doc);
+        };
+        this.storage.getMarkdown = getMarkdown;
+        this.editor.getMarkdown = getMarkdown;
+        if (this.editor.options.content && this.storage.parser) {
+            this.editor.options.initialContent = this.editor.options.content;
+            this.editor.options.content = this.storage.parser.parse(this.editor.options.content);
+        }
+    },
+    onCreate() {
+        this.editor.options.content = this.editor.options.initialContent ?? null;
+        delete this.editor.options.initialContent;
+    },
+    addExtensions() {
+        return [
+            MarkdownTightLists.configure({
+                tight: this.options.tightLists,
+                tightClass: this.options.tightListClass,
+            }),
+            MarkdownClipboard.configure({
+                onBeforePaste: this.options.onBeforePaste,
+                transformCopiedText: this.options.transformCopiedText,
+                transformPastedText: this.options.transformPastedText,
+            }),
+        ];
+    },
 });

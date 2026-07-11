@@ -1,299 +1,299 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "*"
+    push:
+        tags:
+            - "*"
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
 
 jobs:
-  build-mac-arm64:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
+    build-mac-arm64:
+        runs-on: macos-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
 
-      - uses: oven-sh/setup-bun@v2
+            - uses: oven-sh/setup-bun@v2
 
-      - run: npm ci
+            - run: npm ci
 
-      - name: Detect macOS signing mode
+            - name: Detect macOS signing mode
+              env:
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  CSC_LINK: ${{ secrets.CSC_LINK }}
+                  CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+              run: |
+                  required=(APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID CSC_LINK CSC_KEY_PASSWORD)
+                  present=0
+                  for name in "${required[@]}"; do
+                    if [ -n "${!name}" ]; then
+                      present=$((present + 1))
+                    fi
+                  done
+
+                  if [ "$present" -eq "${#required[@]}" ]; then
+                    echo "MACOS_SIGNING_MODE=signed" >> "$GITHUB_ENV"
+                    echo "macOS artifacts will be signed and notarized."
+                  elif [ "$present" -eq 0 ]; then
+                    echo "MACOS_SIGNING_MODE=unsigned" >> "$GITHUB_ENV"
+                    echo "::notice::Apple signing secrets are not configured. Publishing unsigned macOS DMG."
+                  else
+                    echo "::error::Provide all Apple signing secrets, or leave all of them unset for an unsigned build."
+                    for name in "${required[@]}"; do
+                      if [ -z "${!name}" ]; then
+                        echo "::error::Missing macOS signing secret: ${name}"
+                      fi
+                    done
+                    exit 1
+                  fi
+
+            - name: Import Apple Developer ID certificate
+              if: env.MACOS_SIGNING_MODE == 'signed'
+              env:
+                  CSC_LINK: ${{ secrets.CSC_LINK }}
+                  CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+              run: scripts/import-macos-signing-cert.sh
+
+            - name: Build Electron app
+              run: npm run make -- --arch=arm64
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  CSC_LINK: ${{ secrets.CSC_LINK }}
+                  CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+            - name: Verify macOS signature and notarization
+              if: env.MACOS_SIGNING_MODE == 'signed'
+              run: |
+                  APP_PATH=$(find out -type d -name "writeme.app" -print -quit)
+                  if [ -z "$APP_PATH" ]; then
+                    echo "::error::writeme.app was not found under out/"
+                    exit 1
+                  fi
+                  codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+                  xcrun stapler validate "$APP_PATH"
+                  spctl --assess --type execute --verbose=4 "$APP_PATH"
+
+            - name: Delete signing keychain
+              if: always()
+              run: |
+                  if [ -n "${KEYCHAIN_PATH:-}" ]; then
+                    security delete-keychain "$KEYCHAIN_PATH" || true
+                  fi
+
+            - name: Stage artifacts
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                  fi
+                  test -d out/make
+                  DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
+                  if [ "$DMG_COUNT" -ne 1 ]; then
+                    echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
+                  fi
+                  mkdir -p release-artifacts
+                  if [ "${MACOS_SIGNING_MODE}" = "signed" ]; then
+                    DMG_NAME="writeme-${VERSION}-arm64.dmg"
+                  else
+                    DMG_NAME="writeme-${VERSION}-arm64-unsigned.dmg"
+                  fi
+                  find out/make -name "*.dmg" -exec cp {} "release-artifacts/${DMG_NAME}" \;
+                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-arm64.zip" \;
+                  bun build --compile packages/cli/src/index.ts \
+                    --outfile "release-artifacts/writeme-darwin-arm64"
+                  test -f "release-artifacts/${DMG_NAME}"
+                  test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
+                  test -f "release-artifacts/writeme-darwin-arm64"
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: mac-arm64
+                  path: release-artifacts/
+                  if-no-files-found: error
+
+    build-windows:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+
+            - uses: oven-sh/setup-bun@v2
+
+            - run: npm ci
+
+            - name: Build Electron app
+              run: npm run make
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+
+            - name: Stage artifacts
+              shell: bash
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                  fi
+                  test -d out/make
+                  mkdir -p release-artifacts
+                  find out/make -name "*.exe" -exec cp {} "release-artifacts/writeme-${VERSION}-setup.exe" \;
+                  find out/make -name "*.nupkg" -exec cp {} release-artifacts/ \;
+                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-win32-x64.zip" \;
+                  bun build --compile packages/cli/src/index.ts \
+                    --outfile "release-artifacts/writeme-windows-x64.exe"
+                  test -f "release-artifacts/writeme-${VERSION}-setup.exe"
+                  test -n "$(find release-artifacts -name '*.nupkg' -print -quit)"
+                  test -f "release-artifacts/writeme-${VERSION}-win32-x64.zip"
+                  test -f "release-artifacts/writeme-windows-x64.exe"
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: windows
+                  path: release-artifacts/
+                  if-no-files-found: error
+
+    build-linux:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+
+            - uses: oven-sh/setup-bun@v2
+
+            - name: Install rpm
+              run: sudo apt-get install -y rpm
+
+            - run: npm ci
+
+            - name: Build Electron app
+              run: npm run make
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+
+            - name: Stage artifacts
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
+                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                  fi
+                  test -d out/make
+                  mkdir -p release-artifacts
+                  find out/make -name "*.deb" -exec cp {} "release-artifacts/writeme-${VERSION}-amd64.deb" \;
+                  find out/make -name "*.rpm" -exec cp {} "release-artifacts/writeme-${VERSION}-x86_64.rpm" \;
+                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-linux-x64.zip" \;
+                  bun build --compile packages/cli/src/index.ts \
+                    --outfile "release-artifacts/writeme-linux-x64"
+                  test -f "release-artifacts/writeme-${VERSION}-amd64.deb"
+                  test -f "release-artifacts/writeme-${VERSION}-x86_64.rpm"
+                  test -f "release-artifacts/writeme-${VERSION}-linux-x64.zip"
+                  test -f "release-artifacts/writeme-linux-x64"
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: linux
+                  path: release-artifacts/
+                  if-no-files-found: error
+
+    release:
+        needs: [build-mac-arm64, build-windows, build-linux]
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/download-artifact@v4
+              with:
+                  path: artifacts
+                  merge-multiple: true
+
+            - name: Extract release notes
+              run: |
+                  awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
+                  if find artifacts -name "*-arm64-unsigned.dmg" -print -quit | grep -q .; then
+                    cat >> release-notes.md <<'EOF'
+
+                  ### macOS unsigned DMG
+
+                  This release includes an unsigned macOS DMG because Apple signing credentials were not configured. After dragging `writeme.app` to `/Applications`, run:
+
+                  ```bash
+                  xattr -dr com.apple.quarantine /Applications/writeme.app
+                  open /Applications/writeme.app
+                  ```
+                  EOF
+                  fi
+
+            - uses: softprops/action-gh-release@v2
+              with:
+                  body_path: release-notes.md
+                  files: artifacts/**
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    bump-tap:
+        needs: release
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: |
-          required=(APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID CSC_LINK CSC_KEY_PASSWORD)
-          present=0
-          for name in "${required[@]}"; do
-            if [ -n "${!name}" ]; then
-              present=$((present + 1))
-            fi
-          done
+            REF_NAME: ${{ github.ref_name }}
+        steps:
+            - uses: actions/checkout@v4
 
-          if [ "$present" -eq "${#required[@]}" ]; then
-            echo "MACOS_SIGNING_MODE=signed" >> "$GITHUB_ENV"
-            echo "macOS artifacts will be signed and notarized."
-          elif [ "$present" -eq 0 ]; then
-            echo "MACOS_SIGNING_MODE=unsigned" >> "$GITHUB_ENV"
-            echo "::notice::Apple signing secrets are not configured. Publishing unsigned macOS DMG."
-          else
-            echo "::error::Provide all Apple signing secrets, or leave all of them unset for an unsigned build."
-            for name in "${required[@]}"; do
-              if [ -z "${!name}" ]; then
-                echo "::error::Missing macOS signing secret: ${name}"
-              fi
-            done
-            exit 1
-          fi
+            - name: Download macOS artifacts
+              run: |
+                  gh release download "$REF_NAME" \
+                    --repo g4rcez/writeme-editor \
+                    --pattern "writeme-*-arm64*.dmg" \
+                    --pattern "writeme-darwin-arm64" \
+                    --dir ./artifacts
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Import Apple Developer ID certificate
-        if: env.MACOS_SIGNING_MODE == 'signed'
-        env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: scripts/import-macos-signing-cert.sh
+            - name: Configure git credentials
+              env:
+                  TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+              run: |
+                  git config --global http.https://github.com/.extraHeader \
+                    "AUTHORIZATION: basic $(echo -n "x-access-token:${TAP_TOKEN}" | base64)"
 
-      - name: Build Electron app
-        run: npm run make -- --arch=arm64
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+            - name: Clone tap repo
+              run: git clone https://github.com/g4rcez/homebrew-writeme.git tap
 
-      - name: Verify macOS signature and notarization
-        if: env.MACOS_SIGNING_MODE == 'signed'
-        run: |
-          APP_PATH=$(find out -type d -name "writeme.app" -print -quit)
-          if [ -z "$APP_PATH" ]; then
-            echo "::error::writeme.app was not found under out/"
-            exit 1
-          fi
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-          xcrun stapler validate "$APP_PATH"
-          spctl --assess --type execute --verbose=4 "$APP_PATH"
+            - name: Bump cask and formula
+              run: |
+                  VERSION="${REF_NAME#v}"
+                  python3 scripts/bump-tap.py "$VERSION" ./artifacts ./tap
 
-      - name: Delete signing keychain
-        if: always()
-        run: |
-          if [ -n "${KEYCHAIN_PATH:-}" ]; then
-            security delete-keychain "$KEYCHAIN_PATH" || true
-          fi
-
-      - name: Stage artifacts
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
-          fi
-          test -d out/make
-          DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
-          if [ "$DMG_COUNT" -ne 1 ]; then
-            echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
-          fi
-          mkdir -p release-artifacts
-          if [ "${MACOS_SIGNING_MODE}" = "signed" ]; then
-            DMG_NAME="writeme-${VERSION}-arm64.dmg"
-          else
-            DMG_NAME="writeme-${VERSION}-arm64-unsigned.dmg"
-          fi
-          find out/make -name "*.dmg" -exec cp {} "release-artifacts/${DMG_NAME}" \;
-          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-arm64.zip" \;
-          bun build --compile packages/cli/src/index.ts \
-            --outfile "release-artifacts/writeme-darwin-arm64"
-          test -f "release-artifacts/${DMG_NAME}"
-          test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
-          test -f "release-artifacts/writeme-darwin-arm64"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mac-arm64
-          path: release-artifacts/
-          if-no-files-found: error
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - uses: oven-sh/setup-bun@v2
-
-      - run: npm ci
-
-      - name: Build Electron app
-        run: npm run make
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Stage artifacts
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
-          fi
-          test -d out/make
-          mkdir -p release-artifacts
-          find out/make -name "*.exe" -exec cp {} "release-artifacts/writeme-${VERSION}-setup.exe" \;
-          find out/make -name "*.nupkg" -exec cp {} release-artifacts/ \;
-          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-win32-x64.zip" \;
-          bun build --compile packages/cli/src/index.ts \
-            --outfile "release-artifacts/writeme-windows-x64.exe"
-          test -f "release-artifacts/writeme-${VERSION}-setup.exe"
-          test -n "$(find release-artifacts -name '*.nupkg' -print -quit)"
-          test -f "release-artifacts/writeme-${VERSION}-win32-x64.zip"
-          test -f "release-artifacts/writeme-windows-x64.exe"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: release-artifacts/
-          if-no-files-found: error
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install rpm
-        run: sudo apt-get install -y rpm
-
-      - run: npm ci
-
-      - name: Build Electron app
-        run: npm run make
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Stage artifacts
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
-          fi
-          test -d out/make
-          mkdir -p release-artifacts
-          find out/make -name "*.deb" -exec cp {} "release-artifacts/writeme-${VERSION}-amd64.deb" \;
-          find out/make -name "*.rpm" -exec cp {} "release-artifacts/writeme-${VERSION}-x86_64.rpm" \;
-          find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-linux-x64.zip" \;
-          bun build --compile packages/cli/src/index.ts \
-            --outfile "release-artifacts/writeme-linux-x64"
-          test -f "release-artifacts/writeme-${VERSION}-amd64.deb"
-          test -f "release-artifacts/writeme-${VERSION}-x86_64.rpm"
-          test -f "release-artifacts/writeme-${VERSION}-linux-x64.zip"
-          test -f "release-artifacts/writeme-linux-x64"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux
-          path: release-artifacts/
-          if-no-files-found: error
-
-  release:
-    needs: [build-mac-arm64, build-windows, build-linux]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Extract release notes
-        run: |
-          awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
-          if find artifacts -name "*-arm64-unsigned.dmg" -print -quit | grep -q .; then
-            cat >> release-notes.md <<'EOF'
-
-          ### macOS unsigned DMG
-
-          This release includes an unsigned macOS DMG because Apple signing credentials were not configured. After dragging `writeme.app` to `/Applications`, run:
-
-          ```bash
-          xattr -dr com.apple.quarantine /Applications/writeme.app
-          open /Applications/writeme.app
-          ```
-          EOF
-          fi
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          body_path: release-notes.md
-          files: artifacts/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  bump-tap:
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      REF_NAME: ${{ github.ref_name }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download macOS artifacts
-        run: |
-          gh release download "$REF_NAME" \
-            --repo g4rcez/writeme-editor \
-            --pattern "writeme-*-arm64*.dmg" \
-            --pattern "writeme-darwin-arm64" \
-            --dir ./artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure git credentials
-        env:
-          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
-        run: |
-          git config --global http.https://github.com/.extraHeader \
-            "AUTHORIZATION: basic $(echo -n "x-access-token:${TAP_TOKEN}" | base64)"
-
-      - name: Clone tap repo
-        run: git clone https://github.com/g4rcez/homebrew-writeme.git tap
-
-      - name: Bump cask and formula
-        run: |
-          VERSION="${REF_NAME#v}"
-          python3 scripts/bump-tap.py "$VERSION" ./artifacts ./tap
-
-      - name: Push tap
-        working-directory: tap
-        run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add Casks/writeme.rb Formula/writeme.rb
-          git commit -m "chore: bump to ${REF_NAME}"
-          git pull --rebase origin main
-          git push
+            - name: Push tap
+              working-directory: tap
+              run: |
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git config user.name "github-actions[bot]"
+                  git add Casks/writeme.rb Formula/writeme.rb
+                  git commit -m "chore: bump to ${REF_NAME}"
+                  git pull --rebase origin main
+                  git push

@@ -9,26 +9,26 @@ Eighteen portable CSS transitions, each namespaced under `t-*` selectors with se
 
 ## Quick reference
 
-| Transition | When to use | Reference |
-| --- | --- | --- |
-| **Card resize** | Tween a container's width or height when its layout state changes. | [01-card-resize.md](./01-card-resize.md) |
-| **Number pop-in** | Re-enter each digit with a blurred slide when a number updates. | [02-number-pop-in.md](./02-number-pop-in.md) |
-| **Notification badge** | Slide a small badge onto a trigger and pop the dot. | [03-notification-badge.md](./03-notification-badge.md) |
-| **Text states swap** | Swap text in place with a blurred up-and-down transition. | [04-text-states-swap.md](./04-text-states-swap.md) |
-| **Menu dropdown** | Open an origin-aware dropdown that grows from its trigger. | [05-menu-dropdown.md](./05-menu-dropdown.md) |
-| **Modal open / close** | Scale-up modal dialog with a softer scale-down on close. | [06-modal.md](./06-modal.md) |
-| **Panel reveal** | Slide a panel into a region with a cross-blur. | [07-panel-reveal.md](./07-panel-reveal.md) |
-| **Page side-by-side** | Slide between two side-by-side pages (list ↔ detail, step 1 ↔ step 2). | [08-page-side-by-side.md](./08-page-side-by-side.md) |
-| **Icon swap** | Cross-fade two icons in the same slot with blur and scale. | [09-icon-swap.md](./09-icon-swap.md) |
-| **Success check** | Compose fade + rotate + Y-bob + path stroke-draw to celebrate a completed action. | [10-success-check.md](./10-success-check.md) |
-| **Avatar group hover** | Distance-falloff lift on a row of items with a bouncy spring on return. | [11-avatar-group-hover.md](./11-avatar-group-hover.md) |
-| **Error state shake** | Per-segment cubic-bezier shake with auto-reverting border + message. | [12-error-state-shake.md](./12-error-state-shake.md) |
-| **Input clear with dissolve** | Fly-out + per-word streak when a text field is cleared. | [13-input-clear-dissolve.md](./13-input-clear-dissolve.md) |
-| **Skeleton loader and reveal** | Pulse a placeholder, then cross-fade + cross-blur to the loaded content. | [14-skeleton-reveal.md](./14-skeleton-reveal.md) |
-| **Shimmer text** | Sweep a highlight band across muted text on a loop (pure CSS). | [15-shimmer-text.md](./15-shimmer-text.md) |
-| **Tabs sliding** | Slide the active pill between tabs in a segmented control. | [16-tabs-sliding.md](./16-tabs-sliding.md) |
-| **Tooltip open/close** | Delayed fade+scale in, instant out (pure CSS). | [17-tooltip.md](./17-tooltip.md) |
-| **Texts reveal** | Staggered blurred rise for stacked text lines, quiet fade out. | [18-texts-reveal.md](./18-texts-reveal.md) |
+| Transition                     | When to use                                                                       | Reference                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Card resize**                | Tween a container's width or height when its layout state changes.                | [01-card-resize.md](./01-card-resize.md)                   |
+| **Number pop-in**              | Re-enter each digit with a blurred slide when a number updates.                   | [02-number-pop-in.md](./02-number-pop-in.md)               |
+| **Notification badge**         | Slide a small badge onto a trigger and pop the dot.                               | [03-notification-badge.md](./03-notification-badge.md)     |
+| **Text states swap**           | Swap text in place with a blurred up-and-down transition.                         | [04-text-states-swap.md](./04-text-states-swap.md)         |
+| **Menu dropdown**              | Open an origin-aware dropdown that grows from its trigger.                        | [05-menu-dropdown.md](./05-menu-dropdown.md)               |
+| **Modal open / close**         | Scale-up modal dialog with a softer scale-down on close.                          | [06-modal.md](./06-modal.md)                               |
+| **Panel reveal**               | Slide a panel into a region with a cross-blur.                                    | [07-panel-reveal.md](./07-panel-reveal.md)                 |
+| **Page side-by-side**          | Slide between two side-by-side pages (list ↔ detail, step 1 ↔ step 2).            | [08-page-side-by-side.md](./08-page-side-by-side.md)       |
+| **Icon swap**                  | Cross-fade two icons in the same slot with blur and scale.                        | [09-icon-swap.md](./09-icon-swap.md)                       |
+| **Success check**              | Compose fade + rotate + Y-bob + path stroke-draw to celebrate a completed action. | [10-success-check.md](./10-success-check.md)               |
+| **Avatar group hover**         | Distance-falloff lift on a row of items with a bouncy spring on return.           | [11-avatar-group-hover.md](./11-avatar-group-hover.md)     |
+| **Error state shake**          | Per-segment cubic-bezier shake with auto-reverting border + message.              | [12-error-state-shake.md](./12-error-state-shake.md)       |
+| **Input clear with dissolve**  | Fly-out + per-word streak when a text field is cleared.                           | [13-input-clear-dissolve.md](./13-input-clear-dissolve.md) |
+| **Skeleton loader and reveal** | Pulse a placeholder, then cross-fade + cross-blur to the loaded content.          | [14-skeleton-reveal.md](./14-skeleton-reveal.md)           |
+| **Shimmer text**               | Sweep a highlight band across muted text on a loop (pure CSS).                    | [15-shimmer-text.md](./15-shimmer-text.md)                 |
+| **Tabs sliding**               | Slide the active pill between tabs in a segmented control.                        | [16-tabs-sliding.md](./16-tabs-sliding.md)                 |
+| **Tooltip open/close**         | Delayed fade+scale in, instant out (pure CSS).                                    | [17-tooltip.md](./17-tooltip.md)                           |
+| **Texts reveal**               | Staggered blurred rise for stacked text lines, quiet fade out.                    | [18-texts-reveal.md](./18-texts-reveal.md)                 |
 
 ## Decision rules
 
@@ -74,8 +74,8 @@ The skill exposes three namespaced verbs the agent should recognise in addition 
 1. Search the workspace for indicators: `transition:` declarations, `@keyframes`, hardcoded `ms` / `s` durations in style files, components matching the decision-rule patterns (modals, dropdowns, badges, search inputs, skeletons, tabs, tooltips, …).
 2. For each hit, match against the decision rules and pick the single best-fit transition.
 3. Output a numbered list grouped by file:
-   - `path/to/Component.tsx:L42` — looks like a dropdown opening, suggest **menu-dropdown** (`05-menu-dropdown.md`).
-   - Skip ad-hoc transitions that already use a `t-*` class.
+    - `path/to/Component.tsx:L42` — looks like a dropdown opening, suggest **menu-dropdown** (`05-menu-dropdown.md`).
+    - Skip ad-hoc transitions that already use a `t-*` class.
 4. Do not edit anything. End with: "Run `transitions apply` on any line to install the suggested transition."
 
 ### transitions apply — install the best-fit transition
@@ -116,8 +116,8 @@ Keep the diff small: only edit the files needed to introduce the transition. Don
 - **Forgetting the reflow** in the text swap, number pop-in, success check replay, and error state shake — `void el.offsetWidth` (or `offsetHeight`) between class/attribute removal and re-addition is what guarantees the animation replays.
 - **Animating a single container** instead of the inner pieces — for the badge, animate the dot, not the trigger; for page slide, animate the page sections, not the container.
 - **Replacing `transition: …` with `transition: all`** — every snippet enumerates exact properties on purpose so unrelated style changes don't ride in for free.
-- **Hardcoding the success check's `stroke-dasharray`** — the snippet ships `20` as a placeholder. Replace it with `path.getTotalLength()` rounded up by 1 for *your* path, otherwise the stroke pre-reveals or over-draws.
-- **Setting `transition-timing-function` in CSS** for the avatar group hover — it has to be set inline in JS *before* the `--shift` / `--scale-active` writes so the bouncy ease-out only applies on `mouseleave`.
+- **Hardcoding the success check's `stroke-dasharray`** — the snippet ships `20` as a placeholder. Replace it with `path.getTotalLength()` rounded up by 1 for _your_ path, otherwise the stroke pre-reveals or over-draws.
+- **Setting `transition-timing-function` in CSS** for the avatar group hover — it has to be set inline in JS _before_ the `--shift` / `--scale-active` writes so the bouncy ease-out only applies on `mouseleave`.
 - **Mixing `.is-error` and `.is-shaking` into one class** for the error state shake — keeping them orthogonal is what allows the shake to replay (remove → reflow → re-add) without flickering the whole error treatment.
 - **Leaving the input clear glow on `mix-blend-mode: multiply` in dark mode** — flip to `screen`, bump `--glow-opacity` to ~0.85, and paint white gradients in JS.
 - **Forgetting to write the tabs pill's first position without a transition** — on first paint and resize, set `transform` + `width` with `transition: none` (then reflow + restore) or the pill animates in from `translateX(0)` / `width: 0`.
@@ -142,4 +142,4 @@ Keep the diff small: only edit the files needed to introduce the transition. Don
 - [16-tabs-sliding.md](./16-tabs-sliding.md) — Tabs sliding
 - [17-tooltip.md](./17-tooltip.md) — Tooltip open/close
 - [18-texts-reveal.md](./18-texts-reveal.md) — Texts reveal
-- [_root.css](./_root.css) — the universal install block on its own, ready to import directly.
+- [\_root.css](./_root.css) — the universal install block on its own, ready to import directly.

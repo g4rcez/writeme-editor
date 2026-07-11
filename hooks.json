@@ -1,10 +1,10 @@
 {
-  "hooks": [
-    {
-      "regex": ".*",
-      "name": "prettier",
-      "ext": ["ts", "tsx", "json", "md"],
-      "cmd": "npx prettier --write {files}"
-    }
-  ]
+    "hooks": [
+        {
+            "regex": ".*",
+            "name": "oxfmt",
+            "ext": ["ts", "tsx", "json", "md"],
+            "cmd": "npx oxfmt --write {files}"
+        }
+    ]
 }

@@ -58,7 +58,15 @@ Tokens this component reads. Customize by overriding these CSS variables in your
 import { Textarea } from "@g4rcez/components";
 
 export default function BioField() {
-    return <Textarea title="Bio" name="bio" placeholder="Tell us about yourself…" rows={4} onChange={(e) => console.log(e.target.value)} />;
+    return (
+        <Textarea
+            title="Bio"
+            name="bio"
+            placeholder="Tell us about yourself…"
+            rows={4}
+            onChange={(e) => console.log(e.target.value)}
+        />
+    );
 }
 ```
 
@@ -86,7 +94,15 @@ export default function MessageField() {
 import { Textarea } from "@g4rcez/components";
 
 export default function CssSnippetField() {
-    return <Textarea title="CSS Snippet" name="css" className="font-mono text-sm" rows={6} placeholder="body { margin: 0; }" />;
+    return (
+        <Textarea
+            title="CSS Snippet"
+            name="css"
+            className="font-mono text-sm"
+            rows={6}
+            placeholder="body { margin: 0; }"
+        />
+    );
 }
 ```
 
@@ -99,7 +115,14 @@ import { Input } from "@g4rcez/components";
 export default function MultiFieldForm() {
     return (
         <div className="flex flex-col gap-base">
-            <Textarea title="Description" name="description" enterKeyHint="next" next="submit-btn" rows={3} placeholder="Describe the issue…" />
+            <Textarea
+                title="Description"
+                name="description"
+                enterKeyHint="next"
+                next="submit-btn"
+                rows={3}
+                placeholder="Describe the issue…"
+            />
             <button id="submit-btn" type="submit" className="btn">
                 Submit
             </button>

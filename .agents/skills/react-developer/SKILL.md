@@ -1,14 +1,14 @@
 ---
 name: react-developer
 description: >
-  Comprehensive guide for building React + TypeScript frontend applications with community best practices.
-  Use this skill whenever the user asks to create, refactor, or review React components, hooks, pages,
-  or any frontend code involving React and TypeScript. Also trigger when the user mentions: component architecture,
-  React patterns, TypeScript typing for React, state management setup, frontend project structure,
-  TailwindCSS component styling, frontend testing, accessibility in React, or asks to scaffold a new feature.
-  This skill adapts to the project's existing conventions by reading config files before applying rules.
-  Even if the user doesn't explicitly say "React" — if they mention components, hooks, pages, forms, modals,
-  or frontend features, use this skill.
+    Comprehensive guide for building React + TypeScript frontend applications with community best practices.
+    Use this skill whenever the user asks to create, refactor, or review React components, hooks, pages,
+    or any frontend code involving React and TypeScript. Also trigger when the user mentions: component architecture,
+    React patterns, TypeScript typing for React, state management setup, frontend project structure,
+    TailwindCSS component styling, frontend testing, accessibility in React, or asks to scaffold a new feature.
+    This skill adapts to the project's existing conventions by reading config files before applying rules.
+    Even if the user doesn't explicitly say "React" — if they mention components, hooks, pages, forms, modals,
+    or frontend features, use this skill.
 ---
 
 # React + TypeScript Frontend Skill
@@ -47,6 +47,7 @@ grep -r "paths" tsconfig.json 2>/dev/null
 ```
 
 From `package.json`, detect:
+
 - **State management**: Zustand, Jotai, Redux/RTK, use-typed-reducer, or others
 - **Server state**: TanStack Query (@tanstack/react-query)
 - **Test runner**: Vitest or Jest (check `devDependencies`)
@@ -101,15 +102,15 @@ Arrow functions are fine for inline callbacks, event handlers, and small utility
 ```typescript
 // Props for a specific component — use type
 type ButtonProps = {
-  variant?: "primary" | "secondary" | "ghost";
-  size?: "sm" | "md" | "lg";
-  isLoading?: boolean;
+    variant?: "primary" | "secondary" | "ghost";
+    size?: "sm" | "md" | "lg";
+    isLoading?: boolean;
 } & React.ComponentPropsWithoutRef<"button">;
 
 // Contracts that may be extended — use interface
 interface Repository {
-  findById(id: string): Promise<Entity>;
-  create(data: CreateDTO): Promise<Entity>;
+    findById(id: string): Promise<Entity>;
+    create(data: CreateDTO): Promise<Entity>;
 }
 ```
 
@@ -118,13 +119,13 @@ Extend native HTML props to keep components flexible:
 ```typescript
 // ✅ Extends native button — users can pass onClick, disabled, etc.
 type ButtonProps = {
-  variant?: "primary" | "secondary";
+    variant?: "primary" | "secondary";
 } & React.ComponentPropsWithoutRef<"button">;
 
 // ✅ For components that accept refs
 type InputProps = {
-  label: string;
-  error?: string;
+    label: string;
+    error?: string;
 } & React.ComponentPropsWithRef<"input">;
 ```
 
@@ -213,8 +214,8 @@ For detailed TypeScript patterns (generics, utility types, discriminated unions,
 ```typescript
 // ✅ satisfies — validates without losing literal types
 const config = {
-  theme: "dark",
-  locale: "pt-BR",
+    theme: "dark",
+    locale: "pt-BR",
 } satisfies AppConfig;
 
 // ✅ Inference — no need to annotate

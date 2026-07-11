@@ -56,7 +56,9 @@ None — `RenderOnView` is a layout/performance primitive that applies no styles
 
 ```tsx
 const TrackableSection = ({ sectionName, children }: { sectionName: string; children: React.ReactNode }) => (
-    <RenderOnView onIntersection={() => analytics.track("Section Viewed", { section: sectionName })}>{children}</RenderOnView>
+    <RenderOnView onIntersection={() => analytics.track("Section Viewed", { section: sectionName })}>
+        {children}
+    </RenderOnView>
 );
 ```
 

@@ -77,7 +77,15 @@ import { Calendar, type Range } from "@g4rcez/components/calendar";
 function DateRangePicker() {
     const [range, setRange] = useState<Range>({ from: undefined, to: undefined });
 
-    return <Calendar range={range} rangeMode markRange onChange={setRange} labelRange={{ from: "Start Date", to: "End Date" }} />;
+    return (
+        <Calendar
+            range={range}
+            rangeMode
+            markRange
+            onChange={setRange}
+            labelRange={{ from: "Start Date", to: "End Date" }}
+        />
+    );
 }
 ```
 
@@ -140,7 +148,9 @@ function InternationalCalendar() {
 ```tsx
 function EventDot({ date }: { date: Date }) {
     const hasEvent = myEvents.some((e) => e.date.toDateString() === date.toDateString());
-    return hasEvent ? <span className="absolute bottom-1 left-1/2 -translate-x-1/2 size-1 rounded-full bg-primary" /> : null;
+    return hasEvent ? (
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 size-1 rounded-full bg-primary" />
+    ) : null;
 }
 
 <Calendar date={selectedDate} onChange={setSelectedDate} RenderOnDay={EventDot} markToday />;

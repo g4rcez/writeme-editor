@@ -1,188 +1,167 @@
+import type { ExtendedRegExpMatchArray } from "@tiptap/react";
 import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
-import type { ExtendedRegExpMatchArray } from "@tiptap/react";
-import { convertCurrency, formatConversionResult } from "../../lib/currency";
-import {
-  INLINE_MATH_PATTERN,
-  runInlineMath,
-  solveRule3,
-} from "solver";
-import {
-  ClipboardCloseListenerCommand,
-  ClipboardListenerCommand,
-} from "./clipboard-listener.command";
-import { replacerRules } from "./replace-rules";
-import type { ReplacerHandlerParams } from "./types";
+import { INLINE_MATH_PATTERN, runInlineMath, solveRule3 } from "solver";
 import { Dates } from "@/lib/dates";
 import { uiDispatch } from "@/store/ui.store";
+import type { ReplacerHandlerParams } from "./types";
+import { convertCurrency, formatConversionResult } from "../../lib/currency";
+import { ClipboardCloseListenerCommand, ClipboardListenerCommand } from "./clipboard-listener.command";
+import { replacerRules } from "./replace-rules";
 
 export type ReplacerCommand = {
-  find: RegExp;
-  replace: (
-    thing: ExtendedRegExpMatchArray,
-    props: ReplacerHandlerParams,
-    editor: Editor,
-  ) => string;
+    find: RegExp;
+    replace: (thing: ExtendedRegExpMatchArray, props: ReplacerHandlerParams, editor: Editor) => string;
 };
 
 export const CurrencyCommand: ReplacerCommand = {
-  find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
-  replace: (capture, _, editor) => {
-    let from = capture?.groups?.from?.trim().toUpperCase();
-    const to = capture?.groups?.to?.trim().toUpperCase();
-    if (!from || !to) {
-      return "";
-    }
-    const amount = from.replace(/[A-Z]{3}$/g, "");
-    from = from.match(/[A-Z]{3}$/g)?.[0];
-    if (!from) return "";
-    convertCurrency(Number(amount), from, to).then((result) => {
-      editor
-        .chain()
-        .focus()
-        .insertContent(formatConversionResult(result))
-        .run();
-    });
-    return "";
-  },
+    find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
+    replace: (capture, _, editor) => {
+        let from = capture?.groups?.from?.trim().toUpperCase();
+        const to = capture?.groups?.to?.trim().toUpperCase();
+        if (!from || !to) {
+            return "";
+        }
+        const amount = from.replace(/[A-Z]{3}$/g, "");
+        from = from.match(/[A-Z]{3}$/g)?.[0];
+        if (!from) return "";
+        convertCurrency(Number(amount), from, to).then((result) => {
+            editor.chain().focus().insertContent(formatConversionResult(result)).run();
+        });
+        return "";
+    },
 };
 
 const MathCommand: ReplacerCommand = {
-  find: INLINE_MATH_PATTERN,
-  replace: (capture) => runInlineMath(capture[0]),
+    find: INLINE_MATH_PATTERN,
+    replace: (capture) => runInlineMath(capture[0]),
 };
 
 const EvalCommand: ReplacerCommand = {
-  find: />>eval [^;]+ ?;$/,
-  replace: (capture) => {
-    const expr = (capture[0].trim() || "").replace(/^>>eval /, "").trim();
-    if (expr === "") return "";
-    const x = eval(expr);
-    return `${x}`;
-  },
+    find: />>eval [^;]+ ?;$/,
+    replace: (capture) => {
+        const expr = (capture[0].trim() || "").replace(/^>>eval /, "").trim();
+        if (expr === "") return "";
+        const x = eval(expr);
+        return `${x}`;
+    },
 };
 
 export const TimeCommand: ReplacerCommand = {
-  find: />>time $/,
-  replace: (capture) => {
-    const expr = (capture[0].trim() || "").replace(/^>>time /, "").trim();
-    if (expr === "") return "";
-    return Dates.time(new Date());
-  },
+    find: />>time $/,
+    replace: (capture) => {
+        const expr = (capture[0].trim() || "").replace(/^>>time /, "").trim();
+        if (expr === "") return "";
+        return Dates.time(new Date());
+    },
 };
 
 export const DateCommand: ReplacerCommand = {
-  find: />>date $/,
-  replace: (capture) => {
-    const expr = (capture[0].trim() || "").replace(/^>>date /, "").trim();
-    if (expr === "") return "";
-    return Dates.isoDate(new Date());
-  },
+    find: />>date $/,
+    replace: (capture) => {
+        const expr = (capture[0].trim() || "").replace(/^>>date /, "").trim();
+        if (expr === "") return "";
+        return Dates.isoDate(new Date());
+    },
 };
 
 export const DateTimeCommand: ReplacerCommand = {
-  find: />>datetime $/,
-  replace: (capture) => {
-    const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
-    if (expr === "") return "";
-    return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`;
-  },
+    find: />>datetime $/,
+    replace: (capture) => {
+        const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
+        if (expr === "") return "";
+        return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`;
+    },
 };
 
 export const UuidCommand: ReplacerCommand = {
-  find: />>date $/,
-  replace: (capture) => {
-    const expr = (capture[0].trim() || "").replace(/^>>uuid /, "").trim();
-    if (expr === "") return "";
-    return uuid();
-  },
+    find: />>date $/,
+    replace: (capture) => {
+        const expr = (capture[0].trim() || "").replace(/^>>uuid /, "").trim();
+        if (expr === "") return "";
+        return uuid();
+    },
 };
 
 export const LatexInlineCommand: ReplacerCommand = {
-  find: />>expr $/,
-  replace: (_, __, editor) => {
-    uiDispatch.setPrompt({
-      open: true,
-      title: "Inline math block:",
-      onConfirm: (latex: string) => {
-        if (latex) {
-          setTimeout(() => {
-            editor.chain().focus().insertInlineMath({ latex }).run();
-          }, 100);
-        }
-      },
-    });
-    return "";
-  },
+    find: />>expr $/,
+    replace: (_, __, editor) => {
+        uiDispatch.setPrompt({
+            open: true,
+            title: "Inline math block:",
+            onConfirm: (latex: string) => {
+                if (latex) {
+                    setTimeout(() => {
+                        editor.chain().focus().insertInlineMath({ latex }).run();
+                    }, 100);
+                }
+            },
+        });
+        return "";
+    },
 };
 
 const onlyNumbers = (x: string) => x.replace(/[^0-9]/g, "");
 
 export const TableCommand: ReplacerCommand = {
-  find: />>table ?\(\d+[x,]\d+\)$/,
-  replace: (regex, _, editor) => {
-    const coords = regex[0].match(/(\(\d+(x|,)\d+\))/)?.[0];
-    const [cols, , rows] = coords
-      ?.split(/(x|,)/)
-      ?.map((x) => Number.parseInt(onlyNumbers(x))) || [3, 4];
-    setTimeout(() => {
-      editor
-        .chain()
-        .focus()
-        .insertTable({ cols, rows, withHeaderRow: true })
-        .run();
-    }, 100);
-    return "";
-  },
+    find: />>table ?\(\d+[x,]\d+\)$/,
+    replace: (regex, _, editor) => {
+        const coords = regex[0].match(/(\(\d+(x|,)\d+\))/)?.[0];
+        const [cols, , rows] = coords?.split(/(x|,)/)?.map((x) => Number.parseInt(onlyNumbers(x))) || [3, 4];
+        setTimeout(() => {
+            editor.chain().focus().insertTable({ cols, rows, withHeaderRow: true }).run();
+        }, 100);
+        return "";
+    },
 };
 
 const Rule3Command: ReplacerCommand = {
-  find: />>rule3\s*\([^)]+\)$/,
-  replace: (capture) => {
-    const match = capture[0].trim();
-    const innerMatch = match.match(/rule3\s*\(\s*([^)]+)\)/);
-    if (!innerMatch) return match;
-    const result = solveRule3(innerMatch[1]!);
-    if (!result.ok) return match;
-    return `${result.variable} = ${result.value}`;
-  },
+    find: />>rule3\s*\([^)]+\)$/,
+    replace: (capture) => {
+        const match = capture[0].trim();
+        const innerMatch = match.match(/rule3\s*\(\s*([^)]+)\)/);
+        if (!innerMatch) return match;
+        const result = solveRule3(innerMatch[1]!);
+        if (!result.ok) return match;
+        return `${result.variable} = ${result.value}`;
+    },
 };
 
 export const LatexInlineTransformerCommand: ReplacerCommand = {
-  find: /\$\$[^$]+\$\$ /,
-  replace: (regex, _, editor) => {
-    const latex = regex[0];
-    if (!latex) return "";
-    setTimeout(() => {
-      editor
-        .chain()
-        .focus()
-        .insertInlineMath({
-          latex: latex.trim().replace(/^\$/, "").replace(/\$$/, ""),
-        })
-        .run();
-    }, 100);
-    return "";
-  },
+    find: /\$\$[^$]+\$\$ /,
+    replace: (regex, _, editor) => {
+        const latex = regex[0];
+        if (!latex) return "";
+        setTimeout(() => {
+            editor
+                .chain()
+                .focus()
+                .insertInlineMath({
+                    latex: latex.trim().replace(/^\$/, "").replace(/\$$/, ""),
+                })
+                .run();
+        }, 100);
+        return "";
+    },
 };
 
 export const ReplacerCommands = Extension.create({
-  name: "commands-replacer",
-  addInputRules() {
-    return [
-      replacerRules(this.editor, Rule3Command),
-      replacerRules(this.editor, DateCommand),
-      replacerRules(this.editor, DateTimeCommand),
-      replacerRules(this.editor, TimeCommand),
-      replacerRules(this.editor, UuidCommand),
-      replacerRules(this.editor, EvalCommand),
-      replacerRules(this.editor, CurrencyCommand),
-      replacerRules(this.editor, MathCommand),
-      replacerRules(this.editor, TableCommand),
-      replacerRules(this.editor, LatexInlineCommand),
-      replacerRules(this.editor, ClipboardListenerCommand),
-      replacerRules(this.editor, LatexInlineTransformerCommand),
-      replacerRules(this.editor, ClipboardCloseListenerCommand),
-    ];
-  },
+    name: "commands-replacer",
+    addInputRules() {
+        return [
+            replacerRules(this.editor, Rule3Command),
+            replacerRules(this.editor, DateCommand),
+            replacerRules(this.editor, DateTimeCommand),
+            replacerRules(this.editor, TimeCommand),
+            replacerRules(this.editor, UuidCommand),
+            replacerRules(this.editor, EvalCommand),
+            replacerRules(this.editor, CurrencyCommand),
+            replacerRules(this.editor, MathCommand),
+            replacerRules(this.editor, TableCommand),
+            replacerRules(this.editor, LatexInlineCommand),
+            replacerRules(this.editor, ClipboardListenerCommand),
+            replacerRules(this.editor, LatexInlineTransformerCommand),
+            replacerRules(this.editor, ClipboardCloseListenerCommand),
+        ];
+    },
 });

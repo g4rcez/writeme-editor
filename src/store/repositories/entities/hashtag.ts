@@ -1,18 +1,18 @@
 import { type EntityBase, type Repository } from "@/store/repository";
 
 export class Hashtag implements EntityBase {
-  public constructor(
-    public id: string,
-    public hashtag: string,
-    public filename: string,
-    public project: string,
-    public createdAt: Date,
-    public type: string,
-    public updatedAt: Date,
-  ) {}
+    public constructor(
+        public id: string,
+        public hashtag: string,
+        public filename: string,
+        public project: string,
+        public createdAt: Date,
+        public type: string,
+        public updatedAt: Date,
+    ) {}
 }
 
 export interface IHashtagRepository extends Repository<Hashtag> {
-  findByHashtag(tag: string): Promise<Hashtag[]>;
-  sync(filename: string, tags: string[]): Promise<void>;
+    findByHashtag(tag: string): Promise<Hashtag[]>;
+    sync(filename: string, tags: string[]): Promise<void>;
 }

@@ -43,5 +43,5 @@ ls -F
 `;
 
 export default function CodeRunExamplePage() {
-  return <Editor readonly content={content} />;
+    return <Editor readonly content={content} />;
 }

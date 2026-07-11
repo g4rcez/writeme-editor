@@ -4,16 +4,16 @@ import type { Editor } from "@tiptap/react";
  * Information about the current element where the cursor is positioned
  */
 export type CurrentElementInfo = {
-  /** The name of the current node type (e.g., 'paragraph', 'codeBlock', 'heading') */
-  nodeName: string;
-  /** The depth of the current node in the document tree */
-  depth: number;
-  /** Whether the selection spans multiple nodes */
-  isSelection: boolean;
-  /** Additional node attributes if available */
-  attrs?: Record<string, unknown>;
-  /** Parent node name if available */
-  parentName?: string;
+    /** The name of the current node type (e.g., 'paragraph', 'codeBlock', 'heading') */
+    nodeName: string;
+    /** The depth of the current node in the document tree */
+    depth: number;
+    /** Whether the selection spans multiple nodes */
+    isSelection: boolean;
+    /** Additional node attributes if available */
+    attrs?: Record<string, unknown>;
+    /** Parent node name if available */
+    parentName?: string;
 };
 
 /**
@@ -30,38 +30,36 @@ export type CurrentElementInfo = {
  * console.log(elementInfo.isSelection); // true if text is selected
  * ```
  */
-export function getCurrentElementInfo(
-  editor: Editor | null,
-): CurrentElementInfo | null {
-  if (!editor) {
-    return null;
-  }
+export function getCurrentElementInfo(editor: Editor | null): CurrentElementInfo | null {
+    if (!editor) {
+        return null;
+    }
 
-  const { state } = editor;
-  const { selection } = state;
-  const { $from, empty } = selection;
+    const { state } = editor;
+    const { selection } = state;
+    const { $from, empty } = selection;
 
-  // Get the current node at cursor position
-  const currentNode = $from.parent;
-  const currentNodeName = currentNode.type.name;
+    // Get the current node at cursor position
+    const currentNode = $from.parent;
+    const currentNodeName = currentNode.type.name;
 
-  // Get parent node if available
-  const parentNode = $from.depth > 1 ? $from.node($from.depth - 1) : null;
-  const parentName = parentNode?.type.name;
+    // Get parent node if available
+    const parentNode = $from.depth > 1 ? $from.node($from.depth - 1) : null;
+    const parentName = parentNode?.type.name;
 
-  // Check if this is a selection spanning multiple nodes
-  const isSelection = !empty;
+    // Check if this is a selection spanning multiple nodes
+    const isSelection = !empty;
 
-  // Get node attributes
-  const attrs = currentNode.attrs || {};
+    // Get node attributes
+    const attrs = currentNode.attrs || {};
 
-  return {
-    nodeName: currentNodeName,
-    depth: $from.depth,
-    isSelection,
-    attrs,
-    parentName,
-  };
+    return {
+        nodeName: currentNodeName,
+        depth: $from.depth,
+        isSelection,
+        attrs,
+        parentName,
+    };
 }
 
 /**
@@ -80,8 +78,8 @@ export function getCurrentElementInfo(
  * ```
  */
 export function getCurrentElementName(editor: Editor | null): string | null {
-  const info = getCurrentElementInfo(editor);
-  return info?.nodeName || null;
+    const info = getCurrentElementInfo(editor);
+    return info?.nodeName || null;
 }
 
 /**
@@ -102,12 +100,9 @@ export function getCurrentElementName(editor: Editor | null): string | null {
  * }
  * ```
  */
-export function isInNodeType(
-  editor: Editor | null,
-  nodeTypeName: string,
-): boolean {
-  const currentName = getCurrentElementName(editor);
-  return currentName === nodeTypeName;
+export function isInNodeType(editor: Editor | null, nodeTypeName: string): boolean {
+    const currentName = getCurrentElementName(editor);
+    return currentName === nodeTypeName;
 }
 
 /**
@@ -124,24 +119,24 @@ export function isInNodeType(
  * ```
  */
 export function getCurrentElementPath(editor: Editor | null): string[] {
-  if (!editor) {
-    return [];
-  }
-
-  const { state } = editor;
-  const { selection } = state;
-  const { $from } = selection;
-
-  const path: string[] = [];
-
-  for (let i = 0; i <= $from.depth; i++) {
-    const node = $from.node(i);
-    if (node) {
-      path.push(node.type.name);
+    if (!editor) {
+        return [];
     }
-  }
 
-  return path;
+    const { state } = editor;
+    const { selection } = state;
+    const { $from } = selection;
+
+    const path: string[] = [];
+
+    for (let i = 0; i <= $from.depth; i++) {
+        const node = $from.node(i);
+        if (node) {
+            path.push(node.type.name);
+        }
+    }
+
+    return path;
 }
 
 /**
@@ -159,70 +154,66 @@ export function getCurrentElementPath(editor: Editor | null): string[] {
  * ```
  */
 export function getCurrentElementAncestors(editor: Editor | null): Array<{
-  nodeName: string;
-  depth: number;
-  attrs: Record<string, unknown>;
-}> {
-  if (!editor) {
-    return [];
-  }
-
-  const { state } = editor;
-  const { selection } = state;
-  const { $from } = selection;
-
-  const ancestors: Array<{
     nodeName: string;
     depth: number;
     attrs: Record<string, unknown>;
-  }> = [];
-
-  for (let i = 0; i <= $from.depth; i++) {
-    const node = $from.node(i);
-    if (node) {
-      ancestors.push({
-        nodeName: node.type.name,
-        depth: i,
-        attrs: node.attrs || {},
-      });
+}> {
+    if (!editor) {
+        return [];
     }
-  }
 
-  return ancestors;
+    const { state } = editor;
+    const { selection } = state;
+    const { $from } = selection;
+
+    const ancestors: Array<{
+        nodeName: string;
+        depth: number;
+        attrs: Record<string, unknown>;
+    }> = [];
+
+    for (let i = 0; i <= $from.depth; i++) {
+        const node = $from.node(i);
+        if (node) {
+            ancestors.push({
+                nodeName: node.type.name,
+                depth: i,
+                attrs: node.attrs || {},
+            });
+        }
+    }
+
+    return ancestors;
 }
 
-export function updateNodeContent(
-  editor: Editor,
-  targetNode: any,
-  newContent: string,
-) {
-  const { state } = editor;
-  const { tr } = state;
-  let updated = false;
+export function updateNodeContent(editor: Editor, targetNode: any, newContent: string) {
+    const { state } = editor;
+    const { tr } = state;
+    let updated = false;
 
-  state.doc.descendants((node, pos) => {
-    if (node === targetNode) {
-      // Clear existing content and insert new content
-      const from = pos + 1;
-      const to = pos + node.nodeSize - 1;
+    state.doc.descendants((node, pos) => {
+        if (node === targetNode) {
+            // Clear existing content and insert new content
+            const from = pos + 1;
+            const to = pos + node.nodeSize - 1;
 
-      tr.delete(from, to);
+            tr.delete(from, to);
 
-      if (typeof newContent === "string") {
-        tr.insert(from, state.schema.text(newContent));
-      } else {
-        tr.insert(from, newContent); // For rich content/fragments
-      }
+            if (typeof newContent === "string") {
+                tr.insert(from, state.schema.text(newContent));
+            } else {
+                tr.insert(from, newContent); // For rich content/fragments
+            }
 
-      updated = true;
-      return false; // Stop traversal
+            updated = true;
+            return false; // Stop traversal
+        }
+        return;
+    });
+
+    if (updated) {
+        editor.view.dispatch(tr);
+        return true;
     }
-    return;
-  });
-
-  if (updated) {
-    editor.view.dispatch(tr);
-    return true;
-  }
-  return false;
+    return false;
 }

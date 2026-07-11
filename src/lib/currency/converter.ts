@@ -22,43 +22,39 @@ import { validateCurrencyCode } from "./parser";
  * @throws InvalidCurrencyError if currency codes are invalid
  * @throws NetworkError if API fails and no stale cache available
  */
-export async function convertCurrency(
-  amount: number,
-  from: string,
-  to: string,
-): Promise<ConversionResult> {
-  // Validate currency codes
-  validateCurrencyCode(from);
-  validateCurrencyCode(to);
+export async function convertCurrency(amount: number, from: string, to: string): Promise<ConversionResult> {
+    // Validate currency codes
+    validateCurrencyCode(from);
+    validateCurrencyCode(to);
 
-  // Short-circuit: same currency conversion
-  if (from === to) {
+    // Short-circuit: same currency conversion
+    if (from === to) {
+        return {
+            from,
+            to,
+            amount,
+            rate: 1.0,
+            result: amount,
+            timestamp: Date.now(),
+            source: "cache", // Consider same-currency as cached
+        };
+    }
+
+    // Try to get exchange rate
+    const { rate, source } = await getExchangeRate(from, to);
+
+    // Calculate result
+    const result = amount * rate;
+
     return {
-      from,
-      to,
-      amount,
-      rate: 1.0,
-      result: amount,
-      timestamp: Date.now(),
-      source: "cache", // Consider same-currency as cached
+        from,
+        to,
+        amount,
+        rate,
+        result,
+        timestamp: Date.now(),
+        source,
     };
-  }
-
-  // Try to get exchange rate
-  const { rate, source } = await getExchangeRate(from, to);
-
-  // Calculate result
-  const result = amount * rate;
-
-  return {
-    from,
-    to,
-    amount,
-    rate,
-    result,
-    timestamp: Date.now(),
-    source,
-  };
 }
 
 /**
@@ -70,49 +66,49 @@ export async function convertCurrency(
  * @returns Exchange rate and source (cache/api/stale-cache)
  */
 async function getExchangeRate(
-  from: string,
-  to: string,
+    from: string,
+    to: string,
 ): Promise<{ rate: number; source: "cache" | "api" | "stale-cache" }> {
-  // Step 1: Check valid cache
-  const cached = getCachedRates(from);
-  if (cached) {
-    const rate = cached.data.rates[to];
-    if (rate !== undefined) {
-      console.log(`Using cached rate for ${from} to ${to}: ${rate}`);
-      return { rate, source: "cache" };
-    }
-  }
-
-  // Step 2: Fetch from API
-  try {
-    const data = await fetchExchangeRates(from);
-
-    // Cache the fresh data
-    setCachedRates(from, data);
-
-    const rate = data.rates[to];
-    if (rate === undefined) {
-      throw new Error(`Rate not found for ${to} in API response`);
+    // Step 1: Check valid cache
+    const cached = getCachedRates(from);
+    if (cached) {
+        const rate = cached.data.rates[to];
+        if (rate !== undefined) {
+            console.log(`Using cached rate for ${from} to ${to}: ${rate}`);
+            return { rate, source: "cache" };
+        }
     }
 
-    console.log(`Fetched fresh rate for ${from} to ${to}: ${rate}`);
-    return { rate, source: "api" };
-  } catch (apiError) {
-    console.warn("API fetch failed, trying stale cache:", apiError);
+    // Step 2: Fetch from API
+    try {
+        const data = await fetchExchangeRates(from);
 
-    // Step 3: Try stale cache as fallback
-    const staleCache = getStaleCachedRates(from);
-    if (staleCache) {
-      const rate = staleCache.data.rates[to];
-      if (rate !== undefined) {
-        console.log(`Using stale cached rate for ${from} to ${to}: ${rate}`);
-        return { rate, source: "stale-cache" };
-      }
+        // Cache the fresh data
+        setCachedRates(from, data);
+
+        const rate = data.rates[to];
+        if (rate === undefined) {
+            throw new Error(`Rate not found for ${to} in API response`);
+        }
+
+        console.log(`Fetched fresh rate for ${from} to ${to}: ${rate}`);
+        return { rate, source: "api" };
+    } catch (apiError) {
+        console.warn("API fetch failed, trying stale cache:", apiError);
+
+        // Step 3: Try stale cache as fallback
+        const staleCache = getStaleCachedRates(from);
+        if (staleCache) {
+            const rate = staleCache.data.rates[to];
+            if (rate !== undefined) {
+                console.log(`Using stale cached rate for ${from} to ${to}: ${rate}`);
+                return { rate, source: "stale-cache" };
+            }
+        }
+
+        // No fallback available, re-throw API error
+        throw apiError;
     }
-
-    // No fallback available, re-throw API error
-    throw apiError;
-  }
 }
 
 /**
@@ -124,23 +120,19 @@ async function getExchangeRate(
  * @param to - Target currency code
  * @returns Array of conversion results
  */
-export async function convertCurrencyBatch(
-  amounts: number[],
-  from: string,
-  to: string,
-): Promise<ConversionResult[]> {
-  // Get rate once for all conversions
-  const { rate, source } = await getExchangeRate(from, to);
+export async function convertCurrencyBatch(amounts: number[], from: string, to: string): Promise<ConversionResult[]> {
+    // Get rate once for all conversions
+    const { rate, source } = await getExchangeRate(from, to);
 
-  return amounts.map((amount) => ({
-    from,
-    to,
-    amount,
-    rate,
-    result: amount * rate,
-    timestamp: Date.now(),
-    source,
-  }));
+    return amounts.map((amount) => ({
+        from,
+        to,
+        amount,
+        rate,
+        result: amount * rate,
+        timestamp: Date.now(),
+        source,
+    }));
 }
 
 /**
@@ -152,29 +144,29 @@ export async function convertCurrencyBatch(
  * @returns Exchange rate and metadata
  */
 export async function getRate(
-  from: string,
-  to: string,
+    from: string,
+    to: string,
 ): Promise<{
-  rate: number;
-  source: "cache" | "api" | "stale-cache";
-  timestamp: number;
+    rate: number;
+    source: "cache" | "api" | "stale-cache";
+    timestamp: number;
 }> {
-  validateCurrencyCode(from);
-  validateCurrencyCode(to);
+    validateCurrencyCode(from);
+    validateCurrencyCode(to);
 
-  if (from === to) {
+    if (from === to) {
+        return {
+            rate: 1.0,
+            source: "cache",
+            timestamp: Date.now(),
+        };
+    }
+
+    const { rate, source } = await getExchangeRate(from, to);
+
     return {
-      rate: 1.0,
-      source: "cache",
-      timestamp: Date.now(),
+        rate,
+        source,
+        timestamp: Date.now(),
     };
-  }
-
-  const { rate, source } = await getExchangeRate(from, to);
-
-  return {
-    rate,
-    source,
-    timestamp: Date.now(),
-  };
 }

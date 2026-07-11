@@ -10,5 +10,5 @@ It supports common currency codes like USD, EUR, BRL, etc. Powered by [https://f
 `;
 
 export default function EditorPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

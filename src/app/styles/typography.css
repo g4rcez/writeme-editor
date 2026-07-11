@@ -1,53 +1,55 @@
+@reference "../../tailwind.css";
+
 .writeme-editor-content {
-  @apply whitespace-pre-wrap leading-relaxed break-words;
+    @apply leading-relaxed break-words whitespace-pre-wrap;
 }
 
 .writeme-editor-content p {
-  @apply text-pretty proportional-nums text-typography-paragraph;
-  line-height: 1.82;
-  word-spacing: normal;
-  white-space-collapse: preserve-breaks;
-  white-space: pre-line;
-  break-before: column;
-  word-break: auto-phrase;
+    @apply text-pretty text-typography-paragraph proportional-nums;
+    line-height: 1.82;
+    word-spacing: normal;
+    white-space-collapse: preserve-breaks;
+    white-space: pre-line;
+    break-before: column;
+    word-break: auto-phrase;
 }
 
 .writeme-editor-content p.is-empty::before {
-  @apply text-muted float-left h-0 pointer-events-none;
-  content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-muted;
+    content: attr(data-placeholder);
 }
 
 .writeme-editor-content code.inline-code {
-  @apply font-mono bg-muted text-foreground rounded text-sm p-1;
+    @apply rounded bg-muted p-1 font-mono text-sm text-foreground;
 }
 
 .writeme-editor-content .color-inline-preview {
-  text-decoration: underline;
-  text-decoration-color: var(--color);
-  text-underline-offset: 3px;
+    text-decoration: underline;
+    text-decoration-color: var(--color);
+    text-underline-offset: 3px;
 }
 
 .writeme-editor-content .color-inline-preview::before {
-  content: "";
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: var(--button-radius);
-  border: 1px solid hsl(var(--border) / 0.6);
-  background-color: var(--color);
-  margin-right: 0.2rem;
-  vertical-align: middle;
-  position: relative;
-  top: -1px;
+    content: "";
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: var(--button-radius);
+    border: 1px solid hsl(var(--border) / 0.6);
+    background-color: var(--color);
+    margin-right: 0.2rem;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
 }
 
 .writeme-editor-content code.inline-code.color-code {
-  @apply inline-flex items-center gap-1 bg-transparent;
+    @apply inline-flex items-center gap-1 bg-transparent;
 }
 
 .writeme-editor-content code.inline-code.color-code .color-code-swatch {
-  @apply inline-block size-3 rounded-sm border border-border shrink-0;
-  background-color: var(--inline-code-color);
+    @apply inline-block size-3 shrink-0 rounded-sm border border-border;
+    background-color: var(--inline-code-color);
 }
 
 .writeme-editor-content h1,
@@ -56,7 +58,7 @@
 .writeme-editor-content h4,
 .writeme-editor-content h5,
 .writeme-editor-content h6 {
-  @apply mb-3 font-semibold leading-tight tracking-normal text-pretty text-typography-title;
+    @apply mb-3 leading-tight font-semibold tracking-normal text-pretty text-typography-title;
 }
 
 .writeme-editor-content h1:first-child,
@@ -65,238 +67,238 @@
 .writeme-editor-content h4:first-child,
 .writeme-editor-content h5:first-child,
 .writeme-editor-content h6:first-child {
-  @apply mt-0;
+    @apply mt-0;
 }
 
 .writeme-editor-content h1 {
-  @apply mt-12 text-4xl font-bold tracking-tight;
+    @apply mt-12 text-4xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h2 {
-  @apply mt-10 text-3xl font-bold tracking-tight;
+    @apply mt-10 text-3xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h3 {
-  @apply mt-8 text-2xl font-bold tracking-tight;
+    @apply mt-8 text-2xl font-bold tracking-tight;
 }
 
 .writeme-editor-content h4 {
-  @apply mt-6 text-xl;
+    @apply mt-6 text-xl;
 }
 
 .writeme-editor-content h5 {
-  @apply mt-4 text-lg;
+    @apply mt-4 text-lg;
 }
 
 .writeme-editor-content h6 {
-  @apply mt-3 text-base;
+    @apply mt-3 text-base;
 }
 
 .writeme-editor-content blockquote {
-  @apply my-6 ml-0 px-4 py-3 rounded-lg;
-  background-color: hsla(var(--primary-DEFAULT), 0.05);
-  border: 1px solid hsla(var(--primary-DEFAULT), 0.2);
+    @apply my-6 ml-0 rounded-lg px-4 py-3;
+    background-color: hsla(var(--primary-DEFAULT), 0.05);
+    border: 1px solid hsla(var(--primary-DEFAULT), 0.2);
 }
 
 .writeme-editor-content blockquote[data-callout="false"] {
-  @apply border border-card-border italic;
-  background-color: transparent;
+    @apply border border-card-border italic;
+    background-color: transparent;
 }
 
 .writeme-editor-content blockquote[data-callout="true"][data-theme="danger"] {
-  @apply border-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
+    @apply border-alert-danger-border bg-alert-danger-bg text-alert-danger-text;
 }
 
 .writeme-editor-content blockquote[data-callout="true"][data-theme="info"] {
-  @apply border-alert-info-border bg-alert-info-bg text-alert-info-text;
+    @apply border-alert-info-border bg-alert-info-bg text-alert-info-text;
 }
 
 .writeme-editor-content hr {
-  @apply border-b border-border my-10;
+    @apply my-10 border-b border-border;
 }
 
 .writeme-editor-content img {
-  @apply block h-auto my-6 max-w-full rounded-xl;
+    @apply my-6 block h-auto max-w-full rounded-xl;
 }
 
 .writeme-editor-content img.ProseMirror-selectednode {
-  outline: 3px solid var(--purple);
+    outline: 3px solid var(--purple);
 }
 
 .writeme-editor-content mark {
-  @apply bg-primary text-primary-foreground px-1 rounded underline;
-  box-decoration-break: clone;
+    @apply rounded bg-primary px-1 text-primary-foreground underline;
+    box-decoration-break: clone;
 }
 
 .writeme-editor-content ul[data-type="taskList"] {
-  @apply list-none ml-0 p-0 mb-1;
+    @apply mb-1 ml-0 list-none p-0;
 }
 
 .writeme-editor-content ul[data-type="taskList"] li {
-  @apply items-start flex;
+    @apply flex items-start;
 }
 
 .writeme-editor-content ul[data-type="taskList"] li > label {
-  @apply select-none mr-0;
-  flex: 0 0 auto;
+    @apply mr-0 select-none;
+    flex: 0 0 auto;
 }
 
 .writeme-editor-content ul[data-type="taskList"] li > div {
-  @apply items-center;
-  flex: 1 1 auto;
+    @apply items-center;
+    flex: 1 1 auto;
 }
 
 .writeme-editor-content ul[data-type="taskList"] input[type="checkbox"] {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .writeme-editor-content ul[data-type="taskList"] ul[data-type="taskList"] {
-  margin: 0;
+    margin: 0;
 }
 
 .writeme-editor-content li,
 .writeme-editor-content li p {
-  line-height: 1.82;
+    line-height: 1.82;
 }
 
 .writeme-editor-content input[type="checkbox"] {
-  @apply mr-2 rounded text-primary size-5;
-  margin-top: -0.2rem;
+    @apply mr-2 size-5 rounded text-primary;
+    margin-top: -0.2rem;
 }
 
 [type="checkbox"]:checked {
-  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='black' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='black' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
 }
 
 .writeme-editor-content table {
-  border-collapse: collapse;
-  margin: 0;
-  overflow: hidden;
-  table-layout: fixed;
-  width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .writeme-editor-content table td,
 .writeme-editor-content table th {
-  @apply border relative border-card-border px-2 py-3;
-  min-width: 1em;
-  vertical-align: top;
+    @apply relative border border-card-border px-2 py-3;
+    min-width: 1em;
+    vertical-align: top;
 }
 
 .writeme-editor-content table td > *,
 .writeme-editor-content table th > * {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 .writeme-editor-content table th {
-  @apply bg-table-background text-left font-bold;
+    @apply bg-table-background text-left font-bold;
 }
 
 .writeme-editor-content table .selectedCell:after {
-  @apply pointer-events-none bg-background left-0 top-0 right-0 bottom-0 absolute;
-  content: "";
-  z-index: 2;
+    @apply pointer-events-none absolute top-0 right-0 bottom-0 left-0 bg-background;
+    content: "";
+    z-index: 2;
 }
 
 .writeme-editor-content table .column-resize-handle {
-  @apply w-1 bg-primary absolute top-0;
-  bottom: -2px;
-  pointer-events: none;
-  right: -2px;
+    @apply absolute top-0 w-1 bg-primary;
+    bottom: -2px;
+    pointer-events: none;
+    right: -2px;
 }
 
 .writeme-editor-content .tableWrapper {
-  margin: 1.5rem 0;
-  overflow-x: auto;
+    margin: 1.5rem 0;
+    overflow-x: auto;
 }
 
 .writeme-editor-content.resize-cursor {
-  cursor: ew-resize;
-  cursor: col-resize;
+    cursor: ew-resize;
+    cursor: col-resize;
 }
 
 .writeme-editor-content a {
-  @apply cursor-pointer text-typography-link underline ease-linear duration-300 transition-colors hover:text-primary-hover;
+    @apply cursor-pointer text-typography-link underline transition-colors duration-300 ease-linear hover:text-primary-hover;
 }
 
 .writeme-editor-content .mention {
-  @apply no-underline;
+    @apply no-underline;
 }
 
 .writeme-editor-content .mention:hover {
-  @apply underline;
+    @apply underline;
 }
 
 .writeme-editor-content .mention::before {
-  content: "@";
+    content: "@";
 }
 
 .writeme-editor-content ul,
 .writeme-editor-content ol {
-  @apply mb-4 ml-0;
-  padding-left: 1.5rem;
+    @apply mb-4 ml-0;
+    padding-left: 1.5rem;
 }
 
 /* Unordered lists */
 .writeme-editor-content ul {
-  @apply list-disc list-outside;
+    @apply list-outside list-disc;
 }
 
 .writeme-editor-content li > p {
-  @apply mb-0;
+    @apply mb-0;
 }
 
 .writeme-editor-content ul[data-type="taskList"] li > div > p {
-  @apply mb-0;
+    @apply mb-0;
 }
 
 .writeme-editor-content li > ul,
 .writeme-editor-content li > ol {
-  @apply mt-2 mb-2 w-full;
-  word-break: break-all;
+    @apply mt-2 mb-2 w-full;
+    word-break: break-all;
 }
 
 .writeme-editor-content ul ul {
-  list-style-type: circle;
+    list-style-type: circle;
 }
 
 .writeme-editor-content ul ul ul {
-  list-style-type: square;
+    list-style-type: square;
 }
 
 .writeme-editor-content ol {
-  @apply list-none pl-0;
-  counter-reset: section;
+    @apply list-none pl-0;
+    counter-reset: section;
 }
 
 .writeme-editor-content ol li {
-  @apply flex items-start flex-wrap;
-  counter-increment: section;
+    @apply flex flex-wrap items-start;
+    counter-increment: section;
 }
 
 .writeme-editor-content ol li::before {
-  @apply mt-0 mr-1 shrink-0;
-  content: counters(section, ".") ". ";
-  min-width: 1.25rem;
+    @apply mt-0 mr-1 shrink-0;
+    content: counters(section, ".") ". ";
+    min-width: 1.25rem;
 }
 
 .writeme-editor-content ol li > p {
-  @apply flex-1 mb-0;
+    @apply mb-0 flex-1;
 }
 
 .writeme-editor-content ol li > ol {
-  @apply ml-6;
-  counter-reset: section;
+    @apply ml-6;
+    counter-reset: section;
 }
 
 .writeme-editor-content ol li > ul {
-  @apply ml-6;
+    @apply ml-6;
 }
 
 .writeme-editor-content ul li > ul {
-  @apply ml-4;
+    @apply ml-4;
 }
 
 .writeme-editor-content .tiptap-mathematics-render[data-type="inline-math"] {
-  @apply text-sm text-center rounded-lg p-1 px-2 mx-2;
+    @apply mx-2 rounded-lg p-1 px-2 text-center text-sm;
 }

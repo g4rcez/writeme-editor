@@ -1,99 +1,93 @@
 import { useEffect, useState, useCallback } from "react";
-import { repositories } from "@/store/repositories";
-import { Note, NoteType } from "@/store/note";
-import { SettingsService } from "@/store/settings";
 import { isElectron } from "@/lib/is-electron";
+import { Note, NoteType } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { SettingsService } from "@/store/settings";
 
 export const useTemplates = () => {
-  const [templates, setTemplates] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+    const [templates, setTemplates] = useState<Note[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  const loadTemplates = useCallback(async () => {
-    setLoading(true);
-    try {
-      const allTemplates = await repositories.notes.getTemplates();
-      setTemplates(allTemplates);
-    } catch (error) {
-      console.error("Failed to load templates:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const syncTemplates = useCallback(async () => {
-    if (!isElectron()) {
-      await loadTemplates();
-      return;
-    }
-
-    try {
-      const settings = SettingsService.load();
-      let templatesDir = settings.templatesDirectory;
-
-      // Fallback logic
-      if (!templatesDir) {
-        if (settings.directory) {
-          templatesDir = `${settings.directory}/.templates`;
-        } else {
-          const home = await window.electronAPI.env.getHome();
-          templatesDir = `${home}/.templates`;
+    const loadTemplates = useCallback(async () => {
+        setLoading(true);
+        try {
+            const allTemplates = await repositories.notes.getTemplates();
+            setTemplates(allTemplates);
+        } catch (error) {
+            console.error("Failed to load templates:", error);
+        } finally {
+            setLoading(false);
         }
-      }
+    }, []);
 
-      // Ensure directory exists
-      await window.electronAPI.fs.mkdir(templatesDir);
+    const syncTemplates = useCallback(async () => {
+        if (!isElectron()) {
+            await loadTemplates();
+            return;
+        }
 
-      // Read files
-      let result = await window.electronAPI.fs.readDir(templatesDir);
+        try {
+            const settings = SettingsService.load();
+            let templatesDir = settings.templatesDirectory;
 
-      if (!result.error) {
-        const files = result.entries.filter(
-          (f) => f.type === "file" && f.name.endsWith(".md"),
-        );
-        const currentTemplates = await repositories.notes.getTemplates();
-        for (const file of files) {
-          const filePath = file.path;
-          const fileContent = await window.electronAPI.fs.readFile(filePath);
-          if (fileContent.success) {
-            const name = file.name.replace(/\.md$/, "");
-            const note = currentTemplates.find((t) => t.filePath === filePath);
-            if (note) {
-              if (note.content !== fileContent.content) {
-                note.content = fileContent.content;
-                note.title = name;
-                note.updatedAt = new Date();
-                await repositories.notes.update(note.id, note);
-              }
-            } else {
-              const newTemplate = Note.new(
-                name,
-                fileContent.content,
-                NoteType.template,
-              );
-              newTemplate.filePath = filePath;
-              await repositories.notes.save(newTemplate);
+            // Fallback logic
+            if (!templatesDir) {
+                if (settings.directory) {
+                    templatesDir = `${settings.directory}/.templates`;
+                } else {
+                    const home = await window.electronAPI.env.getHome();
+                    templatesDir = `${home}/.templates`;
+                }
             }
-          }
+
+            // Ensure directory exists
+            await window.electronAPI.fs.mkdir(templatesDir);
+
+            // Read files
+            let result = await window.electronAPI.fs.readDir(templatesDir);
+
+            if (!result.error) {
+                const files = result.entries.filter((f) => f.type === "file" && f.name.endsWith(".md"));
+                const currentTemplates = await repositories.notes.getTemplates();
+                for (const file of files) {
+                    const filePath = file.path;
+                    const fileContent = await window.electronAPI.fs.readFile(filePath);
+                    if (fileContent.success) {
+                        const name = file.name.replace(/\.md$/, "");
+                        const note = currentTemplates.find((t) => t.filePath === filePath);
+                        if (note) {
+                            if (note.content !== fileContent.content) {
+                                note.content = fileContent.content;
+                                note.title = name;
+                                note.updatedAt = new Date();
+                                await repositories.notes.update(note.id, note);
+                            }
+                        } else {
+                            const newTemplate = Note.new(name, fileContent.content, NoteType.template);
+                            newTemplate.filePath = filePath;
+                            await repositories.notes.save(newTemplate);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Failed to sync templates:", error);
+        } finally {
+            // Always reload after sync attempt to clear loading state
+            await loadTemplates();
         }
-      }
-    } catch (error) {
-      console.error("Failed to sync templates:", error);
-    } finally {
-      // Always reload after sync attempt to clear loading state
-      await loadTemplates();
-    }
-  }, [loadTemplates]);
+    }, [loadTemplates]);
 
-  useEffect(() => {
-    syncTemplates();
+    useEffect(() => {
+        syncTemplates();
 
-    const handleUpdate = () => {
-      loadTemplates();
-    };
+        const handleUpdate = () => {
+            loadTemplates();
+        };
 
-    window.addEventListener("templates:updated", handleUpdate);
-    return () => window.removeEventListener("templates:updated", handleUpdate);
-  }, [syncTemplates, loadTemplates]);
+        window.addEventListener("templates:updated", handleUpdate);
+        return () => window.removeEventListener("templates:updated", handleUpdate);
+    }, [syncTemplates, loadTemplates]);
 
-  return { templates, loading, refresh: syncTemplates };
+    return { templates, loading, refresh: syncTemplates };
 };

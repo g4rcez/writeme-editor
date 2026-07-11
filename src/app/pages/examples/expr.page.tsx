@@ -32,5 +32,5 @@ Try typing any of these commands:
 `;
 
 export default function ExprPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

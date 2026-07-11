@@ -46,7 +46,11 @@ const CollapsiblePanel = () => {
 
     return (
         <div className="border border-border rounded-card-radius">
-            <button type="button" className="w-full px-4 py-3 text-left font-medium text-foreground" onClick={() => setIsOpen((v) => !v)}>
+            <button
+                type="button"
+                className="w-full px-4 py-3 text-left font-medium text-foreground"
+                onClick={() => setIsOpen((v) => !v)}
+            >
                 Toggle Details
             </button>
             <Resizable>

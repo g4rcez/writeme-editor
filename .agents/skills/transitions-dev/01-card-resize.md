@@ -16,17 +16,17 @@ transition will tween the two sizes.
 
 ## Tunable variables
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `--resize-dur` | `300ms` | sourced from `--p4-dur` |
+| Variable        | Default                          | Notes                    |
+| --------------- | -------------------------------- | ------------------------ |
+| `--resize-dur`  | `300ms`                          | sourced from `--p4-dur`  |
 | `--resize-ease` | `cubic-bezier(0.22, 1, 0.36, 1)` | sourced from `--p4-ease` |
 
 The `:root` defaults below match the live tuning on [transitions.dev](https://transitions.dev). Drop them into your global stylesheet once — every transition in this skill reads from semantic names like these, so multiple transitions can share a single `:root` block.
 
 ```css
 :root {
-  --resize-dur: 300ms;
-  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --resize-dur: 300ms;
+    --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 ```
 
@@ -34,14 +34,16 @@ The `:root` defaults below match the live tuning on [transitions.dev](https://tr
 
 ```css
 .t-resize {
-  transition:
-    width  var(--resize-dur) var(--resize-ease),
-    height var(--resize-dur) var(--resize-ease);
-  will-change: width, height;
+    transition:
+        width var(--resize-dur) var(--resize-ease),
+        height var(--resize-dur) var(--resize-ease);
+    will-change: width, height;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-resize { transition: none !important; }
+    .t-resize {
+        transition: none !important;
+    }
 }
 ```
 
@@ -50,4 +52,3 @@ The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet
 ## JavaScript orchestration
 
 None — pure CSS. Toggle the documented HTML attributes or class names from whatever already drives state in your app.
-

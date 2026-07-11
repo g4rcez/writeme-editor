@@ -173,7 +173,13 @@ function ContactForm() {
 
     return (
         <Form onSubmit={handleSubmit} className="flex flex-col gap-base">
-            <Autocomplete name="country" title="Country" options={countries} required emptyMessage="No countries found" />
+            <Autocomplete
+                name="country"
+                title="Country"
+                options={countries}
+                required
+                emptyMessage="No countries found"
+            />
             <Button theme="primary" type="submit">
                 Submit
             </Button>

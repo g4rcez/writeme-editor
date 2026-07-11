@@ -12,16 +12,16 @@ description: Correct patterns for text selection dispatch and scroll in the writ
 `editor.commands.setTextSelection` appends `.scrollIntoView()` to the transaction before dispatching. In writeme-editor the editor sits inside a custom scroll container (`#main-scroll-container`), not the document body. ProseMirror's `.scrollIntoView()` targets the wrong scrollable ancestor and either does nothing or jumps to the wrong position.
 
 **Wrong:**
+
 ```ts
 editor.commands.setTextSelection({ from: result.from, to: result.to });
 // scrollIntoView() fires automatically — broken in this editor
 ```
 
 **Right:** dispatch the selection transaction yourself using `editor.view.dispatch`:
+
 ```ts
-const selTr = editor.state.tr.setSelection(
-  TextSelection.create(editor.state.doc, result.from, result.to)
-);
+const selTr = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, result.from, result.to));
 editor.view.dispatch(selTr);
 ```
 
@@ -32,12 +32,14 @@ Import `TextSelection` from `@tiptap/pm/state`.
 Calling the scroll helper immediately after `editor.view.dispatch(selTr)` reads coordinates before ProseMirror has painted the updated DOM. The computed `coords.top` is stale and the scroll lands at the wrong position.
 
 **Wrong:**
+
 ```ts
 editor.view.dispatch(selTr);
 scrollToPos(editor.view, pos); // too early — DOM not yet updated
 ```
 
 **Right:** wrap in `requestAnimationFrame`:
+
 ```ts
 editor.view.dispatch(selTr);
 requestAnimationFrame(() => scrollToPos(editor.view, pos));
@@ -51,15 +53,14 @@ The scroll container is `#main-scroll-container` (defined in `src/app/layouts/ma
 
 ```ts
 function scrollToPos(view: EditorView, pos: number): void {
-  const container = document.getElementById("main-scroll-container");
-  if (!container) return;
-  try {
-    const coords = view.coordsAtPos(pos);
-    const containerRect = container.getBoundingClientRect();
-    const targetScrollTop =
-      container.scrollTop + coords.top - containerRect.top - containerRect.height / 3;
-    container.scrollTop = Math.max(0, targetScrollTop);
-  } catch {}
+    const container = document.getElementById("main-scroll-container");
+    if (!container) return;
+    try {
+        const coords = view.coordsAtPos(pos);
+        const containerRect = container.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + coords.top - containerRect.top - containerRect.height / 3;
+        container.scrollTop = Math.max(0, targetScrollTop);
+    } catch {}
 }
 ```
 
@@ -70,9 +71,7 @@ Never use `editor.commands.setTextSelection`. Build and dispatch the transaction
 ```ts
 import { TextSelection } from "@tiptap/pm/state";
 
-const selTr = editor.state.tr.setSelection(
-  TextSelection.create(editor.state.doc, from, to)
-);
+const selTr = editor.state.tr.setSelection(TextSelection.create(editor.state.doc, from, to));
 editor.view.dispatch(selTr);
 requestAnimationFrame(() => scrollToPos(editor.view, from));
 ```

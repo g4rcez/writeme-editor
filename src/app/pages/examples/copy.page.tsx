@@ -9,5 +9,5 @@ After that, everything you copy will be appended to this editor.
 `;
 
 export default function EditorPage() {
-  return <Editor content={content} />;
+    return <Editor content={content} />;
 }

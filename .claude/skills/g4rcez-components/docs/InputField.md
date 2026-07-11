@@ -62,7 +62,11 @@ Tokens this component reads. Customize by overriding these CSS variables in your
 import { InputField } from "@g4rcez/components";
 
 <InputField title="Username" name="username" required>
-    <input id="username" name="username" className="h-input-height w-full flex-1 bg-transparent px-input-padding-x text-foreground outline-none" />
+    <input
+        id="username"
+        name="username"
+        className="h-input-height w-full flex-1 bg-transparent px-input-padding-x text-foreground outline-none"
+    />
 </InputField>;
 ```
 
@@ -140,7 +144,11 @@ import { MagnifyingGlassIcon, CheckIcon } from "@phosphor-icons/react";
     error={!isAvailable ? "Slug is already taken." : undefined}
     required
 >
-    <input id="slug" name="slug" className="h-input-height w-full flex-1 bg-transparent px-input-padding-x text-foreground outline-none" />
+    <input
+        id="slug"
+        name="slug"
+        className="h-input-height w-full flex-1 bg-transparent px-input-padding-x text-foreground outline-none"
+    />
 </InputField>
 ```
 
