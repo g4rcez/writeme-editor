@@ -20,6 +20,7 @@ const colors = {
 };
 
 function createAppTheme(isDark: boolean) {
+    const selectionBackground = `hsla(var(--primary), ${isDark ? 0.45 : 0.28})`;
     const theme = EditorView.theme(
         {
             "&": {
@@ -34,7 +35,7 @@ function createAppTheme(isDark: boolean) {
             },
             "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
                 {
-                    backgroundColor: "hsl(var(--primary) / 0.2)",
+                    backgroundColor: selectionBackground,
                 },
             ".cm-panels": {
                 backgroundColor: colors.floating,
@@ -47,17 +48,17 @@ function createAppTheme(isDark: boolean) {
                 borderTop: `1px solid ${colors.border}`,
             },
             ".cm-searchMatch": {
-                backgroundColor: "hsl(var(--warn) / 0.25)",
+                backgroundColor: "hsla(var(--warn), 0.25)",
                 outline: `1px solid ${colors.warn}`,
             },
             ".cm-searchMatch.cm-searchMatch-selected": {
-                backgroundColor: "hsl(var(--warn) / 0.4)",
+                backgroundColor: "hsla(var(--warn), 0.4)",
             },
             ".cm-activeLine": {
-                backgroundColor: "hsl(var(--muted) / 0.5)",
+                backgroundColor: "hsla(var(--muted), 0.5)",
             },
             ".cm-selectionMatch": {
-                backgroundColor: "hsl(var(--primary) / 0.14)",
+                backgroundColor: "hsla(var(--primary), 0.14)",
             },
             "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
                 backgroundColor: colors.secondarySubtle,
@@ -69,7 +70,7 @@ function createAppTheme(isDark: boolean) {
                 border: "none",
             },
             ".cm-activeLineGutter": {
-                backgroundColor: "hsl(var(--muted) / 0.5)",
+                backgroundColor: "hsla(var(--muted), 0.5)",
             },
             ".cm-foldPlaceholder": {
                 backgroundColor: "transparent",

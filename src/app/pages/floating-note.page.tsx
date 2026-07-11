@@ -143,25 +143,27 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
 
     if (loading || (!error && !state.note)) {
         return (
-            <div className="flex justify-center items-center h-full text-muted-foreground">{config.loadingLabel}</div>
+            <div className="flex h-full items-center justify-center text-muted-foreground">{config.loadingLabel}</div>
         );
     }
 
     if (error || !state.note) {
         return (
-            <div className="flex justify-center items-center h-full text-muted-foreground">
+            <div className="flex h-full items-center justify-center text-muted-foreground">
                 {error ?? config.errorLabel}
             </div>
         );
     }
 
     return (
-        <div className="mx-auto bg-background w-full h-full print:block print:h-auto print:overflow-visible container max-w-safe">
-            <div className="quicknote-window-drag-region flex justify-between items-center py-2 mt-4 mb-4 border-b border-card-border">
-                <h1 className="text-lg font-semibold truncate">{state.note.title}</h1>
+        <div className="container mx-auto flex h-full min-h-0 w-full max-w-safe flex-col bg-background print:block print:h-auto print:overflow-visible">
+            <div className="quicknote-window-drag-region mt-4 mb-4 flex shrink-0 items-center justify-between border-b border-card-border py-2">
+                <h1 className="truncate text-lg font-semibold">{state.note.title}</h1>
                 <span className="text-xs text-disabled">Press Esc to close</span>
             </div>
-            <Editor content={state.note.content} note={state.note} />
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <Editor content={state.note.content} note={state.note} />
+            </div>
         </div>
     );
 }

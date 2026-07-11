@@ -89,10 +89,7 @@ function createRawMarkdownEditorTheme(fontSize: number) {
             color: "hsl(var(--muted-foreground))",
         },
         ".cm-activeLine, .cm-activeLineGutter": {
-            backgroundColor: "hsl(var(--muted) / 0.25)",
-        },
-        ".cm-selectionBackground, .cm-content ::selection": {
-            backgroundColor: "hsl(var(--primary) / 0.2)",
+            backgroundColor: "hsla(var(--muted), 0.25)",
         },
         ".cm-vim-panel": {
             borderTop: "1px solid hsl(var(--border))",
@@ -115,10 +112,10 @@ function createRawMarkdownEditorTheme(fontSize: number) {
             caretColor: "transparent",
         },
         ".cm-indent-marker": {
-            borderLeftColor: "hsl(var(--border) / 0.35)",
+            borderLeftColor: "hsla(var(--border), 0.35)",
         },
         ".cm-indent-marker-active": {
-            borderLeftColor: "hsl(var(--primary) / 0.55)",
+            borderLeftColor: "hsla(var(--primary), 0.55)",
         },
     });
 }
@@ -186,10 +183,10 @@ export function RawMarkdownEditor({
                         hideFirstIndent: true,
                         markerType: "codeOnly",
                         colors: {
-                            light: "hsl(var(--border) / 0.35)",
-                            dark: "hsl(var(--border) / 0.35)",
-                            activeLight: "hsl(var(--primary) / 0.55)",
-                            activeDark: "hsl(var(--primary) / 0.55)",
+                            light: "hsla(var(--border), 0.35)",
+                            dark: "hsla(var(--border), 0.35)",
+                            activeLight: "hsla(var(--primary), 0.55)",
+                            activeDark: "hsla(var(--primary), 0.55)",
                         },
                     }),
                     visualThemeCompartmentRef.current.of(isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme()),
