@@ -1,97 +1,101 @@
-import { type CatppuccinFlavor, flavors } from "@catppuccin/palette";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 
-function createCatppuccinTheme(flavor: CatppuccinFlavor, backgroundColor: string = flavor.colors.base.hex) {
-    const colors = flavor.colors;
-    const isDark = flavor.dark;
+const colors = {
+    foreground: "hsl(var(--foreground))",
+    mutedForeground: "hsl(var(--muted-foreground))",
+    border: "hsl(var(--border))",
+    primary: "hsl(var(--primary))",
+    primarySubtle: "hsl(var(--primary-subtle))",
+    secondary: "hsl(var(--secondary))",
+    secondarySubtle: "hsl(var(--secondary-subtle))",
+    emphasis: "hsl(var(--emphasis))",
+    info: "hsl(var(--info))",
+    warn: "hsl(var(--warn))",
+    danger: "hsl(var(--danger))",
+    success: "hsl(var(--success))",
+    floating: "hsl(var(--floating-background))",
+    floatingForeground: "hsl(var(--floating-foreground))",
+};
 
+function createAppTheme(isDark: boolean) {
     const theme = EditorView.theme(
         {
             "&": {
-                backgroundColor,
-                color: colors.text.hex,
+                backgroundColor: "transparent",
+                color: colors.foreground,
             },
-
             ".cm-content": {
-                caretColor: colors.rosewater.hex,
+                caretColor: colors.primary,
             },
-
             ".cm-cursor, .cm-dropCursor": {
-                borderLeftColor: colors.rosewater.hex,
+                borderLeftColor: colors.primary,
             },
-
             "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
                 {
-                    backgroundColor: `${colors.overlay2.hex}40`,
+                    backgroundColor: "hsl(var(--primary) / 0.2)",
                 },
-
             ".cm-panels": {
-                backgroundColor: colors.mantle.hex,
-                color: colors.text.hex,
+                backgroundColor: colors.floating,
+                color: colors.floatingForeground,
             },
             ".cm-panels.cm-panels-top": {
-                borderBottom: `1px solid ${colors.overlay0.hex}`,
+                borderBottom: `1px solid ${colors.border}`,
             },
             ".cm-panels.cm-panels-bottom": {
-                borderTop: `1px solid ${colors.overlay0.hex}`,
+                borderTop: `1px solid ${colors.border}`,
             },
-
             ".cm-searchMatch": {
-                backgroundColor: `${colors.blue.hex}59`,
-                outline: `1px solid ${colors.blue.hex}`,
+                backgroundColor: "hsl(var(--warn) / 0.25)",
+                outline: `1px solid ${colors.warn}`,
             },
             ".cm-searchMatch.cm-searchMatch-selected": {
-                backgroundColor: `${colors.blue.hex}2f`,
+                backgroundColor: "hsl(var(--warn) / 0.4)",
             },
-
-            ".cm-activeLine": { backgroundColor: colors.surface0.hex },
+            ".cm-activeLine": {
+                backgroundColor: "hsl(var(--muted) / 0.5)",
+            },
             ".cm-selectionMatch": {
-                backgroundColor: `${colors.surface2.hex}4d`,
+                backgroundColor: "hsl(var(--primary) / 0.14)",
             },
-
             "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-                backgroundColor: `${colors.surface2.hex}47`,
-                color: colors.text.hex,
+                backgroundColor: colors.secondarySubtle,
+                color: colors.foreground,
             },
-
             ".cm-gutters": {
-                backgroundColor: colors.base.hex,
-                color: colors.subtext0.hex,
+                backgroundColor: "transparent",
+                color: colors.mutedForeground,
                 border: "none",
             },
-
             ".cm-activeLineGutter": {
-                backgroundColor: colors.surface0.hex,
+                backgroundColor: "hsl(var(--muted) / 0.5)",
             },
-
             ".cm-foldPlaceholder": {
                 backgroundColor: "transparent",
                 border: "none",
-                color: colors.overlay0.hex,
+                color: colors.mutedForeground,
             },
-
             ".cm-placeholder": {
-                color: colors.overlay1.hex,
+                color: colors.mutedForeground,
             },
-
             ".cm-tooltip": {
-                border: "none",
-                backgroundColor: colors.surface0.hex,
+                border: `1px solid ${colors.border}`,
+                backgroundColor: colors.floating,
+                color: colors.floatingForeground,
             },
             ".cm-tooltip .cm-tooltip-arrow:before": {
-                borderTopColor: "transparent",
-                borderBottomColor: "transparent",
+                borderTopColor: colors.border,
+                borderBottomColor: colors.border,
             },
             ".cm-tooltip .cm-tooltip-arrow:after": {
-                borderTopColor: colors.surface0.hex,
-                borderBottomColor: colors.surface0.hex,
+                borderTopColor: colors.floating,
+                borderBottomColor: colors.floating,
             },
             ".cm-tooltip-autocomplete": {
                 "& > ul > li[aria-selected]": {
-                    backgroundColor: colors.surface1.hex,
-                    color: colors.text.hex,
+                    backgroundColor: colors.primarySubtle,
+                    color: colors.foreground,
                 },
             },
         },
@@ -99,51 +103,44 @@ function createCatppuccinTheme(flavor: CatppuccinFlavor, backgroundColor: string
     );
 
     const highlightStyle = HighlightStyle.define([
-        { tag: t.keyword, color: colors.mauve.hex },
+        { tag: t.keyword, color: colors.primary },
         {
             tag: [t.name, t.definition(t.name), t.deleted, t.character, t.macroName],
-            color: colors.text.hex,
+            color: colors.foreground,
         },
         {
             tag: [t.function(t.variableName), t.function(t.propertyName), t.propertyName, t.labelName],
-            color: colors.blue.hex,
+            color: colors.secondary,
         },
         {
-            tag: [t.color, t.constant(t.name), t.standard(t.name)],
-            color: colors.peach.hex,
+            tag: [t.color, t.constant(t.name), t.standard(t.name), t.bool, t.number],
+            color: colors.emphasis,
         },
-        { tag: [t.self, t.atom], color: colors.red.hex },
+        { tag: [t.self, t.atom, t.invalid], color: colors.danger },
         {
             tag: [t.typeName, t.className, t.changed, t.annotation, t.namespace],
-            color: colors.yellow.hex,
+            color: colors.warn,
         },
-        { tag: [t.operator], color: colors.sky.hex },
-        { tag: [t.url], color: colors.teal.hex },
-        { tag: [t.escape, t.regexp], color: colors.pink.hex },
+        { tag: [t.operator, t.url], color: colors.info },
+        { tag: [t.escape, t.regexp, t.special(t.variableName)], color: colors.primary },
         {
             tag: [t.meta, t.punctuation, t.separator, t.comment],
-            color: colors.overlay2.hex,
+            color: colors.mutedForeground,
         },
         { tag: t.strong, fontWeight: "bold" },
         { tag: t.emphasis, fontStyle: "italic" },
         { tag: t.strikethrough, textDecoration: "line-through" },
-        { tag: t.link, color: colors.blue.hex, textDecoration: "underline" },
-        { tag: t.heading, fontWeight: "bold", color: colors.blue.hex },
-        {
-            tag: [t.special(t.variableName)],
-            color: colors.lavender.hex,
-        },
-        { tag: [t.bool, t.number], color: colors.peach.hex },
+        { tag: t.link, color: colors.secondary, textDecoration: "underline" },
+        { tag: t.heading, fontWeight: "bold", color: colors.secondary },
         {
             tag: [t.processingInstruction, t.string, t.inserted],
-            color: colors.green.hex,
+            color: colors.success,
         },
-        { tag: t.invalid, color: colors.red.hex },
     ]);
 
     return [theme, syntaxHighlighting(highlightStyle)];
 }
 
-export const catppuccinLatte = () => createCatppuccinTheme(flavors.latte);
+export const appLightCodeMirrorTheme = () => createAppTheme(false);
 
-export const catppuccinMocha = () => createCatppuccinTheme(flavors.mocha, "transparent");
+export const appDarkCodeMirrorTheme = () => createAppTheme(true);

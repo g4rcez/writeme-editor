@@ -55,6 +55,18 @@ describe("CodeMirrorNodeCodeEditor", () => {
         expect(normalizeText(container.textContent)).toContain("const answer = 42;");
     });
 
+    it("uses the app color tokens", () => {
+        renderCodeMirrorEditor({ isDark: true });
+
+        const codeMirrorStyles = Array.from(
+            document.querySelectorAll("style"),
+            (style) => style.textContent ?? "",
+        ).find((css) => css.includes("var(--foreground)") && css.includes("var(--primary)"));
+
+        expect(codeMirrorStyles).toBeDefined();
+        expect(codeMirrorStyles).not.toContain("#cba6f7");
+    });
+
     it("synchronizes external value updates without emitting a change", async () => {
         const { container, props, rerender } = renderCodeMirrorEditor({
             value: "const answer = 42;",

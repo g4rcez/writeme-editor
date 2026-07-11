@@ -13,7 +13,7 @@ import { Compartment, EditorState, Prec, type Extension } from "@codemirror/stat
 import { keymap } from "@codemirror/view";
 import { EditorView, minimalSetup } from "codemirror";
 import { useEffect, useRef } from "react";
-import { catppuccinLatte, catppuccinMocha } from "./editor-themes.ts";
+import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./editor-themes.ts";
 
 type CodeMirrorNodeCodeEditorProps = {
     language: string;
@@ -394,7 +394,7 @@ export const CodeMirrorNodeCodeEditor = ({
 
     useEffect(() => {
         if (!containerRef.current) return;
-        const theme = isDark ? catppuccinMocha() : catppuccinLatte();
+        const theme = isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme();
         const autocompleteExtensions = [createKeywordCompletionSource(language)];
         if (browserLanguages.includes(language)) {
             autocompleteExtensions.push(scopeCompletionSource(window));
@@ -513,5 +513,5 @@ export const CodeMirrorNodeCodeEditor = ({
         });
     }, [value]);
 
-    return <div ref={containerRef} contentEditable={false} className="w-full h-full" data-code-mirror-editor="true" />;
+    return <div ref={containerRef} contentEditable={false} className="h-full w-full" data-code-mirror-editor="true" />;
 };

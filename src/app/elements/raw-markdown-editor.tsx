@@ -6,7 +6,7 @@ import { vim } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { EditorView, minimalSetup } from "codemirror";
 import { useEffect, useRef } from "react";
-import { catppuccinLatte, catppuccinMocha } from "./code-block/editor-themes.ts";
+import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 
 type RawMarkdownEditorProps = {
     value: string;
@@ -192,7 +192,7 @@ export function RawMarkdownEditor({
                             activeDark: "hsl(var(--primary) / 0.55)",
                         },
                     }),
-                    visualThemeCompartmentRef.current.of(isDark ? catppuccinMocha() : catppuccinLatte()),
+                    visualThemeCompartmentRef.current.of(isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme()),
                     editorThemeCompartmentRef.current.of(createRawMarkdownEditorTheme(initialFontSizeRef.current)),
                     editableCompartmentRef.current.of(EditorView.editable.of(!initialReadonly)),
                     readOnlyCompartmentRef.current.of(EditorState.readOnly.of(initialReadonly)),
@@ -235,7 +235,9 @@ export function RawMarkdownEditor({
         view.dispatch({
             effects: [
                 keymapCompartmentRef.current.reconfigure(createKeymapExtensions(vimMode)),
-                visualThemeCompartmentRef.current.reconfigure(isDark ? catppuccinMocha() : catppuccinLatte()),
+                visualThemeCompartmentRef.current.reconfigure(
+                    isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme(),
+                ),
                 editorThemeCompartmentRef.current.reconfigure(createRawMarkdownEditorTheme(fontSize)),
                 editableCompartmentRef.current.reconfigure(EditorView.editable.of(!readonly)),
                 readOnlyCompartmentRef.current.reconfigure(EditorState.readOnly.of(readonly)),
