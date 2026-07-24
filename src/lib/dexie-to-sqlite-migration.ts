@@ -28,11 +28,13 @@ type Counts = {
     identical: number;
     skipped: number;
 };
+type CheckpointKey = string | number;
 type StoreState = {
     status: "complete" | "failed";
     attempts: number;
     counts?: Counts;
     nextOffset?: number;
+    lastKey?: CheckpointKey;
     error?: string;
 };
 type MigrationState = {
@@ -66,31 +68,52 @@ export function migrationIssueUrl(state: MigrationState): string {
     return `${ISSUE_URL}?${params}`;
 }
 
+function isCheckpointKey(value: unknown): value is CheckpointKey {
+    return typeof value === "string" || (typeof value === "number" && Number.isFinite(value));
+}
+
+function recordPrimaryKey(record: unknown, primaryKey: string): CheckpointKey {
+    if (!record || typeof record !== "object" || Array.isArray(record)) {
+        throw new TypeError(`Invalid ${primaryKey} primary key`);
+    }
+    const value = (record as Record<string, unknown>)[primaryKey];
+    if (!isCheckpointKey(value)) throw new TypeError(`Invalid ${primaryKey} primary key`);
+    return value;
+}
+
 async function migrateStore(
     name: (typeof COLLECTIONS)[number],
     progress: StoreState | undefined,
-    saveProgress: (counts: Counts, nextOffset: number) => void,
+    saveProgress: (counts: Counts, nextOffset: number, lastKey?: CheckpointKey) => void,
 ): Promise<Counts> {
-    const records = await db.table(name).toArray();
+    const table = db.table(name);
+    const total = await table.count();
+    const hasCheckpoint = isCheckpointKey(progress?.lastKey);
+    const restartLegacyProgress = (progress?.nextOffset ?? 0) > 0 && !hasCheckpoint;
     const counts: Counts = {
-        found: records.length,
-        imported: progress?.counts?.imported ?? 0,
-        updated: progress?.counts?.updated ?? 0,
-        identical: progress?.counts?.identical ?? 0,
-        skipped: progress?.counts?.skipped ?? 0,
+        found: total,
+        imported: restartLegacyProgress ? 0 : (progress?.counts?.imported ?? 0),
+        updated: restartLegacyProgress ? 0 : (progress?.counts?.updated ?? 0),
+        identical: restartLegacyProgress ? 0 : (progress?.counts?.identical ?? 0),
+        skipped: restartLegacyProgress ? 0 : (progress?.counts?.skipped ?? 0),
     };
-    const nextOffset = Math.min(progress?.nextOffset ?? 0, records.length);
-    saveProgress(counts, nextOffset);
+    let processed = restartLegacyProgress ? 0 : Math.min(progress?.nextOffset ?? 0, total);
+    let lastKey = hasCheckpoint ? progress.lastKey : undefined;
+    const primaryKey = table.schema.primKey.name;
 
-    for (let offset = nextOffset; offset < Math.max(records.length, 1); offset += MIGRATION_BATCH_SIZE) {
-        const batchCounts = await window.electronAPI.db.migrateCollection(
-            name,
-            records.slice(offset, offset + MIGRATION_BATCH_SIZE),
-        );
+    while (processed < Math.max(total, 1)) {
+        const batch = await (lastKey === undefined ? table.orderBy(primaryKey) : table.where(primaryKey).above(lastKey))
+            .limit(MIGRATION_BATCH_SIZE)
+            .toArray();
+        const nextLastKey = batch.length ? recordPrimaryKey(batch.at(-1), primaryKey) : undefined;
+        const batchCounts = await window.electronAPI.db.migrateCollection(name, batch);
         for (const key of ["imported", "updated", "identical", "skipped"] as const) {
             counts[key] += batchCounts[key];
         }
-        saveProgress(counts, Math.min(offset + MIGRATION_BATCH_SIZE, records.length));
+        processed = Math.min(processed + batch.length, total);
+        if (nextLastKey !== undefined) lastKey = nextLastKey;
+        saveProgress(counts, processed, lastKey);
+        if (!batch.length) break;
     }
     return counts;
 }
@@ -124,17 +147,29 @@ async function removeVerifiedDexie(state: MigrationState): Promise<boolean> {
     if (state.status !== "verified" || !state.verifiedAt) return false;
 
     for (const name of COLLECTIONS) {
-        const records = await db.table(name).toArray();
+        const table = db.table(name);
+        const total = await table.count();
         let matched = 0;
         let destinationCount = 0;
-        for (let offset = 0; offset < Math.max(records.length, 1); offset += MIGRATION_BATCH_SIZE) {
-            const batch = records.slice(offset, offset + MIGRATION_BATCH_SIZE);
+        const primaryKey = table.schema.primKey.name;
+        let processed = 0;
+        let lastKey: CheckpointKey | undefined;
+        while (processed < Math.max(total, 1)) {
+            const batch = await (
+                lastKey === undefined ? table.orderBy(primaryKey) : table.where(primaryKey).above(lastKey)
+            )
+                .limit(MIGRATION_BATCH_SIZE)
+                .toArray();
+            const nextLastKey = batch.length ? recordPrimaryKey(batch.at(-1), primaryKey) : undefined;
             const result = await window.electronAPI.db.verifyCollection(name, batch);
             if (result.sourceCount !== batch.length) break;
             matched += result.matched;
             destinationCount = result.destinationCount;
+            processed += batch.length;
+            if (nextLastKey !== undefined) lastKey = nextLastKey;
+            if (!batch.length) break;
         }
-        if (matched !== records.length || destinationCount < records.length) {
+        if (matched !== total || destinationCount < total) {
             state.status = "running";
             state.stores[name] = {
                 status: "failed",
@@ -166,16 +201,22 @@ export async function migrateDexieToSqlite(): Promise<void> {
             for (let attempt = 1; attempt <= 2; attempt++) {
                 const attempts = previousAttempts + attempt;
                 try {
-                    const counts = await migrateStore(name, state.stores[name], (progressCounts, nextOffset) => {
-                        state.stores[name] = {
-                            status: "failed",
-                            attempts,
-                            counts: { ...progressCounts },
-                            nextOffset,
-                        };
-                        writeState(state);
-                    });
+                    const counts = await migrateStore(
+                        name,
+                        state.stores[name],
+                        (progressCounts, nextOffset, lastKey) => {
+                            state.stores[name] = {
+                                status: "failed",
+                                attempts,
+                                counts: { ...progressCounts },
+                                nextOffset,
+                                ...(lastKey === undefined ? {} : { lastKey }),
+                            };
+                            writeState(state);
+                        },
+                    );
                     state.stores[name] = {
+                        ...state.stores[name],
                         status: "complete",
                         attempts,
                         counts,

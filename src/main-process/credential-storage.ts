@@ -5,25 +5,55 @@ const CREDENTIAL_KEYS = ["accessToken", "refreshToken", "apiKey", "idToken"] as 
 
 type SecureStorage = {
     isEncryptionAvailable(): boolean;
+    getSelectedStorageBackend(): string;
     encryptString(value: string): Buffer;
     decryptString(value: Buffer): string;
 };
 
-function protectSecret(secret: string | null, secureStorage: SecureStorage): string | null {
-    if (!secret) return null;
-    if (!secureStorage.isEncryptionAvailable()) return secret;
-    return secureStorage.encryptString(secret).toString("base64");
+type RevealedSecret = {
+    value: string | null;
+    protected: boolean;
+};
+
+function isSecureStorageSuitable(secureStorage: SecureStorage): boolean {
+    try {
+        if (!secureStorage.isEncryptionAvailable()) return false;
+        if (process.platform !== "linux") return true;
+        const backend = secureStorage.getSelectedStorageBackend();
+        return backend !== "basic_text" && backend !== "unknown";
+    } catch {
+        return false;
+    }
 }
 
-function revealSecret(secret: string | null, secureStorage: SecureStorage): string | null {
-    if (!secret) return null;
-    if (!secureStorage.isEncryptionAvailable()) return secret;
+function revealSecret(secret: string | null, secureStorage: SecureStorage): RevealedSecret {
+    if (!secret) return { value: null, protected: true };
+    if (!secureStorage.isEncryptionAvailable()) return { value: secret, protected: false };
 
     try {
-        return secureStorage.decryptString(Buffer.from(secret, "base64"));
+        return {
+            value: secureStorage.decryptString(Buffer.from(secret, "base64")),
+            protected: true,
+        };
     } catch {
-        return secret;
+        return { value: secret, protected: false };
     }
+}
+
+function inspectStoredCredentials(
+    row: Record<string, unknown>,
+    secureStorage: SecureStorage,
+): { value: Record<string, unknown>; protected: boolean } {
+    const value: Record<string, unknown> = { ...row };
+    let protectedSecrets = true;
+    for (const key of CREDENTIAL_KEYS) {
+        const stored = row[key];
+        if (typeof stored !== "string") continue;
+        const revealed = revealSecret(stored, secureStorage);
+        value[key] = revealed.value;
+        if (stored.trim() && !revealed.protected) protectedSecrets = false;
+    }
+    return { value, protected: protectedSecrets };
 }
 
 export function withStoredCredentials(
@@ -31,14 +61,7 @@ export function withStoredCredentials(
     secureStorage: SecureStorage,
 ): Record<string, unknown> | null {
     if (!row) return null;
-    const out: Record<string, unknown> = { ...row };
-    for (const key of CREDENTIAL_KEYS) {
-        const value = row[key];
-        if (typeof value === "string") {
-            out[key] = revealSecret(value, secureStorage);
-        }
-    }
-    return out;
+    return inspectStoredCredentials(row, secureStorage).value;
 }
 
 export function persistCredentialRow(
@@ -46,10 +69,17 @@ export function persistCredentialRow(
     secureStorage: SecureStorage,
 ): Record<string, unknown> {
     const output = { ...creds };
+    const hasSecret = CREDENTIAL_KEYS.some((key) => {
+        const value = output[key];
+        return typeof value === "string" && Boolean(value.trim());
+    });
+    if (hasSecret && !isSecureStorageSuitable(secureStorage)) {
+        throw new Error("Secure credential storage is unavailable");
+    }
     for (const key of CREDENTIAL_KEYS) {
         const value = output[key];
         if (typeof value === "string" && value.trim()) {
-            output[key] = protectSecret(value, secureStorage);
+            output[key] = secureStorage.encryptString(value).toString("base64");
         }
     }
     return output;
@@ -60,29 +90,30 @@ export function migrateCredentialRow(
     manager: DatabaseManager,
     secureStorage: SecureStorage,
 ): { status: "imported" | "updated" | "identical" | "skipped" } {
-    if (!secureStorage.isEncryptionAvailable()) {
+    if (!isSecureStorageSuitable(secureStorage)) {
         return { status: "skipped" };
     }
     const creds = parseAiCredentials(value);
     const existingRow = manager.db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?").get(creds.adapterId) as
         | Record<string, unknown>
         | undefined;
-    const existing = withStoredCredentials(existingRow ?? null, secureStorage);
+    const inspected = existingRow ? inspectStoredCredentials(existingRow, secureStorage) : null;
+    const existing = inspected?.value ?? null;
     const comparableKeys = [...CREDENTIAL_KEYS, "expiresAt", "baseUrl", "accountId"] as const;
     const sameSecrets = existing && comparableKeys.every((key) => (existing[key] ?? null) === (creds[key] ?? null));
-    if (sameSecrets) return { status: "identical" };
+    if (sameSecrets && inspected?.protected) return { status: "identical" };
 
     const sourceTime = Date.parse(String(creds.updatedAt ?? ""));
     const destinationTime = Date.parse(String(existing?.updatedAt ?? ""));
-    if (
-        existing &&
-        !(Number.isFinite(sourceTime) && Number.isFinite(destinationTime) && sourceTime > destinationTime)
-    ) {
+    const sourceIsNewer =
+        Number.isFinite(sourceTime) && Number.isFinite(destinationTime) && sourceTime > destinationTime;
+    if (existing && inspected?.protected && !sourceIsNewer) {
         return { status: "skipped" };
     }
 
+    const winner = existing && !sourceIsNewer ? existing : creds;
     const now = new Date().toISOString();
-    const encrypted = persistCredentialRow(creds, secureStorage);
+    const encrypted = persistCredentialRow(winner, secureStorage);
     manager.db
         .prepare(
             `
@@ -92,17 +123,17 @@ export function migrateCredentialRow(
       `,
         )
         .run(
-            creds.adapterId,
+            winner.adapterId,
             encrypted.accessToken ?? null,
             encrypted.refreshToken ?? null,
-            creds.expiresAt ?? null,
+            winner.expiresAt ?? null,
             encrypted.apiKey ?? null,
-            creds.baseUrl ?? null,
-            creds.accountId ?? null,
+            winner.baseUrl ?? null,
+            winner.accountId ?? null,
             encrypted.idToken ?? null,
-            creds.adapterId,
-            creds.createdAt instanceof Date ? creds.createdAt.toISOString() : (creds.createdAt ?? now),
-            creds.updatedAt instanceof Date ? creds.updatedAt.toISOString() : (creds.updatedAt ?? now),
+            winner.adapterId,
+            winner.createdAt instanceof Date ? winner.createdAt.toISOString() : (winner.createdAt ?? now),
+            winner.updatedAt instanceof Date ? winner.updatedAt.toISOString() : (winner.updatedAt ?? now),
         );
     return { status: existing ? "updated" : "imported" };
 }

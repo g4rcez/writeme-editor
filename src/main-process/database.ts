@@ -636,14 +636,6 @@ export class DatabaseManager {
         return (stmt.all() as any[]).map((row) => this.normalizeRow(row));
     }
 
-    public emptyTrash(): void {
-        this.db.prepare("DELETE FROM notes WHERE deletedAt IS NOT NULL").run();
-    }
-
-    public purgeTrashedNotesBefore(cutoff: string): void {
-        this.db.prepare("DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?").run(cutoff);
-    }
-
     public moveNoteToTrash(id: string, trashPath: string, originalFilePath: string | null, deletedAt: string): void {
         this.db
             .prepare("UPDATE notes SET filePath = ?, originalFilePath = ?, deletedAt = ? WHERE id = ?")

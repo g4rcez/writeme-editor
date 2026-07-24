@@ -141,16 +141,6 @@ export const databaseIpcHandler = () => {
         return db.getTrashedNotes();
     });
 
-    ipcMain.handle("db:notes:emptyTrash", () => {
-        db.emptyTrash();
-        return true;
-    });
-
-    ipcMain.handle("db:notes:purgeBefore", (_, cutoff: string) => {
-        db.purgeTrashedNotesBefore(dateSchema.parse(cutoff));
-        return true;
-    });
-
     ipcMain.handle(
         "db:notes:moveToTrash",
         (_, id: string, trashPath: string, originalFilePath: string | null, deletedAt: string) => {

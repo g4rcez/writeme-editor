@@ -33,6 +33,15 @@ beforeEach(() => {
 const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)?.({}, ...args);
 
 describe("specialized database IPC validation", () => {
+    it("omits destructive bulk-trash channels while retaining per-note hard delete", () => {
+        expect(handlers.has("db:notes:emptyTrash")).toBe(false);
+        expect(handlers.has("db:notes:purgeBefore")).toBe(false);
+        expect(handlers.has("db:notes:hardDelete")).toBe(true);
+
+        invoke("db:notes:hardDelete", "note-id");
+        expect(db.hardDeleteNote).toHaveBeenCalledWith("note-id");
+    });
+
     it("bounds recent-note limits", () => {
         expect(() => invoke("db:notes:getRecentNotes", 10_001)).toThrow();
         expect(() => invoke("db:notes:getRecentNotes", 0)).toThrow();
