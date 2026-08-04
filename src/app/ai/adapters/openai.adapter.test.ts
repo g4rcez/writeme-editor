@@ -43,6 +43,30 @@ function createJwt(payload: object): string {
     return `header.${encodedPayload}.signature`;
 }
 
+function createUnreadableErrorResponse(status: number) {
+    const bodyAccess = vi.fn();
+    const response = new Proxy(new Response(null, { status }), {
+        get(target, property) {
+            if (property === "body" || property === "text" || property === "json") {
+                bodyAccess(property);
+                throw new Error(`Response ${String(property)} must not be accessed.`);
+            }
+            return Reflect.get(target, property, target);
+        },
+    });
+    return { bodyAccess, response };
+}
+
+async function captureError(promise: Promise<unknown>): Promise<Error> {
+    try {
+        await promise;
+    } catch (error: unknown) {
+        if (error instanceof Error) return error;
+        throw new Error("Expected an Error instance.");
+    }
+    throw new Error("Expected the promise to reject.");
+}
+
 describe("createCodexRequestBody", () => {
     it("moves developer input into top-level instructions for Codex", () => {
         const body = createCodexRequestBody(
@@ -115,6 +139,44 @@ describe("OpenAIAdapter", () => {
         expect(stepCountIsMock).toHaveBeenCalledWith(5);
     });
 
+    it("omits empty text parts from file-only messages", async () => {
+        streamTextMock.mockReturnValueOnce({ textStream: textStream() });
+        const adapter = new OpenAIAdapter();
+
+        for await (const _event of adapter.sendMessage(
+            [
+                {
+                    role: "user",
+                    content: {
+                        text: "",
+                        files: [
+                            {
+                                id: "image-1",
+                                name: "photo.png",
+                                mimeType: "image/png",
+                                size: 4,
+                                data: new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer,
+                            },
+                        ],
+                    },
+                },
+            ],
+            { credentials: { apiKey: "test-key" } },
+        )) {
+            expect(_event).toBeDefined();
+        }
+
+        expect(streamTextMock).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                messages: [
+                    expect.objectContaining({
+                        content: [expect.objectContaining({ type: "image_url" })],
+                    }),
+                ],
+            }),
+        );
+    });
+
     it("routes ChatGPT OAuth credentials to the Codex responses backend", async () => {
         streamTextMock.mockReturnValueOnce({ textStream: textStream() });
 
@@ -173,9 +235,107 @@ describe("OpenAIAdapter", () => {
         expect(openAIResponsesMock).toHaveBeenLastCalledWith("gpt-5.4-mini");
     });
 
-    it("lists Codex backend models for ChatGPT OAuth credentials", async () => {
+    it("lists usable Codex models in priority order for ChatGPT OAuth credentials", async () => {
         vi.mocked(proxyFetch).mockResolvedValueOnce(
-            new Response(JSON.stringify({ models: [{ slug: "gpt-5.4-mini" }] }), {
+            new Response(
+                JSON.stringify({
+                    models: [
+                        {
+                            slug: "gpt-5.4-mini",
+                            display_name: "GPT-5.4 Mini",
+                            visibility: "list",
+                            supported_in_api: true,
+                            priority: 20,
+                        },
+                        {
+                            slug: "hidden-model",
+                            display_name: "Hidden Model",
+                            visibility: "hide",
+                            supported_in_api: true,
+                            priority: 1,
+                        },
+                        {
+                            slug: "unsupported-model",
+                            display_name: "Unsupported Model",
+                            visibility: "list",
+                            supported_in_api: false,
+                            priority: 2,
+                        },
+                        {
+                            slug: "gpt-5.5",
+                            display_name: "GPT-5.5",
+                            visibility: "list",
+                            supported_in_api: true,
+                            priority: 10,
+                        },
+                        {
+                            slug: "none-model",
+                            display_name: "None Model",
+                            visibility: "none",
+                            supported_in_api: true,
+                            priority: 3,
+                        },
+                        {
+                            slug: "missing-eligibility",
+                            display_name: "Missing Eligibility",
+                        },
+                        {
+                            slug: " gpt-5.3 ",
+                            display_name: " GPT-5.3 ",
+                            visibility: "list",
+                            supported_in_api: true,
+                            priority: 15,
+                        },
+                        {
+                            slug: "bad model",
+                            display_name: "Bad Model",
+                            visibility: "list",
+                            supported_in_api: true,
+                            priority: 4,
+                        },
+                        {
+                            slug: "   ",
+                            display_name: "Blank Model",
+                            visibility: "list",
+                            supported_in_api: true,
+                            priority: 5,
+                        },
+                        { id: "legacy-model", name: "Legacy Model" },
+                    ],
+                }),
+                { status: 200 },
+            ),
+        );
+
+        const adapter = new OpenAIAdapter();
+        await expect(
+            adapter.listModels({
+                accessToken: "oauth-token",
+                accountId: "chatgpt-account-id",
+            }),
+        ).resolves.toEqual([
+            { id: "gpt-5.5", name: "GPT-5.5" },
+            { id: "gpt-5.3", name: "GPT-5.3" },
+            { id: "gpt-5.4-mini", name: "GPT-5.4 Mini" },
+        ]);
+
+        expect(proxyFetch).toHaveBeenCalledWith(
+            "https://chatgpt.com/backend-api/codex/models?client_version=0.145.0",
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    Authorization: "Bearer oauth-token",
+                    "ChatGPT-Account-Id": "chatgpt-account-id",
+                    originator: "codex_cli_rs",
+                    "OpenAI-Beta": "responses=experimental",
+                    "x-upstream-user-agent": "codex_cli_rs/0.145.0",
+                }),
+            }),
+        );
+    });
+
+    it("returns no fallback model when the Codex backend reports no models", async () => {
+        vi.mocked(proxyFetch).mockResolvedValueOnce(
+            new Response(JSON.stringify({ models: [] }), {
                 status: 200,
             }),
         );
@@ -186,18 +346,67 @@ describe("OpenAIAdapter", () => {
                 accessToken: "oauth-token",
                 accountId: "chatgpt-account-id",
             }),
-        ).resolves.toEqual([{ id: "gpt-5.4-mini", name: "gpt-5.4-mini" }]);
+        ).resolves.toEqual([]);
+    });
 
-        expect(proxyFetch).toHaveBeenCalledWith(
-            "https://chatgpt.com/backend-api/codex/models?client_version=writeme",
-            expect.objectContaining({
-                headers: expect.objectContaining({
-                    "ChatGPT-Account-Id": "chatgpt-account-id",
-                    originator: "codex_cli_rs",
-                    "OpenAI-Beta": "responses=experimental",
-                    "x-upstream-user-agent": "codex_cli_rs/0.0.1",
-                }),
+    it("does not read or expose Codex error response bodies", async () => {
+        const { bodyAccess, response } = createUnreadableErrorResponse(400);
+        vi.mocked(proxyFetch).mockResolvedValueOnce(response);
+
+        const adapter = new OpenAIAdapter();
+        const error = await captureError(
+            adapter.listModels({
+                accessToken: "expired-token",
+                accountId: "chatgpt-account-id",
             }),
         );
+
+        expect(error.message).toBe("OpenAI model request failed (400).");
+        expect(bodyAccess).not.toHaveBeenCalled();
+    });
+
+    it("lists supported OpenAI API models", async () => {
+        vi.mocked(proxyFetch).mockResolvedValueOnce(
+            new Response(
+                JSON.stringify({
+                    data: [{ id: "gpt-5" }, { id: "o3-mini" }, { id: "text-embedding-3-small" }],
+                }),
+                { status: 200 },
+            ),
+        );
+
+        const adapter = new OpenAIAdapter();
+        await expect(adapter.listModels({ apiKey: "platform-key" })).resolves.toEqual([
+            { id: "gpt-5", name: "gpt-5" },
+            { id: "o3-mini", name: "o3-mini" },
+        ]);
+        expect(proxyFetch).toHaveBeenCalledWith(
+            "https://api.openai.com/v1/models",
+            expect.objectContaining({
+                headers: { Authorization: "Bearer platform-key" },
+            }),
+        );
+    });
+
+    it("returns no models when the OpenAI API reports an empty model list", async () => {
+        vi.mocked(proxyFetch).mockResolvedValueOnce(
+            new Response(JSON.stringify({ data: [] }), {
+                status: 200,
+            }),
+        );
+
+        const adapter = new OpenAIAdapter();
+        await expect(adapter.listModels({ apiKey: "platform-key" })).resolves.toEqual([]);
+    });
+
+    it("does not read or expose OpenAI API error response bodies", async () => {
+        const { bodyAccess, response } = createUnreadableErrorResponse(403);
+        vi.mocked(proxyFetch).mockResolvedValueOnce(response);
+
+        const adapter = new OpenAIAdapter();
+        const error = await captureError(adapter.listModels({ apiKey: "platform-key" }));
+
+        expect(error.message).toBe("OpenAI model request failed (403).");
+        expect(bodyAccess).not.toHaveBeenCalled();
     });
 });

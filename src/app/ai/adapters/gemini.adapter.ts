@@ -11,11 +11,13 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
+import { AI_FILE_CAPABILITIES, prepareFileForCapabilities } from "./types";
 
 export class GeminiAdapter implements AIAdapter {
     readonly id = "gemini";
     readonly name = "Google Gemini";
     readonly supportsFiles = true;
+    readonly fileCapabilities = AI_FILE_CAPABILITIES.gemini;
     readonly supportsOAuth = true;
     readonly defaultModel = "gemini-2.0-flash";
 
@@ -92,15 +94,7 @@ export class GeminiAdapter implements AIAdapter {
     }
 
     async prepareFile(file: File): Promise<AIFile> {
-        const mimeType = file.type || "application/octet-stream";
-        const data = await file.arrayBuffer();
-        return {
-            id: uuidv4(),
-            name: file.name,
-            mimeType,
-            data,
-            size: file.size,
-        };
+        return prepareFileForCapabilities(file, this.fileCapabilities, uuidv4);
     }
 
     async *sendMessage(
@@ -132,7 +126,7 @@ export class GeminiAdapter implements AIAdapter {
                 data: f.data,
                 mimeType: f.mimeType,
             }));
-            parts.push({ type: "text", text: msg.content.text });
+            if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
             return { role: msg.role as "user" | "assistant", content: parts };
         });
 

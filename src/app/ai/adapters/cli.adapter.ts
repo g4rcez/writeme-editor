@@ -8,11 +8,13 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
+import { AI_FILE_CAPABILITIES } from "./types";
 
 export class CLIAdapter implements AIAdapter {
     readonly id = "cli";
     readonly name = "CLI (Local)";
     readonly supportsFiles = false;
+    readonly fileCapabilities = AI_FILE_CAPABILITIES.none;
     readonly supportsOAuth = false;
     readonly defaultModel = "";
 

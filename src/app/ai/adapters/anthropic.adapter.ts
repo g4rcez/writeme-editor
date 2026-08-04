@@ -11,6 +11,7 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
+import { AI_FILE_CAPABILITIES, arrayBufferToBase64, getAIFileKind, prepareFileForCapabilities } from "./types";
 
 export const ANTHROPIC_OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 
@@ -20,12 +21,45 @@ export const ANTHROPIC_OAUTH_SCOPES =
 const ANTHROPIC_BETA_HEADERS = "oauth-2025-04-20,interleaved-thinking-2025-05-14";
 const ANTHROPIC_USER_AGENT = "claude-cli/2.1.2 (external, cli)";
 
-const SUPPORTED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"]);
+export async function mapAnthropicMessages(messages: AIConversationMessage[]) {
+    const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+    for (const message of messages) {
+        if (message.role === "system") {
+            mapped.push({ role: "user", content: message.content.text });
+            continue;
+        }
+        if (!message.content.files?.length) {
+            mapped.push({ role: message.role, content: message.content.text });
+            continue;
+        }
+        const parts: any[] = [];
+        for (const file of message.content.files) {
+            if (getAIFileKind({ name: file.name, type: file.mimeType }) === "text") {
+                const text = new TextDecoder("utf-8", { fatal: true }).decode(file.data);
+                parts.push({ type: "text", text: `Attached file: ${file.name}\n\n${text}` });
+                continue;
+            }
+            const base64 = await arrayBufferToBase64(file.data);
+            if (file.mimeType.startsWith("image/")) {
+                parts.push({ type: "image", source: { type: "base64", media_type: file.mimeType, data: base64 } });
+            } else {
+                parts.push({
+                    type: "document",
+                    source: { type: "base64", media_type: file.mimeType, data: base64 },
+                });
+            }
+        }
+        if (message.content.text.trim()) parts.push({ type: "text", text: message.content.text });
+        mapped.push({ role: message.role, content: parts });
+    }
+    return mapped;
+}
 
 export class AnthropicAdapter implements AIAdapter {
     readonly id = "anthropic";
     readonly name = "Anthropic (Claude)";
     readonly supportsFiles = true;
+    readonly fileCapabilities = AI_FILE_CAPABILITIES.anthropic;
     readonly supportsOAuth = true;
     readonly defaultModel = "claude-sonnet-4-20250514";
 
@@ -80,18 +114,7 @@ export class AnthropicAdapter implements AIAdapter {
     }
 
     async prepareFile(file: File): Promise<AIFile> {
-        const mimeType = file.type || "application/octet-stream";
-        if (!SUPPORTED_MIME_TYPES.has(mimeType) && !mimeType.startsWith("text/")) {
-            throw new Error(`Unsupported file type: ${mimeType}`);
-        }
-        const data = await file.arrayBuffer();
-        return {
-            id: uuidv4(),
-            name: file.name,
-            mimeType,
-            data,
-            size: file.size,
-        };
+        return prepareFileForCapabilities(file, this.fileCapabilities, uuidv4);
     }
 
     async *sendMessage(
@@ -118,32 +141,7 @@ export class AnthropicAdapter implements AIAdapter {
 
         const model = options.model ?? this.defaultModel;
 
-        const mapped = messages.map((msg) => {
-            if (msg.role === "system") {
-                return { role: "user" as const, content: msg.content.text };
-            }
-            if (!msg.content.files || msg.content.files.length === 0) {
-                return {
-                    role: msg.role as "user" | "assistant",
-                    content: msg.content.text,
-                };
-            }
-            const parts: any[] = msg.content.files.map((f) => {
-                const base64 = bufferToBase64(f.data);
-                if (f.mimeType.startsWith("image/")) {
-                    return {
-                        type: "image",
-                        source: { type: "base64", media_type: f.mimeType, data: base64 },
-                    };
-                }
-                return {
-                    type: "document",
-                    source: { type: "base64", media_type: f.mimeType, data: base64 },
-                };
-            });
-            parts.push({ type: "text", text: msg.content.text });
-            return { role: msg.role as "user" | "assistant", content: parts };
-        });
+        const mapped = await mapAnthropicMessages(messages);
 
         try {
             const result = streamText({
@@ -170,13 +168,4 @@ export class AnthropicAdapter implements AIAdapter {
             }
         }
     }
-}
-
-function bufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]!);
-    }
-    return btoa(binary);
 }

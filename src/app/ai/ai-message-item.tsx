@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { css } from "@g4rcez/components";
-import { ChatCircleDotsIcon } from "@phosphor-icons/react";
+import { ChatCircleDotsIcon, PaperclipIcon } from "@phosphor-icons/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AIMessage } from "@/store/repositories/electron/ai.repository";
@@ -20,6 +20,33 @@ function getLoadingMessage(index: number): string {
 
 function isErrorMessage(message: AIMessage): boolean {
     return message.content.trim().toLowerCase().startsWith("error:");
+}
+
+function formatFileSize(size: number): string {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KiB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MiB`;
+}
+
+function MessageAttachments({ message }: { message: AIMessage }) {
+    if (!message.files?.length) return null;
+    return (
+        <ul aria-label="Attached files" className="mt-2 flex max-w-full flex-wrap gap-1.5">
+            {message.files.map((file) => (
+                <li
+                    key={file.id}
+                    className="flex max-w-full items-center gap-1 rounded-full border border-current/25 px-2 py-1 text-xs"
+                >
+                    <PaperclipIcon size={12} className="shrink-0" aria-hidden="true" />
+                    <span className="max-w-40 truncate">{file.name}</span>
+                    <span className="shrink-0 opacity-75">{formatFileSize(file.size)}</span>
+                    <span className="sr-only">
+                        Attachment metadata only; the original file is unavailable after reopening this chat.
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
 }
 
 export function AIAssistantMarkdown({ content, tone = "default" }: { content: string; tone?: "default" | "inherit" }) {
@@ -48,9 +75,9 @@ function AssistantRenderedBody({
         return <AIAssistantMarkdown content={content} />;
     }
     if (isStreaming) {
-        return <p className="text-sm italic text-muted-foreground">{getLoadingMessage(loadingIndex)}</p>;
+        return <p className="text-sm text-muted-foreground italic">{getLoadingMessage(loadingIndex)}</p>;
     }
-    return <p className="text-sm italic text-muted-foreground">No assistant response was returned.</p>;
+    return <p className="text-sm text-muted-foreground italic">No assistant response was returned.</p>;
 }
 
 export function AIChatMessageItem({
@@ -90,21 +117,22 @@ export function AIChatMessageItem({
             <article
                 aria-label="Your message"
                 className={css(
-                    "rounded-2xl items-end rounded-br-md bg-button-primary-bg px-4 py-3 text-sm text-button-primary-text max-w-72",
+                    "max-w-72 items-end rounded-2xl rounded-br-md bg-button-primary-bg px-4 py-3 text-sm text-button-primary-text",
                     maxWidthClass,
                 )}
             >
-                <AIAssistantMarkdown content={message.content} tone="inherit" />
+                {message.content ? <AIAssistantMarkdown content={message.content} tone="inherit" /> : null}
+                <MessageAttachments message={message} />
             </article>
         );
     }
 
     return (
-        <div className="w-full flex" aria-label="Assistant message">
-            <div className="w-full flex flex-col gap-3 px-4 py-3 text-foreground">
+        <div className="flex w-full" aria-label="Assistant message">
+            <div className="flex w-full flex-col gap-3 px-4 py-3 text-foreground">
                 <header className="flex items-center gap-1">
                     <ChatCircleDotsIcon className="size-4 text-muted-foreground" />
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assistant</p>
+                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Assistant</p>
                 </header>
                 <AssistantRenderedBody
                     content={message.content}
@@ -139,7 +167,7 @@ export function AIChatMessageList({
                     <div
                         key={message.id}
                         className={css(
-                            "flex flex-col w-full gap-2",
+                            "flex w-full flex-col gap-2",
                             message.role === "user" && "items-end",
                             message.role === "assistant" && "items-start",
                             message.role === "system" && "items-center",
@@ -159,7 +187,7 @@ export function AIChatMessageList({
                 <div className="flex justify-start">
                     <div
                         className={css(
-                            "rounded-2xl rounded-bl-md border border-card-border bg-secondary-background px-4 py-3 text-sm text-muted-foreground",
+                            "bg-secondary-background rounded-2xl rounded-bl-md border border-card-border px-4 py-3 text-sm text-muted-foreground",
                             maxWidthClass,
                         )}
                     >

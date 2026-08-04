@@ -56,8 +56,18 @@ export default function Page() {
         >
           <Link
             href="/"
-            className="text-sm font-semibold tracking-tight text-foreground"
+            className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground"
           >
+            <svg
+              aria-hidden="true"
+              className="h-6 w-auto shrink-0"
+              fill="currentColor"
+              focusable="false"
+              viewBox="522 413 163 210"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="m527.912 458.028 33.346 20.489 -33.346 20.494v39.3l33.346 20.494 -33.346 20.489v39.199l62.897 -35.637v-48.107l-28.394 -16.085 28.394 -16.091v-48.107l-62.897 -35.637zm152.624 41.084v-0.102l-33.346 -20.494 33.346 -20.489v-39.199l-62.897 35.637v48.107l28.394 16.091 -28.394 16.085v48.107l62.897 35.637v-39.199l-33.346 -20.489 33.346 -20.494z" />
+            </svg>
             Write Me
           </Link>
           <div className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">

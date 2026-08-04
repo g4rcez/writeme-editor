@@ -11,6 +11,7 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
+import { AI_FILE_CAPABILITIES, arrayBufferToBase64, prepareFileForCapabilities } from "./types";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
 
@@ -37,6 +38,7 @@ export class OllamaAdapter implements AIAdapter {
     readonly id = "ollama";
     readonly name = "Ollama";
     readonly supportsFiles = true;
+    readonly fileCapabilities = AI_FILE_CAPABILITIES.rasterImages;
     readonly supportsOAuth = false;
     readonly defaultModel = "llama3.2";
 
@@ -73,15 +75,7 @@ export class OllamaAdapter implements AIAdapter {
     }
 
     async prepareFile(file: File): Promise<AIFile> {
-        const mimeType = file.type || "application/octet-stream";
-        const data = await file.arrayBuffer();
-        return {
-            id: uuidv4(),
-            name: file.name,
-            mimeType,
-            data,
-            size: file.size,
-        };
+        return prepareFileForCapabilities(file, this.fileCapabilities, uuidv4);
     }
 
     async *sendMessage(
@@ -99,27 +93,30 @@ export class OllamaAdapter implements AIAdapter {
 
         const model = options.model ?? this.defaultModel;
 
-        const mapped = messages.map((msg) => {
+        const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+        for (const msg of messages) {
             if (msg.role === "system") {
-                return { role: "user" as const, content: msg.content.text };
+                mapped.push({ role: "user", content: msg.content.text });
+                continue;
             }
-            if (!msg.content.files || msg.content.files.length === 0) {
-                return {
-                    role: msg.role as "user" | "assistant",
-                    content: msg.content.text,
-                };
+            if (!msg.content.files?.length) {
+                mapped.push({ role: msg.role, content: msg.content.text });
+                continue;
             }
-            const parts: any[] = msg.content.files
-                .filter((f) => f.mimeType.startsWith("image/"))
-                .map((f) => ({
+            const parts: any[] = [];
+            for (const file of msg.content.files) {
+                if (!file.mimeType.startsWith("image/")) continue;
+                const base64 = await arrayBufferToBase64(file.data);
+                parts.push({
                     type: "image_url",
                     image_url: {
-                        url: `data:${f.mimeType};base64,${bufferToBase64(f.data)}`,
+                        url: `data:${file.mimeType};base64,${base64}`,
                     },
-                }));
-            parts.push({ type: "text", text: msg.content.text });
-            return { role: msg.role as "user" | "assistant", content: parts };
-        });
+                });
+            }
+            if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
+            mapped.push({ role: msg.role, content: parts });
+        }
 
         try {
             const result = streamText({
@@ -157,13 +154,4 @@ export function normalizeBaseUrl(baseUrl?: string): string {
 function ollamaApiHostFromBaseUrl(baseUrl?: string): string {
     const normalized = normalizeBaseUrl(baseUrl);
     return normalized.endsWith("/v1") ? normalized.slice(0, -3) : normalized;
-}
-
-function bufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]!);
-    }
-    return btoa(binary);
 }

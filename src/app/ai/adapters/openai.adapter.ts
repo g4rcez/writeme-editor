@@ -11,9 +11,11 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
+import { AI_FILE_CAPABILITIES, arrayBufferToBase64, prepareFileForCapabilities } from "./types";
 
 const CODEX_BASE_URL = "https://chatgpt.com/backend-api/codex";
-const CODEX_USER_AGENT = "codex_cli_rs/0.0.1";
+const CODEX_CLIENT_VERSION = "0.145.0";
+const CODEX_USER_AGENT = `codex_cli_rs/${CODEX_CLIENT_VERSION}`;
 const CODEX_DEFAULT_MODEL = "gpt-5.4-mini";
 const CODEX_DEFAULT_INSTRUCTIONS = "You are Writeme Workspace AI.";
 
@@ -88,6 +90,58 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
+function createOpenAIModelRequestError(response: Response): Error {
+    return new Error(`OpenAI model request failed (${response.status}).`);
+}
+
+type PrioritizedModel = AIModel & {
+    priority: number;
+    sourceIndex: number;
+};
+
+function getModelString(model: Record<string, unknown>, key: string): string | undefined {
+    const value = model[key];
+    const normalized = typeof value === "string" ? value.trim() : "";
+    return normalized || undefined;
+}
+
+const CODEX_MODEL_SLUG_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
+
+function parseCodexModels(payload: unknown): AIModel[] {
+    if (!isRecord(payload)) return [];
+
+    let source: unknown[] = [];
+    if (Array.isArray(payload.models)) {
+        source = payload.models;
+    } else if (Array.isArray(payload.data)) {
+        source = payload.data;
+    }
+
+    const parsed: PrioritizedModel[] = [];
+    source.forEach((entry, sourceIndex) => {
+        if (!isRecord(entry) || entry.visibility !== "list" || entry.supported_in_api !== true) return;
+
+        const id = getModelString(entry, "slug");
+        if (!id || !CODEX_MODEL_SLUG_PATTERN.test(id)) return;
+
+        parsed.push({
+            id,
+            name: getModelString(entry, "display_name") ?? id,
+            priority:
+                typeof entry.priority === "number" && Number.isFinite(entry.priority)
+                    ? entry.priority
+                    : Number.POSITIVE_INFINITY,
+            sourceIndex,
+        });
+    });
+
+    parsed.sort((left, right) => {
+        if (left.priority === right.priority) return left.sourceIndex - right.sourceIndex;
+        return left.priority < right.priority ? -1 : 1;
+    });
+    return parsed.map(({ id, name }) => ({ id, name }));
+}
+
 function extractContentText(content: unknown): string | null {
     if (typeof content === "string") return content;
     if (!Array.isArray(content)) return null;
@@ -145,6 +199,7 @@ export class OpenAIAdapter implements AIAdapter {
     readonly id = "openai";
     readonly name = "OpenAI (GPT)";
     readonly supportsFiles = true;
+    readonly fileCapabilities = AI_FILE_CAPABILITIES.rasterImages;
     readonly supportsOAuth = true;
     readonly defaultModel = "gpt-4o";
 
@@ -168,48 +223,32 @@ export class OpenAIAdapter implements AIAdapter {
     }
 
     async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
-        try {
-            if (isCodexOAuthCredentials(credentials)) {
-                const accountId = getCodexAccountId(credentials)!;
-                const resp = await proxyFetch(`${CODEX_BASE_URL}/models?client_version=writeme`, {
-                    headers: createCodexHeaders(accountId),
-                });
-                if (!resp.ok) return [{ id: CODEX_DEFAULT_MODEL, name: CODEX_DEFAULT_MODEL }];
-                const data = (await resp.json()) as {
-                    data?: { id?: string; slug?: string; name?: string }[];
-                    models?: { id?: string; slug?: string; name?: string }[];
-                };
-                const models = data.models ?? data.data ?? [];
-                const parsed = models
-                    .map((model) => model.slug ?? model.id ?? model.name)
-                    .filter((id): id is string => Boolean(id))
-                    .map((id) => ({ id, name: id }));
-                return parsed.length > 0 ? parsed : [{ id: CODEX_DEFAULT_MODEL, name: CODEX_DEFAULT_MODEL }];
-            }
+        if (isCodexOAuthCredentials(credentials)) {
+            const accountId = getCodexAccountId(credentials);
+            if (!accountId) throw new Error("OpenAI OAuth credentials are missing a ChatGPT account ID.");
 
-            const resp = await proxyFetch("https://api.openai.com/v1/models", {
+            const resp = await proxyFetch(`${CODEX_BASE_URL}/models?client_version=${CODEX_CLIENT_VERSION}`, {
                 headers: {
-                    Authorization: `Bearer ${credentials.apiKey ?? credentials.accessToken ?? ""}`,
+                    ...createCodexHeaders(accountId),
+                    Authorization: `Bearer ${credentials.accessToken}`,
                 },
             });
-            if (!resp.ok) return [];
-            const data = (await resp.json()) as { data: { id: string }[] };
-            return (data.data ?? []).filter((m) => /gpt|o1|o3/.test(m.id)).map((m) => ({ id: m.id, name: m.id }));
-        } catch {
-            return [];
+            if (!resp.ok) throw createOpenAIModelRequestError(resp);
+            return parseCodexModels(await resp.json());
         }
+
+        const resp = await proxyFetch("https://api.openai.com/v1/models", {
+            headers: {
+                Authorization: `Bearer ${credentials.apiKey ?? credentials.accessToken ?? ""}`,
+            },
+        });
+        if (!resp.ok) throw createOpenAIModelRequestError(resp);
+        const data = (await resp.json()) as { data: { id: string }[] };
+        return (data.data ?? []).filter((m) => /gpt|o1|o3/.test(m.id)).map((m) => ({ id: m.id, name: m.id }));
     }
 
     async prepareFile(file: File): Promise<AIFile> {
-        const mimeType = file.type || "application/octet-stream";
-        const data = await file.arrayBuffer();
-        return {
-            id: uuidv4(),
-            name: file.name,
-            mimeType,
-            data,
-            size: file.size,
-        };
+        return prepareFileForCapabilities(file, this.fileCapabilities, uuidv4);
     }
 
     async *sendMessage(
@@ -230,27 +269,30 @@ export class OpenAIAdapter implements AIAdapter {
 
         const model = options.model ?? (usesCodexBackend ? CODEX_DEFAULT_MODEL : this.defaultModel);
 
-        const mapped = messages.map((msg) => {
+        const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+        for (const msg of messages) {
             if (msg.role === "system") {
-                return { role: "user" as const, content: msg.content.text };
+                mapped.push({ role: "user", content: msg.content.text });
+                continue;
             }
-            if (!msg.content.files || msg.content.files.length === 0) {
-                return {
-                    role: msg.role as "user" | "assistant",
-                    content: msg.content.text,
-                };
+            if (!msg.content.files?.length) {
+                mapped.push({ role: msg.role, content: msg.content.text });
+                continue;
             }
-            const parts: any[] = msg.content.files
-                .filter((f) => f.mimeType.startsWith("image/"))
-                .map((f) => ({
+            const parts: any[] = [];
+            for (const file of msg.content.files) {
+                if (!file.mimeType.startsWith("image/")) continue;
+                const base64 = await arrayBufferToBase64(file.data);
+                parts.push({
                     type: "image_url",
                     image_url: {
-                        url: `data:${f.mimeType};base64,${bufferToBase64(f.data)}`,
+                        url: `data:${file.mimeType};base64,${base64}`,
                     },
-                }));
-            parts.push({ type: "text", text: msg.content.text });
-            return { role: msg.role as "user" | "assistant", content: parts };
-        });
+                });
+            }
+            if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
+            mapped.push({ role: msg.role, content: parts });
+        }
 
         try {
             const result = streamText({
@@ -282,13 +324,4 @@ export class OpenAIAdapter implements AIAdapter {
             }
         }
     }
-}
-
-function bufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]!);
-    }
-    return btoa(binary);
 }

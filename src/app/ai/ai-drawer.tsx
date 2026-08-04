@@ -9,14 +9,22 @@ import {
 } from "@phosphor-icons/react";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useRef, useState } from "react";
+import {
+    type ChangeEvent,
+    type ClipboardEvent,
+    type DragEvent,
+    type KeyboardEvent,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import type { AIFile } from "./adapters/types";
 import { editorGlobalRef } from "../editor-global-ref";
 import { adapterRegistry } from "./adapters/registry";
-import { AIFileAttachment } from "./ai-file-attachment";
+import { AIFileAttachment, getClipboardFiles, useAIFileAttachments } from "./ai-file-attachment";
 import { AIChatMessageItem, AI_CHAT_LOADING_MESSAGES } from "./ai-message-item";
 import { useAIChat } from "./use-ai-chat";
 
@@ -30,6 +38,8 @@ export const AIDrawer = () => {
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
     const parentRef = useRef<HTMLDivElement>(null);
     const adapter = config ? adapterRegistry.get(config.adapterId ?? "cli") : undefined;
+    const attachmentController = useAIFileAttachments({ files: pendingFiles, onFilesChange: setPendingFiles, adapter });
+    const attachmentsEnabled = Boolean(adapter?.supportsFiles) && !isStreaming && !isLoading;
 
     const virtualizer = useVirtualizer({
         count: messages.length,
@@ -46,7 +56,7 @@ export const AIDrawer = () => {
             });
             globalDispatch.setAiContext(null);
         }
-    }, [aiContext, aiDrawer.isOpen, isStreaming]);
+    }, [aiContext, aiDrawer.isOpen, isStreaming, send]);
 
     useEffect(() => {
         if (messages.length > 0) {
@@ -69,8 +79,8 @@ export const AIDrawer = () => {
         return () => window.clearInterval(intervalId);
     }, [isStreaming]);
 
-    const onSend = () => {
-        if (!input.trim() || isStreaming) return;
+    const onSend = async (): Promise<void> => {
+        if ((!input.trim() && pendingFiles.length === 0) || isStreaming || attachmentController.isPreparing) return;
         const editor = editorGlobalRef.current;
         const selection = editor
             ? editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, " ")
@@ -79,9 +89,30 @@ export const AIDrawer = () => {
         const selectionSlice = editor
             ? { from: editor.state.selection.from, to: editor.state.selection.to }
             : undefined;
-        send(input, { selection, context, selectionSlice }, pendingFiles);
-        setInput("");
-        setPendingFiles([]);
+        const sent = await send(input.trim(), { selection, context, selectionSlice }, pendingFiles);
+        if (sent) {
+            setInput("");
+            setPendingFiles([]);
+            attachmentController.clearErrors();
+        }
+    };
+
+    const handlePaste = (event: ClipboardEvent<HTMLDivElement>): void => {
+        const pastedFiles = getClipboardFiles(event.clipboardData);
+        if (pastedFiles.length === 0) return;
+        event.preventDefault();
+        if (attachmentsEnabled) attachmentController.addFiles(pastedFiles);
+    };
+
+    const handleDragOver = (event: DragEvent<HTMLDivElement>): void => {
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+    };
+
+    const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
+        const droppedFiles = Array.from(event.dataTransfer.files);
+        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) return;
+        event.preventDefault();
+        if (attachmentsEnabled && droppedFiles.length > 0) attachmentController.addFiles(droppedFiles);
     };
 
     const modelLabel = config
@@ -97,25 +128,25 @@ export const AIDrawer = () => {
             open={aiDrawer.isOpen}
             onChange={(open) => !open && globalDispatch.setAiDrawer({ isOpen: false, chatId: null })}
         >
-            <div className="flex overflow-hidden flex-col h-full min-w-[400px]">
+            <div className="flex h-full min-w-[400px] flex-col overflow-hidden">
                 {/* Info bar: context note + provider badge + action buttons */}
-                <div className="flex justify-between items-center px-4 py-2 border-b border-floating-border">
+                <div className="flex items-center justify-between border-b border-floating-border px-4 py-2">
                     <div className="flex flex-col gap-0.5">
                         {note && (
-                            <span className="flex gap-1 items-center text-[11px] text-muted-foreground">
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                 <NoteIcon size={11} />
                                 {note.title}
                             </span>
                         )}
                         {modelLabel && <span className="text-[11px] text-muted-foreground/60">{modelLabel}</span>}
                     </div>
-                    <div className="flex gap-1 items-center">
+                    <div className="flex items-center gap-1">
                         <button
                             type="button"
                             title="Clear messages"
                             disabled={isStreaming || messages.length === 0}
                             onClick={clearChat}
-                            className="p-1.5 rounded transition-colors disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-muted"
+                            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                         >
                             <TrashIcon size={14} />
                         </button>
@@ -124,7 +155,7 @@ export const AIDrawer = () => {
                             title="New chat"
                             disabled={isStreaming}
                             onClick={newChat}
-                            className="p-1.5 rounded transition-colors disabled:opacity-30 text-muted-foreground hover:text-foreground hover:bg-muted"
+                            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                         >
                             <PlusIcon size={14} />
                         </button>
@@ -132,7 +163,7 @@ export const AIDrawer = () => {
                 </div>
 
                 {!config && (
-                    <div className="flex flex-col gap-4 justify-center items-center p-8 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
                         <WarningCircleIcon size={48} className="text-warning" />
                         <h3 className="text-lg font-bold">AI Not Configured</h3>
                         <p className="text-sm text-muted-foreground">
@@ -150,11 +181,11 @@ export const AIDrawer = () => {
                 )}
 
                 {isLoading ? (
-                    <div className="flex flex-1 justify-center items-center">
+                    <div className="flex flex-1 items-center justify-center">
                         <ArrowsCounterClockwiseIcon size={20} className="animate-spin text-muted-foreground" />
                     </div>
                 ) : (
-                    <div ref={parentRef} className="overflow-y-auto relative flex-1 py-4 space-y-6 scrollbar-hide">
+                    <div ref={parentRef} className="scrollbar-hide relative flex-1 space-y-6 overflow-y-auto py-4">
                         <div
                             style={{
                                 width: "100%",
@@ -176,7 +207,7 @@ export const AIDrawer = () => {
                                         ref={virtualizer.measureElement}
                                         style={{ transform: `translateY(${virtualRow.start}px)` }}
                                         className={css(
-                                            "absolute top-0 left-0 w-full flex flex-col gap-2 px-4 pb-5",
+                                            "absolute top-0 left-0 flex w-full flex-col gap-2 px-4 pb-5",
                                             isUser ? "items-end" : isSystem ? "items-center" : "items-start",
                                         )}
                                     >
@@ -191,16 +222,21 @@ export const AIDrawer = () => {
                         </div>
                     </div>
                 )}
-                <div className="flex flex-col py-4 gap-1 border-t border-floating-border">
+                <div
+                    className="flex flex-col gap-1 border-t border-floating-border py-4"
+                    onPaste={handlePaste}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                >
                     <Textarea
                         value={input}
                         optionalText=" "
                         placeholder="Message AI..."
-                        onChange={(e: any) => setInput(e.target.value)}
-                        onKeyDown={(e: any) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                onSend();
+                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setInput(event.target.value)}
+                        onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+                            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                                event.preventDefault();
+                                void onSend();
                             }
                         }}
                         right={
@@ -209,26 +245,34 @@ export const AIDrawer = () => {
                                     <button
                                         type="button"
                                         onClick={cancel}
-                                        className="p-2 rounded-md transition-colors text-destructive hover:bg-destructive/10"
+                                        className="text-destructive hover:bg-destructive/10 rounded-md p-2 transition-colors"
                                     >
                                         <StopCircleIcon size={20} />
                                     </button>
                                 ) : (
                                     <button
                                         type="button"
-                                        onClick={onSend}
-                                        disabled={!input.trim()}
-                                        className="p-2 rounded-md transition-colors disabled:opacity-50 text-primary hover:bg-primary/10"
+                                        onClick={() => void onSend()}
+                                        disabled={
+                                            (!input.trim() && pendingFiles.length === 0) ||
+                                            attachmentController.isPreparing
+                                        }
+                                        className="rounded-md p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                                        aria-label="Send message"
                                     >
-                                        <PaperPlaneRightIcon size={20} />
+                                        <PaperPlaneRightIcon size={20} aria-hidden="true" />
                                     </button>
                                 )}
                             </div>
                         }
                     />
-                    {adapter && adapter.supportsFiles && (
-                        <AIFileAttachment files={pendingFiles} onFilesChange={setPendingFiles} adapter={adapter} />
-                    )}
+                    {adapter?.supportsFiles ? (
+                        <AIFileAttachment
+                            files={pendingFiles}
+                            controller={attachmentController}
+                            disabled={!attachmentsEnabled}
+                        />
+                    ) : null}
                 </div>
             </div>
         </Modal>

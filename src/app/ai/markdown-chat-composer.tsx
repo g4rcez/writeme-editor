@@ -2,8 +2,10 @@ import { css } from "@g4rcez/components";
 import { PaperPlaneRightIcon, StopCircleIcon } from "@phosphor-icons/react";
 import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { type KeyboardEvent, type SubmitEvent, useEffect, useMemo, useState } from "react";
+import { type DragEvent, type KeyboardEvent, type SubmitEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { AIAdapter, AIFile } from "@/app/ai/adapters/types";
 import type { Theme } from "@/store/global.store";
+import { AIFileAttachment, getClipboardFiles, useAIFileAttachments } from "@/app/ai/ai-file-attachment";
 import { getThemeForMode } from "@/app/elements/code-block";
 import { createExtensions } from "@/app/extensions";
 
@@ -11,19 +13,41 @@ type MarkdownChatComposerProps = {
     theme: Theme;
     disabled: boolean;
     isStreaming: boolean;
+    adapter: AIAdapter | undefined;
     onCancel: () => void;
-    onSend: (markdown: string) => Promise<boolean>;
+    onSend: (markdown: string, files: AIFile[]) => Promise<boolean>;
 };
 
 function createChatComposerExtensions(theme: Theme) {
     return createExtensions(() => getThemeForMode(theme))
-        .filter((extension) => extension.name !== "placeholder")
+        .filter((extension) => extension.name !== "placeholder" && extension.name !== "fileHandler")
         .concat(Placeholder.configure({ placeholder: "Message Workspace AI..." }));
 }
 
-export function MarkdownChatComposer({ theme, disabled, isStreaming, onCancel, onSend }: MarkdownChatComposerProps) {
+export function MarkdownChatComposer({
+    theme,
+    disabled,
+    isStreaming,
+    adapter,
+    onCancel,
+    onSend,
+}: MarkdownChatComposerProps) {
     const [markdown, setMarkdown] = useState("");
+    const [files, setFiles] = useState<AIFile[]>([]);
     const extensions = useMemo(() => createChatComposerExtensions(theme), [theme]);
+    const attachmentController = useAIFileAttachments({
+        files,
+        onFilesChange: setFiles,
+        adapter: adapter ?? NO_FILE_ADAPTER,
+    });
+    const attachmentControllerRef = useRef(attachmentController);
+    const attachmentsEnabled = Boolean(adapter?.supportsFiles) && !disabled && !isStreaming;
+    const attachmentsEnabledRef = useRef(attachmentsEnabled);
+
+    useEffect(() => {
+        attachmentControllerRef.current = attachmentController;
+        attachmentsEnabledRef.current = attachmentsEnabled;
+    }, [attachmentController, attachmentsEnabled]);
 
     const editor = useEditor({
         extensions,
@@ -42,6 +66,12 @@ export function MarkdownChatComposer({ theme, disabled, isStreaming, onCancel, o
                 "aria-label": "Message Workspace AI",
                 class: "writeme-chat-composer-content",
             },
+            handlePaste: (_view, event) => {
+                const pastedFiles = getClipboardFiles(event.clipboardData);
+                if (pastedFiles.length === 0) return false;
+                if (attachmentsEnabledRef.current) attachmentControllerRef.current.addFiles(pastedFiles);
+                return true;
+            },
         },
     });
 
@@ -49,17 +79,20 @@ export function MarkdownChatComposer({ theme, disabled, isStreaming, onCancel, o
         editor?.setEditable(!disabled && !isStreaming);
     }, [disabled, editor, isStreaming]);
 
-    const canSend = markdown.length > 0 && !disabled && !isStreaming;
+    const canSend =
+        (markdown.length > 0 || files.length > 0) && !disabled && !isStreaming && !attachmentController.isPreparing;
 
     async function submit(): Promise<void> {
         if (!editor || !canSend) return;
         const content = editor.getMarkdown().trim();
-        if (!content) return;
+        if (!content && files.length === 0) return;
 
-        const sent = await onSend(content);
+        const sent = await onSend(content, files);
         if (sent) {
             editor.commands.setContent("", { emitUpdate: true });
             setMarkdown("");
+            setFiles([]);
+            attachmentController.clearErrors();
         }
     }
 
@@ -69,20 +102,43 @@ export function MarkdownChatComposer({ theme, disabled, isStreaming, onCancel, o
     }
 
     function handleKeyDown(event: KeyboardEvent<HTMLFormElement>): void {
-        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-            event.preventDefault();
-            void submit();
+        if (
+            event.nativeEvent.isComposing ||
+            event.key !== "Enter" ||
+            event.shiftKey ||
+            (event.target as HTMLElement).closest("button")
+        ) {
+            return;
         }
+        event.preventDefault();
+        void submit();
+    }
+
+    function handleDragOver(event: DragEvent<HTMLFormElement>): void {
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+    }
+
+    function handleDrop(event: DragEvent<HTMLFormElement>): void {
+        const droppedFiles = Array.from(event.dataTransfer.files);
+        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) return;
+        event.preventDefault();
+        if (attachmentsEnabled && droppedFiles.length > 0) attachmentController.addFiles(droppedFiles);
     }
 
     return (
         <form
             onSubmit={handleSubmit}
             onKeyDown={handleKeyDown}
+            onDragOverCapture={handleDragOver}
+            onDropCapture={handleDrop}
+            aria-label="AI message composer"
             className="rounded-2xl border border-card-border bg-card-background px-3 py-2 transition-colors focus-within:border-primary/50"
         >
+            {adapter?.supportsFiles ? (
+                <AIFileAttachment files={files} controller={attachmentController} disabled={disabled || isStreaming} />
+            ) : null}
             <div className="flex items-end gap-2">
-                <div className="min-h-10 max-h-48 flex-1 overflow-y-auto py-1">
+                <div className="max-h-48 min-h-10 flex-1 overflow-y-auto py-1">
                     <EditorContent editor={editor} />
                 </div>
                 <button
@@ -105,8 +161,36 @@ export function MarkdownChatComposer({ theme, disabled, isStreaming, onCancel, o
                 </button>
             </div>
             <p className="px-0 pb-0.5 text-[11px] leading-4 text-muted-foreground">
-                Markdown supported. Cmd/Ctrl Enter to send.
+                Markdown supported. Enter to send; Shift Enter for a new line.
+                {adapter?.supportsFiles ? " Paste or drop supported files to attach." : ""}
             </p>
         </form>
     );
 }
+
+const NO_FILE_ADAPTER: AIAdapter = {
+    id: "none",
+    name: "No provider",
+    supportsFiles: false,
+    fileCapabilities: { kinds: [], accept: "" },
+    supportsOAuth: false,
+    defaultModel: "",
+    async auth() {
+        return {};
+    },
+    async refresh(credentials) {
+        return credentials;
+    },
+    isExpired() {
+        return false;
+    },
+    async listModels() {
+        return [];
+    },
+    async prepareFile() {
+        throw new Error("File attachments are unavailable.");
+    },
+    async *sendMessage() {
+        yield { type: "error", message: "AI provider unavailable." };
+    },
+};

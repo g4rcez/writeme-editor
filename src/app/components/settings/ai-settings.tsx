@@ -5,7 +5,7 @@ import { PlugIcon } from "@phosphor-icons/react/dist/csr/Plug";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { TerminalIcon } from "@phosphor-icons/react/dist/csr/Terminal";
 import { XCircleIcon } from "@phosphor-icons/react/dist/csr/XCircle";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { v7 as uuid } from "uuid";
 import type { AIModel } from "@/app/ai/adapters/types";
 import type { AIConfig } from "@/store/repositories/electron/ai.repository";
@@ -20,6 +20,7 @@ type TestStatus = "idle" | "testing" | "success" | "error";
 
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
 const OLLAMA_ADAPTER_ID = "ollama";
+const OPENAI_ADAPTER_ID = "openai";
 
 const PROVIDER_META: Record<
     string,
@@ -81,7 +82,7 @@ function ProviderLogo({ id, active }: { id: string; active: boolean }) {
     return (
         <span
             className={css(
-                "relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-button-radius border border-card-border bg-muted/35 text-foreground/70 transition-colors duration-200 group-hover:text-foreground",
+                "rounded-button-radius relative flex size-10 shrink-0 items-center justify-center overflow-hidden border border-card-border bg-muted/35 text-foreground/70 transition-colors duration-200 group-hover:text-foreground",
                 active && "bg-background/40 text-foreground",
             )}
             aria-hidden="true"
@@ -174,6 +175,7 @@ function ProviderStatusIcon({ status }: { status: CredentialStatus }) {
 export const AISettings = () => {
     const adapters = adapterRegistry.getAll();
     const [adapterId, setAdapterId] = useState(adapters[0]?.id ?? "anthropic");
+    const [configLoading, setConfigLoading] = useState(true);
     const [model, setModel] = useState("");
     const [systemPrompt, setSystemPrompt] = useState("");
     const [apiKey, setApiKey] = useState("");
@@ -187,6 +189,8 @@ export const AISettings = () => {
     const [testError, setTestError] = useState("");
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
     const [ollamaModelsLoading, setOllamaModelsLoading] = useState(false);
+    const [openAIModelsLoading, setOpenAIModelsLoading] = useState(false);
+    const [openAIModelsError, setOpenAIModelsError] = useState("");
     const [oauthPending, setOauthPending] = useState(false);
     const [oauthCode, setOauthCode] = useState("");
     const [oauthInstruction, setOauthInstruction] = useState("");
@@ -194,10 +198,17 @@ export const AISettings = () => {
     const adapter = adapterRegistry.get(adapterId);
     const meta = PROVIDER_META[adapterId];
     const ollamaModelRequestId = useRef(0);
+    const openAIModelRequestId = useRef(0);
+    const credentialRequestId = useRef(0);
+    const authRequestId = useRef(0);
+    const openAIModelSelectRef = useRef<HTMLSelectElement>(null);
+    const focusOpenAIModelAfterRetryRef = useRef(false);
 
     const checkCredentials = async (id: string) => {
+        const requestId = ++credentialRequestId.current;
         setCredentialStatus("loading");
         const creds = await repositories.ai.loadCredentials(id);
+        if (requestId !== credentialRequestId.current) return;
         if (!creds) {
             setCredentialStatus("disconnected");
             return;
@@ -207,39 +218,135 @@ export const AISettings = () => {
     };
 
     useEffect(() => {
+        let disposed = false;
+
         const load = async () => {
-            const configs = await repositories.ai.getConfigs();
-            const def = configs.find((c) => c.isDefault) ?? configs[0];
-            if (def) {
-                setConfigId(def.id);
-                setAdapterId(def.adapterId ?? "anthropic");
-                setModel(def.model ?? "");
-                setSystemPrompt(def.systemPrompt ?? "");
-                setBaseUrl(def.baseUrl ?? DEFAULT_OLLAMA_BASE_URL);
-                setCommandTemplate(def.commandTemplate ?? "claude --dangerously-skip-permissions {{context}}");
-                await checkCredentials(def.adapterId ?? "anthropic");
+            const [configs, credentialEntries] = await Promise.all([
+                repositories.ai.getConfigs().catch(() => []),
+                Promise.all(
+                    adapters.map(async (candidate) => {
+                        const credentials = await repositories.ai.loadCredentials(candidate.id).catch(() => null);
+                        return {
+                            adapterId: candidate.id,
+                            configured: Boolean(credentials?.apiKey || credentials?.accessToken),
+                        };
+                    }),
+                ),
+            ]);
+            if (disposed) return;
+
+            const defaultConfig = configs.find((config) => config.isDefault) ?? configs[0];
+            const configuredAdapterIds = credentialEntries
+                .filter((entry) => entry.configured)
+                .map((entry) => entry.adapterId);
+            const configuredAdapterId =
+                (defaultConfig && configuredAdapterIds.includes(defaultConfig.adapterId)
+                    ? defaultConfig.adapterId
+                    : configuredAdapterIds[0]) ??
+                defaultConfig?.adapterId ??
+                adapters[0]?.id ??
+                "anthropic";
+            const configuredProviderConfig = configs.find((config) => config.adapterId === configuredAdapterId);
+
+            setAdapterId(configuredAdapterId);
+            setCredentialStatus(configuredAdapterIds.includes(configuredAdapterId) ? "connected" : "disconnected");
+            if (configuredProviderConfig) {
+                setConfigId(configuredProviderConfig.id);
+                setModel(configuredProviderConfig.model ?? "");
+                setSystemPrompt(configuredProviderConfig.systemPrompt ?? "");
+                setBaseUrl(configuredProviderConfig.baseUrl ?? DEFAULT_OLLAMA_BASE_URL);
+                setCommandTemplate(
+                    configuredProviderConfig.commandTemplate ?? "claude --dangerously-skip-permissions {{context}}",
+                );
             } else {
-                const firstId = adapters[0]?.id ?? "anthropic";
-                setAdapterId(firstId);
-                setModel(adapterRegistry.get(firstId)?.defaultModel ?? "");
-                await checkCredentials(firstId);
+                setModel(adapterRegistry.get(configuredAdapterId)?.defaultModel ?? "");
+                setSystemPrompt("");
+                setBaseUrl(configuredAdapterId === OLLAMA_ADAPTER_ID ? DEFAULT_OLLAMA_BASE_URL : "");
             }
+            setConfigLoading(false);
         };
-        load();
+        void load();
+        return () => {
+            disposed = true;
+            credentialRequestId.current += 1;
+            authRequestId.current += 1;
+            openAIModelRequestId.current += 1;
+            ollamaModelRequestId.current += 1;
+        };
     }, []);
 
     const handleAdapterChange = async (id: string) => {
+        if (id === adapterId) return;
+        authRequestId.current += 1;
+        openAIModelRequestId.current += 1;
+        focusOpenAIModelAfterRetryRef.current = false;
         setAdapterId(id);
+        setAuthLoading(false);
         setModel(adapterRegistry.get(id)?.defaultModel ?? "");
         setApiKey("");
         setBaseUrl(id === OLLAMA_ADAPTER_ID ? DEFAULT_OLLAMA_BASE_URL : "");
         setTestStatus("idle");
         setTestError("");
         setAvailableModels([]);
+        setOpenAIModelsLoading(false);
+        setOpenAIModelsError("");
         setOauthPending(false);
         setOauthCode("");
         await checkCredentials(id);
     };
+
+    const loadOpenAIModels = useCallback(async (): Promise<void> => {
+        if (adapterId !== OPENAI_ADAPTER_ID) return;
+        const openAIAdapter = adapterRegistry.get(OPENAI_ADAPTER_ID);
+        if (!openAIAdapter) return;
+
+        const requestId = ++openAIModelRequestId.current;
+        setOpenAIModelsLoading(true);
+
+        try {
+            const credentials = await authManager.getCredentials(OPENAI_ADAPTER_ID, openAIAdapter);
+            const models = await openAIAdapter.listModels(credentials);
+            if (requestId !== openAIModelRequestId.current) return;
+
+            setAvailableModels(models);
+            if (models.length === 0) {
+                setOpenAIModelsError("OpenAI returned no available models. Retry or reconnect your account.");
+                return;
+            }
+
+            setOpenAIModelsError("");
+            setModel((currentModel) =>
+                models.some((availableModel) => availableModel.id === currentModel)
+                    ? currentModel
+                    : (models[0]?.id ?? ""),
+            );
+        } catch (error: unknown) {
+            if (requestId !== openAIModelRequestId.current) return;
+            setAvailableModels([]);
+            setOpenAIModelsError(error instanceof Error ? error.message : "Failed to load OpenAI models.");
+        } finally {
+            if (requestId === openAIModelRequestId.current) {
+                setOpenAIModelsLoading(false);
+            }
+        }
+    }, [adapterId]);
+
+    useEffect(() => {
+        if (adapterId !== OPENAI_ADAPTER_ID || credentialStatus !== "connected") return;
+
+        void loadOpenAIModels();
+        return () => {
+            openAIModelRequestId.current += 1;
+        };
+    }, [adapterId, credentialStatus, loadOpenAIModels]);
+
+    useEffect(() => {
+        if (!focusOpenAIModelAfterRetryRef.current || openAIModelsLoading) return;
+        focusOpenAIModelAfterRetryRef.current = false;
+        if (adapterId === OPENAI_ADAPTER_ID && !openAIModelsError && availableModels.length > 0) {
+            openAIModelSelectRef.current?.focus();
+        }
+    }, [adapterId, availableModels, openAIModelsError, openAIModelsLoading]);
 
     const loadOllamaModels = async (silent = false): Promise<boolean> => {
         const ollamaAdapter = adapterRegistry.get(OLLAMA_ADAPTER_ID);
@@ -366,53 +473,70 @@ export const AISettings = () => {
 
     // Phase 1: open external browser
     const handleConnectOAuth = async () => {
+        const requestId = ++authRequestId.current;
+        const authAdapterId = adapterId;
         setAuthLoading(true);
         try {
-            const result = await authManager.startOAuthFlow(adapterId);
+            const result = await authManager.startOAuthFlow(authAdapterId);
+            if (requestId !== authRequestId.current) return;
             setOauthInstruction(result.message);
             setOauthPending(true);
             setOauthCode("");
-        } catch (err: any) {
+        } catch (err: unknown) {
+            if (requestId !== authRequestId.current) return;
             uiDispatch.setAlert({
                 open: true,
-                message: err?.message ?? "OAuth failed.",
+                message: err instanceof Error ? err.message : "OAuth failed.",
                 type: "error",
             });
         } finally {
-            setAuthLoading(false);
+            if (requestId === authRequestId.current) setAuthLoading(false);
         }
     };
 
     // Phase 2: exchange the pasted code or complete device authorization
     const handleSubmitOAuthCode = async () => {
-        if (adapterId !== "openai" && !oauthCode.trim()) return;
+        if (adapterId !== OPENAI_ADAPTER_ID && !oauthCode.trim()) return;
+        const requestId = ++authRequestId.current;
+        const authAdapterId = adapterId;
         setAuthLoading(true);
         try {
-            await authManager.completeOAuthFlow(adapterId, oauthCode.trim());
+            await authManager.completeOAuthFlow(authAdapterId, oauthCode.trim());
+            if (requestId !== authRequestId.current) return;
             setOauthPending(false);
             setOauthCode("");
+            if (authAdapterId === OPENAI_ADAPTER_ID) {
+                setOpenAIModelsLoading(true);
+                setOpenAIModelsError("");
+            }
             setCredentialStatus("connected");
             uiDispatch.setAlert({
                 open: true,
-                message: `Connected to ${adapter?.name ?? adapterId}.`,
+                message: `Connected to ${adapter?.name ?? authAdapterId}.`,
                 type: "success",
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            if (requestId !== authRequestId.current) return;
             uiDispatch.setAlert({
                 open: true,
-                message: err?.message ?? "OAuth code exchange failed.",
+                message: err instanceof Error ? err.message : "OAuth code exchange failed.",
                 type: "error",
             });
         } finally {
-            setAuthLoading(false);
+            if (requestId === authRequestId.current) setAuthLoading(false);
         }
     };
 
     const handleDisconnect = async () => {
+        authRequestId.current += 1;
+        openAIModelRequestId.current += 1;
+        focusOpenAIModelAfterRetryRef.current = false;
+        setOpenAIModelsLoading(false);
         await authManager.clearCredentials(adapterId);
         setCredentialStatus("disconnected");
         setTestStatus("idle");
         setAvailableModels([]);
+        setOpenAIModelsError("");
         setOauthPending(false);
         setOauthCode("");
         uiDispatch.setAlert({
@@ -422,14 +546,29 @@ export const AISettings = () => {
         });
     };
 
+    const hasValidOpenAIModel =
+        adapterId !== OPENAI_ADAPTER_ID ||
+        (credentialStatus === "connected" &&
+            !openAIModelsLoading &&
+            availableModels.some((availableModel) => availableModel.id === model));
+
     const handleSaveConfig = async () => {
+        if (!hasValidOpenAIModel) {
+            uiDispatch.setAlert({
+                open: true,
+                message: "Select an available OpenAI model before saving.",
+                type: "error",
+            });
+            return;
+        }
+
         setSaving(true);
         try {
             const config: AIConfig = {
                 id: configId,
                 name: `${adapter?.name ?? adapterId} Config`,
                 adapterId,
-                model: model || adapter?.defaultModel || "",
+                model: adapterId === OPENAI_ADAPTER_ID ? model : model || adapter?.defaultModel || "",
                 systemPrompt,
                 commandTemplate: adapterId === "cli" ? commandTemplate : undefined,
                 baseUrl: adapterId === OLLAMA_ADAPTER_ID ? baseUrl.trim() : undefined,
@@ -455,6 +594,14 @@ export const AISettings = () => {
     };
 
     const visibleAdapters = adapters.filter((a) => a.id !== "cli" || isElectron());
+
+    if (configLoading) {
+        return (
+            <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+                Loading AI configuration...
+            </p>
+        );
+    }
 
     return (
         <>
@@ -484,7 +631,7 @@ export const AISettings = () => {
                                     onClick={() => handleAdapterChange(a.id)}
                                     aria-pressed={isSelected}
                                     className={css(
-                                        "group flex min-h-28 items-start gap-3 rounded-card-radius border bg-card-background/70 p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                        "group flex min-h-28 items-start gap-3 rounded-card-radius border bg-card-background/70 p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                                         isSelected &&
                                             "border-primary/45 bg-primary/10 shadow-soft ring-1 ring-primary/35",
                                         !isSelected && "border-card-border",
@@ -502,7 +649,7 @@ export const AISettings = () => {
                                                 </span>
                                             </span>
                                             {isSelected && (
-                                                <span className="inline-flex shrink-0 items-center gap-1 rounded-button-radius border border-card-border bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                                                <span className="rounded-button-radius inline-flex shrink-0 items-center gap-1 border border-card-border bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground">
                                                     <ProviderStatusIcon status={credentialStatus} />
                                                     {statusText}
                                                 </span>
@@ -572,7 +719,7 @@ export const AISettings = () => {
                                     {testStatus === "testing" || ollamaModelsLoading ? (
                                         <SpinnerIcon size={14} className="animate-spin" />
                                     ) : (
-                                        <span className="flex gap-1.5 items-center">
+                                        <span className="flex items-center gap-1.5">
                                             <PlugIcon size={14} />
                                             Load models
                                         </span>
@@ -580,14 +727,14 @@ export const AISettings = () => {
                                 </Button>
                             </div>
                             {testStatus === "success" && (
-                                <span className="flex gap-1 items-center text-xs text-success">
+                                <span className="flex items-center gap-1 text-xs text-success">
                                     <CheckCircleIcon size={12} />
                                     Connected — {availableModels.length} model
                                     {availableModels.length !== 1 ? "s" : ""} available
                                 </span>
                             )}
                             {testStatus === "error" && (
-                                <span className="flex gap-1 items-center text-xs text-destructive">
+                                <span className="text-destructive flex items-center gap-1 text-xs">
                                     <XCircleIcon size={12} />
                                     {testError}
                                 </span>
@@ -638,7 +785,7 @@ export const AISettings = () => {
                                             setOauthPending(false);
                                             setOauthCode("");
                                         }}
-                                        className="text-[11px] text-muted-foreground hover:text-foreground w-fit"
+                                        className="w-fit text-[11px] text-muted-foreground hover:text-foreground"
                                     >
                                         Cancel
                                     </button>
@@ -673,7 +820,7 @@ export const AISettings = () => {
                                         href={meta.consoleUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex gap-1 items-center text-[11px] text-primary hover:underline w-fit"
+                                        className="flex w-fit items-center gap-1 text-[11px] text-primary hover:underline"
                                     >
                                         <ArrowSquareOutIcon size={11} />
                                         Get API key
@@ -684,14 +831,14 @@ export const AISettings = () => {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
+                        <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">API Key</span>
                             {meta?.consoleUrl && (
                                 <a
                                     href={meta.consoleUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex gap-1 items-center text-[11px] text-primary hover:underline"
+                                    className="flex items-center gap-1 text-[11px] text-primary hover:underline"
                                 >
                                     <ArrowSquareOutIcon size={11} />
                                     Get key
@@ -720,7 +867,7 @@ export const AISettings = () => {
                                 {testStatus === "testing" ? (
                                     <SpinnerIcon size={14} className="animate-spin" />
                                 ) : (
-                                    <span className="flex gap-1.5 items-center">
+                                    <span className="flex items-center gap-1.5">
                                         <PlugIcon size={14} />
                                         {apiKey.trim() ? "Connect" : "Test"}
                                     </span>
@@ -730,14 +877,14 @@ export const AISettings = () => {
 
                         {/* Test result feedback */}
                         {testStatus === "success" && (
-                            <span className="flex gap-1 items-center text-xs text-success">
+                            <span className="flex items-center gap-1 text-xs text-success">
                                 <CheckCircleIcon size={12} />
                                 Connected — {availableModels.length} model
                                 {availableModels.length !== 1 ? "s" : ""} available
                             </span>
                         )}
                         {testStatus === "error" && (
-                            <span className="flex gap-1 items-center text-xs text-destructive">
+                            <span className="text-destructive flex items-center gap-1 text-xs">
                                 <XCircleIcon size={12} />
                                 {testError}
                             </span>
@@ -749,7 +896,37 @@ export const AISettings = () => {
                 {adapterId !== "cli" && (
                     <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Model</span>
-                        {availableModels.length > 0 ? (
+                        {adapterId === OPENAI_ADAPTER_ID ? (
+                            <Select
+                                ref={openAIModelSelectRef}
+                                hiddenLabel
+                                value={
+                                    availableModels.some((availableModel) => availableModel.id === model) ? model : ""
+                                }
+                                title="Model"
+                                required={false}
+                                loading={credentialStatus === "loading" || openAIModelsLoading}
+                                disabled={
+                                    credentialStatus !== "connected" ||
+                                    openAIModelsLoading ||
+                                    availableModels.length === 0
+                                }
+                                placeholder={
+                                    credentialStatus === "loading" || openAIModelsLoading
+                                        ? "Loading OpenAI models..."
+                                        : credentialStatus !== "connected"
+                                          ? "Connect OpenAI to load models"
+                                          : openAIModelsError
+                                            ? "OpenAI models unavailable"
+                                            : "No OpenAI models available"
+                                }
+                                onChange={(event) => setModel(event.target.value)}
+                                options={availableModels.map((availableModel) => ({
+                                    value: availableModel.id,
+                                    label: availableModel.name,
+                                }))}
+                            />
+                        ) : availableModels.length > 0 ? (
                             <Select
                                 hiddenLabel
                                 value={model}
@@ -784,7 +961,32 @@ export const AISettings = () => {
                                 onChange={(e: any) => setModel(e.target.value)}
                             />
                         )}
-                        {adapterId === OLLAMA_ADAPTER_ID && ollamaModelsLoading ? (
+                        {adapterId === OPENAI_ADAPTER_ID && openAIModelsError ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p role="alert" className="text-destructive text-xs">
+                                    {openAIModelsError}
+                                </p>
+                                <Button
+                                    size="small"
+                                    disabled={openAIModelsLoading || credentialStatus !== "connected"}
+                                    onClick={() => {
+                                        focusOpenAIModelAfterRetryRef.current = true;
+                                        void loadOpenAIModels();
+                                    }}
+                                >
+                                    {openAIModelsLoading ? "Retrying..." : "Retry loading models"}
+                                </Button>
+                            </div>
+                        ) : adapterId === OPENAI_ADAPTER_ID && openAIModelsLoading ? (
+                            <p role="status" className="text-[10px] text-muted-foreground">
+                                Loading models available to your OpenAI account...
+                            </p>
+                        ) : adapterId === OPENAI_ADAPTER_ID && availableModels.length > 0 ? (
+                            <p role="status" className="text-[10px] text-muted-foreground">
+                                {availableModels.length} model
+                                {availableModels.length === 1 ? "" : "s"} available
+                            </p>
+                        ) : adapterId === OLLAMA_ADAPTER_ID && ollamaModelsLoading ? (
                             <p className="text-[10px] text-muted-foreground">
                                 Loading running models from <code>{baseUrl.trim()}</code> via <code>/api/ps</code>...
                             </p>
@@ -808,8 +1010,8 @@ export const AISettings = () => {
                     />
                 </div>
 
-                <div className="flex justify-end pt-4 border-t border-border/50">
-                    <Button size="small" disabled={saving} onClick={handleSaveConfig}>
+                <div className="flex justify-end border-t border-border/50 pt-4">
+                    <Button size="small" disabled={saving || !hasValidOpenAIModel} onClick={handleSaveConfig}>
                         {saving ? "Saving..." : "Save Configuration"}
                     </Button>
                 </div>
