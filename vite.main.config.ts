@@ -5,17 +5,7 @@ export default defineConfig({
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
     build: {
         rollupOptions: {
-            external: [
-                "better-sqlite3",
-                "node-pty",
-                "file-type",
-                "update-electron-app",
-                "elysia",
-                "@elysiajs/node",
-                "@elysiajs/cors",
-                "@sinclair/typebox",
-                "puppeteer-core",
-            ],
+            external: ["better-sqlite3", "node-pty", "file-type", "bufferutil", "utf-8-validate"],
         },
     },
 });

@@ -2,7 +2,6 @@ import { useNotification } from "@g4rcez/components";
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { Fragment, Suspense, useCallback, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import type { TabNavigationShortcut } from "@/lib/keyboard-shortcuts";
 import { AIDrawer } from "@/app/ai/ai-drawer";
 import { createWorkspaceAiChat } from "@/app/ai/create-ai-chat";
 import { Commander } from "@/app/commander";
@@ -30,6 +29,7 @@ import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-work
 import { notificationRef } from "@/app/notification-ref";
 import { registerHotkeys } from "@/lib/hotkeys";
 import { isElectron } from "@/lib/is-electron";
+import { getTabNavigationHotkey, type TabNavigationShortcut } from "@/lib/keyboard-shortcuts";
 import { clearSuppressedNoteRouteTabOpens, suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
@@ -310,7 +310,7 @@ export const RootLayout = () => {
     useEffect(
         function registerBindings() {
             const tabNavigationHotkeys = Array.from({ length: 9 }, (_, index) => ({
-                hotkey: `Mod+${index + 1}`,
+                hotkey: getTabNavigationHotkey(index + 1, isElectron()),
                 callback: () => {
                     selectEditorTabByShortcut(index === 8 ? { type: "last" } : { type: "index", index });
                 },
@@ -407,10 +407,10 @@ export const RootLayout = () => {
 
     if (isFloatingPanel) {
         return (
-            <div className="relative flex overflow-hidden flex-col h-screen rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
+            <div className="relative flex h-screen flex-col overflow-hidden rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
                 <div className="quicknote-window-drag-strip" />
                 <Suspense fallback={null}>
-                    <div className="flex flex-col flex-1 min-h-0 h-full">
+                    <div className="flex h-full min-h-0 flex-1 flex-col">
                         <Outlet />
                     </div>
                 </Suspense>
@@ -419,7 +419,7 @@ export const RootLayout = () => {
     }
 
     return (
-        <div className="flex overflow-hidden flex-col flex-1 justify-center items-center h-screen isolate print:block print:h-auto print:overflow-visible">
+        <div className="isolate flex h-screen flex-1 flex-col items-center justify-center overflow-hidden print:block print:h-auto print:overflow-visible">
             <Fragment>
                 <Commander
                     note={state.note}
@@ -451,7 +451,7 @@ export const RootLayout = () => {
                     type="button"
                     title="Exit focus mode (⌘⇧F)"
                     onClick={() => uiDispatch.toggleFocusMode()}
-                    className="flex fixed right-6 bottom-6 z-50 gap-2 items-center py-2 px-4 text-sm rounded-lg border shadow-medium transition-[transform,color,background-color,border-color] hover:scale-105 bg-background border-border text-foreground/70 animate-fade-in hover:text-foreground"
+                    className="animate-fade-in fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm text-foreground/70 shadow-medium transition-[transform,color,background-color,border-color] hover:scale-105 hover:text-foreground"
                 >
                     <CornersOutIcon className="size-4" />
                     <span>Exit Focus</span>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    getTabNavigationHotkey,
     getTabNavigationShortcut,
     isCommanderShortcut,
     isNewAiChatShortcut,
@@ -18,6 +19,12 @@ const event = (
 });
 
 describe("keyboard shortcuts", () => {
+    it("uses Shift for browser tab navigation only", () => {
+        expect(getTabNavigationHotkey(1, false)).toBe("Mod+Shift+1");
+        expect(getTabNavigationHotkey(9, false)).toBe("Mod+Shift+9");
+        expect(getTabNavigationHotkey(1, true)).toBe("Mod+1");
+    });
+
     it("matches Ctrl+Shift+P", () => {
         expect(isCommanderShortcut(event({ ctrlKey: true, shiftKey: true, key: "P" }))).toBe(true);
     });

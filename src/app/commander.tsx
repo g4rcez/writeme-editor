@@ -32,6 +32,18 @@ export const CommanderPreview = (props: { command: CommandItemTypes; text: strin
     return <Fragment />;
 };
 
+const GithubProjectLink = () => (
+    <a
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link flex items-center gap-1"
+        href="https://github.com/g4rcez/writeme-editor"
+    >
+        <GithubLogoIcon />
+        writeme
+    </a>
+);
+
 type Props = {
     note: Note | null;
     tabs: Tab[];
@@ -66,7 +78,7 @@ export const Commander = (props: Props) => {
             globalState().notes.map(
                 (note: Note): CommandItemTypes => ({
                     Icon: (
-                        <span className="text-primary text-xs flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-xs text-primary">
                             <NoteIcon />
                             Note
                         </span>
@@ -107,7 +119,7 @@ export const Commander = (props: Props) => {
                         title = terminalSession?.title?.trim() || "Terminal";
                         typeLabel = "Terminal";
                         Icon = (
-                            <span className="text-primary text-xs flex items-center gap-1">
+                            <span className="flex items-center gap-1 text-xs text-primary">
                                 <TerminalIcon />
                                 Terminal
                             </span>
@@ -116,7 +128,7 @@ export const Commander = (props: Props) => {
                         title = chat?.title?.trim() || "AI Chat";
                         typeLabel = "Chat";
                         Icon = (
-                            <span className="text-primary text-xs flex items-center gap-1">
+                            <span className="flex items-center gap-1 text-xs text-primary">
                                 <ChatCircleDotsIcon />
                                 Chat
                             </span>
@@ -259,6 +271,14 @@ export const Commander = (props: Props) => {
                         setTimeout(() => {
                             dispatch.readItLaterDialog(true);
                         }, 50);
+                    },
+                },
+                {
+                    title: "Import GitHub Gist",
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        navigate("/gist");
                     },
                 },
                 ...(props.note && !props.note.favorite
@@ -656,17 +676,9 @@ export const Commander = (props: Props) => {
             open={props.commander.enabled}
             onChangeVisibility={dispatch.commander}
             footer={
-                <div className="flex justify-between items-center min-w-full text-sm text-disabled">
+                <div className="flex min-w-full items-center justify-between text-sm text-disabled">
                     Version: {version}
-                    <a
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex gap-1 items-center link"
-                        href="https://github.com/g4rcez/writeme-editor"
-                    >
-                        <GithubLogoIcon />
-                        writeme
-                    </a>
+                    <GithubProjectLink />
                 </div>
             }
         />

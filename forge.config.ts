@@ -58,6 +58,10 @@ const config: ForgeConfig = {
         executableName: "writeme",
         appBundleId: "dev.writeme.app",
         icon: "./public/icon",
+        extendInfo: {
+            NSDocumentsFolderUsageDescription:
+                "Writeme needs access to the Documents folder to open and save your notes.",
+        },
         ...(osxSign ? { osxSign } : {}),
         ...(osxNotarize ? { osxNotarize } : {}),
     },

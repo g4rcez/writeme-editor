@@ -4,6 +4,8 @@ import { ShortcutSettingsControls } from "@/app/components/settings/settings-con
 import { type Shortcut, Type, useWritemeShortcuts } from "@/app/elements/shortcut-items";
 import { registerGlobalShortcuts, saveSettingsPatch } from "@/app/settings/save-settings-section";
 import { useSettingsDraft } from "@/app/settings/use-settings-draft";
+import { isElectron } from "@/lib/is-electron";
+import { getTabNavigationHotkey } from "@/lib/keyboard-shortcuts";
 import { uiDispatch } from "@/store/ui.store";
 import { SettingsPageShell } from "./settings-page-shell";
 
@@ -15,12 +17,12 @@ type ReadonlyShortcut = {
 
 const APP_SHORTCUT_REFERENCE: ReadonlyShortcut[] = [
     {
-        bind: "mod+1-8",
+        bind: getTabNavigationHotkey("1-8", isElectron()),
         title: "Go to tab 1-8",
         description: "Switch directly to one of the first eight open tabs.",
     },
     {
-        bind: "mod+9",
+        bind: getTabNavigationHotkey(9, isElectron()),
         title: "Go to last tab",
         description: "Switch directly to the last open tab.",
     },

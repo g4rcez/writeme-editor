@@ -2,6 +2,10 @@ type KeyboardShortcutEvent = Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey
 
 export type TabNavigationShortcut = { type: "index"; index: number } | { type: "last" };
 
+export function getTabNavigationHotkey(key: string | number, isDesktopApp: boolean): string {
+    return `${isDesktopApp ? "Mod" : "Mod+Shift"}+${key}`;
+}
+
 function hasPrimaryModifier(event: KeyboardShortcutEvent): boolean {
     return event.ctrlKey || event.metaKey;
 }

@@ -1,4 +1,4 @@
-type HotkeyEvent = Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey" | "shiftKey" | "key">;
+type HotkeyEvent = Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey" | "shiftKey" | "key" | "code">;
 
 type HotkeyCallback = (event: KeyboardEvent) => void;
 
@@ -87,7 +87,8 @@ function parseHotkey(hotkey: string): NormalizedHotkey {
 }
 
 function matchesHotkey(event: HotkeyEvent, hotkey: NormalizedHotkey): boolean {
-    if (normalizeKey(event.key) !== hotkey.key) return false;
+    const isShiftedDigit = hotkey.shiftKey && /^\d$/.test(hotkey.key) && event.code === `Digit${hotkey.key}`;
+    if (!isShiftedDigit && normalizeKey(event.key) !== hotkey.key) return false;
     if (event.altKey !== hotkey.altKey) return false;
     if (event.shiftKey !== hotkey.shiftKey) return false;
 

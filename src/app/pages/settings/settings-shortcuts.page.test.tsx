@@ -67,6 +67,8 @@ describe("SettingsShortcutsPage", () => {
         expect(screen.getByText("Commander")).toBeInTheDocument();
         expect(screen.getByText("Go to tab 1-8")).toBeInTheDocument();
         expect(screen.getByText("Go to last tab")).toBeInTheDocument();
+        expect(screen.getByText("Ctrl+Shift+1-8")).toBeInTheDocument();
+        expect(screen.getByText("Ctrl+Shift+9")).toBeInTheDocument();
         expect(screen.getByText("New note")).toBeInTheDocument();
         expect(screen.getByText("New AI chat")).toBeInTheDocument();
         expect(screen.getByText("Shortcut/Help menu")).toBeInTheDocument();

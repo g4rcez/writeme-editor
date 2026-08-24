@@ -10,7 +10,7 @@ function cleanup(): void {
 
 function keydown(
     key: string,
-    overrides: Partial<Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey" | "shiftKey">> = {},
+    overrides: Partial<Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey" | "shiftKey" | "code">> = {},
 ): KeyboardEvent {
     const event = new KeyboardEvent("keydown", {
         bubbles: true,
@@ -54,6 +54,15 @@ describe("hotkeys", () => {
         keydown("P", { metaKey: true });
 
         expect(callback).toHaveBeenCalledTimes(2);
+    });
+
+    it("matches shifted digits by their physical digit key", () => {
+        const callback = vi.fn();
+        unregisterHandlers.push(registerHotkey("Mod+Shift+1", callback));
+
+        keydown("!", { code: "Digit1", ctrlKey: true, shiftKey: true });
+
+        expect(callback).toHaveBeenCalledOnce();
     });
 
     it("unregisters callbacks", () => {

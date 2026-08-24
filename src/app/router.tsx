@@ -45,6 +45,7 @@ const ChatPage = lazy(() => import("./pages/chat.page"));
 const TerminalPage = lazy(() => import("./pages/terminal.page"));
 const OAuthCallbackPage = lazy(() => import("./pages/oauth-callback.page"));
 const FolderWorkspacePage = lazy(() => import("./pages/folder-workspace.page"));
+const GistImportPage = lazy(() => import("./pages/gist-import.page"));
 const SettingsPlatformGate = lazy(() =>
     import("./pages/settings/settings-platform-gate").then((module) => ({
         default: module.SettingsPlatformGate,
@@ -70,6 +71,14 @@ export const router = createRouter([
             {
                 path: "share",
                 element: <SharePage />,
+            },
+            {
+                path: "gist",
+                element: <GistImportPage />,
+            },
+            {
+                path: "gist/:owner/:gistId",
+                element: <GistImportPage />,
             },
             {
                 path: "notes",
