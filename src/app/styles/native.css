@@ -1,9 +1,9 @@
 html.native {
-  --native-liquid-glass-bg: hsla(var(--floating-background), 0.46);
-  --native-liquid-glass-bg-soft: hsla(var(--background), 0.18);
-  --native-liquid-glass-bg-strong: hsla(var(--card-background), 0.56);
-  --native-liquid-glass-border: hsla(var(--border), 0.42);
-  accent-color: hsla(var(--native-system-accent, 210, 100%, 52%));
+    --native-liquid-glass-bg: hsla(var(--floating-background), 0.46);
+    --native-liquid-glass-bg-soft: hsla(var(--background), 0.18);
+    --native-liquid-glass-bg-strong: hsla(var(--card-background), 0.56);
+    --native-liquid-glass-border: hsla(var(--border), 0.42);
+    accent-color: hsla(var(--native-system-accent, 210, 100%, 52%));
 }
 
 html.native body,
@@ -17,9 +17,7 @@ html.native h3,
 html.native h4,
 html.native h5,
 html.native h6 {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
-    sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
 }
 
 html.native .writeme-editor,
@@ -27,21 +25,21 @@ html.native .writeme-block,
 html.native .writeme-sidebar-v2-legacy-pane,
 html.native .writeme-sidebar-v2-group,
 html.native .writeme-sidebar-v2-footer-tab {
-  box-shadow: none;
+    box-shadow: none;
 }
 
 html.native.platform-web,
 html.native.platform-web body,
 html.native.platform-web #root {
-  background-color: hsla(var(--background), 1);
+    background-color: hsla(var(--background), 1);
 }
 
 html.native.platform-web .writeme-layout {
-  background-color: hsla(var(--background), 1);
+    background-color: hsla(var(--background), 1);
 }
 
 html.native.platform-web .writeme-layout-body {
-  background-color: hsla(var(--floating-background), 1);
+    background-color: hsla(var(--floating-background), 1);
 }
 
 html.native.platform-web .writeme-layout-main,
@@ -50,15 +48,15 @@ html.native.platform-web .writeme-editor,
 html.native.platform-web .writeme-aside-activity-bar,
 html.native.platform-web .writeme-aside-panel-inner > div,
 html.native.platform-web [data-treeroot="true"] {
-  background-color: hsla(var(--background), 1);
+    background-color: hsla(var(--background), 1);
 }
 
 html.native.platform-web .tab-scrollbar,
 html.native.platform-web .writeme-sidebar-v2-legacy-pane,
 html.native.platform-web .writeme-sidebar-v2-group,
 html.native.platform-web .writeme-sidebar-v2-footer-tab {
-  border-color: hsla(var(--border), 0.42);
-  background-color: hsla(var(--card-background), 1);
+    border-color: hsla(var(--border), 0.42);
+    background-color: hsla(var(--card-background), 1);
 }
 
 html.native.platform-electron,
@@ -72,50 +70,102 @@ html.native.platform-electron .writeme-editor-page,
 html.native.platform-electron .writeme-editor,
 html.native.platform-electron .writeme-aside-panel-inner > div,
 html.native.platform-electron [data-treeroot="true"] {
-  background: transparent;
-  background-color: transparent;
+    background: transparent;
+    background-color: transparent;
 }
 
 html.native.platform-electron .writeme-aside-activity-bar,
 html.native.platform-electron .writeme-aside-panel,
 html.native.platform-electron .writeme-aside-nav,
 html.native.platform-electron .tab-scrollbar,
-html.native.platform-electron .writeme-editor-bubble-actions {
-  border-color: var(--native-liquid-glass-border);
-  background-color: var(--native-liquid-glass-bg);
-  box-shadow: none;
-  -webkit-backdrop-filter: blur(30px) saturate(1.6);
-  backdrop-filter: blur(30px) saturate(1.6);
+html.native.platform-electron .writeme-editor-bubble-actions,
+html.native.platform-electron .writeme-main-surface,
+html.native.platform-electron .writeme-print-export-button,
+html.native.platform-electron .writeme-table-of-contents-button,
+html.native.platform-electron .writeme-editor-mode-toggle {
+    border-color: var(--native-liquid-glass-border);
+    background-color: var(--native-liquid-glass-bg);
+    box-shadow: none;
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    backdrop-filter: blur(30px) saturate(1.6);
 }
 
 html.native.platform-electron .writeme-aside-activity-bar,
 html.native.platform-electron .writeme-aside-panel,
-html.native.platform-electron .writeme-aside-nav {
-  background-color: var(--native-liquid-glass-bg-strong);
+html.native.platform-electron .writeme-aside-nav,
+html.native.platform-electron .writeme-main-surface {
+    background-color: var(--native-liquid-glass-bg-strong);
+}
+
+html.native.platform-electron .writeme-print-export-button,
+html.native.platform-electron .writeme-table-of-contents-button {
+    appearance: none;
+    color: hsla(var(--foreground), 0.82);
+    box-shadow:
+        0 1px 2px hsla(0, 0%, 0%, 0.24),
+        inset 0 1px 0 hsla(0, 0%, 100%, 0.14);
+}
+
+html.native.platform-electron .writeme-print-export-button:hover,
+html.native.platform-electron .writeme-print-export-button:focus-visible,
+html.native.platform-electron .writeme-table-of-contents-button:hover,
+html.native.platform-electron .writeme-table-of-contents-button:focus-visible {
+    background-color: var(--native-liquid-glass-bg-strong);
+    border-color: hsla(var(--primary-DEFAULT), 0.42);
+}
+
+html.native.platform-electron .writeme-editor-mode-toggle {
+    gap: 0.125rem;
+    padding: 0.25rem;
+    box-shadow:
+        0 1px 2px hsla(0, 0%, 0%, 0.24),
+        inset 0 1px 0 hsla(0, 0%, 100%, 0.14);
+}
+
+html.native.platform-electron .writeme-editor-mode-toggle > button {
+    appearance: none;
+    background-color: transparent;
+    color: hsla(var(--muted-foreground));
+}
+
+html.native.platform-electron .writeme-editor-mode-toggle > button[aria-pressed="true"] {
+    background: linear-gradient(180deg, hsla(var(--primary-DEFAULT), 0.98), hsla(var(--primary-DEFAULT), 0.82));
+    color: hsla(var(--primary-foreground));
+    box-shadow:
+        0 1px 2px hsla(0, 0%, 0%, 0.24),
+        inset 0 1px 0 hsla(0, 0%, 100%, 0.18);
+}
+
+html.native.platform-electron .writeme-editor-mode-toggle > button:not([aria-pressed="true"]):hover,
+html.native.platform-electron .writeme-editor-mode-toggle > button:not([aria-pressed="true"]):focus-visible {
+    background-color: hsla(var(--muted), 0.42);
+    color: hsla(var(--foreground));
 }
 
 html.native.platform-electron .writeme-sidebar-v2-legacy-pane,
 html.native.platform-electron .writeme-sidebar-v2-group,
 html.native.platform-electron .writeme-sidebar-v2-footer-tab {
-  border-color: var(--native-liquid-glass-border);
-  background-color: var(--native-liquid-glass-bg-soft);
+    border-color: var(--native-liquid-glass-border);
+    background-color: var(--native-liquid-glass-bg-soft);
 }
 
 html.native.platform-electron .writeme-editor {
-  border: 0;
-  border-radius: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+    border: 0;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
-@supports not (
-  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
-) {
-  html.native.platform-electron .writeme-aside-activity-bar,
-  html.native.platform-electron .writeme-aside-panel,
-  html.native.platform-electron .writeme-aside-nav,
-  html.native.platform-electron .tab-scrollbar,
-  html.native.platform-electron .writeme-editor-bubble-actions {
-    background-color: hsla(var(--card-background), 0.92);
-  }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    html.native.platform-electron .writeme-aside-activity-bar,
+    html.native.platform-electron .writeme-aside-panel,
+    html.native.platform-electron .writeme-aside-nav,
+    html.native.platform-electron .tab-scrollbar,
+    html.native.platform-electron .writeme-editor-bubble-actions,
+    html.native.platform-electron .writeme-main-surface,
+    html.native.platform-electron .writeme-print-export-button,
+    html.native.platform-electron .writeme-table-of-contents-button,
+    html.native.platform-electron .writeme-editor-mode-toggle {
+        background-color: hsla(var(--card-background), 0.92);
+    }
 }

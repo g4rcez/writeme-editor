@@ -9,6 +9,7 @@ const appleSecondaryLabel = "hsla(240, 4%, 78%)";
 const appleSystemGray4 = "hsla(240, 2%, 23%)";
 const appleSystemGray5 = "hsla(240, 2%, 18%)";
 const appleSystemGray6 = "hsla(240, 3%, 11%)";
+const appleBase = appleSystemGray6;
 const appleSystemAccent = "hsla(var(--native-system-accent, 210, 100%, 52%))";
 const appleSystemGreen = "hsla(135, 64%, 50%)";
 const appleSystemIndigo = "hsla(241, 73%, 63%)";
@@ -32,7 +33,7 @@ export const nativeTheme = {
         "json-caret": appleSystemGray,
     },
     colors: {
-        background: appleBlack,
+        background: appleBase,
         foreground: appleLabel,
         border: appleSystemGray4,
         ring: appleSystemAccent,
@@ -118,7 +119,7 @@ export const nativeTheme = {
             overlay,
         },
         table: {
-            background: appleBlack,
+            background: appleBase,
             header: appleSystemGray6,
             border: appleSystemGray4,
         },

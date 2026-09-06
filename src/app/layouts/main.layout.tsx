@@ -65,7 +65,7 @@ export const MainLayout = () => {
                     />
                     <Group orientation="vertical" className="flex-1 min-h-0">
                         <Panel defaultSize={100} minSize={30} className="min-h-0">
-                            <div className="relative w-full h-full min-h-0 bg-background">
+                            <div className="writeme-main-surface relative w-full h-full min-h-0 bg-background">
                                 <div className={activeTerminalSessionId ? "hidden" : "w-full h-full min-h-0"}>
                                     <div
                                         id="main-scroll-container"

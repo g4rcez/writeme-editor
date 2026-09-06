@@ -111,6 +111,9 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
             "select-background-hover": alpha(muted, 0.42),
         },
         card: {
+            background: get(colors, ["card", "background"], background),
+            border: get(colors, ["card", "border"], border),
+            muted: get(colors, ["card", "muted"], muted),
             "stats-panel-background-hover": alpha(primary, 0.1),
         },
         command: {
@@ -161,6 +164,8 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
             "thumb-background": get(colors, ["input", "slider"], background),
         },
         table: {
+            background: get(colors, ["table", "background"], background),
+            border: get(colors, ["table", "border"], border),
             "header-background": tableHeader,
             "inline-placeholder-color": mutedForeground,
         },

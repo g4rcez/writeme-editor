@@ -170,7 +170,7 @@ function EditorModeToggle({
         <div className="mx-auto flex w-full max-w-safe flex-col items-end gap-1 print:hidden">
             <fieldset
                 aria-label="Editor mode"
-                className="inline-flex rounded-lg border border-border bg-card-background p-0.5 shadow-soft"
+                className="writeme-editor-mode-toggle inline-flex rounded-lg border border-border bg-card-background p-0.5 shadow-soft"
             >
                 {modes.map((item) => {
                     const active = item.value === mode;

@@ -1,4 +1,4 @@
-import { Tag } from "@g4rcez/components";
+import { Button, Tag } from "@g4rcez/components";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
@@ -28,35 +28,25 @@ type ActionCardProps = {
     className?: string;
 };
 
-function SectionHeading({ title, description }: { title: string; description?: string }) {
-    return (
-        <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">{title}</h2>
-            {description ? <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
-        </div>
-    );
-}
-
 function ActionCard({ title, description, icon: Icon, onClick, shortcut, className }: ActionCardProps) {
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`group flex min-h-28 items-start gap-4 rounded-xl border border-border/40 bg-card-background p-4 text-left transition-colors hover:border-primary/30 hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${className ?? ""}`}
+            aria-label={title}
+            className={`group flex min-h-36 flex-col items-start gap-4 p-5 text-left transition-[background-color,transform] duration-150 ease-out hover:bg-muted/20 active:scale-[0.99] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${className ?? ""}`}
         >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
-                <Icon size={20} strokeWidth={1.6} />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-2">
-                <span>
-                    <span className="block text-sm font-semibold text-foreground group-hover:text-primary">
-                        {title}
-                    </span>
-                    <span className="mt-1 block text-sm leading-5 text-muted-foreground">{description}</span>
+            <span className="flex w-full items-center justify-between gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                    <Icon size={20} strokeWidth={1.6} />
                 </span>
-                <kbd className="mt-auto w-fit rounded bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
+                <kbd className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
                     {shortcut}
                 </kbd>
+            </span>
+            <span className="min-w-0">
+                <span className="block text-sm font-semibold text-foreground group-hover:text-primary">{title}</span>
+                <span className="mt-1 block text-sm leading-5 text-muted-foreground">{description}</span>
             </span>
         </button>
     );
@@ -67,14 +57,17 @@ function RecentNoteCard({ note }: { note: Note }) {
         <li>
             <Link
                 to={`/note/${note.id}`}
-                className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                className="group flex items-center gap-4 px-5 py-4 transition-[background-color,transform] duration-150 ease-out hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
             >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
-                    <FileTextIcon size={18} />
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                    <FileTextIcon size={19} />
                 </span>
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">
-                        {note.title || "Untitled"}
+                    <span className="flex min-w-0 items-center gap-2">
+                        <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">
+                            {note.title || "Untitled"}
+                        </span>
+                        {note.favorite ? <StarIcon size={12} weight="fill" className="shrink-0 text-warn" /> : null}
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <time dateTime={new Date(note.updatedAt).toISOString()}>
@@ -89,7 +82,7 @@ function RecentNoteCard({ note }: { note: Note }) {
                     </span>
                 </span>
                 <ArrowRightIcon
-                    size={14}
+                    size={16}
                     className="shrink-0 text-muted-foreground opacity-0 transition-[opacity,transform] group-hover:translate-x-0.5 group-hover:opacity-100"
                 />
             </Link>
@@ -124,84 +117,100 @@ export default function DashboardPage() {
 
     const openAiAssistant = () => navigate("/chat");
 
-    const favorites = state.notes.filter((note: Note) => note.favorite).slice(0, 4);
+    const favoriteNotes = state.notes.filter((note: Note) => note.favorite);
+    const favorites = favoriteNotes.slice(0, 4);
     const recent = state.notes.slice(0, 6);
 
     return (
         <div className="min-h-full bg-background selection:bg-primary/20">
-            <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-10 lg:px-8">
-                <header className="flex flex-col gap-5 border-b border-border/30 pb-8 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl">
-                        <p className="mb-2 font-mono text-sm text-primary">{greeting} · a place for your thoughts</p>
-                        <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                            Just you and your thoughts.
-                        </h1>
-                        <p className="mt-3 max-w-xl text-base leading-7 text-muted-foreground">
-                            A zero-distraction workspace for your mind. Privacy by design, focus by nature, integrated
-                            with AI by default.
-                        </p>
-                    </div>
-                    {cwd ? (
-                        <div className="rounded-xl border border-border/40 bg-card-background px-3 py-2 lg:max-w-xs">
-                            <p className="text-xs font-medium text-muted-foreground">Local-first workspace</p>
-                            <p className="mt-1 truncate text-sm text-foreground" title={cwd}>
-                                {cwd}
+            <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 xl:px-10 2xl:px-12">
+                <header className="border-b border-border/30 pb-7">
+                    <div className="flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+                        <div className="max-w-3xl">
+                            <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-primary">
+                                <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+                                {greeting} · your private workspace
+                            </p>
+                            <h1 className="text-balance text-4xl font-bold leading-[1.05] tracking-tight text-foreground lg:text-5xl">
+                                Just you and your thoughts.
+                            </h1>
+                            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+                                A calm place for notes, ideas, and the work that matters. Everything stays local, with
+                                AI available when you want a second pair of eyes.
                             </p>
                         </div>
-                    ) : null}
+                        <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                            <Button
+                                type="button"
+                                theme="primary"
+                                size="big"
+                                onClick={createNewNote}
+                                className="inline-flex items-center justify-center gap-3 active:scale-[0.99]"
+                            >
+                                <FilePlusIcon size={18} />
+                                <span>New note</span>
+                                <kbd className="rounded bg-button-primary-text/15 px-1.5 py-0.5 font-mono text-[10px] text-button-primary-text/80">
+                                    ⌘ N
+                                </kbd>
+                            </Button>
+                            <Button
+                                type="button"
+                                theme="outlined"
+                                size="big"
+                                onClick={onSearch}
+                                className="inline-flex items-center justify-center gap-3 active:scale-[0.99]"
+                            >
+                                <MagnifyingGlassIcon size={18} />
+                                <span>Find anything</span>
+                                <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                                    ⌘ K
+                                </kbd>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/30 pt-4 text-xs">
+                        <span className="text-muted-foreground">Workspace</span>
+                        <span className="max-w-full truncate font-mono text-foreground" title={cwd ?? undefined}>
+                            {cwd ?? "Local files"}
+                        </span>
+                        <span className="hidden h-3 w-px bg-border/60 sm:block" aria-hidden="true" />
+                        <span className="text-muted-foreground">
+                            <strong className="font-semibold text-foreground">{state.notes.length}</strong> notes
+                        </span>
+                        <span className="text-muted-foreground">
+                            <strong className="font-semibold text-foreground">{favoriteNotes.length}</strong> starred
+                        </span>
+                    </div>
                 </header>
 
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-                    <div className="space-y-10">
-                        <section className="space-y-4">
-                            <SectionHeading
-                                title="Focused writing with power one gesture away."
-                                description="Start writing, search the workspace, or ask for structure without leaving the flow."
-                            />
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <ActionCard
-                                    title="Start writing"
-                                    description="There is no blank page. Open a clean writing column."
-                                    icon={FilePlusIcon}
-                                    shortcut="⌘ N"
-                                    onClick={createNewNote}
-                                />
-                                <ActionCard
-                                    title="Keyboard driven"
-                                    description="Move through notes, tabs, search, and actions without leaving the keyboard."
-                                    icon={MagnifyingGlassIcon}
-                                    shortcut="⌘ K"
-                                    onClick={onSearch}
-                                />
-                                <ActionCard
-                                    title="AI assistant"
-                                    description="Ask for structure, summaries, or help while staying inside your note."
-                                    icon={RobotIcon}
-                                    shortcut="AI"
-                                    className="sm:col-span-2"
-                                    onClick={openAiAssistant}
-                                />
-                            </div>
-                        </section>
-
-                        <section className="space-y-4">
-                            <div className="flex flex-wrap items-end justify-between gap-3">
-                                <SectionHeading
-                                    title="Personal note taker"
-                                    description="Daily notes, project ideas, snippets, tasks, and drafts in one place."
-                                />
+                <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_19rem] 2xl:gap-12">
+                    <div className="min-w-0 space-y-10">
+                        <section aria-labelledby="recent-notes-heading">
+                            <div className="flex flex-wrap items-end justify-between gap-4">
+                                <div>
+                                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                        Your desk
+                                    </p>
+                                    <h2 id="recent-notes-heading" className="text-xl font-semibold text-foreground">
+                                        Pick up where you left off
+                                    </h2>
+                                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                        Your most recently changed notes, ready when you are.
+                                    </p>
+                                </div>
                                 <Link
                                     to="/notes"
-                                    className="group flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                                    className="group flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                 >
-                                    View all
+                                    All notes
                                     <ArrowRightIcon
-                                        size={13}
+                                        size={14}
                                         className="transition-transform group-hover:translate-x-0.5"
                                     />
                                 </Link>
                             </div>
-                            <div className="overflow-hidden rounded-xl border border-border/40 bg-card-background">
+                            <div className="mt-5 overflow-hidden rounded-2xl border border-border/40 bg-card-background">
                                 {recent.length > 0 ? (
                                     <ul className="divide-y divide-border/30">
                                         {recent.map((note: Note) => (
@@ -209,56 +218,141 @@ export default function DashboardPage() {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <div className="flex min-h-36 flex-col items-center justify-center gap-2 px-6 py-10 text-center">
-                                        <FileTextIcon size={24} className="text-muted-foreground/60" />
-                                        <p className="text-sm font-medium text-foreground">There is no blank page.</p>
-                                        <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                                            Every thought you sit down to write already exists somewhere in your head.
-                                        </p>
+                                    <div className="flex min-h-52 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+                                        <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                            <FileTextIcon size={22} />
+                                        </span>
+                                        <div>
+                                            <p className="text-sm font-medium text-foreground">
+                                                Start with one small thought.
+                                            </p>
+                                            <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
+                                                A blank page is only an invitation. Open a note and let the first line
+                                                do the work.
+                                            </p>
+                                        </div>
+                                        <Button type="button" theme="outlined" size="small" onClick={createNewNote}>
+                                            Create a note
+                                        </Button>
                                     </div>
                                 )}
                             </div>
                         </section>
+
+                        <section className="border-t border-border/30 pt-8" aria-labelledby="shortcuts-heading">
+                            <div>
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                    Shortcuts
+                                </p>
+                                <h2 id="shortcuts-heading" className="text-xl font-semibold text-foreground">
+                                    A quieter way to work
+                                </h2>
+                                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                    Keep the important actions close without breaking your flow.
+                                </p>
+                            </div>
+                            <div className="mt-5 grid overflow-hidden rounded-2xl border border-border/40 bg-card-background divide-y divide-border/30 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                                <ActionCard
+                                    title="Start writing"
+                                    description="Open a clean writing column."
+                                    icon={FilePlusIcon}
+                                    shortcut="⌘ N"
+                                    onClick={createNewNote}
+                                />
+                                <ActionCard
+                                    title="Search everything"
+                                    description="Move through notes and actions."
+                                    icon={MagnifyingGlassIcon}
+                                    shortcut="⌘ K"
+                                    onClick={onSearch}
+                                />
+                                <ActionCard
+                                    title="Ask AI"
+                                    description="Find structure without leaving the note."
+                                    icon={RobotIcon}
+                                    shortcut="AI"
+                                    onClick={openAiAssistant}
+                                />
+                            </div>
+                        </section>
                     </div>
 
-                    <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
-                        <section className="rounded-xl border border-border/40 bg-card-background p-4">
-                            <div className="mb-4 flex items-center gap-2">
-                                <StarIcon size={16} className="fill-current text-warn" />
-                                <h2 className="text-sm font-semibold text-foreground">Power one gesture away</h2>
+                    <aside className="xl:pt-1">
+                        <section aria-labelledby="starred-notes-heading">
+                            <div className="flex items-end justify-between gap-3">
+                                <div>
+                                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                        Keep close
+                                    </p>
+                                    <h2 id="starred-notes-heading" className="text-xl font-semibold text-foreground">
+                                        Starred notes
+                                    </h2>
+                                </div>
+                                <StarIcon size={18} className="fill-current text-muted-foreground" />
                             </div>
                             {favorites.length > 0 ? (
-                                <div className="space-y-1">
+                                <ul className="mt-4 space-y-1">
                                     {favorites.map((note: Note) => (
-                                        <Link
-                                            key={note.id}
-                                            to={`/note/${note.id}`}
-                                            className="block rounded-lg px-2 py-2 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                        >
-                                            <h3 className="truncate text-sm font-medium text-foreground">
-                                                {note.title || "Untitled"}
-                                            </h3>
-                                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                                                {note.content.substring(0, 90).replace(/[#*`]/g, "") || "No content"}
-                                            </p>
-                                        </Link>
+                                        <li key={note.id}>
+                                            <Link
+                                                to={`/note/${note.id}`}
+                                                className="group flex items-start gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                            >
+                                                <StarIcon
+                                                    size={14}
+                                                    weight="fill"
+                                                    className="mt-0.5 shrink-0 text-warn"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">
+                                                        {note.title || "Untitled"}
+                                                    </span>
+                                                    <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+                                                        {note.content.substring(0, 90).replace(/[#*`]/g, "") ||
+                                                            "No content"}
+                                                    </span>
+                                                </span>
+                                                <ArrowRightIcon
+                                                    size={14}
+                                                    className="mt-0.5 shrink-0 text-muted-foreground opacity-0 transition-[opacity,transform] group-hover:translate-x-0.5 group-hover:opacity-100"
+                                                />
+                                            </Link>
+                                        </li>
                                     ))}
-                                </div>
+                                </ul>
                             ) : (
-                                <p className="py-4 text-sm leading-6 text-muted-foreground">
-                                    Star notes you return to often and keep them exactly where you expect them.
+                                <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                                    Star the notes you return to often and they will stay one gesture away.
                                 </p>
                             )}
                         </section>
 
-                        <section className="rounded-xl border border-primary/20 bg-primary/10 p-4">
-                            <h2 className="text-sm font-semibold text-foreground">Privacy first</h2>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Write Me is local-first. Your notes stay in formats you control.
+                        <section
+                            className="mt-8 rounded-2xl border border-border/40 bg-card-background p-5"
+                            aria-labelledby="local-first-heading"
+                        >
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-primary">
+                                    <FileTextIcon size={18} />
+                                </span>
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                        Local by default
+                                    </p>
+                                    <h2
+                                        id="local-first-heading"
+                                        className="mt-1 text-base font-semibold text-foreground"
+                                    >
+                                        Your notes stay yours.
+                                    </h2>
+                                </div>
+                            </div>
+                            <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                                Write Me keeps your notes in formats you control, with AI available when you choose it.
                             </p>
-                            <div className="mt-4 flex items-center justify-between gap-3">
+                            <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/40 pt-3">
                                 <span className="text-xs text-muted-foreground">Workspace notes</span>
-                                <Tag size="small" theme="primary">
+                                <Tag size="small" theme="muted">
                                     {state.notes.length}
                                 </Tag>
                             </div>

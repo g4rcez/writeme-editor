@@ -131,7 +131,7 @@ export const TableOfContents = () => {
                 aria-label="Open table of contents"
                 onClick={() => setIsOpen((open) => !open)}
                 className={css(
-                    "rounded-button-radius flex size-11 items-center justify-center border transition-[background-color,border-color,color,transform] duration-200",
+                    "writeme-table-of-contents-button rounded-button-radius flex size-11 items-center justify-center border transition-[background-color,border-color,color,transform] duration-200",
                     "border-card-border bg-card-background text-muted-foreground shadow-soft",
                     "hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                     isOpen && "border-primary/35 bg-primary/10 text-primary",
