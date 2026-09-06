@@ -163,7 +163,14 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
         this.storage.parser = new MarkdownParser(this.editor, this.options);
         this.storage.serializer = new MarkdownSerializer(this.editor);
         const getMarkdown = () => {
-            if (!this.storage.serializer || !this.editor.state.doc) return "";
+            if (
+                !this.storage.serializer ||
+                !this.editor.schema ||
+                !this.editor.extensionManager ||
+                !this.editor.state?.doc
+            ) {
+                return "";
+            }
             return this.storage.serializer.serialize(this.editor.state.doc);
         };
         this.storage.getMarkdown = getMarkdown;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { editorGlobalRef } from "@/app/editor-global-ref";
+import { editorGlobalRef, editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { HARD_LIMIT, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { useUIStore } from "@/store/ui.store";
 
 type Counts = { chars: number; words: number; lines: number };
 
@@ -15,10 +16,10 @@ function getMarkdownCounts(content: string): Counts {
     };
 }
 
-function formatSize(chars: number): string {
-    if (chars < 1_000) return `${chars} B`;
-    if (chars < 1_000_000) return `${(chars / 1_000).toFixed(1)} KB`;
-    return `${(chars / 1_000_000).toFixed(2)} MB`;
+function formatCount(chars: number): string {
+    if (chars < 1_000) return `${chars} chars`;
+    if (chars < 1_000_000) return `${(chars / 1_000).toFixed(1)}K chars`;
+    return `${(chars / 1_000_000).toFixed(2)}M chars`;
 }
 
 function usageColor(chars: number): string {
@@ -27,10 +28,12 @@ function usageColor(chars: number): string {
     return "text-muted-foreground";
 }
 
-const LIMIT_LABEL = `${WARN_THRESHOLD / 1_000_000} MB`;
+const WARNING_LABEL = formatCount(WARN_THRESHOLD);
+const HARD_LIMIT_LABEL = formatCount(HARD_LIMIT);
 
 export function NoteFooter({ noteId, content }: { noteId: string; content?: string }) {
     const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
+    const [{ editorSaveStatus }] = useUIStore();
     const counts = content === undefined ? editorCounts : getMarkdownCounts(content);
 
     useEffect(() => {
@@ -38,43 +41,75 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
         let cleanup: (() => void) | undefined;
 
         const subscribe = () => {
+            const searchEditor = editorSearchGlobalRef.current;
             const editor = editorGlobalRef.current;
-            if (!editor) return false;
+            if (!searchEditor && !editor) return false;
 
-            const compute = () =>
-                setEditorCounts({
-                    chars: editor.storage.characterCount.characters(),
-                    words: editor.storage.characterCount.words(),
-                    lines: editor.state.doc.textContent.split("\n").length,
-                });
+            const compute = () => {
+                if (editorSearchGlobalRef.current) {
+                    setEditorCounts(getMarkdownCounts(editorSearchGlobalRef.current.getContent()));
+                    return;
+                }
+                if (editor) {
+                    setEditorCounts(getMarkdownCounts(editor.getMarkdown()));
+                }
+            };
 
             compute();
-            editor.on("update", compute);
-            cleanup = () => editor.off("update", compute);
+            cleanup = searchEditor
+                ? searchEditor.subscribe(compute)
+                : () => {
+                      editor?.off("update", compute);
+                  };
+            if (editor && !searchEditor) editor.on("update", compute);
             return true;
         };
 
+        const unsubscribeGlobal = subscribeEditorSearchGlobalRef(() => {
+            cleanup?.();
+            cleanup = undefined;
+            subscribe();
+        });
         if (!subscribe()) {
             const interval = setInterval(() => {
                 if (subscribe()) clearInterval(interval);
             }, 50);
             return () => {
                 clearInterval(interval);
+                unsubscribeGlobal();
                 cleanup?.();
             };
         }
 
-        return () => cleanup?.();
+        return () => {
+            unsubscribeGlobal();
+            cleanup?.();
+        };
     }, [content, noteId]);
 
-    const pct = Math.min((counts.chars / WARN_THRESHOLD) * 100, 100);
+    const pct = Math.min((counts.chars / HARD_LIMIT) * 100, 100);
     const color = usageColor(counts.chars);
     const isNearHardLimit = counts.chars >= HARD_LIMIT * 0.8;
-    const title = `${formatSize(counts.chars)} of ${LIMIT_LABEL} used (${pct.toFixed(1)}%)${isNearHardLimit ? " — approaching hard limit" : ""}`;
+    const title = `${formatCount(counts.chars)} used. Warning at ${WARNING_LABEL}; hard limit at ${HARD_LIMIT_LABEL}.${isNearHardLimit ? " Approaching hard limit." : ""}`;
+    const saveLabel =
+        editorSaveStatus === "saving"
+            ? "Saving…"
+            : editorSaveStatus === "unsaved"
+              ? "Unsaved changes"
+              : editorSaveStatus === "error"
+                ? "Save failed"
+                : "Saved";
 
     return (
-        <div className="fixed bottom-3 right-4 z-navbar flex items-center justify-end gap-4 rounded-lg border border-border/40 bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-soft print:hidden">
-            <span title={title} className={`flex items-center gap-1.5 ${color}`}>
+        <div className="fixed right-4 bottom-3 z-navbar flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-lg border border-border/40 bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-soft print:hidden">
+            <output aria-live="polite" className="flex items-center gap-1.5">
+                <span
+                    aria-hidden="true"
+                    className={`size-1.5 rounded-full ${editorSaveStatus === "error" ? "bg-danger" : editorSaveStatus === "unsaved" ? "bg-warn" : "bg-success"}`}
+                />
+                {saveLabel}
+            </output>
+            <span title={title} className={`flex items-center gap-1.5 tabular-nums ${color}`}>
                 <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-muted">
                     <span
                         className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${
@@ -87,12 +122,11 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
                         style={{ width: `${pct}%` }}
                     />
                 </span>
-                <span>{formatSize(counts.chars)}</span>
-                <span className="text-muted-foreground/50">/ {LIMIT_LABEL}</span>
+                <span>{formatCount(counts.chars)}</span>
+                <span className="text-muted-foreground/50">/ {HARD_LIMIT_LABEL}</span>
             </span>
-            <span>{counts.chars} chars</span>
-            <span>{counts.words} words</span>
-            <span>{counts.lines} lines</span>
+            <span className="tabular-nums">{counts.words} words</span>
+            <span className="tabular-nums">{counts.lines} lines</span>
         </div>
     );
 }

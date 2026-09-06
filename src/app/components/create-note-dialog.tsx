@@ -8,6 +8,7 @@ import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
 import { getUniqueNoteTitle } from "@/lib/file-utils";
 import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
+import { isFloatingEditorWindow } from "@/lib/window-mode";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 
@@ -76,9 +77,11 @@ export const CreateNoteDialog = () => {
             type === "excalidraw" ? NoteType.excalidraw : type === "quick" ? NoteType.quick : NoteType.note;
         const note = Note.new(title, content, noteType);
         await repositories.notes.save(note);
-        dispatch.note(note);
+        dispatch.note(note, !isFloatingEditorWindow);
         onClose();
-        if (type === "quick") {
+        if (isFloatingEditorWindow) {
+            navigate("/floating-editor");
+        } else if (type === "quick") {
             navigate(`/quicknote/${note.id}`);
         } else {
             navigate(`/note/${note.id}`);
@@ -123,8 +126,8 @@ export const CreateNoteDialog = () => {
                         />
 
                         {userVariables.length > 0 && (
-                            <div className="p-4 space-y-3 rounded-lg border bg-muted/30 border-border/40">
-                                <span className="font-bold tracking-widest uppercase opacity-70 text-[10px] text-muted-foreground">
+                            <div className="space-y-3 rounded-lg border border-border/40 bg-muted/30 p-4">
+                                <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-70">
                                     Template Variables
                                 </span>
                                 <div className="grid grid-cols-1 gap-3">
@@ -143,7 +146,7 @@ export const CreateNoteDialog = () => {
                     </div>
                 )}
 
-                <div className="flex gap-2 justify-end pt-4">
+                <div className="flex justify-end gap-2 pt-4">
                     <Button theme="muted" onClick={onClose}>
                         Cancel
                     </Button>

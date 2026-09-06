@@ -4,6 +4,7 @@ import { createZustandCompatStore } from "./zustand-compat";
 export type ContentWidth = "narrow" | "medium" | "wide";
 
 export type AlertType = "info" | "success" | "error";
+export type EditorSaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 export type MediaSource = {
     src: string;
@@ -58,6 +59,7 @@ export type UISettings = {
     tasksDialog: { isOpen: boolean };
     gitDialog: { open: boolean };
     parsingContent: boolean;
+    editorSaveStatus: EditorSaveStatus;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -86,6 +88,7 @@ const initialState: UISettings = {
     contentWidth: persistedState.contentWidth || "medium",
     findReplace: persistedState.findReplace || { isOpen: false },
     parsingContent: false,
+    editorSaveStatus: "saved",
 };
 
 export const useUIStore = createZustandCompatStore(
@@ -125,6 +128,7 @@ export const useUIStore = createZustandCompatStore(
         openGitDialog: () => ({ gitDialog: { open: true } }),
         closeGitDialog: () => ({ gitDialog: { open: false } }),
         setParsingContent: (value: boolean) => ({ parsingContent: value }),
+        setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus) => ({ editorSaveStatus }),
     }),
     {
         interceptor: [
@@ -139,6 +143,7 @@ export const useUIStore = createZustandCompatStore(
                     tasksDialog: _tasksDialog,
                     gitDialog: _gitDialog,
                     parsingContent: _parsingContent,
+                    editorSaveStatus: _editorSaveStatus,
                     ...toPersist
                 } = state;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));

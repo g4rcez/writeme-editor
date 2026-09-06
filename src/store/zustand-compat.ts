@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { shallow } from "zustand/shallow";
+import { createWithEqualityFn } from "zustand/traditional";
 
 type ReducerContext<State> = {
     state: () => State;
@@ -41,7 +42,7 @@ export function createZustandCompatStore<State extends object, Factories extends
 ): StoreHook<State, Factories> {
     const interceptor = options.interceptor ?? [];
 
-    const useStore = create<State>(() => initialState);
+    const useStore = createWithEqualityFn<State>(() => initialState, shallow);
 
     const context: ReducerContext<State> = {
         state: () => useStore.getState(),
@@ -89,8 +90,11 @@ export function createZustandCompatStore<State extends object, Factories extends
             : never;
     }
 
-    const hook = ((selector?: any, _options?: any): [any, ReducerDispatchers<Factories>] => [
-        useStore(selector ?? ((state: State) => state)),
+    const hook = ((
+        selector?: any,
+        comparator?: (left: any, right: any) => boolean,
+    ): [any, ReducerDispatchers<Factories>] => [
+        useStore(selector ?? ((state: State) => state), comparator),
         dispatchers,
     ]) as StoreHook<State, Factories>;
     hook.dispatchers = dispatchers;

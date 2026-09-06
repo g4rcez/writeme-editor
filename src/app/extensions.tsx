@@ -1,5 +1,11 @@
 import type { BundledTheme } from "shiki";
-import { type AnyExtension, mergeAttributes, nodeInputRule, PasteRule } from "@tiptap/core";
+import {
+    type AnyExtension,
+    type Editor as TipTapEditor,
+    mergeAttributes,
+    nodeInputRule,
+    PasteRule,
+} from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
@@ -54,14 +60,25 @@ function normalizeMentionPath(path: string): string {
         .replace(mentionNoteNamespacePattern, "/note/");
 }
 
-export const handlePasteImage = async (currentEditor: any) => {
-    if (!isElectron()) return false;
+export const handlePasteImage = async (currentEditor: TipTapEditor, position?: number): Promise<boolean> => {
+    if (!isElectron() || !currentEditor) return false;
+    const insertPos = position ?? currentEditor.state.selection.anchor;
     const imageData = await window.electronAPI.notes.clipboardImage();
-    if (!imageData) return false;
+    if (!imageData || currentEditor.isDestroyed) return false;
+
     const state = globalState();
     const projectDir = state.directory;
     const noteTitle = state.note?.title || "untitled";
-    if (!projectDir) return false;
+    const insertionPosition = Math.min(insertPos, currentEditor.state.doc.content.size);
+    if (!projectDir) {
+        currentEditor
+            .chain()
+            .insertContentAt(insertionPosition, { type: "image", attrs: { src: imageData } })
+            .focus()
+            .run();
+        return true;
+    }
+
     const targetDir = createAttachmentDirectory(projectDir, noteTitle);
     try {
         await window.electronAPI.fs.mkdir(targetDir);
@@ -70,66 +87,87 @@ export const handlePasteImage = async (currentEditor: any) => {
         const filename = `${index}.png`;
         const absolutePath = `${targetDir}/${filename}`;
         const result = await window.electronAPI.fs.writeImage(absolutePath, imageData);
-        if (result.success) {
+        if (result.success && !currentEditor.isDestroyed) {
             const src = createAttachmentRelativePath(noteTitle, filename);
-            currentEditor.chain().insertContent({ type: "image", attrs: { src } }).focus().run();
+            currentEditor.chain().insertContentAt(insertionPosition, { type: "image", attrs: { src } }).focus().run();
             return true;
         }
     } catch (e) {
         console.error("Failed to save pasted image", e);
     }
+
+    if (!currentEditor.isDestroyed) {
+        currentEditor
+            .chain()
+            .insertContentAt(insertionPosition, { type: "image", attrs: { src: imageData } })
+            .focus()
+            .run();
+        return true;
+    }
     return false;
 };
 
+function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        fileReader.onload = () => {
+            if (typeof fileReader.result === "string") resolve(fileReader.result);
+            else reject(new Error("Failed to read media file"));
+        };
+        fileReader.onerror = () => reject(fileReader.error ?? new Error("Failed to read media file"));
+        fileReader.readAsDataURL(file);
+    });
+}
+
 export const handleMediaFile = async (
-    currentEditor: any,
+    currentEditor: TipTapEditor,
     file: File,
     pos: number | null = null,
     offset: number = 0,
-) => {
+): Promise<void> => {
     if (!currentEditor) {
         console.error("[handleMediaFile] no editor");
         return;
     }
-    const insertPos = pos !== null ? pos : currentEditor.state.selection.anchor;
-    const fileReader = new FileReader();
-    fileReader.readAsDataURL(file);
-    fileReader.onload = async () => {
-        let src = fileReader.result as string;
-        if (isElectron()) {
-            const state = globalState();
-            const projectDir = state.directory;
-            const noteTitle = state.note?.title || "untitled";
-            if (projectDir) {
-                const targetDir = createAttachmentDirectory(projectDir, noteTitle);
-                try {
-                    await window.electronAPI.fs.mkdir(targetDir);
-                    const dirContents = await window.electronAPI.fs.readDir(targetDir);
-                    const index = dirContents.entries.filter((e: any) => e.type === "file").length + 1 + offset;
-                    const ext = file.name.split(".").pop() || "png";
-                    const filename = `${Date.now()}_${index}.${ext}`;
-                    const absolutePath = `${targetDir}/${filename}`;
-                    const result = await window.electronAPI.fs.writeImage(absolutePath, src);
-                    if (result.success) {
-                        src = createAttachmentRelativePath(noteTitle, filename);
-                    }
-                } catch (e) {
-                    console.error("Failed to save media to filesystem", e);
-                }
+
+    const insertPos = pos ?? currentEditor.state.selection.anchor;
+    let src: string;
+    try {
+        src = await readFileAsDataUrl(file);
+    } catch (error) {
+        console.error("Failed to read media file", error);
+        return;
+    }
+
+    if (isElectron()) {
+        const state = globalState();
+        const projectDir = state.directory;
+        const noteTitle = state.note?.title || "untitled";
+        if (projectDir) {
+            const targetDir = createAttachmentDirectory(projectDir, noteTitle);
+            try {
+                await window.electronAPI.fs.mkdir(targetDir);
+                const dirContents = await window.electronAPI.fs.readDir(targetDir);
+                const index = dirContents.entries.filter((e: any) => e.type === "file").length + 1 + offset;
+                const ext = file.name.split(".").pop() || "png";
+                const filename = `${Date.now()}_${index}.${ext}`;
+                const absolutePath = `${targetDir}/${filename}`;
+                const result = await window.electronAPI.fs.writeImage(absolutePath, src);
+                if (result.success) src = createAttachmentRelativePath(noteTitle, filename);
+            } catch (error) {
+                console.error("Failed to save media to filesystem", error);
             }
         }
-        let type = "image";
-        if (file.type.startsWith("video/")) {
-            type = "video";
-        } else if (file.type === "application/pdf") {
-            type = "pdf";
-        }
-        currentEditor
-            .chain()
-            .insertContentAt(insertPos, { type, attrs: { src, title: file.name } })
-            .focus()
-            .run();
-    };
+    }
+
+    if (currentEditor.isDestroyed) return;
+    const insertionPosition = Math.min(insertPos, currentEditor.state.doc.content.size);
+    const type = file.type.startsWith("video/") ? "video" : file.type === "application/pdf" ? "pdf" : "image";
+    currentEditor
+        .chain()
+        .insertContentAt(insertionPosition, { type, attrs: { src, title: file.name } })
+        .focus()
+        .run();
 };
 
 export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtension[] => {
@@ -191,14 +229,13 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
             ],
             onDrop: (currentEditor, files, pos) => {
                 files.forEach((file, index) => {
-                    handleMediaFile(currentEditor, file, pos, index);
+                    void handleMediaFile(currentEditor, file, pos, index);
                 });
             },
             onPaste: (currentEditor, files, htmlContent) => {
+                if (htmlContent) return;
                 files.forEach((file, index) => {
-                    if (!htmlContent) {
-                        handleMediaFile(currentEditor, file, null, index);
-                    }
+                    void handleMediaFile(currentEditor, file, null, index);
                 });
             },
         }),

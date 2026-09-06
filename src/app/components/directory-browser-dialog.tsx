@@ -1,378 +1,370 @@
-import { Modal, Shortcut, Button, Input } from "@g4rcez/components";
-import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
-import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
+import { Empty, Input, Modal, Shortcut, css } from "@g4rcez/components";
+import { ArrowLeftIcon } from "@phosphor-icons/react/dist/csr/ArrowLeft";
+import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
+import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
+import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
-import { TreeStructureIcon } from "@phosphor-icons/react/dist/csr/TreeStructure";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TreeNode } from "@/types/tree";
+import { useListSearch } from "@/app/hooks/use-list-search";
 import { getDirname } from "@/lib/file-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
-import { useUIStore } from "@/store/ui.store";
-import { TreeView } from "./tree-view";
+
+type ParentEntry = {
+    type: "parent";
+    name: "..";
+    path: string;
+};
+
+type BrowserEntry = TreeNode | ParentEntry;
+
+const normalizePath = (value: string): string => {
+    const normalized = value.replace(/\\/g, "/");
+    if (normalized === "/") return normalized;
+    return normalized.replace(/\/+$/, "");
+};
+
+const getDirectoryName = (directory: string): string => {
+    const parts = normalizePath(directory).split("/").filter(Boolean);
+    return parts.at(-1) ?? directory;
+};
+
+const getRelativeWorkspacePath = (workspaceDirectory: string, entryPath: string): string => {
+    const workspace = normalizePath(workspaceDirectory);
+    const entry = normalizePath(entryPath);
+    if (workspace === entry) return "";
+
+    const prefix = workspace === "/" ? "/" : `${workspace}/`;
+    return entry.startsWith(prefix) ? entry.slice(prefix.length) : entry;
+};
+
+const getDirectoryPrefix = (workspaceDirectory: string, entryPath: string): string => {
+    const relativePath = getRelativeWorkspacePath(workspaceDirectory, entryPath);
+    const separatorIndex = relativePath.lastIndexOf("/");
+    return separatorIndex === -1 ? "" : relativePath.slice(0, separatorIndex + 1);
+};
+
+const getFileTitle = (filename: string): string => filename.replace(/\.[^.]+$/, "");
 
 export const DirectoryBrowserDialog = () => {
     const [state, dispatch] = useGlobalStore();
-    const map = new Map(state.notes.map((x) => [x.filePath!, x]));
-    const [, uiDispatch] = useUIStore();
-    const [storageDir, setStorageDir] = useState<string | null>(null);
-    const [focusedNode, setFocusedNode] = useState<TreeNode | null>(null);
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [homeDirectory, setHomeDirectory] = useState<string | null>(null);
+    const [navigationPath, setNavigationPath] = useState<string | null>(null);
+    const [entries, setEntries] = useState<TreeNode[]>([]);
+    const [query, setQuery] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [loadedDirectory, setLoadedDirectory] = useState<string | null>(null);
+    const [openingPath, setOpeningPath] = useState<string | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLUListElement>(null);
 
-    const refreshView = useCallback(() => {
-        setRefreshKey((prev) => prev + 1);
-    }, []);
+    const workspaceDirectory = state.directory ?? homeDirectory;
+    const currentDirectory = navigationPath ?? workspaceDirectory;
+    const isLoading = Boolean(currentDirectory && loadedDirectory !== currentDirectory);
+
+    const handleDialogChange = useCallback(
+        (isOpen: boolean): void => {
+            if (!isOpen) {
+                setNavigationPath(null);
+                setEntries([]);
+                setLoadedDirectory(null);
+                setQuery("");
+                setError(null);
+            }
+            dispatch.directoryBrowserDialog(isOpen);
+        },
+        [dispatch],
+    );
+
+    const closeDialog = useCallback((): void => {
+        handleDialogChange(false);
+    }, [handleDialogChange]);
 
     useEffect(() => {
-        if (state.directoryBrowserDialog) {
-            if (state.directory) return void setStorageDir(state.directory);
-            window.electronAPI.env.getHome().then(setStorageDir);
-        }
-    }, [state.directoryBrowserDialog, state.directory]);
+        if (!state.directoryBrowserDialog || state.directory || homeDirectory) return;
+        void window.electronAPI.env.getHome().then(setHomeDirectory);
+    }, [homeDirectory, state.directory, state.directoryBrowserDialog]);
 
-    const closeDialog = useCallback(() => {
-        dispatch.directoryBrowserDialog(false);
-    }, [dispatch]);
-
-    const handleFileSelect = async (node: TreeNode) => {
-        if (node.extension !== ".md") return;
-        try {
-            const result = await window.electronAPI.fs.readFile(node.path);
-            if (!result.success) {
-                console.error("Failed to read file:", result.error);
-                return;
-            }
-            const title = node.name.replace(/\.md$/, "");
-            const allNotes = await repositories.notes.getAll();
-            const existingNote = allNotes.find((n) => n.filePath === node.path);
-            if (existingNote) {
-                const fullNote = await repositories.notes.getOne(existingNote.id);
-                if (fullNote) {
-                    dispatch.note(fullNote);
-                    closeDialog();
-                    return;
-                }
-            }
-            const newNote = Note.new(title, result.content);
-            newNote.filePath = node.path;
-            newNote.fileSize = result.fileSize;
-            newNote.lastSynced = new Date(result.lastModified);
-            await repositories.notes.save(newNote);
-            dispatch.note(newNote);
-            closeDialog();
-        } catch (error) {
-            console.error("Error opening file:", error);
-        }
-    };
-
-    const handleDelete = async (node: TreeNode): Promise<boolean> => {
-        const isDir = node.type === "directory";
-        try {
-            if (!isDir) {
-                const allNotes = await repositories.notes.getAll();
-                const existingNote = allNotes.find((n) => n.filePath === node.path);
-
-                if (existingNote) {
-                    await dispatch.deleteNote(existingNote.id);
-                    refreshView();
-                    return true;
-                }
-            } else {
-                const allNotes = await repositories.notes.getAll();
-                const notesInDir = allNotes.filter((n) => n.filePath?.startsWith(node.path + "/"));
-                for (const note of notesInDir) {
-                    await dispatch.deleteNote(note.id);
-                }
-            }
-            const result = await window.electronAPI.fs.deleteFile(node.path);
-            if (result === true || (typeof result === "object" && result && result.success)) {
-                refreshView();
-                return true;
-            } else {
-                console.error("Failed to delete:", result?.error || "Unknown error");
-                return false;
-            }
-        } catch (error) {
-            console.error("Error deleting:", error);
-            return false;
-        }
-    };
-
-    const handleCreateFile = useCallback(async () => {
-        if (!storageDir) return;
-
-        let parentPath = storageDir;
-        if (focusedNode) {
-            parentPath = focusedNode.type === "directory" ? focusedNode.path : getDirname(focusedNode.path);
-        }
-
-        uiDispatch.setPrompt({
-            open: true,
-            title: "New File",
-            message: "Enter new file name (e.g. note.md):",
-            placeholder: "note.md",
-            onConfirm: async (fileName) => {
-                if (!fileName) return;
-                try {
-                    const newPath = `${parentPath}/${fileName.endsWith(".md") ? fileName : fileName + ".md"}`;
-                    const result = await window.electronAPI.fs.writeFile(newPath, "");
-                    if (result.success) {
-                        refreshView();
-                    } else {
-                        console.error("Failed to create file:", result.error);
-                    }
-                } catch (error) {
-                    console.error("Error creating file:", error);
-                }
-            },
-        });
-    }, [storageDir, focusedNode, refreshView, uiDispatch]);
-
-    const handleCreateFolder = useCallback(async () => {
-        if (!storageDir) return;
-
-        let parentPath = storageDir;
-        if (focusedNode) {
-            parentPath = focusedNode.type === "directory" ? focusedNode.path : getDirname(focusedNode.path);
-        }
-
-        uiDispatch.setPrompt({
-            open: true,
-            title: "New Folder",
-            message: "Enter new folder name:",
-            onConfirm: async (folderName) => {
-                if (!folderName) return;
-                try {
-                    const newPath = `${parentPath}/${folderName}`;
-                    const result = await window.electronAPI.fs.mkdir(newPath);
-                    if (result.success) {
-                        refreshView();
-                    } else {
-                        console.error("Failed to create folder:", result.error);
-                    }
-                } catch (error) {
-                    console.error("Error creating folder:", error);
-                }
-            },
-        });
-    }, [storageDir, focusedNode, refreshView, uiDispatch]);
-
-    const handleMove = useCallback(async () => {
-        if (!focusedNode) return;
-
-        uiDispatch.setPrompt({
-            open: true,
-            title: "Move/Rename",
-            message: `Move/Rename "${focusedNode.name}" to:`,
-            initialValue: focusedNode.path,
-            onConfirm: async (newPath) => {
-                if (!newPath || newPath === focusedNode.path) return;
-
-                try {
-                    // If it's a markdown file, sync IndexedDB
-                    if (focusedNode.extension === ".md") {
-                        const allNotes = await repositories.notes.getAll();
-                        const existingNote = allNotes.find((n) => n.filePath === focusedNode.path);
-
-                        if (existingNote) {
-                            const fullNote = await repositories.notes.getOne(existingNote.id);
-                            if (fullNote) {
-                                const oldDir = getDirname(focusedNode.path);
-                                const newDir = getDirname(newPath);
-                                if (oldDir === newDir) {
-                                    const newTitle = newPath.split(/[/\\]/).pop()?.replace(/\.md$/, "");
-                                    if (newTitle) fullNote.title = newTitle;
-                                }
-                                fullNote.filePath = newPath;
-                                await repositories.notes.update(fullNote.id, fullNote);
-                                refreshView();
-                                return;
-                            }
-                        }
-                    } else if (focusedNode.type === "directory") {
-                        // If it's a directory, update all notes contained within it
-                        const allNotes = await repositories.notes.getAll();
-                        const notesInDir = allNotes.filter((n) => n.filePath?.startsWith(focusedNode.path + "/"));
-
-                        // Physically move first
-                        const result = await window.electronAPI.fs.moveFile(focusedNode.path, newPath);
-                        if (result.success) {
-                            // Update paths in DB
-                            for (const note of notesInDir) {
-                                const relativePart = note.filePath!.substring(focusedNode.path.length);
-                                const updatedNote = await repositories.notes.getOne(note.id);
-                                if (updatedNote) {
-                                    updatedNote.filePath = newPath + relativePart;
-                                    await repositories.notes.update(updatedNote.id, updatedNote);
-                                }
-                            }
-                            refreshView();
-                        } else {
-                            console.error("Failed to move directory:", result.error);
-                        }
-                        return;
-                    }
-
-                    // Fallback for non-note files or if not in DB
-                    const result = await window.electronAPI.fs.moveFile(focusedNode.path, newPath);
-                    if (result.success) {
-                        refreshView();
-                    } else {
-                        console.error("Failed to move:", result.error);
-                    }
-                } catch (error) {
-                    console.error("Error moving:", error);
-                }
-            },
-        });
-    }, [focusedNode, refreshView, uiDispatch]);
-
-    // Keyboard shortcuts for modal-level actions
     useEffect(() => {
         if (!state.directoryBrowserDialog) return;
+        const timeoutId = window.setTimeout(() => inputRef.current?.focus(), 10);
+        return () => window.clearTimeout(timeoutId);
+    }, [state.directoryBrowserDialog, workspaceDirectory]);
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Don't trigger if user is typing in a prompt (though prompts are blocking,
-            // some browser environments or future non-blocking versions might need this)
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+    useEffect(() => {
+        if (!state.directoryBrowserDialog || !currentDirectory) return;
+
+        let isCurrentRequest = true;
+        void window.electronAPI.fs
+            .readDir(currentDirectory)
+            .then((result) => {
+                if (!isCurrentRequest) return;
+                setLoadedDirectory(currentDirectory);
+                if (result.error) {
+                    setEntries([]);
+                    setError(result.error);
+                    return;
+                }
+                setEntries(result.entries ?? []);
+            })
+            .catch((reason: unknown) => {
+                if (!isCurrentRequest) return;
+                setLoadedDirectory(currentDirectory);
+                setEntries([]);
+                setError(reason instanceof Error ? reason.message : "Failed to load directory");
+            });
+
+        return () => {
+            isCurrentRequest = false;
+        };
+    }, [currentDirectory, state.directoryBrowserDialog]);
+
+    const parentEntry = useMemo<ParentEntry | null>(() => {
+        if (!workspaceDirectory || !currentDirectory) return null;
+        if (!getRelativeWorkspacePath(workspaceDirectory, currentDirectory)) return null;
+
+        return {
+            type: "parent",
+            name: "..",
+            path: getDirname(currentDirectory),
+        };
+    }, [currentDirectory, workspaceDirectory]);
+
+    const browserEntries = useMemo<BrowserEntry[]>(
+        () => (parentEntry ? [parentEntry, ...entries] : entries),
+        [entries, parentEntry],
+    );
+
+    const visibleEntries = useMemo(() => {
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) return browserEntries;
+
+        return browserEntries.filter((entry) => {
+            if (entry.type === "parent") return entry.name.includes(normalizedQuery);
+            const relativePath = workspaceDirectory
+                ? getRelativeWorkspacePath(workspaceDirectory, entry.path)
+                : entry.name;
+            return (
+                entry.name.toLowerCase().includes(normalizedQuery) ||
+                relativePath.toLowerCase().includes(normalizedQuery)
+            );
+        });
+    }, [browserEntries, query, workspaceDirectory]);
+
+    const openFile = useCallback(
+        async (node: TreeNode): Promise<void> => {
+            setOpeningPath(node.path);
+            try {
+                const result = await window.electronAPI.fs.readFile(node.path);
+                if (!result.success) {
+                    setError(result.error ?? "Failed to read file");
+                    return;
+                }
+
+                const allNotes = await repositories.notes.getAll();
+                const existingNote = allNotes.find((note) => note.filePath === node.path);
+                if (existingNote) {
+                    const fullNote = await repositories.notes.getOne(existingNote.id);
+                    if (fullNote) {
+                        await dispatch.note(fullNote);
+                        closeDialog();
+                        return;
+                    }
+                }
+
+                const newNote = Note.new(getFileTitle(node.name), result.content ?? "");
+                newNote.filePath = node.path;
+                newNote.fileSize = result.fileSize;
+                newNote.lastSynced = new Date(result.lastModified);
+                await repositories.notes.save(newNote);
+                await dispatch.note(newNote);
+                closeDialog();
+            } catch (reason: unknown) {
+                setError(reason instanceof Error ? reason.message : "Failed to open file");
+            } finally {
+                setOpeningPath(null);
+            }
+        },
+        [closeDialog, dispatch],
+    );
+
+    const selectEntry = useCallback(
+        (entry: BrowserEntry): void => {
+            if (entry.type === "parent" || entry.type === "directory") {
+                setNavigationPath(entry.path);
+                setEntries([]);
+                setLoadedDirectory(null);
+                setQuery("");
+                setError(null);
                 return;
             }
+            void openFile(entry);
+        },
+        [openFile],
+    );
 
-            switch (e.key.toLowerCase()) {
-                case "n":
-                    e.preventDefault();
-                    handleCreateFolder();
-                    break;
-                case "t":
-                    e.preventDefault();
-                    handleCreateFile();
-                    break;
-                case "m":
-                    if (focusedNode) {
-                        e.preventDefault();
-                        handleMove();
-                    }
-                    break;
-            }
-        };
+    const { selectedIndex, setSelectedIndex } = useListSearch({
+        items: visibleEntries,
+        onSelect: selectEntry,
+        isOpen: state.directoryBrowserDialog,
+    });
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [state.directoryBrowserDialog, handleCreateFile, handleCreateFolder, handleMove, focusedNode]);
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [currentDirectory, query, setSelectedIndex]);
+
+    useEffect(() => {
+        if (!listRef.current || visibleEntries.length === 0) return;
+        const selectedElement = listRef.current.children[selectedIndex] as HTMLElement | undefined;
+        selectedElement?.scrollIntoView({ block: "nearest" });
+    }, [selectedIndex, visibleEntries]);
+
+    const directoryName = currentDirectory ? getDirectoryName(currentDirectory) : "Browse Files";
+    const relativeDirectory =
+        workspaceDirectory && currentDirectory ? getRelativeWorkspacePath(workspaceDirectory, currentDirectory) : "";
 
     return (
         <Modal
+            className="max-w-4xl"
+            title={directoryName}
+            onChange={handleDialogChange}
             open={state.directoryBrowserDialog}
-            onChange={(val) => dispatch.directoryBrowserDialog(val)}
-            title="Browse Files"
-            className="max-w-6xl"
-            bodyClassName="overflow-hidden p-0"
+            bodyClassName="overflow-hidden bg-background p-0"
         >
-            <div className="flex h-[68vh] min-h-96 flex-col overflow-hidden">
-                <header className="border-b border-floating-border px-6 py-5">
-                    <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-button-radius bg-primary/10 text-primary">
-                                <TreeStructureIcon className="size-5" />
-                            </span>
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-foreground">Select a file to open</p>
-                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                    Open markdown files or manage workspace folders in place.
-                                </p>
-                            </div>
+            <div className="flex h-[64vh] min-h-28 flex-col overflow-hidden">
+                <div className="border-b border-floating-border px-5 py-4">
+                    <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0">
+                            <p className="text-sm text-muted-foreground">Select a file or directory.</p>
+                            <p className="mt-1 truncate font-mono text-xs text-foreground/60">
+                                {relativeDirectory ? `./${relativeDirectory}` : "./"}
+                            </p>
                         </div>
-
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             <span>Move</span>
                             <Shortcut value="↑ ↓" />
                             <span>Open</span>
                             <Shortcut value="Enter" />
-                            <span>Delete</span>
-                            <Shortcut value="Del" />
+                            <span>Close</span>
+                            <Shortcut value="Esc" />
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-                        <div className="min-w-0 flex-1">
-                            <Input
-                                type="text"
-                                title="Search files"
-                                hiddenLabel
-                                left={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
-                                placeholder="Search files and folders..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                size="small"
-                                theme="muted"
-                                onClick={handleCreateFile}
-                                className="gap-2"
-                                title="New File (T)"
-                            >
-                                <FilePlusIcon className="size-4" />
-                                <span>File</span>
-                                <Shortcut value="T" />
-                            </Button>
-                            <Button
-                                size="small"
-                                theme="muted"
-                                onClick={handleCreateFolder}
-                                className="gap-2"
-                                title="New Folder (N)"
-                            >
-                                <FolderPlusIcon className="size-4" />
-                                <span>Folder</span>
-                                <Shortcut value="N" />
-                            </Button>
-                            <Button
-                                size="small"
-                                theme="muted"
-                                onClick={handleMove}
-                                disabled={!focusedNode}
-                                className="gap-2 disabled:opacity-40"
-                                title="Move/Rename (M)"
-                            >
-                                <PencilSimpleIcon className="size-4" />
-                                <span>Move</span>
-                                <Shortcut value="M" />
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="mt-3 flex min-w-0 items-center gap-2 rounded-button-radius border border-card-border bg-muted/35 px-3 py-2 text-xs">
-                        <span className="shrink-0 font-medium text-muted-foreground">Workspace</span>
-                        <span className="min-w-0 truncate font-mono text-foreground">{storageDir ?? "Loading..."}</span>
-                    </div>
-                </header>
+                    <Input
+                        ref={inputRef}
+                        type="text"
+                        title="Search files and directories"
+                        hiddenLabel
+                        left={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
+                        placeholder="Search files and directories..."
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                    />
+                </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto bg-background scrollbar-thin">
-                    {storageDir ? (
-                        <div className="p-3">
-                            <TreeView
-                                map={map}
-                                rootPath={storageDir}
-                                onDelete={handleDelete}
-                                searchQuery={searchQuery}
-                                onFocusChange={setFocusedNode}
-                                onFileSelect={handleFileSelect}
-                                key={`${storageDir}-${refreshKey}`}
+                    {!workspaceDirectory ? (
+                        <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
+                            <div>
+                                <p className="font-medium text-foreground">No workspace directory configured.</p>
+                                <p className="mt-2 text-sm">Open a workspace before browsing files.</p>
+                            </div>
+                        </div>
+                    ) : isLoading ? (
+                        <div className="flex h-full items-center justify-center gap-2 p-8 text-muted-foreground">
+                            <CircleNotchIcon className="size-5 animate-spin" />
+                            <span>Loading directory...</span>
+                        </div>
+                    ) : error ? (
+                        <div className="flex h-full items-center justify-center p-8 text-center">
+                            <div>
+                                <p className="font-medium text-danger">Unable to read this directory</p>
+                                <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+                            </div>
+                        </div>
+                    ) : visibleEntries.length === 0 ? (
+                        <div className="flex h-full items-center justify-center p-8">
+                            <Empty
+                                Icon={MagnifyingGlassIcon}
+                                message={
+                                    query
+                                        ? "No files or directories match your search"
+                                        : "No files found in this directory"
+                                }
                             />
                         </div>
                     ) : (
-                        <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
-                            <div>
-                                <p className="font-medium text-foreground">No storage directory configured.</p>
-                                <p className="mt-2 text-sm">Please set up your workspace first.</p>
-                            </div>
-                        </div>
+                        <ul ref={listRef} className="min-h-0 overflow-y-auto p-2">
+                            {visibleEntries.map((entry, index) => {
+                                const isParent = entry.type === "parent";
+                                const relativePath = workspaceDirectory
+                                    ? getRelativeWorkspacePath(workspaceDirectory, entry.path)
+                                    : entry.name;
+                                const directoryPrefix = isParent
+                                    ? ""
+                                    : getDirectoryPrefix(workspaceDirectory ?? "", entry.path);
+                                const isOpening = entry.type === "file" && openingPath === entry.path;
+                                const selected = index === selectedIndex;
+
+                                return (
+                                    <li key={entry.path}>
+                                        <button
+                                            type="button"
+                                            className={css(
+                                                "group grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-button-radius border px-3 py-2.5 text-left transition-colors",
+                                                selected
+                                                    ? "border-primary/35 bg-primary/10"
+                                                    : "border-transparent hover:border-card-border hover:bg-muted/40",
+                                            )}
+                                            onClick={() => selectEntry(entry)}
+                                            onKeyDown={(event) => {
+                                                if (event.key !== "Enter") return;
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                selectEntry(entry);
+                                            }}
+                                            onMouseEnter={() => setSelectedIndex(index)}
+                                            disabled={isOpening}
+                                        >
+                                            <span
+                                                className={css(
+                                                    "flex size-8 shrink-0 items-center justify-center rounded-button-radius transition-colors",
+                                                    selected
+                                                        ? "bg-primary/15 text-primary"
+                                                        : "bg-muted/60 text-muted-foreground group-hover:text-foreground",
+                                                )}
+                                            >
+                                                {isParent ? (
+                                                    <ArrowLeftIcon size={17} />
+                                                ) : entry.type === "directory" ? (
+                                                    <FolderSimpleIcon size={17} />
+                                                ) : (
+                                                    <FileIcon size={17} />
+                                                )}
+                                            </span>
+
+                                            <span className="min-w-0">
+                                                <span
+                                                    className={css(
+                                                        "block truncate text-sm font-semibold",
+                                                        selected ? "text-primary" : "text-foreground",
+                                                    )}
+                                                >
+                                                    {isParent ? "Parent directory" : entry.name}
+                                                </span>
+                                                {!isParent && directoryPrefix && (
+                                                    <span className="mt-1 block truncate font-mono text-xs text-muted-foreground">
+                                                        {relativePath}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     )}
                 </div>
             </div>

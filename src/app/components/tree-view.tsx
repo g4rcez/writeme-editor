@@ -266,15 +266,15 @@ const TreeNodeItem = ({
             tabIndex={isFocused ? 0 : -1}
             aria-expanded={isDirectory ? isExpanded : undefined}
             className={`
-        group flex items-center gap-2 py-1.5 px-2 cursor-pointer rounded transition-colors
+        group flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition-colors
         ${isDropTarget ? "bg-primary/15 ring-1 ring-primary/40" : isFocused ? "bg-muted" : "hover:bg-muted/60"}
-        ${!isDirectory && !extConfig ? "opacity-50 cursor-default" : ""}
+        ${!isDirectory && !extConfig ? "cursor-default opacity-50" : ""}
       `}
         >
             {isDirectory ? (
                 <>
                     {isLoading ? (
-                        <CircleNotchIcon className="animate-spin size-4 text-muted" />
+                        <CircleNotchIcon className="size-4 animate-spin text-muted" />
                     ) : isExpanded ? (
                         <CaretDownIcon className="size-4" />
                     ) : (
@@ -290,17 +290,17 @@ const TreeNodeItem = ({
                 <>
                     <span className="w-4" />
                     {note?.noteType === NoteType.quick ? (
-                        <LightningIcon className="text-warn size-4" />
+                        <LightningIcon className="size-4 text-warn" />
                     ) : extConfig ? (
                         <extConfig.icon className={extConfig.iconClass} />
                     ) : (
-                        <FileIcon className="text-foreground/50 size-4" />
+                        <FileIcon className="size-4 text-foreground/50" />
                     )}
                 </>
             )}
             <span className={`
-          text-sm truncate flex-1
-          ${isFocused ? "text-foreground font-medium" : "text-foreground/70"}
+          flex-1 truncate text-sm
+          ${isFocused ? "font-medium text-foreground" : "text-foreground/70"}
           ${!isDirectory && !extConfig ? "text-foreground/35" : ""}
         `}>{node.name}</span>
             {onDelete && (
@@ -312,24 +312,24 @@ const TreeNodeItem = ({
                     title={
                         <button
                             type="button"
-                            className="p-1 rounded opacity-0 transition-opacity group-hover:opacity-100 hover:bg-danger-subtle focus:opacity-100"
+                            className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-danger-subtle focus:opacity-100"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onConfirmRequest();
                             }}
                             title="Delete"
                         >
-                            <TrashIcon className="text-muted-foreground transition-colors hover:text-danger size-4" />
+                            <TrashIcon className="size-4 text-muted-foreground transition-colors hover:text-danger" />
                         </button>
                     }
                 >
                     <div
-                        className="flex flex-col gap-3 p-3 rounded-xl min-w-[200px]"
+                        className="flex min-w-[200px] flex-col gap-3 rounded-xl p-3"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <p className="text-sm font-medium">Delete this {isDirectory ? "directory" : "file"}?</p>
                         <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex justify-end gap-2">
                             <Button size="small" theme="muted" onClick={onConfirmCancel}>
                                 Cancel
                             </Button>
@@ -418,6 +418,8 @@ export const TreeView = ({
     const [rootChildren, setRootChildren] = useState<TreeNode[] | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [permissionDenied, setPermissionDenied] = useState(false);
+    const [isRequestingAccess, setIsRequestingAccess] = useState(false);
 
     const [expandedPaths, setExpandedPaths] = useState(() => new Set<string>());
     const [childrenCache, setChildrenCache] = useState(new Map<string, TreeNode[]>());
@@ -437,6 +439,7 @@ export const TreeView = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const pendingInputRef = useRef<HTMLInputElement>(null);
     const pendingCommitRef = useRef(false);
+    const hasRequestedDirectoryAccessRef = useRef(false);
     const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
     const expandedPathsRef = useRef(new Set<string>());
     const flattenedNodesRef = useRef<FlattenedNode[]>([]);
@@ -449,7 +452,9 @@ export const TreeView = ({
             const result = await window.electronAPI.fs.readDir(rootPath);
             if (result.error) {
                 setError(result.error);
+                setPermissionDenied(result.errorCode === "EPERM" || result.errorCode === "EACCES");
             } else {
+                setPermissionDenied(false);
                 setRootChildren(result.entries);
             }
         } catch (err) {
@@ -459,9 +464,31 @@ export const TreeView = ({
         }
     }, [rootPath]);
 
+    const requestDirectoryAccess = useCallback(async () => {
+        setIsRequestingAccess(true);
+        try {
+            const result = await window.electronAPI.fs.requestDirectoryAccess(rootPath);
+            if (result.granted) {
+                await loadRoot();
+                return;
+            }
+            setError(result.error ?? "Folder access was not granted");
+        } catch (accessError) {
+            setError(accessError instanceof Error ? accessError.message : "Failed to request folder access");
+        } finally {
+            setIsRequestingAccess(false);
+        }
+    }, [loadRoot, rootPath]);
+
     useEffect(() => {
         loadRoot();
     }, [loadRoot]);
+
+    useEffect(() => {
+        if (!permissionDenied || hasRequestedDirectoryAccessRef.current) return;
+        hasRequestedDirectoryAccessRef.current = true;
+        void requestDirectoryAccess();
+    }, [permissionDenied, requestDirectoryAccess]);
 
     useEffect(() => {
         if (!isElectron()) return;
@@ -970,8 +997,8 @@ export const TreeView = ({
 
     if (isLoading && !rootChildren) {
         return (
-            <div className="flex justify-center items-center p-8">
-                <SpinnerIcon className="w-6 h-6 text-info animate-spin" />
+            <div className="flex items-center justify-center p-8">
+                <SpinnerIcon className="h-6 w-6 animate-spin text-info" />
                 <span className="ml-2 text-muted-foreground">Loading...</span>
             </div>
         );
@@ -982,6 +1009,13 @@ export const TreeView = ({
             <div className="p-4 text-center text-danger">
                 <p>Error loading directory:</p>
                 <p className="mt-1 text-sm">{error}</p>
+                {permissionDenied && (
+                    <div className="mt-4">
+                        <Button size="small" disabled={isRequestingAccess} onClick={requestDirectoryAccess}>
+                            {isRequestingAccess ? "Checking access…" : "Grant access and retry"}
+                        </Button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -994,7 +1028,7 @@ export const TreeView = ({
         <div
             ref={containerRef}
             role="tree"
-            className={`py-2 outline-none focus-visible:!outline-none focus-visible:!ring-0 ${dropTargetPath === rootPath ? "bg-primary/10" : ""}`}
+            className={`py-2 outline-none focus-visible:!ring-0 focus-visible:!outline-none ${dropTargetPath === rootPath ? "bg-primary/10" : ""}`}
             tabIndex={0}
             onDragOver={(e) => handleDragOverMove(e, null)}
             onDrop={(e) => handleDropMove(e, null)}
@@ -1032,18 +1066,18 @@ export const TreeView = ({
             {pendingCreate !== null && (
                 <div
                     role="none"
-                    className="flex items-center gap-2 py-1.5 px-2"
+                    className="flex items-center gap-2 px-2 py-1.5"
                     style={{ paddingLeft: 12 + pendingCreateDepth * 16 }}
                 >
                     <span className="w-4 shrink-0" />
                     {pendingCreate.kind === "directory" ? (
-                        <FolderIcon className="size-4 text-foreground/70 shrink-0" />
+                        <FolderIcon className="size-4 shrink-0 text-foreground/70" />
                     ) : (
-                        <FileTextIcon className="size-4 text-foreground/70 shrink-0" />
+                        <FileTextIcon className="size-4 shrink-0 text-foreground/70" />
                     )}
                     <input
                         ref={pendingInputRef}
-                        className="flex-1 text-sm bg-transparent border-b border-border outline-none text-foreground"
+                        className="flex-1 border-b border-border bg-transparent text-sm text-foreground outline-none"
                         value={pendingName}
                         onChange={(e) => setPendingName(e.target.value)}
                         onKeyDown={(e) => {

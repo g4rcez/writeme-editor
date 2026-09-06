@@ -7,6 +7,7 @@ import { RootLayout } from "./root-layout";
 const DashboardPage = lazy(() => import("./pages/dashboard.page"));
 const NotePage = lazy(() => import("./pages/note.page"));
 const QuicknotePage = lazy(() => import("./pages/quicknote.page"));
+const FloatingEditorPage = lazy(() => import("./pages/floating-editor.page"));
 const MathnotePage = lazy(() => import("./pages/mathnote.page"));
 const AboutPage = lazy(() => import("./pages/about.page"));
 const ExamplesPage = lazy(() => import("./pages/examples.page"));
@@ -95,6 +96,10 @@ export const router = createRouter([
             {
                 path: "mathnote",
                 element: <MathnotePage />,
+            },
+            {
+                path: "floating-editor",
+                element: <FloatingEditorPage />,
             },
             {
                 path: "quicknote/:noteId",

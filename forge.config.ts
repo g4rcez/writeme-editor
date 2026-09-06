@@ -31,20 +31,12 @@ const osxSign = hasAppleNotarizeCredentials
       }
     : undefined;
 
-const runtimePaths = [
-    "public",
-    "packages/cli/dist",
-    "node_modules/better-sqlite3",
-    "node_modules/bindings",
-    "node_modules/file-uri-to-path",
-    "node_modules/node-pty",
-    "node_modules/node-addon-api",
-];
+const runtimePaths = ["public", "packages/cli/dist", "node_modules/better-sqlite3", "node_modules/node-pty"];
 
 async function copyRuntimePaths(buildPath: string): Promise<void> {
     await Promise.all(
         runtimePaths.map((runtimePath) =>
-            fs.cp(path.resolve(__dirname, runtimePath), path.resolve(buildPath, runtimePath), {
+            fs.cp(path.resolve(import.meta.dirname, runtimePath), path.resolve(buildPath, runtimePath), {
                 recursive: true,
             }),
         ),
@@ -75,12 +67,14 @@ const config: ForgeConfig = {
         new MakerSquirrel({
             name: "writeme",
             setupExe: "writeme-setup.exe",
+            setupIcon: "./public/icon.ico",
             description: "Writeme - Markdown editor",
         }),
         new MakerDMG(
             {
                 format: "ULFO",
                 name: "writeme",
+                icon: "./public/icon.icns",
             },
             ["darwin"],
         ),
@@ -120,19 +114,19 @@ const config: ForgeConfig = {
                 {
                     // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
                     entry: "src/main.ts",
-                    config: "vite.main.config.ts",
+                    config: "vite.main.config.mts",
                     target: "main",
                 },
                 {
                     entry: "src/preload.ts",
-                    config: "vite.preload.config.ts",
+                    config: "vite.preload.config.mts",
                     target: "preload",
                 },
             ],
             renderer: [
                 {
                     name: "main_window",
-                    config: "vite.renderer.config.ts",
+                    config: "vite.renderer.config.mts",
                 },
             ],
         }),

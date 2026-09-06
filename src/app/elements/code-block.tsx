@@ -17,6 +17,7 @@ import {
 import { getCurrentElementName } from "@/lib/editor-utils";
 import { isElectron } from "@/lib/is-electron";
 import { globalState } from "@/store/global.store";
+import { editorGlobalRef } from "../editor-global-ref";
 import { handlePasteImage } from "../extensions";
 import { CodeBlockRenderer } from "./code-block/code-block-rendered.tsx";
 import { shikiMathGrammer } from "./code-block/shiki-math-grammar";
@@ -70,7 +71,7 @@ export const CodeBlockFrame = ({
             aria-hidden={!isBodyVisible}
             data-print-fallback={printContent !== undefined ? "true" : undefined}
             className={clsx(
-                "relative w-full my-4 font-mono text-sm leading-snug border border-card-border",
+                "relative my-4 w-full border border-card-border font-mono text-sm leading-snug",
                 isTransparent ? "bg-transparent" : "bg-card-background",
                 className,
             )}
@@ -84,10 +85,10 @@ export const CodeBlockFrame = ({
             <div
                 className={clsx(
                     "writeme-code-block-body transition-opacity duration-200",
-                    isBodyVisible ? "h-auto opacity-100" : "h-0 opacity-0 pointer-events-none overflow-hidden",
+                    isBodyVisible ? "h-auto opacity-100" : "pointer-events-none h-0 overflow-hidden opacity-0",
                 )}
             >
-                <div className="overflow-x-auto relative p-2 w-full font-mono leading-loose whitespace-pre">
+                <div className="relative w-full overflow-x-auto p-2 font-mono leading-loose whitespace-pre">
                     {children}
                 </div>
             </div>
@@ -457,8 +458,11 @@ const PastePlugin = (name: string) =>
                     if (items) {
                         for (let i = 0; i < items.length; i++) {
                             const item = items[i];
-                            if (item?.type.startsWith("image/")) {
-                                handlePasteImage(view);
+                            if (item?.kind === "file" && item.type.startsWith("image/")) {
+                                const editor = editorGlobalRef.current;
+                                if (!editor) return false;
+                                const insertPos = editor.state.selection.anchor;
+                                void handlePasteImage(editor, insertPos);
                                 return true;
                             }
                         }

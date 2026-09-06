@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { DatabaseCollection, DatabaseRecord } from "./main-process/database-schema";
 import type { Note } from "./store/note";
 import type { GitPushResult, GitStatusResult } from "./types/git";
-import type { ReadDirResult } from "./types/tree";
+import type { DirectoryAccessResult, ReadDirResult } from "./types/tree";
 
 contextBridge.exposeInMainWorld("electronAPI", {
     env: {
@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     },
     app: {
         openQuickNote: () => ipcRenderer.invoke("app:openQuickNote"),
+        openFloatingEditor: () => ipcRenderer.invoke("app:openFloatingEditor"),
         hideToTray: () => ipcRenderer.invoke("app:hideToTray"),
         getSystemAccentColor: () => ipcRenderer.invoke("app:get-system-accent-color"),
         getLaunchWorkspace: () => ipcRenderer.invoke("app:get-launch-workspace"),
@@ -25,6 +26,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
         rendererReady: (workspacePath: string | null) => ipcRenderer.invoke("app:renderer-ready", workspacePath),
         updateShortcut: (shortcut: string) => ipcRenderer.invoke("app:update-shortcut", shortcut),
         updateMathShortcut: (shortcut: string) => ipcRenderer.invoke("app:update-math-shortcut", shortcut),
+        updateFloatingEditorShortcut: (shortcut: string) =>
+            ipcRenderer.invoke("app:update-floating-editor-shortcut", shortcut),
         openFolder: (folderPath: string) => ipcRenderer.invoke("app:open-folder", { folderPath }),
         installCli: () => ipcRenderer.invoke("app:install-cli"),
     },
@@ -59,6 +62,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
     fs: {
         chooseDirectory: async (): Promise<string | null> => {
             return ipcRenderer.invoke("fs:chooseDirectory");
+        },
+        requestDirectoryAccess: async (dirPath: string): Promise<DirectoryAccessResult> => {
+            return ipcRenderer.invoke("fs:requestDirectoryAccess", dirPath);
         },
         writeFile: async (filePath: string, content: string) => {
             return ipcRenderer.invoke("fs:writeFile", filePath, content);
@@ -251,6 +257,7 @@ declare global {
             };
             app: {
                 openQuickNote(): Promise<void>;
+                openFloatingEditor(): Promise<void>;
                 hideToTray(): Promise<boolean>;
                 getSystemAccentColor(): Promise<string | null>;
                 getLaunchWorkspace(): Promise<string | null>;
@@ -261,6 +268,7 @@ declare global {
                 rendererReady(workspacePath: string | null): Promise<boolean>;
                 updateShortcut(shortcut: string): Promise<{ success: boolean; error?: string }>;
                 updateMathShortcut(shortcut: string): Promise<{ success: boolean; error?: string }>;
+                updateFloatingEditorShortcut(shortcut: string): Promise<{ success: boolean; error?: string }>;
                 openFolder(folderPath: string): Promise<boolean>;
                 installCli(): Promise<
                     | {
@@ -282,6 +290,7 @@ declare global {
             };
             fs: {
                 chooseDirectory(): Promise<string | null>;
+                requestDirectoryAccess(dirPath: string): Promise<DirectoryAccessResult>;
                 writeFile(filePath: string, content: string): Promise<any>;
                 readFile(filePath: string): Promise<any>;
                 readBinaryFile(filePath: string): Promise<{ success: boolean; data?: Uint8Array; error?: string }>;

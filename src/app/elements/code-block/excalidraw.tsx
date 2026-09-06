@@ -1,5 +1,4 @@
 import { Excalidraw, restoreElements } from "@excalidraw/excalidraw";
-import "@excalidraw/excalidraw/index.css";
 import { Button } from "@g4rcez/components";
 import { CornersInIcon } from "@phosphor-icons/react/dist/csr/CornersIn";
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
@@ -38,7 +37,7 @@ export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; on
     if (state === null) return null;
     const Icon = isFullScreen ? CornersInIcon : CornersOutIcon;
     return (
-        <div ref={ref} className="relative p-6 w-full min-w-full bg-card h-[800px]">
+        <div ref={ref} className="relative h-[800px] w-full min-w-full bg-card p-6">
             <Excalidraw
                 gridModeEnabled
                 initialData={state}
@@ -49,7 +48,7 @@ export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; on
                     props.onChange?.(JSON.stringify(elements));
                 }}
             />
-            <div className="flex absolute top-0 right-0 gap-2 bg-card items-center z-navbar">
+            <div className="absolute top-0 right-0 z-navbar flex items-center gap-2 bg-card">
                 <Button
                     size="small"
                     theme="ghost-primary"

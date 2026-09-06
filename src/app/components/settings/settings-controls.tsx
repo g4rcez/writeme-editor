@@ -28,8 +28,8 @@ const TRASH_RETENTION_OPTIONS = [
 ];
 
 const EDITOR_MODE_OPTIONS = [
-    { label: "Rich", value: "rich" },
-    { label: "Raw Markdown", value: "raw" },
+    { label: "Formatted", value: "formatted" },
+    { label: "Markdown", value: "markdown" },
 ];
 
 function SettingsField({ label, description, children, compact = false }: SettingsFieldProps) {
@@ -46,7 +46,7 @@ function SettingsField({ label, description, children, compact = false }: Settin
     }
 
     return (
-        <div className="flex flex-col gap-3 py-4 border-b border-card-border last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-card-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-xl">
                 <span className="text-sm font-medium text-foreground">{label}</span>
                 <p className="text-sm text-muted-foreground">{description}</p>
@@ -119,6 +119,16 @@ export function ShortcutSettingsControls({ settings, onPatch, compact }: Setting
                     onChange={(mathNoteShortcut) => onPatch({ mathNoteShortcut })}
                 />
             </SettingsField>
+            <SettingsField
+                label="Floating Editor"
+                description="Open a new editor window without the sidebar or tabs."
+                compact={compact}
+            >
+                <ShortcutRecorder
+                    value={settings.floatingEditorShortcut}
+                    onChange={(floatingEditorShortcut) => onPatch({ floatingEditorShortcut })}
+                />
+            </SettingsField>
         </div>
     );
 }
@@ -152,7 +162,7 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
             ) : null}
             <SettingsField
                 label="Default editor mode"
-                description="Choose whether notes open in the rich editor or raw Markdown."
+                description="Choose whether notes open in the formatted editor or Markdown."
             >
                 <Select
                     optionalText=" "
@@ -166,7 +176,7 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
                     }
                 />
             </SettingsField>
-            <SettingsField label="Raw editor Vim mode" description="Enable Vim keybindings when editing raw Markdown.">
+            <SettingsField label="Markdown editor Vim mode" description="Enable Vim keybindings when editing Markdown.">
                 <Checkbox
                     checked={settings.rawEditorVimMode}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>

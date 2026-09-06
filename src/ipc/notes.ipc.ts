@@ -1,7 +1,8 @@
+import type { Dirent } from "node:fs";
 import { BrowserWindow, Menu, MenuItem, app, clipboard, dialog, ipcMain, shell } from "electron";
-import * as fs from "fs/promises";
-import * as path from "path";
-import type { TreeNode } from "../types/tree";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import type { DirectoryAccessResult, TreeNode } from "../types/tree";
 import { dbManager } from "../main-process/database";
 import { FileWatcher } from "../main-process/file-watcher";
 
@@ -42,6 +43,12 @@ function isPathUnderRoot(candidatePath: string): boolean {
         }
     }
     return false;
+}
+
+function getRevealLabel(): string {
+    if (process.platform === "darwin") return "Reveal in Finder";
+    if (process.platform === "win32") return "Show in Explorer";
+    return "Open in File Manager";
 }
 
 function validatePaths(...inputPaths: string[]) {
@@ -118,6 +125,51 @@ export const notesIpcHandler = async () => {
         return result.canceled ? null : result.filePaths[0];
     });
 
+    ipcMain.handle("fs:requestDirectoryAccess", async (_, dirPath: string): Promise<DirectoryAccessResult> => {
+        const access = validatePaths(dirPath);
+        if (!access.success) {
+            return { granted: false, error: access.error };
+        }
+
+        try {
+            await fs.readdir(dirPath);
+            return { granted: true };
+        } catch {
+            // Selecting the folder again records explicit user intent and can restore macOS folder access.
+        }
+
+        const result = await dialog.showOpenDialog({
+            defaultPath: dirPath,
+            properties: ["openDirectory"],
+            title: "Allow Writeme to access this folder",
+            message: "Select the current workspace folder to grant access",
+            buttonLabel: "Grant Access",
+        });
+        if (result.canceled || !result.filePaths[0]) {
+            return { granted: false, error: "Folder access was not granted" };
+        }
+        if (normalizePath(result.filePaths[0]) !== normalizePath(dirPath)) {
+            return { granted: false, error: `Select the current workspace folder: ${dirPath}` };
+        }
+
+        try {
+            await fs.readdir(dirPath);
+            return { granted: true };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Folder access was not granted";
+            if (process.platform === "darwin") {
+                await shell.openExternal(
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_FilesAndFolders",
+                );
+                return {
+                    granted: false,
+                    error: `${message}. Enable Documents Folder access for Writeme in System Settings, then retry.`,
+                };
+            }
+            return { granted: false, error: message };
+        }
+    });
+
     ipcMain.handle("fs:openFileOrDirectory", async () => {
         const result = await dialog.showOpenDialog({
             properties: ["openFile", "openDirectory"],
@@ -144,10 +196,15 @@ export const notesIpcHandler = async () => {
             await fs.mkdir(path.dirname(filePath), { recursive: true });
             FileWatcher.suppressNext(filePath);
             await fs.writeFile(filePath, content, "utf-8");
-            let stats;
             try {
-                stats = await fs.stat(filePath);
-            } catch (e) {
+                const stats = await fs.stat(filePath);
+                return {
+                    success: true,
+                    filePath,
+                    fileSize: stats.size,
+                    lastModified: stats.mtime,
+                };
+            } catch {
                 return {
                     success: true,
                     filePath,
@@ -155,12 +212,6 @@ export const notesIpcHandler = async () => {
                     lastModified: new Date(),
                 };
             }
-            return {
-                success: true,
-                filePath,
-                fileSize: stats.size,
-                lastModified: stats.mtime,
-            };
         } catch (error: any) {
             return {
                 success: false,
@@ -299,7 +350,7 @@ export const notesIpcHandler = async () => {
         const results: FileEntry[] = [];
         const walk = async (currentDir: string, depth: number) => {
             if (depth > maxDepth) return;
-            let entries;
+            let entries: Dirent[];
             try {
                 entries = await fs.readdir(currentDir, { withFileTypes: true });
             } catch {
@@ -356,8 +407,11 @@ export const notesIpcHandler = async () => {
                     return a.name.localeCompare(b.name);
                 });
             return { entries: nodes };
-        } catch (error: any) {
-            return { entries: [], error: error.message };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to read directory";
+            const errorCode =
+                error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : undefined;
+            return { entries: [], error: message, errorCode };
         }
     });
 
@@ -365,12 +419,7 @@ export const notesIpcHandler = async () => {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (!win) return;
 
-        const revealLabel =
-            process.platform === "darwin"
-                ? "Reveal in Finder"
-                : process.platform === "win32"
-                  ? "Show in Explorer"
-                  : "Open in File Manager";
+        const revealLabel = getRevealLabel();
 
         const menu = new Menu();
         menu.append(

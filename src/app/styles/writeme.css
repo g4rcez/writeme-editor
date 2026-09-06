@@ -178,10 +178,25 @@
     @apply relative flex h-full w-full flex-col gap-6 px-4 py-2 sm:px-8 lg:px-12 print:block print:h-auto print:overflow-visible;
 }
 
+.writeme-editor-column,
 .writeme-editor {
-    @apply mx-auto flex w-full flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
+    @apply mx-auto w-full;
     max-width: min(84ch, 100%);
+}
+
+.writeme-editor {
+    @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
     padding-bottom: 6rem;
+}
+
+.writeme-formatting-toolbar {
+    top: 0;
+    left: 0;
+    max-width: calc(100% - 1rem);
+}
+
+.writeme-formatting-toolbar[data-positioned="false"] {
+    visibility: hidden;
 }
 
 .writeme-editor-content {
@@ -227,4 +242,15 @@
 
 .writeme-layout-main {
     @apply relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background print:block print:h-auto print:w-auto print:overflow-visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
 }

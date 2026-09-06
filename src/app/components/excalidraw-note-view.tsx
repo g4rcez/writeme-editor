@@ -1,9 +1,7 @@
-import type { ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import { Excalidraw, restore } from "@excalidraw/excalidraw";
-import "@excalidraw/excalidraw/index.css";
 import { Button } from "@g4rcez/components";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import type { Note } from "@/store/note";
 import {
     EMPTY_EXCALIDRAW_PAYLOAD,
@@ -13,6 +11,8 @@ import {
     type ExcalidrawNotePayload,
 } from "@/lib/excalidraw-note";
 import { useGlobalStore } from "@/store/global.store";
+
+type ExcalidrawProps = ComponentProps<typeof Excalidraw>;
 
 type ParsedState =
     | {
@@ -132,12 +132,10 @@ export function ExcalidrawNoteView(props: { note: Note }) {
     return (
         <div className="h-full min-h-0 w-full bg-background">
             <Excalidraw
-                aiEnabled
                 autoFocus
                 detectScroll
                 gridModeEnabled
                 onChange={onChange}
-                objectsSnapModeEnabled
                 isCollaborating={false}
                 initialData={parsed.initialData}
                 key={`${props.note.id}-${resetKey}`}

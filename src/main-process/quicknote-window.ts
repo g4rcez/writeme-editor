@@ -5,7 +5,7 @@ import path from "node:path";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-const floatingNoteWindows = new Set<BrowserWindow>();
+const floatingWindows = new Set<BrowserWindow>();
 
 const floatingPanelWidth = 620;
 const floatingPanelHeight = 480;
@@ -33,7 +33,7 @@ const floatingPanelTopLevel: NonNullable<Parameters<BrowserWindow["setAlwaysOnTo
     process.platform === "darwin" ? "screen-saver" : "floating";
 
 type FloatingPanelOptions = {
-    boundsName?: "quicknote" | "mathnote";
+    boundsName?: "quicknote" | "mathnote" | "floating-editor";
     nativeWindowControls?: boolean;
     persistBounds?: boolean;
     resizable?: boolean;
@@ -76,7 +76,6 @@ function getInitialPanelBounds(options: FloatingPanelOptions): FloatingPanelBoun
 
 function showFloatingPanel(win: BrowserWindow, options: FloatingPanelOptions = {}): void {
     const isResizable = options.resizable === true;
-    win.setBounds(getInitialPanelBounds(options), false);
     win.setFocusable(true);
     win.setMovable(true);
     win.setResizable(isResizable);
@@ -156,8 +155,15 @@ function createFloatingPanel(
     win.once("ready-to-show", () => {
         showFloatingPanel(win, options);
     });
-    if (options.persistBounds && options.boundsName) {
-        win.on("close", () => saveFloatingPanelBounds(win, options.boundsName!));
+    win.on("always-on-top-changed", (_event, isAlwaysOnTop) => {
+        if (!isAlwaysOnTop) win.setAlwaysOnTop(true, floatingPanelTopLevel);
+    });
+    const boundsName = options.boundsName;
+    if (options.persistBounds && boundsName) {
+        const saveBounds = (): void => saveFloatingPanelBounds(win, boundsName);
+        win.on("moved", saveBounds);
+        win.on("resized", saveBounds);
+        win.on("close", saveBounds);
     }
     win.on("closed", onClosed);
     return win;
@@ -169,7 +175,7 @@ function createFloatingNoteWindow(preloadPath: string, title: string, hash: "qui
         title,
         hash,
         () => {
-            floatingNoteWindows.delete(floatingNoteWindow);
+            floatingWindows.delete(floatingNoteWindow);
         },
         {
             boundsName: hash,
@@ -178,7 +184,25 @@ function createFloatingNoteWindow(preloadPath: string, title: string, hash: "qui
             resizable: true,
         },
     );
-    floatingNoteWindows.add(floatingNoteWindow);
+    floatingWindows.add(floatingNoteWindow);
+}
+
+export function createFloatingEditorWindow(preloadPath: string): void {
+    const floatingEditorWindow = createFloatingPanel(
+        preloadPath,
+        "Floating Editor",
+        "floating-editor",
+        () => {
+            floatingWindows.delete(floatingEditorWindow);
+        },
+        {
+            boundsName: "floating-editor",
+            nativeWindowControls: true,
+            persistBounds: true,
+            resizable: true,
+        },
+    );
+    floatingWindows.add(floatingEditorWindow);
 }
 
 export const createQuickNoteWindow = (preloadPath: string) => {

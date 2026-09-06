@@ -1,5 +1,6 @@
 @config "../tailwind.config.ts";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@excalidraw/excalidraw/index.css";
 @import "@g4rcez/components/foundation.css";
 @import "@g4rcez/components/polymorph.css";
 @import "@g4rcez/components/tag.css";
@@ -509,6 +510,6 @@ a:focus-visible,
     }
 }
 
-.__floating-command-palette__container {
-    max-width: 60vw;
+.__command-palette {
+    max-inline-size: 60vw;
 }

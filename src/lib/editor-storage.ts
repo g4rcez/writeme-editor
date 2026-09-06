@@ -1,5 +1,5 @@
-import { type Editor } from "@tiptap/core";
-import { type Note } from "@/store/note";
+import type { Editor } from "@tiptap/core";
+import type { Note } from "@/store/note";
 
 export const getEditorNote = (editor: Editor): Note | undefined => (editor.storage as any).note as Note | undefined;
 
@@ -13,4 +13,9 @@ export const setEditorAllNotes = (editor: Editor, notes: Note[]): void => {
     (editor.storage as any).allNotes = notes;
 };
 
-export const getEditorMarkdown = (editor: Editor): string => (editor.storage as any).markdown.getMarkdown() as string;
+export const getEditorMarkdown = (editor: Editor): string => {
+    if (!editor.schema || !editor.extensionManager) return "";
+
+    const markdownStorage = (editor.storage as { markdown?: { getMarkdown?: (() => string) | null } }).markdown;
+    return markdownStorage?.getMarkdown?.() ?? "";
+};

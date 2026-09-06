@@ -47,6 +47,7 @@ vi.mock("@/app/settings/use-settings-draft", () => ({
         settings: {
             quickNoteShortcut: "CommandOrControl+Alt+N",
             mathNoteShortcut: "CommandOrControl+Alt+M",
+            floatingEditorShortcut: "CommandOrControl+Alt+P",
         },
         patchSettings: vi.fn(),
     }),

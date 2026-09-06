@@ -38,7 +38,7 @@ export default function SettingsEditorPage() {
     return (
         <SettingsPageShell
             title="Editor"
-            description="Tune autosave behavior, raw editing, and the editor reading size."
+            description="Tune autosave behavior, Markdown editing, and the editor reading size."
             actions={
                 <Button size="small" disabled={saving} onClick={onSave}>
                     {saving ? "Saving..." : "Save Editor"}

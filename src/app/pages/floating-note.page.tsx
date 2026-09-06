@@ -161,7 +161,7 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
                 <h1 className="truncate text-lg font-semibold">{state.note.title}</h1>
                 <span className="text-xs text-disabled">Press Esc to close</span>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="min-h-0 flex-1 p-8 overflow-y-auto overscroll-contain">
                 <Editor content={state.note.content} note={state.note} />
             </div>
         </div>

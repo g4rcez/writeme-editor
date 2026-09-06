@@ -180,6 +180,7 @@ export default function SettingsShortcutsPage() {
             await saveSettingsPatch({
                 quickNoteShortcut: settings.quickNoteShortcut,
                 mathNoteShortcut: settings.mathNoteShortcut,
+                floatingEditorShortcut: settings.floatingEditorShortcut,
             });
             const success = await registerGlobalShortcuts(settings);
             if (success) {
@@ -199,7 +200,7 @@ export default function SettingsShortcutsPage() {
     return (
         <SettingsPageShell
             title="Shortcuts"
-            description="Edit the global shortcuts that open quick capture windows."
+            description="Edit the global shortcuts that open quick capture and floating editor windows."
             actions={
                 <Button size="small" disabled={saving} onClick={onSave}>
                     {saving ? "Saving..." : "Save Shortcuts"}

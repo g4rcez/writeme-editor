@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Point = {
@@ -13,6 +14,17 @@ type WorkArea = {
 };
 
 type FloatingPanelBounds = WorkArea;
+
+type FloatingPanelCase = {
+    create: keyof typeof import("./quicknote-window");
+    boundsName: string;
+};
+
+const floatingPanelCases: FloatingPanelCase[] = [
+    { create: "createQuickNoteWindow", boundsName: "quicknote" },
+    { create: "createMathNoteWindow", boundsName: "mathnote" },
+    { create: "createFloatingEditorWindow", boundsName: "floating-editor" },
+];
 
 type BrowserWindowOptions = {
     width?: number;
@@ -72,11 +84,8 @@ const screenMock = {
     getDisplayNearestPoint: vi.fn(() => ({ workArea })),
 };
 
-class MockBrowserWindow {
+class MockBrowserWindow extends EventEmitter {
     readonly options: BrowserWindowOptions;
-    private readyToShow: (() => void) | null = null;
-    private closeHandler: (() => void) | null = null;
-    private closedHandler: (() => void) | null = null;
 
     isDestroyed = vi.fn(() => false);
     webContents = {
@@ -90,7 +99,9 @@ class MockBrowserWindow {
     setMaximizable = vi.fn<(maximizable: boolean) => void>();
     setMinimizable = vi.fn<(minimizable: boolean) => void>();
     setFullScreenable = vi.fn<(fullscreenable: boolean) => void>();
-    setAlwaysOnTop = vi.fn<(flag: boolean, level: string) => void>();
+    setAlwaysOnTop = vi.fn<(flag: boolean, level: string) => void>((flag) => {
+        this.emit("always-on-top-changed", {}, flag);
+    });
     setVisibleOnAllWorkspaces = vi.fn<(visible: boolean, options: { visibleOnFullScreen: boolean }) => void>();
     moveTop = vi.fn<() => void>();
     show = vi.fn<() => void>();
@@ -101,39 +112,21 @@ class MockBrowserWindow {
     loadFile = vi.fn<(filePath: string, options: { hash: string }) => void>();
 
     constructor(options: BrowserWindowOptions) {
+        super();
         this.options = options;
         createdWindows.push(this);
     }
 
-    once(eventName: string, callback: () => void): this {
-        if (eventName === "ready-to-show") {
-            this.readyToShow = callback;
-        }
-
-        return this;
-    }
-
-    on(eventName: string, callback: () => void): this {
-        if (eventName === "close") {
-            this.closeHandler = callback;
-        }
-        if (eventName === "closed") {
-            this.closedHandler = callback;
-        }
-
-        return this;
-    }
-
     triggerReadyToShow(): void {
-        this.readyToShow?.();
+        this.emit("ready-to-show");
     }
 
     triggerClose(): void {
-        this.closeHandler?.();
+        this.emit("close");
     }
 
     triggerClosed(): void {
-        this.closedHandler?.();
+        this.emit("closed");
     }
 }
 
@@ -225,29 +218,109 @@ describe("quick note floating panels", () => {
         expect(screenMock.getDisplayNearestPoint).toHaveBeenCalledWith(cursorPoint);
     });
 
-    it("saves quick note bounds on close and restores them on next open", async () => {
-        const { createQuickNoteWindow } = await importQuickNoteWindowModule();
-        const savedBounds = { x: 88, y: 99, width: 760, height: 540 };
+    it.each(floatingPanelCases)(
+        "saves $boundsName bounds on close and restores them on next open",
+        async ({ create, boundsName }) => {
+            const module = await importQuickNoteWindowModule();
+            const savedBounds = { x: 88, y: 99, width: 760, height: 540 };
 
-        createQuickNoteWindow("/preload.js");
-        const firstWindow = getCreatedWindow(0);
-        currentWindowBounds = savedBounds;
-        firstWindow.triggerClose();
-        firstWindow.triggerClosed();
+            module[create]("/preload.js");
+            const firstWindow = getCreatedWindow(0);
+            currentWindowBounds = savedBounds;
+            firstWindow.triggerClose();
+            firstWindow.triggerClosed();
 
-        expect(fsMock.writeFileSync).toHaveBeenCalledWith(
-            "/user-data/quicknote-window-bounds.json",
-            JSON.stringify(savedBounds, null, 2),
-            "utf8",
-        );
+            expect(fsMock.writeFileSync).toHaveBeenCalledWith(
+                `/user-data/${boundsName}-window-bounds.json`,
+                JSON.stringify(savedBounds, null, 2),
+                "utf8",
+            );
 
-        createQuickNoteWindow("/preload.js");
-        const restoredWindow = getCreatedWindow(1);
-        restoredWindow.triggerReadyToShow();
+            module[create]("/preload.js");
+            const restoredWindow = getCreatedWindow(1);
+            restoredWindow.triggerReadyToShow();
 
-        expect(restoredWindow.options).toMatchObject(savedBounds);
-        expect(restoredWindow.setBounds).toHaveBeenCalledWith(savedBounds, false);
-    });
+            expect(restoredWindow.options).toMatchObject(savedBounds);
+            expect(restoredWindow.setBounds).not.toHaveBeenCalled();
+        },
+    );
+
+    it.each(floatingPanelCases)(
+        "keeps $boundsName at its initial position while loading",
+        async ({ create, boundsName }) => {
+            const module = await importQuickNoteWindowModule();
+            const initialBounds = expectedBoundsFor(workArea);
+
+            module[create]("/preload.js");
+            const win = getCreatedWindow(0);
+            workArea = { x: -1728, y: 0, width: 1728, height: 1117 };
+            persistedBoundsJson = JSON.stringify(currentWindowBounds);
+            win.triggerReadyToShow();
+
+            expect(win.options).toMatchObject(initialBounds);
+            expect(win.setBounds).not.toHaveBeenCalled();
+            expect(fsMock.readFileSync).toHaveBeenCalledExactlyOnceWith(
+                `/user-data/${boundsName}-window-bounds.json`,
+                "utf8",
+            );
+            expect(screenMock.getCursorScreenPoint).toHaveBeenCalledTimes(1);
+        },
+    );
+
+    it.each(floatingPanelCases)(
+        "remembers $boundsName moves and resizes before closing",
+        async ({ create, boundsName }) => {
+            const module = await importQuickNoteWindowModule();
+            module[create]("/preload.js");
+            const win = getCreatedWindow(0);
+            win.triggerReadyToShow();
+
+            currentWindowBounds = { x: -1400, y: 180, width: 620, height: 480 };
+            win.emit("moved");
+            expect(fsMock.writeFileSync).toHaveBeenLastCalledWith(
+                `/user-data/${boundsName}-window-bounds.json`,
+                JSON.stringify(currentWindowBounds, null, 2),
+                "utf8",
+            );
+
+            currentWindowBounds = { ...currentWindowBounds, width: 800, height: 600 };
+            win.emit("resized");
+            expect(fsMock.writeFileSync).toHaveBeenLastCalledWith(
+                `/user-data/${boundsName}-window-bounds.json`,
+                JSON.stringify(currentWindowBounds, null, 2),
+                "utf8",
+            );
+
+            module[create]("/preload.js");
+            expect(getCreatedWindow(1).options).toMatchObject(currentWindowBounds);
+        },
+    );
+
+    it.each(floatingPanelCases)(
+        "keeps $boundsName on top without moving it or taking focus again",
+        async ({ create }) => {
+            const module = await importQuickNoteWindowModule();
+            module[create]("/preload.js");
+            const win = getCreatedWindow(0);
+            win.triggerReadyToShow();
+            win.setAlwaysOnTop.mockClear();
+
+            win.emit("always-on-top-changed", {}, false);
+
+            expect(win.options).toMatchObject({ alwaysOnTop: true });
+            expect(win.setAlwaysOnTop).toHaveBeenCalledExactlyOnceWith(true, expectedAlwaysOnTopLevel());
+            expect(win.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, { visibleOnFullScreen: true });
+            expect(win.setBounds).not.toHaveBeenCalled();
+            expect(win.show).toHaveBeenCalledTimes(1);
+            expect(win.moveTop).toHaveBeenCalledTimes(1);
+            expect(win.focus).toHaveBeenCalledTimes(1);
+            expect(win.webContents.focus).toHaveBeenCalledTimes(1);
+            expect(win.hide).not.toHaveBeenCalled();
+            if (process.platform === "darwin") {
+                expect(appMock.focus).toHaveBeenCalledTimes(1);
+            }
+        },
+    );
 
     it("creates a new focused and topmost quick note instance", async () => {
         const { createQuickNoteWindow } = await importQuickNoteWindowModule();
@@ -263,7 +336,8 @@ describe("quick note floating panels", () => {
         quickNoteWindow.triggerReadyToShow();
 
         expect(createdWindows).toHaveLength(2);
-        expect(quickNoteWindow.setBounds).toHaveBeenCalledWith(expectedBounds, false);
+        expect(quickNoteWindow.options).toMatchObject(expectedBounds);
+        expect(quickNoteWindow.setBounds).not.toHaveBeenCalled();
         expect(quickNoteWindow.setFocusable).toHaveBeenCalledWith(true);
         expect(quickNoteWindow.setMovable).toHaveBeenCalledWith(true);
         expect(quickNoteWindow.setResizable).toHaveBeenCalledWith(true);
@@ -279,7 +353,7 @@ describe("quick note floating panels", () => {
         expect(quickNoteWindow.moveTop).toHaveBeenCalledTimes(1);
         expect(quickNoteWindow.focus).toHaveBeenCalledTimes(1);
         expect(quickNoteWindow.webContents.focus).toHaveBeenCalledTimes(1);
-        expect(firstCallOrder(quickNoteWindow.setBounds)).toBeLessThan(firstCallOrder(quickNoteWindow.show));
+        expect(firstCallOrder(quickNoteWindow.setAlwaysOnTop)).toBeLessThan(firstCallOrder(quickNoteWindow.show));
     });
 
     it("creates math scratchpads with the same floating-window behavior as quick notes", async () => {
@@ -303,7 +377,7 @@ describe("quick note floating panels", () => {
             maximizable: false,
             fullscreenable: false,
         });
-        expect(mathNoteWindow.setBounds).toHaveBeenCalledWith(expectedBounds, false);
+        expect(mathNoteWindow.setBounds).not.toHaveBeenCalled();
         expect(mathNoteWindow.setFocusable).toHaveBeenCalledWith(true);
         expect(mathNoteWindow.setMovable).toHaveBeenCalledWith(true);
         expect(mathNoteWindow.setResizable).toHaveBeenCalledWith(true);
@@ -316,7 +390,7 @@ describe("quick note floating panels", () => {
         expect(mathNoteWindow.moveTop).toHaveBeenCalledTimes(1);
         expect(mathNoteWindow.focus).toHaveBeenCalledTimes(1);
         expect(mathNoteWindow.webContents.focus).toHaveBeenCalledTimes(1);
-        expect(firstCallOrder(mathNoteWindow.setBounds)).toBeLessThan(firstCallOrder(mathNoteWindow.show));
+        expect(firstCallOrder(mathNoteWindow.setAlwaysOnTop)).toBeLessThan(firstCallOrder(mathNoteWindow.show));
     });
 
     it("spawns independent math scratchpad windows", async () => {
@@ -328,5 +402,27 @@ describe("quick note floating panels", () => {
         expect(createdWindows).toHaveLength(2);
         expect(getCreatedWindow(0).options.title).toBe("Math Scratchpad");
         expect(getCreatedWindow(1).options.title).toBe("Math Scratchpad");
+    });
+
+    it("creates a floating editor window", async () => {
+        const { createFloatingEditorWindow } = await importQuickNoteWindowModule();
+        const expectedBounds = expectedBoundsFor(workArea);
+
+        createFloatingEditorWindow("/preload.js");
+        const floatingEditorWindow = getCreatedWindow(0);
+
+        expect(floatingEditorWindow.options).toMatchObject({
+            ...expectedBounds,
+            title: "Floating Editor",
+            titleBarStyle: "hiddenInset",
+            trafficLightPosition: { x: 16, y: 16 },
+            focusable: true,
+            movable: true,
+            resizable: true,
+            minimizable: false,
+            maximizable: false,
+            fullscreenable: false,
+        });
+        expect(floatingEditorWindow.loadURL).toHaveBeenCalledWith("http://localhost:5173#/floating-editor");
     });
 });

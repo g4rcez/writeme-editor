@@ -13,7 +13,9 @@ export class MarkdownSerializer {
         this.editor = editor;
     }
 
-    serialize(content: Node) {
+    serialize(content: Node): string {
+        if (!this.editor.schema || !this.editor.extensionManager) return "";
+
         const state = new MarkdownSerializerState(this.nodes, this.marks, {
             ...this.editor.storage.markdown.options,
             hardBreakNodeName: HardBreak.name,
@@ -23,6 +25,8 @@ export class MarkdownSerializer {
     }
 
     get nodes() {
+        if (!this.editor.schema || !this.editor.extensionManager) return {};
+
         return {
             ...Object.fromEntries(
                 Object.keys(this.editor.schema.nodes).map((name) => [name, this.serializeNode(HTMLNode)]),
@@ -36,6 +40,8 @@ export class MarkdownSerializer {
     }
 
     get marks() {
+        if (!this.editor.schema || !this.editor.extensionManager) return {};
+
         return {
             ...Object.fromEntries(
                 Object.keys(this.editor.schema.marks).map((name) => [name, this.serializeMark(HTMLMark)]),

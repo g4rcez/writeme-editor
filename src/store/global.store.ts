@@ -568,6 +568,24 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
                 return get.state();
             }
         },
+        updateNoteTitle: async (id: string, title: string) => {
+            try {
+                const state = get.state();
+                const existing = state.notes.find((n) => n.id === id) ?? (state.note?.id === id ? state.note : null);
+                if (!existing) return state;
+
+                const updated = Object.assign(Object.create(Object.getPrototypeOf(existing)), existing, {
+                    title: title.trim() || "Untitled",
+                    updatedAt: new Date(),
+                }) as Note;
+                await repositories.notes.save(updated);
+                const notes = state.notes.map((n) => (n.id === id ? updated : n));
+                return { notes, note: state.note?.id === id ? updated : state.note };
+            } catch (error: any) {
+                uiDispatch.setError(error.message || "Failed to update note title");
+                return get.state();
+            }
+        },
         theme: (theme: Toggle<string>) => {
             const result = typeof theme === "function" ? theme(get.state().theme) : theme;
             for (const className of THEME_CLASSES) {

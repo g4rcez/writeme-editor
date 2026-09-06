@@ -1,12 +1,166 @@
 import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, type Extension } from "@codemirror/state";
-import { keymap } from "@codemirror/view";
+import {
+    Compartment,
+    EditorState,
+    RangeSetBuilder,
+    StateEffect,
+    StateField,
+    type Extension,
+    type StateEffect as StateEffectType,
+} from "@codemirror/state";
+import { Decoration, EditorView, keymap, type DecorationSet } from "@codemirror/view";
 import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 import { vim } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
-import { EditorView, minimalSetup } from "codemirror";
+import { minimalSetup } from "codemirror";
 import { useEffect, useRef } from "react";
+import { editorSearchGlobalRef, type EditorSearchHandle, setEditorSearchGlobalRef } from "../editor-global-ref";
 import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
+
+const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
+const CURSOR_SCROLL_MARGIN_PX = 96;
+const setMarkdownSearchDecorations = StateEffect.define<DecorationSet>();
+
+const markdownSearchDecorations = StateField.define<DecorationSet>({
+    create: () => Decoration.none,
+    update(decorations, transaction) {
+        const mappedDecorations = decorations.map(transaction.changes);
+        for (const effect of transaction.effects) {
+            if (effect.is(setMarkdownSearchDecorations)) return effect.value;
+        }
+        return mappedDecorations;
+    },
+    provide: (field) => EditorView.decorations.from(field),
+});
+
+type MarkdownMatch = { from: number; to: number };
+
+function findMarkdownMatches(content: string, searchTerm: string, caseSensitive: boolean): MarkdownMatch[] {
+    if (!searchTerm) return [];
+    const source = caseSensitive ? content : content.toLocaleLowerCase();
+    const needle = caseSensitive ? searchTerm : searchTerm.toLocaleLowerCase();
+    const matches: MarkdownMatch[] = [];
+    let from = 0;
+
+    while (from <= source.length - needle.length) {
+        const index = source.indexOf(needle, from);
+        if (index === -1) break;
+        matches.push({ from: index, to: index + needle.length });
+        from = index + Math.max(needle.length, 1);
+    }
+
+    return matches;
+}
+
+function buildMarkdownSearchDecorations(matches: MarkdownMatch[], resultIndex: number): DecorationSet {
+    const builder = new RangeSetBuilder<Decoration>();
+    for (const [index, match] of matches.entries()) {
+        builder.add(
+            match.from,
+            match.to,
+            Decoration.mark({ class: index === resultIndex ? "cm-searchMatch-current" : "cm-searchMatch" }),
+        );
+    }
+    return builder.finish();
+}
+
+export function createMarkdownSearchController(
+    view: EditorView,
+): EditorSearchHandle & { dispose: () => void; refreshDocument: () => void } {
+    let searchTerm = "";
+    let replaceTerm = "";
+    let caseSensitive = false;
+    let matches: MarkdownMatch[] = [];
+    let resultIndex = 0;
+    const listeners = new Set<() => void>();
+
+    const notify = (): void => {
+        for (const listener of listeners) listener();
+    };
+
+    const updateView = (selectCurrent: boolean): void => {
+        const current = matches[resultIndex];
+        const effects: StateEffectType<unknown>[] = [
+            setMarkdownSearchDecorations.of(buildMarkdownSearchDecorations(matches, resultIndex)),
+        ];
+        if (selectCurrent && current) {
+            effects.push(EditorView.scrollIntoView(current.from, { y: "center" }));
+        }
+        view.dispatch({
+            effects,
+            selection: selectCurrent && current ? { anchor: current.from, head: current.to } : undefined,
+        });
+        notify();
+    };
+
+    const refresh = (selectCurrent: boolean): void => {
+        matches = findMarkdownMatches(view.state.doc.toString(), searchTerm, caseSensitive);
+        resultIndex = Math.min(resultIndex, Math.max(matches.length - 1, 0));
+        updateView(selectCurrent);
+    };
+
+    const controller: EditorSearchHandle & { dispose: () => void; refreshDocument: () => void } = {
+        getState: () => ({
+            searchTerm,
+            replaceTerm,
+            resultsCount: matches.length,
+            resultIndex,
+            caseSensitive,
+        }),
+        getContent: () => view.state.doc.toString(),
+        setSearchTerm: (nextSearchTerm) => {
+            searchTerm = nextSearchTerm;
+            resultIndex = 0;
+            refresh(true);
+        },
+        setReplaceTerm: (nextReplaceTerm) => {
+            replaceTerm = nextReplaceTerm;
+            notify();
+        },
+        setCaseSensitive: (nextCaseSensitive) => {
+            caseSensitive = nextCaseSensitive;
+            resultIndex = 0;
+            refresh(true);
+        },
+        nextSearchResult: () => {
+            if (matches.length === 0) return;
+            resultIndex = (resultIndex + 1) % matches.length;
+            updateView(true);
+        },
+        previousSearchResult: () => {
+            if (matches.length === 0) return;
+            resultIndex = (resultIndex - 1 + matches.length) % matches.length;
+            updateView(true);
+        },
+        replace: (nextReplaceTerm) => {
+            const current = matches[resultIndex];
+            if (!current) return;
+            view.dispatch({
+                changes: { from: current.from, to: current.to, insert: nextReplaceTerm },
+            });
+            refresh(true);
+        },
+        replaceAll: (nextReplaceTerm) => {
+            if (!searchTerm || matches.length === 0) return;
+            view.dispatch({
+                changes: matches.map((match) => ({ from: match.from, to: match.to, insert: nextReplaceTerm })),
+            });
+            resultIndex = 0;
+            refresh(false);
+        },
+        focus: () => view.focus(),
+        subscribe: (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+        },
+        dispose: () => {
+            listeners.clear();
+        },
+        refreshDocument: () => refresh(false),
+    };
+
+    return controller;
+}
 
 type RawMarkdownEditorProps = {
     value: string;
@@ -16,9 +170,6 @@ type RawMarkdownEditorProps = {
     fontSize: number;
     vimMode?: boolean;
 };
-
-const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
-const CURSOR_SCROLL_MARGIN_PX = 96;
 
 function getEditorTopInScrollContainer(view: EditorView, scrollContainer: HTMLElement): number {
     const containerRect = scrollContainer.getBoundingClientRect();
@@ -71,6 +222,15 @@ function createRawMarkdownEditorTheme(fontSize: number) {
         },
         ".cm-line": {
             padding: "0",
+        },
+        ".cm-searchMatch": {
+            backgroundColor: "hsla(var(--primary), 0.2)",
+            borderRadius: "2px",
+        },
+        ".cm-searchMatch-current": {
+            backgroundColor: "hsla(var(--primary), 0.45)",
+            borderRadius: "2px",
+            boxShadow: "0 0 0 1px hsla(var(--primary), 0.7)",
         },
         ".cm-cursor, .cm-dropCursor": {
             borderLeftColor: "hsl(var(--foreground))",
@@ -155,6 +315,7 @@ export function RawMarkdownEditor({
         if (!containerRef.current) return;
 
         let cursorScrollFrame: number | null = null;
+        let searchController: (EditorSearchHandle & { dispose: () => void; refreshDocument: () => void }) | null = null;
         const scheduleCursorScroll = (editorView: EditorView): void => {
             if (cursorScrollFrame !== null) return;
             cursorScrollFrame = requestAnimationFrame(() => {
@@ -177,6 +338,7 @@ export function RawMarkdownEditor({
                         completeHTMLTags: true,
                         pasteURLAsLink: true,
                     }),
+                    markdownSearchDecorations,
                     EditorView.lineWrapping,
                     indentationMarkers({
                         activeThickness: 2,
@@ -199,6 +361,7 @@ export function RawMarkdownEditor({
                         }
 
                         if (!update.docChanged) return;
+                        searchController?.refreshDocument();
                         if (isSyncingExternalValueRef.current) {
                             isSyncingExternalValueRef.current = false;
                             return;
@@ -212,6 +375,8 @@ export function RawMarkdownEditor({
         });
 
         viewRef.current = view;
+        searchController = createMarkdownSearchController(view);
+        setEditorSearchGlobalRef(searchController);
         if (!initialReadonly) {
             requestAnimationFrame(() => view.focus());
         }
@@ -220,6 +385,10 @@ export function RawMarkdownEditor({
             if (cursorScrollFrame !== null) {
                 cancelAnimationFrame(cursorScrollFrame);
             }
+            if (editorSearchGlobalRef.current === searchController) {
+                setEditorSearchGlobalRef(null);
+            }
+            searchController?.dispose();
             view.destroy();
             viewRef.current = null;
         };

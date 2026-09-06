@@ -9,7 +9,13 @@ export interface TreeNode {
 export interface ReadDirResult {
     entries: TreeNode[];
     error?: string;
+    errorCode?: string;
 }
+
+export type DirectoryAccessResult = {
+    granted: boolean;
+    error?: string;
+};
 
 export interface FlattenedNode {
     node: TreeNode;

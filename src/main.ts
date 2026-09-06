@@ -36,7 +36,11 @@ import { dbManager } from "./main-process/database";
 import { parseAiCredentials } from "./main-process/database-schema";
 import { FileWatcher } from "./main-process/file-watcher";
 import { createFolderWindow } from "./main-process/folder-window";
-import { createMathNoteWindow, createQuickNoteWindow } from "./main-process/quicknote-window";
+import {
+    createFloatingEditorWindow,
+    createMathNoteWindow,
+    createQuickNoteWindow,
+} from "./main-process/quicknote-window";
 import { handleWindowClose } from "./main-process/window-lifecycle";
 import { startProxyServer } from "./server/proxy";
 
@@ -237,6 +241,7 @@ let isQuitting = false;
 let pendingFileOpen: string | null = null;
 let activeQuickNoteShortcut = "CommandOrControl+Alt+N";
 let activeMathNoteShortcut = "CommandOrControl+Alt+M";
+let activeFloatingEditorShortcut = "CommandOrControl+Alt+P";
 
 type AppCommand = "quick-note" | "math-note" | "settings";
 
@@ -641,6 +646,20 @@ async function main() {
             activeMathNoteShortcut = newShortcut;
             return { success: true };
         });
+        ipcMain.handle("app:update-floating-editor-shortcut", (_, newShortcut: string) => {
+            const previous = activeFloatingEditorShortcut;
+            globalShortcut.unregister(previous);
+            const success = globalShortcut.register(newShortcut, () => createFloatingEditorWindow(preload));
+            if (!success) {
+                globalShortcut.register(previous, () => createFloatingEditorWindow(preload));
+                return {
+                    success: false,
+                    error: `Failed to register shortcut: ${newShortcut}`,
+                };
+            }
+            activeFloatingEditorShortcut = newShortcut;
+            return { success: true };
+        });
         const createWindow = ({ primary = true }: { primary?: boolean } = {}) => {
             const win = new BrowserWindow({
                 width: 800,
@@ -682,11 +701,15 @@ async function main() {
                 return { action: "deny" };
             });
             win.webContents.on("will-navigate", (event, url) => {
-                const requestedHost = new URL(url).host;
-                const currentHost = new URL(win.webContents.getURL()).host;
-                if (requestedHost && requestedHost !== currentHost) {
+                try {
+                    const requestedHost = new URL(url).host;
+                    const currentHost = new URL(win.webContents.getURL()).host;
+                    if (requestedHost && requestedHost !== currentHost) {
+                        event.preventDefault();
+                        shell.openExternal(url);
+                    }
+                } catch {
                     event.preventDefault();
-                    shell.openExternal(url);
                 }
             });
             if (primary && !isWorkspaceInstance) {
@@ -783,16 +806,20 @@ async function main() {
                 };
                 activeQuickNoteShortcut = parseSetting("quickNoteShortcut", "CommandOrControl+Alt+N");
                 activeMathNoteShortcut = parseSetting("mathNoteShortcut", "CommandOrControl+Alt+M");
+                activeFloatingEditorShortcut = parseSetting("floatingEditorShortcut", "CommandOrControl+Alt+P");
                 globalShortcut.register(activeQuickNoteShortcut, () => createQuickNoteWindow(preload));
                 globalShortcut.register(activeMathNoteShortcut, () => createMathNoteWindow(preload));
+                globalShortcut.register(activeFloatingEditorShortcut, () => createFloatingEditorWindow(preload));
             } catch (e) {
                 console.error("Failed to start file watcher on ready:", e);
                 globalShortcut.register("CommandOrControl+Alt+N", () => createQuickNoteWindow(preload));
                 globalShortcut.register("CommandOrControl+Alt+M", () => createMathNoteWindow(preload));
+                globalShortcut.register("CommandOrControl+Alt+P", () => createFloatingEditorWindow(preload));
             }
         } else if (!isWorkspaceInstance) {
             globalShortcut.register("CommandOrControl+Alt+N", () => createQuickNoteWindow(preload));
             globalShortcut.register("CommandOrControl+Alt+M", () => createMathNoteWindow(preload));
+            globalShortcut.register("CommandOrControl+Alt+P", () => createFloatingEditorWindow(preload));
         }
         if (!isWorkspaceInstance) {
             globalShortcut.register("CommandOrControl+Shift+Q", () => app.quit());

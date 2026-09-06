@@ -29,11 +29,12 @@ export default function SettingsPage() {
         try {
             await SettingsService.save(settings);
             if (isElectron()) {
-                const [qn, mn] = await Promise.all([
+                const [qn, mn, floatingEditor] = await Promise.all([
                     window.electronAPI.app.updateShortcut(settings.quickNoteShortcut),
                     window.electronAPI.app.updateMathShortcut(settings.mathNoteShortcut),
+                    window.electronAPI.app.updateFloatingEditorShortcut(settings.floatingEditorShortcut),
                 ]);
-                const failed = [qn, mn].find((r) => !r.success);
+                const failed = [qn, mn, floatingEditor].find((r) => !r.success);
                 if (failed) {
                     uiDispatch.setAlert({
                         open: true,
@@ -70,13 +71,13 @@ export default function SettingsPage() {
     if (!settings) return <div className="p-8">Loading settings...</div>;
 
     return (
-        <div className="py-4 pb-20 mx-auto space-y-6 w-full max-w-safe">
-            <header className="flex justify-between items-center px-4">
-                <h1 className="flex gap-2 items-center text-3xl font-bold">
+        <div className="mx-auto w-full max-w-safe space-y-6 py-4 pb-20">
+            <header className="flex items-center justify-between px-4">
+                <h1 className="flex items-center gap-2 text-3xl font-bold">
                     <GearIcon className="size-8" />
                     Settings
                 </h1>
-                <Button size="small" disabled={saving} onClick={handleSave} className="flex gap-2 items-center">
+                <Button size="small" disabled={saving} onClick={handleSave} className="flex items-center gap-2">
                     <FloppyDiskIcon size={16} />
                     {saving ? "Saving..." : "Save Changes"}
                 </Button>
@@ -84,7 +85,7 @@ export default function SettingsPage() {
 
             <div className="flex flex-col gap-6 px-4">
                 <Card title="Editor" className="space-y-4">
-                    <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center justify-between py-2">
                         <Info label="Autosave" className="flex flex-col gap-1">
                             <p className="text-sm text-muted-foreground">Automatically save changes while typing</p>
                         </Info>
@@ -96,7 +97,7 @@ export default function SettingsPage() {
 
                     {settings.autosave && (
                         <Info label="Autosave delay">
-                            <div className="flex flex-row gap-1 justify-between items-center w-full">
+                            <div className="flex w-full flex-row items-center justify-between gap-1">
                                 <p className="text-sm text-muted-foreground">
                                     Milliseconds to wait after last keystroke before saving
                                 </p>
@@ -117,7 +118,7 @@ export default function SettingsPage() {
                     )}
                 </Card>
                 <Card title="Appearance">
-                    <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center justify-between py-2">
                         <div className="flex flex-col gap-1">
                             <span className="font-medium">Theme</span>
                             <p className="text-sm text-muted-foreground">Choose your preferred editor theme</p>
@@ -131,7 +132,7 @@ export default function SettingsPage() {
                     </div>
                 </Card>
                 <Card title="Trash">
-                    <div className="flex justify-between items-center py-2">
+                    <div className="flex items-center justify-between py-2">
                         <Info label="Auto-purge after" className="flex flex-col gap-1">
                             <p className="text-sm text-muted-foreground">
                                 Permanently delete trashed notes after this period
@@ -231,7 +232,7 @@ export default function SettingsPage() {
                 ) : null}
                 {isElectron() ? (
                     <Card title="Global Shortcuts" className="space-y-2">
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex items-center justify-between py-2">
                             <Info label="Quick Note" className="flex flex-col gap-1">
                                 <p className="text-sm text-muted-foreground">Open a new quick note from anywhere</p>
                             </Info>
@@ -240,7 +241,7 @@ export default function SettingsPage() {
                                 onChange={(v) => setSettings({ ...settings, quickNoteShortcut: v })}
                             />
                         </div>
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex items-center justify-between py-2">
                             <Info label="Math Note" className="flex flex-col gap-1">
                                 <p className="text-sm text-muted-foreground">
                                     Open a new math note with a ready-to-use math block
@@ -251,6 +252,17 @@ export default function SettingsPage() {
                                 onChange={(v) => setSettings({ ...settings, mathNoteShortcut: v })}
                             />
                         </div>
+                        <div className="flex items-center justify-between py-2">
+                            <Info label="Floating Editor" className="flex flex-col gap-1">
+                                <p className="text-sm text-muted-foreground">
+                                    Open a new editor window without the sidebar or tabs
+                                </p>
+                            </Info>
+                            <ShortcutRecorder
+                                value={settings.floatingEditorShortcut}
+                                onChange={(v) => setSettings({ ...settings, floatingEditorShortcut: v })}
+                            />
+                        </div>
                     </Card>
                 ) : null}
                 {isElectron() ? (
@@ -258,12 +270,12 @@ export default function SettingsPage() {
                         <div className="space-y-4">
                             <div className="flex flex-col gap-2">
                                 <span className="text-sm font-medium">Notes Directory</span>
-                                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
+                                <code className="block rounded border border-border p-2 text-xs break-all whitespace-pre-wrap">
                                     {settings.directory || "No directory selected (Local Storage)"}
                                 </code>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Templates Directory</span>
                                     <Button
                                         size="small"
@@ -278,7 +290,7 @@ export default function SettingsPage() {
                                         Change Folder
                                     </Button>
                                 </div>
-                                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
+                                <code className="block rounded border border-border p-2 text-xs break-all whitespace-pre-wrap">
                                     {settings.templatesDirectory || "Default (.templates in workspace)"}
                                 </code>
                                 <p className="text-[10px] text-muted-foreground">
@@ -287,7 +299,7 @@ export default function SettingsPage() {
                                 </p>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Quick Notes Directory</span>
                                     <Button
                                         size="small"
@@ -305,7 +317,7 @@ export default function SettingsPage() {
                                         Change Folder
                                     </Button>
                                 </div>
-                                <code className="block p-2 whitespace-pre-wrap break-all rounded border text-xs border-border">
+                                <code className="block rounded border border-border p-2 text-xs break-all whitespace-pre-wrap">
                                     {settings.quicknotesDirectory ||
                                         (settings.directory
                                             ? `${settings.directory}/quicknotes`

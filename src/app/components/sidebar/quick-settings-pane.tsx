@@ -17,7 +17,8 @@ export const QuickSettingsPane = () => {
         setSettings(next);
         setSaving(true);
         try {
-            const shortcutChanged = "quickNoteShortcut" in patch || "mathNoteShortcut" in patch;
+            const shortcutChanged =
+                "quickNoteShortcut" in patch || "mathNoteShortcut" in patch || "floatingEditorShortcut" in patch;
             if (patch.theme) {
                 globalDispatch.theme(patch.theme);
             } else if (!shortcutChanged) {
@@ -34,7 +35,7 @@ export const QuickSettingsPane = () => {
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            <div className="flex items-center justify-between py-2 px-4 borderr">
+            <div className="borderr flex items-center justify-between px-4 py-2">
                 <span className="text-xs text-muted-foreground">Settings</span>
                 {saving ? <span className="text-xs text-muted-foreground">Saving...</span> : null}
             </div>

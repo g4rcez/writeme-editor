@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, nativeTheme, systemPreferences } from "electron";
 import { installBundledCli } from "../main-process/cli-installer";
 import { markCliRendererReady } from "../main-process/cli-server";
-import { createQuickNoteWindow } from "../main-process/quicknote-window";
+import { createFloatingEditorWindow, createQuickNoteWindow } from "../main-process/quicknote-window";
 
 const getSystemAccentColor = (): string | null => {
     try {
@@ -38,6 +38,7 @@ export const appIpcHandler = (
     registerSystemAccentListener();
     ipcMain.handle("env:getHome", () => app.getPath("home"));
     ipcMain.handle("app:openQuickNote", () => createQuickNoteWindow(preloadPath));
+    ipcMain.handle("app:openFloatingEditor", () => createFloatingEditorWindow(preloadPath));
     ipcMain.handle("app:hideToTray", (event) => {
         BrowserWindow.fromWebContents(event.sender)?.hide();
         return true;

@@ -3,8 +3,8 @@ import { ArrowUpIcon } from "@phosphor-icons/react/dist/csr/ArrowUp";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { useEffect, useId, useRef, useState } from "react";
-import { editorGlobalRef } from "@/app/editor-global-ref";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { useUIStore } from "@/store/ui.store";
 
 export const FindReplaceBar = () => {
@@ -13,6 +13,7 @@ export const FindReplaceBar = () => {
     const [replaceTerm, setReplaceTerm] = useState("");
     const [showReplace, setShowReplace] = useState(false);
     const [caseSensitive, setCaseSensitive] = useState(false);
+    const [searchHandleVersion, setSearchHandleVersion] = useState(0);
     const [, forceUpdate] = useState(0);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const replaceId = useId();
@@ -26,30 +27,35 @@ export const FindReplaceBar = () => {
         }
     }, [isOpen]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const editor = editorGlobalRef.current;
-        if (!editor) return;
-        editor.commands.setSearchTerm(searchTerm);
-        forceUpdate((n) => n + 1);
-    }, [searchTerm, isOpen]);
+    useEffect(
+        () =>
+            subscribeEditorSearchGlobalRef(() => {
+                setSearchHandleVersion((version) => version + 1);
+                forceUpdate((n) => n + 1);
+            }),
+        [],
+    );
 
     useEffect(() => {
         if (!isOpen) return;
-        const editor = editorGlobalRef.current;
-        if (!editor) return;
-        editor.commands.setCaseSensitive(caseSensitive);
-        forceUpdate((n) => n + 1);
-    }, [caseSensitive, isOpen]);
+        editorSearchGlobalRef.current?.setSearchTerm(searchTerm);
+    }, [searchTerm, isOpen, searchHandleVersion]);
 
-    const close = () => {
-        const editor = editorGlobalRef.current;
-        if (editor) {
-            editor.commands.setSearchTerm("");
-        }
+    useEffect(() => {
+        if (!isOpen) return;
+        editorSearchGlobalRef.current?.setCaseSensitive(caseSensitive);
+    }, [caseSensitive, isOpen, searchHandleVersion]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        editorSearchGlobalRef.current?.setReplaceTerm(replaceTerm);
+    }, [replaceTerm, isOpen, searchHandleVersion]);
+
+    const close = useCallback(() => {
+        editorSearchGlobalRef.current?.setSearchTerm("");
         setSearchTerm("");
         uiDispatch.closeFindReplace();
-    };
+    }, [uiDispatch]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -61,40 +67,40 @@ export const FindReplaceBar = () => {
         };
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    }, [isOpen]);
+    }, [close, isOpen]);
 
     if (!isOpen) return null;
 
-    const editor = editorGlobalRef.current;
-    const storage = (editor?.storage as any)?.searchReplace;
-    const total = storage?.results?.length ?? 0;
-    const current = total === 0 ? 0 : (storage?.resultIndex ?? 0) + 1;
+    const search = editorSearchGlobalRef.current;
+    const searchState = search?.getState();
+    const total = searchState?.resultsCount ?? 0;
+    const current = total === 0 ? 0 : (searchState?.resultIndex ?? 0) + 1;
 
     const onNext = () => {
-        editor?.commands.nextSearchResult();
+        search?.nextSearchResult();
         forceUpdate((n) => n + 1);
     };
 
     const onPrev = () => {
-        editor?.commands.previousSearchResult();
+        search?.previousSearchResult();
         forceUpdate((n) => n + 1);
     };
 
     const onReplace = () => {
-        editor?.commands.replace(replaceTerm);
+        search?.replace(replaceTerm);
         forceUpdate((n) => n + 1);
     };
 
     const onReplaceAll = () => {
-        editor?.commands.replaceAll(replaceTerm);
+        search?.replaceAll(replaceTerm);
         forceUpdate((n) => n + 1);
     };
 
     return (
-        <div
-            role="dialog"
+        <dialog
+            open
             aria-label="Find and replace"
-            className="fixed top-12 right-4 z-50 flex flex-col gap-1 rounded-lg border border-border bg-background shadow-lg p-2 w-80 text-sm"
+            className="fixed top-12 right-4 z-50 m-0 flex w-80 flex-col gap-1 rounded-lg border border-border bg-background p-2 text-sm shadow-lg"
             onKeyDown={(e) => e.stopPropagation()}
         >
             <div className="flex items-center gap-1">
@@ -103,7 +109,7 @@ export const FindReplaceBar = () => {
                     aria-controls={replaceControlsId}
                     title={showReplace ? "Collapse replace" : "Expand replace"}
                     onClick={() => setShowReplace((v) => !v)}
-                    className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60"
+                    className="hover:bg-accent flex-shrink-0 rounded p-1 text-foreground/60"
                     type="button"
                     aria-label={showReplace ? "Collapse replace controls" : "Expand replace controls"}
                 >
@@ -120,17 +126,18 @@ export const FindReplaceBar = () => {
                     ref={searchInputRef}
                     aria-label="Find text"
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
+                    className="min-w-0 flex-1 rounded bg-muted px-2 py-1 text-sm text-foreground placeholder:text-foreground/40"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                            e.shiftKey ? onPrev() : onNext();
+                            if (e.shiftKey) onPrev();
+                            else onNext();
                         }
                     }}
                 />
                 <span
                     aria-live="polite"
                     aria-atomic="true"
-                    className="flex-shrink-0 text-foreground/50 tabular-nums text-xs min-w-[3.5rem] text-right"
+                    className="min-w-[3.5rem] flex-shrink-0 text-right text-xs text-foreground/50 tabular-nums"
                 >
                     {searchTerm ? `${current} of ${total}` : ""}
                 </span>
@@ -140,7 +147,7 @@ export const FindReplaceBar = () => {
                     title="Previous match (Shift+Enter)"
                     onClick={onPrev}
                     disabled={total === 0}
-                    className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60 disabled:opacity-40"
+                    className="hover:bg-accent flex-shrink-0 rounded p-1 text-foreground/60 disabled:opacity-40"
                 >
                     <ArrowUpIcon aria-hidden="true" className="size-3.5" />
                 </button>
@@ -150,7 +157,7 @@ export const FindReplaceBar = () => {
                     title="Next match (Enter)"
                     onClick={onNext}
                     disabled={total === 0}
-                    className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60 disabled:opacity-40"
+                    className="hover:bg-accent flex-shrink-0 rounded p-1 text-foreground/60 disabled:opacity-40"
                 >
                     <ArrowDownIcon aria-hidden="true" className="size-3.5" />
                 </button>
@@ -160,7 +167,7 @@ export const FindReplaceBar = () => {
                     aria-pressed={caseSensitive}
                     title="Toggle case-sensitive"
                     onClick={() => setCaseSensitive((v) => !v)}
-                    className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs font-mono ${caseSensitive ? "bg-primary text-primary-foreground" : "hover:bg-accent text-foreground/60"}`}
+                    className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-xs ${caseSensitive ? "bg-primary text-primary-foreground" : "hover:bg-accent text-foreground/60"}`}
                 >
                     Aa
                 </button>
@@ -169,7 +176,7 @@ export const FindReplaceBar = () => {
                     aria-label="Close find and replace"
                     title="Close (Escape)"
                     onClick={close}
-                    className="flex-shrink-0 p-1 rounded hover:bg-accent text-foreground/60"
+                    className="hover:bg-accent flex-shrink-0 rounded p-1 text-foreground/60"
                 >
                     <XIcon aria-hidden="true" className="size-3.5" />
                 </button>
@@ -182,13 +189,13 @@ export const FindReplaceBar = () => {
                         onChange={(e) => setReplaceTerm(e.target.value)}
                         aria-label="Replace with"
                         placeholder="Replace"
-                        className="flex-1 min-w-0 bg-muted rounded px-2 py-1 text-foreground placeholder:text-foreground/40 text-sm"
+                        className="min-w-0 flex-1 rounded bg-muted px-2 py-1 text-sm text-foreground placeholder:text-foreground/40"
                     />
                     <button
                         type="button"
                         onClick={onReplace}
                         disabled={total === 0}
-                        className="flex-shrink-0 px-2 py-1 rounded text-xs hover:bg-accent text-foreground/70 disabled:opacity-40"
+                        className="hover:bg-accent flex-shrink-0 rounded px-2 py-1 text-xs text-foreground/70 disabled:opacity-40"
                     >
                         Replace
                     </button>
@@ -196,12 +203,12 @@ export const FindReplaceBar = () => {
                         type="button"
                         onClick={onReplaceAll}
                         disabled={total === 0}
-                        className="flex-shrink-0 px-2 py-1 rounded text-xs hover:bg-accent text-foreground/70 disabled:opacity-40"
+                        className="hover:bg-accent flex-shrink-0 rounded px-2 py-1 text-xs text-foreground/70 disabled:opacity-40"
                     >
                         All
                     </button>
                 </div>
             )}
-        </div>
+        </dialog>
     );
 };

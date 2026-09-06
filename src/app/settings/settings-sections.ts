@@ -56,7 +56,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     {
         id: "shortcuts",
         label: "Shortcuts",
-        description: "Global shortcuts for quick capture.",
+        description: "Global shortcuts for quick capture and floating editors.",
         path: "/settings/shortcuts",
         platform: "electron",
     },

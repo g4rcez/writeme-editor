@@ -4,7 +4,7 @@ import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import { EditorContent, EditorContext, useEditor, type Editor as TipTapEditor } from "@tiptap/react";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "@/ipc/copy-event";
-import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
+import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { isRelativeLink } from "@/lib/link-utils";
@@ -16,7 +16,14 @@ import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import "katex/dist/katex.min.css";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
-import { editorGlobalRef } from "./editor-global-ref";
+import type { SearchReplaceStorage } from "./extensions/search-replace";
+import { FormattingToolbar } from "./components/formatting-toolbar";
+import {
+    type EditorSearchHandle,
+    editorGlobalRef,
+    editorSearchGlobalRef,
+    setEditorSearchGlobalRef,
+} from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
@@ -71,12 +78,59 @@ const ric: (cb: () => void) => void =
     typeof requestIdleCallback === "undefined" ? (cb) => setTimeout(cb, 0) : (cb) => requestIdleCallback(cb);
 
 type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
-export type EditorMode = "rich" | "raw";
+export type EditorMode = "formatted" | "markdown";
 
 type LinkContextTarget = {
     text: string;
     url: string;
 };
+
+function createTiptapSearchHandle(editor: TipTapEditor): EditorSearchHandle {
+    const getStorage = (): SearchReplaceStorage =>
+        (editor.storage as unknown as Record<string, SearchReplaceStorage>).searchReplace!;
+
+    return {
+        getState: () => {
+            const storage = getStorage();
+            return {
+                searchTerm: storage.searchTerm,
+                replaceTerm: storage.replaceTerm,
+                resultsCount: storage.results.length,
+                resultIndex: storage.resultIndex,
+                caseSensitive: storage.caseSensitive,
+            };
+        },
+        getContent: () => getEditorMarkdown(editor),
+        setSearchTerm: (searchTerm) => {
+            editor.commands.setSearchTerm(searchTerm);
+        },
+        setReplaceTerm: (replaceTerm) => {
+            editor.commands.setReplaceTerm(replaceTerm);
+        },
+        setCaseSensitive: (caseSensitive) => {
+            editor.commands.setCaseSensitive(caseSensitive);
+        },
+        nextSearchResult: () => {
+            editor.commands.nextSearchResult();
+        },
+        previousSearchResult: () => {
+            editor.commands.previousSearchResult();
+        },
+        replace: (replaceTerm) => {
+            editor.commands.replace(replaceTerm);
+        },
+        replaceAll: (replaceTerm) => {
+            editor.commands.replaceAll(replaceTerm);
+        },
+        focus: () => {
+            editor.commands.focus();
+        },
+        subscribe: (listener) => {
+            editor.on("update", listener);
+            return () => editor.off("update", listener);
+        },
+    };
+}
 
 const resolveLinkContextTarget = (target: EventTarget | null): LinkContextTarget | null => {
     if (!(target instanceof Element)) return null;
@@ -120,6 +174,7 @@ const TiptapEditorCore = memo(
         const isSettingContent = useRef(false);
         const lastEditorContentRef = useRef(content ?? "");
         const [parseProgress, setParseProgress] = useState(0);
+        const settings = useMemo(() => SettingsService.load(), []);
 
         const editor = useEditor({
             extensions,
@@ -133,11 +188,11 @@ const TiptapEditorCore = memo(
             parseOptions: { preserveWhitespace: "full" },
             onUpdate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, noteRef.current);
-                lastEditorContentRef.current = currentEditor.getMarkdown();
+                lastEditorContentRef.current = getEditorMarkdown(currentEditor);
             },
             onCreate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, note);
-                lastEditorContentRef.current = currentEditor.getMarkdown();
+                lastEditorContentRef.current = getEditorMarkdown(currentEditor);
                 try {
                     return void migrateMathStrings(currentEditor);
                 } catch (error) {
@@ -210,8 +265,10 @@ const TiptapEditorCore = memo(
                         const items = event.clipboardData?.items;
                         if (items) {
                             for (let i = 0; i < items.length; i++) {
-                                if (items[i]!.type.startsWith("image/")) {
-                                    handlePasteImage(editor);
+                                const item = items[i]!;
+                                if (item.kind === "file" && item.type.startsWith("image/")) {
+                                    const insertPos = editor.state.selection.anchor;
+                                    void handlePasteImage(editor, insertPos);
                                     return true;
                                 }
                             }
@@ -298,10 +355,15 @@ const TiptapEditorCore = memo(
 
         useEffect(() => {
             if (!editor) return;
+            const searchHandle = createTiptapSearchHandle(editor);
             editorGlobalRef.current = editor;
+            setEditorSearchGlobalRef(searchHandle);
             return () => {
                 if (editorGlobalRef.current === editor) {
                     editorGlobalRef.current = null;
+                }
+                if (editorSearchGlobalRef.current === searchHandle) {
+                    setEditorSearchGlobalRef(null);
                 }
             };
         }, [editor]);
@@ -425,8 +487,8 @@ const TiptapEditorCore = memo(
         };
 
         useEffect(() => {
-            if (!editor || content === undefined) return;
-            const currentMarkdown = editor.getMarkdown();
+            if (!editor || content === undefined || editor.isDestroyed || !editor.schema) return;
+            const currentMarkdown = getEditorMarkdown(editor);
             if (content === currentMarkdown || content === lastEditorContentRef.current) {
                 lastEditorContentRef.current = currentMarkdown;
                 return;
@@ -457,47 +519,53 @@ const TiptapEditorCore = memo(
         useEditorScrollMemory(id, editor);
 
         useEffect(() => {
-            if (editor === null) return;
-            if (readonly) return;
-            let saveTimeout: NodeJS.Timeout;
+            if (editor === null || readonly) return;
+            let saveTimeout: NodeJS.Timeout | undefined;
+
+            const getCurrentMarkdown = (): string | null => {
+                if (editor.isDestroyed || !editor.schema) return null;
+                return getEditorMarkdown(editor);
+            };
+
+            const saveDocument = async (markdown: string): Promise<void> => {
+                uiDispatch.setEditorSaveStatus("saving");
+                try {
+                    if (onSaveRef.current) {
+                        await onSaveRef.current(markdown);
+                    } else if (noteRef.current) {
+                        await dispatch.updateNoteContent(noteRef.current.id, markdown);
+                    }
+                    uiDispatch.setEditorSaveStatus("saved");
+                } catch (error) {
+                    uiDispatch.setEditorSaveStatus("error");
+                    console.error("Failed to save document:", error);
+                }
+            };
+
             const updateHandler = () => {
                 if (isSettingContent.current) {
-                    clearTimeout(saveTimeout);
+                    if (saveTimeout) clearTimeout(saveTimeout);
                     return;
                 }
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(async () => {
-                    try {
-                        const html = editor.getMarkdown();
-                        if (onSaveRef.current) {
-                            await onSaveRef.current(html);
-                            return;
-                        }
-                        if (!noteRef.current) return;
-                        await dispatch.updateNoteContent(noteRef.current.id, html);
-                    } catch (error) {
-                        console.error("Failed to save document:", error);
-                    }
-                }, 500);
+                uiDispatch.setEditorSaveStatus("unsaved");
+                if (!settings.autosave) return;
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(
+                    () => {
+                        const markdown = getCurrentMarkdown();
+                        if (markdown !== null) void saveDocument(markdown);
+                    },
+                    Math.max(0, settings.autosaveDelay),
+                );
             };
             editor.on("update", updateHandler);
             return () => {
                 editor.off("update", updateHandler);
-                clearTimeout(saveTimeout);
-                try {
-                    const html = editor.getMarkdown();
-                    if (onSaveRef.current) {
-                        onSaveRef.current(html);
-                        return;
-                    }
-                    if (noteRef.current) {
-                        dispatch.updateNoteContent(noteRef.current.id, html);
-                    }
-                } catch (error) {
-                    console.warn("Failed to perform final save on unmount:", error);
-                }
+                if (saveTimeout) clearTimeout(saveTimeout);
+                const markdown = getCurrentMarkdown();
+                if (markdown !== null) void saveDocument(markdown);
             };
-        }, [editor, readonly]);
+        }, [dispatch, editor, readonly, settings]);
 
         useEffect(() => {
             if (editor) {
@@ -511,8 +579,6 @@ const TiptapEditorCore = memo(
                 uiDispatch.setParsingContent(false);
             };
         }, []);
-
-        const settings = useMemo(() => SettingsService.load(), []);
 
         return (
             <div
@@ -537,6 +603,7 @@ const TiptapEditorCore = memo(
                     </div>
                 )}
                 <EditorContext.Provider value={{ editor }}>
+                    <FormattingToolbar editor={editor} />
                     <EditorContent key={id} editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
@@ -568,15 +635,17 @@ const RawEditorCore = memo(
 
         const saveContent = useCallback(
             async (content: string): Promise<void> => {
+                uiDispatch.setEditorSaveStatus("saving");
                 try {
                     if (props.onSaveRef.current) {
                         await props.onSaveRef.current(content);
-                        return;
+                    } else if (noteRef.current) {
+                        await props.dispatch.updateNoteContent(noteRef.current.id, content);
                     }
-                    if (!noteRef.current) return;
-                    await props.dispatch.updateNoteContent(noteRef.current.id, content);
+                    uiDispatch.setEditorSaveStatus("saved");
                 } catch (error) {
-                    console.error("Failed to save raw document:", error);
+                    uiDispatch.setEditorSaveStatus("error");
+                    console.error("Failed to save Markdown document:", error);
                 }
             },
             [props.dispatch, props.onSaveRef],
@@ -608,10 +677,15 @@ const RawEditorCore = memo(
         const handleChange = (nextContent: string): void => {
             latestContentRef.current = nextContent;
             if (props.readonly) return;
+            uiDispatch.setEditorSaveStatus("unsaved");
+            if (!settings.autosave) return;
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-            saveTimeoutRef.current = setTimeout(() => {
-                void saveContent(nextContent);
-            }, 500);
+            saveTimeoutRef.current = setTimeout(
+                () => {
+                    void saveContent(nextContent);
+                },
+                Math.max(0, settings.autosaveDelay),
+            );
         };
 
         return (
@@ -656,13 +730,13 @@ const InnerEditor = (props: {
     }, [props.onSave]);
 
     useEffect(() => {
-        if (props.mode !== "rich") return;
+        if (props.mode !== "formatted") return;
         if (editorGlobalRef.current) {
             setEditorAllNotes(editorGlobalRef.current, state.notes);
         }
     }, [props.mode, state.notes]);
 
-    if (props.mode === "raw") {
+    if (props.mode === "markdown") {
         return (
             <RawEditorCore
                 id={props.id}
@@ -705,7 +779,7 @@ export const Editor = (props: {
     const rawEditorVimMode = props.rawEditorVimMode ?? settings.rawEditorVimMode;
 
     if (props.content === undefined) {
-        return <div className="flex justify-center items-center">Loading...</div>;
+        return <div className="flex items-center justify-center">Loading...</div>;
     }
 
     return (

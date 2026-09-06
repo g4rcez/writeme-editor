@@ -27,6 +27,7 @@ describe("TreeView", () => {
     let contextMenuAction: ((action: ContextMenuAction) => void) | null = null;
     let directoryEntries: Record<string, TreeNode[]>;
     let readDir: ReturnType<typeof vi.fn>;
+    let requestDirectoryAccess: ReturnType<typeof vi.fn>;
     let statFile: ReturnType<typeof vi.fn>;
     let moveFile: ReturnType<typeof vi.fn>;
 
@@ -45,6 +46,7 @@ describe("TreeView", () => {
         readDir = vi.fn(async (path: string) => ({
             entries: directoryEntries[path] ?? [],
         }));
+        requestDirectoryAccess = vi.fn(async () => ({ granted: true }));
         statFile = vi.fn(async (path: string) => ({
             success: true,
             exists: Object.values(directoryEntries).some((entries) => entries.some((entry) => entry.path === path)),
@@ -70,6 +72,7 @@ describe("TreeView", () => {
             electronAPI: {
                 fs: {
                     readDir,
+                    requestDirectoryAccess,
                     statFile,
                     moveFile,
                     onDirChanged: vi.fn(() => vi.fn()),
@@ -83,6 +86,43 @@ describe("TreeView", () => {
                 }),
             },
         });
+    });
+
+    it("requests directory access and retries after macOS denies access", async () => {
+        readDir
+            .mockResolvedValueOnce({
+                entries: [],
+                error: "EPERM: operation not permitted, scandir '/workspace'",
+                errorCode: "EPERM",
+            })
+            .mockResolvedValueOnce({ entries: directoryEntries["/workspace"] });
+
+        render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={vi.fn()} />);
+
+        await waitFor(() => {
+            expect(requestDirectoryAccess).toHaveBeenCalledWith("/workspace");
+            expect(readDir).toHaveBeenCalledTimes(2);
+            expect(screen.getByText("existing.md")).toBeInTheDocument();
+        });
+    });
+
+    it("keeps the permission retry available until access is granted", async () => {
+        readDir
+            .mockResolvedValueOnce({ entries: [], error: "EPERM: operation not permitted", errorCode: "EPERM" })
+            .mockResolvedValueOnce({ entries: directoryEntries["/workspace"] });
+        requestDirectoryAccess
+            .mockResolvedValueOnce({ granted: false, error: "Enable Documents Folder access, then retry." })
+            .mockResolvedValueOnce({ granted: true });
+
+        render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={vi.fn()} />);
+
+        const retryButton = await screen.findByRole("button", { name: "Grant access and retry" });
+        expect(screen.getByText("Enable Documents Folder access, then retry.")).toBeInTheDocument();
+
+        fireEvent.click(retryButton);
+
+        expect(await screen.findByText("existing.md")).toBeInTheDocument();
+        expect(requestDirectoryAccess).toHaveBeenCalledTimes(2);
     });
 
     it("creates a root file on Enter and refreshes the tree", async () => {

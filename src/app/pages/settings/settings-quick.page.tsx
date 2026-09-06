@@ -17,7 +17,8 @@ export default function SettingsQuickPage() {
         setSettings(next);
         setSaving(true);
         try {
-            const shortcutChanged = "quickNoteShortcut" in patch || "mathNoteShortcut" in patch;
+            const shortcutChanged =
+                "quickNoteShortcut" in patch || "mathNoteShortcut" in patch || "floatingEditorShortcut" in patch;
             if (patch.theme) {
                 globalDispatch.theme(patch.theme);
             } else if (!shortcutChanged) {

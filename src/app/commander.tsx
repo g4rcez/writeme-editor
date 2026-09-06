@@ -17,6 +17,7 @@ import { isElectron } from "@/lib/is-electron";
 import { suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getRouteForTab, isAiChatTab, isTerminalTab } from "@/lib/tab-target";
+import { isFloatingEditorWindow } from "@/lib/window-mode";
 import { CommanderType, globalState, type CommanderState, type GlobalDispatchers } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -63,9 +64,25 @@ export const Commander = (props: Props) => {
     const navigate = useNavigate();
 
     const showActivity = (activity: Parameters<typeof layoutDispatch.setActivity>[0]) => {
+        if (isFloatingEditorWindow && activity === "templates") {
+            navigate("/settings/templates");
+            return;
+        }
         layoutDispatch.setActivity(activity);
         uiDispatch.setSidebarOpen(true);
     };
+
+    const openNote = useCallback(
+        async (note: Note): Promise<void> => {
+            if (isFloatingEditorWindow) {
+                await dispatch.note(note, false);
+                navigate("/floating-editor");
+                return;
+            }
+            navigate(`/note/${note.id}`);
+        },
+        [dispatch, navigate],
+    );
 
     const notesSig = useMemo(() => props.notes.map((n: Note) => `${n.id}:${n.title}`).join("|"), [props.notes]);
 
@@ -87,11 +104,11 @@ export const Commander = (props: Props) => {
                     title: `${note.title}`,
                     action: (args) => {
                         args.setOpen(false);
-                        navigate(`/note/${note.id}`);
+                        void openNote(note);
                     },
                 }),
             ),
-        [notesSig, navigate],
+        [notesSig, openNote],
     );
 
     const notesById = useNoteTabs(props.notes);
@@ -145,10 +162,16 @@ export const Commander = (props: Props) => {
                                 await dispatch.addTerminalTab(tab.noteId);
                             } else if (isChatTab) {
                                 await dispatch.addAiChatTab(tab.noteId);
+                            } else if (isFloatingEditorWindow && note) {
+                                await dispatch.note(note, false);
                             } else {
                                 await dispatch.selectNoteById(tab.noteId);
                             }
-                            navigate(getRouteForTab(tab));
+                            navigate(
+                                isFloatingEditorWindow && !isTerminal && !isChatTab
+                                    ? "/floating-editor"
+                                    : getRouteForTab(tab),
+                            );
                         },
                     };
                 }),
@@ -263,6 +286,19 @@ export const Commander = (props: Props) => {
                         }
                     },
                 },
+                ...(isElectron()
+                    ? [
+                          {
+                              title: "Floating editor",
+                              shortcut: mapShortcutOS("mod+alt+p"),
+                              type: "shortcut" as const,
+                              action: (args: { setOpen: (value: boolean) => void }) => {
+                                  args.setOpen(false);
+                                  void window.electronAPI.app.openFloatingEditor();
+                              },
+                          },
+                      ]
+                    : []),
                 {
                     title: 'New "read it later" note',
                     type: "shortcut",
@@ -667,6 +703,7 @@ export const Commander = (props: Props) => {
         navigate,
         dispatch,
         commands,
+        openNote,
         templates,
     ]);
 

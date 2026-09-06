@@ -25,9 +25,9 @@ vi.mock("@/store/ui.store", () => ({
 
 vi.mock("@/store/settings", () => ({
     SettingsService: {
-        load: vi.fn(() => ({ editorMode: "rich", rawEditorVimMode: false })),
+        load: vi.fn(() => ({ editorMode: "formatted", rawEditorVimMode: false })),
         save: vi.fn().mockResolvedValue({
-            editorMode: "raw",
+            editorMode: "markdown",
             rawEditorVimMode: true,
         }),
     },
@@ -77,6 +77,7 @@ function createDispatch() {
         addTab: vi.fn().mockResolvedValue(undefined),
         setNote: vi.fn(),
         updateNoteContent: vi.fn().mockResolvedValue(undefined),
+        updateNoteTitle: vi.fn().mockResolvedValue(undefined),
     };
 }
 
@@ -136,7 +137,7 @@ describe("NotePage route loading", () => {
         expect(dispatch.addTab).not.toHaveBeenCalled();
     });
 
-    it("switches to raw mode and persists the editor mode preference", async () => {
+    it("switches to Markdown mode and persists the editor mode preference", async () => {
         const user = userEvent.setup();
         const dispatch = createDispatch();
         vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);
@@ -144,19 +145,38 @@ describe("NotePage route loading", () => {
 
         renderNoteRoute();
 
-        expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "rich");
-        await user.click(screen.getByRole("button", { name: "Raw" }));
+        expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "formatted");
+        await user.click(screen.getByRole("button", { name: "Markdown" }));
 
-        expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "raw");
+        expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "markdown");
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-vim-mode", "false");
 
         await user.click(screen.getByRole("checkbox", { name: "Vim mode" }));
 
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-vim-mode", "true");
-        expect(SettingsService.save).toHaveBeenCalledWith({ editorMode: "raw" });
+        expect(SettingsService.save).toHaveBeenCalledWith({ editorMode: "markdown" });
         expect(SettingsService.save).toHaveBeenCalledWith({
             rawEditorVimMode: true,
         });
+    });
+
+    it("derives and edits the title from the first Markdown H1", async () => {
+        const user = userEvent.setup();
+        const dispatch = createDispatch();
+        const note = Note.parse({ id: "note-1", title: "Old title", content: "\n# Markdown title\n\nBody" });
+        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        const title = screen.getByRole("textbox", { name: "Note title" });
+        expect(title).toHaveValue("Markdown title");
+        await user.clear(title);
+        await user.type(title, "Updated title");
+        await user.tab();
+
+        expect(dispatch.updateNoteTitle).toHaveBeenCalledWith("note-1", "Updated title");
+        expect(dispatch.updateNoteContent).toHaveBeenCalledWith("note-1", "\n# Updated title\n\nBody");
     });
 
     it("does not open a suppressed note route while closing its tab", () => {

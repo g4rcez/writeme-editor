@@ -22,7 +22,7 @@ import { ReadItLaterDialog } from "@/app/components/read-it-later-dialog";
 import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { useLayoutStore } from "@/app/contexts/layout-context";
-import { editorGlobalRef } from "@/app/editor-global-ref";
+import { editorSearchGlobalRef, editorGlobalRef } from "@/app/editor-global-ref";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
@@ -42,6 +42,7 @@ import {
     isAiChatTab,
     isTerminalTab,
 } from "@/lib/tab-target";
+import { isFloatingEditorWindow } from "@/lib/window-mode";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -65,6 +66,10 @@ export const RootLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const prevTabsRef = useRef(state.tabs);
+    const isFloatingPanel =
+        isFloatingEditorWindow ||
+        window.location.hash.includes("quicknote") ||
+        window.location.hash.includes("mathnote");
 
     useEffect(() => {
         clearSuppressedNoteRouteTabOpens();
@@ -334,6 +339,7 @@ export const RootLayout = () => {
                     callback: () => void closeCurrentTabOrHide(),
                 },
                 { hotkey: "Mod+Shift+P", callback: () => dispatch.commander(true) },
+                ...(isFloatingEditorWindow ? [{ hotkey: "Mod+K", callback: () => dispatch.commander(true) }] : []),
                 {
                     hotkey: "Mod+Shift+N",
                     callback: () => void createNewAiChat(),
@@ -359,9 +365,8 @@ export const RootLayout = () => {
                 },
                 {
                     hotkey: "Mod+F",
-                    options: { preventDefault: false },
                     callback: (event) => {
-                        if (!editorGlobalRef.current) return;
+                        if (!editorSearchGlobalRef.current) return;
                         event.preventDefault();
                         uiDispatch.toggleFindReplace();
                     },
@@ -397,8 +402,6 @@ export const RootLayout = () => {
         ],
     );
 
-    const isFloatingPanel = window.location.hash.includes("quicknote") || window.location.hash.includes("mathnote");
-
     useEffect(() => {
         if (!isFloatingPanel) return;
         document.documentElement.style.background = "transparent";
@@ -409,6 +412,74 @@ export const RootLayout = () => {
         return (
             <div className="relative flex h-screen flex-col overflow-hidden rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
                 <div className="quicknote-window-drag-strip" />
+                {isFloatingEditorWindow && (
+                    <Fragment>
+                        <Commander
+                            note={state.note}
+                            tabs={state.tabs}
+                            dispatch={dispatch}
+                            notes={state.notes}
+                            commander={state.commander}
+                            noteGroups={state.noteGroups}
+                            terminalSessions={state.terminalSessions}
+                        />
+                        <FindReplaceBar />
+                        <CreateNoteDialog />
+                        <CreateTemplateDialog />
+                        <CreateVariableDialog />
+                        <RecentNotesDialog />
+                        <ReadItLaterDialog />
+                        <AddToGroupDialog />
+                        <DirectoryBrowserDialog />
+                        <InspectJsonDialog />
+                        <TasksDialog />
+                        <GitSyncDialog />
+                        <MediaPreview />
+                        <AIDrawer />
+                        <KeyboardClickHints />
+                        {uiState.alert && (
+                            <Alert
+                                open={uiState.alert.open}
+                                title={uiState.alert.title}
+                                message={uiState.alert.message}
+                                type={uiState.alert.type}
+                                onClose={() => uiDispatch.clearAlert()}
+                            />
+                        )}
+                        {uiState.confirm && (
+                            <Confirm
+                                open={uiState.confirm.open}
+                                title={uiState.confirm.title}
+                                message={uiState.confirm.message}
+                                type={uiState.confirm.type}
+                                confirmText={uiState.confirm.confirmText}
+                                cancelText={uiState.confirm.cancelText}
+                                onConfirm={uiState.confirm.onConfirm}
+                                onCancel={() => {
+                                    uiState.confirm?.onCancel?.();
+                                    uiDispatch.clearConfirm();
+                                }}
+                            />
+                        )}
+                        {uiState.prompt && (
+                            <Prompt
+                                open={uiState.prompt.open}
+                                title={uiState.prompt.title}
+                                message={uiState.prompt.message}
+                                initialValue={uiState.prompt.initialValue}
+                                placeholder={uiState.prompt.placeholder}
+                                onConfirm={(val) => {
+                                    uiState.prompt?.onConfirm(val);
+                                    uiDispatch.clearPrompt();
+                                }}
+                                onCancel={() => {
+                                    uiState.prompt?.onCancel?.();
+                                    uiDispatch.clearPrompt();
+                                }}
+                            />
+                        )}
+                    </Fragment>
+                )}
                 <Suspense fallback={null}>
                     <div className="flex h-full min-h-0 flex-1 flex-col">
                         <Outlet />
