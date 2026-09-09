@@ -11,6 +11,21 @@ type Heading = {
     element: HTMLHeadingElement;
 };
 
+function scrollToHeading(element: HTMLElement, reduceMotion: boolean): void {
+    const container = document.getElementById("main-scroll-container");
+    const behavior = reduceMotion ? "auto" : "smooth";
+
+    if (!container) {
+        element.scrollIntoView({ behavior, block: "start" });
+        return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = element.getBoundingClientRect();
+    const targetScrollTop = container.scrollTop + targetRect.top - containerRect.top - 48;
+    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior });
+}
+
 export const TableOfContents = () => {
     const [headings, setHeadings] = useState<Heading[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -123,7 +138,7 @@ export const TableOfContents = () => {
     if (headings.length === 0) return null;
 
     return (
-        <div ref={popoverRef} className="fixed top-20 right-5 z-50 print:hidden">
+        <div ref={popoverRef} className="relative shrink-0 print:hidden">
             <button
                 type="button"
                 aria-expanded={isOpen}
@@ -151,7 +166,7 @@ export const TableOfContents = () => {
                         initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -8 }}
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                         className={css(
-                            "absolute top-full right-0 m-0 mt-3 flex max-h-96 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card-radius",
+                            "absolute top-full left-auto right-0 z-50 m-0 mt-3 flex max-h-96 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card-radius",
                             "border border-floating-border bg-floating-background text-floating-foreground shadow-medium",
                         )}
                     >
@@ -191,10 +206,7 @@ export const TableOfContents = () => {
                                                     ? heading.element
                                                     : null);
                                             if (el) {
-                                                el.scrollIntoView({
-                                                    behavior: shouldReduceMotion ? "auto" : "smooth",
-                                                    block: "start",
-                                                });
+                                                scrollToHeading(el, shouldReduceMotion === true);
                                                 setIsOpen(false);
                                             }
                                         }}

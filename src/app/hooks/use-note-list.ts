@@ -1,8 +1,9 @@
 import { Modal } from "@g4rcez/components";
 import React, { useEffect, useMemo, useState } from "react";
+import type { Note } from "@/store/note";
 import { notificationRef } from "@/app/notification-ref";
+import { filterNotesByQuery } from "@/lib/note-search";
 import { useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 
 export type NoteWithTags = Note & {
@@ -38,7 +39,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
                 : newNotes.filter((n: Note) => n.noteType !== "template");
             const notesWithTags = filteredByProp.map((note: Note): NoteWithTags => {
                 const key = note.filePath || note.title;
-                const tags = tagsMap.get(key) || [];
+                const tags = Array.from(new Set([...note.tags, ...(tagsMap.get(key) ?? [])]));
                 return {
                     ...note,
                     tags: tags,
@@ -60,16 +61,12 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     const filteredNotes = useMemo(() => {
         let result = innerNotes;
         if (search) {
-            const lower = search.toLowerCase();
-            result = result.filter(
-                (n: NoteWithTags) =>
-                    n.title.toLowerCase().includes(lower) ||
-                    n.tags.some((t) => t.toLowerCase().includes(lower)) ||
-                    (n.url && n.url.toLowerCase().includes(lower)),
-            );
+            result = filterNotesByQuery(result, search);
         }
         if (options.noteType === "read-it-later") {
-            return result.sort((a: NoteWithTags, b: NoteWithTags) => b.createdAt.getTime() - a.createdAt.getTime());
+            return [...result].sort(
+                (a: NoteWithTags, b: NoteWithTags) => b.createdAt.getTime() - a.createdAt.getTime(),
+            );
         }
         return result;
     }, [innerNotes, search, options.noteType]);

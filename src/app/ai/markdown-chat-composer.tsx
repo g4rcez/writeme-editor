@@ -132,7 +132,7 @@ export function MarkdownChatComposer({
             onDragOverCapture={handleDragOver}
             onDropCapture={handleDrop}
             aria-label="AI message composer"
-            className="rounded-2xl border border-card-border bg-card-background px-3 py-2 transition-colors focus-within:border-primary/50"
+            className="rounded-xl border border-card-border bg-card-background px-3 py-2 transition-colors focus-within:border-primary/50"
         >
             {adapter?.supportsFiles ? (
                 <AIFileAttachment files={files} controller={attachmentController} disabled={disabled || isStreaming} />

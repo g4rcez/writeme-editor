@@ -1,14 +1,15 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useState, useEffect, useRef, useCallback } from "react";
+import type { Note } from "@/store/note";
 import { useListSearch } from "@/app/hooks/use-list-search";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
-import { useGlobalStore, globalState } from "@/store/global.store";
-import { Note } from "@/store/note";
+import { filterNotesByQuery } from "@/lib/note-search";
+import { useGlobalStore } from "@/store/global.store";
 import { SettingsService } from "@/store/settings";
 
 export const SearchBar = () => {
-    const [, dispatch] = useGlobalStore();
+    const [state, dispatch] = useGlobalStore();
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<Note[]>([]);
@@ -72,14 +73,9 @@ export const SearchBar = () => {
             return;
         }
 
-        const lowerQuery = query.toLowerCase();
-        const filtered = globalState().notes.filter((note: Note) => {
-            const titleMatch = note.title.toLowerCase().includes(lowerQuery);
-            const pathMatch = note.filePath?.toLowerCase().includes(lowerQuery);
-            return titleMatch || pathMatch;
-        });
+        const filtered = filterNotesByQuery(state.notes, query);
         setResults(filtered.slice(0, 8));
-    }, [query]);
+    }, [query, state.notes]);
 
     // Click outside to close
     useEffect(() => {

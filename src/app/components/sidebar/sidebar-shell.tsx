@@ -29,7 +29,13 @@ type SidebarFooterTabProps = {
 
 function SidebarNavItem({ icon, label, active, onClick }: SidebarNavItemProps): JSX.Element {
     return (
-        <Button size="small" onClick={onClick} className="w-full" theme={active ? "ghost-primary" : "ghost-muted"}>
+        <Button
+            size="small"
+            onClick={onClick}
+            aria-current={active ? "page" : undefined}
+            className="w-full justify-start gap-2.5 border border-transparent px-2.5"
+            theme={active ? "ghost-primary" : "ghost-muted"}
+        >
             <span className="shrink-0">{icon}</span>
             <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         </Button>
@@ -38,8 +44,14 @@ function SidebarNavItem({ icon, label, active, onClick }: SidebarNavItemProps): 
 
 function SidebarFooterTab({ icon, label, active, onClick }: SidebarFooterTabProps): JSX.Element {
     return (
-        <Button size="small" onClick={onClick} aria-pressed={active} theme={active ? "ghost-primary" : "ghost-muted"}>
-            <span className="text-xs shrink-0">{icon}</span>
+        <Button
+            size="small"
+            onClick={onClick}
+            aria-pressed={active}
+            className="gap-2 px-2"
+            theme={active ? "ghost-primary" : "ghost-muted"}
+        >
+            <span className="shrink-0 text-xs">{icon}</span>
             <span>{label}</span>
         </Button>
     );
@@ -54,27 +66,37 @@ export const SidebarShell = () => {
 
     const workspace = useMemo(() => {
         const source = state.explorerRoot ?? state.directory;
-        if (!source) return { title: "Writeme", directory: "~" };
+        if (!source) return { title: "Local workspace", directory: "Your notes" };
         const parts = source.split(/[\\/]/).filter(Boolean);
-        return { title: parts.at(-1) ?? "Writeme", directory: source || "~" };
+        return { title: parts.at(-1) ?? "Workspace", directory: source || "~" };
     }, [state.directory, state.explorerRoot]);
 
     useEffect(() => {
         void dispatch.loadGroups();
     }, [dispatch]);
 
+    const createNewNote = () => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+    const openSearch = () => dispatch.commander(true, CommanderType.Notes);
+
     return (
-        <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4">
-            <header className="flex px-3 my-2 shrink-0 flex-nowrap justify-between">
-                <div className="flex items-center gap-4">
-                    <WritemeLogo className="size-8" />
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate text-base font-semibold text-foreground">{workspace.title}</p>
-                        <p className="truncate text-xs text-muted-foreground">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden px-3">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-1 py-3">
+                <button
+                    type="button"
+                    className="flex min-w-0 items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    title={workspace.directory}
+                    onClick={() => navigate("/")}
+                >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <WritemeLogo className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-foreground">{workspace.title}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                             {fishify(workspace.directory, state.homedir ?? "")}
-                        </p>
-                    </div>
-                </div>
+                        </span>
+                    </span>
+                </button>
                 <Button
                     size="tiny"
                     theme="ghost-muted"
@@ -85,34 +107,59 @@ export const SidebarShell = () => {
                     <SidebarIcon size={14} />
                 </Button>
             </header>
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-                <nav className="grid gap-2 items-center grid-cols-2">
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="shrink-0 py-3">
+                    <div className="mb-2 flex items-center justify-between px-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Workspace
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground/60">{state.notes.length}</span>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                        <Button
+                            size="small"
+                            theme="primary"
+                            onClick={createNewNote}
+                            className="justify-center gap-2"
+                            title="New note (⌘N)"
+                        >
+                            <NotePencilIcon size={15} aria-hidden="true" />
+                            <span>New note</span>
+                        </Button>
+                        <Button
+                            size="small"
+                            theme="outlined"
+                            onClick={openSearch}
+                            aria-label="Find anything"
+                            title="Find anything (⌘K)"
+                            className="px-2.5"
+                        >
+                            <FileSearchIcon size={16} aria-hidden="true" />
+                        </Button>
+                    </div>
+                </div>
+
+                <nav className="grid shrink-0 gap-0.5 border-b border-border/40 pb-3" aria-label="Workspace views">
                     <SidebarNavItem
-                        active={false}
-                        label="Search"
-                        icon={<FileSearchIcon size={14} />}
-                        onClick={() => {
-                            dispatch.commander(true, CommanderType.Notes);
-                        }}
-                    />
-                    <SidebarNavItem
-                        label="Notes"
-                        icon={<NotePencilIcon size={14} />}
                         active={location.pathname.startsWith("/notes")}
+                        label="All notes"
+                        icon={<NotePencilIcon size={15} />}
                         onClick={() => {
                             navigate("/notes");
                             layoutDispatch.setActivity("explorer");
+                            layoutDispatch.setView({ type: "all" });
                         }}
                     />
                     <SidebarNavItem
                         label="Tasks"
                         active={uiState.tasksDialog.isOpen}
-                        icon={<ListBulletsIcon size={14} />}
+                        icon={<ListBulletsIcon size={15} />}
                         onClick={() => uiDispatch.openTasksDialog()}
                     />
                     <SidebarNavItem
-                        label="AI"
-                        icon={<RobotIcon size={14} />}
+                        label="Workspace AI"
+                        icon={<RobotIcon size={15} />}
                         active={location.pathname.startsWith("/chat")}
                         onClick={() => {
                             layoutDispatch.setActivity("ai");
@@ -120,12 +167,14 @@ export const SidebarShell = () => {
                         }}
                     />
                 </nav>
-                <div className="flex py-2 min-h-0 flex-1 flex-col overflow-hidden">
+
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">
                     <SidebarContent />
                 </div>
             </div>
-            <footer className="shrink-0 border-t border-card-border">
-                <div className="flex items-center gap-4 justify-between mt-2">
+
+            <footer className="shrink-0 border-t border-border/40 py-2">
+                <div className="flex items-center justify-between gap-1">
                     <SidebarFooterTab
                         label="Help"
                         icon={<InfoIcon size={14} />}

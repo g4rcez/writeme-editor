@@ -9,7 +9,11 @@ test.describe("Create note flow", () => {
     });
 
     test("creates a note from dialog and lands on the editor", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await expect(dialog).toBeVisible();
 
@@ -23,7 +27,11 @@ test.describe("Create note flow", () => {
     });
 
     test("typed content persists across reload", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill(NOTE_TITLE);
         await dialog.getByRole("button", { name: /^Create/ }).click();
@@ -43,7 +51,11 @@ test.describe("Create note flow", () => {
     });
 
     test("dialog blocks submission when title is empty", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill("");
         await dialog.getByRole("button", { name: /^Create/ }).click();
@@ -53,7 +65,11 @@ test.describe("Create note flow", () => {
     });
 
     test("created note appears in the dashboard recent list", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill(NOTE_TITLE);
         await dialog.getByRole("button", { name: /^Create/ }).click();

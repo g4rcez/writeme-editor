@@ -1,4 +1,4 @@
-import { Checkbox, Tag } from "@g4rcez/components";
+import { Button, Checkbox, Tag } from "@g4rcez/components";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -25,14 +25,12 @@ function useNoteReferences(content: string) {
         let cancelled = false;
         async function resolve() {
             const ids = new Set<string>();
-
             for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
                 ids.add(m![2]!);
             }
             for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
                 ids.add(m![1]!);
             }
-
             const wikiMatches = [...content.matchAll(/\[\[([^\]]+)\]\]/g)];
             if (wikiMatches.length > 0) {
                 const allNotes = await repositories.notes.getAll();
@@ -52,7 +50,6 @@ function useNoteReferences(content: string) {
             cancelled = true;
         };
     }, [content]);
-
     return refs;
 }
 
@@ -78,23 +75,16 @@ function NoteReferences({ note }: { note: Note }) {
     );
 }
 
-const Wrapper = (props: PropsWithChildren) => {
-    return (
-        <div className="writeme-editor-page">
-            <TableOfContents />
-            {props.children}
-        </div>
-    );
-};
+const Wrapper = (props: PropsWithChildren) => <div className="writeme-editor-page">{props.children}</div>;
 
-function PrintableNoteHeader({ note }: { note: Note }) {
+const PrintableNoteHeader = ({ note }: { note: Note }) => {
     return (
         <header className="writeme-print-header hidden print:block">
             <h1 className="writeme-print-title">{note.title}</h1>
             <p className="writeme-print-meta">Updated {Dates.yearMonthDay(note.updatedAt)}</p>
         </header>
     );
-}
+};
 
 function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: string) => Promise<void> }) {
     const [draft, setDraft] = useState(value);
@@ -144,69 +134,42 @@ function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: s
                         event.currentTarget.blur();
                     }
                 }}
-                className="w-full border-0 border-b border-transparent bg-transparent px-0 py-3 text-2xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary focus-visible:ring-0"
+                className="writeme-note-title-editor w-full border-0 border-b border-transparent bg-transparent px-0 py-3 text-3xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary focus-visible:ring-0"
             />
         </div>
     );
 }
 
-function EditorModeToggle({
-    mode,
-    vimMode,
-    onChange,
-    onVimModeChange,
-}: {
-    mode: EditorMode;
-    vimMode: boolean;
-    onChange: (mode: EditorMode) => void;
-    onVimModeChange: (vimMode: boolean) => void;
-}) {
+const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mode: EditorMode) => void }) => {
     const modes: Array<{ value: EditorMode; label: string }> = [
         { value: "formatted", label: "Formatted" },
         { value: "markdown", label: "Markdown" },
     ];
 
     return (
-        <div className="mx-auto flex w-full max-w-safe flex-col items-end gap-1 print:hidden">
+        <div className="writeme-editor-mode-controls flex items-center shrink-0 flex-col gap-1 print:hidden">
             <fieldset
                 aria-label="Editor mode"
-                className="writeme-editor-mode-toggle inline-flex rounded-lg border border-border bg-card-background p-0.5 shadow-soft"
+                className="writeme-editor-mode-toggle inline-flex rounded-md border border-border/60 bg-card-background/70 p-0.5"
             >
                 {modes.map((item) => {
                     const active = item.value === mode;
                     return (
-                        <button
+                        <Button
+                            size="tiny"
                             key={item.value}
-                            type="button"
                             aria-pressed={active}
                             onClick={() => onChange(item.value)}
-                            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                                active
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
+                            theme={active ? "primary" : "muted"}
                         >
                             {item.label}
-                        </button>
+                        </Button>
                     );
                 })}
             </fieldset>
-            {mode === "markdown" ? (
-                <label
-                    htmlFor="markdown-vim-mode"
-                    className="flex items-center gap-2 px-1 py-1 text-xs font-medium text-muted-foreground"
-                >
-                    <Checkbox
-                        id="markdown-vim-mode"
-                        checked={vimMode}
-                        onChange={(event) => onVimModeChange(event.target.checked)}
-                    />
-                    <span>Vim mode</span>
-                </label>
-            ) : null}
         </div>
     );
-}
+};
 
 function ExportNoteButton({ note }: { note: Note }) {
     return (
@@ -215,7 +178,7 @@ function ExportNoteButton({ note }: { note: Note }) {
             aria-label={`Export ${note.title}`}
             title="Export document (print or save as PDF)"
             onClick={() => printDocument({ title: note.title })}
-            className="writeme-print-export-button rounded-button-radius fixed top-6 right-5 z-50 flex size-11 items-center justify-center border border-card-border bg-card-background text-muted-foreground shadow-soft transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none print:hidden"
+            className="writeme-note-tool-button print:hidden"
         >
             <PrinterIcon aria-hidden="true" size={21} />
         </button>
@@ -358,43 +321,97 @@ export default function NotePage() {
 
     return (
         <Wrapper>
-            <ExportNoteButton note={note} />
             <PrintableNoteHeader note={note} />
             {note.noteType === "read-it-later" ? (
-                <header className="writeme-editor-column flex flex-col gap-2 border-b border-card-border py-4 print:hidden">
+                <header className="writeme-editor-column writeme-note-header flex flex-col gap-2 border-b border-border/50 print:hidden">
+                    <div className="writeme-note-header-top">
+                        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                            <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em]">
+                                Reading list
+                            </span>
+                            {note.url ? <span className="truncate">/ {new URL(note.url).hostname}</span> : null}
+                        </div>
+                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
+                            <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
+                            <div className="flex flex-col">
+                                <TableOfContents />
+                                <ExportNoteButton note={note} />
+                                {editorMode === "markdown" ? (
+                                    <label
+                                        htmlFor="markdown-vim-mode"
+                                        className="flex items-center gap-2 px-1 py-1 text-xs font-medium text-muted-foreground"
+                                    >
+                                        <Checkbox
+                                            id="markdown-vim-mode"
+                                            checked={rawEditorVimMode}
+                                            onChange={(event) => changeRawEditorVimMode(event.target.checked)}
+                                        />
+                                        <span>Vim mode</span>
+                                    </label>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
                     <EditableNoteTitle
                         key={`${note.id}:${markdownTitle?.title ?? note.title}`}
                         value={markdownTitle?.title ?? note.title}
                         onSave={saveTitle}
                     />
                     {note.url ? (
-                        <Link target="_blank" className="link" to={note.url} rel="noopener noreferrer nofollow">
-                            {new URL(note.url).hostname}
+                        <Link
+                            target="_blank"
+                            className="link truncate text-sm"
+                            to={note.url}
+                            rel="noopener noreferrer nofollow"
+                        >
+                            {note.url}
                         </Link>
                     ) : null}
-                    <span className="flex items-center gap-2 text-sm">
-                        <Tag size="small">Read it later</Tag>-
-                        <time dateTime={note.createdAt.toISOString()}>{Dates.yearMonthDay(note.createdAt)}</time>-
+                    <span className="writeme-note-metadata">
+                        <Tag size="small">Read it later</Tag>
+                        <span aria-hidden="true">·</span>
+                        <time dateTime={note.createdAt.toISOString()}>{Dates.yearMonthDay(note.createdAt)}</time>
+                        <span aria-hidden="true">·</span>
                         <i>{getReadingTime(note.content).formatted}</i>
                     </span>
                 </header>
-            ) : null}
-
-            {note.noteType === "read-it-later" ? null : (
-                <header className="writeme-editor-column border-b border-card-border print:hidden">
+            ) : (
+                <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
+                    <div className="writeme-note-header-top">
+                        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                            {note.filePath ? (
+                                <span className="truncate" title={note.filePath}>
+                                    Workspace file
+                                </span>
+                            ) : (
+                                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em]">
+                                    Local note
+                                </span>
+                            )}
+                        </div>
+                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
+                            <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
+                            <TableOfContents />
+                            <ExportNoteButton note={note} />
+                        </div>
+                    </div>
                     <EditableNoteTitle
                         key={`${note.id}:${markdownTitle?.title ?? note.title}`}
                         value={markdownTitle?.title ?? note.title}
                         onSave={saveTitle}
                     />
+                    <div className="writeme-note-metadata">
+                        <time dateTime={note.updatedAt.toISOString()}>
+                            Updated {Dates.yearMonthDay(note.updatedAt)}
+                        </time>
+                        {note.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="text-primary">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
                 </header>
             )}
-            <EditorModeToggle
-                mode={editorMode}
-                vimMode={rawEditorVimMode}
-                onChange={changeEditorMode}
-                onVimModeChange={changeRawEditorVimMode}
-            />
             <Editor
                 note={note}
                 key={note.id}

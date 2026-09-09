@@ -44,9 +44,26 @@ export const Sidebar = () => {
         return () => mql.removeEventListener("change", onNarrow);
     }, [uiDispatch]);
 
+    useEffect(() => {
+        if (collapsed) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") uiDispatch.setSidebarOpen(false);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [collapsed, uiDispatch]);
+
     return (
         <Fragment>
             <ActivityBar />
+            {!collapsed && (
+                <button
+                    type="button"
+                    className="writeme-mobile-sidebar-backdrop"
+                    aria-label="Close workspace menu"
+                    onClick={() => uiDispatch.setSidebarOpen(false)}
+                />
+            )}
             <div
                 style={{ "--panel-w": `${sidebarWidth}px` } as CSSProperties}
                 data-resizing={isResizing || undefined}

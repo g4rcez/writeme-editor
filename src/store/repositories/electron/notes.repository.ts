@@ -3,12 +3,30 @@ import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
-import { type INoteRepository, Note, type NoteDeletionOutcome } from "../../note";
+import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "../../note";
 import { SettingsService } from "../../settings";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 import { BaseRepository } from "../base.repository";
 
+type WorkspaceFile = {
+    name: string;
+    path: string;
+    relativePath: string;
+};
+
+const MARKDOWN_FILE_PATTERN = /\.(?:md|mdx)$/i;
+
+const getWorkspaceNoteTitle = (fileName: string): string => fileName.replace(MARKDOWN_FILE_PATTERN, "");
+
+type WorkspaceNotesResult = {
+    complete: boolean;
+    filePaths: Set<string>;
+    notes: Map<string, Note>;
+};
+
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+    private filesystemLoadPromise: Promise<WorkspaceNotesResult> | null = null;
+
     public constructor(private readonly tabsRepository: ITabRepository) {
         super(new ElectronStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
     }
@@ -148,17 +166,153 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return Note.parse({ ...metadata, content: metadata.content || "" });
     }
 
-    override async getAll(query?: { limit?: number }): Promise<Note[]> {
-        const all = await this.adapter.getAll<Note>(this.collection);
-        const settings = SettingsService.load();
-        const mode = getStorageMode(settings.directory);
-
-        let filtered = all.filter((n) => (n as any).deletedAt == null);
-        if (mode === "filesystem" && settings.directory) {
-            filtered = filtered.filter((n) => !n.filePath || n.filePath.startsWith(settings.directory!));
+    private async readWorkspaceNotes(directory: string, existing: readonly Note[]): Promise<WorkspaceNotesResult> {
+        let directoryResult: Awaited<ReturnType<typeof window.electronAPI.fs.readDirRecursive>>;
+        try {
+            directoryResult = await window.electronAPI.fs.readDirRecursive(directory);
+        } catch (error) {
+            console.error("Failed to list workspace notes:", error);
+            return { complete: false, filePaths: new Set(), notes: new Map() };
         }
 
-        const notes = filtered.map((metadata: any) => Note.parse({ ...metadata, content: "" }));
+        if (!directoryResult.success) {
+            if (directoryResult.error) {
+                console.error("Failed to list workspace notes:", directoryResult.error);
+            }
+            return { complete: false, filePaths: new Set(), notes: new Map() };
+        }
+
+        const existingByPath = new Map<string, Note>();
+        for (const note of existing) {
+            if (note.filePath && !existingByPath.has(note.filePath)) {
+                existingByPath.set(note.filePath, note);
+            }
+        }
+
+        const markdownFiles = directoryResult.files.flatMap((file: WorkspaceFile) =>
+            MARKDOWN_FILE_PATTERN.test(file.path) ? [file] : [],
+        );
+        const loadedNotes = await Promise.all(
+            markdownFiles.map(async (file: WorkspaceFile): Promise<[string, Note] | null> => {
+                const metadata = existingByPath.get(file.path);
+                if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
+
+                let readResult: Awaited<ReturnType<typeof window.electronAPI.fs.readFile>>;
+                try {
+                    readResult = await window.electronAPI.fs.readFile(file.path);
+                } catch {
+                    return null;
+                }
+                if (!readResult.success || typeof readResult.content !== "string") return null;
+
+                const fileModified = new Date(readResult.lastModified ?? Date.now());
+                const lastModified = Number.isNaN(fileModified.getTime()) ? new Date() : fileModified;
+                const fileSize =
+                    typeof readResult.fileSize === "number" ? readResult.fileSize : readResult.content.length;
+
+                if (metadata) {
+                    const previousLastSynced = metadata.lastSynced ? new Date(metadata.lastSynced).getTime() : null;
+                    const metadataChanged =
+                        metadata.fileSize !== fileSize || previousLastSynced !== lastModified.getTime();
+                    const nextMetadata = {
+                        ...metadata,
+                        content: readResult.content,
+                        fileSize,
+                        lastSynced: lastModified,
+                    };
+                    if (previousLastSynced === null || lastModified.getTime() > previousLastSynced) {
+                        nextMetadata.updatedAt = lastModified;
+                    }
+
+                    const note = Note.parse(nextMetadata);
+                    if (metadataChanged) {
+                        const { content: _, ...persistedMetadata } = nextMetadata;
+                        try {
+                            await this.adapter.save(this.collection, persistedMetadata);
+                        } catch (error) {
+                            console.error(`Failed to update workspace note metadata ${file.path}:`, error);
+                        }
+                    }
+                    return [file.path, note];
+                }
+
+                const note = Note.parse({
+                    title: getWorkspaceNoteTitle(file.name),
+                    content: readResult.content,
+                    filePath: file.path,
+                    fileSize,
+                    createdAt: lastModified,
+                    updatedAt: lastModified,
+                    lastSynced: lastModified,
+                    noteType: NoteType.note,
+                });
+                try {
+                    await this.save(note);
+                    return [file.path, note];
+                } catch (error) {
+                    console.error(`Failed to index workspace note ${file.path}:`, error);
+                    return null;
+                }
+            }),
+        );
+
+        return {
+            complete: true,
+            filePaths: new Set(markdownFiles.map((file) => file.path)),
+            notes: new Map(loadedNotes.filter((entry): entry is [string, Note] => entry !== null)),
+        };
+    }
+
+    private async loadWorkspaceNotes(directory: string, existing: readonly Note[]): Promise<WorkspaceNotesResult> {
+        if (this.filesystemLoadPromise) return this.filesystemLoadPromise;
+
+        const loadPromise = this.readWorkspaceNotes(directory, existing);
+        this.filesystemLoadPromise = loadPromise;
+        try {
+            return await loadPromise;
+        } finally {
+            if (this.filesystemLoadPromise === loadPromise) {
+                this.filesystemLoadPromise = null;
+            }
+        }
+    }
+
+    override async getAll(query?: { limit?: number }): Promise<Note[]> {
+        let all = await this.adapter.getAll<Note>(this.collection);
+        const settings = SettingsService.load();
+        const mode = getStorageMode(settings.directory);
+        const workspaceDirectory = mode === "filesystem" ? settings.directory : null;
+        let workspaceScan: WorkspaceNotesResult = { complete: false, filePaths: new Set(), notes: new Map() };
+
+        if (workspaceDirectory) {
+            workspaceScan = await this.loadWorkspaceNotes(workspaceDirectory, all);
+            all = await this.adapter.getAll<Note>(this.collection);
+        }
+
+        let filtered = all.filter((n) => n.deletedAt === null || n.deletedAt === undefined);
+        if (workspaceDirectory) {
+            filtered = filtered.filter((n) => !n.filePath || n.filePath.startsWith(workspaceDirectory));
+            if (workspaceScan.complete) {
+                filtered = filtered.filter(
+                    (n) =>
+                        !n.filePath ||
+                        !MARKDOWN_FILE_PATTERN.test(n.filePath) ||
+                        workspaceScan.filePaths.has(n.filePath),
+                );
+            }
+        }
+
+        const workspaceNotes = workspaceScan.notes;
+        const hydratedPaths = new Set<string>();
+        const notes = filtered.map((metadata) => {
+            const hydrated = metadata.filePath ? workspaceNotes.get(metadata.filePath) : undefined;
+            if (hydrated && metadata.filePath) hydratedPaths.add(metadata.filePath);
+            return hydrated ?? Note.parse({ ...metadata, content: metadata.content || "" });
+        });
+        for (const [filePath, note] of workspaceNotes) {
+            if (!hydratedPaths.has(filePath)) notes.push(note);
+        }
+
         const sorted = notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
         if (query?.limit) {
             return sorted.slice(0, query.limit);

@@ -1,6 +1,7 @@
 import type React from "react";
 import { css } from "@g4rcez/components";
 import { ChatCircleDotsIcon, FileTextIcon, TerminalIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -191,109 +192,121 @@ export const TabsBar = (props: Props) => {
     }, [props.activeTabId]);
 
     return (
-        <div
-            ref={scrollRef}
-            className="flex tab-scrollbar overflow-x-auto sticky top-0 flex-row items-center mx-auto w-full h-11 md:h-9 select-none print:hidden z-navbar bg-background isolate border-b border-border/20"
-        >
-            {props.tabs.map((tab: Tab) => {
-                const isChatTab = isAiChatTab(tab);
-                const isTerminal = isTerminalTab(tab);
-                const note = isChatTab || isTerminal ? undefined : notesById.get(tab.noteId);
-                const isActive = isCurrentTab(tab);
-                const title = getTabTitle(tab);
-                const tabTitle = isTerminal ? title : isChatTab ? title : note?.filePath || title;
-                const renameTarget: RenamingTarget | null = isTerminal
-                    ? { type: "terminal", id: tab.noteId }
-                    : isChatTab
-                      ? null
-                      : { type: "note", id: tab.noteId };
-                const isRenaming = renameTarget ? isSameRenamingTarget(renamingTarget, renameTarget) : false;
-                return (
-                    <Link
-                        key={tab.id}
-                        data-tab-id={tab.id}
-                        title={tabTitle}
-                        to={getRouteForTab(tab)}
-                        onMouseDown={(e) => onMiddleClick(e, tab)}
-                        onClick={(e) => {
-                            if (isRenaming) {
-                                e.preventDefault();
-                            }
-                        }}
-                        className={css(
-                            "group flex border-r border-card-border items-center min-w-28 max-w-xs h-full px-2.5 gap-1.5 cursor-pointer transition-[color,background-color] relative",
-                            isActive
-                                ? "bg-muted/30 text-foreground"
-                                : "bg-transparent text-foreground/50 hover:text-foreground/80 hover:bg-muted/10",
-                        )}
-                    >
-                        {isTerminal ? (
-                            <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                        ) : isChatTab ? (
-                            <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                        ) : (
-                            <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                        )}
-                        {renameTarget && isRenaming ? (
-                            <input
-                                autoFocus
-                                value={renamingValue}
-                                onClick={(e) => e.stopPropagation()}
-                                onBlur={() => void commitRename(renameTarget)}
-                                onChange={(e) => setRenamingValue(e.target.value)}
-                                className="flex-1 text-xs bg-transparent outline-none min-w-0"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        commitRename(renameTarget);
-                                    }
-                                    if (e.key === "Escape") {
-                                        e.stopPropagation();
-                                        renameEscapedRef.current = true;
-                                        (e.target as HTMLInputElement).blur();
-                                    }
-                                }}
-                            />
-                        ) : (
-                            <span
-                                className="flex-1 text-xs truncate"
-                                tabIndex={renameTarget ? 0 : undefined}
-                                onDoubleClick={(e) => {
-                                    if (!renameTarget) return;
+        <div className="writeme-tabs-bar">
+            <div ref={scrollRef} className="writeme-tabs-bar-list tab-scrollbar select-none">
+                {props.tabs.map((tab: Tab) => {
+                    const isChatTab = isAiChatTab(tab);
+                    const isTerminal = isTerminalTab(tab);
+                    const note = isChatTab || isTerminal ? undefined : notesById.get(tab.noteId);
+                    const isActive = isCurrentTab(tab);
+                    const title = getTabTitle(tab);
+                    const tabTitle = isTerminal ? title : isChatTab ? title : note?.filePath || title;
+                    const renameTarget: RenamingTarget | null = isTerminal
+                        ? { type: "terminal", id: tab.noteId }
+                        : isChatTab
+                          ? null
+                          : { type: "note", id: tab.noteId };
+                    const isRenaming = renameTarget ? isSameRenamingTarget(renamingTarget, renameTarget) : false;
+                    return (
+                        <Link
+                            key={tab.id}
+                            data-tab-id={tab.id}
+                            title={tabTitle}
+                            to={getRouteForTab(tab)}
+                            onMouseDown={(e) => onMiddleClick(e, tab)}
+                            onClick={(e) => {
+                                if (isRenaming) {
                                     e.preventDefault();
-                                    renameCommittedRef.current = false;
-                                    setRenamingTarget(renameTarget);
-                                    setRenamingValue(title);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (!renameTarget) return;
-                                    if (e.key === "Enter" || e.key === "F2") {
+                                }
+                            }}
+                            aria-current={isActive ? "page" : undefined}
+                            className={css(
+                                "group relative flex h-full min-w-28 max-w-xs items-center gap-1.5 border-r border-border/40 px-3",
+                                "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                                isActive
+                                    ? "bg-muted/50 text-foreground"
+                                    : "bg-transparent text-foreground/55 hover:bg-muted/30 hover:text-foreground",
+                            )}
+                        >
+                            {isTerminal ? (
+                                <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                            ) : isChatTab ? (
+                                <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                            ) : (
+                                <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                            )}
+                            {renameTarget && isRenaming ? (
+                                <input
+                                    autoFocus
+                                    value={renamingValue}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onBlur={() => void commitRename(renameTarget)}
+                                    onChange={(e) => setRenamingValue(e.target.value)}
+                                    className="flex-1 text-xs bg-transparent outline-none min-w-0"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            commitRename(renameTarget);
+                                        }
+                                        if (e.key === "Escape") {
+                                            e.stopPropagation();
+                                            renameEscapedRef.current = true;
+                                            (e.target as HTMLInputElement).blur();
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <span
+                                    className="flex-1 text-xs truncate"
+                                    tabIndex={renameTarget ? 0 : undefined}
+                                    onDoubleClick={(e) => {
+                                        if (!renameTarget) return;
                                         e.preventDefault();
                                         renameCommittedRef.current = false;
                                         setRenamingTarget(renameTarget);
                                         setRenamingValue(title);
-                                    }
-                                }}
-                            >
-                                {title}
-                            </span>
-                        )}
-                        <button
-                            type="button"
-                            aria-label={`Close ${title}`}
-                            onClick={(e) => void onCloseTab(e, tab)}
-                            className={css(
-                                "p-0.5 rounded transition-opacity hover:bg-foreground/10",
-                                isActive ? "opacity-60 group-hover:opacity-100" : "opacity-0 group-hover:opacity-100",
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (!renameTarget) return;
+                                        if (e.key === "Enter" || e.key === "F2") {
+                                            e.preventDefault();
+                                            renameCommittedRef.current = false;
+                                            setRenamingTarget(renameTarget);
+                                            setRenamingValue(title);
+                                        }
+                                    }}
+                                >
+                                    {title}
+                                </span>
                             )}
-                        >
-                            <XIcon className="size-2.5" />
-                        </button>
-                        {isActive && <div className="absolute bottom-0 right-0 left-0 h-hairline bg-primary" />}
-                    </Link>
-                );
-            })}
+                            <button
+                                type="button"
+                                aria-label={`Close ${title}`}
+                                onClick={(e) => void onCloseTab(e, tab)}
+                                className={css(
+                                    "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
+                                    isActive
+                                        ? "opacity-60 group-hover:opacity-100"
+                                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                                )}
+                            >
+                                <XIcon className="size-2.5" />
+                            </button>
+                            {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
+                        </Link>
+                    );
+                })}
+            </div>
+            <button
+                type="button"
+                className="writeme-tabs-bar-new"
+                aria-label="New note"
+                title="New note (⌘N)"
+                onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" })}
+            >
+                <PlusIcon size={16} aria-hidden="true" />
+            </button>
         </div>
     );
 };

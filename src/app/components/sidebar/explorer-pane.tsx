@@ -154,12 +154,12 @@ export const ExplorerPane = () => {
     };
 
     const onFileSelect = async (node: TreeNode) => {
-        if (node.type === "file" && node.extension === ".md") {
+        if (node.type === "file" && (node.extension === ".md" || node.extension === ".mdx")) {
             const allNotes = await repositories.notes.getAll();
             let note = allNotes.find((n) => n.filePath === node.path);
             if (!note) {
                 const result = await window.electronAPI.fs.readFile(node.path);
-                note = Note.new(node.name.replace(".md", ""), result.content || "");
+                note = Note.new(node.name.replace(/\.(?:md|mdx)$/i, ""), result.content || "");
                 note.filePath = node.path;
                 await repositories.notes.save(note);
                 const updatedNotes = await repositories.notes.getAll();
@@ -210,18 +210,18 @@ export const ExplorerPane = () => {
 
     if (!state.explorerRoot) {
         return (
-            <div className="flex flex-col gap-4 justify-center items-center p-6 h-full text-center">
-                <div className="p-4 rounded-full bg-primary/10 text-primary">
-                    <FolderOpenIcon size={32} />
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FolderOpenIcon size={23} aria-hidden="true" />
                 </div>
-                <div>
-                    <h3 className="mb-1 text-sm font-semibold">No folder opened</h3>
-                    <p className="text-xs text-muted-foreground">
-                        Open a folder to start managing your local markdown notes.
+                <div className="max-w-[220px]">
+                    <h3 className="text-sm font-semibold text-foreground">Open a workspace folder</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Browse local Markdown files alongside your notes.
                     </p>
                 </div>
-                <Button onClick={handleChooseDirectory} size="small" className="w-full">
-                    Open Folder
+                <Button onClick={handleChooseDirectory} size="small" className="w-full max-w-[220px]">
+                    Open folder
                 </Button>
             </div>
         );
@@ -229,33 +229,36 @@ export const ExplorerPane = () => {
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-                <span className="text-xs text-muted-foreground">Files</span>
-                <div className="flex gap-1">
+            <div className="flex items-center justify-between border-b border-border/40 px-1 py-2">
+                <div className="flex min-w-0 items-center gap-2">
+                    <FolderOpenIcon size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="truncate text-xs font-medium text-foreground">Files</span>
+                </div>
+                <div className="flex items-center gap-0.5">
                     <button
                         type="button"
-                        className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                        className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         title="Create file"
                         aria-label="Create file"
                         onClick={() => requestRootCreate("file")}
                     >
-                        <FilePlusIcon size={14} />
+                        <FilePlusIcon size={15} />
                     </button>
                     <button
                         type="button"
-                        className="p-1 rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                        className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         title="Create folder"
                         aria-label="Create folder"
                         onClick={() => requestRootCreate("directory")}
                     >
-                        <FolderPlusIcon size={14} />
+                        <FolderPlusIcon size={15} />
                     </button>
                 </div>
             </div>
             <div
                 data-treeroot="true"
                 onContextMenu={handleTreeRootContextMenu}
-                className="min-h-0 flex-1 overflow-auto pb-0 scrollbar-hide"
+                className="writeme-sidebar-v2-tree min-h-0 flex-1 overflow-auto pb-2 scrollbar-hide"
             >
                 <TreeView
                     map={map}

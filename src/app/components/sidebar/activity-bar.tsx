@@ -15,6 +15,7 @@ import type { Note } from "@/store/note";
 import { useLayoutStore, type ActivityType } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
+import { WritemeLogo } from "../logo";
 
 type ActivityIconProps = {
     icon: Icon;
@@ -31,13 +32,15 @@ const ActivityIcon = ({ icon: Icon, label, badge, active, onClick }: ActivityIco
             <button
                 type="button"
                 aria-label={label}
+                aria-pressed={active}
+                title={label}
                 onClick={onClick}
                 className={css(
                     "writeme-aside-activity-icon",
                     active ? "writeme-aside-activity-icon--active" : "writeme-aside-activity-icon--inactive",
                 )}
             >
-                <Icon size={18} strokeWidth={1.5} />
+                <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
                 {active ? <div className="writeme-aside-activity-indicator" /> : null}
                 {badge !== undefined && badge > 0 && (
                     <span className="writeme-aside-activity-badge">{badge > 99 ? "99+" : badge}</span>
@@ -72,7 +75,16 @@ export const ActivityBar = () => {
     };
 
     return (
-        <div className="writeme-aside-activity-bar">
+        <nav className="writeme-aside-activity-bar" aria-label="Workspace navigation">
+            <button
+                type="button"
+                className="writeme-aside-activity-brand"
+                aria-label="Go to home"
+                title="Go to home"
+                onClick={() => navigate("/")}
+            >
+                <WritemeLogo className="size-6" aria-hidden="true" />
+            </button>
             <div className="writeme-aside-activity-icons">
                 <ActivityIcon
                     icon={FilesIcon}
@@ -133,6 +145,7 @@ export const ActivityBar = () => {
                     onClick={() => onActivityClick("trash")}
                     active={layout.activeActivity === "trash"}
                 />
+                <div className="writeme-aside-activity-divider" aria-hidden="true" />
                 <ActivityIcon
                     icon={ChatCircleDotsIcon}
                     label="Workspace AI"
@@ -163,6 +176,6 @@ export const ActivityBar = () => {
                     }}
                 />
             </div>
-        </div>
+        </nav>
     );
 };

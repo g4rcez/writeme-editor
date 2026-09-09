@@ -5,15 +5,15 @@ test.describe("Navigation", () => {
         await goHome(cleanPage);
     });
 
-    test("View all link goes to notes list", async ({ cleanPage: page }) => {
-        await page.getByRole("link", { name: /View all/ }).click();
+    test("All notes link goes to notes list", async ({ cleanPage: page }) => {
+        await page.getByRole("link", { name: "All notes" }).click();
         await expect(page).toHaveURL(/\/notes$/);
         await expect(page.getByRole("heading", { name: "All Notes" })).toBeVisible();
     });
 
     test("direct URLs render core pages", async ({ cleanPage: page }) => {
         await page.goto("/settings");
-        await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Quick Settings" })).toBeVisible();
 
         await page.goto("/tags");
         await expect(page).toHaveURL(/\/tags$/);
@@ -23,7 +23,11 @@ test.describe("Navigation", () => {
     });
 
     test("create-note dialog closes on Escape", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await expect(dialog).toBeVisible();
 
@@ -33,7 +37,7 @@ test.describe("Navigation", () => {
 
     test("global ⌘N opens the create note dialog from any page", async ({ cleanPage: page }) => {
         await page.goto("/settings");
-        await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Quick Settings" })).toBeVisible();
 
         await page.keyboard.press("ControlOrMeta+n");
         await expect(page.getByRole("dialog", { name: /Create new note/i })).toBeVisible();

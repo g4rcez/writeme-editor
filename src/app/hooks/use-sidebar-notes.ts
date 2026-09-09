@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Note } from "@/store/note";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { filterNotesByQuery } from "@/lib/note-search";
 import { useGlobalStore } from "@/store/global.store";
-import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
-import { type NoteWithTags } from "./use-note-list";
+import type { NoteWithTags } from "./use-note-list";
 
 type SortBy = "updatedAt" | "createdAt" | "alphabetical";
 
@@ -20,7 +21,21 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
 
     const noteMetaFingerprint = useMemo(
         () =>
-            state.notes.map((n) => n.id + n.title + n.updatedAt.getTime() + String(n.favorite) + n.noteType).join("|"),
+            state.notes
+                .map((n) =>
+                    [
+                        n.id,
+                        n.title,
+                        n.updatedAt.getTime(),
+                        String(n.favorite),
+                        n.noteType,
+                        n.description,
+                        n.url,
+                        n.filePath,
+                        n.tags.join(","),
+                    ].join("|"),
+                )
+                .join("|"),
         [state.notes],
     );
 
@@ -39,7 +54,7 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
             });
             const notesWithTags = allNotes.map((note: Note): NoteWithTags => {
                 const key = note.filePath || note.title;
-                const tags = tagsMap.get(key) || [];
+                const tags = Array.from(new Set([...note.tags, ...(tagsMap.get(key) ?? [])]));
                 return {
                     ...note,
                     tags: tags,
@@ -59,9 +74,9 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [noteMetaFingerprint]);
 
+    const { activeView, searchQuery, activeActivity } = layoutState;
     const filteredNotes = useMemo(() => {
         let result = innerNotes;
-        const { activeView, searchQuery, activeActivity } = layoutState;
         if (activeActivity === "favorites") {
             result = result.filter((n) => n.favorite && n.noteType !== "template");
         } else if (activeActivity === "tags" && activeView.type === "tag") {
@@ -93,16 +108,12 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
                         result = result.filter((n) => n.tags.includes(activeView.id));
                     }
                     break;
+                default:
+                    break;
             }
         }
         if (searchQuery) {
-            const lower = searchQuery.toLowerCase();
-            result = result.filter(
-                (n) =>
-                    n.title.toLowerCase().includes(lower) ||
-                    n.tags.some((t) => t.toLowerCase().includes(lower)) ||
-                    (n.url && n.url.toLowerCase().includes(lower)),
-            );
+            result = filterNotesByQuery(result, searchQuery);
         }
 
         if (sortBy === "alphabetical") {
@@ -112,7 +123,7 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
             return [...result].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         }
         return [...result].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-    }, [innerNotes, layoutState.activeView, layoutState.searchQuery, layoutState.activeActivity, sortBy]);
+    }, [innerNotes, activeView, searchQuery, activeActivity, sortBy]);
 
     return {
         loading,

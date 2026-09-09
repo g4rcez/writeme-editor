@@ -9,7 +9,11 @@ test.describe("Tab inline rename", () => {
     });
 
     test("double-click tab opens rename input, Enter commits", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill(ORIGINAL_TITLE);
         await dialog.getByRole("button", { name: /^Create/ }).click();
@@ -31,7 +35,11 @@ test.describe("Tab inline rename", () => {
     });
 
     test("Escape cancels rename without saving", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill(ORIGINAL_TITLE);
         await dialog.getByRole("button", { name: /^Create/ }).click();
@@ -51,7 +59,11 @@ test.describe("Tab inline rename", () => {
     });
 
     test("clicking outside the input commits the rename", async ({ cleanPage: page }) => {
-        await page.getByRole("button", { name: /New Document/ }).click();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
         await dialog.getByTitle("Note title").fill(ORIGINAL_TITLE);
         await dialog.getByRole("button", { name: /^Create/ }).click();

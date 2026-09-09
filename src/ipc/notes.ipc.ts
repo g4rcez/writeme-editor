@@ -66,14 +66,24 @@ function validatePaths(...inputPaths: string[]) {
 }
 
 export const notesIpcHandler = async () => {
-    ipcMain.handle("notes:clipboard", async () => {
-        const x = clipboard.readText("clipboard");
-        return x;
-    });
+    ipcMain.handle("notes:clipboard", async () => clipboard.readText());
     ipcMain.handle("notes:clipboardImage", async () => {
-        const image = clipboard.readImage();
-        if (image.isEmpty()) return null;
-        return image.toDataURL();
+        try {
+            const items = await clipboard.read();
+            for (const item of items) {
+                const imageType = item.types.find((type) => type.startsWith("image/"));
+                if (!imageType) continue;
+
+                const image = await item.getType(imageType);
+                if (!("arrayBuffer" in image)) continue;
+
+                const imageBuffer = Buffer.from(await image.arrayBuffer());
+                return `data:${imageType};base64,${imageBuffer.toString("base64")}`;
+            }
+        } catch (error) {
+            console.error("Failed to read image from clipboard:", error);
+        }
+        return null;
     });
 
     ipcMain.handle("context-menu:edit", async (event) => {
@@ -174,8 +184,8 @@ export const notesIpcHandler = async () => {
         const result = await dialog.showOpenDialog({
             properties: ["openFile", "openDirectory"],
             filters: [
-                { name: "All Supported", extensions: ["md", "json"] },
-                { name: "Markdown", extensions: ["md"] },
+                { name: "All Supported", extensions: ["md", "mdx", "json"] },
+                { name: "Markdown", extensions: ["md", "mdx"] },
                 { name: "JSON", extensions: ["json"] },
             ],
             title: "Open",
@@ -360,8 +370,9 @@ export const notesIpcHandler = async () => {
                 if (entry.name.startsWith(".")) continue;
                 const fullPath = path.join(currentDir, entry.name);
                 if (entry.isDirectory()) {
+                    if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) continue;
                     await walk(fullPath, depth + 1);
-                } else if (entry.name.endsWith(".md")) {
+                } else if (/\.(?:md|mdx)$/i.test(entry.name)) {
                     results.push({
                         name: entry.name,
                         path: fullPath,

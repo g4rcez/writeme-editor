@@ -117,7 +117,7 @@ export function AIChatMessageItem({
             <article
                 aria-label="Your message"
                 className={css(
-                    "max-w-72 items-end rounded-2xl rounded-br-md bg-button-primary-bg px-4 py-3 text-sm text-button-primary-text",
+                    "max-w-72 items-end rounded-xl rounded-br-md bg-button-primary-bg px-4 py-3 text-sm text-button-primary-text",
                     maxWidthClass,
                 )}
             >
@@ -187,7 +187,7 @@ export function AIChatMessageList({
                 <div className="flex justify-start">
                     <div
                         className={css(
-                            "bg-secondary-background rounded-2xl rounded-bl-md border border-card-border px-4 py-3 text-sm text-muted-foreground",
+                            "bg-secondary-background rounded-xl rounded-bl-md border border-card-border px-4 py-3 text-sm text-muted-foreground",
                             maxWidthClass,
                         )}
                     >

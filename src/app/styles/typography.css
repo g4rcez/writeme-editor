@@ -71,7 +71,7 @@
 }
 
 .writeme-editor-content h1 {
-    @apply mt-12 text-4xl font-bold tracking-tight;
+    @apply mt-10 text-3xl font-semibold tracking-tight;
 }
 
 .writeme-editor-content h2 {

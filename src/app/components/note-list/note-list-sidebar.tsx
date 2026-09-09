@@ -14,7 +14,7 @@ import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
-import { globalDispatch } from "@/store/global.store";
+import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 
@@ -42,56 +42,72 @@ export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, 
     return (
         <li
             ref={itemRef}
-            onClick={onClick}
-            className={`group relative cursor-pointer px-3 py-2.5 transition-colors hover:bg-muted/20 ${
-                isActive ? "bg-primary/10" : ""
+            className={`group relative min-h-16 shrink-0 border-l-2 transition-[background-color,border-color] hover:bg-muted/30 ${
+                isActive ? "border-primary bg-primary/10" : "border-transparent"
             }`}
         >
-            <div className="flex gap-2 justify-between items-start mb-1">
-                <h3
-                    className={`font-medium text-sm line-clamp-1 flex-1 ${
-                        isActive ? "text-primary" : "text-foreground"
-                    }`}
-                >
-                    {note.title || "Untitled"}
-                </h3>
-                {extra}
+            <div className="flex items-start gap-2 px-3 py-3">
                 <button
-                    onClick={onToggleFavorite}
-                    className={`shrink-0 p-0.5 rounded hover:bg-background/80 transition-opacity ${
-                        note.favorite
-                            ? "text-warn opacity-100"
-                            : "text-muted-foreground opacity-0 group-hover:opacity-100"
-                    }`}
+                    type="button"
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={onClick}
+                    className="min-w-0 flex-1 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                 >
-                    <StarIcon className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
-                </button>
-                {onDelete && (
-                    <button
-                        onClick={onDelete}
-                        className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-[color,opacity] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
+                    <h3
+                        className={`mb-1 line-clamp-1 text-sm font-medium ${
+                            isActive ? "text-primary" : "text-foreground"
+                        }`}
                     >
-                        <TrashIcon className="size-3" />
+                        {note.title || "Untitled"}
+                    </h3>
+                    <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {note.description || note.content.substring(0, 150).replace(/[#*`]/g, "") || "No content"}
+                    </p>
+                    {note.tags.length > 0 && (
+                        <div className="mb-1.5 flex flex-wrap gap-1">
+                            {note.tags.map((tag) => (
+                                <span key={tag} className="rounded bg-primary/5 px-1 text-[10px] text-primary/70">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground/60">
+                        <span>{Dates.yearMonthDay(note.createdAt)}</span>
+                        {wasEdited ? (
+                            <span className="text-muted-foreground/40">
+                                edited {Dates.yearMonthDay(note.updatedAt)}
+                            </span>
+                        ) : null}
+                    </div>
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                    {extra}
+                    <button
+                        type="button"
+                        aria-label={
+                            note.favorite ? `Unstar ${note.title || "Untitled"}` : `Star ${note.title || "Untitled"}`
+                        }
+                        onClick={onToggleFavorite}
+                        className={`flex size-7 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            note.favorite
+                                ? "text-warn opacity-100"
+                                : "text-muted-foreground opacity-0 group-hover:opacity-100"
+                        }`}
+                    >
+                        <StarIcon aria-hidden="true" className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
                     </button>
-                )}
-            </div>
-            <p className="mb-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {note.description || note.content.substring(0, 150).replace(/[#*`]/g, "") || "No content"}
-            </p>
-            {note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-1.5">
-                    {note.tags.map((tag) => (
-                        <span key={tag} className="px-1 rounded bg-primary/5 text-primary/70 text-[10px]">
-                            #{tag}
-                        </span>
-                    ))}
+                    {onDelete ? (
+                        <button
+                            type="button"
+                            aria-label={`Delete ${note.title || "Untitled"}`}
+                            onClick={onDelete}
+                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[background-color,color,opacity] hover:bg-background/80 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <TrashIcon aria-hidden="true" className="size-3" />
+                        </button>
+                    ) : null}
                 </div>
-            )}
-            <div className="flex gap-2 justify-between items-center text-[10px] text-muted-foreground/60">
-                <span>{Dates.yearMonthDay(note.createdAt)}</span>
-                {wasEdited && (
-                    <span className="text-muted-foreground/40">edited {Dates.yearMonthDay(note.updatedAt)}</span>
-                )}
             </div>
         </li>
     );
@@ -143,25 +159,30 @@ const NoteListItems = (props: {
     };
 
     return (
-        <ul className="flex min-h-0 flex-1 flex-col divide-y divide-border/20 overflow-y-auto scrollbar-hide">
-            <li
-                onClick={props.onCreateNewNote}
-                className="flex sticky top-0 gap-1 items-center p-2 text-sm transition-colors cursor-pointer bg-card-background z-floating text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-            >
-                <PlusIcon className="size-4" />
-                <span>New note</span>
-            </li>
-            {props.notes.map((note) => (
-                <NoteItem
-                    note={note}
-                    key={note.id}
-                    isActive={note.id === props.activeNoteId}
-                    onClick={() => navigate(`/note/${note.id}`)}
-                    onToggleFavorite={(e) => toggleFavorite(e, note)}
-                    onDelete={(e) => handleDelete(e, note)}
-                />
-            ))}
-        </ul>
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="shrink-0 border-b border-border/40 bg-card-background px-2 py-2">
+                <button
+                    type="button"
+                    onClick={props.onCreateNewNote}
+                    className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    <PlusIcon className="size-4" aria-hidden="true" />
+                    <span>New note</span>
+                </button>
+            </div>
+            <ul className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide" aria-label="Notes">
+                {props.notes.map((note) => (
+                    <NoteItem
+                        note={note}
+                        key={note.id}
+                        isActive={note.id === props.activeNoteId}
+                        onClick={() => navigate(`/note/${note.id}`)}
+                        onToggleFavorite={(e) => toggleFavorite(e, note)}
+                        onDelete={(e) => handleDelete(e, note)}
+                    />
+                ))}
+            </ul>
+        </div>
     );
 };
 
@@ -169,6 +190,7 @@ type SortBy = "updatedAt" | "createdAt" | "alphabetical";
 
 export const NoteListSidebar = () => {
     const [state, layoutDispatch] = useLayoutStore();
+    const [globalState] = useGlobalStore();
     const [sortBy, setSortBy] = useState<SortBy>("createdAt");
     const { notes, loading } = useSidebarNotes({ sortBy });
     const params = useParams();
@@ -193,28 +215,41 @@ export const NoteListSidebar = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-full text-sm text-muted-foreground">
-                <div className="flex flex-col gap-2 items-center">
-                    <div className="w-4 h-4 rounded-full border-2 animate-spin border-primary border-t-transparent" />
-                    <span>Loading notes...</span>
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span>Loading notes…</span>
                 </div>
             </div>
         );
     }
 
+    const query = state.searchQuery.trim();
+    const hasNotes = globalState.notes.some((note) => {
+        if (state.activeActivity === "favorites") return note.favorite;
+        if (state.activeActivity === "tags" && state.activeView.type === "tag") {
+            return note.tags.includes(state.activeView.id);
+        }
+        return note.noteType === "note";
+    });
+
     return (
         <div ref={containerRef} className="flex h-full min-h-0 flex-col bg-background">
-            <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
-                <span className="text-xs text-muted-foreground">{getHeaderTitle()}</span>
+            <div className="flex items-center justify-between border-b border-border/40 px-1 py-2">
+                <span className="text-xs font-medium text-foreground">{getHeaderTitle()}</span>
                 <div className="flex gap-1 items-center">
                     <Tooltip
                         placement="bottom"
                         title={
                             <button
+                                type="button"
+                                aria-label="Sort by created date"
+                                aria-pressed={sortBy === "createdAt"}
+                                title="Sort by created date"
                                 onClick={() => setSortBy("createdAt")}
                                 className={`p-1 rounded transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
-                                <CalendarIcon className="size-3.5" />
+                                <CalendarIcon className="size-3.5" aria-hidden="true" />
                             </button>
                         }
                     >
@@ -224,10 +259,14 @@ export const NoteListSidebar = () => {
                         placement="bottom"
                         title={
                             <button
+                                type="button"
+                                aria-label="Sort by last edited"
+                                aria-pressed={sortBy === "updatedAt"}
+                                title="Sort by last edited"
                                 onClick={() => setSortBy("updatedAt")}
                                 className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
-                                <ClockCounterClockwiseIcon className="size-3.5" />
+                                <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
                             </button>
                         }
                     >
@@ -237,10 +276,14 @@ export const NoteListSidebar = () => {
                         placement="bottom"
                         title={
                             <button
+                                type="button"
+                                aria-label="Sort alphabetically"
+                                aria-pressed={sortBy === "alphabetical"}
+                                title="Sort alphabetically"
                                 onClick={() => setSortBy("alphabetical")}
                                 className={`p-1 rounded transition-colors font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
-                                <SortAscendingIcon />
+                                <SortAscendingIcon aria-hidden="true" />
                             </button>
                         }
                     >
@@ -248,25 +291,48 @@ export const NoteListSidebar = () => {
                     </Tooltip>
                 </div>
             </div>
-            <div className="my-2">
+            <div className="px-1 py-2">
                 <Input
                     optionalText=" "
                     onChange={onSearch}
-                    placeholder="Search..."
+                    placeholder="Search notes…"
                     value={state.searchQuery}
                     right={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
                 />
             </div>
             {notes.length === 0 ? (
-                <div className="flex flex-col flex-1 gap-4 justify-center items-center py-4 h-full text-sm text-muted-foreground">
-                    <span>No notes found</span>
-                    <button
-                        onClick={createNewNote}
-                        className="flex gap-2 items-center py-1.5 px-3 rounded-md border transition-colors border-border/40 hover:bg-muted/50 hover:text-foreground"
-                    >
-                        <PlusIcon className="size-4" />
-                        <span>Create first note</span>
-                    </button>
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-5 py-6 text-center text-sm text-muted-foreground">
+                    <span className="flex size-9 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+                        <MagnifyingGlassIcon size={17} aria-hidden="true" />
+                    </span>
+                    <div>
+                        <p className="font-medium text-foreground">
+                            {query || hasNotes ? "No matching notes" : "No notes yet"}
+                        </p>
+                        <p className="mt-1 text-xs leading-5">
+                            {query || hasNotes
+                                ? "Try a different search or clear the filter."
+                                : "Create a note and your workspace will appear here."}
+                        </p>
+                    </div>
+                    {query || hasNotes ? (
+                        <button
+                            type="button"
+                            onClick={() => layoutDispatch.setSearch("")}
+                            className="min-h-9 rounded-md border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Clear search
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={createNewNote}
+                            className="flex min-h-9 items-center gap-2 rounded-md border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <PlusIcon className="size-4" aria-hidden="true" />
+                            <span>Create first note</span>
+                        </button>
+                    )}
                 </div>
             ) : (
                 <NoteListItems notes={notes} activeNoteId={activeNoteId} onCreateNewNote={createNewNote} />

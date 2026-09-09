@@ -1,297 +1,350 @@
----
-name: writeme
-description: An AI-native markdown editor and knowledge tool for builders who think by writing.
-colors:
-    primary: "#B899FF"
-    primary-hover: "#9B77F5"
-    primary-surface: "#F0EAFF"
-    foreground: "#323843"
-    foreground-muted: "#717178"
-    background: "#FFFFFF"
-    surface: "#F4F4F5"
-    surface-raised: "#FFFFFF"
-    border: "#E4E4E8"
-    danger: "#F16161"
-    warn: "#F59E0B"
-    success: "#22C55E"
-    info: "#0EA5E9"
-    background-dark: "#111117"
-    surface-dark: "#10131B"
-    border-dark: "#27272C"
-    foreground-dark: "#F4F4F5"
-    foreground-muted-dark: "#A1A1AA"
-typography:
-    body:
-        fontFamily: "'IBM Plex Sans', sans-serif"
-        fontSize: "16px"
-        fontWeight: 400
-        lineHeight: 1.5
-        letterSpacing: "normal"
-        fontFeature: "'cv01', 'cv02', 'cv03', 'cv04', 'ss01'"
-    headline:
-        fontFamily: "'IBM Plex Sans', sans-serif"
-        fontSize: "18px"
-        fontWeight: 700
-        lineHeight: 1.4
-        letterSpacing: "normal"
-    title:
-        fontFamily: "'IBM Plex Sans', sans-serif"
-        fontSize: "14px"
-        fontWeight: 600
-        lineHeight: 1.4
-        letterSpacing: "normal"
-    label:
-        fontFamily: "'IBM Plex Sans', sans-serif"
-        fontSize: "12px"
-        fontWeight: 500
-        lineHeight: 1.0
-        letterSpacing: "0.04em"
-    mono:
-        fontFamily: "'JetBrains Mono Variable', monospace"
-        fontSize: "14px"
-        fontWeight: 400
-        lineHeight: 1.5
-        letterSpacing: "normal"
-        fontFeature: "common-ligatures"
-rounded:
-    button: "0.55rem"
-    card: "0.75rem"
-    pill: "2rem"
-spacing:
-    base: "1rem"
-    input-height: "2.5rem"
-    field-label: "0.875rem"
-    sm: "0.75rem"
-    lg: "1.125rem"
-components:
-    button-primary:
-        backgroundColor: "{colors.primary}"
-        textColor: "#FFFFFF"
-        rounded: "{rounded.button}"
-        padding: "6px 16px"
-    button-primary-hover:
-        backgroundColor: "{colors.primary-hover}"
-        textColor: "#FFFFFF"
-        rounded: "{rounded.button}"
-        padding: "6px 16px"
-    button-secondary:
-        backgroundColor: "{colors.surface}"
-        textColor: "{colors.foreground}"
-        rounded: "{rounded.button}"
-        padding: "6px 16px"
-    button-ghost:
-        backgroundColor: "transparent"
-        textColor: "{colors.foreground-muted}"
-        rounded: "{rounded.button}"
-        padding: "6px 16px"
-    nav-item-active:
-        backgroundColor: "{colors.primary-surface}"
-        textColor: "{colors.primary}"
-        rounded: "{rounded.button}"
-        padding: "6px 8px"
-    nav-item-inactive:
-        backgroundColor: "transparent"
-        textColor: "{colors.foreground-muted}"
-        rounded: "{rounded.button}"
-        padding: "6px 8px"
-    tab-active:
-        backgroundColor: "{colors.surface}"
-        textColor: "{colors.foreground}"
-        height: "36px"
-        padding: "0 10px"
-    tab-inactive:
-        backgroundColor: "transparent"
-        textColor: "{colors.foreground-muted}"
-        height: "36px"
-        padding: "0 10px"
----
-
-# Design System: writeme
-
-## 1. Overview
-
-**Creative North Star: "The Patient Workshop"**
-
-writeme is the tool you return to every day. Not because it demands your attention, but because it never gets in the way. The visual language is built around reliability and restraint: a surface that stays calm whether you are capturing a half-formed idea at 7am or tracing a research thread at midnight. The primary violet accent is present, trustworthy, and quiet. It marks what matters without announcing it.
-
-The system operates in two modes that share one vocabulary. Light mode is a clean workspace: near-white surfaces, dark foreground text, a border language that divides without interrupting. Dark mode is the same workshop after the overhead lights go down: deep charcoal surfaces, the same structural hierarchy, the same violet accent. Neither mode is primary. The user chooses; the design honors that choice identically.
-
-IBM Plex Sans carries everything: headings, labels, UI copy, running text. It is humanist, precise, and slightly warm without being decorative. JetBrains Mono handles code. The pairing needs no ornamentation.
-
-**This system explicitly rejects:**
-
-- Dev tool brutalism: monospace everything, flat gray, no warmth. writeme is for builders, not for signaling that you are a builder.
-- AI startup aesthetic: gradient blobs, glassmorphism panels, purple-to-teal gradients. The violet here is a tool color, not a pitch deck.
-- Sparse blog templates: writeme has serious information density. Empty breathing room is for moments, not default states.
-
-**Key Characteristics:**
-
-- Single accent color used for primary actions, active states, and semantic emphasis only.
-- IBM Plex Sans throughout, no display font pairing.
-- Nearly flat elevation: shadows are ambient and barely perceptible.
-- Dynamic font sizing via `--default-size` CSS variable (default 16px); all spacing scales from it.
-- Full multi-theme support: light, dark, Catppuccin Mocha, Tokyo Night. Same structural vocabulary in all.
-
-## 2. Colors: The Quiet Violet Palette
-
-A restrained palette with one warm-violet accent. The accent is used for primary interactive states only; everything else is neutral and structural.
-
-### Primary
-
-- **Quiet Violet** (#B899FF): The single accent color. Used for primary buttons, active navigation indicators, hashtag decorations, links, and selection states. A soft lavender-purple that is distinctive without being aggressive. The canonical system value is an HSL CSS custom property (`hsla(var(--primary-DEFAULT))`); #B899FF is the resolved sRGB approximation.
-- **Violet Hover** (#9B77F5): The pressed/hover state of the primary. Slightly deeper, same hue family.
-- **Violet Surface** (#F0EAFF): The 10% tint of the primary used for active nav item backgrounds and selection surfaces. Never used on full-surface areas.
-
-### Neutral
-
-- **Ink** (#323843): Primary foreground for body text and headings (light mode). Dark blue-gray with a slight cool cast.
-- **Slate** (#717178): Muted foreground for secondary text, placeholders, inactive labels.
-- **Bone** (#F4F4F5): Surface/muted background. Used for sidebar panels, code blocks, hover states on nav items.
-- **Ghost** (#E4E4E8): Border and divider color (light mode). Barely perceptible; divides without interrupting.
-- **Canvas** (#FFFFFF): Base background of the content area (light mode).
-
-### Dark Mode Variants
-
-- **Deep Charcoal** (#111117): Base background (dark mode). Deep but not black; a subtle blue-black cast.
-- **Night Surface** (#10131B): Card and panel backgrounds (dark mode). Slightly cooler and lighter than the base.
-- **Coal** (#27272C): Border color (dark mode). Same structural role as Ghost.
-- **Pale** (#F4F4F5): Primary foreground (dark mode). Near-white with a neutral cast.
-
-### Semantic
-
-- **Alert Red** (#F16161): Danger/error states only.
-- **Amber** (#F59E0B): Warning states.
-- **Leaf** (#22C55E): Success states.
-- **Sky** (#0EA5E9): Info/informational states.
-
-### Named Rules
-
-**The One Voice Rule.** Quiet Violet appears in ≤10% of any given screen surface. It marks the active state, the primary action, the current selection. Its rarity is the point. When everything is purple, nothing is.
-
-**The Semantic-Only Rule.** Alert Red, Amber, Leaf, and Sky are reserved for their semantic states. They are never used decoratively or for section headers.
-
-## 3. Typography
-
-**Body Font:** IBM Plex Sans (with `sans-serif` fallback)**Code Font:** JetBrains Mono Variable (with `monospace` fallback)
-
-**Character:** IBM Plex Sans is humanist with a technical precision that suits a knowledge tool. It reads well in long prose, holds up in dense UI labels, and never looks decorative. JetBrains Mono adds ligature support and optical sizing. The pairing is intentionally minimal: one sans, one mono, no display family.
-
-All sizes scale from `--default-size` (default 16px), which the user can adjust. All spacing scales from the same root.
-
-### Hierarchy
-
-- **Headline** (700 weight, 18px / 1.4): Section titles in settings, sidebar headers, dialog titles.
-- **Title** (600 weight, 14px / 1.4): Sub-section labels, panel titles, nav section headers. Uppercase tracking (0.04em letter-spacing) reserved for metadata labels only.
-- **Body** (400 weight, 16px / 1.5): Editor prose, note content. Max line length: 70ch (enforced via `max-w-safe`). Font features: `cv01, cv02, cv03, cv04, ss01` for optical improvements.
-- **Label** (500 weight, 12px / 1.0, tracking 0.04em): Tab labels, activity icon tooltips, metadata chips, keyboard shortcut hints.
-- **Mono** (400 weight, 14px / 1.5): All code, inline code spans, terminal output, frontmatter blocks.
-
-### Named Rules
-
-**The Single-Family Rule.** IBM Plex Sans carries headings, UI, and body. No display family is added. Hierarchy is expressed through weight (400/500/600/700) and size, not through font switching.
-
-**The Scale-Root Rule.** Every size and spacing value derives from `--default-size`. Do not introduce hard-coded pixel values that break user-adjustable font sizing.
-
-## 4. Elevation
-
-writeme uses nearly flat elevation. Surfaces are separated by color difference and border opacity, not by shadow depth. This matches the "Patient Workshop" north star: a calm space where surfaces hold still.
-
-### Shadow Vocabulary
-
-- **Ambient Low** (`0 2px 8px -2px rgba(0, 0, 0, 0.06)`): Hover lift on interactive cards and draggable elements only. Present as subtle grounding, not drama.
-- **Ambient Medium** (`0 4px 16px -4px rgba(0, 0, 0, 0.10)`): Floating panels, popovers, command palette.
-- **Ambient Large** (`0 4px 12px -3px rgba(0, 0, 0, 0.08)`): Modals and dialogs. Still restrained; the overlay handles the sense of depth.
-- **Notification** (`1px 2px 2px 2px rgba(33, 54, 68, 0.15)`): Toast and notification cards.
-
-### Named Rules
-
-**The Flat-By-Default Rule.** Shadows appear only in response to state (hover, floating, modal). Resting surfaces are flat. A shadow that is always visible is a border that failed to commit.
-
-**The Backdrop Rule.** `backdrop-blur-sm` is used on the sidebar panel to create tonal separation from the editor surface. This is purposeful (depth signal, not decoration) and is the only use of blur in the system. Blur on cards or popovers is banned.
-
-## 5. Components
-
-### Buttons
-
-Clear feedback; decisive press states. Buttons acknowledge every action.
-
-- **Shape:** Gently curved (0.55rem, \~9px). Not pill, not sharp.
-- **Primary:** Quiet Violet (#B899FF) background, white text, 6px/16px padding. Hover: Violet Hover (#9B77F5). Focus: 1px violet outline, 1px offset.
-- **Secondary:** Bone (#F4F4F5) background, Ink (#323843) text. Same shape and padding.
-- **Ghost:** Transparent background, Slate (#717178) text. For toolbar and activity bar icon actions. Hover: Bone background.
-- **Danger variant:** Alert Red background, white text. Used only for destructive confirmation actions.
-
-### Activity Bar
-
-The leftmost 40px strip of the app shell. Icon-only navigation.
-
-- **Width:** 40px fixed.
-- **Icons:** 18px Phosphor icons, 1.5px stroke weight.
-- **Active:** Quiet Violet text color + 2px violet left-edge indicator (absolute-positioned, 32px tall). Background remains neutral.
-- **Inactive:** Foreground at 50% opacity. Hover: full foreground opacity.
-- **Bottom cluster:** Sidebar toggle and settings — same treatment, always at the bottom.
-
-### Sidebar Panel
-
-The resizable content panel (150px–600px) to the right of the activity bar.
-
-- **Background:** Bone (#F4F4F5) with `backdrop-blur-sm` in light; Night Surface (#10131B) in dark.
-- **Nav items:** Full-width, 8px vertical padding, 8px horizontal. Active: Violet Surface background + Quiet Violet text. Inactive: transparent + Slate text.
-- **Section headers:** 12px uppercase label, Slate at 35% opacity, 16px top margin.
-- **Resize handle:** 4px wide, transparent at rest. On hover: primary at 50% opacity.
-
-### Tabs Bar
-
-The horizontal tab strip above the editor, 36px tall.
-
-- **Active tab:** Bone/Muted background, full foreground text, 1px violet bottom underline.
-- **Inactive tab:** Transparent, foreground at 50% opacity. Hover: foreground at 80%.
-- **Close button:** Hidden at rest; visible on tab hover (opacity transition). 10px icon.
-- **Rename inline:** `<input>` overlays the label in-place. No modal.
-
-### Editor Surface
-
-The core writing area.
-
-- **Max width:** 70vw (`max-w-safe`). Centered in the content panel.
-- **Vertical padding:** 32px top/bottom.
-- **Font:** IBM Plex Sans 16px (body). Headings: same family, weight 700.
-- **Line length:** Capped at 70ch by max-width constraint. Readers do not scroll horizontally.
-
-### Inputs / Fields
-
-- **Style:** No border at rest (inputs use `border: transparent`). Focus-visible: no custom outline by default (relies on browser default suppressed; see focus handling).
-- **Height:** 40px (`--spacing-input-height: 2.5rem`).
-- **Placeholder:** Slate (#717178).
-- **Error state:** Alert Red border + subtle red background tint.
-
-### Terminal Panel
-
-A collapsible bottom panel.
-
-- **Background:** Hard `#1e1e1e` (dark always, regardless of theme). This is intentional: terminal sessions are always dark.
-- **Header:** 12px uppercase label, Slate foreground, tiny 24px height. Matches VS Code conventions users recognize.
-- **Resize separator:** 4px, border color at 20% opacity. Hover: primary at 50%.
-
-## 6. Do's and Don'ts
-
-### Do:
-
-- **Do** use Quiet Violet (#B899FF) exclusively for interactive primary states, active navigation, and semantic emphasis. Never for decorative color fills or section headers.
-- **Do** derive every size and spacing value from `--default-size`. Hard-coded pixel values that ignore this variable break user-configured font sizing.
-- **Do** keep resting surfaces flat. Add shadow only when an element has been lifted by state (hover, floating, modal).
-- **Do** use IBM Plex Sans for all UI text including headings. Do not introduce a display or serif family.
-- **Do** keep the activity bar at 40px and icon-only. Tooltips (right-placement) are the label surface.
-- **Do** support `prefers-reduced-motion` for every animation in the product. Transitions are state signals, not choreography.
-- **Do** use semantic color tokens for all state: `danger` for errors, `warn` for warnings, `success` for confirmations. Never use the primary violet for semantic states.
-
-### Don't:
-
-- **Don't** add gradient fills, glassmorphism cards, or purple-to-teal gradients. writeme is a knowledge tool, not a pitch deck. If it looks like an AI startup landing page, it's wrong.
-- **Don't** use `backdrop-blur` anywhere except the sidebar panel. That is the single sanctioned use; it earns depth separation. Blur on cards, tooltips, or modals is decorative and banned.
-- **Don't** produce dev tool brutalism: monospace-everything, gray-on-gray, no visual warmth. writeme respects the user's craft without cosplaying as a terminal.
-- **Don't** create sparse, empty designs that feel like a blog theme. Users have dense information needs. Empty states should teach; white space should breathe at rest, not dominate.
-- **Don't** use `border-left` greater than 1px as a colored stripe on cards, list items, callouts, or alerts. Use full borders, background tints, or leading icons instead.
-- **Don't** use gradient text (`background-clip: text`). Emphasis is expressed through weight or size.
-- **Don't** use `any` hardcoded color that is not a design token reference or CSS custom property. The multi-theme system only works if every color value is token-sourced.
-- **Don't** animate CSS layout properties (width, height, padding, margin). Animate `opacity` and `transform` only.
+# WriteMe UI implementation instructions
+
+Use this file as the visual and interaction brief for the WriteMe app at
+[app.writeme.dev](https://app.writeme.dev/).
+
+This is a product workspace, not a marketing page. The main job of the
+interface is to help a person open a note and keep writing. Use Obsidian as
+the information-architecture reference, then borrow the following qualities
+without copying any brand assets:
+
+- **Obsidian:** vault/file navigation, tabs, backlinks, outline, command
+  palette, local-first language, and a calm writing surface.
+- **Vercel:** monochrome surfaces, crisp hairlines, tight geometric type,
+  restrained radii, and high signal-to-noise.
+- **Cursor:** a focused workbench, keyboard-first actions, useful context
+  panels, and status that stays out of the way.
+- **Framer:** artboard-like composition and carefully controlled atmospheric
+  color on the home and AI surfaces only.
+
+The result should feel like a quiet personal knowledge workbench: precise,
+fast, private, and slightly expressive.
+
+## 1. Product and repository context
+
+- Preserve the current product promise: notes stay local and AI is optional.
+- Preserve existing routes, editor behavior, file formats, storage, and
+  keyboard shortcuts unless the task explicitly changes them.
+- The reference app currently has a dark canvas, a narrow icon rail, a lavender
+  primary action, a home view, and an `/notes` view with note search.
+- The observed home view contains `Explorer`, `Search`, `Favorites`, `Tags`,
+  `Groups`, `Calendar`, `Views`, `Trash`, `Workspace AI`, and `Settings` in the
+  rail. Keep these capabilities discoverable even when the rail is collapsed.
+- The observed empty state has a large amount of unused space. Do not preserve
+  that space if it makes the writing path harder to find. The empty state must
+  remain useful at every viewport.
+- This checkout contains the WriteMe frontend source. Treat this file as the
+  implementation brief for the existing app; extend the current architecture
+  instead of inventing a second app or replacing established behavior.
+
+## 2. North-star experience
+
+A user should be able to:
+
+1. See where they are in the workspace.
+2. Find or create a note with one obvious action.
+3. Start typing immediately, without a dashboard, toolbar, or AI panel taking
+   over the page.
+4. Discover related notes, headings, and tags when they need context.
+5. Understand whether the note is saved and where it lives.
+6. Use the whole product with a keyboard and with assistive technology.
+
+Prioritize the writing surface over decoration. Every persistent control must
+answer one of these questions: Where am I? What can I write? How do I find
+something? What context helps me continue?
+
+## 3. Target application shell
+
+On wide screens, use this four-region layout:
+
+```text
+┌──────────┬────────────────────┬──────────────────────────┬──────────────┐
+│ activity │ workspace / files  │ tabs + note editor       │ context      │
+│ rail     │ explorer           │                          │ (optional)   │
+│ 56–72 px │ 240–288 px         │ flexible, min 520 px     │ 280–320 px   │
+└──────────┴────────────────────┴──────────────────────────┴──────────────┘
+```
+
+- The activity rail is fixed. The explorer and context panel are collapsible
+  and resizable if the existing layout supports it.
+- Use a 48px app header, a 40px tab row, and a 28–32px status bar. Do not let
+  chrome consume more height than the note itself.
+- The editor column can fill the available region, but the prose column must
+  remain readable: target `min(100% - 48px, 760px)` for normal note content.
+- Keep the editor background visually continuous with the canvas. Panels are
+  for navigation and context, not a stack of cards around the document.
+- Persist collapsed state and pane widths using the existing settings store if
+  one exists. Do not add a new persistence system for this layout pass.
+
+### 3.1 Activity rail
+
+- Keep the brand mark at the top and settings/help or account actions at the
+  bottom.
+- Group the primary navigation in a stable order: Explorer, Search, Favorites,
+  Tags, Groups, Calendar, Views, and Trash. Put Workspace AI in a separate
+  lower group so it reads as optional context, not the default destination.
+- Use real buttons with accessible labels. Icon-only controls need a tooltip
+  on hover and a visible label in the expanded rail.
+- The active item gets a 2px lavender edge or compact active marker plus a
+  subtle surface tint. Do not use a large filled tile for every item.
+- Preserve a visible focus ring. Hover, focus, active, and selected states must
+  not rely on color alone.
+- When collapsed, provide a clear `aria-label` and tooltip for every item. When
+  the rail is hidden on mobile, expose the same destinations from the menu
+  button and command palette.
+
+### 3.2 Workspace explorer
+
+The explorer is the user's map of their local workspace.
+
+- Header: workspace name, collapse button, and a compact `New note` action.
+- Search: one input with the placeholder `Search notes or tags…`; show the
+  keyboard shortcut where there is room, not inside the editable value.
+- Sections, in this order when populated: `Pinned`, `Recent`, `Folders`, and
+  `All notes`.
+- A file row includes an icon, the note name, optional folder context, and a
+  quiet modified time or status. Do not show a large excerpt for every row.
+- Use indentation and disclosure controls for folders. The disclosure control
+  must be separately clickable from the note link.
+- Give the selected note a left accent and a low-contrast background. Keep
+  selected and hover states distinct.
+- Empty sections should collapse or show a short explanation. Never render a
+  tall blank panel that pushes the editor below the fold.
+
+### 3.3 Tabs and editor header
+
+- Open notes in tabs. Each tab shows the note name, an unsaved indicator when
+  needed, and a close button that appears on hover or focus.
+- Keep tab actions small: new tab, split view, and more actions. Put rarely
+  used actions in the menu instead of a permanent toolbar.
+- Below tabs, show breadcrumbs only when they add location context. Use muted
+  text and a small separator; do not turn breadcrumbs into a second title.
+- The title is an editable `h1`/title field with a clear focus state. Target
+  30–36px on desktop and 26–30px on narrow screens.
+- Place tags, folder, updated time, and save state in one compact metadata row.
+  Tags may be pill-shaped; ordinary metadata must not be.
+- Keep formatting controls contextual: show them on text selection, on an
+  explicit toolbar toggle, or in the command palette. A permanent row of
+  twenty icons is not the target.
+
+### 3.4 Writing surface
+
+- Start the cursor in the body when a new note opens, unless the user has
+  explicitly focused the title.
+- Use a readable prose width of 680–760px, 16–18px body text, and roughly
+  `1.65–1.8` line height. Keep paragraphs visually separated without adding
+  card backgrounds.
+- Use a clear hierarchy: `h1` for the note title, `h2`/`h3` for sections, and
+  restrained heading weights. Avoid oversized marketing display type inside a
+  note.
+- Markdown syntax, block handles, and editor affordances should be quiet until
+  the relevant line is focused or hovered.
+- Links use the link accent and an underline on hover/focus. Code uses the mono
+  face and a slightly raised surface. Blockquotes use a hairline or left rule,
+  not a heavy box.
+- Tables, equations, diagrams, and code blocks must scroll inside themselves;
+  they must not force the whole app wider than the viewport.
+- Show save state in the status bar or metadata row with text such as `Saved`
+  or `Saving…`. A tiny status dot alone is not sufficient.
+
+### 3.5 Context panel
+
+The right panel is optional and should never compete with the note.
+
+- Default sections: `Outline`, `Backlinks`, `Properties`, and `Related notes`.
+- Show only sections that have content, or use a short empty message. Avoid
+  four empty cards on a new note.
+- Make the panel independently scrollable and collapsible. Keep a selected
+  outline heading synchronized with the editor when that behavior already
+  exists.
+- Workspace AI opens as a drawer or focused panel from an explicit action. It
+  must not permanently shrink the writing column on small screens.
+- Keep AI output visually distinct with a modest tint or border, not a large
+  glowing gradient. The user always controls when AI enters the workflow.
+
+## 4. Home, search, and empty states
+
+### Home / workspace overview
+
+The current greeting and local-first message are useful, but the home screen
+should be a launch surface rather than a hero landing page.
+
+- Keep one short welcome line and one primary `New note` action.
+- Make `Find anything` a strong secondary action with `⌘/Ctrl K`.
+- Replace the oversized hero gap with a compact `Recent notes` or `Pick up
+where you left off` list. Show title, location, modified time, and a useful
+  empty state.
+- Keep workspace counts as quiet inline metadata, not the main visual event.
+- Use the Framer-inspired ambient gradient only behind this overview or an AI
+  empty state. Keep it low opacity, blurred, and decorative; never place it
+  behind editable text.
+- Empty-state copy should fit a readable 420–560px measure. Do not allow the
+  message to collapse into one-word lines inside a wide card.
+
+### All notes and search
+
+- `/notes` (or the existing equivalent) should offer a visible search field,
+  sort/filter controls, and a list/grid toggle only if both views are useful.
+- Search results show title, path, modified time, tags, and a short excerpt.
+- The no-results state explains how to change the query and offers `New note`.
+- The no-notes state offers one action and a short sentence. Avoid “No data” as
+  the only explanation.
+- Keep search keyboard-first: `⌘/Ctrl K` opens global search and `/` focuses a
+  search field when it is not already being edited.
+
+## 5. Visual language
+
+### Color tokens
+
+Use semantic tokens so the light/dark implementation can evolve without
+rewriting components. These values are the dark-first starting point and should
+be tuned against the existing brand mark and contrast checks.
+
+| Token                | Value     | Use                                           |
+| -------------------- | --------- | --------------------------------------------- |
+| `--wm-canvas`        | `#0f0f10` | App background and editor canvas              |
+| `--wm-rail`          | `#131315` | Activity rail                                 |
+| `--wm-surface-1`     | `#17171a` | Explorer, context, tab surfaces               |
+| `--wm-surface-2`     | `#1d1d22` | Menus, popovers, focused rows                 |
+| `--wm-surface-hover` | `#222229` | Hover and pressed-neutral states              |
+| `--wm-border`        | `#27272d` | Default hairlines and dividers                |
+| `--wm-border-strong` | `#383840` | Resizers, active separators                   |
+| `--wm-ink`           | `#f4f4f5` | Titles and primary text                       |
+| `--wm-text`          | `#d4d4d8` | Body and editor text                          |
+| `--wm-muted`         | `#96969f` | Secondary labels and metadata                 |
+| `--wm-faint`         | `#62626c` | Placeholder and disabled text                 |
+| `--wm-accent`        | `#b394ff` | Primary action, active marker, selected links |
+| `--wm-accent-hover`  | `#c5adff` | Hover/active accent                           |
+| `--wm-accent-ink`    | `#17121f` | Text on lavender controls                     |
+| `--wm-link`          | `#6eb8ff` | Inline links and selection affordances        |
+| `--wm-positive`      | `#7dd3a5` | Saved/success state                           |
+| `--wm-danger`        | `#f27d86` | Destructive actions and errors                |
+
+- Lavender is the product signal. Use it for one primary action and selected
+  states, not for every icon or border.
+- The blue link signal is inspired by Framer's interaction color. Keep it for
+  hyperlinks, selection, and focused editable affordances.
+- Framer-like violet, magenta, cyan, and amber gradients are atmosphere tokens,
+  not UI status colors. Use them only in home/AI decoration at low opacity.
+- Never communicate saved, warning, or destructive state with color alone.
+- Verify text and controls against WCAG AA. Increase contrast rather than
+  brightening every accent.
+
+### Typography
+
+- Prefer the existing `IBM Plex Sans` if it is already loaded by the app. If
+  the codebase already has Geist, use Geist for UI and display. Do not add a
+  font dependency only to imitate Vercel.
+- Use one sans family across interface and editor UI. Use a mono face already in
+  the project (otherwise `ui-monospace, SFMono-Regular, Menlo, monospace`) for
+  code, shortcuts, file paths, and technical metadata.
+- Keep display type confident but compact:
+
+| Role           | Size / line height |  Weight | Notes                    |
+| -------------- | -----------------: | ------: | ------------------------ |
+| Home title     |     44–56px / 1.02 | 600–700 | One or two lines maximum |
+| Page title     |      28–36px / 1.1 |     600 | Notes and list views     |
+| Editor title   |     30–36px / 1.15 |     600 | Editable, not a hero     |
+| Editor body    | 16–18px / 1.65–1.8 |     400 | Readable measure         |
+| UI body        |      13–14px / 1.4 | 400–500 | Navigation and controls  |
+| Caption        |      11–12px / 1.3 |     500 | Metadata, use sparingly  |
+| Technical mono |     12–13px / 1.45 | 400–500 | Code and shortcuts       |
+
+- Use negative letter spacing only on large headings (`-0.02em` to `-0.04em`).
+  Do not track body copy or file names tightly.
+- Uppercase mono eyebrows are allowed for small section labels, but never for
+  prose or primary navigation labels.
+
+### Shape, spacing, and depth
+
+- Use a 4px base spacing scale: `4, 8, 12, 16, 24, 32, 40, 48`.
+- Use 6–8px radius for controls, 8–12px for panels, and full pills only for
+  tags, status badges, and keyboard hints. Do not put every surface in a pill.
+- Prefer hairlines and surface contrast to drop shadows. Use a shadow only for
+  a floating menu or modal that must separate from the canvas.
+- Resizers and dividers should be visible enough to discover, but not bright.
+- Keep page padding 24–40px on desktop and 16px on narrow screens.
+
+## 6. Component rules
+
+### Buttons and controls
+
+- Primary: lavender fill, dark text, 40px height, 8px radius.
+- Secondary: transparent or `surface-1` fill, 1px border, light text.
+- Tertiary: text/ghost control with a clear hover surface.
+- Icon buttons: 32–36px in desktop chrome and at least 40–44px for touch.
+- Every destructive action needs a confirmation or undo path consistent with
+  the current product behavior.
+- Keyboard hints are compact mono badges such as `⌘ K`; they are not the
+  button's accessible name.
+
+### Menus, dialogs, and command palette
+
+- Use a single overlay treatment: `surface-2`, hairline border, modest shadow,
+  8–12px radius.
+- The command palette is centered, about 520–640px wide on desktop, and nearly
+  full width with 16px margins on mobile.
+- Put the search field first, group commands by task, show shortcut hints, and
+  preserve arrow-key/typeahead navigation.
+- Return focus to the invoking control when an overlay closes. Escape closes
+  the topmost layer only.
+
+### Motion
+
+- Use 120–180ms for hover/focus and 180–260ms for drawers or menus.
+- Animate opacity and small translations; avoid scaling text or the editor.
+- Resize and collapse panes without a layout jump where possible.
+- Respect `prefers-reduced-motion: reduce`; remove decorative gradients' motion
+  and transition durations in that mode.
+- Motion should confirm a change of state, never delay typing or navigation.
+
+## 7. Responsive rules
+
+- **`≥1280px`** — Rail + explorer + editor; open the context panel when useful.
+- **`960–1279px`** — Rail + editor; explorer/context become drawers or one
+  optional pane.
+- **`640–959px`** — Editor-first layout; one overlay drawer at a time; tabs
+  scroll.
+- **`<640px`** — Full-width editor, compact top bar, menu/drawer navigation,
+  and 44px targets.
+
+- Never allow fixed sidebars to make the editor horizontally scroll.
+- At narrow widths, move title actions into an overflow menu and keep the title
+  and body as the first visible content.
+- Tables, code blocks, and embeds scroll locally. Images use `max-width: 100%`.
+- Keep the rail/menu, editor, and overlay states usable with a hardware keyboard
+  and touch.
+
+## 8. Accessibility and behavior requirements
+
+- Use semantic `nav`, `aside`, `main`, `header`, and `article` regions.
+- Use `aria-current` for the active destination, `aria-expanded` for collapsible
+  panes, and descriptive labels for icon buttons.
+- Keep a visible `:focus-visible` ring with at least 2px effective contrast.
+- Do not remove native keyboard behavior from text editing controls.
+- Do not use placeholder text as the only label for an input.
+- Announce save/error state changes through the existing live-region pattern if
+  one exists; do not spam announcements on every keystroke.
+- Preserve local data and autosave behavior. Never use a visual redesign as a
+  reason to change storage, authentication, sync, or API contracts.
+- Do not add dependencies, replace the editor engine, or alter schemas without
+  explicit approval.
+
+## 9. Definition of done
+
+The implementation is ready when:
+
+- A new or existing note opens into the four-region workbench without a
+  marketing hero in front of the cursor.
+- Explorer, tabs, title, editor, save state, and optional context are legible
+  at desktop and mobile widths.
+- Home, `/notes`, search, no-results, no-notes, and error states have a clear
+  next action.
+- `⌘/Ctrl N`, `⌘/Ctrl K`, command-palette navigation, Escape, and pane toggles
+  work without stealing focus from the editor.
+- No icon-only action is unlabeled, no control is smaller than its target size,
+  and focus is visible throughout.
+- Contrast, reduced motion, local persistence, and existing editor features
+  pass focused QA.
+- The final screenshots show restraint: black/charcoal surfaces, lavender
+  signal, crisp borders, readable prose, and atmosphere only where it helps.

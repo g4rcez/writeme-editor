@@ -101,7 +101,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
                 : "Saved";
 
     return (
-        <div className="fixed right-4 bottom-3 z-navbar flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-lg border border-border/40 bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-soft print:hidden">
+        <div className="writeme-editor-status-bar print:hidden">
             <output aria-live="polite" className="flex items-center gap-1.5">
                 <span
                     aria-hidden="true"

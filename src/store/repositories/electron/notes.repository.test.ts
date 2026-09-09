@@ -3,10 +3,14 @@ import { SettingsService } from "../../settings";
 import { NotesRepository } from "./notes.repository";
 
 const get = vi.fn();
+const getAll = vi.fn();
+const save = vi.fn();
 const hardDelete = vi.fn();
 const getTrashed = vi.fn();
 const getRecentNotes = vi.fn();
 const deleteFile = vi.fn();
+const readDirRecursive = vi.fn();
+const readFile = vi.fn();
 const tabs = { deleteByNoteId: vi.fn() };
 
 beforeEach(() => {
@@ -23,14 +27,75 @@ beforeEach(() => {
         value: {
             db: {
                 get,
+                getAll,
+                save,
                 notes: { hardDelete, getTrashed, getRecentNotes },
             },
-            fs: { deleteFile },
+            fs: { deleteFile, readDirRecursive, readFile },
         },
     });
 });
 
 describe("Electron NotesRepository", () => {
+    it("indexes every Markdown workspace file, including MDX files", async () => {
+        getAll.mockResolvedValue([]);
+        readDirRecursive.mockResolvedValue({
+            success: true,
+            files: [
+                { name: "guide.md", path: "/notes/guide.md", relativePath: "guide.md" },
+                { name: "component.mdx", path: "/notes/component.mdx", relativePath: "component.mdx" },
+                { name: "image.txt", path: "/notes/image.txt", relativePath: "image.txt" },
+            ],
+        });
+        readFile.mockImplementation(async (filePath: string) => ({
+            success: true,
+            content: filePath.endsWith(".mdx") ? "# Component\nReact notes" : "# Guide\nSearchable text",
+            fileSize: 24,
+            lastModified: "2026-01-01T00:00:00.000Z",
+        }));
+
+        const repository = new NotesRepository(tabs as never);
+        const notes = await repository.getAll();
+
+        expect(notes.map((note) => note.filePath)).toEqual(["/notes/guide.md", "/notes/component.mdx"]);
+        expect(notes.map((note) => note.content)).toEqual(["# Guide\nSearchable text", "# Component\nReact notes"]);
+        expect(save).toHaveBeenCalledTimes(2);
+        expect(readFile).toHaveBeenCalledTimes(2);
+    });
+
+    it("hydrates indexed workspace notes with current file contents", async () => {
+        const metadata = {
+            id: "guide",
+            title: "Guide",
+            filePath: "/notes/guide.md",
+            fileSize: 1,
+            lastSynced: "2025-01-01T00:00:00.000Z",
+            updatedAt: "2025-01-01T00:00:00.000Z",
+        };
+        getAll.mockResolvedValue([metadata]);
+        readDirRecursive.mockResolvedValue({
+            success: true,
+            files: [{ name: "guide.md", path: "/notes/guide.md", relativePath: "guide.md" }],
+        });
+        readFile.mockResolvedValue({
+            success: true,
+            content: "find me in the file",
+            fileSize: 19,
+            lastModified: "2026-01-01T00:00:00.000Z",
+        });
+
+        const repository = new NotesRepository(tabs as never);
+        const [note] = await repository.getAll();
+
+        expect(note?.id).toBe("guide");
+        expect(note?.content).toBe("find me in the file");
+        expect(note?.updatedAt.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+        expect(save).toHaveBeenCalledWith(
+            "notes",
+            expect.objectContaining({ id: "guide", fileSize: 19, lastSynced: new Date("2026-01-01T00:00:00.000Z") }),
+        );
+    });
+
     it("keeps recent-note IPC requests within the 10,000 row limit", async () => {
         getRecentNotes.mockResolvedValue([]);
         const repository = new NotesRepository(tabs as never);

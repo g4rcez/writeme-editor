@@ -186,6 +186,31 @@ export const RootLayout = () => {
     }, [state.directory]);
 
     useEffect(() => {
+        if (!isElectron() || !state.directory) return;
+
+        let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+        const refreshNotes = () => {
+            if (refreshTimer) clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => {
+                void repositories.notes
+                    .getAll()
+                    .then((notes) => dispatch.notes(notes))
+                    .catch((error) => console.error("Failed to refresh workspace notes:", error));
+            }, 100);
+        };
+        const unsubscribeFileChanges = window.electronAPI.fs.onFileChanged(({ filePath }) => {
+            if (/\.(?:md|mdx)$/i.test(filePath)) refreshNotes();
+        });
+        const unsubscribeDirectoryChanges = window.electronAPI.fs.onDirChanged(refreshNotes);
+
+        return () => {
+            unsubscribeFileChanges();
+            unsubscribeDirectoryChanges();
+            if (refreshTimer) clearTimeout(refreshTimer);
+        };
+    }, [dispatch, state.directory]);
+
+    useEffect(() => {
         if (!isElectron()) return;
         const prevTabs = prevTabsRef.current;
         const removedTabs = prevTabs.filter((pt) => !state.tabs.find((ct) => ct.id === pt.id));
