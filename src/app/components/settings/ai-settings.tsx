@@ -172,6 +172,20 @@ function ProviderStatusIcon({ status }: { status: CredentialStatus }) {
     return <XCircleIcon size={14} className="text-muted-foreground" />;
 }
 
+function ExternalProviderLink({ href, label }: { href: string; label: string }) {
+    return (
+        <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-fit items-center gap-1 text-[11px] text-primary hover:underline"
+        >
+            <ArrowSquareOutIcon size={11} />
+            {label}
+        </a>
+    );
+}
+
 export const AISettings = () => {
     const adapters = adapterRegistry.getAll();
     const [adapterId, setAdapterId] = useState(adapters[0]?.id ?? "anthropic");
@@ -200,13 +214,36 @@ export const AISettings = () => {
     const ollamaModelRequestId = useRef(0);
     const openAIModelRequestId = useRef(0);
     const credentialRequestId = useRef(0);
+    const testRequestId = useRef(0);
     const authRequestId = useRef(0);
     const openAIModelSelectRef = useRef<HTMLSelectElement>(null);
     const focusOpenAIModelAfterRetryRef = useRef(false);
+    const pendingCredentialClears = useRef(new Map<string, Promise<void>>());
+
+    const trackCredentialClear = (id: string): Promise<void> => {
+        const clearPromise = authManager.clearCredentials(id);
+        pendingCredentialClears.current.set(id, clearPromise);
+        void clearPromise.then(
+            () => {
+                if (pendingCredentialClears.current.get(id) === clearPromise) {
+                    pendingCredentialClears.current.delete(id);
+                }
+            },
+            () => {
+                if (pendingCredentialClears.current.get(id) === clearPromise) {
+                    pendingCredentialClears.current.delete(id);
+                }
+            },
+        );
+        return clearPromise;
+    };
 
     const checkCredentials = async (id: string) => {
         const requestId = ++credentialRequestId.current;
         setCredentialStatus("loading");
+        const pendingClear = pendingCredentialClears.current.get(id);
+        if (pendingClear) await pendingClear.catch(() => undefined);
+        if (requestId !== credentialRequestId.current) return;
         const creds = await repositories.ai.loadCredentials(id);
         if (requestId !== credentialRequestId.current) return;
         if (!creds) {
@@ -272,13 +309,19 @@ export const AISettings = () => {
             authRequestId.current += 1;
             openAIModelRequestId.current += 1;
             ollamaModelRequestId.current += 1;
+            testRequestId.current += 1;
+            authManager.cancelOAuthFlow();
         };
     }, []);
 
     const handleAdapterChange = async (id: string) => {
         if (id === adapterId) return;
         authRequestId.current += 1;
+        credentialRequestId.current += 1;
+        testRequestId.current += 1;
         openAIModelRequestId.current += 1;
+        ollamaModelRequestId.current += 1;
+        authManager.cancelOAuthFlow();
         focusOpenAIModelAfterRetryRef.current = false;
         setAdapterId(id);
         setAuthLoading(false);
@@ -288,6 +331,7 @@ export const AISettings = () => {
         setTestStatus("idle");
         setTestError("");
         setAvailableModels([]);
+        setOllamaModelsLoading(false);
         setOpenAIModelsLoading(false);
         setOpenAIModelsError("");
         setOauthPending(false);
@@ -391,6 +435,7 @@ export const AISettings = () => {
             }
             return false;
         } catch (err: unknown) {
+            if (requestId !== ollamaModelRequestId.current) return false;
             if (!silent) {
                 setTestStatus("error");
                 setTestError(err instanceof Error ? err.message : "Connection failed.");
@@ -414,19 +459,27 @@ export const AISettings = () => {
             void loadOllamaModels(true);
         }, 500);
 
-        return () => window.clearTimeout(timeoutId);
+        return () => {
+            window.clearTimeout(timeoutId);
+            ollamaModelRequestId.current += 1;
+        };
     }, [adapterId, baseUrl]);
 
     const handleTestConnection = async () => {
         if (!adapter) return;
+        const requestId = ++testRequestId.current;
+        const enteredApiKey = apiKey.trim();
+        const isCurrentRequest = (): boolean => requestId === testRequestId.current;
+
         if (adapterId === OLLAMA_ADAPTER_ID) {
             const loaded = await loadOllamaModels(false);
-            if (loaded && apiKey.trim()) {
-                await repositories.ai.saveCredentials({
-                    adapterId,
-                    apiKey: apiKey.trim(),
+            if (!isCurrentRequest() || !loaded) return;
+            if (enteredApiKey) {
+                await authManager.saveCredentials(adapterId, {
+                    apiKey: enteredApiKey,
                     baseUrl: baseUrl.trim(),
                 });
+                if (!isCurrentRequest()) return;
                 setApiKey("");
             }
             return;
@@ -436,9 +489,10 @@ export const AISettings = () => {
         setTestError("");
         try {
             const savedCreds = await repositories.ai.loadCredentials(adapterId);
+            if (!isCurrentRequest()) return;
             const creds = {
                 ...(savedCreds ?? {}),
-                ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+                ...(enteredApiKey ? { apiKey: enteredApiKey } : {}),
             };
             if (!("apiKey" in creds) && !("accessToken" in creds)) {
                 setTestStatus("error");
@@ -446,28 +500,27 @@ export const AISettings = () => {
                 return;
             }
             const models = await adapter.listModels(creds);
+            if (!isCurrentRequest()) return;
             if (models.length > 0) {
                 setTestStatus("success");
                 setAvailableModels(models);
-                if (apiKey.trim()) {
-                    await repositories.ai.saveCredentials({
-                        adapterId,
-                        apiKey: apiKey.trim(),
+                if (enteredApiKey) {
+                    await authManager.saveCredentials(adapterId, {
+                        apiKey: enteredApiKey,
                     });
+                    if (!isCurrentRequest()) return;
                     setApiKey("");
                 }
+                if (!isCurrentRequest()) return;
                 setCredentialStatus("connected");
             } else {
                 setTestStatus("error");
-                setTestError(
-                    adapterId === OLLAMA_ADAPTER_ID
-                        ? "Could not reach Ollama or no models are installed. Check the base URL and try again."
-                        : "Could not reach the API. Check your credentials and try again.",
-                );
+                setTestError("Could not reach the API. Check your credentials and try again.");
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
+            if (!isCurrentRequest()) return;
             setTestStatus("error");
-            setTestError(err?.message ?? "Connection failed.");
+            setTestError(err instanceof Error ? err.message : "Connection failed.");
         }
     };
 
@@ -527,12 +580,28 @@ export const AISettings = () => {
         }
     };
 
-    const handleDisconnect = async () => {
+    const handleCancelOAuth = () => {
         authRequestId.current += 1;
+        authManager.cancelOAuthFlow();
+        setAuthLoading(false);
+        setOauthPending(false);
+        setOauthCode("");
+        setOauthInstruction("");
+    };
+
+    const handleDisconnect = async () => {
+        const requestId = ++authRequestId.current;
+        const disconnectedAdapterId = adapterId;
+        credentialRequestId.current += 1;
+        testRequestId.current += 1;
         openAIModelRequestId.current += 1;
+        ollamaModelRequestId.current += 1;
+        authManager.cancelOAuthFlow();
         focusOpenAIModelAfterRetryRef.current = false;
         setOpenAIModelsLoading(false);
-        await authManager.clearCredentials(adapterId);
+        setOllamaModelsLoading(false);
+        await trackCredentialClear(disconnectedAdapterId);
+        if (requestId !== authRequestId.current) return;
         setCredentialStatus("disconnected");
         setTestStatus("idle");
         setAvailableModels([]);
@@ -781,10 +850,7 @@ export const AISettings = () => {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setOauthPending(false);
-                                            setOauthCode("");
-                                        }}
+                                        onClick={handleCancelOAuth}
                                         className="w-fit text-[11px] text-muted-foreground hover:text-foreground"
                                     >
                                         Cancel
@@ -816,15 +882,7 @@ export const AISettings = () => {
                                     </Button>
                                 </div>
                                 {meta?.consoleUrl && (
-                                    <a
-                                        href={meta.consoleUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex w-fit items-center gap-1 text-[11px] text-primary hover:underline"
-                                    >
-                                        <ArrowSquareOutIcon size={11} />
-                                        Get API key
-                                    </a>
+                                    <ExternalProviderLink href={meta.consoleUrl} label="Get API key" />
                                 )}
                             </div>
                         )}
@@ -833,17 +891,7 @@ export const AISettings = () => {
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">API Key</span>
-                            {meta?.consoleUrl && (
-                                <a
-                                    href={meta.consoleUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-                                >
-                                    <ArrowSquareOutIcon size={11} />
-                                    Get key
-                                </a>
-                            )}
+                            {meta?.consoleUrl && <ExternalProviderLink href={meta.consoleUrl} label="Get key" />}
                         </div>
                         <div className="flex gap-2">
                             <Input

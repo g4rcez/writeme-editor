@@ -59,10 +59,12 @@ export function useNoteList(options: UseNoteListOptions = {}) {
     }, [state.notes, options.noteType]);
 
     const filteredNotes = useMemo(() => {
-        let result = innerNotes;
-        if (search) {
-            result = filterNotesByQuery(result, search);
+        if (search.trim()) {
+            // Search results are already ordered by fzf compatibility.
+            return filterNotesByQuery(innerNotes, search);
         }
+
+        const result = innerNotes;
         if (options.noteType === "read-it-later") {
             return [...result].sort(
                 (a: NoteWithTags, b: NoteWithTags) => b.createdAt.getTime() - a.createdAt.getTime(),

@@ -41,6 +41,17 @@ describe("fzf note search", () => {
         expect(filterNotesByQuery([note], "reference").map(({ id }) => id)).toEqual(["searchable"]);
     });
 
+    it("does not treat scattered characters as a note match", () => {
+        const note = createNote({
+            id: "unrelated",
+            title: "Banana ideas",
+            content: "The renderer handles diagrams.",
+        });
+
+        expect(fzfScore("Nada", note.title)).not.toBeNull();
+        expect(filterNotesByQuery([note], "Nada")).toEqual([]);
+    });
+
     it("returns every note for an empty query and ranks stronger matches first", () => {
         const titleMatch = createNote({ id: "title", title: "Project plan" });
         const contentMatch = createNote({ id: "content", title: "Other note", content: "A project plan" });
@@ -49,6 +60,18 @@ describe("fzf note search", () => {
         expect(filterNotesByQuery([contentMatch, titleMatch], "project").map(({ id }) => id)).toEqual([
             "title",
             "content",
+        ]);
+    });
+
+    it("orders compatible title matches before less compatible title matches", () => {
+        const distantMatch = createNote({ id: "distant", title: "A note about project" });
+        const prefixMatch = createNote({ id: "prefix", title: "Project plan" });
+        const exactMatch = createNote({ id: "exact", title: "Project" });
+
+        expect(filterNotesByQuery([distantMatch, prefixMatch, exactMatch], "project").map(({ id }) => id)).toEqual([
+            "exact",
+            "prefix",
+            "distant",
         ]);
     });
 });

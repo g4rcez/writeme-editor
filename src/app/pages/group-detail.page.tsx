@@ -10,6 +10,7 @@ import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { NoteGroupMember } from "@/store/repositories/entities/note-group-member";
+import { filterNotesByQuery } from "@/lib/note-search";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -103,13 +104,8 @@ export default function GroupDetailPage() {
     const memberNoteIds = useMemo(() => new Set(localMembers.map((m) => m.noteId)), [localMembers]);
 
     const availableNotes = useMemo(() => {
-        const q = addNoteQuery.toLowerCase();
-        return state.notes.filter(
-            (n) =>
-                !n.deletedAt &&
-                !memberNoteIds.has(n.id) &&
-                (q === "" || (n.title || "Untitled").toLowerCase().includes(q)),
-        );
+        const candidates = state.notes.filter((note) => !note.deletedAt && !memberNoteIds.has(note.id));
+        return filterNotesByQuery(candidates, addNoteQuery);
     }, [state.notes, memberNoteIds, addNoteQuery]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));

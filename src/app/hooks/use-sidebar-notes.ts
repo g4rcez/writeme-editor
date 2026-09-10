@@ -112,8 +112,9 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
                     break;
             }
         }
-        if (searchQuery) {
-            result = filterNotesByQuery(result, searchQuery);
+        if (searchQuery.trim()) {
+            // Search results are already ordered by fzf compatibility.
+            return filterNotesByQuery(result, searchQuery);
         }
 
         if (sortBy === "alphabetical") {

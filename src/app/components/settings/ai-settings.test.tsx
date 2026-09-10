@@ -20,7 +20,9 @@ const mocks = vi.hoisted(() => ({
     getCredentials: vi.fn(),
     startOAuthFlow: vi.fn(),
     completeOAuthFlow: vi.fn(),
+    cancelOAuthFlow: vi.fn(),
     clearCredentials: vi.fn(),
+    listAnthropicModels: vi.fn(),
     listOpenAIModels: vi.fn(),
     listOllamaModels: vi.fn(),
     setAlert: vi.fn(),
@@ -79,7 +81,7 @@ vi.mock("@/app/ai/adapters/registry", () => {
         name: "Anthropic (Claude)",
         supportsOAuth: true,
         defaultModel: "claude-test",
-        listModels: vi.fn(async () => []),
+        listModels: mocks.listAnthropicModels,
     };
     const openAIAdapter = {
         id: "openai",
@@ -108,8 +110,10 @@ vi.mock("@/app/ai/adapters/registry", () => {
 vi.mock("@/app/ai/auth/auth-manager", () => ({
     authManager: {
         getCredentials: mocks.getCredentials,
+        saveCredentials: mocks.saveCredentials,
         startOAuthFlow: mocks.startOAuthFlow,
         completeOAuthFlow: mocks.completeOAuthFlow,
+        cancelOAuthFlow: mocks.cancelOAuthFlow,
         clearCredentials: mocks.clearCredentials,
     },
 }));
@@ -163,6 +167,7 @@ beforeEach(() => {
         accessToken: "fresh-token",
         accountId: "account-id",
     });
+    mocks.listAnthropicModels.mockResolvedValue([]);
     mocks.listOllamaModels.mockResolvedValue([]);
     mocks.startOAuthFlow.mockResolvedValue({
         message: "Finish signing in with OpenAI.",
@@ -383,5 +388,120 @@ describe("AISettings OpenAI models", () => {
 
         expect(ollamaButton).toHaveAttribute("aria-pressed", "true");
         expect(ollamaButton).toHaveTextContent("Needs setup");
+    });
+
+    it("ignores a stale Ollama response after switching providers", async () => {
+        const ollamaResponse = deferred<Array<{ id: string; name: string }>>();
+        mocks.listOpenAIModels.mockResolvedValue([]);
+        mocks.listOllamaModels.mockReturnValue(ollamaResponse.promise);
+
+        render(<AISettings />);
+
+        const ollamaButton = await screen.findByRole("button", { name: /Ollama/ });
+        fireEvent.click(ollamaButton);
+        fireEvent.click(await screen.findByRole("button", { name: "Load models" }));
+        await waitFor(() => expect(mocks.listOllamaModels).toHaveBeenCalledTimes(1));
+
+        const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
+        fireEvent.click(anthropicButton);
+        await waitFor(() => expect(anthropicButton).toHaveTextContent("Needs setup"));
+
+        await act(async () => {
+            ollamaResponse.resolve([{ id: "stale-ollama-model", name: "Stale Ollama model" }]);
+            await ollamaResponse.promise;
+        });
+
+        expect(anthropicButton).toHaveTextContent("Needs setup");
+        expect(screen.queryByText(/Connected — 1 model/)).not.toBeInTheDocument();
+    });
+
+    it("ignores a stale generic provider test after switching providers", async () => {
+        const anthropicResponse = deferred<Array<{ id: string; name: string }>>();
+        mocks.listOpenAIModels.mockResolvedValue([]);
+        mocks.listAnthropicModels.mockReturnValue(anthropicResponse.promise);
+
+        render(<AISettings />);
+
+        const anthropicButton = await screen.findByRole("button", { name: /Anthropic \(Claude\)/ });
+        fireEvent.click(anthropicButton);
+        const apiKeyInput = await screen.findByPlaceholderText("Starts with sk-ant-");
+        fireEvent.change(apiKeyInput, { target: { value: "stale-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+        await waitFor(() => expect(mocks.listAnthropicModels).toHaveBeenCalledTimes(1));
+
+        const ollamaButton = screen.getByRole("button", { name: /Ollama/ });
+        fireEvent.click(ollamaButton);
+        await waitFor(() => expect(ollamaButton).toHaveTextContent("Needs setup"));
+
+        await act(async () => {
+            anthropicResponse.resolve([{ id: "stale-anthropic-model", name: "Stale Anthropic model" }]);
+            await anthropicResponse.promise;
+        });
+
+        expect(ollamaButton).toHaveTextContent("Needs setup");
+        expect(mocks.saveCredentials).not.toHaveBeenCalledWith(
+            "anthropic",
+            expect.objectContaining({ apiKey: "stale-api-key" }),
+        );
+    });
+
+    it("keeps the newly selected provider connected when an older disconnect finishes", async () => {
+        const disconnect = deferred<void>();
+        let openAICredentialsAvailable = true;
+        mocks.listOpenAIModels.mockResolvedValue([]);
+        mocks.loadCredentials.mockImplementation(async (adapterId: string) => {
+            if (adapterId === "openai" && openAICredentialsAvailable) {
+                return { adapterId, accessToken: "openai-token" };
+            }
+            if (adapterId === "anthropic") {
+                return { adapterId, accessToken: "anthropic-token" };
+            }
+            return null;
+        });
+        mocks.clearCredentials.mockImplementation(async () => {
+            await disconnect.promise;
+            openAICredentialsAvailable = false;
+        });
+
+        render(<AISettings />);
+
+        const openAIButton = await screen.findByRole("button", { name: /OpenAI \(GPT\)/ });
+        await waitFor(() => expect(openAIButton).toHaveTextContent("Connected"));
+        fireEvent.click(screen.getByRole("button", { name: "Disconnect OpenAI account" }));
+
+        const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
+        fireEvent.click(anthropicButton);
+        await waitFor(() => expect(anthropicButton).toHaveTextContent("Connected"));
+
+        fireEvent.click(openAIButton);
+        await waitFor(() => expect(openAIButton).toHaveTextContent("Checking"));
+
+        await act(async () => {
+            disconnect.resolve();
+            await disconnect.promise;
+        });
+
+        await waitFor(() => expect(openAIButton).toHaveTextContent("Needs setup"));
+    });
+
+    it("cancels an in-flight OAuth completion", async () => {
+        const oauthCompletion = deferred<void>();
+        mocks.loadCredentials.mockResolvedValue(null);
+        mocks.completeOAuthFlow.mockReturnValue(oauthCompletion.promise);
+
+        render(<AISettings />);
+
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Complete sign-in" }));
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        expect(mocks.cancelOAuthFlow).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            oauthCompletion.resolve();
+            await oauthCompletion.promise;
+        });
+
+        expect(mocks.setAlert).not.toHaveBeenCalledWith(expect.objectContaining({ type: "success" }));
+        expect(screen.getByRole("button", { name: "Sign in with OpenAI" })).toBeInTheDocument();
     });
 });

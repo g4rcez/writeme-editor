@@ -62,8 +62,39 @@ function parseJwtExpiresAt(token: string | undefined): number | undefined {
     return claims?.exp ? claims.exp * 1000 : undefined;
 }
 
+function parseTrustedOAuthUrl(rawUrl: string, expectedOrigin: string): string {
+    let url: URL;
+    try {
+        url = new URL(rawUrl);
+    } catch {
+        throw new Error("OAuth provider returned an invalid authorization URL.");
+    }
+    if (url.protocol !== "https:" || url.origin !== expectedOrigin) {
+        throw new Error("OAuth provider returned an untrusted authorization URL.");
+    }
+    return url.toString();
+}
+
+function openTrustedOAuthUrl(url: string): void {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.click();
+}
+
+function navigateToTrustedOAuthUrl(url: string): void {
+    const link = document.createElement("a");
+    link.href = url;
+    link.rel = "noopener noreferrer";
+    link.click();
+}
+
 const OPENAI_AUTH_CLAIMS_KEY = "https://api.openai.com/auth";
 const OPENAI_PLATFORM_SETUP_URL = "https://platform.openai.com/org-setup";
+const ANTHROPIC_AUTH_ORIGIN = "https://claude.ai";
+const GEMINI_AUTH_ORIGIN = "https://accounts.google.com";
+const OPENAI_AUTH_ORIGIN = "https://auth.openai.com";
 
 type OpenAIOrganization = { id?: string; is_default?: boolean };
 
@@ -117,7 +148,12 @@ export function parseOpenAIAccountId(token: string | undefined): string | undefi
 
 export function createOpenAIPlatformSetupUrl(idToken: string): string {
     const authClaims = getOpenAIAuthClaims(idToken);
-    const setupUrl = new URL(OPENAI_PLATFORM_SETUP_URL);
+    let setupUrl: URL;
+    try {
+        setupUrl = new URL(OPENAI_PLATFORM_SETUP_URL);
+    } catch {
+        throw new Error("OpenAI platform setup URL is invalid.");
+    }
     setupUrl.searchParams.set("t", idToken);
 
     const planType = authClaims?.chatgpt_plan_type;
@@ -149,6 +185,15 @@ type OpenAIDeviceCode = {
     userCode: string;
     deviceAuthId: string;
     interval: number;
+};
+
+type OAuthCredentialWrite = {
+    adapterId: string;
+    oauthGeneration: number;
+    credentialGeneration: number;
+    version: number;
+    wrote: boolean;
+    canceled: boolean;
 };
 
 /**
@@ -194,24 +239,191 @@ class AuthManager {
     private _pendingState: string | null = null;
     private _pendingAdapterId: string | null = null;
     private _pendingOpenAIDeviceCode: OpenAIDeviceCode | null = null;
+    private _oauthGeneration = 0;
+    private _credentialGenerations = new Map<string, number>();
+    private _credentialWriteQueues = new Map<string, Promise<void>>();
+    private _credentialWriteVersions = new Map<string, number>();
+    private _latestCredentialWriteVersions = new Map<string, number>();
+    private _pendingOAuthCredentialWrites = new Set<OAuthCredentialWrite>();
+
+    private _clearPendingOAuth(): void {
+        this._pendingVerifier = null;
+        this._pendingState = null;
+        this._pendingAdapterId = null;
+        this._pendingOpenAIDeviceCode = null;
+    }
+
+    private _beginOAuthFlow(): number {
+        this._invalidateOAuthFlow();
+        return this._oauthGeneration;
+    }
+
+    private _isCurrentOAuthFlow(generation: number): boolean {
+        return generation === this._oauthGeneration;
+    }
+
+    private _assertCurrentOAuthFlow(generation: number): void {
+        if (!this._isCurrentOAuthFlow(generation)) {
+            throw new Error("OAuth flow was canceled or superseded.");
+        }
+    }
+
+    private _assertPendingOAuth(adapterId: string, generation: number): void {
+        if (!this._isCurrentOAuthFlow(generation) || this._pendingAdapterId !== adapterId) {
+            throw new Error("No pending OAuth flow. Click the sign-in button first.");
+        }
+    }
+
+    private _getCredentialGeneration(adapterId: string): number {
+        return this._credentialGenerations.get(adapterId) ?? 0;
+    }
+
+    private _isCurrentCredentialGeneration(adapterId: string, generation: number): boolean {
+        return generation === this._getCredentialGeneration(adapterId);
+    }
+
+    private _invalidateCredentialGeneration(adapterId: string): void {
+        this._credentialGenerations.set(adapterId, this._getCredentialGeneration(adapterId) + 1);
+    }
+
+    private _nextCredentialWriteVersion(adapterId: string): number {
+        const version = (this._credentialWriteVersions.get(adapterId) ?? 0) + 1;
+        this._credentialWriteVersions.set(adapterId, version);
+        return version;
+    }
+
+    private _markCredentialWriteCommitted(adapterId: string, version: number): void {
+        this._latestCredentialWriteVersions.set(adapterId, version);
+    }
+
+    private _isLatestCredentialWrite(adapterId: string, version: number): boolean {
+        return this._latestCredentialWriteVersions.get(adapterId) === version;
+    }
+
+    private _enqueueCredentialWrite<T>(adapterId: string, operation: () => Promise<T>): Promise<T> {
+        const previous = this._credentialWriteQueues.get(adapterId) ?? Promise.resolve();
+        const queued = previous.catch(() => undefined).then(operation);
+        let current: Promise<void>;
+        current = queued.then(
+            () => {
+                if (this._credentialWriteQueues.get(adapterId) === current) {
+                    this._credentialWriteQueues.delete(adapterId);
+                }
+            },
+            () => {
+                if (this._credentialWriteQueues.get(adapterId) === current) {
+                    this._credentialWriteQueues.delete(adapterId);
+                }
+            },
+        );
+        this._credentialWriteQueues.set(adapterId, current);
+        return queued;
+    }
+
+    private async _saveCredentialsAtGeneration(
+        adapterId: string,
+        creds: AuthCredentials,
+        credentialGeneration: number,
+    ): Promise<boolean> {
+        const version = this._nextCredentialWriteVersion(adapterId);
+        return this._enqueueCredentialWrite(adapterId, async () => {
+            if (!this._isCurrentCredentialGeneration(adapterId, credentialGeneration)) return false;
+            await repositories.ai.saveCredentials({ adapterId, ...creds });
+            this._markCredentialWriteCommitted(adapterId, version);
+            return true;
+        });
+    }
+
+    private async _saveOAuthCredentials(
+        adapterId: string,
+        creds: AuthCredentials,
+        oauthGeneration: number,
+    ): Promise<boolean> {
+        const write: OAuthCredentialWrite = {
+            adapterId,
+            oauthGeneration,
+            credentialGeneration: this._invalidateAndGetCredentialGeneration(adapterId),
+            version: this._nextCredentialWriteVersion(adapterId),
+            wrote: false,
+            canceled: false,
+        };
+        this._pendingOAuthCredentialWrites.add(write);
+
+        try {
+            return await this._enqueueCredentialWrite(adapterId, async () => {
+                if (
+                    write.canceled ||
+                    !this._isCurrentOAuthFlow(oauthGeneration) ||
+                    !this._isCurrentCredentialGeneration(adapterId, write.credentialGeneration)
+                ) {
+                    return false;
+                }
+                await repositories.ai.saveCredentials({ adapterId, ...creds });
+                write.wrote = true;
+                this._markCredentialWriteCommitted(adapterId, write.version);
+                return true;
+            });
+        } finally {
+            this._pendingOAuthCredentialWrites.delete(write);
+        }
+    }
+
+    private _queueOAuthCredentialCleanup(write: OAuthCredentialWrite): void {
+        const cleanup = this._enqueueCredentialWrite(write.adapterId, async () => {
+            if (!write.wrote || !this._isLatestCredentialWrite(write.adapterId, write.version)) return;
+            const version = this._nextCredentialWriteVersion(write.adapterId);
+            await repositories.ai.clearCredentials(write.adapterId);
+            this._markCredentialWriteCommitted(write.adapterId, version);
+        });
+        void cleanup.catch(() => undefined);
+    }
+
+    private _invalidateAndGetCredentialGeneration(adapterId: string): number {
+        this._invalidateCredentialGeneration(adapterId);
+        return this._getCredentialGeneration(adapterId);
+    }
+
+    private _invalidateOAuthFlow(): void {
+        const canceledGeneration = this._oauthGeneration;
+        this._oauthGeneration += 1;
+        this._clearPendingOAuth();
+
+        const canceledWrites = [...this._pendingOAuthCredentialWrites].filter(
+            (write) => write.oauthGeneration === canceledGeneration,
+        );
+        const canceledAdapters = new Set(canceledWrites.map((write) => write.adapterId));
+        for (const adapterId of canceledAdapters) {
+            this._invalidateCredentialGeneration(adapterId);
+        }
+        for (const write of canceledWrites) {
+            write.canceled = true;
+            this._queueOAuthCredentialCleanup(write);
+        }
+    }
+
+    cancelOAuthFlow(): void {
+        this._invalidateOAuthFlow();
+    }
 
     async startOAuthFlow(adapterId: string): Promise<{ message: string }> {
+        const generation = this._beginOAuthFlow();
         if (adapterId === "anthropic") {
-            return this._openAnthropicBrowser();
+            return this._openAnthropicBrowser(generation);
         }
         if (adapterId === "gemini") {
-            return this._openGeminiBrowser();
+            return this._openGeminiBrowser(generation);
         }
         if (adapterId === "openai") {
-            return this._startOpenAIDeviceFlow();
+            return this._startOpenAIDeviceFlow(generation);
         }
         throw new Error(`OAuth not supported for adapter: ${adapterId}`);
     }
 
-    private async _openAnthropicBrowser(): Promise<{ message: string }> {
+    private async _openAnthropicBrowser(generation: number): Promise<{ message: string }> {
         const codeVerifier = generateCodeVerifier();
         const codeChallenge = await generateCodeChallenge(codeVerifier);
         const state = generateState();
+        this._assertCurrentOAuthFlow(generation);
 
         const params = new URLSearchParams({
             code: "true",
@@ -230,10 +442,17 @@ class AuthManager {
         this._pendingState = state;
         this._pendingAdapterId = "anthropic";
 
-        if (isElectron()) {
-            await window.electronAPI.ai.startOAuth(authUrl);
-        } else {
-            window.open(authUrl, "_blank");
+        try {
+            const trustedAuthUrl = parseTrustedOAuthUrl(authUrl, ANTHROPIC_AUTH_ORIGIN);
+            if (isElectron()) {
+                await window.electronAPI.ai.startOAuth(trustedAuthUrl);
+            } else {
+                openTrustedOAuthUrl(trustedAuthUrl);
+            }
+            this._assertCurrentOAuthFlow(generation);
+        } catch (error: unknown) {
+            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            throw error;
         }
 
         return {
@@ -241,13 +460,14 @@ class AuthManager {
         };
     }
 
-    private async _startOpenAIDeviceFlow(): Promise<{ message: string }> {
+    private async _startOpenAIDeviceFlow(generation: number): Promise<{ message: string }> {
         const resp = await proxyFetch(`${OPENAI_ISSUER}/api/accounts/deviceauth/usercode`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ client_id: OPENAI_CLIENT_ID }),
         });
 
+        this._assertCurrentOAuthFlow(generation);
         if (!resp.ok) {
             const err = await resp.text();
             throw new Error(`OpenAI device authorization failed: ${err}`);
@@ -260,6 +480,7 @@ class AuthManager {
             device_auth_id: string;
             interval?: string | number;
         };
+        this._assertCurrentOAuthFlow(generation);
 
         const userCode = data.user_code ?? data.usercode;
         if (!userCode) {
@@ -276,10 +497,17 @@ class AuthManager {
         this._pendingOpenAIDeviceCode = deviceCode;
         this._pendingAdapterId = "openai";
 
-        if (isElectron()) {
-            await window.electronAPI.ai.startOAuth(deviceCode.verificationUrl);
-        } else {
-            window.open(deviceCode.verificationUrl, "_blank");
+        try {
+            const trustedVerificationUrl = parseTrustedOAuthUrl(deviceCode.verificationUrl, OPENAI_AUTH_ORIGIN);
+            if (isElectron()) {
+                await window.electronAPI.ai.startOAuth(trustedVerificationUrl);
+            } else {
+                openTrustedOAuthUrl(trustedVerificationUrl);
+            }
+            this._assertCurrentOAuthFlow(generation);
+        } catch (error: unknown) {
+            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            throw error;
         }
 
         return {
@@ -287,10 +515,11 @@ class AuthManager {
         };
     }
 
-    private async _openGeminiBrowser(): Promise<{ message: string }> {
+    private async _openGeminiBrowser(generation: number): Promise<{ message: string }> {
         const codeVerifier = generateCodeVerifier();
         const codeChallenge = await generateCodeChallenge(codeVerifier);
         const clientId = getGoogleClientId();
+        this._assertCurrentOAuthFlow(generation);
 
         const redirectUri = isElectron() ? "writeme://oauth/callback" : `${window.location.origin}/oauth/callback`;
 
@@ -310,12 +539,19 @@ class AuthManager {
         this._pendingState = null;
         this._pendingAdapterId = "gemini";
 
-        if (isElectron()) {
-            await window.electronAPI.ai.startOAuth(authUrl);
-        } else {
-            sessionStorage.setItem("ai_pkce_verifier", codeVerifier);
-            sessionStorage.setItem("ai_pkce_adapter", "gemini");
-            window.location.href = authUrl;
+        try {
+            const trustedAuthUrl = parseTrustedOAuthUrl(authUrl, GEMINI_AUTH_ORIGIN);
+            if (isElectron()) {
+                await window.electronAPI.ai.startOAuth(trustedAuthUrl);
+            } else {
+                sessionStorage.setItem("ai_pkce_verifier", codeVerifier);
+                sessionStorage.setItem("ai_pkce_adapter", "gemini");
+                navigateToTrustedOAuthUrl(trustedAuthUrl);
+            }
+            this._assertCurrentOAuthFlow(generation);
+        } catch (error: unknown) {
+            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            throw error;
         }
 
         return {
@@ -324,13 +560,14 @@ class AuthManager {
     }
 
     async completeOAuthFlow(adapterId: string, rawInput: string): Promise<AuthCredentials> {
+        const generation = this._oauthGeneration;
         if (adapterId === "openai") {
-            if (this._pendingAdapterId !== adapterId) {
-                throw new Error("No pending OAuth flow. Click the sign-in button first.");
-            }
-            const creds = await this.completeOpenAIDeviceFlow();
-            this._pendingAdapterId = null;
-            await this.saveCredentials(adapterId, creds);
+            this._assertPendingOAuth(adapterId, generation);
+            const creds = await this.completeOpenAIDeviceFlow(generation);
+            this._assertCurrentOAuthFlow(generation);
+            const saved = await this._saveOAuthCredentials(adapterId, creds, generation);
+            this._assertCurrentOAuthFlow(generation);
+            if (!saved) throw new Error("OAuth credentials were not saved.");
             return creds;
         }
 
@@ -339,9 +576,7 @@ class AuthManager {
             throw new Error("No pending OAuth flow. Click the sign-in button first.");
         }
         const pendingState = this._pendingState;
-        this._pendingVerifier = null;
-        this._pendingState = null;
-        this._pendingAdapterId = null;
+        this._clearPendingOAuth();
 
         let creds: AuthCredentials;
         if (adapterId === "anthropic") {
@@ -357,20 +592,25 @@ class AuthManager {
             throw new Error(`OAuth not supported for adapter: ${adapterId}`);
         }
 
-        await this.saveCredentials(adapterId, creds);
+        this._assertCurrentOAuthFlow(generation);
+        const saved = await this._saveOAuthCredentials(adapterId, creds, generation);
+        this._assertCurrentOAuthFlow(generation);
+        if (!saved) throw new Error("OAuth credentials were not saved.");
         return creds;
     }
 
-    async completeOpenAIDeviceFlow(): Promise<AuthCredentials> {
+    async completeOpenAIDeviceFlow(generation = this._oauthGeneration): Promise<AuthCredentials> {
+        this._assertPendingOAuth("openai", generation);
         const deviceCode = this._pendingOpenAIDeviceCode;
         if (!deviceCode) {
             throw new Error("No pending OpenAI device authorization flow.");
         }
+        this._clearPendingOAuth();
 
-        const codeResp = await this.pollOpenAIDeviceCode(deviceCode);
-        this._pendingOpenAIDeviceCode = null;
-
+        const codeResp = await this.pollOpenAIDeviceCode(deviceCode, generation);
+        this._assertCurrentOAuthFlow(generation);
         const tokens = await this.exchangeOpenAICode(codeResp.authorization_code, codeResp.code_verifier);
+        this._assertCurrentOAuthFlow(generation);
 
         return {
             accessToken: tokens.access_token,
@@ -381,7 +621,10 @@ class AuthManager {
         };
     }
 
-    private async pollOpenAIDeviceCode(deviceCode: OpenAIDeviceCode): Promise<{
+    private async pollOpenAIDeviceCode(
+        deviceCode: OpenAIDeviceCode,
+        generation: number,
+    ): Promise<{
         authorization_code: string;
         code_challenge: string;
         code_verifier: string;
@@ -390,6 +633,7 @@ class AuthManager {
         const maxWaitMs = 60 * 1000;
 
         while (Date.now() - startedAt < maxWaitMs) {
+            this._assertCurrentOAuthFlow(generation);
             const resp = await proxyFetch(`${OPENAI_ISSUER}/api/accounts/deviceauth/token`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -398,13 +642,16 @@ class AuthManager {
                     user_code: deviceCode.userCode,
                 }),
             });
+            this._assertCurrentOAuthFlow(generation);
 
             if (resp.ok) {
-                return (await resp.json()) as {
+                const data = (await resp.json()) as {
                     authorization_code: string;
                     code_challenge: string;
                     code_verifier: string;
                 };
+                this._assertCurrentOAuthFlow(generation);
+                return data;
             }
 
             if (resp.status !== 403 && resp.status !== 404) {
@@ -413,6 +660,7 @@ class AuthManager {
             }
 
             await sleep(Math.max(deviceCode.interval, 1) * 1000);
+            this._assertCurrentOAuthFlow(generation);
         }
 
         throw new Error("OpenAI device authorization is still pending. Finish sign-in and try again.");
@@ -597,6 +845,7 @@ class AuthManager {
     }
 
     async getCredentials(adapterId: string, adapter: AIAdapter): Promise<AuthCredentials> {
+        const credentialGeneration = this._getCredentialGeneration(adapterId);
         const creds = await this.loadCredentials(adapterId);
         if (!creds) {
             if (adapterId === "ollama") return {};
@@ -604,14 +853,19 @@ class AuthManager {
         }
         if (adapter.isExpired(creds)) {
             const refreshed = await adapter.refresh(creds);
-            await this.saveCredentials(adapterId, refreshed);
+            await this._saveCredentialsAtGeneration(adapterId, refreshed, credentialGeneration);
             return refreshed;
         }
         return creds;
     }
 
     async saveCredentials(adapterId: string, creds: AuthCredentials): Promise<void> {
-        await repositories.ai.saveCredentials({ adapterId, ...creds });
+        this._invalidateCredentialGeneration(adapterId);
+        const version = this._nextCredentialWriteVersion(adapterId);
+        await this._enqueueCredentialWrite(adapterId, async () => {
+            await repositories.ai.saveCredentials({ adapterId, ...creds });
+            this._markCredentialWriteCommitted(adapterId, version);
+        });
     }
 
     async loadCredentials(adapterId: string): Promise<AuthCredentials | null> {
@@ -622,7 +876,12 @@ class AuthManager {
     }
 
     async clearCredentials(adapterId: string): Promise<void> {
-        await repositories.ai.clearCredentials(adapterId);
+        this._invalidateCredentialGeneration(adapterId);
+        const version = this._nextCredentialWriteVersion(adapterId);
+        await this._enqueueCredentialWrite(adapterId, async () => {
+            await repositories.ai.clearCredentials(adapterId);
+            this._markCredentialWriteCommitted(adapterId, version);
+        });
     }
 }
 
