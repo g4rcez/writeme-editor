@@ -1,9 +1,11 @@
 /// <reference lib="webworker" />
 import { Marked } from "marked";
+import { configureMathMarkdown } from "@/lib/latex-markdown";
 import { linkify } from "@/lib/link-utils";
 import { dedent } from "./dedent";
 
 const md = new Marked({ gfm: true, breaks: true });
+configureMathMarkdown(md);
 
 export function processMarkdown(text: string): string {
     const dedented = dedent(text);

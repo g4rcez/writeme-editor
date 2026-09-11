@@ -1,6 +1,7 @@
 import { Extension } from "@tiptap/core";
 import { DOMParser, Fragment, Slice } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { detectMarkdown } from "@/lib/markdown-paste/detect-markdown";
 import { dedent } from "@/lib/markdown-worker/dedent";
 import { elementFromString } from "../../util/dom";
 
@@ -86,13 +87,43 @@ export const MarkdownClipboard = Extension.create<MarkdownClipboardOptions>({
                                 }
                             }
 
-                            const parsed = this.editor.storage.markdown.parser!.parse(dedentedText, { inline: true });
+                            const parser = this.editor.storage.markdown.parser!;
+                            const parsed = parser.parse(dedentedText, { inline: true });
                             const slice = DOMParser.fromSchema(this.editor.schema).parseSlice(
                                 elementFromString(parsed),
                                 {
                                     preserveWhitespace: true,
                                 },
                             );
+
+                            if (detectMarkdown(dedentedText)) {
+                                const $from = view.state.selection.$from;
+                                let codeBlockDepth = $from.depth;
+                                while (codeBlockDepth > 0 && !$from.node(codeBlockDepth).type.spec.code) {
+                                    codeBlockDepth -= 1;
+                                }
+
+                                if (codeBlockDepth > 0) {
+                                    const codeBlock = $from.node(codeBlockDepth);
+                                    const blockStart = $from.start(codeBlockDepth);
+                                    const blockEnd = $from.end(codeBlockDepth);
+                                    const replacesCodeBlock =
+                                        codeBlock.content.size === 0 ||
+                                        (view.state.selection.from <= blockStart &&
+                                            view.state.selection.to >= blockEnd);
+
+                                    if (replacesCodeBlock) {
+                                        const parsedDocument = DOMParser.fromSchema(this.editor.schema).parse(
+                                            elementFromString(parser.parse(dedentedText, { inline: false })),
+                                            { preserveWhitespace: true },
+                                        );
+                                        const from = $from.before(codeBlockDepth);
+                                        const to = $from.after(codeBlockDepth);
+                                        view.dispatch(view.state.tr.replaceWith(from, to, parsedDocument.content));
+                                        return true;
+                                    }
+                                }
+                            }
 
                             view.dispatch(view.state.tr.replaceSelection(slice));
                             return true;

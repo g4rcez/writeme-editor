@@ -26,15 +26,15 @@ export const Prompt = ({ title, message, initialValue = "", placeholder, open, o
     };
 
     return (
-        <Modal open={open} onChange={onCancel} title={title} className="max-w-sm">
+        <Modal open={open} onChange={onCancel} title={title} className="max-w-5xl">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
                 {message && <p className="text-sm text-muted-foreground">{message}</p>}
                 <Input
                     autoFocus
                     value={value}
+                    className="w-full"
                     placeholder={placeholder}
                     onChange={(e) => setValue(e.target.value)}
-                    className="w-full"
                 />
                 <div className="flex gap-2 w-full mt-4">
                     <Button theme="muted" type="button" onClick={onCancel} className="flex-1">

@@ -16,6 +16,9 @@ import {
 } from "shiki";
 import { getCurrentElementName } from "@/lib/editor-utils";
 import { isElectron } from "@/lib/is-electron";
+import { detectMarkdown } from "@/lib/markdown-paste/detect-markdown";
+import { normalizeMarkdownPaste } from "@/lib/markdown-paste/normalize-markdown";
+import { dedent } from "@/lib/markdown-worker/dedent";
 import { globalState } from "@/store/global.store";
 import { editorGlobalRef } from "../editor-global-ref";
 import { handlePasteImage } from "../extensions";
@@ -468,10 +471,13 @@ const PastePlugin = (name: string) =>
                         }
                     }
                 }
-                event.preventDefault();
                 const text = event.clipboardData?.getData("text/plain");
                 if (text) {
-                    const normalizedText = text.replace(/\r\n/g, "\n");
+                    const normalizedText = normalizeMarkdownPaste(text);
+                    if (detectMarkdown(dedent(normalizedText))) {
+                        return false;
+                    }
+                    event.preventDefault();
                     view.dispatch(state.tr.insertText(normalizedText, $from.pos, $to.pos));
                     return true;
                 }

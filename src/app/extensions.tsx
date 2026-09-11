@@ -1,3 +1,4 @@
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { BundledTheme } from "shiki";
 import {
     type AnyExtension,
@@ -11,7 +12,7 @@ import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
 import Highlight from "@tiptap/extension-highlight";
 import { OrderedList, TaskList } from "@tiptap/extension-list";
-import { InlineMath } from "@tiptap/extension-mathematics";
+import { BlockMath as TiptapBlockMath, InlineMath as TiptapInlineMath } from "@tiptap/extension-mathematics";
 import Mention from "@tiptap/extension-mention";
 import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
@@ -30,7 +31,9 @@ import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { formatObsidianLink, parseObsidianLinkBody } from "@/lib/obsidian-links";
 import { globalState } from "@/store/global.store";
+import { uiDispatch } from "@/store/ui.store";
 import { ReplacerCommands } from "./commands/commands";
+import { editorGlobalRef } from "./editor-global-ref";
 import { Blockquote } from "./elements/blockquote";
 import { Callout } from "./elements/callout";
 import { ShikiBlock } from "./elements/code-block";
@@ -58,6 +61,58 @@ function normalizeMentionPath(path: string): string {
         .replace(getUrlNamespace("mention"), "")
         .replace(/^\/@+mention\/note\//, "/note/")
         .replace(mentionNoteNamespacePattern, "/note/");
+}
+
+function renderBlockMathText(node: ProseMirrorNode): string {
+    return `$$\n${String(node.attrs.latex ?? "")}\n$$`;
+}
+
+function renderInlineMathText(node: ProseMirrorNode): string {
+    return `$${String(node.attrs.latex ?? "")}$`;
+}
+
+const BlockMath = TiptapBlockMath.extend({
+    renderText({ node }) {
+        return renderBlockMathText(node);
+    },
+    extendNodeSchema(extension) {
+        if (extension.name !== "blockMath") return {};
+        return {
+            leafText: renderBlockMathText,
+        };
+    },
+});
+
+const InlineMath = TiptapInlineMath.extend({
+    renderText({ node }) {
+        return renderInlineMathText(node);
+    },
+    extendNodeSchema(extension) {
+        if (extension.name !== "inlineMath") return {};
+        return {
+            leafText: renderInlineMathText,
+        };
+    },
+});
+
+function promptForMath(node: { attrs: { latex?: unknown } }, pos: number, block: boolean): void {
+    const editor = editorGlobalRef.current;
+    if (!editor) return;
+    uiDispatch.setPrompt({
+        open: true,
+        title: block ? "Edit block math" : "Edit inline math",
+        initialValue: String(node.attrs.latex ?? ""),
+        placeholder: "\\frac{1}{2}",
+        onConfirm: (latex: string) => {
+            const value = latex.trim();
+            if (!value || editor.isDestroyed) return;
+            if (block) {
+                editor.chain().focus().updateBlockMath({ latex: value, pos }).run();
+            } else {
+                editor.chain().focus().updateInlineMath({ latex: value, pos }).run();
+            }
+        },
+    });
 }
 
 export const handlePasteImage = async (currentEditor: TipTapEditor, position?: number): Promise<boolean> => {
@@ -175,8 +230,6 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
         Frontmatter,
         ColorCode,
         StarterKit.configure({
-            // @ts-expect-error
-            inlineMath: false,
             heading: false,
             codeBlock: false,
             blockquote: false,
@@ -256,7 +309,14 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
             exitOnTripleEnter: true,
             defaultTheme: getCurrentTheme(),
         }),
-        InlineMath,
+        BlockMath.configure({
+            katexOptions: { throwOnError: false },
+            onClick: (node, pos) => promptForMath(node, pos, true),
+        }),
+        InlineMath.configure({
+            katexOptions: { throwOnError: false },
+            onClick: (node, pos) => promptForMath(node, pos, false),
+        }),
         Subscript,
         TaskList,
         TaskListItem,

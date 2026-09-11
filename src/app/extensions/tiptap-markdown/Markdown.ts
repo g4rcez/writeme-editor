@@ -2,6 +2,7 @@ import { type Content, Extension, createNodeFromContent } from "@tiptap/core";
 import { DOMParser, Fragment } from "@tiptap/pm/model";
 import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
+import { normalizeMarkdownPaste } from "../../../lib/markdown-paste/normalize-markdown";
 import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
 import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownParser } from "./parse/MarkdownParser";
@@ -59,7 +60,7 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
             transformCopiedText: true,
             transformPastedText: true,
             onBeforePaste: (text: string) => {
-                return linkify(safeMarkdown(text));
+                return linkify(normalizeMarkdownPaste(safeMarkdown(text)));
             },
         };
     },

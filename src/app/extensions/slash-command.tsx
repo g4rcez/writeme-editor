@@ -30,7 +30,7 @@ type SlashCommandItem = {
     description: string;
     icon: React.ElementType;
     group: string;
-    needsModal?: "table" | "math";
+    needsModal?: "table" | "math" | "block-math";
     command: (editor: any, range: any) => void;
 };
 
@@ -137,6 +137,14 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
                 .run(),
     },
     {
+        label: "LaTeX Block",
+        description: "Insert a LaTeX display expression",
+        icon: MathOperationsIcon,
+        group: "Inserts",
+        needsModal: "block-math",
+        command: (editor, range) => editor.chain().focus().deleteRange(range).run(),
+    },
+    {
         label: "Math Block",
         description: "Insert a math code block",
         icon: MathOperationsIcon,
@@ -217,15 +225,25 @@ const TableInsertModal = ({ editor, onClose }: { editor: Editor; onClose: () => 
     );
 };
 
-const MathInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void }) => {
+const MathInsertModal = ({
+    editor,
+    onClose,
+    mode,
+}: {
+    editor: Editor;
+    onClose: () => void;
+    mode: "inline" | "block";
+}) => {
     const [mathExpr, setMathExpr] = useState("");
     const confirm = (e: React.FormEvent) => {
         e.preventDefault();
-        editor
-            .chain()
-            .focus()
-            .insertContent({ type: "inlineMath", attrs: { latex: mathExpr } })
-            .run();
+        const latex = mathExpr.trim();
+        if (!latex) return;
+        if (mode === "block") {
+            editor.chain().focus().insertBlockMath({ latex }).run();
+        } else {
+            editor.chain().focus().insertInlineMath({ latex }).run();
+        }
         onClose();
     };
     const handleClose = () => {
@@ -233,9 +251,20 @@ const MathInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void
         onClose();
     };
     return (
-        <Modal open onChange={handleClose} title="Insert Math Expression" className="max-w-sm">
+        <Modal
+            open
+            onChange={handleClose}
+            title={mode === "block" ? "Insert Block Math" : "Insert Inline Math"}
+            className="max-w-sm"
+        >
             <form onSubmit={confirm} className="flex flex-col gap-4">
-                <Input value={mathExpr} onChange={(e) => setMathExpr(e.target.value)} placeholder="\frac{1}{2}" />
+                <Input
+                    required
+                    title={mode === "block" ? "Block LaTeX expression" : "Inline LaTeX expression"}
+                    value={mathExpr}
+                    onChange={(e) => setMathExpr(e.target.value)}
+                    placeholder="\frac{1}{2}"
+                />
                 <div className="flex gap-2 justify-end">
                     <Button type="button" onClick={handleClose}>
                         Cancel
@@ -247,7 +276,7 @@ const MathInsertModal = ({ editor, onClose }: { editor: any; onClose: () => void
     );
 };
 
-const openSlashModal = (type: "table" | "math", editor: any) => {
+const openSlashModal = (type: "table" | "math" | "block-math", editor: Editor) => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -259,7 +288,7 @@ const openSlashModal = (type: "table" | "math", editor: any) => {
         type === "table" ? (
             <TableInsertModal editor={editor} onClose={close} />
         ) : (
-            <MathInsertModal editor={editor} onClose={close} />
+            <MathInsertModal editor={editor} mode={type === "block-math" ? "block" : "inline"} onClose={close} />
         ),
     );
 };

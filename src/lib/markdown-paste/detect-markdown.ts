@@ -1,3 +1,5 @@
+import { normalizeMarkdownPaste } from "./normalize-markdown";
+
 /**
  * Heuristics to detect if text contains markdown formatting.
  * Returns true if the text appears to be markdown content.
@@ -6,10 +8,10 @@
 const MARKDOWN_PATTERNS = {
     // Headings: # Heading, ## Heading, etc.
     headings: /^#{1,6}\s/m,
-    // Code fences: ```lang or ```
-    codeFences: /^```/m,
+    // Code fences: ```lang, ~~~lang, or their bare forms
+    codeFences: /^(?:`{3,}|~{3,})/m,
     // Unordered lists: - item, * item, + item
-    unorderedLists: /^[\-\*\+]\s/m,
+    unorderedLists: /^[-*+]\s/m,
     // Ordered lists: 1. item, 2. item
     orderedLists: /^\d+\.\s/m,
     // Links: [text](url)
@@ -31,7 +33,7 @@ const MARKDOWN_PATTERNS = {
     // Inline code: `code`
     inlineCode: /`[^`]+`/,
     // Task lists: - [ ] or - [x]
-    taskLists: /^[\-\*\+]\s\[[ xX]\]/m,
+    taskLists: /^[-*+]\s\[[ xX]\]/m,
 };
 
 /**
@@ -43,28 +45,24 @@ const MARKDOWN_PATTERNS = {
  * - 2+ other markdown patterns
  */
 export function detectMarkdown(text: string): boolean {
-    console.log("[markdown-detect] Input length:", text?.length);
-
     if (!text || typeof text !== "string") {
-        console.log("[markdown-detect] Invalid input");
         return false;
     }
 
+    const normalizedText = normalizeMarkdownPaste(text);
+
     // Code fences are a strong indicator
-    if (MARKDOWN_PATTERNS.codeFences.test(text)) {
-        console.log("[markdown-detect] Strong indicator: code fence");
+    if (MARKDOWN_PATTERNS.codeFences.test(normalizedText)) {
         return true;
     }
 
     // Tables are a strong indicator
-    if (MARKDOWN_PATTERNS.tables.test(text)) {
-        console.log("[markdown-detect] Strong indicator: table");
+    if (MARKDOWN_PATTERNS.tables.test(normalizedText)) {
         return true;
     }
 
     // Headings are a strong indicator
-    if (MARKDOWN_PATTERNS.headings.test(text)) {
-        console.log("[markdown-detect] Strong indicator: heading");
+    if (MARKDOWN_PATTERNS.headings.test(normalizedText)) {
         return true;
     }
 
@@ -85,16 +83,14 @@ export function detectMarkdown(text: string): boolean {
     ];
 
     for (const pattern of patternsToCheck) {
-        if (pattern.test(text)) {
+        if (pattern.test(normalizedText)) {
             matchCount++;
             // Return early if we have enough matches
             if (matchCount >= 2) {
-                console.log("[markdown-detect] Match count threshold reached:", matchCount);
                 return true;
             }
         }
     }
 
-    console.log("[markdown-detect] Final match count:", matchCount, "- not markdown");
     return false;
 }
