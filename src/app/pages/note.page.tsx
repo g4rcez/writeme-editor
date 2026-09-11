@@ -142,32 +142,46 @@ function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: s
 
 const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mode: EditorMode) => void }) => {
     const modes: Array<{ value: EditorMode; label: string }> = [
-        { value: "formatted", label: "Formatted" },
         { value: "markdown", label: "Markdown" },
+        { value: "formatted", label: "Formatted" },
     ];
 
     return (
-        <div className="writeme-editor-mode-controls flex items-center shrink-0 flex-col gap-1 print:hidden">
-            <fieldset
-                aria-label="Editor mode"
-                className="writeme-editor-mode-toggle inline-flex rounded-md border border-border/60 bg-card-background/70 p-0.5"
-            >
-                {modes.map((item) => {
-                    const active = item.value === mode;
-                    return (
-                        <Button
-                            size="tiny"
-                            key={item.value}
-                            aria-pressed={active}
-                            onClick={() => onChange(item.value)}
-                            theme={active ? "primary" : "muted"}
-                        >
-                            {item.label}
-                        </Button>
-                    );
-                })}
-            </fieldset>
+        <div className="flex items-center">
+            {modes.map((item) => {
+                const active = item.value === mode;
+                return (
+                    <Button
+                        size="small"
+                        key={item.value}
+                        aria-pressed={active}
+                        onClick={() => onChange(item.value)}
+                        theme={active ? "primary" : "muted"}
+                    >
+                        {item.label}
+                    </Button>
+                );
+            })}
         </div>
+    );
+};
+
+const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => {
+    return (
+        <Button
+            size="tiny"
+            theme="muted"
+            className="h-fit"
+            data-enabled={enabled.toString()}
+            onClick={(event) => {
+                const isTrue = event.currentTarget.dataset.enabled === "true";
+                onChange(!isTrue);
+            }}
+        >
+            <Checkbox size="tiny" onChange={(e) => onChange(e.target.checked)} checked={enabled} id="markdown-vim-mode">
+                <span>Vim mode</span>
+            </Checkbox>
+        </Button>
     );
 };
 
@@ -331,24 +345,14 @@ export default function NotePage() {
                             </span>
                             {note.url ? <span className="truncate">/ {new URL(note.url).hostname}</span> : null}
                         </div>
-                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
+                        <div className="flex items-center" role="toolbar" aria-label="Note tools">
+                            {editorMode === "markdown" ? (
+                                <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
+                            ) : null}
                             <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
-                            <div className="flex flex-col">
+                            <div className="flex flex-col items-center">
                                 <TableOfContents />
                                 <ExportNoteButton note={note} />
-                                {editorMode === "markdown" ? (
-                                    <label
-                                        htmlFor="markdown-vim-mode"
-                                        className="flex items-center gap-2 px-1 py-1 text-xs font-medium text-muted-foreground"
-                                    >
-                                        <Checkbox
-                                            id="markdown-vim-mode"
-                                            checked={rawEditorVimMode}
-                                            onChange={(event) => changeRawEditorVimMode(event.target.checked)}
-                                        />
-                                        <span>Vim mode</span>
-                                    </label>
-                                ) : null}
                             </div>
                         </div>
                     </div>
@@ -390,6 +394,9 @@ export default function NotePage() {
                             )}
                         </div>
                         <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
+                            {editorMode === "markdown" ? (
+                                <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
+                            ) : null}
                             <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
                             <TableOfContents />
                             <ExportNoteButton note={note} />

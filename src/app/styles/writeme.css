@@ -1,587 +1,596 @@
 @reference "../../tailwind.css";
 
 :root {
-  --wm-canvas: hsl(var(--background));
-  --wm-rail: hsl(var(--card-muted));
-  --wm-surface-1: hsl(var(--card-background));
-  --wm-surface-2: hsl(var(--muted));
-  --wm-surface-hover: hsl(var(--muted-hover, var(--muted)));
-  --wm-border: hsl(var(--border));
-  --wm-border-strong: hsl(var(--input-border, var(--border)));
-  --wm-ink: hsl(var(--foreground));
-  --wm-text: hsl(var(--foreground));
-  --wm-muted: hsl(var(--muted-foreground));
-  --wm-accent: hsl(var(--primary-DEFAULT));
-  --wm-accent-hover: hsl(var(--primary-hover, var(--primary-DEFAULT)));
-  --wm-accent-ink: hsl(var(--primary-foreground));
-  --wm-link: hsl(var(--primary-DEFAULT));
+    --wm-canvas: hsl(var(--background));
+    --wm-rail: hsl(var(--card-muted));
+    --wm-surface-1: hsl(var(--card-background));
+    --wm-surface-2: hsl(var(--muted));
+    --wm-surface-hover: hsl(var(--muted-hover, var(--muted)));
+    --wm-border: hsl(var(--border));
+    --wm-border-strong: hsl(var(--input-border, var(--border)));
+    --wm-ink: hsl(var(--foreground));
+    --wm-text: hsl(var(--foreground));
+    --wm-muted: hsl(var(--muted-foreground));
+    --wm-accent: hsl(var(--primary-DEFAULT));
+    --wm-accent-hover: hsl(var(--primary-hover, var(--primary-DEFAULT)));
+    --wm-accent-ink: hsl(var(--primary-foreground));
+    --wm-link: hsl(var(--primary-DEFAULT));
 }
 
 .writeme-aside-panel {
-  @apply flex-shrink-0 overflow-hidden print:hidden;
-  background-color: var(--wm-surface-1);
-  transition:
-    width 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 180ms ease-out;
+    @apply flex-shrink-0 overflow-hidden print:hidden;
+    background-color: var(--wm-surface-1);
+    transition:
+        width 220ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 180ms ease-out;
 }
 
 .writeme-aside-panel[data-resizing] {
-  transition: none;
+    transition: none;
 }
 
 .writeme-aside-panel--open {
-  @apply border-r opacity-100;
-  width: var(--panel-w);
-  border-color: hsla(var(--border), 0.55);
+    @apply border-r opacity-100;
+    width: var(--panel-w);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-aside-panel--collapsed {
-  @apply w-0 border-r-0 opacity-0;
+    @apply w-0 border-r-0 opacity-0;
 }
 
 .writeme-aside-panel-inner {
-  @apply flex h-full min-h-full flex-1 flex-col print:hidden;
-  background-color: var(--wm-surface-1);
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    @apply flex h-full min-h-full flex-1 flex-col print:hidden;
+    background-color: var(--wm-surface-1);
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .writeme-aside-panel[data-resizing] .writeme-aside-panel-inner {
-  transition: none;
+    transition: none;
 }
 
 .writeme-aside-resize {
-  @apply z-10 -ml-px w-1 flex-shrink-0 cursor-col-resize transition-colors focus-visible:bg-primary/50 focus-visible:outline-none print:hidden;
+    @apply z-10 -ml-px w-1 flex-shrink-0 cursor-col-resize transition-colors focus-visible:bg-primary/50 focus-visible:outline-none print:hidden;
 }
 
 .writeme-aside-resize:hover {
-  background-color: hsla(var(--primary-DEFAULT), 0.55);
+    background-color: hsla(var(--primary-DEFAULT), 0.55);
 }
 
 .writeme-aside-collapsed-toggle {
-  @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
+    @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
 }
 
 .writeme-aside-activity-bar {
-  @apply relative z-10 flex h-full w-14 flex-col items-center border-r py-3 print:hidden;
-  background-color: var(--wm-rail);
-  border-color: hsla(var(--border), 0.55);
+    @apply relative z-10 flex h-full w-14 flex-col items-center border-r py-3 print:hidden;
+    background-color: var(--wm-rail);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-aside-activity-brand {
-  @apply mb-5 flex size-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply mb-5 flex size-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-aside-activity-icons {
-  @apply flex w-full flex-1 flex-col items-center gap-1;
+    @apply flex w-full flex-1 flex-col items-center gap-1;
 }
 
 .writeme-aside-activity-divider {
-  @apply my-2 h-px w-6 shrink-0;
-  background-color: hsla(var(--border), 0.7);
+    @apply my-2 h-px w-6 shrink-0;
+    background-color: hsla(var(--border), 0.7);
 }
 
 .writeme-aside-activity-icon {
-  @apply relative flex size-10 items-center justify-center rounded-lg transition-[background-color,color,transform] duration-150;
+    @apply relative flex size-10 items-center justify-center rounded-lg transition-[background-color,color,transform] duration-150;
 }
 
 .writeme-aside-activity-icon--active {
-  @apply bg-primary/10 text-primary;
+    @apply bg-primary/10 text-primary;
 }
 
 .writeme-aside-activity-icon--inactive {
-  @apply text-foreground/45 hover:bg-muted/60 hover:text-foreground;
+    @apply text-foreground/45 hover:bg-muted/60 hover:text-foreground;
 }
 
 .writeme-aside-activity-indicator {
-  @apply absolute -left-3 h-5 w-0.5 rounded-r bg-primary;
+    @apply absolute -left-3 h-5 w-0.5 rounded-r bg-primary;
 }
 
 .writeme-aside-activity-badge {
-  @apply absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm;
+    @apply absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm;
 }
 
 .writeme-aside-activity-bottom {
-  @apply mt-auto flex w-full flex-col items-center gap-1;
+    @apply mt-auto flex w-full flex-col items-center gap-1;
 }
 
 @media (pointer: coarse) {
-  .writeme-aside-activity-bar {
-    @apply w-14;
-  }
+    .writeme-aside-activity-bar {
+        @apply w-14;
+    }
 
-  .writeme-aside-activity-icon {
-    @apply size-11;
-  }
+    .writeme-aside-activity-icon {
+        @apply size-11;
+    }
 }
 
 .writeme-aside-nav {
-  @apply flex h-full w-full flex-col border-r backdrop-blur-xl;
-  border-color: hsla(var(--border), 0.4);
+    @apply flex h-full w-full flex-col border-r backdrop-blur-xl;
+    border-color: hsla(var(--border), 0.4);
 }
 
 .writeme-aside-nav-header {
-  @apply p-3;
+    @apply p-3;
 }
 
 .writeme-aside-nav-title {
-  @apply flex items-center gap-2 px-2 py-2 font-semibold text-foreground;
+    @apply flex items-center gap-2 px-2 py-2 font-semibold text-foreground;
 }
 
 .writeme-aside-nav-content {
-  @apply flex-1 overflow-y-auto px-2 pb-4;
-  scrollbar-width: none;
+    @apply flex-1 overflow-y-auto px-2 pb-4;
+    scrollbar-width: none;
 }
 
 .writeme-aside-nav-content::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .writeme-aside-nav-item {
-  @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
+    @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
 }
 
 .writeme-aside-nav-item--active {
-  @apply font-medium text-primary;
-  background-color: hsla(var(--primary-DEFAULT), 0.1);
+    @apply font-medium text-primary;
+    background-color: hsla(var(--primary-DEFAULT), 0.1);
 }
 
 .writeme-aside-nav-item--inactive {
-  @apply text-foreground/55 hover:text-foreground;
+    @apply text-foreground/55 hover:text-foreground;
 }
 
 .writeme-aside-nav-item--inactive:hover {
-  background-color: hsla(var(--muted-DEFAULT), 0.5);
+    background-color: hsla(var(--muted-DEFAULT), 0.5);
 }
 
 .writeme-aside-nav-section {
-  @apply mt-4 mb-1 px-2 py-1.5 text-xs font-semibold tracking-wider uppercase;
-  color: hsla(var(--foreground), 0.35);
+    @apply mt-4 mb-1 px-2 py-1.5 text-xs font-semibold tracking-wider uppercase;
+    color: hsla(var(--foreground), 0.35);
 }
 
 .writeme-aside-nav-footer {
-  @apply border-t p-2;
-  border-color: hsla(var(--border), 0.4);
+    @apply border-t p-2;
+    border-color: hsla(var(--border), 0.4);
 }
 .writeme-sidebar-v2-tree [role="tree"] {
-  @apply px-2 py-2;
+    @apply px-2 py-2;
 }
 
 .writeme-sidebar-v2-tree [role="treeitem"] {
-  @apply min-w-0 text-muted-foreground hover:text-foreground;
+    @apply min-w-0 text-muted-foreground hover:text-foreground;
 }
 
 .writeme-sidebar-v2-group-list {
-  @apply flex flex-col gap-2;
+    @apply flex flex-col gap-2;
 }
 
 .writeme-sidebar-v2-legacy-pane {
-  @apply h-full min-h-0 overflow-hidden rounded-xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
+    @apply h-full min-h-0 overflow-hidden rounded-xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group {
-  @apply rounded-xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
+    @apply rounded-xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group-button {
-  @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
+    @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
 }
 
 .writeme-sidebar-v2-file {
-  @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
+    @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
 }
 
 .writeme-sidebar-v2-file--active {
-  @apply bg-primary/10 text-primary;
+    @apply bg-primary/10 text-primary;
 }
 
 .writeme-sidebar-v2-footer-tab {
-  @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
+    @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
 }
 
 .writeme-sidebar-v2-footer-tab--active {
-  @apply border-primary/20 bg-primary text-primary-foreground;
+    @apply border-primary/20 bg-primary text-primary-foreground;
 }
 
 .writeme-editor-page {
-  @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
-  gap: 0;
-  padding: 2.5rem clamp(1rem, 5vw, 4rem) 0;
+    @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
+    gap: 0;
+    padding: 2.5rem clamp(1rem, 5vw, 4rem) 0;
 }
 
 .writeme-editor-column,
 .writeme-editor {
-  @apply mx-auto w-full;
-  max-width: min(760px, 100%);
+    @apply mx-auto w-full;
+    max-width: min(760px, 100%);
 }
 
 .writeme-note-header {
-  @apply pb-1;
+    @apply pb-1;
 }
 
 .writeme-note-header-top {
-  @apply flex min-h-9 items-center justify-between gap-4;
+    @apply flex min-h-9 items-center justify-between gap-4;
 }
 
 .writeme-note-title-editor {
-  font-size: 1.75rem;
-  line-height: 1.2;
+    font-size: 1.75rem;
+    line-height: 1.2;
 }
 
 .writeme-note-header-actions {
-  @apply flex max-w-full shrink-0 items-center gap-1;
+    @apply flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1;
 }
 
 .writeme-note-tool-button {
-  @apply flex size-9 items-center justify-center rounded-md border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-9 items-center justify-center rounded-md border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-note-header-actions .writeme-table-of-contents-button {
-  @apply size-9 rounded-md shadow-none;
-  transform: none;
+    @apply size-9 rounded-md shadow-none;
+    transform: none;
 }
 
 .writeme-note-header-actions .writeme-table-of-contents-button:hover {
-  transform: none;
+    transform: none;
 }
 
 .writeme-note-header-actions .writeme-editor-mode-toggle {
-  @apply h-9 shadow-none;
+    @apply h-9 items-center justify-center shadow-none;
+}
+
+.writeme-note-header-actions .writeme-editor-mode-toggle button {
+    @apply justify-center text-center;
+}
+
+.writeme-markdown-vim-mode-toggle {
+    min-width: 5.5rem;
 }
 
 .writeme-note-metadata {
-  @apply flex flex-wrap items-center gap-x-3 gap-y-1 pb-3 text-xs text-muted-foreground;
+    @apply flex flex-wrap items-center gap-x-3 gap-y-1 pb-3 text-xs text-muted-foreground;
 }
 
 .writeme-editor {
-  @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
-  padding-top: 1.5rem;
-  padding-bottom: 4rem;
+    @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
+    padding-top: 1.5rem;
+    padding-bottom: 4rem;
 }
 
 .writeme-formatting-toolbar {
-  top: 0;
-  left: 0;
-  max-width: calc(100% - 1rem);
+    top: 0;
+    left: 0;
+    max-width: calc(100% - 1rem);
 }
 
 .writeme-formatting-toolbar[data-positioned="false"] {
-  visibility: hidden;
+    visibility: hidden;
 }
 
 .writeme-editor-content {
-  @apply h-full w-full outline-none print:block print:h-auto print:overflow-visible;
+    @apply h-full w-full outline-none print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-editor-content:focus,
 .writeme-editor-content:focus-visible {
-  outline: none;
+    outline: none;
 }
 
 .writeme-block {
-  @apply w-full xl:text-lg print:block print:h-auto print:overflow-visible;
+    @apply w-full xl:text-lg print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-editor-bubble {
-  @apply isolate z-navbar print:hidden;
+    @apply isolate z-navbar print:hidden;
 }
 
 .writeme-editor-bubble-actions {
-  @apply flex max-w-48 gap-1 overflow-y-auto rounded-lg border-floating-border bg-floating-background p-2 shadow-lg;
+    @apply flex max-w-48 gap-1 overflow-y-auto rounded-lg border-floating-border bg-floating-background p-2 shadow-lg;
 }
 
 .quicknote-window-drag-region {
-  -webkit-app-region: drag;
-  user-select: none;
+    -webkit-app-region: drag;
+    user-select: none;
 }
 
 .quicknote-window-drag-strip {
-  -webkit-app-region: drag;
-  @apply absolute top-0 right-0 z-navbar h-12;
-  left: 72px;
+    -webkit-app-region: drag;
+    @apply absolute top-0 right-0 z-navbar h-12;
+    left: 72px;
 }
 
 /* writeme-layout */
 .writeme-layout {
-  @apply flex h-screen min-h-0 w-full flex-col overflow-hidden bg-background print:block print:h-auto print:overflow-visible;
-  color: var(--wm-ink);
+    @apply flex h-screen min-h-0 w-full flex-col overflow-hidden bg-background print:block print:h-auto print:overflow-visible;
+    color: var(--wm-ink);
 }
 
 .writeme-layout-body {
-  @apply relative flex min-h-0 w-full flex-1 overflow-hidden print:block print:h-auto print:overflow-visible;
-  background-color: var(--wm-canvas);
+    @apply relative flex min-h-0 w-full flex-1 overflow-hidden print:block print:h-auto print:overflow-visible;
+    background-color: var(--wm-canvas);
 }
 
 .writeme-layout-main {
-  @apply relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background print:block print:h-auto print:overflow-visible;
+    @apply relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-scroll-container {
-  @apply min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-background print:block print:h-auto print:overflow-visible;
+    @apply min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-background print:block print:h-auto print:overflow-visible;
 }
 
 .writeme-app-header {
-  @apply flex h-12 min-h-12 shrink-0 items-center justify-between gap-3 border-b pr-4 print:hidden;
-  background-color: var(--wm-surface-1);
-  border-color: hsla(var(--border), 0.55);
+    @apply flex h-12 min-h-12 shrink-0 items-center justify-between gap-3 border-b pr-4 print:hidden;
+    background-color: var(--wm-surface-1);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-app-header-start {
-  @apply min-w-0 justify-self-start;
+    @apply min-w-0 justify-self-start;
 }
 
 .writeme-app-header-tabs {
-  @apply min-h-0 min-w-0 flex-1 self-stretch;
+    @apply min-h-0 min-w-0 flex-1 self-stretch;
 }
 
 .writeme-app-header-tabs > .writeme-tabs-bar {
-  @apply h-full min-h-0 border-b-0;
-  background-color: transparent;
+    @apply h-full min-h-0 border-b-0;
+    background-color: transparent;
 }
 
 .writeme-app-header-tabs .writeme-tabs-bar-new {
-  @apply h-full w-10;
+    @apply h-full w-10;
 }
 
 .writeme-app-header-actions {
-  @apply flex shrink-0 items-center gap-1 justify-self-end;
+    @apply flex shrink-0 items-center gap-1 justify-self-end;
 }
 
 .writeme-header-action {
-  @apply flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color] hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color] hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-mobile-header-action {
-  @apply hidden;
+    @apply hidden;
 }
 
 .writeme-tabs-bar {
-  @apply relative flex h-10 min-h-10 shrink-0 items-stretch border-b print:hidden;
-  background-color: var(--wm-canvas);
-  border-color: hsla(var(--border), 0.55);
+    @apply relative flex h-10 min-h-10 shrink-0 items-stretch border-b print:hidden;
+    background-color: var(--wm-canvas);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-tabs-bar-list {
-  @apply flex min-w-0 flex-1 items-stretch overflow-x-auto;
+    @apply flex min-w-0 flex-1 items-stretch overflow-x-auto;
 }
 
 .writeme-tabs-bar-new {
-  @apply flex size-10 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-  border-color: hsla(var(--border), 0.55);
+    @apply flex size-10 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-context-pane {
-  @apply relative z-20 flex h-full min-h-0 w-72 shrink-0 flex-col border-l print:hidden;
-  background-color: var(--wm-surface-1);
-  border-color: hsla(var(--border), 0.55);
+    @apply relative z-20 flex h-full min-h-0 w-72 shrink-0 flex-col border-l print:hidden;
+    background-color: var(--wm-surface-1);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-context-backdrop {
-  display: none;
+    display: none;
 }
 
 .writeme-context-pane-header {
-  @apply flex h-12 min-h-12 items-center justify-between gap-3 border-b px-4;
-  border-color: hsla(var(--border), 0.55);
+    @apply flex h-12 min-h-12 items-center justify-between gap-3 border-b px-4;
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-context-pane-content {
-  @apply min-h-0 flex-1 overflow-y-auto p-3;
+    @apply min-h-0 flex-1 overflow-y-auto p-3;
 }
 
 .writeme-context-section {
-  @apply border-b py-3 last:border-b-0;
-  border-color: hsla(var(--border), 0.4);
+    @apply border-b py-3 last:border-b-0;
+    border-color: hsla(var(--border), 0.4);
 }
 
 .writeme-context-section summary {
-  @apply flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground;
+    @apply flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground;
 }
 
 .writeme-context-section summary::-webkit-details-marker {
-  display: none;
+    display: none;
 }
 
 .writeme-context-section summary::after {
-  content: "+";
-  @apply text-sm font-normal text-muted-foreground/60;
+    content: "+";
+    @apply text-sm font-normal text-muted-foreground/60;
 }
 
 .writeme-context-section[open] summary::after {
-  content: "−";
+    content: "−";
 }
 
 .writeme-context-list {
-  @apply mt-2 flex flex-col gap-0.5;
+    @apply mt-2 flex flex-col gap-0.5;
 }
 
 .writeme-context-list-button {
-  @apply min-h-9 w-full rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply min-h-9 w-full rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-context-empty {
-  @apply px-2.5 py-2 text-xs leading-5 text-muted-foreground/70;
+    @apply px-2.5 py-2 text-xs leading-5 text-muted-foreground/70;
 }
 
 .writeme-context-property {
-  @apply flex items-start justify-between gap-3 px-2.5 py-1.5 text-xs;
+    @apply flex items-start justify-between gap-3 px-2.5 py-1.5 text-xs;
 }
 
 .writeme-context-property dt {
-  @apply shrink-0 text-muted-foreground;
+    @apply shrink-0 text-muted-foreground;
 }
 
 .writeme-context-property dd {
-  @apply min-w-0 truncate text-right text-foreground;
+    @apply min-w-0 truncate text-right text-foreground;
 }
 
 .writeme-home-shell,
 .writeme-settings-shell {
-  min-height: 100%;
+    min-height: 100%;
 }
 
 .writeme-home-welcome {
-  max-width: 76rem;
+    max-width: 76rem;
 }
 
 .writeme-settings-card {
-  @apply overflow-hidden rounded-xl border border-border/45 bg-card-background shadow-none;
+    @apply overflow-hidden rounded-xl border border-border/45 bg-card-background shadow-none;
 }
 
 .writeme-settings-card [data-component="card-title"] {
-  @apply border-b border-border/40 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:px-5;
+    @apply border-b border-border/40 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:px-5;
 }
 
 .writeme-settings-card [data-component="card-body"] {
-  @apply p-4 sm:p-5;
+    @apply p-4 sm:p-5;
 }
 
 .writeme-mobile-sidebar-backdrop {
-  display: none;
+    display: none;
 }
 
 .writeme-editor-status-bar {
-  @apply sticky bottom-0 z-10 mt-auto flex min-h-8 flex-wrap items-center justify-end gap-x-3 gap-y-1 border-t px-1 py-2 text-xs text-muted-foreground;
-  background-color: hsla(var(--background), 0.94);
-  border-color: hsla(var(--border), 0.55);
+    @apply sticky bottom-0 z-10 mt-auto flex min-h-8 flex-wrap items-center justify-end gap-x-3 gap-y-1 border-t px-1 py-2 text-xs text-muted-foreground;
+    background-color: hsla(var(--background), 0.94);
+    border-color: hsla(var(--border), 0.55);
 }
 
 @media (max-width: 959px) {
-  .writeme-aside-panel {
-    position: absolute;
-    z-index: 40;
-    top: 0;
-    bottom: 0;
-    left: 3.5rem;
-    width: 0;
-    box-shadow: 1rem 0 2rem hsla(var(--background), 0.2);
-  }
+    .writeme-aside-panel {
+        position: absolute;
+        z-index: 40;
+        top: 0;
+        bottom: 0;
+        left: 3.5rem;
+        width: 0;
+        box-shadow: 1rem 0 2rem hsla(var(--background), 0.2);
+    }
 
-  .writeme-aside-panel--open {
-    z-index: 40;
-    width: min(320px, calc(100vw - 3.5rem));
-  }
+    .writeme-aside-panel--open {
+        z-index: 40;
+        width: min(320px, calc(100vw - 3.5rem));
+    }
 
-  .writeme-aside-panel-inner {
-    width: min(320px, calc(100vw - 3.5rem)) !important;
-  }
+    .writeme-aside-panel-inner {
+        width: min(320px, calc(100vw - 3.5rem)) !important;
+    }
 
-  .writeme-aside-resize {
-    display: none;
-  }
+    .writeme-aside-resize {
+        display: none;
+    }
 
-  .writeme-mobile-sidebar-backdrop {
-    @apply fixed inset-0 z-30 bg-floating-overlay;
-  }
+    .writeme-mobile-sidebar-backdrop {
+        @apply fixed inset-0 z-30 bg-floating-overlay;
+    }
 
-  .writeme-context-backdrop {
-    @apply fixed inset-0 z-30 bg-floating-overlay;
-  }
+    .writeme-context-backdrop {
+        @apply fixed inset-0 z-30 bg-floating-overlay;
+    }
 
-  .writeme-context-pane {
-    position: absolute;
-    z-index: 40;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: auto;
-    width: min(320px, 86vw);
-    height: 100%;
-    box-shadow: -1rem 0 2rem hsla(var(--background), 0.2);
-  }
+    .writeme-context-pane {
+        position: absolute;
+        z-index: 40;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: auto;
+        width: min(320px, 86vw);
+        height: 100%;
+        box-shadow: -1rem 0 2rem hsla(var(--background), 0.2);
+    }
 }
 
 @media (min-width: 640px) {
-  .writeme-app-header-start {
-    display: none;
-  }
+    .writeme-app-header-start {
+        display: none;
+    }
 }
 
 @media (max-width: 639px) {
-  .writeme-aside-activity-bar {
-    display: none;
-  }
+    .writeme-aside-activity-bar {
+        display: none;
+    }
 
-  .writeme-aside-panel {
-    left: 0;
-  }
+    .writeme-aside-panel {
+        left: 0;
+    }
 
-  .writeme-aside-panel--open,
-  .writeme-aside-panel-inner {
-    width: min(320px, 88vw) !important;
-  }
+    .writeme-aside-panel--open,
+    .writeme-aside-panel-inner {
+        width: min(320px, 88vw) !important;
+    }
 
-  .writeme-mobile-header-action {
-    @apply flex;
-  }
+    .writeme-mobile-header-action {
+        @apply flex;
+    }
 
-  .writeme-app-header {
-    @apply gap-1 px-2;
-  }
+    .writeme-app-header {
+        @apply gap-1 px-2;
+    }
 
-  .writeme-app-header-start {
-    @apply gap-1;
-  }
+    .writeme-app-header-start {
+        @apply gap-1;
+    }
 
-  .writeme-header-action {
-    @apply size-8;
-  }
+    .writeme-header-action {
+        @apply size-8;
+    }
 
-  .writeme-note-header-top {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
+    .writeme-note-header-top {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
 
-  .writeme-note-header-actions {
-    margin-left: auto;
-  }
+    .writeme-note-header-actions {
+        width: 100%;
+        margin-inline: auto;
+    }
 
-  .writeme-note-title-editor {
-    font-size: 1.5rem;
-  }
+    .writeme-note-title-editor {
+        font-size: 1.5rem;
+    }
 
-  .writeme-note-header-actions .writeme-editor-mode-toggle button {
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
-  }
+    .writeme-note-header-actions .writeme-editor-mode-toggle button {
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
 
-  .writeme-editor-page {
-    padding: 1.75rem 1rem 0;
-  }
+    .writeme-editor-page {
+        padding: 1.75rem 1rem 0;
+    }
 
-  .writeme-editor-column,
-  .writeme-editor {
-    max-width: 100%;
-  }
+    .writeme-editor-column,
+    .writeme-editor {
+        max-width: 100%;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-  }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
 }

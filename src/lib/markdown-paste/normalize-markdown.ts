@@ -34,7 +34,7 @@ const ESCAPED_MARKDOWN_PATTERNS = [
     /(?:^|\n)[ \t]*\\(?:-{3,}|\*{3,}|_{3,})[ \t]*$/m,
 ];
 
-const HTML_ENTITY_PATTERN = /(?:^|\n)&(?:amp|apos|gt|lt|nbsp|quot|#\d+|#x[\da-f]+);/i;
+const HTML_ENTITY_PATTERN = /(?:^|\n)&gt;/i;
 
 type FenceLine = {
     indent: string;
@@ -134,23 +134,8 @@ function protectMath(text: string): { text: string; math: string[] } {
     return { text: protectedText, math };
 }
 
-function decodeHtmlEntities(text: string): string {
-    return text.replace(/&(#(?:x[\da-f]+|\d+)|[a-z][a-z\d]+);/gi, (entity, value: string) => {
-        if (value === "amp") return "&";
-        if (value === "apos") return "'";
-        if (value === "gt") return ">";
-        if (value === "lt") return "<";
-        if (value === "nbsp") return " ";
-        if (value === "quot") return '"';
-
-        const codePoint = value.startsWith("#x")
-            ? Number.parseInt(value.slice(2), 16)
-            : Number.parseInt(value.slice(1), 10);
-        if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) {
-            return entity;
-        }
-        return String.fromCodePoint(codePoint);
-    });
+function decodeBlockquoteEntities(text: string): string {
+    return text.replace(/&gt;/gi, ">");
 }
 
 function unescapeMarkdown(text: string): string {
@@ -203,7 +188,7 @@ export function normalizeMarkdownPaste(text: string): string {
     const fenced = protectFencedCode(normalizedLineEndings);
     const withBoundaries = addMissingMarkdownBoundaries(fenced.text);
     const math = protectMath(withBoundaries);
-    const decoded = decodeHtmlEntities(unescapeMarkdown(math.text));
+    const decoded = decodeBlockquoteEntities(unescapeMarkdown(math.text));
     const cleaned = removeEscapedSeparatorLines(decoded);
     const withMath = restoreTokens(cleaned, math.math, MATH_TOKEN_PREFIX, MATH_TOKEN_SUFFIX);
 
