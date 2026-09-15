@@ -117,7 +117,7 @@ describe("TreeView", () => {
         render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={vi.fn()} />);
 
         const retryButton = await screen.findByRole("button", { name: "Grant access and retry" });
-        expect(screen.getByText("Enable Documents Folder access, then retry.")).toBeInTheDocument();
+        expect(await screen.findByText("Enable Documents Folder access, then retry.")).toBeInTheDocument();
 
         fireEvent.click(retryButton);
 

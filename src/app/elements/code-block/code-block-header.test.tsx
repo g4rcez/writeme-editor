@@ -21,7 +21,7 @@ describe("CodeBlockHeader", () => {
             />,
         );
 
-        expect(screen.getByRole("button", { name: /copy to clipboard/i })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /^copy$/i })).toBeInTheDocument();
         expect(screen.getByRole("combobox")).toBeInTheDocument();
     });
 
@@ -45,7 +45,7 @@ describe("CodeBlockHeader", () => {
             />,
         );
 
-        await user.click(screen.getByRole("button", { name: /copy to clipboard/i }));
+        await user.click(screen.getByRole("button", { name: /^copy$/i }));
 
         expect(onCopy).toHaveBeenCalledTimes(1);
     });

@@ -153,7 +153,7 @@ describe("Dates.evaluateDaysUntil", () => {
     });
 });
 
-const FIXED_DATE = new Date("2025-01-15T12:00:00.000Z");
+const FIXED_DATE = new Date(2025, 0, 15, 12);
 
 describe("Dates.evaluateDateArithmetic", () => {
     beforeEach(() => vi.useFakeTimers({ now: FIXED_DATE }));
