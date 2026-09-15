@@ -10,11 +10,15 @@ import { ClipboardCloseListenerCommand, ClipboardListenerCommand } from "./clipb
 import { replacerRules } from "./replace-rules";
 
 export type ReplacerCommand = {
+    trigger: string;
+    description: string;
     find: RegExp;
     replace: (thing: ExtendedRegExpMatchArray, props: ReplacerHandlerParams, editor: Editor) => string;
 };
 
 export const CurrencyCommand: ReplacerCommand = {
+    trigger: ">>money 10USD to EUR=",
+    description: "Convert an amount between currencies.",
     find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
     replace: (capture, _, editor) => {
         let from = capture?.groups?.from?.trim().toUpperCase();
@@ -33,11 +37,15 @@ export const CurrencyCommand: ReplacerCommand = {
 };
 
 const MathCommand: ReplacerCommand = {
+    trigger: ">>math 1 + 1=",
+    description: "Calculate a math expression.",
     find: INLINE_MATH_PATTERN,
     replace: (capture) => runInlineMath(capture[0]),
 };
 
 const EvalCommand: ReplacerCommand = {
+    trigger: ">>eval expression;",
+    description: "Evaluate a JavaScript expression.",
     find: />>eval [^;]+ ?;$/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>eval /, "").trim();
@@ -48,6 +56,8 @@ const EvalCommand: ReplacerCommand = {
 };
 
 export const TimeCommand: ReplacerCommand = {
+    trigger: ">>time",
+    description: "Insert the current local time.",
     find: />>time $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>time /, "").trim();
@@ -57,6 +67,8 @@ export const TimeCommand: ReplacerCommand = {
 };
 
 export const DateCommand: ReplacerCommand = {
+    trigger: ">>date",
+    description: "Insert the current ISO date.",
     find: />>date $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>date /, "").trim();
@@ -66,6 +78,8 @@ export const DateCommand: ReplacerCommand = {
 };
 
 export const DateTimeCommand: ReplacerCommand = {
+    trigger: ">>datetime",
+    description: "Insert the current local date and time.",
     find: />>datetime $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
@@ -75,7 +89,9 @@ export const DateTimeCommand: ReplacerCommand = {
 };
 
 export const UuidCommand: ReplacerCommand = {
-    find: />>date $/,
+    trigger: ">>uuid",
+    description: "Insert a UUID.",
+    find: />>uuid $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>uuid /, "").trim();
         if (expr === "") return "";
@@ -84,6 +100,8 @@ export const UuidCommand: ReplacerCommand = {
 };
 
 export const LatexInlineCommand: ReplacerCommand = {
+    trigger: ">>expr",
+    description: "Open the inline math expression prompt.",
     find: />>expr $/,
     replace: (_, __, editor) => {
         uiDispatch.setPrompt({
@@ -104,6 +122,8 @@ export const LatexInlineCommand: ReplacerCommand = {
 const onlyNumbers = (x: string) => x.replace(/[^0-9]/g, "");
 
 export const TableCommand: ReplacerCommand = {
+    trigger: ">>table(3x4)",
+    description: "Insert a table with the specified columns and rows.",
     find: />>table ?\(\d+[x,]\d+\)$/,
     replace: (regex, _, editor) => {
         const coords = regex[0].match(/(\(\d+(x|,)\d+\))/)?.[0];
@@ -116,6 +136,8 @@ export const TableCommand: ReplacerCommand = {
 };
 
 const Rule3Command: ReplacerCommand = {
+    trigger: ">>rule3(2, 4, x, 8)",
+    description: "Solve a rule-of-three proportion.",
     find: />>rule3\s*\([^)]+\)$/,
     replace: (capture) => {
         const match = capture[0].trim();
@@ -128,6 +150,8 @@ const Rule3Command: ReplacerCommand = {
 };
 
 export const LatexInlineTransformerCommand: ReplacerCommand = {
+    trigger: "$$expression$$",
+    description: "Convert LaTeX text to inline math.",
     find: /\$\$[^$]+\$\$ /,
     replace: (regex, _, editor) => {
         const latex = regex[0];
@@ -145,23 +169,30 @@ export const LatexInlineTransformerCommand: ReplacerCommand = {
     },
 };
 
+const REPLACER_COMMANDS = [
+    Rule3Command,
+    DateCommand,
+    DateTimeCommand,
+    TimeCommand,
+    UuidCommand,
+    EvalCommand,
+    CurrencyCommand,
+    MathCommand,
+    TableCommand,
+    LatexInlineCommand,
+    ClipboardListenerCommand,
+    LatexInlineTransformerCommand,
+    ClipboardCloseListenerCommand,
+];
+
+export const TEXT_COMMAND_REFERENCE = REPLACER_COMMANDS.map(({ trigger, description }) => ({
+    trigger,
+    description,
+}));
+
 export const ReplacerCommands = Extension.create({
     name: "commands-replacer",
     addInputRules() {
-        return [
-            replacerRules(this.editor, Rule3Command),
-            replacerRules(this.editor, DateCommand),
-            replacerRules(this.editor, DateTimeCommand),
-            replacerRules(this.editor, TimeCommand),
-            replacerRules(this.editor, UuidCommand),
-            replacerRules(this.editor, EvalCommand),
-            replacerRules(this.editor, CurrencyCommand),
-            replacerRules(this.editor, MathCommand),
-            replacerRules(this.editor, TableCommand),
-            replacerRules(this.editor, LatexInlineCommand),
-            replacerRules(this.editor, ClipboardListenerCommand),
-            replacerRules(this.editor, LatexInlineTransformerCommand),
-            replacerRules(this.editor, ClipboardCloseListenerCommand),
-        ];
+        return REPLACER_COMMANDS.map((command) => replacerRules(this.editor, command));
     },
 });

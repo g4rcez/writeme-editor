@@ -10,7 +10,6 @@ import { version } from "@/../package.json";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { notificationRef } from "@/app/notification-ref";
-import { getSettingsPath, isSettingsSectionAvailable } from "@/app/settings/settings-sections";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { utf8ToBase64 } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
@@ -92,22 +91,20 @@ export const Commander = (props: Props) => {
 
     const noteGroup = useMemo(
         (): CommandItemTypes[] =>
-            globalState().notes.map(
-                (note: Note): CommandItemTypes => ({
-                    Icon: (
-                        <span className="flex items-center gap-1 text-xs text-primary">
-                            <NoteIcon />
-                            Note
-                        </span>
-                    ),
-                    type: "shortcut",
-                    title: `${note.title}`,
-                    action: (args) => {
-                        args.setOpen(false);
-                        void openNote(note);
-                    },
-                }),
-            ),
+            globalState().notes.map((note: Note): CommandItemTypes => ({
+                Icon: (
+                    <span className="flex items-center gap-1 text-xs text-primary">
+                        <NoteIcon />
+                        Note
+                    </span>
+                ),
+                type: "shortcut",
+                title: `${note.title}`,
+                action: (args) => {
+                    args.setOpen(false);
+                    void openNote(note);
+                },
+            })),
         [notesSig, openNote],
     );
 
@@ -403,19 +400,17 @@ export const Commander = (props: Props) => {
             ],
         };
         const actions = commands
-            .filter((x) => !x.hidden && !x.hideInCommander)
+            .filter((x) => !x.hidden)
             .filter((x) => x.type === Type.Shortcut)
-            .map(
-                (x): CommandItemTypes => ({
-                    title: x.description,
-                    shortcut: mapShortcutOS(x.bind),
-                    type: "shortcut",
-                    action: (args) => {
-                        args.setOpen(false);
-                        x.action();
-                    },
-                }),
-            );
+            .map((x): CommandItemTypes => ({
+                title: x.description,
+                shortcut: mapShortcutOS(x.bind),
+                type: "shortcut",
+                action: (args) => {
+                    args.setOpen(false);
+                    x.action();
+                },
+            }));
         const otherStuff: CommandItemTypes[] = [
             {
                 title: "Actions",
@@ -543,18 +538,14 @@ export const Commander = (props: Props) => {
                             navigate("/examples");
                         },
                     },
-                    ...(isSettingsSectionAvailable("shortcuts")
-                        ? [
-                              {
-                                  title: "Shortcut/Help menu",
-                                  type: "shortcut" as const,
-                                  action: (args: { setOpen: (v: boolean) => void }) => {
-                                      args.setOpen(false);
-                                      navigate(getSettingsPath("shortcuts"));
-                                  },
-                              },
-                          ]
-                        : []),
+                    {
+                        title: "Shortcut/Help menu",
+                        type: "shortcut",
+                        action: (args) => {
+                            args.setOpen(false);
+                            dispatch.help(true);
+                        },
+                    },
                     {
                         title: "Settings",
                         type: "shortcut",
@@ -578,22 +569,20 @@ export const Commander = (props: Props) => {
                         showActivity("templates");
                     },
                 },
-                ...templates.map(
-                    (t): CommandItemTypes => ({
-                        title: `Template: ${t.title}`,
-                        type: "shortcut",
-                        action: (args) => {
-                            args.setOpen(false);
-                            setTimeout(() => {
-                                dispatch.setCreateNoteDialog({
-                                    isOpen: true,
-                                    type: "note",
-                                    templateId: t.id,
-                                });
-                            }, 50);
-                        },
-                    }),
-                ),
+                ...templates.map((t): CommandItemTypes => ({
+                    title: `Template: ${t.title}`,
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        setTimeout(() => {
+                            dispatch.setCreateNoteDialog({
+                                isOpen: true,
+                                type: "note",
+                                templateId: t.id,
+                            });
+                        }, 50);
+                    },
+                })),
             ],
         };
 
@@ -621,16 +610,14 @@ export const Commander = (props: Props) => {
                         navigate("/groups");
                     },
                 },
-                ...props.noteGroups.map(
-                    (g): CommandItemTypes => ({
-                        title: `Group: ${g.title}`,
-                        type: "shortcut",
-                        action: (args) => {
-                            args.setOpen(false);
-                            navigate(`/groups/${g.id}`);
-                        },
-                    }),
-                ),
+                ...props.noteGroups.map((g): CommandItemTypes => ({
+                    title: `Group: ${g.title}`,
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        navigate(`/groups/${g.id}`);
+                    },
+                })),
             ],
         };
 

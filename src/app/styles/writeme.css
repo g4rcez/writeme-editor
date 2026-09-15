@@ -210,8 +210,8 @@
 
 .writeme-editor-column,
 .writeme-editor {
-    @apply mx-auto w-full;
-    max-width: min(760px, 100%);
+  @apply mx-auto w-full;
+  max-width: clamp(32rem, 120ch, 100%);
 }
 
 .writeme-note-header {
@@ -328,9 +328,9 @@
 }
 
 .writeme-app-header {
-    @apply flex h-12 min-h-12 shrink-0 items-center justify-between gap-3 border-b pr-4 print:hidden;
-    background-color: var(--wm-surface-1);
-    border-color: hsla(var(--border), 0.55);
+  @apply flex h-10 min-h-10 shrink-0 items-center justify-between gap-3 border-b pr-4 print:hidden;
+  background-color: var(--wm-surface-1);
+  border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-app-header-start {

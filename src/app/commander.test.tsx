@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
         clearTabs: vi.fn(),
         commander: vi.fn(),
         directoryBrowserDialog: vi.fn(),
+        help: vi.fn(),
         loadGroups: vi.fn(),
         recentNotesDialog: vi.fn(),
         setAiDrawer: vi.fn(),
@@ -291,7 +292,7 @@ describe("Commander", () => {
         expect(mocks.navigate).toHaveBeenCalledWith("/", { replace: true });
     });
 
-    it("opens the shortcuts page from the help command without showing the old shortcut binding", () => {
+    it("opens the shortcut modal from the help command without showing the old shortcut binding", () => {
         render(
             <Commander
                 note={mocks.state.note}
@@ -314,6 +315,7 @@ describe("Commander", () => {
         shortcutHelpCommand?.action?.({ setOpen });
 
         expect(setOpen).toHaveBeenCalledWith(false);
-        expect(mocks.navigate).toHaveBeenCalledWith("/settings/shortcuts");
+        expect(mocks.dispatch.help).toHaveBeenCalledWith(true);
+        expect(mocks.navigate).not.toHaveBeenCalled();
     });
 });

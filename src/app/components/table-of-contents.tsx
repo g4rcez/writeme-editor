@@ -1,4 +1,4 @@
-import { css } from "@g4rcez/components";
+import { Button, css } from "@g4rcez/components";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -126,7 +126,6 @@ export const TableOfContents = () => {
                 setIsOpen(false);
             }
         };
-
         document.addEventListener("pointerdown", handlePointerDown);
         document.addEventListener("keydown", handleKeyDown);
         return () => {
@@ -139,21 +138,17 @@ export const TableOfContents = () => {
 
     return (
         <div ref={popoverRef} className="relative shrink-0 print:hidden">
-            <button
-                type="button"
+            <Button
+                size="tiny"
                 aria-expanded={isOpen}
-                aria-controls={isOpen ? popoverId : undefined}
                 aria-label="Open table of contents"
                 onClick={() => setIsOpen((open) => !open)}
-                className={css(
-                    "writeme-table-of-contents-button rounded-button-radius flex size-11 items-center justify-center border transition-[background-color,border-color,color,transform] duration-200",
-                    "border-card-border bg-card-background text-muted-foreground shadow-soft",
-                    "hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                    isOpen && "border-primary/35 bg-primary/10 text-primary",
-                )}
+                className="writeme-table-of-contents-button"
+                aria-controls={isOpen ? popoverId : undefined}
+                theme={isOpen ? "ghost-neutral": "ghost-primary"}
             >
                 <ListBulletsIcon size={21} />
-            </button>
+            </Button>
 
             <AnimatePresence>
                 {isOpen && (

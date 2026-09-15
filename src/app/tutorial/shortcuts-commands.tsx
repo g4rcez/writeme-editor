@@ -1,40 +1,54 @@
 import { Modal } from "@g4rcez/components";
-import { useGlobalStore } from "../../store/global.store";
-import { type Shortcut, ShortcutItem, Type, useWritemeShortcuts } from "../elements/shortcut-items";
+import { mapShortcutOS } from "@/app/elements/shortcut-items";
+import { isElectron } from "@/lib/is-electron";
+import { useGlobalStore } from "@/store/global.store";
+import { SettingsService } from "@/store/settings";
+import { type CommandReferenceItem, getCommandReference } from "./command-reference";
 
-const ShortcutTutorial = (props: { shortcuts: Shortcut[]; title: string; description: string }) => {
+function CommandReferenceRow({ item }: { item: CommandReferenceItem }) {
+    const trigger = item.category === "Keyboard" ? mapShortcutOS(item.trigger) : item.trigger;
+
     return (
-        <div className="flex flex-col gap-6">
-            <header>
-                <h2 className="text-xl font-medium leading-relaxed mb-2">{props.title}</h2>
-                <p className="text-foreground/70">{props.description}</p>
-            </header>
-            <ul className="flex flex-col gap-4">
-                {props.shortcuts.map((x) => (
-                    <ShortcutItem key={x.bind} shortcut={x} />
+        <li className="flex flex-col gap-3 border-b border-card-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        {item.category}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{item.context}</span>
+                </div>
+                <p className="text-sm text-foreground">{item.description}</p>
+            </div>
+            <kbd className="w-fit shrink-0 rounded border border-border bg-background px-3 py-2 font-mono text-sm text-foreground sm:max-w-72">
+                {trigger}
+            </kbd>
+        </li>
+    );
+}
+
+export function ShortcutsCommands() {
+    const [state, dispatch] = useGlobalStore();
+    const commands = getCommandReference({
+        isDesktopApp: isElectron(),
+        settings: SettingsService.load(),
+    });
+
+    return (
+        <Modal
+            type="dialog"
+            className="max-w-4xl"
+            title="All shortcuts and commands"
+            open={state.help}
+            onChange={dispatch.help}
+        >
+            <ul aria-label="Shortcuts and commands" className="flex flex-col">
+                {commands.map((item, index) => (
+                    <CommandReferenceRow
+                        key={`${item.category}-${item.context}-${item.trigger}-${index}`}
+                        item={item}
+                    />
                 ))}
             </ul>
-        </div>
-    );
-};
-
-export const ShortcutsCommands = () => {
-    const [state, dispatch] = useGlobalStore();
-    const writemeShortcuts = useWritemeShortcuts();
-    return (
-        <Modal title="Shortcuts and commands" open={state.help} onChange={dispatch.help}>
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                <ShortcutTutorial
-                    title="Shortcuts"
-                    shortcuts={writemeShortcuts.filter((x) => x.type === Type.Shortcut)}
-                    description="These shortcuts you can run globally to enable/disable some functions"
-                />
-                <ShortcutTutorial
-                    title="Commands"
-                    shortcuts={writemeShortcuts.filter((x) => x.type === Type.Command)}
-                    description="These commands you can run in text editor to replace commands to their function results"
-                />
-            </div>
         </Modal>
     );
-};
+}

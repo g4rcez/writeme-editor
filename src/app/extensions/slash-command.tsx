@@ -185,6 +185,12 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
     },
 ];
 
+export const SLASH_COMMAND_REFERENCE = SLASH_COMMANDS.map(({ label, description }) => ({
+    trigger: `/${label.toLocaleLowerCase()}`,
+    title: label,
+    description,
+}));
+
 const TableInsertModal = ({ editor, onClose }: { editor: Editor; onClose: () => void }) => {
     const [rows, setRows] = useState("3");
     const [cols, setCols] = useState("3");

@@ -9,19 +9,15 @@ import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 
 // Shortcuts that only work in the Electron app
-const ELECTRON_ONLY_SHORTCUTS = ["mod+o", "mod+shift+e", "mod+/"];
-
-const noop = () => {};
+const ELECTRON_ONLY_SHORTCUTS = ["mod+o", "mod+shift+e"];
 
 export enum Type {
     Shortcut = "shortcut",
-    Command = "command",
 }
 
 export type Shortcut = {
     bind: string;
     hidden?: boolean;
-    hideInCommander?: boolean;
     action: () => any;
     description: string;
     type: Type;
@@ -87,13 +83,6 @@ export const useWritemeShortcuts = () => {
                     action: () => zoom(() => 1),
                 },
                 {
-                    description: "Shortcut/Help menu",
-                    bind: "mod+/",
-                    hideInCommander: true,
-                    type: Type.Shortcut,
-                    action: () => navigate("/settings/shortcuts"),
-                },
-                {
                     description: "Settings",
                     bind: "mod+,",
                     type: Type.Shortcut,
@@ -150,18 +139,6 @@ export const useWritemeShortcuts = () => {
                     type: Type.Shortcut,
                     action: () => dispatch.setAiDrawer({ isOpen: true, chatId: null }),
                 },
-                {
-                    description: "Start copy watcher mode",
-                    bind: ">>copy",
-                    type: Type.Command,
-                    action: noop,
-                },
-                {
-                    description: "Parse and solve the math expression until your next `=`",
-                    bind: ">>math",
-                    type: Type.Command,
-                    action: noop,
-                },
             ]
                 // Filter out Electron-only shortcuts in browser mode
                 .filter((s) => isElectron() || !ELECTRON_ONLY_SHORTCUTS.includes(s.bind))
@@ -183,30 +160,13 @@ export const useShortcuts = () => {
     }, []);
 };
 
-const IOS_DEVICES = [
-    "iPad Simulator",
-    "iPhone Simulator",
-    "iPod Simulator",
-    "iPad",
-    "iPhone",
-    "iPod",
-    "AppleWebkit",
-    "Apple",
-];
-
-function iOS() {
-    return (
-        IOS_DEVICES.includes(navigator.platform) ||
-        IOS_DEVICES.some((x) => navigator.userAgent.includes(x)) ||
-        (navigator.userAgent.includes("Mac") && "ontouchend" in document)
-    );
+function usesCommandKey(): boolean {
+    return /Macintosh|Mac OS X|iPhone|iPad|iPod/.test(navigator.userAgent);
 }
-
-type ShortcutDisplay = Pick<Shortcut, "bind" | "description">;
 
 const getShortcutKeyLabel = (key: string): string => {
     const normalizedKey = key.toLocaleLowerCase();
-    if (normalizedKey === "mod") return iOS() ? "⌘" : "Ctrl";
+    if (normalizedKey === "mod" || normalizedKey === "commandorcontrol") return usesCommandKey() ? "⌘" : "Ctrl";
     if (normalizedKey === "control" || normalizedKey === "ctrl") return "Ctrl";
     if (normalizedKey === "shift") return "Shift";
     if (normalizedKey === "alt") return "Alt";
@@ -217,14 +177,3 @@ const getShortcutKeyLabel = (key: string): string => {
 };
 
 export const mapShortcutOS = (s: string) => s.split("+").map(getShortcutKeyLabel).join(" + ");
-
-export const ShortcutItem = (props: { shortcut: ShortcutDisplay }) => (
-    <li className="flex flex-row gap-2 items-center">
-        <kbd className="flex flex-row gap-2 items-center py-1 px-2 font-medium rounded-md bg-background">
-            {props.shortcut.bind.split("+").map((x, i) => {
-                return <span key={`bind-${i}-${x}`}>{getShortcutKeyLabel(x)}</span>;
-            })}
-        </kbd>
-        <span>{props.shortcut.description}</span>
-    </li>
-);

@@ -7,6 +7,8 @@ let interval: null | NodeJS.Timeout = null;
 let clipboardState: string | null = null;
 
 export const ClipboardListenerCommand: ReplacerCommand = {
+    trigger: ">>copy",
+    description: "Start inserting new clipboard text into the note.",
     find: />>copy $/,
     replace: () => {
         if (interval) {
@@ -27,6 +29,8 @@ export const ClipboardListenerCommand: ReplacerCommand = {
 };
 
 export const ClipboardCloseListenerCommand: ReplacerCommand = {
+    trigger: ">>endcopy",
+    description: "Stop the clipboard watcher.",
     find: />>endcopy $/,
     replace: () => {
         if (interval) {

@@ -88,7 +88,6 @@ const WRITEME_SHORTCUT_DESCRIPTIONS: Record<string, string> = {
     "Open...": "Open a file or folder from disk.",
     Reload: "Reload the current app window.",
     Settings: "Open the settings page.",
-    "Shortcut/Help menu": "Open the shortcut reference.",
     "Zoom in": "Increase the interface scale.",
     "Zoom normal": "Reset the interface scale.",
     "Zoom out": "Decrease the interface scale.",

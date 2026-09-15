@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useGlobalStore } from "../../store/global.store";
-import { useWritemeShortcuts, Type } from "./shortcut-items";
+import { mapShortcutOS, useWritemeShortcuts, Type } from "./shortcut-items";
 
 vi.mock("../../store/global.store", () => ({
     CommanderType: {
@@ -24,7 +24,6 @@ describe("shortcut-items", () => {
     const dispatch = {
         commander: vi.fn(),
         directoryBrowserDialog: vi.fn(),
-        help: vi.fn(),
         recentNotesDialog: vi.fn(),
         setAiDrawer: vi.fn(),
         theme: vi.fn(),
@@ -33,6 +32,13 @@ describe("shortcut-items", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         (useGlobalStore as any).mockReturnValue([{ theme: "dark" }, dispatch]);
+    });
+
+    it("formats Electron CommandOrControl accelerators for display", () => {
+        const label = mapShortcutOS("CommandOrControl+Alt+N");
+
+        expect(label).toMatch(/^(⌘|Ctrl) \+ Alt \+ N$/);
+        expect(label).not.toContain("CommandOrControl");
     });
 
     it("should not include an Open Recent keyboard shortcut", () => {

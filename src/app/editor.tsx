@@ -165,7 +165,6 @@ type TiptapEditorCoreProps = {
 const TiptapEditorCore = memo(
     function TiptapEditorCore({ id, note, content, readonly, theme, dispatch, onSaveRef }: TiptapEditorCoreProps) {
         const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme)), [theme]);
-
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
         const generationRef = useRef(0);
@@ -201,9 +200,9 @@ const TiptapEditorCore = memo(
             },
             editorProps: {
                 attributes: {
-                    class: "writeme-editor-content",
                     role: "textbox",
                     "aria-multiline": "true",
+                    class: "writeme-editor-content",
                     "aria-readonly": readonly ? "true" : "false",
                     "aria-label": readonly ? "Read-only note editor" : "Note editor",
                 },
@@ -786,11 +785,11 @@ export const Editor = (props: {
         <Fragment key={`${props.note?.id || props.id}:${mode}`}>
             <InnerEditor
                 id={id}
+                mode={mode}
                 note={props.note}
                 onSave={props.onSave}
                 content={props.content}
                 readonly={props.readonly}
-                mode={mode}
                 rawEditorVimMode={rawEditorVimMode}
                 key={`${props.note?.id || props.id}:${mode}`}
             />

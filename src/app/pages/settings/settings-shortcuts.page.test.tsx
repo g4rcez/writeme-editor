@@ -23,12 +23,6 @@ vi.mock("@/app/elements/shortcut-items", () => ({
             action: vi.fn(),
         },
         {
-            bind: "mod+/",
-            description: "Shortcut/Help menu",
-            type: "shortcut",
-            action: vi.fn(),
-        },
-        {
             bind: ">>copy",
             description: "Start copy watcher mode",
             type: "command",
@@ -72,13 +66,11 @@ describe("SettingsShortcutsPage", () => {
         expect(screen.getByText("Ctrl+Shift+9")).toBeInTheDocument();
         expect(screen.getByText("New note")).toBeInTheDocument();
         expect(screen.getByText("New AI chat")).toBeInTheDocument();
-        expect(screen.getByText("Shortcut/Help menu")).toBeInTheDocument();
         expect(screen.getByText("Open the command palette.")).toBeInTheDocument();
         expect(screen.getByText("Switch directly to one of the first eight open tabs.")).toBeInTheDocument();
         expect(screen.getByText("Switch directly to the last open tab.")).toBeInTheDocument();
         expect(screen.getByText("Create a blank note.")).toBeInTheDocument();
         expect(screen.getByText("Create and open a new workspace AI chat.")).toBeInTheDocument();
-        expect(screen.getByText("Open the shortcut reference.")).toBeInTheDocument();
         expect(screen.queryByText("Read-only built-in shortcut.")).not.toBeInTheDocument();
         expect(screen.queryByText("Start copy watcher mode")).not.toBeInTheDocument();
     });

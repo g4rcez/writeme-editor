@@ -27,6 +27,7 @@ import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { notificationRef } from "@/app/notification-ref";
+import { ShortcutsCommands } from "@/app/tutorial/shortcuts-commands";
 import { registerHotkeys } from "@/lib/hotkeys";
 import { isElectron } from "@/lib/is-electron";
 import { getTabNavigationHotkey, type TabNavigationShortcut } from "@/lib/keyboard-shortcuts";
@@ -448,6 +449,7 @@ export const RootLayout = () => {
                             noteGroups={state.noteGroups}
                             terminalSessions={state.terminalSessions}
                         />
+                        <ShortcutsCommands />
                         <FindReplaceBar />
                         <CreateNoteDialog />
                         <CreateTemplateDialog />
@@ -526,6 +528,7 @@ export const RootLayout = () => {
                     noteGroups={state.noteGroups}
                     terminalSessions={state.terminalSessions}
                 />
+                <ShortcutsCommands />
                 <FindReplaceBar />
                 <CreateNoteDialog />
                 <CreateTemplateDialog />

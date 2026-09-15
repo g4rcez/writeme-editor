@@ -187,15 +187,15 @@ const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChan
 
 function ExportNoteButton({ note }: { note: Note }) {
     return (
-        <button
-            type="button"
+        <Button
+            size="tiny"
+            theme="ghost-primary"
             aria-label={`Export ${note.title}`}
             title="Export document (print or save as PDF)"
             onClick={() => printDocument({ title: note.title })}
-            className="writeme-note-tool-button print:hidden"
         >
             <PrinterIcon aria-hidden="true" size={21} />
-        </button>
+        </Button>
     );
 }
 
