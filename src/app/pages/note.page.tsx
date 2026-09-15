@@ -152,7 +152,7 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
                 const active = item.value === mode;
                 return (
                     <Button
-                        size="small"
+                        size="tiny"
                         key={item.value}
                         aria-pressed={active}
                         onClick={() => onChange(item.value)}
