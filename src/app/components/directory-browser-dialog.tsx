@@ -4,13 +4,13 @@ import { CircleNotchIcon } from "@phosphor-icons/react/dist/csr/CircleNotch";
 import { FileIcon } from "@phosphor-icons/react/dist/csr/File";
 import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TreeNode } from "@/types/tree";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useListSearch } from "@/app/hooks/use-list-search";
 import { getDirname } from "@/lib/file-utils";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
+import { FILE_SEARCH_RESULT_LIMIT, type FileSearchEvent, type TreeNode } from "@/types/tree";
 
 type ParentEntry = {
     type: "parent";
@@ -48,6 +48,15 @@ const getDirectoryPrefix = (workspaceDirectory: string, entryPath: string): stri
 
 const getFileTitle = (filename: string): string => filename.replace(/\.[^.]+$/, "");
 
+type SearchStatus = "idle" | "loading" | "complete" | "error";
+
+let nextDirectorySearchRequestId = 0;
+
+const createDirectorySearchRequestId = (): string => {
+    nextDirectorySearchRequestId += 1;
+    return `directory-search-${Date.now()}-${nextDirectorySearchRequestId}`;
+};
+
 export const DirectoryBrowserDialog = () => {
     const [state, dispatch] = useGlobalStore();
     const [homeDirectory, setHomeDirectory] = useState<string | null>(null);
@@ -55,6 +64,10 @@ export const DirectoryBrowserDialog = () => {
     const [entries, setEntries] = useState<TreeNode[]>([]);
     const [query, setQuery] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [searchEntries, setSearchEntries] = useState<TreeNode[]>([]);
+    const [searchStatus, setSearchStatus] = useState<SearchStatus>("idle");
+    const [searchError, setSearchError] = useState<string | null>(null);
+    const [searchTruncated, setSearchTruncated] = useState(false);
     const [loadedDirectory, setLoadedDirectory] = useState<string | null>(null);
     const [openingPath, setOpeningPath] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +76,7 @@ export const DirectoryBrowserDialog = () => {
     const workspaceDirectory = state.directory ?? homeDirectory;
     const currentDirectory = navigationPath ?? workspaceDirectory;
     const isLoading = Boolean(currentDirectory && loadedDirectory !== currentDirectory);
+    const isSearching = query.trim().length > 0;
 
     const handleDialogChange = useCallback(
         (isOpen: boolean): void => {
@@ -121,6 +135,68 @@ export const DirectoryBrowserDialog = () => {
         };
     }, [currentDirectory, state.directoryBrowserDialog]);
 
+    useEffect(() => {
+        const normalizedQuery = query.trim();
+        if (!state.directoryBrowserDialog || !currentDirectory || !normalizedQuery) {
+            setSearchEntries([]);
+            setSearchStatus("idle");
+            setSearchError(null);
+            setSearchTruncated(false);
+            return;
+        }
+
+        const fsApi = window.electronAPI.fs;
+        const requestId = createDirectorySearchRequestId();
+        let isCurrentRequest = true;
+
+        setSearchEntries([]);
+        setSearchStatus("loading");
+        setSearchError(null);
+        setSearchTruncated(false);
+
+        const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
+            if (!isCurrentRequest || event.requestId !== requestId) return;
+
+            if (event.type === "batch") {
+                startTransition(() => {
+                    setSearchEntries((previous) => [...previous, ...event.entries]);
+                });
+                return;
+            }
+
+            if (event.type === "complete") {
+                setSearchStatus("complete");
+                setSearchTruncated(event.truncated);
+                return;
+            }
+
+            setSearchStatus("error");
+            setSearchError(event.error);
+        });
+
+        const timeoutId = window.setTimeout(() => {
+            void fsApi
+                .startFileSearch(currentDirectory, normalizedQuery, requestId)
+                .then((result) => {
+                    if (!isCurrentRequest || result.success) return;
+                    setSearchStatus("error");
+                    setSearchError(result.error);
+                })
+                .catch((reason: unknown) => {
+                    if (!isCurrentRequest) return;
+                    setSearchStatus("error");
+                    setSearchError(reason instanceof Error ? reason.message : "Failed to search directory");
+                });
+        }, 180);
+
+        return () => {
+            isCurrentRequest = false;
+            window.clearTimeout(timeoutId);
+            unsubscribe();
+            void fsApi.cancelFileSearch(requestId).catch(() => undefined);
+        };
+    }, [currentDirectory, query, state.directoryBrowserDialog]);
+
     const parentEntry = useMemo<ParentEntry | null>(() => {
         if (!workspaceDirectory || !currentDirectory) return null;
         if (!getRelativeWorkspacePath(workspaceDirectory, currentDirectory)) return null;
@@ -137,21 +213,16 @@ export const DirectoryBrowserDialog = () => {
         [entries, parentEntry],
     );
 
-    const visibleEntries = useMemo(() => {
-        const normalizedQuery = query.trim().toLowerCase();
-        if (!normalizedQuery) return browserEntries;
+    const visibleEntries = useMemo<BrowserEntry[]>(
+        () =>
+            isSearching && (searchEntries.length > 0 || searchStatus === "complete") ? searchEntries : browserEntries,
+        [browserEntries, isSearching, searchEntries, searchStatus],
+    );
 
-        return browserEntries.filter((entry) => {
-            if (entry.type === "parent") return entry.name.includes(normalizedQuery);
-            const relativePath = workspaceDirectory
-                ? getRelativeWorkspacePath(workspaceDirectory, entry.path)
-                : entry.name;
-            return (
-                entry.name.toLowerCase().includes(normalizedQuery) ||
-                relativePath.toLowerCase().includes(normalizedQuery)
-            );
-        });
-    }, [browserEntries, query, workspaceDirectory]);
+    const activeError = isSearching ? searchError : error;
+    const isContentLoading = !isSearching && isLoading;
+    const isWaitingForSearch =
+        isSearching && searchEntries.length === 0 && (searchStatus === "idle" || searchStatus === "loading");
 
     const openFile = useCallback(
         async (node: TreeNode): Promise<void> => {
@@ -258,6 +329,17 @@ export const DirectoryBrowserDialog = () => {
                         title="Search files and directories"
                         hiddenLabel
                         left={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
+                        right={
+                            searchStatus === "loading" ? (
+                                <span
+                                    className="flex items-center text-muted-foreground"
+                                    role="status"
+                                    aria-label="Searching directory"
+                                >
+                                    <CircleNotchIcon className="size-4 animate-spin" aria-hidden="true" />
+                                </span>
+                            ) : undefined
+                        }
                         placeholder="Search files and directories..."
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
@@ -272,19 +354,21 @@ export const DirectoryBrowserDialog = () => {
                                 <p className="mt-2 text-sm">Open a workspace before browsing files.</p>
                             </div>
                         </div>
-                    ) : isLoading ? (
+                    ) : isContentLoading ? (
                         <div className="flex h-full items-center justify-center gap-2 p-8 text-muted-foreground">
                             <CircleNotchIcon className="size-5 animate-spin" />
                             <span>Loading directory...</span>
                         </div>
-                    ) : error ? (
+                    ) : activeError ? (
                         <div className="flex h-full items-center justify-center p-8 text-center">
                             <div>
-                                <p className="font-medium text-danger">Unable to read this directory</p>
-                                <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+                                <p className="font-medium text-danger">
+                                    {isSearching ? "Unable to search this directory" : "Unable to read this directory"}
+                                </p>
+                                <p className="mt-2 text-sm text-muted-foreground">{activeError}</p>
                             </div>
                         </div>
-                    ) : visibleEntries.length === 0 ? (
+                    ) : visibleEntries.length === 0 && !isWaitingForSearch ? (
                         <div className="flex h-full items-center justify-center p-8">
                             <Empty
                                 Icon={MagnifyingGlassIcon}
@@ -364,6 +448,11 @@ export const DirectoryBrowserDialog = () => {
                                     </li>
                                 );
                             })}
+                            {isSearching && searchTruncated && (
+                                <li className="px-3 py-2 text-center text-xs text-muted-foreground" role="status">
+                                    Showing the first {FILE_SEARCH_RESULT_LIMIT.toLocaleString()} matches.
+                                </li>
+                            )}
                         </ul>
                     )}
                 </div>

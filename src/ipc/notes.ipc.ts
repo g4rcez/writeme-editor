@@ -2,11 +2,27 @@ import type { Dirent } from "node:fs";
 import { BrowserWindow, Menu, MenuItem, app, clipboard, dialog, ipcMain, shell } from "electron";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { DirectoryAccessResult, TreeNode } from "../types/tree";
 import { dbManager } from "../main-process/database";
+import { searchWorkspaceFiles } from "../main-process/file-search";
 import { FileWatcher } from "../main-process/file-watcher";
+import {
+    DEFAULT_RECURSIVE_DIRECTORY_DEPTH,
+    type DirectoryAccessResult,
+    type FileSearchEvent,
+    type FileSearchStartResult,
+    type TreeNode,
+} from "../types/tree";
 
 const allowedFilesystemRoots = new Set<string>();
+const fileSearchJobs = new Map<string, AbortController>();
+
+type FileSearchRequest = {
+    rootPath: string;
+    query: string;
+    requestId: string;
+};
+
+const getFileSearchJobKey = (senderId: number, requestId: string): string => `${senderId}:${requestId}`;
 
 function normalizePath(input: string): string {
     return path.resolve(input);
@@ -15,12 +31,12 @@ function normalizePath(input: string): string {
 function expandAllowedRoots(): void {
     allowedFilesystemRoots.clear();
     allowedFilesystemRoots.add(app.getPath("userData"));
-
     const settings = dbManager().getAll<{ name: string; value: string }>("settings");
     const directoryRow = settings.find((row) => row.name === "directory");
     if (directoryRow?.value) {
         try {
             const parsed = JSON.parse(directoryRow.value);
+            console.log({ parsed });
             if (typeof parsed === "string" && parsed.trim()) {
                 allowedFilesystemRoots.add(normalizePath(parsed));
             }
@@ -350,53 +366,124 @@ export const notesIpcHandler = async () => {
         }
     });
 
-    ipcMain.handle("fs:readDirRecursive", async (_event, dirPath: string, maxDepth = 10) => {
-        const access = validatePaths(dirPath);
-        if (!access.success) {
-            return access;
+    ipcMain.handle("fs:searchFiles:start", (event, request: FileSearchRequest): FileSearchStartResult => {
+        if (
+            !request ||
+            typeof request.rootPath !== "string" ||
+            typeof request.query !== "string" ||
+            typeof request.requestId !== "string" ||
+            request.requestId.trim() === ""
+        ) {
+            return { success: false, error: "Invalid file search request" };
         }
 
-        type FileEntry = { name: string; path: string; relativePath: string };
-        const results: FileEntry[] = [];
-        const walk = async (currentDir: string, depth: number) => {
-            if (depth > maxDepth) return;
-            let entries: Dirent[];
-            try {
-                entries = await fs.readdir(currentDir, { withFileTypes: true });
-            } catch {
-                return;
-            }
-            for (const entry of entries) {
-                if (entry.name.startsWith(".")) continue;
-                const fullPath = path.join(currentDir, entry.name);
-                if (entry.isDirectory()) {
-                    if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) continue;
-                    await walk(fullPath, depth + 1);
-                } else if (/\.(?:md|mdx)$/i.test(entry.name)) {
-                    results.push({
-                        name: entry.name,
-                        path: fullPath,
-                        relativePath: path.relative(dirPath, fullPath),
-                    });
-                }
+        const access = validatePaths(request.rootPath);
+        if (!access.success) {
+            return { success: false, error: access.error };
+        }
+
+        const jobKey = getFileSearchJobKey(event.sender.id, request.requestId);
+        fileSearchJobs.get(jobKey)?.abort();
+        const controller = new AbortController();
+        fileSearchJobs.set(jobKey, controller);
+
+        const isCurrentJob = (): boolean => fileSearchJobs.get(jobKey) === controller;
+        const sendEvent = (data: FileSearchEvent): void => {
+            if (!event.sender.isDestroyed() && isCurrentJob()) {
+                event.sender.send("fs:file-search", data);
             }
         };
-        try {
-            await walk(dirPath, 0);
-            return { success: true, files: results };
-        } catch (error: any) {
-            return { success: false, files: [], error: error.message };
-        }
+        const onDestroyed = (): void => controller.abort();
+        event.sender.once("destroyed", onDestroyed);
+
+        void searchWorkspaceFiles({
+            onBatch: (entries) => sendEvent({ requestId: request.requestId, type: "batch", entries }),
+            query: request.query,
+            rootPath: request.rootPath,
+            signal: controller.signal,
+        })
+            .then(({ cancelled, truncated }) => {
+                if (!cancelled && !controller.signal.aborted) {
+                    sendEvent({ requestId: request.requestId, type: "complete", truncated });
+                }
+            })
+            .catch((error: unknown) => {
+                if (controller.signal.aborted || !isCurrentJob()) return;
+                const message = error instanceof Error ? error.message : "Failed to search workspace files";
+                sendEvent({ requestId: request.requestId, type: "error", error: message });
+            })
+            .finally(() => {
+                event.sender.removeListener("destroyed", onDestroyed);
+                if (isCurrentJob()) fileSearchJobs.delete(jobKey);
+            });
+
+        return { success: true };
     });
+
+    ipcMain.handle("fs:searchFiles:cancel", (event, requestId: string): { success: true } => {
+        if (typeof requestId === "string") {
+            const jobKey = getFileSearchJobKey(event.sender.id, requestId);
+            fileSearchJobs.get(jobKey)?.abort();
+            fileSearchJobs.delete(jobKey);
+        }
+        return { success: true };
+    });
+
+    ipcMain.handle(
+        "fs:readDirRecursive",
+        async (_event, dirPath: string, maxDepth = DEFAULT_RECURSIVE_DIRECTORY_DEPTH) => {
+            const access = validatePaths(dirPath);
+            if (!access.success) {
+                return access;
+            }
+
+            const depthLimit =
+                Number.isInteger(maxDepth) && maxDepth >= 0 ? maxDepth : DEFAULT_RECURSIVE_DIRECTORY_DEPTH;
+            type FileEntry = { name: string; path: string; relativePath: string };
+            const results: FileEntry[] = [];
+            const walk = async (currentDir: string, depth: number) => {
+                if (depth > depthLimit) return;
+                let entries: Dirent[];
+                try {
+                    entries = await fs.readdir(currentDir, { withFileTypes: true });
+                } catch {
+                    return;
+                }
+                for (const entry of entries) {
+                    if (entry.name.startsWith(".")) continue;
+                    const fullPath = path.join(currentDir, entry.name);
+                    if (entry.isDirectory()) {
+                        if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) continue;
+                        await walk(fullPath, depth + 1);
+                    } else if (/\.(?:md|mdx)$/i.test(entry.name)) {
+                        results.push({
+                            name: entry.name,
+                            path: fullPath,
+                            relativePath: path.relative(dirPath, fullPath),
+                        });
+                    }
+                }
+            };
+            try {
+                await walk(dirPath, 0);
+                return { success: true, files: results };
+            } catch (error: unknown) {
+                return {
+                    success: false,
+                    files: [],
+                    error: error instanceof Error ? error.message : "Failed to read directory",
+                };
+            }
+        },
+    );
 
     ipcMain.handle("fs:readDir", async (_, dirPath: string) => {
         const access = validatePaths(dirPath);
         if (!access.success) {
             return access;
         }
-
         try {
-            const entries = await fs.readdir(dirPath, { withFileTypes: true });
+            const entries = (await fs.readdir(dirPath, { withFileTypes: true })).slice(0, 200);
             const nodes: TreeNode[] = entries
                 .filter((entry) => !entry.name.startsWith("."))
                 .map((entry): TreeNode => {

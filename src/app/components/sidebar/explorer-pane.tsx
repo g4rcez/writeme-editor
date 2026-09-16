@@ -1,10 +1,12 @@
-import { Button } from "@g4rcez/components";
+import { Button, Input } from "@g4rcez/components";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FolderOpenIcon } from "@phosphor-icons/react/dist/csr/FolderOpen";
 import { FolderPlusIcon } from "@phosphor-icons/react/dist/csr/FolderPlus";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { TreeNode } from "@/types/tree";
+import { useLayoutStore } from "@/app/contexts/layout-context";
 import { isElectron } from "@/lib/is-electron";
 import { globalDispatch, repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
@@ -33,6 +35,9 @@ type EXTENSION_TYPE = keyof typeof MEDIA_EXTENSION_MAP;
 
 export const ExplorerPane = () => {
     const [state] = useGlobalStore();
+    const [{ searchQuery }, layoutDispatch] = useLayoutStore((currentState) => ({
+        searchQuery: currentState.searchQuery,
+    }));
     const [, uiDispatch] = useUIStore();
     const [createRequest, setCreateRequest] = useState<TreeCreateRequest | null>(null);
     const map = new Map(state.notes.map((x) => [x.filePath!, x]));
@@ -255,6 +260,16 @@ export const ExplorerPane = () => {
                     </button>
                 </div>
             </div>
+            <div className="shrink-0 px-1 py-2">
+                <Input
+                    optionalText=" "
+                    value={searchQuery}
+                    onChange={(event) => layoutDispatch.setSearch(event.target.value)}
+                    placeholder="Search files…"
+                    title="Search files"
+                    right={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
+                />
+            </div>
             <div
                 data-treeroot="true"
                 onContextMenu={handleTreeRootContextMenu}
@@ -269,6 +284,7 @@ export const ExplorerPane = () => {
                     createRequest={createRequest}
                     onNewFolder={handleNewFolder}
                     rootPath={state.explorerRoot}
+                    searchQuery={searchQuery}
                 />
             </div>
         </div>

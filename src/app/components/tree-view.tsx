@@ -17,11 +17,11 @@ import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useReducedMotion } from "motion/react";
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import type { TreeNode, FlattenedNode } from "@/types/tree";
+import { startTransition, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Prompt } from "@/app/components/prompt";
 import { isElectron } from "@/lib/is-electron";
 import { NoteType, type Note } from "@/store/note";
+import { FILE_SEARCH_RESULT_LIMIT, type FileSearchEvent, type TreeNode, type FlattenedNode } from "@/types/tree";
 
 interface FileExtensionConfig {
     icon: React.ElementType;
@@ -159,7 +159,7 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 };
 
 interface TreeNodeItemProps {
-    note: Note;
+    note: Note | null;
     depth: number;
     node: TreeNode;
     isFocused: boolean;
@@ -307,7 +307,9 @@ const TreeNodeItem = ({
           flex-1 truncate text-sm
           ${isFocused ? "font-medium text-foreground" : "text-foreground/70"}
           ${!isDirectory && !extConfig ? "text-foreground/35" : ""}
-        `}>{node.name}</span>
+        `} title={node.relativePath ?? node.name}>
+                {node.relativePath ?? node.name}
+            </span>
             {onDelete && (
                 <Tooltip
                     open={isConfirming}
@@ -395,6 +397,15 @@ export type TreeCreateRequest = {
     parentPath?: string | null;
 };
 
+type FileSearchStatus = "idle" | "loading" | "complete" | "error";
+
+let nextFileSearchRequestId = 0;
+
+const createFileSearchRequestId = (): string => {
+    nextFileSearchRequestId += 1;
+    return `file-search-${Date.now()}-${nextFileSearchRequestId}`;
+};
+
 interface TreeViewProps {
     rootPath: string;
     searchQuery?: string;
@@ -448,7 +459,13 @@ export const TreeView = ({
     const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
     const expandedPathsRef = useRef(new Set<string>());
     const flattenedNodesRef = useRef<FlattenedNode[]>([]);
+    const [searchResults, setSearchResults] = useState<TreeNode[]>([]);
+    const [searchStatus, setSearchStatus] = useState<FileSearchStatus>("idle");
+    const [searchError, setSearchError] = useState<string | null>(null);
+    const [searchTruncated, setSearchTruncated] = useState(false);
+    const [searchRefreshToken, setSearchRefreshToken] = useState(0);
     const shouldReduceMotion = useReducedMotion();
+    const isSearching = searchQuery.trim().length > 0;
 
     const loadRoot = useCallback(async () => {
         setIsLoading(true);
@@ -490,6 +507,76 @@ export const TreeView = ({
     }, [loadRoot]);
 
     useEffect(() => {
+        const query = searchQuery.trim();
+        if (!query) {
+            setSearchResults([]);
+            setSearchStatus("idle");
+            setSearchError(null);
+            setSearchTruncated(false);
+            return;
+        }
+
+        const fsApi = window.electronAPI.fs;
+        if (typeof fsApi.startFileSearch !== "function" || typeof fsApi.onFileSearchEvent !== "function") {
+            setSearchStatus("error");
+            setSearchError("Recursive file search is unavailable");
+            return;
+        }
+
+        const requestId = createFileSearchRequestId();
+        let isCurrentSearch = true;
+        setSearchResults([]);
+        setSearchStatus("loading");
+        setSearchError(null);
+        setSearchTruncated(false);
+        setFocusedIndex(0);
+
+        const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
+            if (!isCurrentSearch || event.requestId !== requestId) return;
+
+            if (event.type === "batch") {
+                startTransition(() => {
+                    setSearchResults((previous) => [...previous, ...event.entries]);
+                });
+                return;
+            }
+
+            if (event.type === "complete") {
+                setSearchStatus("complete");
+                setSearchTruncated(event.truncated);
+                return;
+            }
+
+            setSearchStatus("error");
+            setSearchError(event.error);
+        });
+
+        const timeoutId = window.setTimeout(() => {
+            void fsApi
+                .startFileSearch(rootPath, query, requestId)
+                .then((result) => {
+                    if (!isCurrentSearch || result.success) return;
+                    setSearchStatus("error");
+                    setSearchError(result.error);
+                })
+                .catch((reason: unknown) => {
+                    if (!isCurrentSearch) return;
+                    setSearchStatus("error");
+                    setSearchError(reason instanceof Error ? reason.message : "Failed to search workspace files");
+                });
+        }, 180);
+
+        return () => {
+            isCurrentSearch = false;
+            window.clearTimeout(timeoutId);
+            unsubscribe();
+            if (typeof fsApi.cancelFileSearch === "function") {
+                void fsApi.cancelFileSearch(requestId).catch(() => undefined);
+            }
+        };
+    }, [rootPath, searchQuery, searchRefreshToken]);
+
+    useEffect(() => {
         if (!permissionDenied || hasRequestedDirectoryAccessRef.current) return;
         hasRequestedDirectoryAccessRef.current = true;
         void requestDirectoryAccess();
@@ -498,6 +585,7 @@ export const TreeView = ({
     useEffect(() => {
         if (!isElectron()) return;
         return window.electronAPI.fs.onDirChanged(({ dirPath }) => {
+            if (isSearching) setSearchRefreshToken((previous) => previous + 1);
             if (dirPath === rootPath) {
                 loadRoot();
             } else if (childrenCacheRef.current.has(dirPath)) {
@@ -506,7 +594,7 @@ export const TreeView = ({
                 });
             }
         });
-    }, [rootPath, loadRoot]);
+    }, [isSearching, rootPath, loadRoot]);
 
     const handleContextMenu = useCallback((e: React.MouseEvent, node: TreeNode) => {
         if (!isElectron()) return;
@@ -541,9 +629,17 @@ export const TreeView = ({
     );
 
     const flattenedNodes = useMemo(() => {
+        if (isSearching) {
+            return searchResults.map((node): FlattenedNode => ({
+                node,
+                depth: 0,
+                isExpanded: false,
+                parentPath: null,
+            }));
+        }
         if (!rootChildren) return [];
-        return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, searchQuery);
-    }, [rootChildren, expandedPaths, childrenCache, searchQuery]);
+        return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, "");
+    }, [isSearching, searchResults, rootChildren, expandedPaths, childrenCache]);
 
     useEffect(() => {
         childrenCacheRef.current = childrenCache;
@@ -1000,7 +1096,7 @@ export const TreeView = ({
         }
     }, [rootChildren]);
 
-    if (isLoading && !rootChildren) {
+    if (isLoading && !rootChildren && !isSearching) {
         return (
             <div className="flex items-center justify-center p-8">
                 <SpinnerIcon className="h-6 w-6 animate-spin text-info" />
@@ -1025,7 +1121,24 @@ export const TreeView = ({
         );
     }
 
-    if ((!rootChildren || rootChildren.length === 0) && pendingCreate === null) {
+    if (isSearching && searchStatus === "error") {
+        return <div className="p-8 text-center text-danger">{searchError ?? "Failed to search workspace files"}</div>;
+    }
+
+    if (isSearching && searchResults.length === 0 && searchStatus !== "complete") {
+        return (
+            <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground" role="status">
+                <SpinnerIcon className="size-4 animate-spin" />
+                <span>Searching files…</span>
+            </div>
+        );
+    }
+
+    if (isSearching && searchStatus === "complete" && searchResults.length === 0) {
+        return <div className="p-8 text-center text-muted-foreground">No matching files</div>;
+    }
+
+    if (!isSearching && (!rootChildren || rootChildren.length === 0) && pendingCreate === null) {
         return <div className="p-8 text-center text-muted-foreground">No files found in this directory</div>;
     }
 
@@ -1050,7 +1163,7 @@ export const TreeView = ({
                     isDropTarget={dropTargetPath === flatNode.node.path}
                     isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
                     shouldReduceMotion={shouldReduceMotion}
-                    note={map.get(flatNode.node.path)!}
+                    note={map.get(flatNode.node.path) ?? null}
                     onHover={() => setFocusedIndex(index)}
                     onDragStart={handleDragStart}
                     onDropMove={handleDropMove}
@@ -1068,6 +1181,11 @@ export const TreeView = ({
                     }}
                 />
             ))}
+            {isSearching && searchTruncated && (
+                <p className="px-4 py-2 text-center text-xs text-muted-foreground" role="status">
+                    Showing the first {FILE_SEARCH_RESULT_LIMIT.toLocaleString()} matching files.
+                </p>
+            )}
             {pendingCreate !== null && (
                 <div
                     role="none"
@@ -1114,7 +1232,7 @@ export const TreeView = ({
                             isDropTarget={dropTargetPath === flatNode.node.path}
                             isManuallyExpanded={expandedPaths.has(flatNode.node.path)}
                             shouldReduceMotion={shouldReduceMotion}
-                            note={map.get(flatNode.node.path)!}
+                            note={map.get(flatNode.node.path) ?? null}
                             onHover={() => setFocusedIndex(index)}
                             onDragStart={handleDragStart}
                             onDropMove={handleDropMove}

@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { DatabaseCollection, DatabaseRecord } from "./main-process/database-schema";
 import type { Note } from "./store/note";
 import type { GitPushResult, GitStatusResult } from "./types/git";
-import type { DirectoryAccessResult, ReadDirResult } from "./types/tree";
+import type { DirectoryAccessResult, FileSearchEvent, FileSearchStartResult, ReadDirResult } from "./types/tree";
 
 contextBridge.exposeInMainWorld("electronAPI", {
     env: {
@@ -93,14 +93,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
         readDir: async (dirPath: string): Promise<ReadDirResult> => {
             return ipcRenderer.invoke("fs:readDir", dirPath);
         },
+        startFileSearch: async (rootPath: string, query: string, requestId: string): Promise<FileSearchStartResult> => {
+            return ipcRenderer.invoke("fs:searchFiles:start", { rootPath, query, requestId });
+        },
+        cancelFileSearch: async (requestId: string): Promise<{ success: true }> => {
+            return ipcRenderer.invoke("fs:searchFiles:cancel", requestId);
+        },
+        onFileSearchEvent: (callback: (data: FileSearchEvent) => void) => {
+            const handler = (_event: Electron.IpcRendererEvent, data: FileSearchEvent) => callback(data);
+            ipcRenderer.on("fs:file-search", handler);
+            return () => ipcRenderer.removeListener("fs:file-search", handler);
+        },
         readDirRecursive: async (
             dirPath: string,
+            maxDepth?: number,
         ): Promise<{
             success: boolean;
             files: { name: string; path: string; relativePath: string }[];
             error?: string;
         }> => {
-            return ipcRenderer.invoke("fs:readDirRecursive", dirPath);
+            return ipcRenderer.invoke("fs:readDirRecursive", dirPath, maxDepth);
         },
         openFileOrDirectory: async (): Promise<{
             path: string;
@@ -299,11 +311,17 @@ declare global {
                 deleteFile(filePath: string): Promise<any>;
                 moveFile(oldPath: string, newPath: string): Promise<any>;
                 readDir(dirPath: string): Promise<ReadDirResult>;
+                startFileSearch(rootPath: string, query: string, requestId: string): Promise<FileSearchStartResult>;
+                cancelFileSearch(requestId: string): Promise<{ success: true }>;
+                onFileSearchEvent(callback: (data: FileSearchEvent) => void): () => void;
                 writeImage(
                     filePath: string,
                     base64Data: string,
                 ): Promise<{ success: boolean; filePath?: string; error?: string }>;
-                readDirRecursive(dirPath: string): Promise<{
+                readDirRecursive(
+                    dirPath: string,
+                    maxDepth?: number,
+                ): Promise<{
                     success: boolean;
                     files: { name: string; path: string; relativePath: string }[];
                     error?: string;

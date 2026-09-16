@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { TreeNode } from "@/types/tree";
+import type { FileSearchEvent, TreeNode } from "@/types/tree";
 import { TreeView } from "./tree-view";
 
 vi.mock("@/lib/is-electron", () => ({
@@ -30,9 +30,13 @@ describe("TreeView", () => {
     let requestDirectoryAccess: ReturnType<typeof vi.fn>;
     let statFile: ReturnType<typeof vi.fn>;
     let moveFile: ReturnType<typeof vi.fn>;
+    let fileSearchEvent: ((event: FileSearchEvent) => void) | null;
+    let startFileSearch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         contextMenuAction = null;
+        fileSearchEvent = null;
+        startFileSearch = vi.fn(async () => ({ success: true as const }));
         directoryEntries = {
             "/workspace": [
                 {
@@ -75,6 +79,12 @@ describe("TreeView", () => {
                     requestDirectoryAccess,
                     statFile,
                     moveFile,
+                    startFileSearch,
+                    cancelFileSearch: vi.fn(async () => ({ success: true as const })),
+                    onFileSearchEvent: vi.fn((callback: (event: FileSearchEvent) => void) => {
+                        fileSearchEvent = callback;
+                        return vi.fn();
+                    }),
                     onDirChanged: vi.fn(() => vi.fn()),
                 },
                 contextMenu: {
@@ -123,6 +133,35 @@ describe("TreeView", () => {
 
         expect(await screen.findByText("existing.md")).toBeInTheDocument();
         expect(requestDirectoryAccess).toHaveBeenCalledTimes(2);
+    });
+
+    it("streams recursive search results for the typed query", async () => {
+        render(<TreeView rootPath="/workspace" searchQuery="guide" map={new Map()} onFileSelect={vi.fn()} />);
+
+        await waitFor(() => expect(startFileSearch).toHaveBeenCalledWith("/workspace", "guide", expect.any(String)));
+        const requestId = startFileSearch.mock.calls[0]?.[2] as string;
+
+        act(() => {
+            fileSearchEvent?.({
+                requestId,
+                type: "batch",
+                entries: [
+                    {
+                        name: "guide.md",
+                        path: "/workspace/docs/guide.md",
+                        relativePath: "docs/guide.md",
+                        type: "file",
+                        extension: ".md",
+                    },
+                ],
+            });
+        });
+
+        expect(await screen.findByText("docs/guide.md")).toBeInTheDocument();
+
+        act(() => {
+            fileSearchEvent?.({ requestId, type: "complete", truncated: false });
+        });
     });
 
     it("creates a root file on Enter and refreshes the tree", async () => {
