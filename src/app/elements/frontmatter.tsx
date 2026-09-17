@@ -1,3 +1,4 @@
+import type { BundledLanguage } from "shiki";
 import { negate } from "@g4rcez/components";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretUpIcon } from "@phosphor-icons/react/dist/csr/CaretUp";
@@ -6,8 +7,8 @@ import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { mergeAttributes, Node, NodeViewContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { useEffect, useMemo, useState } from "react";
-import { type BundledLanguage } from "shiki";
 import * as YAML from "yaml";
+import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { getEditorNote } from "@/lib/editor-storage";
 import { globalDispatch, globalState } from "@/store/global.store";
 import { getThemeForMode, ShikiPlugin, CodeBlockFrame } from "./code-block";
@@ -255,7 +256,7 @@ export const Frontmatter = Node.create({
         return {
             "Mod-Alt-f": () => {
                 const frontMatterBlock = document.getElementById(FRONTMATTER_ID);
-                if (!frontMatterBlock) this.editor.commands.insertContent("---\n\n---");
+                if (!frontMatterBlock) addFrontmatterToEditor(this.editor);
                 const button = document.getElementById(FRONTMATTER_BUTTON_ID);
                 if (button) {
                     button?.click();

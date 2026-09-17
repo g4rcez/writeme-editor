@@ -22,8 +22,17 @@ export type EditorSearchHandle = {
     subscribe: (listener: () => void) => () => void;
 };
 
+export type EditorActionHandle = {
+    addFrontmatter: () => void;
+};
+
 export const editorGlobalRef: { current: Editor | null } = { current: null };
+export const editorActionsGlobalRef: { current: EditorActionHandle | null } = { current: null };
 export const editorSearchGlobalRef: { current: EditorSearchHandle | null } = { current: null };
+
+export function setEditorActionsGlobalRef(handle: EditorActionHandle | null): void {
+    editorActionsGlobalRef.current = handle;
+}
 
 const editorSearchListeners = new Set<() => void>();
 

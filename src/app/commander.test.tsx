@@ -34,6 +34,9 @@ const mocks = vi.hoisted(() => {
 
     return {
         commandPalette: vi.fn(() => null),
+        editorActionsGlobalRef: {
+            current: { addFrontmatter: vi.fn() },
+        },
         dispatch,
         layoutDispatch: {
             setActivity: vi.fn(),
@@ -100,6 +103,7 @@ vi.mock("@/app/contexts/layout-context", () => ({
 }));
 
 vi.mock("@/app/editor-global-ref", () => ({
+    editorActionsGlobalRef: mocks.editorActionsGlobalRef,
     editorGlobalRef: { current: null },
 }));
 
@@ -171,6 +175,29 @@ function getFlattenedCommands(): CommandItem[] {
 describe("Commander", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it("adds the frontmatter command for the current note", () => {
+        render(
+            <Commander
+                note={{ id: "note-1", title: "Note", favorite: false } as never}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Add frontmatter");
+        expect(command).toBeDefined();
+
+        const setOpen = vi.fn();
+        command?.action?.({ setOpen });
+
+        expect(setOpen).toHaveBeenCalledWith(false);
+        expect(mocks.editorActionsGlobalRef.current.addFrontmatter).toHaveBeenCalledOnce();
     });
 
     it("opens the create note dialog for the new excalidraw command", () => {

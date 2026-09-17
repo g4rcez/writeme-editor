@@ -1,4 +1,5 @@
 import { Button, Checkbox, Tag } from "@g4rcez/components";
+import { ColumnsIcon } from "@phosphor-icons/react";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -18,6 +19,7 @@ import { NoteFooter } from "../components/note-footer";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
+import { addFrontmatterToCurrentEditor } from "../frontmatter";
 
 function useNoteReferences(content: string) {
     const [refs, setRefs] = useState<Note[]>([]);
@@ -185,6 +187,22 @@ const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChan
     );
 };
 
+function AddFrontmatterButton() {
+    return (
+        <Button
+            type="button"
+            size="tiny"
+            theme="ghost-primary"
+            className="writeme-note-tool-button"
+            aria-label="Add frontmatter"
+            title="Add Markdown frontmatter"
+            onClick={addFrontmatterToCurrentEditor}
+        >
+            <ColumnsIcon aria-hidden="true" size={21} />
+        </Button>
+    );
+}
+
 function ExportNoteButton({ note }: { note: Note }) {
     return (
         <Button
@@ -350,6 +368,7 @@ export default function NotePage() {
                                 <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                             ) : null}
                             <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
+                            <AddFrontmatterButton />
                             <div className="flex flex-col items-center">
                                 <TableOfContents />
                                 <ExportNoteButton note={note} />
@@ -398,6 +417,7 @@ export default function NotePage() {
                                 <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                             ) : null}
                             <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
+                            <AddFrontmatterButton />
                             <TableOfContents />
                             <ExportNoteButton note={note} />
                         </div>

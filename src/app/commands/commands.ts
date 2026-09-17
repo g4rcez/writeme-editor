@@ -1,7 +1,10 @@
+import type { EditorView } from "@tiptap/pm/view";
 import type { ExtendedRegExpMatchArray } from "@tiptap/react";
 import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { INLINE_MATH_PATTERN, runInlineMath, solveRule3 } from "solver";
+import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { Dates } from "@/lib/dates";
 import { uiDispatch } from "@/store/ui.store";
 import type { ReplacerHandlerParams } from "./types";
@@ -120,6 +123,25 @@ export const LatexInlineCommand: ReplacerCommand = {
 };
 
 const onlyNumbers = (x: string) => x.replace(/[^0-9]/g, "");
+const FRONTMATTER_PENDING_META = "frontmatterCommandPending";
+type PendingFrontmatter = { position: number };
+
+export const FrontmatterCommand: ReplacerCommand = {
+    trigger: ">>-- ",
+    description: "Add frontmatter to the current note.",
+    find: />>(?:--|\u2014)(?: |$)/,
+    replace: (match, props, editor) => {
+        if (!match[0].endsWith(" ")) {
+            props.state.tr.setMeta(FRONTMATTER_PENDING_META, {
+                position: props.range.from,
+            } satisfies PendingFrontmatter);
+        }
+        setTimeout(() => {
+            addFrontmatterToEditor(editor);
+        }, 0);
+        return "";
+    },
+};
 
 export const TableCommand: ReplacerCommand = {
     trigger: ">>table(3x4)",
@@ -178,6 +200,7 @@ const REPLACER_COMMANDS = [
     EvalCommand,
     CurrencyCommand,
     MathCommand,
+    FrontmatterCommand,
     TableCommand,
     LatexInlineCommand,
     ClipboardListenerCommand,
@@ -194,5 +217,63 @@ export const ReplacerCommands = Extension.create({
     name: "commands-replacer",
     addInputRules() {
         return REPLACER_COMMANDS.map((command) => replacerRules(this.editor, command));
+    },
+    addProseMirrorPlugins() {
+        const pluginKey = new PluginKey<PendingFrontmatter | null>("frontmatterCommand");
+        const clearPending = (view: EditorView): void => {
+            view.dispatch(view.state.tr.setMeta(FRONTMATTER_PENDING_META, null));
+        };
+
+        return [
+            new Plugin<PendingFrontmatter | null>({
+                key: pluginKey,
+                state: {
+                    init: () => null,
+                    apply: (transaction, previous) => {
+                        const meta = transaction.getMeta(FRONTMATTER_PENDING_META) as
+                            | PendingFrontmatter
+                            | null
+                            | undefined;
+                        if (meta === null) return null;
+                        if (meta) return { position: transaction.mapping.map(meta.position) };
+                        if (!previous) return null;
+                        return { position: transaction.mapping.map(previous.position) };
+                    },
+                },
+                props: {
+                    handleKeyDown: (view, event) => {
+                        const pending = pluginKey.getState(view.state);
+                        if (!pending) return false;
+
+                        const { from, to } = view.state.selection;
+                        if (from !== pending.position || to !== pending.position) {
+                            clearPending(view);
+                            return false;
+                        }
+
+                        if (event.key !== " ") {
+                            clearPending(view);
+                            return false;
+                        }
+
+                        event.preventDefault();
+                        clearPending(view);
+                        return true;
+                    },
+                    handleTextInput: (view, from, to, text) => {
+                        const pending = pluginKey.getState(view.state);
+                        if (!pending) return false;
+
+                        if (from !== pending.position || to !== pending.position) {
+                            clearPending(view);
+                            return false;
+                        }
+
+                        clearPending(view);
+                        return text === " ";
+                    },
+                },
+            }),
+        ];
     },
 });

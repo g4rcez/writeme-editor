@@ -137,6 +137,16 @@ describe("NotePage route loading", () => {
         expect(dispatch.addTab).not.toHaveBeenCalled();
     });
 
+    it("shows the Add frontmatter note action in the header", () => {
+        const dispatch = createDispatch();
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        expect(screen.getByRole("button", { name: "Add frontmatter" })).toBeInTheDocument();
+    });
+
     it("switches to Markdown mode and persists the editor mode preference", async () => {
         const user = userEvent.setup();
         const dispatch = createDispatch();

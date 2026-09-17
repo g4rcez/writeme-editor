@@ -19,15 +19,18 @@ import { uiDispatch, useUIStore } from "@/store/ui.store";
 import type { SearchReplaceStorage } from "./extensions/search-replace";
 import { FormattingToolbar } from "./components/formatting-toolbar";
 import {
-    type EditorSearchHandle,
+    editorActionsGlobalRef,
     editorGlobalRef,
+    type EditorSearchHandle,
     editorSearchGlobalRef,
+    setEditorActionsGlobalRef,
     setEditorSearchGlobalRef,
 } from "./editor-global-ref";
 import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
+import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 
 const useCopyEvents = (editor: TipTapEditor | null) => {
@@ -355,11 +358,20 @@ const TiptapEditorCore = memo(
         useEffect(() => {
             if (!editor) return;
             const searchHandle = createTiptapSearchHandle(editor);
+            const actionHandle = {
+                addFrontmatter: () => {
+                    addFrontmatterToEditor(editor);
+                },
+            };
             editorGlobalRef.current = editor;
+            setEditorActionsGlobalRef(actionHandle);
             setEditorSearchGlobalRef(searchHandle);
             return () => {
                 if (editorGlobalRef.current === editor) {
                     editorGlobalRef.current = null;
+                }
+                if (editorActionsGlobalRef.current === actionHandle) {
+                    setEditorActionsGlobalRef(null);
                 }
                 if (editorSearchGlobalRef.current === searchHandle) {
                     setEditorSearchGlobalRef(null);

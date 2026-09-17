@@ -6,6 +6,7 @@ import { Slice } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import { describe, expect, it } from "vitest";
 import { createExtensions } from "@/app/extensions";
+import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { Markdown } from "./Markdown";
 
 describe("Markdown extension", () => {
@@ -183,6 +184,23 @@ describe("Markdown extension", () => {
         editor.destroy();
     });
 
+    it("adds frontmatter once at the beginning of a note", () => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Body",
+        });
+
+        expect(addFrontmatterToEditor(editor)).toBe(true);
+        expect(editor.getMarkdown()).toBe("---\n\n---\n\nBody");
+        expect(addFrontmatterToEditor(editor)).toBe(false);
+        expect(editor.getMarkdown()).toBe("---\n\n---\n\nBody");
+
+        editor.destroy();
+    });
+
     it("supports the math insertion commands", () => {
         const element = document.createElement("div");
         document.body.append(element);
@@ -201,6 +219,78 @@ describe("Markdown extension", () => {
         });
         expect(nodeNames).toContain("inlineMath");
         expect(nodeNames).toContain("blockMath");
+
+        editor.destroy();
+    });
+
+    it("triggers the frontmatter command when typed in Tiptap", async () => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Body",
+        });
+        editor.commands.setTextSelection({ from: 1, to: 1 });
+
+        for (const text of [">", ">", "-", "-"]) {
+            const { from, to } = editor.state.selection;
+            let handled = false;
+            editor.view.someProp("handleTextInput", (handler) => {
+                if (handler(editor.view, from, to, text, () => editor.state.tr.insertText(text, from, to))) {
+                    handled = true;
+                    return true;
+                }
+                return false;
+            });
+            if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+        }
+
+        const spaceEvent = { key: " ", preventDefault: () => undefined } as unknown as KeyboardEvent;
+        let spaceHandled = false;
+        editor.view.someProp("handleKeyDown", (handler) => {
+            if (handler(editor.view, spaceEvent)) {
+                spaceHandled = true;
+                return true;
+            }
+            return false;
+        });
+        if (!spaceHandled) {
+            const { from, to } = editor.state.selection;
+            editor.view.dispatch(editor.state.tr.insertText(" ", from, to));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(editor.getMarkdown()).toBe("---\n\n---\n\nBody");
+
+        editor.destroy();
+    });
+
+    it("triggers the frontmatter command without a trailing space", async () => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Body",
+        });
+        editor.commands.setTextSelection({ from: 1, to: 1 });
+
+        for (const text of [">", ">", "-", "-"]) {
+            const { from, to } = editor.state.selection;
+            let handled = false;
+            editor.view.someProp("handleTextInput", (handler) => {
+                if (handler(editor.view, from, to, text, () => editor.state.tr.insertText(text, from, to))) {
+                    handled = true;
+                    return true;
+                }
+                return false;
+            });
+            if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(editor.getMarkdown()).toBe("---\n\n---\n\nBody");
 
         editor.destroy();
     });

@@ -14,7 +14,14 @@ import { vim } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
 import { useEffect, useRef } from "react";
-import { editorSearchGlobalRef, type EditorSearchHandle, setEditorSearchGlobalRef } from "../editor-global-ref";
+import {
+    editorActionsGlobalRef,
+    editorSearchGlobalRef,
+    type EditorSearchHandle,
+    setEditorActionsGlobalRef,
+    setEditorSearchGlobalRef,
+} from "../editor-global-ref";
+import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
 import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 
 const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
@@ -376,6 +383,26 @@ export function RawMarkdownEditor({
 
         viewRef.current = view;
         searchController = createMarkdownSearchController(view);
+        const actionHandle = {
+            addFrontmatter: () => {
+                if (initialReadonly) {
+                    view.focus();
+                    return;
+                }
+
+                const currentContent = view.state.doc.toString();
+                if (hasMarkdownFrontmatter(currentContent)) {
+                    view.focus();
+                    return;
+                }
+
+                const nextContent = addMarkdownFrontmatter(currentContent);
+                const frontmatter = nextContent.slice(0, nextContent.length - currentContent.length);
+                view.dispatch({ changes: { from: 0, to: 0, insert: frontmatter } });
+                view.focus();
+            },
+        };
+        setEditorActionsGlobalRef(actionHandle);
         setEditorSearchGlobalRef(searchController);
         if (!initialReadonly) {
             requestAnimationFrame(() => view.focus());
@@ -384,6 +411,9 @@ export function RawMarkdownEditor({
         return () => {
             if (cursorScrollFrame !== null) {
                 cancelAnimationFrame(cursorScrollFrame);
+            }
+            if (editorActionsGlobalRef.current === actionHandle) {
+                setEditorActionsGlobalRef(null);
             }
             if (editorSearchGlobalRef.current === searchController) {
                 setEditorSearchGlobalRef(null);

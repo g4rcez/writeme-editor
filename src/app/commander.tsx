@@ -8,6 +8,7 @@ import type { Tab } from "@/store/repositories/entities/tab";
 import type { TerminalSession } from "@/store/repositories/entities/terminal-session";
 import { version } from "@/../package.json";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { addFrontmatterToCurrentEditor } from "@/app/frontmatter";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { notificationRef } from "@/app/notification-ref";
 import { getEditorMarkdown } from "@/lib/editor-storage";
@@ -306,6 +307,18 @@ export const Commander = (props: Props) => {
                         }, 50);
                     },
                 },
+                ...(props.note
+                    ? [
+                          {
+                              title: "Add frontmatter",
+                              type: "shortcut" as const,
+                              action: (args: { setOpen: (v: boolean) => void }) => {
+                                  args.setOpen(false);
+                                  addFrontmatterToCurrentEditor();
+                              },
+                          },
+                      ]
+                    : []),
                 {
                     title: "Import GitHub Gist",
                     type: "shortcut",
