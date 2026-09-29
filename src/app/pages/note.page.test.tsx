@@ -1,3 +1,4 @@
+import type { ChangeEventHandler, ReactNode, SelectHTMLAttributes } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -7,6 +8,7 @@ import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { SettingsService } from "@/store/settings";
 import { useUIStore } from "@/store/ui.store";
+import { clearEditorPaneState } from "../hooks/use-editor-panes";
 import NotePage from "./note.page";
 
 vi.mock("@/store/global.store", () => ({
@@ -36,6 +38,35 @@ vi.mock("@/store/settings", () => ({
 vi.mock("@/lib/is-electron", () => ({
     isElectron: () => false,
 }));
+
+vi.mock("@g4rcez/components", async () => {
+    const actual = await vi.importActual<typeof import("@g4rcez/components")>("@g4rcez/components");
+    type TestSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> & {
+        hiddenLabel?: boolean;
+        options: Array<{ label: string; value: string }>;
+        onChange?: ChangeEventHandler<HTMLSelectElement>;
+    };
+    const TestSelect = ({ hiddenLabel, options, ...props }: TestSelectProps) => {
+        void hiddenLabel;
+        return (
+            <select {...props}>
+                {options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        );
+    };
+    return { ...actual, Select: TestSelect };
+});
+
+vi.mock("react-resizable-panels", () => {
+    const Group = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+    const Panel = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+    const Separator = () => <div role="separator" />;
+    return { Group, Panel, Separator };
+});
 
 vi.mock("../editor", () => ({
     Editor: ({ mode, rawEditorVimMode }: { mode?: string; rawEditorVimMode?: boolean }) => (
@@ -101,6 +132,7 @@ function renderNoteRoute() {
 
 describe("NotePage route loading", () => {
     afterEach(() => {
+        clearEditorPaneState();
         clearSuppressedNoteRouteTabOpens();
         vi.clearAllMocks();
     });
@@ -137,7 +169,7 @@ describe("NotePage route loading", () => {
         expect(dispatch.addTab).not.toHaveBeenCalled();
     });
 
-    it("shows the Add frontmatter note action in the header", () => {
+    it("shows the Add frontmatter and History actions for ordinary notes", () => {
         const dispatch = createDispatch();
         vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
@@ -145,6 +177,7 @@ describe("NotePage route loading", () => {
         renderNoteRoute();
 
         expect(screen.getByRole("button", { name: "Add frontmatter" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
     });
 
     it("switches to Markdown mode and persists the editor mode preference", async () => {
@@ -168,6 +201,47 @@ describe("NotePage route loading", () => {
         expect(SettingsService.save).toHaveBeenCalledWith({
             rawEditorVimMode: true,
         });
+    });
+
+    it("opens multiple editor panes and closes panes without closing the note tab", async () => {
+        const user = userEvent.setup();
+        const dispatch = createDispatch();
+        const note = createNote();
+        const secondNote = createNote("note-2");
+        vi.mocked(useGlobalStore).mockReturnValue([
+            { note, notes: [note, secondNote], tabs: [createNoteTab()] },
+            dispatch,
+        ] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        await user.click(screen.getByRole("button", { name: "Open pane mode" }));
+        expect(screen.getAllByTestId("editor")).toHaveLength(2);
+        expect(screen.getByRole("button", { name: "Exit panes" })).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Close pane 2" }));
+        expect(screen.getAllByTestId("editor")).toHaveLength(1);
+        expect(screen.getByRole("button", { name: "Close pane 1" })).toBeDisabled();
+    });
+
+    it("opens LaTeX workspace files in the raw editor mode", () => {
+        const dispatch = createDispatch();
+        const note = Note.parse({
+            id: "note-1",
+            title: "Paper",
+            content: "\\documentclass{article}\n\\begin{document}\nSource\n\\end{document}\n",
+            filePath: "/workspace/paper.tex",
+        });
+        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "markdown");
+        expect(screen.queryByRole("button", { name: "Formatted" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Add frontmatter" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
     });
 
     it("derives and edits the title from the first Markdown H1", async () => {

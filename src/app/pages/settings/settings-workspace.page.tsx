@@ -1,5 +1,6 @@
 import { Button } from "@g4rcez/components";
 import { useState } from "react";
+import { ObsidianImporter } from "@/app/components/obsidian-importer";
 import { saveSettingsPatch } from "@/app/settings/save-settings-section";
 import { useSettingsDraft } from "@/app/settings/use-settings-draft";
 import { SettingsPageShell } from "./settings-page-shell";
@@ -70,6 +71,7 @@ export default function SettingsWorkspacePage() {
                     }
                     description="Folder where quick notes are saved. Defaults to a quicknotes subdirectory inside your workspace."
                 />
+                <ObsidianImporter destinationDirectory={settings.directory || null} />
             </div>
         </SettingsPageShell>
     );

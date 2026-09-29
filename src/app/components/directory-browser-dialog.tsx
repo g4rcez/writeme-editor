@@ -229,7 +229,7 @@ export const DirectoryBrowserDialog = () => {
             setOpeningPath(node.path);
             try {
                 const result = await window.electronAPI.fs.readFile(node.path);
-                if (!result.success) {
+                if (!result.success || typeof result.content !== "string") {
                     setError(result.error ?? "Failed to read file");
                     return;
                 }
@@ -245,10 +245,9 @@ export const DirectoryBrowserDialog = () => {
                     }
                 }
 
-                const newNote = Note.new(getFileTitle(node.name), result.content ?? "");
-                newNote.filePath = node.path;
-                newNote.fileSize = result.fileSize;
-                newNote.lastSynced = new Date(result.lastModified);
+                const newNote = Note.new(getFileTitle(node.name), result.content);
+                newNote.setFilePath(node.path, result.lastModified ? new Date(result.lastModified) : new Date());
+                newNote.fileSize = typeof result.fileSize === "number" ? result.fileSize : result.content.length;
                 await repositories.notes.save(newNote);
                 await dispatch.note(newNote);
                 closeDialog();

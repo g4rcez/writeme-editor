@@ -8,6 +8,9 @@ const save = vi.fn();
 const hardDelete = vi.fn();
 const getTrashed = vi.fn();
 const getRecentNotes = vi.fn();
+const getHistory = vi.fn();
+const saveSnapshot = vi.fn();
+const updateContent = vi.fn();
 const deleteFile = vi.fn();
 const readDirRecursive = vi.fn();
 const readFile = vi.fn();
@@ -29,7 +32,7 @@ beforeEach(() => {
                 get,
                 getAll,
                 save,
-                notes: { hardDelete, getTrashed, getRecentNotes },
+                notes: { hardDelete, getTrashed, getRecentNotes, getHistory, saveSnapshot, updateContent },
             },
             fs: { deleteFile, readDirRecursive, readFile },
         },
@@ -37,30 +40,53 @@ beforeEach(() => {
 });
 
 describe("Electron NotesRepository", () => {
-    it("indexes every Markdown workspace file, including MDX files", async () => {
+    it("indexes Markdown and LaTeX workspace files without changing their source", async () => {
         getAll.mockResolvedValue([]);
         readDirRecursive.mockResolvedValue({
             success: true,
             files: [
                 { name: "guide.md", path: "/notes/guide.md", relativePath: "guide.md" },
                 { name: "component.mdx", path: "/notes/component.mdx", relativePath: "component.mdx" },
+                { name: "paper.tex", path: "/notes/paper.tex", relativePath: "paper.tex" },
+                { name: "appendix.latex", path: "/notes/appendix.latex", relativePath: "appendix.latex" },
                 { name: "image.txt", path: "/notes/image.txt", relativePath: "image.txt" },
             ],
         });
-        readFile.mockImplementation(async (filePath: string) => ({
-            success: true,
-            content: filePath.endsWith(".mdx") ? "# Component\nReact notes" : "# Guide\nSearchable text",
-            fileSize: 24,
-            lastModified: "2026-01-01T00:00:00.000Z",
-        }));
+        readFile.mockImplementation(async (filePath: string) => {
+            let content = "# Guide\nSearchable text";
+            if (filePath.endsWith(".mdx")) {
+                content = "# Component\nReact notes";
+            } else if (filePath.endsWith(".tex")) {
+                content = "\\documentclass{article}\n\\begin{document}\n$ x^2 $\n\\end{document}\n";
+            } else if (filePath.endsWith(".latex")) {
+                content = "\\section*{Appendix}\n\\newcommand{\\R}{\\mathbb{R}}\n";
+            }
+            return {
+                success: true,
+                content,
+                fileSize: 24,
+                lastModified: "2026-01-01T00:00:00.000Z",
+            };
+        });
 
         const repository = new NotesRepository(tabs as never);
         const notes = await repository.getAll();
 
-        expect(notes.map((note) => note.filePath)).toEqual(["/notes/guide.md", "/notes/component.mdx"]);
-        expect(notes.map((note) => note.content)).toEqual(["# Guide\nSearchable text", "# Component\nReact notes"]);
-        expect(save).toHaveBeenCalledTimes(2);
-        expect(readFile).toHaveBeenCalledTimes(2);
+        expect(notes.map((note) => note.filePath)).toEqual([
+            "/notes/guide.md",
+            "/notes/component.mdx",
+            "/notes/paper.tex",
+            "/notes/appendix.latex",
+        ]);
+        expect(notes.map((note) => note.content)).toEqual([
+            "# Guide\nSearchable text",
+            "# Component\nReact notes",
+            "\\documentclass{article}\n\\begin{document}\n$ x^2 $\n\\end{document}\n",
+            "\\section*{Appendix}\n\\newcommand{\\R}{\\mathbb{R}}\n",
+        ]);
+        expect(save).toHaveBeenCalledTimes(4);
+        expect(saveSnapshot).toHaveBeenCalledTimes(4);
+        expect(readFile).toHaveBeenCalledTimes(4);
     });
 
     it("hydrates indexed workspace notes with current file contents", async () => {
@@ -105,6 +131,30 @@ describe("Electron NotesRepository", () => {
 
         expect(getRecentNotes).toHaveBeenNthCalledWith(1, 10_000, "/notes");
         expect(getRecentNotes).toHaveBeenNthCalledWith(2, 10_000, "/notes");
+    });
+
+    it("restores a snapshot through the normal content update path", async () => {
+        getHistory.mockResolvedValue([
+            {
+                id: "snapshot-1",
+                noteId: "note-1",
+                content: "restored content",
+                createdAt: "2026-01-01T00:00:00.000Z",
+            },
+        ]);
+        get.mockResolvedValue({ id: "note-1", title: "Note", content: "current content" });
+        updateContent.mockResolvedValue(true);
+        const repository = new NotesRepository(tabs as never);
+
+        await repository.restoreSnapshot("note-1", "snapshot-1");
+
+        expect(updateContent).toHaveBeenCalledWith(
+            "note-1",
+            "restored content",
+            "restored content".length,
+            expect.any(String),
+            undefined,
+        );
     });
 
     it("retains metadata when deleting the note file fails", async () => {

@@ -1,8 +1,10 @@
 import { endOfDay, startOfDay } from "date-fns";
+import type { NoteSnapshot } from "../../note-history";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { getStorageMode } from "../../../lib/storage-mode";
+import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "../../../types/workspace-files";
 import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "../../note";
 import { SettingsService } from "../../settings";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
@@ -13,10 +15,6 @@ type WorkspaceFile = {
     path: string;
     relativePath: string;
 };
-
-const MARKDOWN_FILE_PATTERN = /\.(?:md|mdx)$/i;
-
-const getWorkspaceNoteTitle = (fileName: string): string => fileName.replace(MARKDOWN_FILE_PATTERN, "");
 
 type WorkspaceNotesResult = {
     complete: boolean;
@@ -29,6 +27,10 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     public constructor(private readonly tabsRepository: ITabRepository) {
         super(new ElectronStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
+    }
+
+    private async saveSnapshot(noteId: string, content: string, createdAt: Date): Promise<void> {
+        await window.electronAPI.db.notes.saveSnapshot(noteId, content, createdAt.toISOString());
     }
 
     override async save(item: Note): Promise<Note> {
@@ -70,6 +72,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             item.fileSize = item.content.length;
             await this.adapter.save(this.collection, { ...item, id: item.id });
         }
+        await this.saveSnapshot(item.id, item.content, item.updatedAt);
         return item;
     }
 
@@ -81,6 +84,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             if (result.success) {
                 item.lastSynced = new Date(result.lastModified);
                 item.fileSize = result.fileSize;
+                await this.saveSnapshot(id, item.content, new Date());
             }
             return item;
         }
@@ -138,6 +142,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             await this.adapter.save(this.collection, { ...item, id });
         }
 
+        if (existing.content !== item.content) {
+            await this.saveSnapshot(id, item.content, item.updatedAt);
+        }
         return item;
     }
 
@@ -189,11 +196,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             }
         }
 
-        const markdownFiles = directoryResult.files.flatMap((file: WorkspaceFile) =>
-            MARKDOWN_FILE_PATTERN.test(file.path) ? [file] : [],
+        const workspaceFiles = directoryResult.files.flatMap((file: WorkspaceFile) =>
+            isWorkspaceDocumentFile(file.path) ? [file] : [],
         );
         const loadedNotes = await Promise.all(
-            markdownFiles.map(async (file: WorkspaceFile): Promise<[string, Note] | null> => {
+            workspaceFiles.map(async (file: WorkspaceFile): Promise<[string, Note] | null> => {
                 const metadata = existingByPath.get(file.path);
                 if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
 
@@ -229,6 +236,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                         const { content: _, ...persistedMetadata } = nextMetadata;
                         try {
                             await this.adapter.save(this.collection, persistedMetadata);
+                            await this.saveSnapshot(note.id, readResult.content, lastModified);
                         } catch (error) {
                             console.error(`Failed to update workspace note metadata ${file.path}:`, error);
                         }
@@ -237,7 +245,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 }
 
                 const note = Note.parse({
-                    title: getWorkspaceNoteTitle(file.name),
+                    title: getWorkspaceDocumentTitle(file.name),
                     content: readResult.content,
                     filePath: file.path,
                     fileSize,
@@ -258,7 +266,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
         return {
             complete: true,
-            filePaths: new Set(markdownFiles.map((file) => file.path)),
+            filePaths: new Set(workspaceFiles.map((file) => file.path)),
             notes: new Map(loadedNotes.filter((entry): entry is [string, Note] => entry !== null)),
         };
     }
@@ -295,9 +303,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             if (workspaceScan.complete) {
                 filtered = filtered.filter(
                     (n) =>
-                        !n.filePath ||
-                        !MARKDOWN_FILE_PATTERN.test(n.filePath) ||
-                        workspaceScan.filePaths.has(n.filePath),
+                        !n.filePath || !isWorkspaceDocumentFile(n.filePath) || workspaceScan.filePaths.has(n.filePath),
                 );
             }
         }
@@ -503,6 +509,25 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return outcome;
     }
 
+    async getHistory(noteId: string): Promise<NoteSnapshot[]> {
+        const snapshots = await window.electronAPI.db.notes.getHistory(noteId);
+        return snapshots
+            .map((snapshot: any) => ({
+                id: snapshot.id,
+                noteId: snapshot.noteId,
+                content: snapshot.content,
+                createdAt: new Date(snapshot.createdAt),
+            }))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+
+    async restoreSnapshot(noteId: string, snapshotId: string): Promise<Note | null> {
+        const snapshot = (await this.getHistory(noteId)).find((item) => item.id === snapshotId);
+        if (!snapshot) return null;
+        await this.updateContent(noteId, snapshot.content);
+        return this.getOne(noteId);
+    }
+
     async updateContent(id: string, content: string): Promise<void> {
         const settings = SettingsService.load();
         const mode = getStorageMode(settings.directory);
@@ -532,6 +557,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             } as any;
             delete metadata.content;
             await this.adapter.save(this.collection, metadata);
+            if (existing.content !== content) {
+                await this.saveSnapshot(id, content, updatedAt);
+            }
         } else {
             await window.electronAPI.db.notes.updateContent(
                 id,

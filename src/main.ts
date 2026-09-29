@@ -438,6 +438,7 @@ const WORKSPACE_INSTANCE_FLAG = "--workspace-instance";
 const WORKSPACE_ARG = "--workspace";
 const WORKSPACE_INSTANCE_ENV = "WRITEME_WORKSPACE_INSTANCE";
 const WORKSPACE_ENV = "WRITEME_WORKSPACE";
+const DEVELOPMENT_USER_DATA_DIR = "writeme-dev";
 
 function resolveArgPath(rawPath: string, workingDir?: string): string {
     return workingDir ? path.resolve(workingDir, rawPath) : path.resolve(rawPath);
@@ -529,11 +530,19 @@ function sendOpenFile(filePath: string, wait: boolean, requestId: string): void 
     }
 }
 
+function configureDevelopmentUserData(): void {
+    if (app.isPackaged) return;
+
+    app.setPath("userData", path.join(app.getPath("appData"), DEVELOPMENT_USER_DATA_DIR));
+}
+
 async function main() {
     if (started) {
         app.quit();
         return;
     }
+
+    configureDevelopmentUserData();
 
     const isWorkspaceInstance =
         process.env[WORKSPACE_INSTANCE_ENV] === "1" || process.argv.includes(WORKSPACE_INSTANCE_FLAG);

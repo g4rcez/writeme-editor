@@ -88,7 +88,7 @@ export default function FolderWorkspacePage() {
                     </span>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                    Markdown files in this folder. Open one to add it to your workspace.
+                    Markdown and LaTeX files in this folder. Open one to add it to your workspace.
                 </p>
             </header>
             {files.length === 0 ? (
@@ -96,9 +96,9 @@ export default function FolderWorkspacePage() {
                     <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <FolderOpenIcon size={20} aria-hidden="true" />
                     </span>
-                    <p className="mt-3 text-sm font-medium text-foreground">No markdown files found.</p>
+                    <p className="mt-3 text-sm font-medium text-foreground">No supported text files found.</p>
                     <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-                        Add a Markdown file to this folder and it will appear here.
+                        Add a Markdown or LaTeX file to this folder and it will appear here.
                     </p>
                 </div>
             ) : (

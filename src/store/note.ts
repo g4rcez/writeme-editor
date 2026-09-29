@@ -1,5 +1,8 @@
 import { v7 as uuid } from "uuid";
+import type { NoteSnapshot } from "./note-history";
 import type { EntityBase, Repository } from "./repository";
+
+export type { NoteSnapshot } from "./note-history";
 
 export enum NoteType {
     note = "note",
@@ -135,6 +138,8 @@ export interface INoteRepository extends Repository<Note> {
     getQuicknoteByDate: (date: Date) => Promise<Note | null>;
     getTemplates: () => Promise<Note[]>;
     updateContent: (id: string, content: string) => Promise<void>;
+    getHistory: (noteId: string) => Promise<NoteSnapshot[]>;
+    restoreSnapshot: (noteId: string, snapshotId: string) => Promise<Note | null>;
     getTrashed: () => Promise<Note[]>;
     hardDelete: (id: string) => Promise<boolean>;
     restore: (id: string) => Promise<Note | null>;

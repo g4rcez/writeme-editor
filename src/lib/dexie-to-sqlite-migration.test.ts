@@ -95,6 +95,7 @@ import { migrateDexieToSqlite } from "./dexie-to-sqlite-migration";
 
 const expectedCollections = [
     "notes",
+    "noteHistory",
     "projects",
     "tabs",
     "hashtags",

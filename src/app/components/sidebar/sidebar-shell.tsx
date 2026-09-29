@@ -83,11 +83,11 @@ export const SidebarShell = () => {
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-1 py-3">
                 <button
                     type="button"
-                    className="flex min-w-0 items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-w-0 items-center gap-2.5 rounded-none px-1.5 py-1 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     title={workspace.directory}
                     onClick={() => navigate("/")}
                 >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
                         <WritemeLogo className="size-5" aria-hidden="true" />
                     </span>
                     <span className="min-w-0">

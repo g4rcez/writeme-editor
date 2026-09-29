@@ -1,15 +1,34 @@
 import { endOfDay, startOfDay } from "date-fns";
+import type { EntityBase } from "../../repository";
+import type { ITabRepository } from "../entities/tab";
 import { type INoteRepository, Note, type NoteDeletionOutcome } from "../../note";
-import { type EntityBase } from "../../repository";
+import { appendNoteSnapshot, type NoteSnapshot } from "../../note-history";
 import { SettingsService } from "../../settings";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { BaseRepository } from "../base.repository";
-import { type ITabRepository } from "../entities/tab";
 import { db } from "./dexie-db";
 
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
     constructor(private readonly tabsRepository: ITabRepository) {
         super(new DexieStorageAdapter(), "notes", (a, b) => +b.updatedAt - +a.updatedAt);
+    }
+
+    private async saveSnapshot(noteId: string, content: string, createdAt: Date): Promise<void> {
+        await db.transaction("rw", db.noteHistory, async () => {
+            const existingRows = await db.noteHistory.where("noteId").equals(noteId).toArray();
+            const existing = existingRows.map((snapshot) => ({
+                ...snapshot,
+                createdAt: new Date(snapshot.createdAt),
+            }));
+            const next = appendNoteSnapshot(existing, noteId, content, createdAt);
+            const existingIds = new Set(existing.map((snapshot) => snapshot.id));
+            const added = next.find((snapshot) => !existingIds.has(snapshot.id));
+            if (added) await db.noteHistory.add(added);
+
+            const keptIds = new Set(next.map((snapshot) => snapshot.id));
+            const staleIds = existing.filter((snapshot) => !keptIds.has(snapshot.id)).map((snapshot) => snapshot.id);
+            if (staleIds.length > 0) await db.noteHistory.bulkDelete(staleIds);
+        });
     }
 
     override async delete(id: EntityBase["id"]): Promise<boolean> {
@@ -22,7 +41,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         if (!(await db.notes.get(id))) return false;
         await db.transaction(
             "rw",
-            [db.notes, db.tabs, db.noteGroupMembers, db.cursorPositions, db.aiChats, db.aiMessages],
+            [db.notes, db.noteHistory, db.tabs, db.noteGroupMembers, db.cursorPositions, db.aiChats, db.aiMessages],
             async () => {
                 const chatIds = (await db.aiChats.where("noteId").equals(id).primaryKeys()) as string[];
                 if (chatIds.length) {
@@ -32,6 +51,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 await db.tabs.where("noteId").equals(id).delete();
                 await db.noteGroupMembers.where("noteId").equals(id).delete();
                 await db.cursorPositions.where("noteId").equals(id).delete();
+                await db.noteHistory.where("noteId").equals(id).delete();
                 await db.notes.delete(id);
             },
         );
@@ -81,7 +101,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         item.createdBy = settings.defaultAuthor;
         item.updatedBy = settings.defaultAuthor;
         item.fileSize = item.content.length;
-        return await super.save(item);
+        const saved = await super.save(item);
+        await this.saveSnapshot(saved.id, saved.content, saved.updatedAt);
+        return saved;
     }
 
     override async update(id: EntityBase["id"], item: Note): Promise<Note> {
@@ -94,7 +116,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         item.updatedBy = settings.defaultAuthor;
         item.updatedAt = new Date();
         item.fileSize = item.content.length;
-        return await super.update(id, item);
+        const updated = await super.update(id, item);
+        if (existing.content !== updated.content) {
+            await this.saveSnapshot(updated.id, updated.content, updated.updatedAt);
+        }
+        return updated;
     }
 
     override async getOne(id: EntityBase["id"]): Promise<Note | null> {
@@ -171,13 +197,39 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return result.map((metadata) => Note.parse({ ...metadata, content: metadata.content || "" }));
     }
 
+    async getHistory(noteId: string): Promise<NoteSnapshot[]> {
+        const snapshots = await db.noteHistory.where("noteId").equals(noteId).toArray();
+        return snapshots
+            .map((snapshot) => ({
+                ...snapshot,
+                createdAt: new Date(snapshot.createdAt),
+            }))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+
+    async restoreSnapshot(noteId: string, snapshotId: string): Promise<Note | null> {
+        const snapshot = await db.noteHistory.get(snapshotId);
+        if (!snapshot || snapshot.noteId !== noteId) return null;
+        await this.updateContent(noteId, snapshot.content);
+        return this.getOne(noteId);
+    }
+
     async updateContent(id: string, content: string): Promise<void> {
         const settings = SettingsService.load();
+        const existing = await this.getOne(id);
+        if (!existing) {
+            throw new Error(`Note ${id} not found`);
+        }
+
+        const updatedAt = new Date();
         await db.notes.update(id, {
             content,
             fileSize: content.length,
-            updatedAt: new Date(),
+            updatedAt,
             updatedBy: settings.defaultAuthor,
         });
+        if (existing.content !== content) {
+            await this.saveSnapshot(id, content, updatedAt);
+        }
     }
 }

@@ -135,6 +135,34 @@ describe("TreeView", () => {
         expect(requestDirectoryAccess).toHaveBeenCalledTimes(2);
     });
 
+    it("discovers and activates TeX workspace files", async () => {
+        directoryEntries["/workspace"] = [
+            {
+                name: "paper.tex",
+                path: "/workspace/paper.tex",
+                type: "file",
+                extension: ".tex",
+            },
+            {
+                name: "appendix.latex",
+                path: "/workspace/appendix.latex",
+                type: "file",
+                extension: ".latex",
+            },
+        ];
+        const onFileSelect = vi.fn();
+
+        render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={onFileSelect} />);
+
+        const texFile = await screen.findByText("paper.tex");
+        const latexFile = await screen.findByText("appendix.latex");
+        fireEvent.click(texFile);
+        fireEvent.click(latexFile);
+
+        expect(onFileSelect).toHaveBeenNthCalledWith(1, expect.objectContaining({ path: "/workspace/paper.tex" }));
+        expect(onFileSelect).toHaveBeenNthCalledWith(2, expect.objectContaining({ path: "/workspace/appendix.latex" }));
+    });
+
     it("streams recursive search results for the typed query", async () => {
         render(<TreeView rootPath="/workspace" searchQuery="guide" map={new Map()} onFileSelect={vi.fn()} />);
 

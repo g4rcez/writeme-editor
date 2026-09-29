@@ -138,7 +138,7 @@ export default function NotesListPage() {
         if (notes.length === 0) {
             return (
                 <div className="flex min-h-56 flex-col items-center justify-center px-6 py-12 text-center">
-                    <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="flex size-10 items-center justify-center rounded-none bg-primary/10 text-primary">
                         <FilePlusIcon size={20} aria-hidden="true" />
                     </span>
                     <p className="mt-3 text-sm font-medium text-foreground">No notes yet.</p>
@@ -167,7 +167,7 @@ export default function NotesListPage() {
         }
 
         return (
-            <div className="mt-5 overflow-x-auto rounded-xl border border-border/45 bg-card-background">
+            <div className="mt-5 overflow-x-auto rounded-none border border-border/45 bg-card-background">
                 <Table
                     name="notes"
                     reference="id"
@@ -211,7 +211,7 @@ export default function NotesListPage() {
         });
         col.add("noteType", "Type", {
             Element: (props) => (
-                <Tag className="rounded-xl" size="small" theme={tag[props.value].theme}>
+                <Tag className="rounded-none" size="small" theme={tag[props.value].theme}>
                     {tag[props.value].title}
                 </Tag>
             ),
@@ -228,7 +228,7 @@ export default function NotesListPage() {
                             e.stopPropagation();
                             setGroupPickerNoteIds([props.row.id]);
                         }}
-                        className="p-2 rounded transition-colors text-foreground/50 hover:bg-muted/30 hover:text-foreground"
+                        className="rounded-none p-1.5 text-foreground/50 transition-colors hover:bg-muted/30 hover:text-foreground"
                         title="Add to group"
                     >
                         <FolderSimplePlusIcon className="w-4 h-4" />
@@ -236,7 +236,7 @@ export default function NotesListPage() {
                     <button
                         type="button"
                         onClick={(e) => handleDelete(e, props.row.id)}
-                        className="p-2 text-danger rounded transition-colors hover:bg-danger/10"
+                        className="rounded-none p-1.5 text-danger transition-colors hover:bg-danger/10"
                         title="Delete note"
                     >
                         <TrashIcon className="w-4 h-4" />
@@ -299,7 +299,7 @@ export default function NotesListPage() {
 
             {selectedIds.size > 0 && (
                 <div className="fixed bottom-8 left-1/2 z-50 duration-200 -translate-x-1/2 animate-in slide-in-from-bottom-4 fade-in">
-                    <div className="flex gap-4 items-center py-3 px-6 rounded-xl border shadow-xl border-border bg-floating-background text-card-foreground">
+                    <div className="flex items-center gap-3 border border-border bg-floating-background px-5 py-2.5 text-card-foreground shadow-xl">
                         <span className="font-medium">{selectedIds.size} selected</span>
                         <div className="w-px h-4 bg-border" />
                         <Button size="small" theme="ghost-danger" onClick={() => setBatchGroupOpen(true)}>

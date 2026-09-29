@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { app } from "electron";
 import path from "node:path";
 import { v7 as uuid } from "uuid";
+import { NOTE_HISTORY_LIMIT } from "../store/note-history";
 import { type DatabaseCollection, isDatabaseCollection, parseDatabaseRecord } from "./database-schema";
 
 export type MigrationCounts = {
@@ -12,7 +13,8 @@ export type MigrationCounts = {
     skipped: number;
 };
 
-const GENERIC_DELETE_DENYLIST = new Set<DatabaseCollection>(["notes", "noteGroups", "aiChats"]);
+const GENERIC_DELETE_DENYLIST = new Set<DatabaseCollection>(["notes", "noteGroups", "aiChats", "noteHistory"]);
+const GENERIC_WRITE_DENYLIST = new Set<DatabaseCollection>(["noteHistory"]);
 
 export class DatabaseManager {
     private static instance: DatabaseManager;
@@ -77,6 +79,17 @@ export class DatabaseManager {
         metadata TEXT, -- JSON object
         favorite INTEGER DEFAULT 0
       );
+
+      CREATE TABLE IF NOT EXISTS noteHistory (
+        id TEXT PRIMARY KEY,
+        type TEXT,
+        noteId TEXT NOT NULL,
+        content TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_noteHistory_noteId_createdAt
+        ON noteHistory (noteId, createdAt DESC);
 
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
@@ -252,6 +265,7 @@ export class DatabaseManager {
         // Migration for missing 'type' column if tables existed without it
         const tables = [
             "notes",
+            "noteHistory",
             "projects",
             "tabs",
             "hashtags",
@@ -444,7 +458,7 @@ export class DatabaseManager {
                           : source.id;
                 const destination = find.get(identity) as Record<string, unknown> | undefined;
                 if (!destination) {
-                    this.save(collection, source);
+                    this.saveRecord(collection, source);
                     counts.imported++;
                     continue;
                 }
@@ -466,13 +480,13 @@ export class DatabaseManager {
                     counts.identical++;
                     continue;
                 }
-                const sourceTime = Date.parse(String(source.updatedAt ?? ""));
+                const sourceTime = Date.parse(String(sourceRecord.updatedAt ?? ""));
                 const destinationTime = Date.parse(String(destination.updatedAt ?? ""));
                 if (
                     (collection === "settings" && !Number.isFinite(destinationTime)) ||
                     (Number.isFinite(sourceTime) && Number.isFinite(destinationTime) && sourceTime > destinationTime)
                 ) {
-                    this.save(collection, source);
+                    this.saveRecord(collection, source);
                     counts.updated++;
                 } else {
                     counts.skipped++;
@@ -533,6 +547,18 @@ export class DatabaseManager {
         id: string;
     } {
         const collection = this.collection(table);
+        if (GENERIC_WRITE_DENYLIST.has(collection)) {
+            throw new TypeError(`Generic writes are not allowed for collection: ${collection}`);
+        }
+        return this.saveRecord(collection, item);
+    }
+
+    private saveRecord(
+        collection: DatabaseCollection,
+        item: unknown,
+    ): Record<string, unknown> & {
+        id: string;
+    } {
         const parsed = parseDatabaseRecord(collection, item);
         const keys = Object.keys(parsed);
         const values = Object.values(parsed).map((v: unknown) => {
@@ -623,6 +649,7 @@ export class DatabaseManager {
             this.db.prepare("DELETE FROM tabs WHERE noteId = ?").run(id);
             this.db.prepare("DELETE FROM noteGroupMembers WHERE noteId = ?").run(id);
             this.db.prepare("DELETE FROM cursorPositions WHERE noteId = ?").run(id);
+            this.db.prepare("DELETE FROM noteHistory WHERE noteId = ?").run(id);
             this.db.prepare("DELETE FROM notes WHERE id = ?").run(id);
         })();
     }
@@ -690,6 +717,38 @@ export class DatabaseManager {
         transaction();
     }
 
+    private saveNoteSnapshotWithinTransaction(noteId: string, content: string, createdAt: string): void {
+        const latest = this.db
+            .prepare("SELECT content FROM noteHistory WHERE noteId = ? ORDER BY createdAt DESC, rowid DESC LIMIT 1")
+            .get(noteId) as { content?: string } | undefined;
+        if (latest?.content === content) return;
+
+        this.db
+            .prepare("INSERT INTO noteHistory (id, type, noteId, content, createdAt) VALUES (?, ?, ?, ?, ?)")
+            .run(uuid(), "note-history", noteId, content, createdAt);
+
+        const staleRows = this.db
+            .prepare("SELECT id FROM noteHistory WHERE noteId = ? ORDER BY createdAt DESC, rowid DESC")
+            .all(noteId) as Array<{ id: string }>;
+        const deleteStmt = this.db.prepare("DELETE FROM noteHistory WHERE id = ?");
+        for (const row of staleRows.slice(NOTE_HISTORY_LIMIT)) {
+            deleteStmt.run(row.id);
+        }
+    }
+
+    public saveNoteSnapshot(noteId: string, content: string, createdAt: string): void {
+        this.db.transaction(() => {
+            this.saveNoteSnapshotWithinTransaction(noteId, content, createdAt);
+        })();
+    }
+
+    public getNoteHistory(noteId: string): any[] {
+        const rows = this.db
+            .prepare("SELECT * FROM noteHistory WHERE noteId = ? ORDER BY createdAt DESC, rowid DESC")
+            .all(noteId) as any[];
+        return rows.map((row) => this.normalizeRow(row));
+    }
+
     public updateNoteContent(
         id: string,
         content: string,
@@ -697,10 +756,14 @@ export class DatabaseManager {
         updatedAt: string,
         updatedBy: string,
     ): void {
-        const stmt = this.db.prepare(
-            "UPDATE notes SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ? WHERE id = ?",
-        );
-        stmt.run(content, fileSize, updatedAt, updatedBy, id);
+        this.db.transaction(() => {
+            const result = this.db
+                .prepare("UPDATE notes SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ? WHERE id = ?")
+                .run(content, fileSize, updatedAt, updatedBy, id);
+            if (result.changes > 0) {
+                this.saveNoteSnapshotWithinTransaction(id, content, updatedAt);
+            }
+        })();
     }
 
     public deleteNoteGroup(id: string): void {

@@ -58,30 +58,30 @@
 }
 
 .writeme-aside-collapsed-toggle {
-    @apply flex h-full w-10 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-4 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
+    @apply flex h-full w-8 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-3 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
 }
 
 .writeme-aside-activity-bar {
-    @apply relative z-10 flex h-full w-14 flex-col items-center border-r py-3 print:hidden;
+    @apply relative z-10 flex h-full w-12 flex-col items-center border-r py-2 print:hidden;
     background-color: var(--wm-rail);
     border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-aside-activity-brand {
-    @apply mb-5 flex size-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply mb-4 flex size-8 shrink-0 items-center justify-center rounded-none text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-aside-activity-icons {
-    @apply flex w-full flex-1 flex-col items-center gap-1;
+    @apply flex w-full flex-1 flex-col items-center gap-0.5;
 }
 
 .writeme-aside-activity-divider {
-    @apply my-2 h-px w-6 shrink-0;
+    @apply my-1 h-px w-5 shrink-0;
     background-color: hsla(var(--border), 0.7);
 }
 
 .writeme-aside-activity-icon {
-    @apply relative flex size-10 items-center justify-center rounded-lg transition-[background-color,color,transform] duration-150;
+    @apply relative flex size-8 items-center justify-center rounded-none transition-[background-color,color,transform] duration-150;
 }
 
 .writeme-aside-activity-icon--active {
@@ -93,7 +93,7 @@
 }
 
 .writeme-aside-activity-indicator {
-    @apply absolute -left-3 h-5 w-0.5 rounded-r bg-primary;
+    @apply absolute -left-2 h-4 w-0.5 rounded-none bg-primary;
 }
 
 .writeme-aside-activity-badge {
@@ -101,7 +101,7 @@
 }
 
 .writeme-aside-activity-bottom {
-    @apply mt-auto flex w-full flex-col items-center gap-1;
+    @apply mt-auto flex w-full flex-col items-center gap-0.5;
 }
 
 @media (pointer: coarse) {
@@ -110,7 +110,7 @@
     }
 
     .writeme-aside-activity-icon {
-        @apply size-11;
+        @apply size-11 rounded-none;
     }
 }
 
@@ -120,15 +120,15 @@
 }
 
 .writeme-aside-nav-header {
-    @apply p-3;
+    @apply p-2;
 }
 
 .writeme-aside-nav-title {
-    @apply flex items-center gap-2 px-2 py-2 font-semibold text-foreground;
+    @apply flex items-center gap-2 px-1.5 py-1.5 font-semibold text-foreground;
 }
 
 .writeme-aside-nav-content {
-    @apply flex-1 overflow-y-auto px-2 pb-4;
+    @apply flex-1 overflow-y-auto px-1.5 pb-3;
     scrollbar-width: none;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .writeme-aside-nav-item {
-    @apply flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors;
+    @apply flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-sm transition-colors;
 }
 
 .writeme-aside-nav-item--active {
@@ -175,19 +175,19 @@
 }
 
 .writeme-sidebar-v2-legacy-pane {
-    @apply h-full min-h-0 overflow-hidden rounded-xl border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
+    @apply h-full min-h-0 overflow-hidden rounded-none border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group {
-    @apply rounded-xl border border-border/40 bg-card-background/70 px-3 py-2 shadow-sm shadow-background/10;
+    @apply rounded-none border border-border/40 bg-card-background/70 px-2.5 py-1.5 shadow-sm shadow-background/10;
 }
 
 .writeme-sidebar-v2-group-button {
-    @apply flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
+    @apply flex w-full items-center gap-2 rounded-none px-1.5 py-1 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
 }
 
 .writeme-sidebar-v2-file {
-    @apply flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted/40;
+    @apply flex items-center gap-2 rounded-none px-1.5 py-1 text-left text-sm transition-colors hover:bg-muted/40;
 }
 
 .writeme-sidebar-v2-file--active {
@@ -195,7 +195,7 @@
 }
 
 .writeme-sidebar-v2-footer-tab {
-    @apply flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card-background px-3 py-2 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
+    @apply flex items-center justify-center gap-2 rounded-none border border-border/50 bg-card-background px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
 }
 
 .writeme-sidebar-v2-footer-tab--active {
@@ -205,21 +205,21 @@
 .writeme-editor-page {
     @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
     gap: 0;
-    padding: 2.5rem clamp(1rem, 5vw, 4rem) 0;
+    padding: 2rem clamp(1rem, 5vw, 2.5rem) 0;
 }
 
 .writeme-editor-column,
 .writeme-editor {
-  @apply mx-auto w-full;
-  max-width: clamp(32rem, 120ch, 100%);
+    @apply mx-auto w-full;
+    max-width: min(100%, 760px);
 }
 
 .writeme-note-header {
-    @apply pb-1;
+    @apply pb-0;
 }
 
 .writeme-note-header-top {
-    @apply flex min-h-9 items-center justify-between gap-4;
+    @apply flex min-h-8 items-center justify-between gap-3;
 }
 
 .writeme-note-title-editor {
@@ -228,15 +228,15 @@
 }
 
 .writeme-note-header-actions {
-    @apply flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1;
+    @apply flex max-w-full shrink-0 flex-wrap items-center justify-center gap-0.5;
 }
 
 .writeme-note-tool-button {
-    @apply flex size-9 items-center justify-center rounded-md border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-8 items-center justify-center rounded-none border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-note-header-actions .writeme-table-of-contents-button {
-    @apply size-9 rounded-md shadow-none;
+    @apply size-8 rounded-none shadow-none;
     transform: none;
 }
 
@@ -245,7 +245,7 @@
 }
 
 .writeme-note-header-actions .writeme-editor-mode-toggle {
-    @apply h-9 items-center justify-center shadow-none;
+    @apply h-8 items-center justify-center shadow-none;
 }
 
 .writeme-note-header-actions .writeme-editor-mode-toggle button {
@@ -262,8 +262,8 @@
 
 .writeme-editor {
     @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
-    padding-top: 1.5rem;
-    padding-bottom: 4rem;
+    padding-top: 1rem;
+    padding-bottom: 3rem;
 }
 
 .writeme-formatting-toolbar {
@@ -294,7 +294,7 @@
 }
 
 .writeme-editor-bubble-actions {
-    @apply flex max-w-48 gap-1 overflow-y-auto rounded-lg border-floating-border bg-floating-background p-2 shadow-lg;
+    @apply flex max-w-48 gap-0.5 overflow-y-auto rounded-none border-floating-border bg-floating-background p-1.5 shadow-lg;
 }
 
 .quicknote-window-drag-region {
@@ -328,9 +328,9 @@
 }
 
 .writeme-app-header {
-  @apply flex h-10 min-h-10 shrink-0 items-center justify-between gap-3 border-b pr-4 print:hidden;
-  background-color: var(--wm-surface-1);
-  border-color: hsla(var(--border), 0.55);
+    @apply flex h-9 min-h-9 shrink-0 items-center justify-between gap-2 border-b pr-3 print:hidden;
+    background-color: var(--wm-surface-1);
+    border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-app-header-start {
@@ -351,11 +351,11 @@
 }
 
 .writeme-app-header-actions {
-    @apply flex shrink-0 items-center gap-1 justify-self-end;
+    @apply flex shrink-0 items-center gap-0.5 justify-self-end;
 }
 
 .writeme-header-action {
-    @apply flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color] hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-8 items-center justify-center rounded-none text-muted-foreground transition-[background-color,color] hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-mobile-header-action {
@@ -363,7 +363,7 @@
 }
 
 .writeme-tabs-bar {
-    @apply relative flex h-10 min-h-10 shrink-0 items-stretch border-b print:hidden;
+    @apply relative flex h-9 min-h-9 shrink-0 items-stretch border-b print:hidden;
     background-color: var(--wm-canvas);
     border-color: hsla(var(--border), 0.55);
 }
@@ -373,7 +373,7 @@
 }
 
 .writeme-tabs-bar-new {
-    @apply flex size-10 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-9 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
     border-color: hsla(var(--border), 0.55);
 }
 
@@ -388,21 +388,21 @@
 }
 
 .writeme-context-pane-header {
-    @apply flex h-12 min-h-12 items-center justify-between gap-3 border-b px-4;
+    @apply flex h-10 min-h-10 items-center justify-between gap-2 border-b px-3;
     border-color: hsla(var(--border), 0.55);
 }
 
 .writeme-context-pane-content {
-    @apply min-h-0 flex-1 overflow-y-auto p-3;
+    @apply min-h-0 flex-1 overflow-y-auto p-2;
 }
 
 .writeme-context-section {
-    @apply border-b py-3 last:border-b-0;
+    @apply border-b py-2 last:border-b-0;
     border-color: hsla(var(--border), 0.4);
 }
 
 .writeme-context-section summary {
-    @apply flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground;
+    @apply flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 rounded-none px-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground;
 }
 
 .writeme-context-section summary::-webkit-details-marker {
@@ -419,11 +419,11 @@
 }
 
 .writeme-context-list {
-    @apply mt-2 flex flex-col gap-0.5;
+    @apply mt-1 flex flex-col gap-0.5;
 }
 
 .writeme-context-list-button {
-    @apply min-h-9 w-full rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply min-h-8 w-full rounded-none px-2 py-1 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-context-empty {
@@ -452,7 +452,7 @@
 }
 
 .writeme-settings-card {
-    @apply overflow-hidden rounded-xl border border-border/45 bg-card-background shadow-none;
+    @apply overflow-hidden rounded-none border border-border/45 bg-card-background shadow-none;
 }
 
 .writeme-settings-card [data-component="card-title"] {
@@ -468,7 +468,7 @@
 }
 
 .writeme-editor-status-bar {
-    @apply sticky bottom-0 z-10 mt-auto flex min-h-8 flex-wrap items-center justify-end gap-x-3 gap-y-1 border-t px-1 py-2 text-xs text-muted-foreground;
+    @apply sticky bottom-0 z-10 mt-auto flex min-h-7 flex-wrap items-center justify-end gap-x-2 gap-y-1 border-t px-1 py-1 text-xs text-muted-foreground;
     background-color: hsla(var(--background), 0.94);
     border-color: hsla(var(--border), 0.55);
 }
@@ -551,13 +551,13 @@
     }
 
     .writeme-header-action {
-        @apply size-8;
+        @apply size-8 rounded-none;
     }
 
     .writeme-note-header-top {
         flex-wrap: wrap;
         align-items: flex-start;
-        gap: 0.75rem;
+        gap: 0.5rem;
     }
 
     .writeme-note-header-actions {
@@ -575,7 +575,7 @@
     }
 
     .writeme-editor-page {
-        padding: 1.75rem 1rem 0;
+        padding: 1.25rem 1rem 0;
     }
 
     .writeme-editor-column,

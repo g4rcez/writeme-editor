@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import { v7 as uuid } from "uuid";
 import type { Note } from "../../note";
+import type { NoteSnapshot } from "../../note-history";
 import type { AIChat, AIConfig, AIMessage } from "../electron/ai.repository";
 import type { AICredentials } from "../entities/ai";
 import type { CursorPosition } from "../entities/cursor-position";
@@ -16,6 +17,7 @@ import type { View } from "../entities/view";
 
 export const db = new Dexie("writeme") as Dexie & {
     notes: EntityTable<Note, "id">;
+    noteHistory: EntityTable<NoteSnapshot, "id">;
     projects: EntityTable<Project, "id">;
     tabs: EntityTable<Tab, "id">;
     hashtags: EntityTable<Hashtag, "id">;
@@ -338,6 +340,26 @@ db.version(22).stores({
     scripts: "&id, name, createdAt, updatedAt",
     noteGroups: "&id, title, createdAt, updatedAt",
     noteGroupMembers: "&id, groupId, noteId, order, createdAt",
+    aiConfigs: "&id, adapterId, isDefault, createdAt",
+    aiChats: "&id, noteId, createdAt",
+    aiMessages: "&id, chatId, role, createdAt",
+    aiCredentials: "&adapterId",
+    views: "&id, title, viewType, createdAt, updatedAt",
+    cursorPositions: "&noteId, y, anchor",
+    terminalSessions: "&id, title, project, createdAt, updatedAt",
+});
+
+// Version 23 (Local note history)
+db.version(23).stores({
+    notes: "&id, title, filePath, noteType, *tags, createdAt, updatedAt, createdBy, updatedBy, favorite, deletedAt",
+    noteHistory: "&id, noteId, createdAt",
+    projects: "&id, title, folderPath, description, createdAt, updatedAt",
+    tabs: "&id, noteId, order, createdAt",
+    hashtags: "&id, hashtag, filename, project",
+    settings: "&id, &name, value",
+    scripts: "&id, name, createdAt, updatedAt",
+    noteGroups: "&id, title, createdAt, updatedAt",
+    noteGroupMembers: "&id, groupId, noteId, order, createdAt, updatedAt",
     aiConfigs: "&id, adapterId, isDefault, createdAt",
     aiChats: "&id, noteId, createdAt",
     aiMessages: "&id, chatId, role, createdAt",

@@ -14,12 +14,16 @@ import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { type EditorMode, SettingsService } from "@/store/settings";
 import { useUIStore } from "@/store/ui.store";
+import { isLatexFilePath } from "@/types/workspace-files";
+import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { NoteFooter } from "../components/note-footer";
+import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
+import { useEditorPanes } from "../hooks/use-editor-panes";
 
 function useNoteReferences(content: string) {
     const [refs, setRefs] = useState<Note[]>([]);
@@ -136,7 +140,7 @@ function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: s
                         event.currentTarget.blur();
                     }
                 }}
-                className="writeme-note-title-editor w-full border-0 border-b border-transparent bg-transparent px-0 py-3 text-3xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary focus-visible:ring-0"
+                className="writeme-note-title-editor w-full border-0 border-b border-transparent bg-transparent px-0 py-2 text-3xl font-semibold tracking-tight text-foreground transition-colors outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary focus-visible:ring-0"
             />
         </div>
     );
@@ -203,6 +207,23 @@ function AddFrontmatterButton() {
     );
 }
 
+function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: () => void }) {
+    return (
+        <Button
+            type="button"
+            size="tiny"
+            theme={open ? "primary" : "ghost-primary"}
+            className="writeme-note-tool-button"
+            aria-label={open ? "Exit pane mode" : "Open pane mode"}
+            aria-pressed={open}
+            title={open ? "Exit pane mode" : "Open pane mode"}
+            onClick={onChange}
+        >
+            <ColumnsIcon aria-hidden="true" size={21} />
+        </Button>
+    );
+}
+
 function ExportNoteButton({ note }: { note: Note }) {
     return (
         <Button
@@ -227,6 +248,13 @@ export default function NotePage() {
     const isLoading = note === null;
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
     const [rawEditorVimMode, setRawEditorVimMode] = useState<boolean>(() => SettingsService.load().rawEditorVimMode);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const editorPanes = useEditorPanes(id ?? null, state.notes);
+    const paneMode = editorPanes.state !== null;
+    const togglePaneMode = useCallback((): void => {
+        if (paneMode) editorPanes.exit();
+        else editorPanes.enter();
+    }, [editorPanes, paneMode]);
     const changeEditorMode = useCallback((nextMode: EditorMode): void => {
         setEditorMode((currentMode) => {
             if (currentMode === nextMode) return currentMode;
@@ -290,7 +318,8 @@ export default function NotePage() {
         });
     }, [dispatch, note]);
 
-    const markdownTitle = note ? findFirstMarkdownH1(note.content || "") : null;
+    const isLatexSource = note ? isLatexFilePath(note.filePath) : false;
+    const markdownTitle = !isLatexSource && note ? findFirstMarkdownH1(note.content || "") : null;
     const markdownTitleText = markdownTitle?.title;
     useEffect(() => {
         if (!note?.id || !markdownTitleText || markdownTitleText === note.title) return;
@@ -300,13 +329,15 @@ export default function NotePage() {
     const saveTitle = useCallback(
         async (title: string): Promise<void> => {
             if (!note) return;
-            const updatedContent = replaceFirstMarkdownH1(note.content || "", title);
-            if (updatedContent !== null && updatedContent !== note.content) {
-                await dispatch.updateNoteContent(note.id, updatedContent);
+            if (!isLatexSource) {
+                const updatedContent = replaceFirstMarkdownH1(note.content || "", title);
+                if (updatedContent !== null && updatedContent !== note.content) {
+                    await dispatch.updateNoteContent(note.id, updatedContent);
+                }
             }
             await dispatch.updateNoteTitle(note.id, title);
         },
-        [dispatch, note],
+        [dispatch, isLatexSource, note],
     );
 
     if (isLoading) {
@@ -324,6 +355,8 @@ export default function NotePage() {
 
     const isJson = note.noteType === NoteType.json;
     const isExcalidraw = note.noteType === NoteType.excalidraw;
+    const isHistoryEligible = note.noteType === NoteType.note && !isLatexSource;
+    const activeEditorMode: EditorMode = isLatexSource ? "markdown" : editorMode;
 
     if (isJson || isExcalidraw) {
         return (
@@ -364,11 +397,12 @@ export default function NotePage() {
                             {note.url ? <span className="truncate">/ {new URL(note.url).hostname}</span> : null}
                         </div>
                         <div className="flex items-center" role="toolbar" aria-label="Note tools">
-                            {editorMode === "markdown" ? (
+                            {activeEditorMode === "markdown" ? (
                                 <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                             ) : null}
-                            <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
-                            <AddFrontmatterButton />
+                            {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
+                            {isLatexSource ? null : <AddFrontmatterButton />}
+                            <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
                             <div className="flex flex-col items-center">
                                 <TableOfContents />
                                 <ExportNoteButton note={note} />
@@ -413,11 +447,13 @@ export default function NotePage() {
                             )}
                         </div>
                         <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
-                            {editorMode === "markdown" ? (
+                            {activeEditorMode === "markdown" ? (
                                 <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                             ) : null}
-                            <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />
-                            <AddFrontmatterButton />
+                            {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
+                            {isLatexSource ? null : <AddFrontmatterButton />}
+                            {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}
+                            <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
                             <TableOfContents />
                             <ExportNoteButton note={note} />
                         </div>
@@ -439,13 +475,37 @@ export default function NotePage() {
                     </div>
                 </header>
             )}
-            <Editor
-                note={note}
-                key={note.id}
-                content={note.content || ""}
-                mode={editorMode}
-                rawEditorVimMode={rawEditorVimMode}
-            />
+            {isHistoryEligible && historyOpen ? (
+                <NoteHistoryDialog
+                    note={note}
+                    open
+                    onClose={() => setHistoryOpen(false)}
+                    onRestored={(restored) => dispatch.syncNoteState(restored)}
+                />
+            ) : null}
+            {editorPanes.state ? (
+                <EditorPanes
+                    state={editorPanes.state}
+                    notes={state.notes}
+                    currentNote={note}
+                    editorMode={activeEditorMode}
+                    rawEditorVimMode={rawEditorVimMode}
+                    onActivate={editorPanes.activate}
+                    onSelectNote={editorPanes.selectNote}
+                    onAdd={editorPanes.add}
+                    onRemove={editorPanes.remove}
+                    onExit={editorPanes.exit}
+                    canAdd={editorPanes.canAdd}
+                />
+            ) : (
+                <Editor
+                    note={note}
+                    key={note.id}
+                    content={note.content || ""}
+                    mode={activeEditorMode}
+                    rawEditorVimMode={rawEditorVimMode}
+                />
+            )}
             <NoteReferences note={note} />
             <NoteFooter noteId={note.id} />
         </Wrapper>

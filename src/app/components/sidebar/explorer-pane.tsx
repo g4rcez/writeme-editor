@@ -11,6 +11,7 @@ import { isElectron } from "@/lib/is-electron";
 import { globalDispatch, repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { useUIStore, type MediaSource } from "@/store/ui.store";
+import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "@/types/workspace-files";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { TreeView, type TreeCreateRequest } from "../tree-view";
 
@@ -55,7 +56,7 @@ export const ExplorerPane = () => {
             try {
                 const writeResult = await window.electronAPI.fs.writeFile(targetPath, "");
                 if (!writeResult?.success) return false;
-                const title = targetPath.substring(targetPath.lastIndexOf("/") + 1).replace(/\.md$/, "");
+                const title = getWorkspaceDocumentTitle(targetPath.substring(targetPath.lastIndexOf("/") + 1));
                 const note = Note.new(title, "");
                 note.filePath = targetPath;
                 await repositories.notes.save(note);
@@ -159,19 +160,22 @@ export const ExplorerPane = () => {
     };
 
     const onFileSelect = async (node: TreeNode) => {
-        if (node.type === "file" && (node.extension === ".md" || node.extension === ".mdx")) {
+        const extension = node.extension?.toLowerCase();
+        if (node.type === "file" && extension && isWorkspaceDocumentFile(node.name)) {
             const allNotes = await repositories.notes.getAll();
             let note = allNotes.find((n) => n.filePath === node.path);
             if (!note) {
                 const result = await window.electronAPI.fs.readFile(node.path);
-                note = Note.new(node.name.replace(/\.(?:md|mdx)$/i, ""), result.content || "");
-                note.filePath = node.path;
+                if (!result?.success || typeof result.content !== "string") return;
+                note = Note.new(getWorkspaceDocumentTitle(node.name), result.content);
+                note.setFilePath(node.path, result.lastModified ? new Date(result.lastModified) : new Date());
+                note.fileSize = typeof result.fileSize === "number" ? result.fileSize : result.content.length;
                 await repositories.notes.save(note);
                 const updatedNotes = await repositories.notes.getAll();
                 globalDispatch.notes(updatedNotes);
             }
             navigate(`/note/${note.id}`);
-        } else if (node.type === "file" && node.extension === ".json") {
+        } else if (node.type === "file" && extension === ".json") {
             const allNotes = await repositories.notes.getAll();
             let note = allNotes.find((n) => n.filePath === node.path);
             if (!note) {

@@ -63,11 +63,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
         chooseDirectory: async (): Promise<string | null> => {
             return ipcRenderer.invoke("fs:chooseDirectory");
         },
+        chooseObsidianVault: async (): Promise<string | null> => {
+            return ipcRenderer.invoke("fs:chooseObsidianVault");
+        },
         requestDirectoryAccess: async (dirPath: string): Promise<DirectoryAccessResult> => {
             return ipcRenderer.invoke("fs:requestDirectoryAccess", dirPath);
         },
         writeFile: async (filePath: string, content: string) => {
             return ipcRenderer.invoke("fs:writeFile", filePath, content);
+        },
+        copyFile: async (sourcePath: string, targetPath: string) => {
+            return ipcRenderer.invoke("fs:copyFile", sourcePath, targetPath);
         },
         writeImage: async (filePath: string, base64Data: string) => {
             return ipcRenderer.invoke("fs:writeImage", filePath, base64Data);
@@ -107,12 +113,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
         readDirRecursive: async (
             dirPath: string,
             maxDepth?: number,
+            includeAllFiles?: boolean,
         ): Promise<{
             success: boolean;
             files: { name: string; path: string; relativePath: string }[];
             error?: string;
         }> => {
-            return ipcRenderer.invoke("fs:readDirRecursive", dirPath, maxDepth);
+            return ipcRenderer.invoke("fs:readDirRecursive", dirPath, maxDepth, includeAllFiles);
         },
         openFileOrDirectory: async (): Promise<{
             path: string;
@@ -159,6 +166,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
             restoreFromTrash: (id: string) => ipcRenderer.invoke("db:notes:restoreFromTrash", id),
             updateContent: (id: string, content: string, fileSize: number, updatedAt: string, updatedBy: string) =>
                 ipcRenderer.invoke("db:notes:updateContent", id, content, fileSize, updatedAt, updatedBy),
+            getHistory: (noteId: string) => ipcRenderer.invoke("db:notes:getHistory", noteId),
+            saveSnapshot: (noteId: string, content: string, createdAt: string) =>
+                ipcRenderer.invoke("db:notes:saveSnapshot", noteId, content, createdAt),
         },
         tabs: {
             updateOrder: (tabs: any[]) => ipcRenderer.invoke("db:tabs:updateOrder", tabs),
@@ -302,8 +312,10 @@ declare global {
             };
             fs: {
                 chooseDirectory(): Promise<string | null>;
+                chooseObsidianVault(): Promise<string | null>;
                 requestDirectoryAccess(dirPath: string): Promise<DirectoryAccessResult>;
                 writeFile(filePath: string, content: string): Promise<any>;
+                copyFile(sourcePath: string, targetPath: string): Promise<any>;
                 readFile(filePath: string): Promise<any>;
                 readBinaryFile(filePath: string): Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
                 statFile(filePath: string): Promise<any>;
@@ -321,6 +333,7 @@ declare global {
                 readDirRecursive(
                     dirPath: string,
                     maxDepth?: number,
+                    includeAllFiles?: boolean,
                 ): Promise<{
                     success: boolean;
                     files: { name: string; path: string; relativePath: string }[];
@@ -382,6 +395,8 @@ declare global {
                         updatedAt: string,
                         updatedBy: string,
                     ): Promise<void>;
+                    getHistory(noteId: string): Promise<unknown[]>;
+                    saveSnapshot(noteId: string, content: string, createdAt: string): Promise<void>;
                 };
                 tabs: {
                     updateOrder(tabs: any[]): Promise<void>;

@@ -48,6 +48,7 @@ import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { useUIStore } from "@/store/ui.store";
+import { isWorkspaceDocumentFile } from "@/types/workspace-files";
 
 const waitMap = new Map<string, string>();
 
@@ -140,11 +141,15 @@ export const RootLayout = () => {
                 if (existing) {
                     noteId = existing.id;
                 } else {
-                    const content = await window.electronAPI.fs.readFile(filePath).catch(() => "");
+                    const result = await window.electronAPI.fs.readFile(filePath);
+                    if (!result?.success || typeof result.content !== "string") {
+                        throw new Error(result?.error ?? "Failed to read file");
+                    }
                     const basename = filePath.split(/[\\/]/).pop() ?? filePath;
                     const title = basename.replace(/\.[^.]+$/, "");
-                    const note = Note.new(title, typeof content === "string" ? content : "");
-                    note.setFilePath(filePath, new Date());
+                    const note = Note.new(title, result.content);
+                    note.setFilePath(filePath, result.lastModified ? new Date(result.lastModified) : new Date());
+                    note.fileSize = typeof result.fileSize === "number" ? result.fileSize : result.content.length;
                     await repositories.notes.save(note);
                     noteId = note.id;
                 }
@@ -200,7 +205,7 @@ export const RootLayout = () => {
             }, 100);
         };
         const unsubscribeFileChanges = window.electronAPI.fs.onFileChanged(({ filePath }) => {
-            if (/\.(?:md|mdx)$/i.test(filePath)) refreshNotes();
+            if (isWorkspaceDocumentFile(filePath)) refreshNotes();
         });
         const unsubscribeDirectoryChanges = window.electronAPI.fs.onDirChanged(refreshNotes);
 
@@ -436,7 +441,7 @@ export const RootLayout = () => {
 
     if (isFloatingPanel) {
         return (
-            <div className="relative flex h-screen flex-col overflow-hidden rounded-xl bg-background p-4 text-foreground ring-1 ring-border/40">
+            <div className="relative flex h-screen flex-col overflow-hidden rounded-none bg-background p-3 text-foreground ring-1 ring-border/40">
                 <div className="quicknote-window-drag-strip" />
                 {isFloatingEditorWindow && (
                     <Fragment>
@@ -550,7 +555,7 @@ export const RootLayout = () => {
                     type="button"
                     title="Exit focus mode (⌘⇧F)"
                     onClick={() => uiDispatch.toggleFocusMode()}
-                    className="animate-fade-in fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm text-foreground/70 shadow-medium transition-[transform,color,background-color,border-color] hover:scale-105 hover:text-foreground"
+                    className="animate-fade-in fixed right-6 bottom-6 z-50 flex items-center gap-2 rounded-none border border-border bg-background px-4 py-2 text-sm text-foreground/70 shadow-medium transition-[transform,color,background-color,border-color] hover:scale-105 hover:text-foreground"
                 >
                     <CornersOutIcon className="size-4" />
                     <span>Exit Focus</span>

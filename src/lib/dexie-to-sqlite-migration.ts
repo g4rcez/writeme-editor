@@ -6,6 +6,7 @@ const MIGRATION_BATCH_SIZE = 500;
 const ISSUE_URL = "https://github.com/g4rcez/writeme-editor/issues/new";
 const COLLECTIONS = [
     "notes",
+    "noteHistory",
     "projects",
     "tabs",
     "hashtags",

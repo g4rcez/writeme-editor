@@ -66,7 +66,7 @@ export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, 
                     {note.tags.length > 0 && (
                         <div className="mb-1.5 flex flex-wrap gap-1">
                             {note.tags.map((tag) => (
-                                <span key={tag} className="rounded bg-primary/5 px-1 text-[10px] text-primary/70">
+                                <span key={tag} className="rounded-none bg-primary/5 px-1 text-[10px] text-primary/70">
                                     #{tag}
                                 </span>
                             ))}
@@ -89,7 +89,7 @@ export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, 
                             note.favorite ? `Unstar ${note.title || "Untitled"}` : `Star ${note.title || "Untitled"}`
                         }
                         onClick={onToggleFavorite}
-                        className={`flex size-7 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        className={`flex size-7 items-center justify-center rounded-none transition-[background-color,opacity] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                             note.favorite
                                 ? "text-warn opacity-100"
                                 : "text-muted-foreground opacity-0 group-hover:opacity-100"
@@ -102,7 +102,7 @@ export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, 
                             type="button"
                             aria-label={`Delete ${note.title || "Untitled"}`}
                             onClick={onDelete}
-                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[background-color,color,opacity] hover:bg-background/80 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="flex size-7 items-center justify-center rounded-none text-muted-foreground opacity-0 transition-[background-color,color,opacity] hover:bg-background/80 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <TrashIcon aria-hidden="true" className="size-3" />
                         </button>
@@ -164,7 +164,7 @@ const NoteListItems = (props: {
                 <button
                     type="button"
                     onClick={props.onCreateNewNote}
-                    className="flex min-h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-h-8 w-full items-center gap-2 rounded-none px-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     <PlusIcon className="size-4" aria-hidden="true" />
                     <span>New note</span>
@@ -247,7 +247,7 @@ export const NoteListSidebar = () => {
                                 aria-pressed={sortBy === "createdAt"}
                                 title="Sort by created date"
                                 onClick={() => setSortBy("createdAt")}
-                                className={`p-1 rounded transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                                className={`p-1 rounded-none transition-colors ${sortBy === "createdAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
                                 <CalendarIcon className="size-3.5" aria-hidden="true" />
                             </button>
@@ -264,7 +264,7 @@ export const NoteListSidebar = () => {
                                 aria-pressed={sortBy === "updatedAt"}
                                 title="Sort by last edited"
                                 onClick={() => setSortBy("updatedAt")}
-                                className={`p-1 rounded transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                                className={`p-1 rounded-none transition-colors ${sortBy === "updatedAt" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
                                 <ClockCounterClockwiseIcon className="size-3.5" aria-hidden="true" />
                             </button>
@@ -281,7 +281,7 @@ export const NoteListSidebar = () => {
                                 aria-pressed={sortBy === "alphabetical"}
                                 title="Sort alphabetically"
                                 onClick={() => setSortBy("alphabetical")}
-                                className={`p-1 rounded transition-colors font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                                className={`p-1 rounded-none transition-colors font-bold leading-none ${sortBy === "alphabetical" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                             >
                                 <SortAscendingIcon aria-hidden="true" />
                             </button>
@@ -302,7 +302,7 @@ export const NoteListSidebar = () => {
             </div>
             {notes.length === 0 ? (
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-5 py-6 text-center text-sm text-muted-foreground">
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+                    <span className="flex size-9 items-center justify-center rounded-none bg-muted/50 text-muted-foreground">
                         <MagnifyingGlassIcon size={17} aria-hidden="true" />
                     </span>
                     <div>
@@ -319,7 +319,7 @@ export const NoteListSidebar = () => {
                         <button
                             type="button"
                             onClick={() => layoutDispatch.setSearch("")}
-                            className="min-h-9 rounded-md border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="min-h-9 rounded-none border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             Clear search
                         </button>
@@ -327,7 +327,7 @@ export const NoteListSidebar = () => {
                         <button
                             type="button"
                             onClick={createNewNote}
-                            className="flex min-h-9 items-center gap-2 rounded-md border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="flex min-h-9 items-center gap-2 rounded-none border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <PlusIcon className="size-4" aria-hidden="true" />
                             <span>Create first note</span>

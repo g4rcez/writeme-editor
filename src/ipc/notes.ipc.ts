@@ -12,8 +12,10 @@ import {
     type FileSearchStartResult,
     type TreeNode,
 } from "../types/tree";
+import { isWorkspaceDocumentFile, WORKSPACE_DOCUMENT_EXTENSIONS } from "../types/workspace-files";
 
 const allowedFilesystemRoots = new Set<string>();
+const explicitlyGrantedFilesystemRoots = new Set<string>();
 const fileSearchJobs = new Map<string, AbortController>();
 
 type FileSearchRequest = {
@@ -36,7 +38,6 @@ function expandAllowedRoots(): void {
     if (directoryRow?.value) {
         try {
             const parsed = JSON.parse(directoryRow.value);
-            console.log({ parsed });
             if (typeof parsed === "string" && parsed.trim()) {
                 allowedFilesystemRoots.add(normalizePath(parsed));
             }
@@ -44,21 +45,86 @@ function expandAllowedRoots(): void {
             // ignore malformed settings value; fallback to userData root only
         }
     }
+    for (const root of explicitlyGrantedFilesystemRoots) {
+        allowedFilesystemRoots.add(root);
+    }
+}
+
+function isPathWithinRoot(candidatePath: string, rootPath: string): boolean {
+    const normalizedCandidate = normalizePath(candidatePath);
+    const normalizedRoot = normalizePath(rootPath);
+    return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}${path.sep}`);
 }
 
 function isPathUnderRoot(candidatePath: string): boolean {
     expandAllowedRoots();
-    const normalizedCandidate = normalizePath(candidatePath);
+    return [...allowedFilesystemRoots].some((root) => isPathWithinRoot(candidatePath, root));
+}
 
-    if (allowedFilesystemRoots.has(normalizedCandidate)) return true;
+function isPathUnderExplicitRoot(candidatePath: string): boolean {
+    return [...explicitlyGrantedFilesystemRoots].some((root) => isPathWithinRoot(candidatePath, root));
+}
 
-    for (const root of allowedFilesystemRoots) {
-        const normalizedRoot = normalizePath(root);
-        if (normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}${path.sep}`)) {
-            return true;
+async function isRealPathUnderRoot(candidatePath: string, roots: Iterable<string>): Promise<boolean> {
+    const realCandidate = normalizePath(await fs.realpath(candidatePath));
+    for (const root of roots) {
+        let realRoot: string;
+        try {
+            realRoot = normalizePath(await fs.realpath(root));
+        } catch {
+            realRoot = normalizePath(root);
         }
+        if (isPathWithinRoot(realCandidate, realRoot)) return true;
     }
     return false;
+}
+
+async function resolveExistingPath(inputPath: string): Promise<string> {
+    let currentPath = normalizePath(inputPath);
+    while (true) {
+        try {
+            return normalizePath(await fs.realpath(currentPath));
+        } catch (error) {
+            const code =
+                error && typeof error === "object" && "code" in error && typeof error.code === "string"
+                    ? error.code
+                    : null;
+            if (code !== "ENOENT") throw error;
+            const parentPath = path.dirname(currentPath);
+            if (parentPath === currentPath) throw error;
+            currentPath = parentPath;
+        }
+    }
+}
+
+async function validateWritablePath(
+    filePath: string,
+): Promise<{ success: true } | { success: false; error: string; filePath: string }> {
+    if (isPathUnderExplicitRoot(filePath)) {
+        return { success: false, error: "Destination cannot be inside the selected vault", filePath };
+    }
+
+    try {
+        const targetStats = await fs.lstat(filePath).catch(() => null);
+        if (targetStats?.isSymbolicLink()) {
+            return { success: false, error: "Symbolic links are not supported", filePath };
+        }
+
+        const realPath = await resolveExistingPath(filePath);
+        if (!(await isRealPathUnderRoot(realPath, allowedFilesystemRoots))) {
+            return { success: false, error: "Path is outside the allowed workspace", filePath: realPath };
+        }
+        if (await isRealPathUnderRoot(realPath, explicitlyGrantedFilesystemRoots)) {
+            return { success: false, error: "Destination cannot be inside the selected vault", filePath };
+        }
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Path cannot be accessed safely",
+            filePath,
+        };
+    }
 }
 
 function getRevealLabel(): string {
@@ -151,6 +217,17 @@ export const notesIpcHandler = async () => {
         return result.canceled ? null : result.filePaths[0];
     });
 
+    ipcMain.handle("fs:chooseObsidianVault", async () => {
+        const result = await dialog.showOpenDialog({
+            properties: ["openDirectory"],
+            title: "Import Obsidian Vault",
+            message: "Select the Obsidian vault to import",
+        });
+        const vaultPath = result.canceled ? null : result.filePaths[0];
+        if (vaultPath) explicitlyGrantedFilesystemRoots.add(normalizePath(vaultPath));
+        return vaultPath ?? null;
+    });
+
     ipcMain.handle("fs:requestDirectoryAccess", async (_, dirPath: string): Promise<DirectoryAccessResult> => {
         const access = validatePaths(dirPath);
         if (!access.success) {
@@ -200,8 +277,9 @@ export const notesIpcHandler = async () => {
         const result = await dialog.showOpenDialog({
             properties: ["openFile", "openDirectory"],
             filters: [
-                { name: "All Supported", extensions: ["md", "mdx", "json"] },
+                { name: "All Supported", extensions: [...WORKSPACE_DOCUMENT_EXTENSIONS, "json"] },
                 { name: "Markdown", extensions: ["md", "mdx"] },
+                { name: "LaTeX", extensions: ["tex", "latex"] },
                 { name: "JSON", extensions: ["json"] },
             ],
             title: "Open",
@@ -212,6 +290,35 @@ export const notesIpcHandler = async () => {
         return { path: selectedPath, isDirectory: stats.isDirectory() };
     });
 
+    ipcMain.handle("fs:copyFile", async (_, sourcePath: string, targetPath: string) => {
+        const access = validatePaths(sourcePath, targetPath, path.dirname(targetPath));
+        if (!access.success) return access;
+
+        try {
+            const sourceStats = await fs.lstat(sourcePath);
+            if (sourceStats.isSymbolicLink()) {
+                return { success: false, error: "Symbolic links are not supported", filePath: sourcePath };
+            }
+            const realSourcePath = await fs.realpath(sourcePath);
+            if (!(await isRealPathUnderRoot(realSourcePath, allowedFilesystemRoots))) {
+                return {
+                    success: false,
+                    error: "Path is outside the allowed workspace",
+                    filePath: realSourcePath,
+                };
+            }
+            const targetSafety = await validateWritablePath(targetPath);
+            if (!targetSafety.success) return targetSafety;
+            await fs.mkdir(path.dirname(targetPath), { recursive: true });
+            const finalTargetSafety = await validateWritablePath(targetPath);
+            if (!finalTargetSafety.success) return finalTargetSafety;
+            await fs.copyFile(sourcePath, targetPath);
+            return { success: true, filePath: targetPath };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
     ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) => {
         const access = validatePaths(filePath, path.dirname(filePath));
         if (!access.success) {
@@ -219,7 +326,11 @@ export const notesIpcHandler = async () => {
         }
 
         try {
+            const pathSafety = await validateWritablePath(filePath);
+            if (!pathSafety.success) return pathSafety;
             await fs.mkdir(path.dirname(filePath), { recursive: true });
+            const finalPathSafety = await validateWritablePath(filePath);
+            if (!finalPathSafety.success) return finalPathSafety;
             FileWatcher.suppressNext(filePath);
             await fs.writeFile(filePath, content, "utf-8");
             try {
@@ -253,7 +364,11 @@ export const notesIpcHandler = async () => {
         }
 
         try {
+            const pathSafety = await validateWritablePath(filePath);
+            if (!pathSafety.success) return pathSafety;
             await fs.mkdir(path.dirname(filePath), { recursive: true });
+            const finalPathSafety = await validateWritablePath(filePath);
+            if (!finalPathSafety.success) return finalPathSafety;
             const base64Content = base64Data.split(",")[1];
             if (!base64Content) {
                 throw new Error("Invalid base64 data");
@@ -431,7 +546,7 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle(
         "fs:readDirRecursive",
-        async (_event, dirPath: string, maxDepth = DEFAULT_RECURSIVE_DIRECTORY_DEPTH) => {
+        async (_event, dirPath: string, maxDepth = DEFAULT_RECURSIVE_DIRECTORY_DEPTH, includeAllFiles = false) => {
             const access = validatePaths(dirPath);
             if (!access.success) {
                 return access;
@@ -450,12 +565,12 @@ export const notesIpcHandler = async () => {
                     return;
                 }
                 for (const entry of entries) {
-                    if (entry.name.startsWith(".")) continue;
+                    if (entry.name.startsWith(".") || entry.isSymbolicLink()) continue;
                     const fullPath = path.join(currentDir, entry.name);
                     if (entry.isDirectory()) {
                         if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) continue;
                         await walk(fullPath, depth + 1);
-                    } else if (/\.(?:md|mdx)$/i.test(entry.name)) {
+                    } else if (includeAllFiles || isWorkspaceDocumentFile(entry.name)) {
                         results.push({
                             name: entry.name,
                             path: fullPath,
@@ -465,6 +580,10 @@ export const notesIpcHandler = async () => {
                 }
             };
             try {
+                const rootStats = await fs.lstat(dirPath);
+                if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
+                    return { success: false, files: [], error: "Selected path is not a directory" };
+                }
                 await walk(dirPath, 0);
                 return { success: true, files: results };
             } catch (error: unknown) {

@@ -14,8 +14,9 @@ import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { SettingsService } from "@/store/settings";
-import "katex/dist/katex.min.css";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
+import "katex/dist/katex.min.css";
+import { isLatexFilePath } from "@/types/workspace-files";
 import type { SearchReplaceStorage } from "./extensions/search-replace";
 import { FormattingToolbar } from "./components/formatting-toolbar";
 import {
@@ -23,6 +24,7 @@ import {
     editorGlobalRef,
     type EditorSearchHandle,
     editorSearchGlobalRef,
+    registerEditorActivation,
     setEditorActionsGlobalRef,
     setEditorSearchGlobalRef,
 } from "./editor-global-ref";
@@ -160,13 +162,23 @@ type TiptapEditorCoreProps = {
     note?: Note;
     content?: string;
     readonly?: boolean;
+    active?: boolean;
     theme: string;
     dispatch: GlobalDispatch;
     onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
 };
 
 const TiptapEditorCore = memo(
-    function TiptapEditorCore({ id, note, content, readonly, theme, dispatch, onSaveRef }: TiptapEditorCoreProps) {
+    function TiptapEditorCore({
+        id,
+        note,
+        content,
+        readonly,
+        active,
+        theme,
+        dispatch,
+        onSaveRef,
+    }: TiptapEditorCoreProps) {
         const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme)), [theme]);
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
@@ -175,12 +187,14 @@ const TiptapEditorCore = memo(
         const [uiState] = useUIStore();
         const isSettingContent = useRef(false);
         const lastEditorContentRef = useRef(content ?? "");
+        const initialActiveRef = useRef(active);
+        const activateRef = useRef<() => void>(() => {});
         const [parseProgress, setParseProgress] = useState(0);
         const settings = useMemo(() => SettingsService.load(), []);
 
         const editor = useEditor({
             extensions,
-            autofocus: true,
+            autofocus: active ?? true,
             editable: !readonly,
             content: content ?? "",
             immediatelyRender: true,
@@ -363,10 +377,19 @@ const TiptapEditorCore = memo(
                     addFrontmatterToEditor(editor);
                 },
             };
-            editorGlobalRef.current = editor;
-            setEditorActionsGlobalRef(actionHandle);
-            setEditorSearchGlobalRef(searchHandle);
+            const activate = () => {
+                editorGlobalRef.current = editor;
+                setEditorActionsGlobalRef(actionHandle);
+                setEditorSearchGlobalRef(searchHandle);
+            };
+            const activation = registerEditorActivation(activate);
+            activateRef.current = activation.activate;
+            if (initialActiveRef.current || !editorGlobalRef.current) activation.activate();
             return () => {
+                activation.unregister();
+                if (activateRef.current === activation.activate) {
+                    activateRef.current = () => {};
+                }
                 if (editorGlobalRef.current === editor) {
                     editorGlobalRef.current = null;
                 }
@@ -378,6 +401,10 @@ const TiptapEditorCore = memo(
                 }
             };
         }, [editor]);
+
+        useEffect(() => {
+            if (active) activateRef.current();
+        }, [active]);
 
         useCopyEvents(editor);
 
@@ -593,10 +620,11 @@ const TiptapEditorCore = memo(
 
         return (
             <div
-                id="editor-container"
+                id={`editor-container-${id}`}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
                 aria-busy={uiState.parsingContent ? "true" : "false"}
+                onFocusCapture={() => activateRef.current()}
             >
                 {uiState.parsingContent && (
                     <div
@@ -625,6 +653,7 @@ const TiptapEditorCore = memo(
         prev.theme === next.theme &&
         prev.content === next.content &&
         prev.readonly === next.readonly &&
+        prev.active === next.active &&
         prev.note?.id === next.note?.id,
 );
 
@@ -636,6 +665,7 @@ const RawEditorCore = memo(
         readonly?: boolean;
         theme: string;
         rawEditorVimMode: boolean;
+        active?: boolean;
         dispatch: GlobalDispatch;
         onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
     }) {
@@ -671,12 +701,6 @@ const RawEditorCore = memo(
         }, [props.content]);
 
         useEffect(() => {
-            if (editorGlobalRef.current) {
-                editorGlobalRef.current = null;
-            }
-        }, []);
-
-        useEffect(() => {
             return () => {
                 if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
                 if (!props.readonly) {
@@ -701,7 +725,7 @@ const RawEditorCore = memo(
 
         return (
             <div
-                id="editor-container"
+                id={`editor-container-${props.id}`}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
             >
@@ -712,6 +736,7 @@ const RawEditorCore = memo(
                     theme={props.theme}
                     fontSize={settings.editorFontSize}
                     vimMode={props.rawEditorVimMode}
+                    active={props.active}
                 />
             </div>
         );
@@ -722,6 +747,7 @@ const RawEditorCore = memo(
         prev.rawEditorVimMode === next.rawEditorVimMode &&
         prev.content === next.content &&
         prev.readonly === next.readonly &&
+        prev.active === next.active &&
         prev.note?.id === next.note?.id,
 );
 
@@ -732,6 +758,7 @@ const InnerEditor = (props: {
     readonly?: boolean;
     mode: EditorMode;
     rawEditorVimMode: boolean;
+    active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
     const [state, dispatch] = useGlobalStore();
@@ -755,6 +782,7 @@ const InnerEditor = (props: {
                 dispatch={dispatch}
                 theme={state.theme}
                 rawEditorVimMode={props.rawEditorVimMode}
+                active={props.active}
                 onSaveRef={onSaveRef}
                 content={props.content}
                 readonly={props.readonly}
@@ -771,6 +799,7 @@ const InnerEditor = (props: {
             onSaveRef={onSaveRef}
             content={props.content}
             readonly={props.readonly}
+            active={props.active}
         />
     );
 };
@@ -782,11 +811,13 @@ export const Editor = (props: {
     readonly?: boolean;
     mode?: EditorMode;
     rawEditorVimMode?: boolean;
+    active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
     const id = useMemo(() => props.id || props.note?.id || uuid(), [props.note, props.id]);
     const settings = SettingsService.load();
-    const mode = props.mode ?? settings.editorMode;
+    const requestedMode = props.mode ?? settings.editorMode;
+    const mode = isLatexFilePath(props.note?.filePath) ? "markdown" : requestedMode;
     const rawEditorVimMode = props.rawEditorVimMode ?? settings.rawEditorVimMode;
 
     if (props.content === undefined) {
@@ -803,6 +834,7 @@ export const Editor = (props: {
                 content={props.content}
                 readonly={props.readonly}
                 rawEditorVimMode={rawEditorVimMode}
+                active={props.active}
                 key={`${props.note?.id || props.id}:${mode}`}
             />
         </Fragment>

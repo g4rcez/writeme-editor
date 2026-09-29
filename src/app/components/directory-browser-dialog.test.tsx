@@ -219,4 +219,32 @@ describe("DirectoryBrowserDialog", () => {
         await waitFor(() => expect(readFile).toHaveBeenCalledWith("/workspace/README.md"));
         expect(dispatch.directoryBrowserDialog).toHaveBeenCalledWith(false);
     });
+
+    it("opens LaTeX files with their exact source and path", async () => {
+        const source = "\\documentclass{article}\n\\begin{document}\n$ x^2 $\n\\end{document}\n";
+        readDir.mockResolvedValue({
+            entries: [{ name: "paper.latex", path: "/workspace/paper.latex", type: "file", extension: ".latex" }],
+        });
+        readFile.mockResolvedValue({
+            success: true,
+            content: source,
+            fileSize: source.length,
+            lastModified: "2026-01-01T00:00:00.000Z",
+        });
+
+        render(<DirectoryBrowserDialog />);
+        await waitFor(() => expect(screen.getByRole("button", { name: /paper\.latex/ })).toBeInTheDocument());
+
+        await act(async () => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+            await Promise.resolve();
+        });
+
+        await waitFor(() => {
+            expect(dispatch.note).toHaveBeenCalledWith(
+                expect.objectContaining({ content: source, filePath: "/workspace/paper.latex" }),
+            );
+        });
+        expect(dispatch.directoryBrowserDialog).toHaveBeenCalledWith(false);
+    });
 });

@@ -30,6 +30,38 @@ export const editorGlobalRef: { current: Editor | null } = { current: null };
 export const editorActionsGlobalRef: { current: EditorActionHandle | null } = { current: null };
 export const editorSearchGlobalRef: { current: EditorSearchHandle | null } = { current: null };
 
+type RegisteredEditor = {
+    activate: () => void;
+};
+
+const registeredEditors: RegisteredEditor[] = [];
+let activeEditor: RegisteredEditor | null = null;
+
+export function registerEditorActivation(activate: () => void): {
+    activate: () => void;
+    unregister: () => void;
+} {
+    const registeredEditor: RegisteredEditor = { activate };
+    registeredEditors.push(registeredEditor);
+
+    return {
+        activate: () => {
+            if (!registeredEditors.includes(registeredEditor)) return;
+            activeEditor = registeredEditor;
+            registeredEditor.activate();
+        },
+        unregister: () => {
+            const index = registeredEditors.indexOf(registeredEditor);
+            if (index === -1) return;
+            registeredEditors.splice(index, 1);
+            if (activeEditor !== registeredEditor) return;
+
+            activeEditor = registeredEditors.at(-1) ?? null;
+            activeEditor?.activate();
+        },
+    };
+}
+
 export function setEditorActionsGlobalRef(handle: EditorActionHandle | null): void {
     editorActionsGlobalRef.current = handle;
 }

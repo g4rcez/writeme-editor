@@ -226,6 +226,10 @@ export const createWritemeThemeCss = (selector: string, theme: WritemeThemeToken
     const merged = mergeThemeTokens(base, theme);
     const themed: WritemeThemeTokens = {
         ...theme,
+        spacing: {
+            ...theme.spacing,
+            base: "0.875rem",
+        },
         components: derivedComponentColors(merged.colors ?? {}),
     };
 

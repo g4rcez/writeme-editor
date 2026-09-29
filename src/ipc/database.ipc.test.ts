@@ -83,4 +83,15 @@ describe("specialized database IPC validation", () => {
         invoke("db:notes:softDelete", "note", "2026-01-01T00:00:00.000Z");
         expect(db.softDeleteNote).toHaveBeenCalledWith("note", "2026-01-01T00:00:00.000Z");
     });
+
+    it("validates and forwards history snapshot requests", () => {
+        expect(() => invoke("db:notes:getHistory", "")).toThrow();
+        expect(() => invoke("db:notes:saveSnapshot", "note", "body", "not-a-date")).toThrow();
+
+        invoke("db:notes:getHistory", "note");
+        invoke("db:notes:saveSnapshot", "note", "body", "2026-01-01T00:00:00.000Z");
+
+        expect(db.getNoteHistory).toHaveBeenCalledWith("note");
+        expect(db.saveNoteSnapshot).toHaveBeenCalledWith("note", "body", "2026-01-01T00:00:00.000Z");
+    });
 });

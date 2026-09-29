@@ -16,7 +16,9 @@ import { minimalSetup } from "codemirror";
 import { useEffect, useRef } from "react";
 import {
     editorActionsGlobalRef,
+    editorGlobalRef,
     editorSearchGlobalRef,
+    registerEditorActivation,
     type EditorSearchHandle,
     setEditorActionsGlobalRef,
     setEditorSearchGlobalRef,
@@ -176,6 +178,7 @@ type RawMarkdownEditorProps = {
     theme: string;
     fontSize: number;
     vimMode?: boolean;
+    active?: boolean;
 };
 
 function getEditorTopInScrollContainer(view: EditorView, scrollContainer: HTMLElement): number {
@@ -294,6 +297,7 @@ export function RawMarkdownEditor({
     theme,
     fontSize,
     vimMode = false,
+    active = true,
 }: RawMarkdownEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -303,12 +307,14 @@ export function RawMarkdownEditor({
     const initialFontSizeRef = useRef(fontSize);
     const initialReadonlyRef = useRef(readonly);
     const initialVimModeRef = useRef(vimMode);
+    const initialActiveRef = useRef(active);
     const isSyncingExternalValueRef = useRef(false);
     const keymapCompartmentRef = useRef(new Compartment());
     const visualThemeCompartmentRef = useRef(new Compartment());
     const editorThemeCompartmentRef = useRef(new Compartment());
     const editableCompartmentRef = useRef(new Compartment());
     const readOnlyCompartmentRef = useRef(new Compartment());
+    const activateRef = useRef<() => void>(() => {});
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -402,13 +408,23 @@ export function RawMarkdownEditor({
                 view.focus();
             },
         };
-        setEditorActionsGlobalRef(actionHandle);
-        setEditorSearchGlobalRef(searchController);
-        if (!initialReadonly) {
+        const activate = () => {
+            editorGlobalRef.current = null;
+            setEditorActionsGlobalRef(actionHandle);
+            setEditorSearchGlobalRef(searchController);
+        };
+        const activation = registerEditorActivation(activate);
+        activateRef.current = activation.activate;
+        view.dom.addEventListener("focus", activation.activate, true);
+        if (initialActiveRef.current || (!editorActionsGlobalRef.current && !editorSearchGlobalRef.current))
+            activation.activate();
+        if (!initialReadonly && initialActiveRef.current) {
             requestAnimationFrame(() => view.focus());
         }
 
         return () => {
+            activation.unregister();
+            view.dom.removeEventListener("focus", activation.activate, true);
             if (cursorScrollFrame !== null) {
                 cancelAnimationFrame(cursorScrollFrame);
             }
@@ -418,11 +434,18 @@ export function RawMarkdownEditor({
             if (editorSearchGlobalRef.current === searchController) {
                 setEditorSearchGlobalRef(null);
             }
+            if (activateRef.current === activation.activate) {
+                activateRef.current = () => {};
+            }
             searchController?.dispose();
             view.destroy();
             viewRef.current = null;
         };
     }, []);
+
+    useEffect(() => {
+        if (active) activateRef.current();
+    }, [active]);
 
     useEffect(() => {
         const view = viewRef.current;

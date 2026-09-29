@@ -40,6 +40,16 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
         iconClass: "text-foreground/70 size-4",
         selectable: true,
     },
+    ".tex": {
+        icon: FileTextIcon,
+        iconClass: "text-foreground/70 size-4",
+        selectable: true,
+    },
+    ".latex": {
+        icon: FileTextIcon,
+        iconClass: "text-foreground/70 size-4",
+        selectable: true,
+    },
     ".json": {
         icon: BracketsCurlyIcon,
         iconClass: "text-warn size-4",

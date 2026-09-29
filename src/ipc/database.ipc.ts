@@ -75,6 +75,15 @@ export const databaseIpcHandler = () => {
         },
     );
 
+    ipcMain.handle("db:notes:getHistory", (_, noteId: string) => {
+        return db.getNoteHistory(idSchema.parse(noteId));
+    });
+
+    ipcMain.handle("db:notes:saveSnapshot", (_, noteId: string, content: string, createdAt: string) => {
+        db.saveNoteSnapshot(idSchema.parse(noteId), contentSchema.parse(content), dateSchema.parse(createdAt));
+        return true;
+    });
+
     ipcMain.handle("db:tabs:updateOrder", (_, tabs: unknown) => {
         db.updateTabsOrder(tabsSchema.parse(tabs));
         return true;

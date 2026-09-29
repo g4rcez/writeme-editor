@@ -40,6 +40,15 @@ describe("DatabaseManager persistence boundary", () => {
         warn.mockRestore();
     });
 
+    it("denies generic writes and deletes for immutable note history", () => {
+        expect(() => manager.save("noteHistory", { noteId: "note", content: "body", createdAt: new Date() })).toThrow(
+            "Generic writes are not allowed for collection: noteHistory",
+        );
+        expect(() => manager.delete("noteHistory", "snapshot")).toThrow(
+            "Generic deletion is not allowed for collection: noteHistory",
+        );
+    });
+
     it("denies generic deletes that require specialized relational cleanup", () => {
         manager.save("notes", { id: "note", title: "note" });
         manager.save("noteGroups", { id: "group", title: "group" });
@@ -162,6 +171,35 @@ describe("recent notes", () => {
         });
 
         expect(manager.getRecentNotes(1, "/workspace").map((note) => note.id)).toEqual(["workspace"]);
+    });
+});
+
+describe("note history", () => {
+    it("captures changed content updates and deduplicates unchanged saves", () => {
+        manager.save("notes", { id: "note", title: "note", content: "initial" });
+
+        manager.updateNoteContent("note", "changed", 7, "2026-01-01T00:00:00.000Z", "user");
+        manager.updateNoteContent("note", "changed", 7, "2026-01-02T00:00:00.000Z", "user");
+
+        expect(manager.getNoteHistory("note")).toHaveLength(1);
+        expect(manager.getNoteHistory("note")[0]).toMatchObject({ content: "changed", noteId: "note" });
+    });
+
+    it("deduplicates consecutive content, bounds entries, and deletes history permanently", () => {
+        manager.save("notes", { id: "note", title: "note" });
+
+        for (let index = 0; index <= 50; index += 1) {
+            manager.saveNoteSnapshot("note", `content-${index}`, new Date(Date.UTC(2026, 0, index + 1)).toISOString());
+        }
+        manager.saveNoteSnapshot("note", "content-50", new Date("2027-01-01T00:00:00.000Z").toISOString());
+
+        const history = manager.getNoteHistory("note");
+        expect(history).toHaveLength(50);
+        expect(history[0]).toMatchObject({ noteId: "note", content: "content-50" });
+        expect(history.at(-1)).toMatchObject({ content: "content-1" });
+
+        manager.hardDeleteNote("note");
+        expect(manager.getNoteHistory("note")).toEqual([]);
     });
 });
 
