@@ -1,3 +1,4 @@
+import Database from "better-sqlite3";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -38,6 +39,95 @@ describe("DatabaseManager persistence boundary", () => {
         expect(() => manager.save("notes", { title: 1 })).toThrow();
         expect(() => manager.getAll("sqlite_master")).toThrow("Unknown database collection");
         warn.mockRestore();
+    });
+
+    it("round-trips validated workspace data and additively migrates older message tables", () => {
+        const workspaceData = {
+            activities: [{ id: "activity-1", toolName: "proposeNoteEdit", label: "Staged proposal", status: "complete" }],
+            sources: [{ noteId: "note-1", title: "Research" }],
+            proposals: [{
+                id: "proposal-1",
+                noteId: "note-1",
+                title: "Research",
+                rationale: "Clarify the summary",
+                baseUpdatedAt: "2026-04-05T06:07:08.000Z",
+                baseMarkdown: "# Current",
+                proposedMarkdown: "# Revised",
+                status: "pending",
+                createdAt: "2026-04-05T06:08:00.000Z",
+            }],
+        };
+        manager.save("aiMessages", {
+            id: "workspace-message",
+            chatId: "chat-1",
+            role: "assistant",
+            content: "Review this proposal",
+            createdAt: "2026-04-05T06:08:00.000Z",
+            workspaceData,
+        });
+        expect(manager.get<{ workspaceData: typeof workspaceData }>("aiMessages", "workspace-message")?.workspaceData)
+            .toStrictEqual(workspaceData);
+
+        const oldPath = path.join(directory, "old.sqlite");
+        const oldDatabase = new Database(oldPath);
+        oldDatabase.exec(`
+            CREATE TABLE aiMessages (
+                id TEXT PRIMARY KEY, chatId TEXT, role TEXT, content TEXT,
+                createdAt TEXT, updatedAt TEXT
+            );
+            INSERT INTO aiMessages (id, chatId, role, content, createdAt)
+            VALUES ('old-message', 'old-chat', 'assistant', 'kept', '2025-01-01T00:00:00.000Z');
+        `);
+        oldDatabase.close();
+
+        const upgraded = new DatabaseManager(oldPath);
+        try {
+            expect(upgraded.db.prepare("SELECT name FROM pragma_table_info('aiMessages') WHERE name = 'workspaceData'").get())
+                .toStrictEqual({ name: "workspaceData" });
+            expect(upgraded.get<{ content: string; workspaceData?: unknown }>("aiMessages", "old-message"))
+                .toMatchObject({ content: "kept" });
+        } finally {
+            upgraded.close();
+        }
+    });
+
+    it("updates SQLite note content only when title, version, and Markdown still match", () => {
+        manager.save("notes", {
+            id: "conditional-note",
+            title: "Research",
+            content: "# Current",
+            updatedAt: "2026-04-05T06:07:08.000Z",
+        });
+        const expected = {
+            title: "Research",
+            updatedAt: "2026-04-05T06:07:08.000Z",
+            content: "# Current",
+        };
+
+        for (const staleBase of [
+            { ...expected, title: "Renamed" },
+            { ...expected, updatedAt: "2026-04-05T06:07:09.000Z" },
+            { ...expected, content: "# Changed elsewhere" },
+        ]) {
+            expect(manager.updateNoteContentIfUnchanged(
+                "conditional-note",
+                staleBase,
+                "# Stale",
+                7,
+                "2026-04-06T00:00:00.000Z",
+                "test",
+            )).toBeNull();
+            expect(manager.get<{ content: string }>("notes", "conditional-note")?.content).toBe("# Current");
+        }
+
+        expect(manager.updateNoteContentIfUnchanged(
+            "conditional-note",
+            expected,
+            "# Approved",
+            10,
+            "2026-04-06T00:00:00.000Z",
+            "test",
+        )).toMatchObject({ title: "Research", content: "# Approved" });
     });
 
     it("denies generic writes and deletes for immutable note history", () => {

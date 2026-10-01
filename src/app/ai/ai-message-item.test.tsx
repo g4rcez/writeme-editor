@@ -15,6 +15,7 @@ function createMessage(overrides: Partial<AIMessage>): AIMessage {
         diffNew: overrides.diffNew,
         selectionSlice: overrides.selectionSlice,
         files: overrides.files,
+        workspaceData: overrides.workspaceData,
     };
 }
 
@@ -72,5 +73,25 @@ describe("AIChatMessageItem", () => {
         render(<AIChatMessageItem message={createMessage({ role: "assistant", content: "" })} loadingIndex={0} />);
 
         expect(screen.getByText("No assistant response was returned.")).toBeInTheDocument();
+    });
+
+    it("does not show the empty-response fallback when workspace research completed", () => {
+        render(
+            <AIChatMessageItem
+                message={createMessage({
+                    role: "assistant",
+                    content: "",
+                    workspaceData: {
+                        activities: [{ id: "activity-1", toolName: "readNote", label: "Read a note", status: "complete" }],
+                        sources: [{ noteId: "note-1", title: "Research" }],
+                        proposals: [],
+                    },
+                })}
+                loadingIndex={0}
+            />,
+        );
+
+        expect(screen.queryByText("No assistant response was returned.")).not.toBeInTheDocument();
+        expect(screen.getByLabelText("Assistant message")).toBeInTheDocument();
     });
 });

@@ -104,15 +104,32 @@ export const databaseSchemas = {
         diffOriginal: text,
         diffNew: text,
         selectionSlice: z.object({ from: z.number(), to: z.number() }).nullable().optional(),
-        files: z
-            .array(
-                z.object({
-                    id: z.string(),
-                    name: z.string(),
-                    mimeType: z.string(),
-                    size: z.number(),
-                }),
-            )
+        workspaceData: z
+            .object({
+                activities: z.array(
+                    z.object({
+                        id: z.string(),
+                        toolName: z.enum(["listNotes", "readNote", "searchNotes", "runNotesQuery", "proposeNoteEdit"]),
+                        label: z.string(),
+                        status: z.enum(["running", "complete", "error"]),
+                    }),
+                ),
+                sources: z.array(z.object({ noteId: z.string(), title: z.string() })),
+                proposals: z.array(
+                    z.object({
+                        id: z.string(),
+                        noteId: z.string(),
+                        title: z.string(),
+                        rationale: z.string(),
+                        baseUpdatedAt: z.string(),
+                        baseMarkdown: z.string(),
+                        proposedMarkdown: z.string(),
+                        status: z.enum(["pending", "approved", "rejected", "stale"]),
+                        createdAt: z.string(),
+                        updatedAt: z.string().optional(),
+                    }),
+                ),
+            })
             .optional(),
         createdAt: date,
         updatedAt: date,

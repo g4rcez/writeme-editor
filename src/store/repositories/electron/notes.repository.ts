@@ -3,6 +3,7 @@ import type { NoteSnapshot } from "../../note-history";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
+import { isPathWithinImportRoot } from "../../../lib/obsidian-import";
 import { getStorageMode } from "../../../lib/storage-mode";
 import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "../../../types/workspace-files";
 import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "../../note";
@@ -299,7 +300,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
         let filtered = all.filter((n) => n.deletedAt === null || n.deletedAt === undefined);
         if (workspaceDirectory) {
-            filtered = filtered.filter((n) => !n.filePath || n.filePath.startsWith(workspaceDirectory));
+            filtered = filtered.filter((note) => !note.filePath || isPathWithinImportRoot(workspaceDirectory, note.filePath));
             if (workspaceScan.complete) {
                 filtered = filtered.filter(
                     (n) =>
@@ -569,5 +570,66 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 updatedBy,
             );
         }
+    }
+
+    async updateContentIfUnchanged(
+        id: string,
+        expected: { title: string; updatedAt: Date; content: string },
+        content: string,
+    ): Promise<Note | null> {
+        const settings = SettingsService.load();
+        const mode = getStorageMode(settings.directory);
+        const existing = await this.getOne(id);
+        if (
+            !existing ||
+            existing.title !== expected.title ||
+            existing.updatedAt.getTime() !== expected.updatedAt.getTime() ||
+            existing.content !== expected.content
+        ) {
+            return null;
+        }
+
+        const updatedAt = new Date();
+        const updatedBy = settings.defaultAuthor;
+        if (mode === "filesystem" && existing.filePath) {
+            const writeResult = await window.electronAPI.fs.compareAndWriteFile(existing.filePath, expected.content, content);
+            if (!writeResult.success) {
+                if (writeResult.stale) return null;
+                throw new Error(`Failed to conditionally update file: ${writeResult.error ?? "Unknown error"}`);
+            }
+            const lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : updatedAt;
+            const metadata = {
+                ...existing,
+                id,
+                fileSize: writeResult.fileSize ?? content.length,
+                lastSynced,
+                updatedAt,
+                updatedBy,
+            };
+            Reflect.deleteProperty(metadata, "content");
+            await this.adapter.save(this.collection, metadata);
+            if (expected.content !== content) await this.saveSnapshot(id, content, updatedAt);
+            return Note.parse({
+                ...existing,
+                content,
+                fileSize: writeResult.fileSize ?? content.length,
+                lastSynced,
+                updatedAt,
+                updatedBy,
+            });
+        }
+
+        const updated = await window.electronAPI.db.notes.updateContentIfUnchanged(
+            id,
+            {
+                title: expected.title,
+                updatedAt: expected.updatedAt.toISOString(),
+                content: expected.content,
+            },
+            content,
+            updatedAt.toISOString(),
+            updatedBy,
+        );
+        return updated ? Note.parse({ ...updated, content }) : null;
     }
 }

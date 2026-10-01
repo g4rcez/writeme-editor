@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { TreeNode } from "@/types/tree";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { isElectron } from "@/lib/is-electron";
 import { globalDispatch, repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
@@ -155,6 +156,7 @@ export const ExplorerPane = () => {
     const handleChooseDirectory = async () => {
         const path = await window.electronAPI.fs.chooseDirectory();
         if (path) {
+            await migrateWebOnlyNotesToDirectory(path);
             await globalDispatch.switchWorkspace(path);
         }
     };

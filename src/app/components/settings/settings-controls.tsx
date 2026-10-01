@@ -80,6 +80,7 @@ export function AppearanceSettingsControls({ settings, onPatch, compact }: Setti
 }
 
 export function TrashSettingsControls({ settings, onPatch, compact }: SettingsControlsProps) {
+    if (!isElectron()) return null;
     return (
         <SettingsField
             label="Auto-purge after"

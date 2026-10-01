@@ -122,6 +122,31 @@ describe("Electron NotesRepository", () => {
         );
     });
 
+
+    it("keeps workspace notes and excludes sibling or traversal paths when a scan fails", async () => {
+        const timestamp = new Date("2026-01-01T00:00:00.000Z");
+        const metadata = (id: string, filePath: string) => ({
+            id,
+            title: id,
+            content: "# Note",
+            filePath,
+            updatedAt: timestamp,
+            createdAt: timestamp,
+            noteType: "note",
+        });
+        getAll.mockResolvedValue([
+            metadata("workspace-note", "/notes/guide.md"),
+            metadata("sibling-note", "/notes-private/secret.md"),
+            metadata("traversal-note", "/notes/../outside.md"),
+        ]);
+        readDirRecursive.mockRejectedValueOnce(new Error("workspace unavailable"));
+        const repository = new NotesRepository(tabs as never);
+
+        const notes = await repository.getAll();
+
+        expect(notes.map((note) => note.id)).toEqual(["workspace-note"]);
+        expect(readFile).not.toHaveBeenCalled();
+    });
     it("keeps recent-note IPC requests within the 10,000 row limit", async () => {
         getRecentNotes.mockResolvedValue([]);
         const repository = new NotesRepository(tabs as never);

@@ -28,6 +28,38 @@ export type AIChat = {
     updatedAt?: string;
 };
 
+export type AIWorkspaceActivity = {
+    id: string;
+    toolName: "listNotes" | "readNote" | "searchNotes" | "runNotesQuery" | "proposeNoteEdit";
+    label: string;
+    status: "running" | "complete" | "error";
+};
+
+export type AIWorkspaceSource = {
+    noteId: string;
+    title: string;
+};
+
+export type AINoteEditProposal = {
+    id: string;
+    noteId: string;
+    title: string;
+    rationale: string;
+    baseUpdatedAt: string;
+    baseMarkdown: string;
+    proposedMarkdown: string;
+    status: "pending" | "approved" | "rejected" | "stale";
+    createdAt: string;
+    updatedAt?: string;
+};
+
+
+export type AIWorkspaceData = {
+    activities: AIWorkspaceActivity[];
+    sources: AIWorkspaceSource[];
+    proposals: AINoteEditProposal[];
+};
+
 export type AIMessage = {
     id: string;
     chatId: string;
@@ -37,9 +69,11 @@ export type AIMessage = {
     diffNew?: string;
     selectionSlice?: { from: number; to: number };
     files?: AttachedFile[];
+    workspaceData?: AIWorkspaceData;
     createdAt: string;
     updatedAt?: string;
 };
+
 
 export class AIRepository {
     public async getConfigs(): Promise<AIConfig[]> {

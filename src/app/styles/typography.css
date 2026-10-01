@@ -221,15 +221,18 @@
     @apply cursor-pointer text-typography-link underline transition-colors duration-300 ease-linear hover:text-primary-hover;
 }
 
-.writeme-editor-content .mention {
+.writeme-editor-content .mention,
+.writeme-chat-composer-content .mention {
     @apply no-underline;
 }
 
-.writeme-editor-content .mention:hover {
+.writeme-editor-content .mention:hover,
+.writeme-chat-composer-content .mention:hover {
     @apply underline;
 }
 
-.writeme-editor-content .mention::before {
+.writeme-editor-content .mention::before,
+.writeme-chat-composer-content .mention::before {
     content: "@";
 }
 

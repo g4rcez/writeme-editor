@@ -4,16 +4,24 @@ import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { type DragEvent, type KeyboardEvent, type SubmitEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { AIAdapter, AIFile } from "@/app/ai/adapters/types";
+import type { EditorMentionItem } from "@/lib/editor-storage";
+import type { Note } from "@/store/note";
 import type { Theme } from "@/store/global.store";
 import { AIFileAttachment, getClipboardFiles, useAIFileAttachments } from "@/app/ai/ai-file-attachment";
 import { getThemeForMode } from "@/app/elements/code-block";
+import { setEditorAllNotes, setEditorMentionItems } from "@/lib/editor-storage";
 import { createExtensions } from "@/app/extensions";
+import { refreshMentionSuggestions } from "@/app/extensions/suggestion";
 
 type MarkdownChatComposerProps = {
     theme: Theme;
     disabled: boolean;
     isStreaming: boolean;
     adapter: AIAdapter | undefined;
+    content: string;
+    onContentChange: (content: string) => void;
+    allNotes: Note[];
+    mentionItems: EditorMentionItem[];
     onCancel: () => void;
     onSend: (markdown: string, files: AIFile[]) => Promise<boolean>;
 };
@@ -29,6 +37,10 @@ export function MarkdownChatComposer({
     disabled,
     isStreaming,
     adapter,
+    content,
+    onContentChange,
+    allNotes,
+    mentionItems,
     onCancel,
     onSend,
 }: MarkdownChatComposerProps) {
@@ -57,6 +69,7 @@ export function MarkdownChatComposer({
         shouldRerenderOnTransaction: false,
         parseOptions: { preserveWhitespace: "full" },
         onUpdate: ({ editor: currentEditor }) => {
+            onContentChange(currentEditor.getHTML());
             setMarkdown(currentEditor.getMarkdown().trim());
         },
         editorProps: {
@@ -76,11 +89,30 @@ export function MarkdownChatComposer({
     });
 
     useEffect(() => {
+        if (!editor) return;
+        if (editor.getHTML() !== content) {
+            editor.commands.setContent(content, { emitUpdate: false });
+        }
+        setMarkdown(editor.getMarkdown().trim());
+    }, [content, editor]);
+
+
+    useEffect(() => {
+        if (!editor) return;
+        setEditorAllNotes(editor, allNotes);
+        setEditorMentionItems(editor, mentionItems);
+        refreshMentionSuggestions(editor);
+    }, [allNotes, editor, mentionItems]);
+
+    useEffect(() => {
         editor?.setEditable(!disabled && !isStreaming);
     }, [disabled, editor, isStreaming]);
 
     const canSend =
-        (markdown.length > 0 || files.length > 0) && !disabled && !isStreaming && !attachmentController.isPreparing;
+        (markdown.length > 0 || files.length > 0) &&
+        !disabled &&
+        !isStreaming &&
+        !attachmentController.isPreparing;
 
     async function submit(): Promise<void> {
         if (!editor || !canSend) return;
@@ -89,10 +121,13 @@ export function MarkdownChatComposer({
 
         const sent = await onSend(content, files);
         if (sent) {
-            editor.commands.setContent("", { emitUpdate: true });
-            setMarkdown("");
-            setFiles([]);
-            attachmentController.clearErrors();
+            onContentChange("");
+            if (!editor.isDestroyed) {
+                editor.commands.setContent("", { emitUpdate: false });
+                setMarkdown("");
+                setFiles([]);
+                attachmentController.clearErrors();
+            }
         }
     }
 

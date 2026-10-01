@@ -1,3 +1,18 @@
+## Unreleased
+
+### Features
+
+- Preserve unsent AI conversation drafts per conversation and allow renaming conversations.
+- Add fuzzy @ suggestions for workspace notes and files in AI chat.
+
+### Bug Fixes
+
+- Preserve local-only notes when opening a workspace folder from the explorer.
+- avoid renderer-side `node:path` access during workspace note discovery, fixing Open folder errors.
+- Keep browser IndexedDB history snapshots uncapped and preserve records across non-destructive schema/origin migrations without overwriting destination data.
+- Require explicit web note deletion and surface storage startup failures instead of rendering an empty workspace.
+- Close floating notes on Escape before editor suggestions can consume the key.
+
 ## [1.0.6](https://github.com/g4rcez/writeme-editor/compare/v1.0.5...v1.0.6) (2026-05-20)
 
 ### Bug Fixes

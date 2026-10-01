@@ -38,7 +38,7 @@ export class Note implements EntityBase {
         public metadata: Record<string, any> = {},
         public favorite: boolean = false,
         public deletedAt: Date | null = null,
-    ) {}
+    ) { }
 
     public static new(
         title: string,
@@ -110,7 +110,7 @@ export class Note implements EntityBase {
             a.title || "Untitled",
             a.content || "",
             a.id || uuid(),
-            "",
+            a.project || "",
             a.createdAt ? new Date(a.createdAt) : new Date(),
             a.updatedAt ? new Date(a.updatedAt) : new Date(),
             a.filePath || null,
@@ -138,6 +138,11 @@ export interface INoteRepository extends Repository<Note> {
     getQuicknoteByDate: (date: Date) => Promise<Note | null>;
     getTemplates: () => Promise<Note[]>;
     updateContent: (id: string, content: string) => Promise<void>;
+    updateContentIfUnchanged: (
+        id: string,
+        expected: { title: string; updatedAt: Date; content: string },
+        content: string,
+    ) => Promise<Note | null>;
     getHistory: (noteId: string) => Promise<NoteSnapshot[]>;
     restoreSnapshot: (noteId: string, snapshotId: string) => Promise<Note | null>;
     getTrashed: () => Promise<Note[]>;

@@ -146,7 +146,11 @@ export const router = createRouter([
                     },
                     {
                         path: "trash",
-                        element: <SettingsTrashPage />,
+                        element: (
+                            <SettingsPlatformGate sectionId="trash">
+                                <SettingsTrashPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "ai",

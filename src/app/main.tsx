@@ -1,4 +1,4 @@
-import { ComponentsProvider, Notifications, type Tweaks } from "@g4rcez/components";
+import { Button, ComponentsProvider, Notifications, type Tweaks } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
@@ -111,6 +111,26 @@ const themeConfiguration = () => {
     }
 };
 
+function StartupFailureScreen() {
+    return (
+        <main
+            role="alert"
+            className="flex min-h-screen items-center justify-center p-8 text-foreground"
+        >
+            <div className="max-w-xl space-y-4">
+                <h1 className="text-xl font-semibold">Writeme stopped before loading this workspace</h1>
+                <p className="text-sm text-muted-foreground">
+                    Storage initialization failed, so Writeme is not showing an empty workspace. Avoid clearing this
+                    site&apos;s browser data or uninstalling Writeme. Retry, and contact support if it still fails.
+                </p>
+                <Button size="small" onClick={() => window.location.reload()}>
+                    Retry loading
+                </Button>
+            </div>
+        </main>
+    );
+}
+
 export async function main() {
     const rootElement = document.getElementById("root");
     if (!rootElement) {
@@ -121,12 +141,10 @@ export async function main() {
     themeConfiguration();
     void applySystemAccentColor();
     watchSystemAccentColor();
+
+    let initializationFailed = false;
     try {
-        try {
-            await migrateDexieToSqlite();
-        } catch (error) {
-            console.error("Dexie to SQLite migration failed; continuing normal startup:", error);
-        }
+        await migrateDexieToSqlite();
         await SettingsService.init();
         const settings = SettingsService.load();
         const launchWorkspace = isElectron() ? await window.electronAPI.app.getLaunchWorkspace() : null;
@@ -178,19 +196,23 @@ export async function main() {
             const find = notes.find((x) => x.id === tab?.noteId);
             if (find) {
                 const note = await repositories.notes.getOne(find.id);
-                globalDispatch.note(note!);
+                if (note) globalDispatch.note(note);
             }
         }
-        runPurge().catch(console.error);
-        setInterval(() => runPurge().catch(console.error), 60 * 60 * 1000);
+        if (isElectron()) {
+            runPurge().catch(console.error);
+            setInterval(() => runPurge().catch(console.error), 60 * 60 * 1000);
+        }
     } catch (error) {
+        initializationFailed = true;
         console.error("Failed to load notes:", error);
     }
+
     createRoot(rootElement).render(
         <StrictMode>
             <ComponentsProvider tweaks={tweaks}>
                 <Notifications timeout={10_000}>
-                    <RouterProvider router={router} />
+                    {initializationFailed ? <StartupFailureScreen /> : <RouterProvider router={router} />}
                 </Notifications>
             </ComponentsProvider>
         </StrictMode>,

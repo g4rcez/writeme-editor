@@ -29,6 +29,7 @@ export const MentionNodeView = (props: NodeViewProps) => {
     const obsidianEmbed = Boolean(props.node.attrs.obsidianEmbed);
     const href = path || innerUrl(`/note/${id}`, "mention");
     const title = label || id;
+    const isFileReference = id.startsWith("file:");
     const notes = getEditorAllNotes(props.editor);
     const preview = createNoteLinkPreview(
         notes,
@@ -36,7 +37,9 @@ export const MentionNodeView = (props: NodeViewProps) => {
         title,
     );
     const LinkComp: LinkRenderer = props.extension.options.linkRenderer ?? DefaultLink;
-    const trigger = (
+    const trigger = isFileReference ? (
+        <span className="mention">{title}</span>
+    ) : (
         <LinkComp href={href} title={`writeme-mention:${id}`} className="mention">
             {title}
         </LinkComp>
@@ -59,9 +62,11 @@ export const MentionNodeView = (props: NodeViewProps) => {
             data-type="mention"
             contentEditable={false}
         >
-            <LinkPreview trigger={trigger}>
-                <NoteMentionPreview preview={preview} />
-            </LinkPreview>
+            {isFileReference ? trigger : (
+                <LinkPreview trigger={trigger}>
+                    <NoteMentionPreview preview={preview} />
+                </LinkPreview>
+            )}
         </NodeViewWrapper>
     );
 };

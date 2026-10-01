@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/is-electron", () => ({
+    isElectron: vi.fn(),
+}));
 
 vi.mock("@/store/repositories", () => ({
     repositories: {
@@ -14,16 +18,28 @@ vi.mock("@/store/settings", () => ({
     },
 }));
 
+import { isElectron } from "@/lib/is-electron";
 import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
 import { runPurge } from "./purge";
 
+const mockIsElectron = vi.mocked(isElectron);
 const mockPurgeBefore = repositories.notes.purgeBefore as ReturnType<typeof vi.fn>;
 const mockGet = SettingsService.get as ReturnType<typeof vi.fn>;
 
 describe("runPurge", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockIsElectron.mockReturnValue(true);
+    });
+
+    it("never auto-purges browser notes", async () => {
+        mockIsElectron.mockReturnValue(false);
+
+        await runPurge();
+
+        expect(mockGet).not.toHaveBeenCalled();
+        expect(mockPurgeBefore).not.toHaveBeenCalled();
     });
 
     it("does nothing when retention is 'never'", async () => {

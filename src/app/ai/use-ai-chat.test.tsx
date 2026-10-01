@@ -107,6 +107,21 @@ describe("useAIChat", () => {
         );
     });
 
+    it("renames the current conversation and persists the updated title", async () => {
+        const { result } = renderHook(() => useAIChat(undefined, "workspace:test"));
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        await act(async () => {
+            await result.current.renameChat("Research notes");
+        });
+
+        expect(mocks.aiRepository.saveChat).toHaveBeenCalledWith(
+            expect.objectContaining({ id: chat.id, title: "Research notes" }),
+        );
+        expect(result.current.chat?.title).toBe("Research notes");
+    });
+
     it("appends and persists streamed assistant text", async () => {
         const { result } = renderHook(() => useAIChat(undefined, "workspace:test"));
 
@@ -133,6 +148,37 @@ describe("useAIChat", () => {
         expect(mocks.aiRepository.saveMessage).toHaveBeenCalledWith(
             expect.objectContaining({ role: "assistant", content: "Hello back" }),
         );
+    });
+
+    it("persists workspace proposals with completed assistant messages", async () => {
+        const workspaceData = {
+            activities: [{ id: "activity-1", toolName: "proposeNoteEdit" as const, label: "Staged", status: "complete" as const }],
+            sources: [{ noteId: "note-1", title: "Research" }],
+            proposals: [{
+                id: "proposal-1",
+                noteId: "note-1",
+                title: "Research",
+                rationale: "Clarify",
+                baseUpdatedAt: "2026-04-05T06:07:08.000Z",
+                baseMarkdown: "# Old",
+                proposedMarkdown: "# New",
+                status: "pending" as const,
+                createdAt: "2026-04-05T06:08:00.000Z",
+            }],
+        };
+        const getWorkspaceData = () => workspaceData;
+        const { result } = renderHook(() => useAIChat(undefined, "workspace:test"));
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        await act(async () => {
+            await result.current.send("Review", { selection: "", context: "" }, undefined, undefined, undefined, getWorkspaceData);
+        });
+
+        expect(result.current.messages.at(-1)).toMatchObject({ role: "assistant", workspaceData });
+        expect(mocks.aiRepository.saveMessage).toHaveBeenCalledWith(expect.objectContaining({
+            role: "assistant",
+            workspaceData,
+        }));
     });
 
     it("does not send when config is unavailable", async () => {
@@ -473,35 +519,93 @@ describe("useAIChat", () => {
         expect(mocks.aiRepository.saveMessage).not.toHaveBeenCalled();
         expect(mocks.adapter.sendMessage).not.toHaveBeenCalled();
     });
-
-    it("shows stream errors as system messages", async () => {
+    it("persists staged workspace data when the stream errors", async () => {
+        const workspaceData = {
+            activities: [{ id: "activity-1", toolName: "proposeNoteEdit" as const, label: "Staged", status: "complete" as const }],
+            sources: [{ noteId: "note-1", title: "Research" }],
+            proposals: [{
+                id: "proposal-1",
+                noteId: "note-1",
+                title: "Research",
+                rationale: "Clarify",
+                baseUpdatedAt: "2026-04-05T06:07:08.000Z",
+                baseMarkdown: "# Old",
+                proposedMarkdown: "# New",
+                status: "pending" as const,
+                createdAt: "2026-04-05T06:08:00.000Z",
+            }],
+        };
         mocks.adapter.sendMessage.mockReturnValue(createStream([{ type: "error", message: "Provider failed" }]));
         const { result } = renderHook(() => useAIChat(undefined, "workspace:test"));
-
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        let sent = true;
+        let sent = false;
         await act(async () => {
-            sent = await result.current.send("Hello", {
-                selection: "",
-                context: "Workspace context",
-            });
+            sent = await result.current.send(
+                "Hello",
+                { selection: "", context: "Workspace context" },
+                undefined,
+                undefined,
+                undefined,
+                () => workspaceData,
+            );
         });
 
         expect(sent).toBe(true);
         expect(result.current.messages).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({
-                    role: "system",
-                    content: "Error: Provider failed",
-                }),
+                expect.objectContaining({ role: "system", content: "Error: Provider failed" }),
+                expect.objectContaining({ role: "assistant", workspaceData }),
             ]),
         );
         expect(mocks.aiRepository.saveMessage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                role: "system",
-                content: "Error: Provider failed",
-            }),
+            expect.objectContaining({ role: "assistant", workspaceData }),
+        );
+    });
+
+    it("persists workspace proposals with partial assistant text when cancelled", async () => {
+        const workspaceData = {
+            activities: [{ id: "activity-1", toolName: "proposeNoteEdit" as const, label: "Staged", status: "complete" as const }],
+            sources: [{ noteId: "note-1", title: "Research" }],
+            proposals: [{
+                id: "proposal-1",
+                noteId: "note-1",
+                title: "Research",
+                rationale: "Clarify",
+                baseUpdatedAt: "2026-04-05T06:07:08.000Z",
+                baseMarkdown: "# Old",
+                proposedMarkdown: "# New",
+                status: "pending" as const,
+                createdAt: "2026-04-05T06:08:00.000Z",
+            }],
+        };
+        mocks.adapter.sendMessage.mockImplementation((_history, _options, signal: AbortSignal) =>
+            (async function*() {
+                yield { type: "text", delta: "Partial response" } as const;
+                await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve(), { once: true }));
+                throw new Error("aborted");
+            })(),
+        );
+        const { result } = renderHook(() => useAIChat(undefined, "workspace:test"));
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        let pending!: Promise<boolean>;
+        act(() => {
+            pending = result.current.send(
+                "Hello",
+                { selection: "", context: "" },
+                undefined,
+                undefined,
+                undefined,
+                () => workspaceData,
+            );
+        });
+        await waitFor(() => expect(result.current.isStreaming).toBe(true));
+        act(() => result.current.cancel());
+        await act(async () => { await pending; });
+
+        expect(mocks.aiRepository.saveMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ role: "assistant", content: "Partial response", workspaceData }),
         );
     });
 });

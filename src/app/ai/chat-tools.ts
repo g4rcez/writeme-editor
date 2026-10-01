@@ -1,18 +1,22 @@
-import { tool } from "ai";
+import { tool, type ToolSet } from "ai";
+import { v7 as uuid } from "uuid";
 import { z } from "zod";
+import type { AINoteEditProposal, AIWorkspaceActivity, AIWorkspaceData, AIWorkspaceSource } from "@/store/repositories/electron/ai.repository";
 import { executeQuery } from "@/lib/views/engine";
 import { parse } from "@/lib/views/parser";
-import { NoteType } from "@/store/note";
+import { NoteType, type Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 
-type WorkspaceChatToolResult = {
-    success: true;
-    result: Record<string, unknown>;
-};
-
-type ToolExecutionError = {
-    success: false;
-    message: string;
+type ToolExecutionError = { success: false; message: string; result?: Record<string, unknown> };
+type WorkspaceToolName = AIWorkspaceActivity["toolName"];
+type WorkspaceNote = Pick<
+    Note,
+    "id" | "title" | "updatedAt" | "createdAt" | "tags" | "noteType" | "filePath" | "content"
+>;
+export type WorkspaceToolSession = {
+    tools: ToolSet;
+    reset: () => void;
+    getWorkspaceData: () => AIWorkspaceData;
 };
 
 const MAX_LIST_RESULTS = 60;
@@ -30,15 +34,7 @@ function toSafeDateString(value: Date): string {
     return value.toISOString();
 }
 
-function toSafeNoteSummary(note: {
-    id: string;
-    title: string;
-    updatedAt: Date;
-    createdAt: Date;
-    tags: string[];
-    noteType: NoteType;
-    content: string;
-}): Record<string, unknown> {
+function toSafeNoteSummary(note: WorkspaceNote): Record<string, unknown> {
     return {
         id: note.id,
         title: note.title,
@@ -56,9 +52,7 @@ function toSerializedValue(value: unknown): unknown {
     if (Array.isArray(value)) return value.map((item) => toSerializedValue(item));
     if (typeof value === "object") {
         const out: Record<string, unknown> = {};
-        for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-            out[key] = toSerializedValue(nested);
-        }
+        for (const [key, nested] of Object.entries(value as Record<string, unknown>)) out[key] = toSerializedValue(nested);
         return out;
     }
     return value;
@@ -67,11 +61,15 @@ function toSerializedValue(value: unknown): unknown {
 function toQueryRows(rows: Record<string, unknown>[]) {
     return rows.slice(0, MAX_QUERY_RESULTS).map((row) => {
         const transformed: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(row)) {
-            transformed[key] = toSerializedValue(value);
-        }
+        for (const [key, value] of Object.entries(row)) transformed[key] = toSerializedValue(value);
         return transformed;
     });
+}
+
+function toQueryableNote(note: WorkspaceNote): Omit<WorkspaceNote, "filePath"> {
+    const queryNote = { ...note };
+    Reflect.deleteProperty(queryNote, "filePath");
+    return queryNote;
 }
 
 function withLimits(limit: number | undefined): number {
@@ -83,25 +81,49 @@ function withLimits(limit: number | undefined): number {
 }
 
 function buildListError(error: unknown): ToolExecutionError {
-    return {
-        success: false,
-        message: error instanceof Error ? error.message : "Unexpected error",
-    };
+    return { success: false, message: error instanceof Error ? error.message : "Unexpected error" };
 }
 
-async function getAllNotesForTool(): Promise<WorkspaceChatToolResult> {
-    const notes = await repositories.notes.getAll();
-    return {
-        success: true,
-        result: {
-            noteCount: notes.length,
-            notes,
-        },
+function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceToolSession {
+    const activities: AIWorkspaceActivity[] = [];
+    const sources: AIWorkspaceSource[] = [];
+    const proposals: AINoteEditProposal[] = [];
+    const snapshot = (): AIWorkspaceData => ({
+        activities: activities.map((activity) => ({ ...activity })),
+        sources: sources.map((source) => ({ ...source })),
+        proposals: proposals.map((proposal) => ({ ...proposal })),
+    });
+    const notify = (): void => onChange?.(snapshot());
+    const addSources = (notes: Array<{ id: string; title: string }>): void => {
+        const known = new Set(sources.map((source) => source.noteId));
+        for (const note of notes) {
+            if (known.has(note.id)) continue;
+            known.add(note.id);
+            sources.push({ noteId: note.id, title: note.title });
+        }
     };
-}
+    const run = async <T,>(toolName: WorkspaceToolName, label: string, operation: () => Promise<T>): Promise<T | ToolExecutionError> => {
+        const activity: AIWorkspaceActivity = { id: uuid(), toolName, label, status: "running" };
+        activities.push(activity);
+        notify();
+        try {
+            const result = await operation();
+            activity.status = typeof result === "object" && result !== null && "success" in result && result.success === false
+                ? "error"
+                : "complete";
+            notify();
+            return result;
+        } catch (error) {
+            activity.status = "error";
+            notify();
+            return buildListError(error);
+        }
+    };
+    const getAllNotes = async (): Promise<WorkspaceNote[]> => repositories.notes.getAll();
 
-export function createWorkspaceTools() {
-    return {
+    const getWorkspaceNote = async (id: string): Promise<WorkspaceNote | null> =>
+        (await getAllNotes()).find((note) => note.id === id) ?? null;
+    const tools = {
         listNotes: tool({
             description: "List workspace notes with lightweight metadata and optional filters.",
             inputSchema: z.object({
@@ -111,234 +133,129 @@ export function createWorkspaceTools() {
                 includeContent: z.boolean().default(false),
                 limit: z.number().int().min(MIN_LIMIT).max(MAX_LIMIT).default(20),
             }),
-            execute: async ({
-                query,
-                noteType,
-                tag,
-                includeContent,
-                limit,
-            }: {
-                query?: string;
-                noteType?: NoteType;
-                tag?: string;
-                includeContent: boolean;
-                limit: number;
-            }): Promise<WorkspaceChatToolResult | ToolExecutionError> => {
-                try {
-                    const notesResult = await getAllNotesForTool();
-                    const allNotes = notesResult.result.notes as Array<{
-                        id: string;
-                        title: string;
-                        updatedAt: Date;
-                        createdAt: Date;
-                        tags: string[];
-                        noteType: NoteType;
-                        content: string;
-                    }>;
-
-                    const normalized = withLimits(limit);
-                    const filtered = allNotes
-                        .filter((note) => (noteType ? note.noteType === noteType : true))
-                        .filter((note) => (tag ? note.tags.includes(tag) : true))
-                        .filter((note) => {
-                            if (!query) return true;
-                            const needle = query.toLowerCase();
-                            return (
-                                note.title.toLowerCase().includes(needle) ||
-                                note.tags.some((value) => value.toLowerCase().includes(needle)) ||
-                                note.content.toLowerCase().includes(needle)
-                            );
-                        });
-
-                    const safeNotes = filtered.slice(0, normalized).map((note) =>
-                        includeContent
-                            ? {
-                                  ...toSafeNoteSummary(note),
-                                  content: truncate(note.content || "", SNIPPET_LENGTH),
-                              }
-                            : toSafeNoteSummary(note),
-                    );
-
-                    return {
-                        success: true,
-                        result: {
-                            totalMatches: filtered.length,
-                            returned: safeNotes.length,
-                            notes: safeNotes,
-                        },
-                    };
-                } catch (error) {
-                    return buildListError(error);
-                }
-            },
-        }),
-
-        readNote: tool({
-            description: "Read a workspace note by id.",
-            inputSchema: z.object({
-                noteId: z.string(),
-                includeContent: z.boolean().default(false),
+            execute: async ({ query, noteType, tag, includeContent, limit }: {
+                query?: string; noteType?: NoteType; tag?: string; includeContent: boolean; limit: number;
+            }) => run("listNotes", "Listed workspace notes", async () => {
+                const notes = await getAllNotes();
+                const filtered = notes.filter((note) => (noteType ? note.noteType === noteType : true))
+                    .filter((note) => (tag ? note.tags.includes(tag) : true))
+                    .filter((note) => !query || note.title.toLowerCase().includes(query.toLowerCase()) ||
+                        note.tags.some((value) => value.toLowerCase().includes(query.toLowerCase())) ||
+                        note.content.toLowerCase().includes(query.toLowerCase()));
+                const selected = filtered.slice(0, withLimits(limit));
+                addSources(selected);
+                return {
+                    success: true as const,
+                    result: {
+                        totalMatches: filtered.length,
+                        returned: selected.length,
+                        notes: selected.map((note) => includeContent
+                            ? { ...toSafeNoteSummary(note), content: truncate(note.content || "", SNIPPET_LENGTH) }
+                            : toSafeNoteSummary(note)),
+                    },
+                };
             }),
-            execute: async ({ noteId, includeContent }: { noteId: string; includeContent: boolean }) => {
-                try {
-                    const note = await repositories.notes.getOne(noteId);
-                    if (!note) {
-                        return {
-                            success: false,
-                            result: {
-                                noteId,
-                                found: false,
-                                message: "Note not found in current workspace.",
-                            },
-                        };
-                    }
-
-                    const summary = toSafeNoteSummary(note);
+        }),
+        readNote: tool({
+            description: "Read a workspace note by id. includeContent returns the full Markdown and exact updatedAt version.",
+            inputSchema: z.object({ noteId: z.string(), includeContent: z.boolean().default(false) }),
+            execute: async ({ noteId, includeContent }: { noteId: string; includeContent: boolean }) =>
+                run("readNote", "Read a workspace note", async () => {
+                    const note = await getWorkspaceNote(noteId);
+                    if (!note) return { success: false as const, result: { noteId, found: false, message: "Note not found in current workspace." } };
+                    addSources([note]);
                     return {
-                        success: true,
+                        success: true as const,
                         result: {
                             note: {
-                                ...summary,
-                                content: includeContent ? truncate(note.content || "", SNIPPET_LENGTH * 3) : undefined,
-                                filePath: note.filePath,
-                            },
+                                ...toSafeNoteSummary(note),
+                                content: includeContent ? note.content || "" : undefined,
+                            }
                         },
                     };
-                } catch (error) {
-                    return buildListError(error);
-                }
-            },
+                }),
         }),
-
         searchNotes: tool({
             description: "Search notes by title, tags, or content. Returns concise metadata plus optional excerpt.",
-            inputSchema: z.object({
-                query: z.string().min(1),
-                includeContent: z.boolean().default(false),
-                limit: z.number().int().min(MIN_LIMIT).max(MAX_LIMIT).default(20),
-            }),
-            execute: async ({
-                query,
-                includeContent,
-                limit,
-            }: {
-                query: string;
-                includeContent: boolean;
-                limit: number;
-            }) => {
-                try {
-                    const notesResult = await getAllNotesForTool();
-                    const allNotes = notesResult.result.notes as Array<{
-                        id: string;
-                        title: string;
-                        updatedAt: Date;
-                        createdAt: Date;
-                        tags: string[];
-                        noteType: NoteType;
-                        content: string;
-                    }>;
-                    const normalized = withLimits(limit);
+            inputSchema: z.object({ query: z.string().min(1), includeContent: z.boolean().default(false), limit: z.number().int().min(MIN_LIMIT).max(MAX_LIMIT).default(20) }),
+            execute: async ({ query, includeContent, limit }: { query: string; includeContent: boolean; limit: number }) =>
+                run("searchNotes", "Searched workspace notes", async () => {
                     const needle = query.toLowerCase();
-                    const matches = allNotes.filter(
-                        (note) =>
-                            note.title.toLowerCase().includes(needle) ||
-                            note.tags.some((value) => value.toLowerCase().includes(needle)) ||
-                            note.content.toLowerCase().includes(needle),
-                    );
-
-                    const items = matches.slice(0, normalized).map((note) =>
-                        includeContent
-                            ? {
-                                  ...toSafeNoteSummary(note),
-                                  content: truncate(note.content || "", SNIPPET_LENGTH),
-                              }
-                            : toSafeNoteSummary(note),
-                    );
-
+                    const matches = (await getAllNotes()).filter((note) => note.title.toLowerCase().includes(needle) ||
+                        note.tags.some((value) => value.toLowerCase().includes(needle)) || note.content.toLowerCase().includes(needle));
+                    const selected = matches.slice(0, withLimits(limit));
+                    addSources(selected);
                     return {
-                        success: true,
-                        result: {
-                            query,
-                            totalMatches: matches.length,
-                            returned: items.length,
-                            notes: items,
-                        },
+                        success: true as const, result: {
+                            query, totalMatches: matches.length, returned: selected.length,
+                            notes: selected.map((note) => includeContent
+                                ? { ...toSafeNoteSummary(note), content: truncate(note.content || "", SNIPPET_LENGTH) }
+                                : toSafeNoteSummary(note)),
+                        }
                     };
-                } catch (error) {
-                    return buildListError(error);
-                }
-            },
+                }),
         }),
-
         runNotesQuery: tool({
-            description:
-                "Run a read-only notes view query. Supports filtering, sorting, and projection with existing syntax.",
-            inputSchema: z.object({
-                query: z.string().min(1),
-                limit: z.number().int().min(MIN_LIMIT).max(MAX_LIMIT).default(50),
-            }),
-            execute: async ({
-                query,
-                limit,
-            }: {
-                query: string;
-                limit: number;
-            }): Promise<WorkspaceChatToolResult | ToolExecutionError> => {
-                try {
-                    const parsed = parse(query);
-                    const targetTable = parsed.from ?? "notes";
-                    if (targetTable !== "notes") {
-                        return {
-                            success: false,
-                            message: "Only `notes` dataset is currently supported.",
-                        };
-                    }
-                    if (parsed.joins.some((join) => join.table !== "notes")) {
-                        return {
-                            success: false,
-                            message: "Joins are currently supported only for the notes dataset and notes aliases.",
-                        };
-                    }
-
-                    const baseNotesResult = await getAllNotesForTool();
-                    const queryRows = executeQuery(parsed, {
-                        notes: baseNotesResult.result.notes as Array<{
-                            id: string;
-                            title: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                        }> as Record<string, unknown>[],
-                    });
-                    const normalizedRows = toQueryRows(queryRows);
-                    const limited = normalizedRows.slice(0, withLimits(limit));
-
-                    return {
-                        success: true,
-                        result: {
-                            query,
-                            totalRows: normalizedRows.length,
-                            rows: limited,
-                            limit: withLimits(limit),
-                            rowCount: limited.length,
-                        },
-                    };
-                } catch (error) {
-                    if (error instanceof Error) {
-                        return {
-                            success: false,
-                            message: error.message,
-                        };
-                    }
-                    return buildListError(error);
+            description: "Run a read-only notes view query. Supports filtering, sorting, and projection with existing syntax.",
+            inputSchema: z.object({ query: z.string().min(1), limit: z.number().int().min(MIN_LIMIT).max(MAX_LIMIT).default(50) }),
+            execute: async ({ query, limit }: { query: string; limit: number }) => run("runNotesQuery", "Queried workspace notes", async () => {
+                const parsed = parse(query);
+                const targetTable = parsed.from ?? "notes";
+                if (targetTable !== "notes") return { success: false as const, message: "Only `notes` dataset is currently supported." };
+                if (parsed.joins.some((join) => join.table !== "notes")) {
+                    return { success: false as const, message: "Joins are currently supported only for the notes dataset and notes aliases." };
                 }
-            },
+                const notes = await getAllNotes();
+                const queryRows = executeQuery(parsed, { notes: notes.map(toQueryableNote) as Record<string, unknown>[] });
+                const normalizedRows = toQueryRows(queryRows);
+                const limited = normalizedRows.slice(0, withLimits(limit));
+                const ids = new Set(limited.map((row) => row.id).filter((id): id is string => typeof id === "string"));
+                if (ids.size) addSources(notes.filter((note) => ids.has(note.id)));
+                return { success: true as const, result: { query, totalRows: normalizedRows.length, rows: limited, limit: withLimits(limit), rowCount: limited.length } };
+            }),
         }),
+        proposeNoteEdit: tool({
+            description: "Stage a proposal to replace an existing note's full Markdown. Provide updatedAt from a full readNote; never writes the note.",
+            inputSchema: z.object({
+                noteId: z.string().min(1).max(1_024),
+                rationale: z.string().min(1).max(10_000),
+                proposedMarkdown: z.string().max(50_000_000),
+                updatedAt: z.iso.datetime(),
+            }),
+            execute: async ({ noteId, rationale, proposedMarkdown, updatedAt }: { noteId: string; rationale: string; proposedMarkdown: string; updatedAt: string }) =>
+                run("proposeNoteEdit", "Staged a note edit proposal", async () => {
+                    const note = await getWorkspaceNote(noteId);
+                    if (!note) return { success: false as const, message: "Note not found in current workspace; no proposal was staged." };
+                    const currentUpdatedAt = toSafeDateString(note.updatedAt);
+                    if (currentUpdatedAt !== updatedAt) return { success: false as const, message: "Note changed since it was read; read it again before proposing an edit." };
+                    if ((note.content || "") === proposedMarkdown) return { success: false as const, message: "The proposed Markdown is unchanged; no proposal was staged." };
+                    if (proposals.some((proposal) => proposal.noteId === noteId)) return { success: false as const, message: "A proposal for this note already exists in this tool session." };
+                    const proposal: AINoteEditProposal = {
+                        id: uuid(), noteId, title: note.title, rationale, baseUpdatedAt: currentUpdatedAt,
+                        baseMarkdown: note.content || "", proposedMarkdown, status: "pending", createdAt: new Date().toISOString(),
+                    };
+                    proposals.push(proposal);
+                    addSources([note]);
+                    return { success: true as const, result: { proposal: { ...proposal } } };
+                }),
+        }),
+    };
+
+    return {
+        tools,
+        reset: (): void => { activities.length = 0; sources.length = 0; proposals.length = 0; notify(); },
+        getWorkspaceData: snapshot,
     };
 }
 
-export type WorkspaceTools = ReturnType<typeof createWorkspaceTools>;
+export function createWorkspaceTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceToolSession {
+    return createTools(onChange);
+}
+
+export type WorkspaceTools = ToolSet;
 
 export const workspaceToolsPromptNote = [
-    "You can use listNotes, readNote, searchNotes, and runNotesQuery.",
-    "Call tools before giving recommendations when user asks for filters or charts.",
+    "You can use listNotes, readNote, searchNotes, runNotesQuery, and proposeNoteEdit.",
+    "Call workspace tools before recommendations about current note contents. For a proposal, first read the full note including content and updatedAt, then submit its exact updatedAt with the full proposed Markdown.",
+    "Proposals only stage changes for user review; never claim a note was changed until the user explicitly approves it.",
 ].join("\n");

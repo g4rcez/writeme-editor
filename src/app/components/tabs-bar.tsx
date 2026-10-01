@@ -225,7 +225,7 @@ export const TabsBar = (props: Props) => {
                                 "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                                 isActive
                                     ? "bg-muted/50 text-foreground"
-                                    : "bg-transparent text-foreground/55 hover:bg-muted/30 hover:text-foreground",
+                                    : "bg-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground",
                             )}
                         >
                             {isTerminal ? (

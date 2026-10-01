@@ -63,9 +63,9 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     {
         id: "trash",
         label: "Trash",
-        description: "Trash retention and auto-purge behavior.",
+        description: "Trash retention and auto-purge settings for the desktop app.",
         path: "/settings/trash",
-        platform: "all",
+        platform: "electron",
     },
     {
         id: "workspace",

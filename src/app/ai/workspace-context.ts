@@ -13,7 +13,11 @@ export function getWorkspaceChatScope(directory: string | null): string {
     return `${WORKSPACE_CHAT_SCOPE_PREFIX}${getWorkspaceKey(directory)}`;
 }
 
-export function buildWorkspaceContextSummary(directory: string | null, notes: Note[]): string {
+export function buildWorkspaceContextSummary(
+    directory: string | null,
+    notes: Note[],
+    workspaceToolsAvailable = true,
+): string {
     const workspaceLabel = directory ? directory : "local workspace";
     const sortedNotes = [...notes].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     const countsByType = Object.values(NoteType).reduce(
@@ -60,7 +64,14 @@ export function buildWorkspaceContextSummary(directory: string | null, notes: No
         notesByType ? `Notes by type: ${notesByType}` : "No notes by type yet.",
         tagSummary ? `Top tags: ${tagSummary}` : "Top tags: none",
         `Recent notes: ${JSON.stringify(recentNotes)}`,
-        "Tools are available: listNotes, readNote, searchNotes, runNotesQuery.",
-        "Always use tools before reading full note bodies when possible.",
+        workspaceToolsAvailable
+            ? "Tools are available: listNotes, readNote, searchNotes, runNotesQuery, proposeNoteEdit."
+            : "Writeme workspace read and proposal tools are unavailable in this chat. Do not claim to inspect, search, query, or propose edits to workspace notes.",
+        workspaceToolsAvailable
+            ? "Read a note with readNote({ includeContent: true }) before proposing an edit. Pass the exact updatedAt returned by that full read and the complete proposed Markdown to proposeNoteEdit."
+            : "No Writeme workspace note tools are available; do not claim that a note was read, searched, queried, or edited.",
+        workspaceToolsAvailable
+            ? "proposeNoteEdit stages a review proposal only. It never writes or changes a note; only the user can approve a proposal."
+            : "Never claim to have staged or written a note edit.",
     ].join("\n");
 }

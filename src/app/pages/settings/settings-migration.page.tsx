@@ -29,7 +29,7 @@ export default function SettingsMigrationPage() {
                                 const counts = await startMigration();
                                 uiDispatch.setAlert({
                                     open: true,
-                                    message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                                    message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                     type: "success",
                                 });
                             } catch (err) {
@@ -61,7 +61,7 @@ export default function SettingsMigrationPage() {
                                 const counts = await importFromFile(file);
                                 uiDispatch.setAlert({
                                     open: true,
-                                    message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                                    message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                     type: "success",
                                 });
                             } catch (err) {

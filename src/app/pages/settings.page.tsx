@@ -144,34 +144,36 @@ export default function SettingsPage() {
                             />
                         </div>
                     </Card>
-                    <Card title="Trash" container="writeme-settings-card">
-                        <div className="flex items-center justify-between py-2">
-                            <Info label="Auto-purge after" className="flex flex-col gap-1">
-                                <p className="text-sm text-muted-foreground">
-                                    Permanently delete trashed notes after this period
-                                </p>
-                            </Info>
-                            <Select
-                                hiddenLabel
-                                value={String(settings.trashRetentionDays)}
-                                options={[
-                                    { label: "7 days", value: "7" },
-                                    { label: "10 days", value: "10" },
-                                    { label: "30 days", value: "30" },
-                                    { label: "Never", value: "never" },
-                                ]}
-                                onChange={(e) =>
-                                    setSettings({
-                                        ...settings,
-                                        trashRetentionDays:
-                                            e.target.value === "never"
-                                                ? "never"
-                                                : (parseInt(e.target.value) as 7 | 10 | 30),
-                                    })
-                                }
-                            />
-                        </div>
-                    </Card>
+                    {isElectron() ? (
+                        <Card title="Trash" container="writeme-settings-card">
+                            <div className="flex items-center justify-between py-2">
+                                <Info label="Auto-purge after" className="flex flex-col gap-1">
+                                    <p className="text-sm text-muted-foreground">
+                                        Permanently delete trashed notes after this period
+                                    </p>
+                                </Info>
+                                <Select
+                                    hiddenLabel
+                                    value={String(settings.trashRetentionDays)}
+                                    options={[
+                                        { label: "7 days", value: "7" },
+                                        { label: "10 days", value: "10" },
+                                        { label: "30 days", value: "30" },
+                                        { label: "Never", value: "never" },
+                                    ]}
+                                    onChange={(e) =>
+                                        setSettings({
+                                            ...settings,
+                                            trashRetentionDays:
+                                                e.target.value === "never"
+                                                    ? "never"
+                                                    : (parseInt(e.target.value) as 7 | 10 | 30),
+                                        })
+                                    }
+                                />
+                            </div>
+                        </Card>
+                    ) : null}
                     <CustomVariables />
                     <AISettings />
                     {isElectron() ? null : (
@@ -179,7 +181,7 @@ export default function SettingsPage() {
                             <div className="space-y-4">
                                 <p className="text-sm text-muted-foreground">
                                     Moved from <strong>www.writeme.dev</strong>? Import your notes, tabs, hashtags,
-                                    settings, and scripts from the old domain.
+                                    settings, scripts, and note history from the old domain.
                                 </p>
                                 <div className="flex flex-wrap gap-3">
                                     <Button
@@ -191,7 +193,7 @@ export default function SettingsPage() {
                                                 const counts = await startMigration();
                                                 uiDispatch.setAlert({
                                                     open: true,
-                                                    message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                                                    message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                                     type: "success",
                                                 });
                                             } catch (err) {
@@ -227,7 +229,7 @@ export default function SettingsPage() {
                                                 const counts = await importFromFile(file);
                                                 uiDispatch.setAlert({
                                                     open: true,
-                                                    message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts.`,
+                                                    message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                                     type: "success",
                                                 });
                                             } catch (err) {

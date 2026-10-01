@@ -15,6 +15,10 @@ Agent guidelines for the Writeme Electron application.
 - `npm run test` - Run unit tests (Vitest)
 - `npm run test:e2e` - Run e2e tests (Playwright)
 
+## Feature Verification
+
+- Test feature behavior with Playwright (`npm run test:e2e`), not interactive browser automation. Add or update relevant Playwright tests and run them for feature changes.
+
 ## Code Style Guidelines
 
 - **TypeScript**: Strict typing with `noImplicitAny` enabled

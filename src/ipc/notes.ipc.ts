@@ -30,6 +30,25 @@ function normalizePath(input: string): string {
     return path.resolve(input);
 }
 
+const fileWriteLocks = new Map<string, Promise<void>>();
+
+async function withFileWriteLock<T>(filePath: string, operation: () => Promise<T>): Promise<T> {
+    const key = normalizePath(filePath);
+    const previous = fileWriteLocks.get(key) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    fileWriteLocks.set(key, current);
+    await previous;
+    try {
+        return await operation();
+    } finally {
+        release();
+        if (fileWriteLocks.get(key) === current) fileWriteLocks.delete(key);
+    }
+}
+
 function expandAllowedRoots(): void {
     allowedFilesystemRoots.clear();
     allowedFilesystemRoots.add(app.getPath("userData"));
@@ -319,43 +338,109 @@ export const notesIpcHandler = async () => {
         }
     });
 
-    ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) => {
-        const access = validatePaths(filePath, path.dirname(filePath));
-        if (!access.success) {
-            return access;
-        }
-
-        try {
-            const pathSafety = await validateWritablePath(filePath);
-            if (!pathSafety.success) return pathSafety;
-            await fs.mkdir(path.dirname(filePath), { recursive: true });
-            const finalPathSafety = await validateWritablePath(filePath);
-            if (!finalPathSafety.success) return finalPathSafety;
-            FileWatcher.suppressNext(filePath);
-            await fs.writeFile(filePath, content, "utf-8");
+    ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) =>
+        withFileWriteLock(filePath, async () => {
+            const access = validatePaths(filePath, path.dirname(filePath));
+            if (!access.success) return access;
             try {
-                const stats = await fs.stat(filePath);
-                return {
-                    success: true,
-                    filePath,
-                    fileSize: stats.size,
-                    lastModified: stats.mtime,
-                };
-            } catch {
-                return {
-                    success: true,
-                    filePath,
-                    fileSize: content.length,
-                    lastModified: new Date(),
-                };
+                const pathSafety = await validateWritablePath(filePath);
+                if (!pathSafety.success) return pathSafety;
+                await fs.mkdir(path.dirname(filePath), { recursive: true });
+                const finalPathSafety = await validateWritablePath(filePath);
+                if (!finalPathSafety.success) return finalPathSafety;
+                FileWatcher.suppressNext(filePath);
+                await fs.writeFile(filePath, content, "utf-8");
+                try {
+                    const stats = await fs.stat(filePath);
+                    return { success: true, filePath, fileSize: stats.size, lastModified: stats.mtime };
+                } catch {
+                    return { success: true, filePath, fileSize: content.length, lastModified: new Date() };
+                }
+            } catch (error: unknown) {
+                return { success: false, error: error instanceof Error ? error.message : "Filesystem write failed." };
             }
-        } catch (error: any) {
-            return {
-                success: false,
-                error: error.message,
-            };
-        }
-    });
+        }),
+    );
+
+    ipcMain.handle(
+        "fs:compareAndWriteFile",
+        async (_, filePath: string, expectedContent: string, content: string) =>
+            withFileWriteLock(filePath, async () => {
+                if (
+                    typeof expectedContent !== "string" ||
+                    typeof content !== "string" ||
+                    expectedContent.length > 50_000_000 ||
+                    content.length > 50_000_000
+                ) {
+                    return { success: false, error: "Note content exceeds the supported size limit." };
+                }
+                const access = validatePaths(filePath, path.dirname(filePath));
+                if (!access.success) return access;
+                try {
+                    const pathSafety = await validateWritablePath(filePath);
+                    if (!pathSafety.success) return pathSafety;
+                    const handle = await fs.open(filePath, "r+");
+                    try {
+                        const initialStats = await handle.stat();
+                        const currentContent = await handle.readFile("utf-8");
+                        const readStats = await handle.stat();
+                        const currentPathStats = await fs.stat(filePath);
+                        if (
+                            currentContent !== expectedContent ||
+                            initialStats.dev !== readStats.dev ||
+                            initialStats.ino !== readStats.ino ||
+                            initialStats.mtimeMs !== readStats.mtimeMs ||
+                            initialStats.size !== readStats.size ||
+                            readStats.dev !== currentPathStats.dev ||
+                            readStats.ino !== currentPathStats.ino
+                        ) {
+                            return { success: false, stale: true, error: "Note content changed since review." };
+                        }
+                        const finalPathSafety = await validateWritablePath(filePath);
+                        if (!finalPathSafety.success) return finalPathSafety;
+                        const finalStats = await handle.stat();
+                        const finalPathStats = await fs.stat(filePath);
+                        if (
+                            finalStats.dev !== readStats.dev ||
+                            finalStats.ino !== readStats.ino ||
+                            finalStats.mtimeMs !== readStats.mtimeMs ||
+                            finalStats.size !== readStats.size ||
+                            finalPathStats.dev !== readStats.dev ||
+                            finalPathStats.ino !== readStats.ino
+                        ) {
+                            return { success: false, stale: true, error: "Note content changed since review." };
+                        }
+                        FileWatcher.suppressNext(filePath);
+                        const buffer = Buffer.from(content, "utf-8");
+                        await handle.truncate(0);
+                        let written = 0;
+                        while (written < buffer.length) {
+                            const result = await handle.write(buffer, written, buffer.length - written, written);
+                            if (result.bytesWritten === 0) throw new Error("Filesystem write made no progress.");
+                            written += result.bytesWritten;
+                        }
+                        await handle.sync();
+
+                        const stats = await handle.stat();
+                        const pathStats = await fs.stat(filePath);
+                        if (pathStats.dev !== stats.dev || pathStats.ino !== stats.ino) {
+                            return { success: false, stale: true, error: "Note was replaced during review." };
+                        }
+                        return { success: true, filePath, fileSize: stats.size, lastModified: stats.mtime };
+                    } finally {
+                        await handle.close();
+                    }
+                } catch (error: unknown) {
+                    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+                        return { success: false, stale: true, error: "Note no longer exists." };
+                    }
+                    return {
+                        success: false,
+                        error: error instanceof Error ? error.message : "Filesystem write failed.",
+                    };
+                }
+            }),
+    );
 
     ipcMain.handle("fs:writeImage", async (_, filePath: string, base64Data: string) => {
         const access = validatePaths(filePath, path.dirname(filePath));

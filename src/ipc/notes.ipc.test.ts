@@ -12,11 +12,11 @@ const handlers = vi.hoisted(() => new Map<string, (...args: any[]) => unknown>()
 
 vi.mock("electron", () => {
     class MockMenu {
-        append() {}
-        popup() {}
+        append() { }
+        popup() { }
     }
     class MockMenuItem {
-        constructor(public readonly options: unknown) {}
+        constructor(public readonly options: unknown) { }
     }
     return {
         BrowserWindow: { fromWebContents: vi.fn() },
@@ -156,5 +156,18 @@ describe("Obsidian filesystem IPC", () => {
             error: "Path is outside the allowed workspace",
         });
         await expect(readFile(path.join(outsideDestinationDirectory, "escaped.md"), "utf8")).rejects.toThrow();
+    });
+
+    it("writes only when the reviewed file content is unchanged", async () => {
+        const filePath = path.join(workspace, "proposal.md");
+        await writeFile(filePath, "# Current");
+
+        const stale = await invoke("fs:compareAndWriteFile", filePath, "# Older", "# Rejected");
+        expect(stale).toMatchObject({ success: false, stale: true });
+        await expect(readFile(filePath, "utf8")).resolves.toBe("# Current");
+
+        const applied = await invoke("fs:compareAndWriteFile", filePath, "# Current", "# Approved");
+        expect(applied).toMatchObject({ success: true, filePath });
+        await expect(readFile(filePath, "utf8")).resolves.toBe("# Approved");
     });
 });

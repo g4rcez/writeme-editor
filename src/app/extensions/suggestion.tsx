@@ -1,8 +1,14 @@
 import { TextSelection, type EditorState } from "@tiptap/pm/state";
+import type { Editor } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { updatePosition } from "@/app/extensions/update-position";
-import { getEditorAllNotes } from "@/lib/editor-storage";
+import {
+    getEditorAllNotes,
+    getEditorMentionItems,
+    type EditorMentionItem,
+} from "@/lib/editor-storage";
+import { filterMentionItems } from "@/app/extensions/mention-search";
 import { innerUrl } from "@/lib/encoding";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
@@ -118,12 +124,12 @@ const MentionList = (props: any) => {
         <ul
             ref={listRef}
             role="listbox"
-            aria-label="Note suggestions"
+            aria-label="Note and file suggestions"
             aria-activedescendant={props.items.length ? `note-suggestion-${selectedIndex}` : undefined}
             className="flex overflow-y-auto relative flex-col p-1 w-80 max-h-64 rounded-lg border shadow-lg border-border bg-background z-50 animate-fade-in-scale"
         >
             {props.items.length ? (
-                props.items.map((item: any, index: number) => {
+                props.items.map((item: EditorMentionItem, index: number) => {
                     const relativePath = item.filePath && storageDir ? getRelativePath(storageDir, item.filePath) : "";
                     const folderPath = relativePath.includes("/")
                         ? relativePath.substring(0, relativePath.lastIndexOf("/"))
@@ -142,11 +148,15 @@ const MentionList = (props: any) => {
                                     selectItem(index);
                                 }}
                                 onMouseEnter={() => setSelectedIndex(index)}
-                                className={`flex flex-col px-3 py-2 rounded-md w-full text-left transition-colors ${
-                                    isSelected ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-foreground"
-                                }`}
+                                className={`flex flex-col px-3 py-2 rounded-md w-full text-left transition-colors ${isSelected ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-foreground"
+                                    }`}
                             >
-                                <span className="text-sm font-medium truncate">{item.label || "Untitled"}</span>
+                                <span className="flex w-full items-center justify-between gap-3">
+                                    <span className="truncate text-sm font-medium">{item.label || "Untitled"}</span>
+                                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                                        {item.kind === "file" ? "File" : "Note"}
+                                    </span>
+                                </span>
                                 {displayPath && (
                                     <span className="text-xs text-foreground/50 truncate">{displayPath}</span>
                                 )}
@@ -156,7 +166,7 @@ const MentionList = (props: any) => {
                 })
             ) : (
                 <li role="presentation" className="flex flex-col gap-2 p-2">
-                    <div className="px-3 py-2 text-center text-sm text-foreground/50">No notes found</div>
+                    <div className="px-3 py-2 text-center text-sm text-foreground/50">No notes or files found</div>
                     {String(props.query ?? "").trim() && (
                         <button
                             type="button"
@@ -184,27 +194,54 @@ export const getMentionReplacementFrom = (state: EditorState, from: number): num
     return from > 1 && state.doc.textBetween(from - 1, from) === "@" ? from - 1 : from;
 };
 
+function getMentionSuggestionItems(query: string, editor: Editor): EditorMentionItem[] {
+    try {
+        const items =
+            getEditorMentionItems(editor) ??
+            getEditorAllNotes(editor).map((note) => ({
+                id: note.id,
+                label: note.title,
+                filePath: note.filePath,
+                path: note.filePath || innerUrl(`/note/${note.id}`, "mention"),
+                kind: "note" as const,
+            }));
+        return filterMentionItems(items, query);
+    } catch {
+        return [];
+    }
+}
+
+const MENTION_SUGGESTION_REFRESH_KEY = "mentionSuggestionRefresh";
+
+export const refreshMentionSuggestions = (editor: Editor): boolean => {
+    const refresh = Reflect.get(editor.storage, MENTION_SUGGESTION_REFRESH_KEY);
+    if (typeof refresh !== "function") return false;
+    refresh();
+    return true;
+};
+
 export const suggestion = {
-    items: async ({ query, editor }: { query: string; editor: any }) => {
-        try {
-            const notes = getEditorAllNotes(editor);
-            return notes
-                .filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
-                .map((n) => ({
-                    id: n.id,
-                    label: n.title,
-                    filePath: n.filePath,
-                    path: n.filePath || innerUrl(`/note/${n.id}`, "mention"),
-                }));
-        } catch {
-            return [];
-        }
-    },
+    items: ({ query, editor }: { query: string; editor: Editor }) => getMentionSuggestionItems(query, editor),
     render: () => {
         let reactRenderer: ReactRenderer | undefined;
         let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null = null;
+        let activeEditor: Editor | undefined;
+        let activeProps: any;
+        const getRendererProps = (props: any) => ({
+            ...props,
+            items: getMentionSuggestionItems(props.query, props.editor),
+            closeSuggestion,
+            registerKeyDown,
+        });
+        const refreshActiveSuggestion = () => {
+            if (!activeProps || !reactRenderer) return;
+            reactRenderer.updateProps(getRendererProps(activeProps));
+        };
         const closeSuggestion = () => {
             keyDownHandler = null;
+            if (activeEditor) Reflect.deleteProperty(activeEditor.storage, MENTION_SUGGESTION_REFRESH_KEY);
+            activeEditor = undefined;
+            activeProps = undefined;
             if (!reactRenderer) return;
 
             const element = reactRenderer.element;
@@ -217,11 +254,12 @@ export const suggestion = {
         };
         return {
             onStart: (props: any) => {
-                if (!props.clientRect) {
-                    return;
-                }
+                if (!props.clientRect) return;
+                activeEditor = props.editor;
+                activeProps = props;
+                Reflect.set(props.editor.storage, MENTION_SUGGESTION_REFRESH_KEY, refreshActiveSuggestion);
                 reactRenderer = new ReactRenderer(MentionList, {
-                    props: { ...props, closeSuggestion, registerKeyDown },
+                    props: getRendererProps(props),
                     editor: props.editor,
                 });
                 reactRenderer.element.style.position = "absolute";
@@ -229,14 +267,10 @@ export const suggestion = {
                 updatePosition(props.editor, reactRenderer.element);
             },
             onUpdate(props: any) {
-                reactRenderer?.updateProps({
-                    ...props,
-                    closeSuggestion,
-                    registerKeyDown,
-                });
-                if (!props.clientRect || !reactRenderer) {
-                    return;
-                }
+                if (!reactRenderer) return;
+                activeProps = props;
+                reactRenderer.updateProps(getRendererProps(props));
+                if (!props.clientRect) return;
                 updatePosition(props.editor, reactRenderer.element);
             },
             onKeyDown(props: { event: KeyboardEvent }) {

@@ -1,8 +1,12 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useGlobalStore } from "../../store/global.store";
 import { mapShortcutOS, useWritemeShortcuts, Type } from "./shortcut-items";
+const mocks = vi.hoisted(() => ({
+    openFileOrDirectory: vi.fn(),
+    migrateNotes: vi.fn(),
+}));
 
 vi.mock("../../store/global.store", () => ({
     CommanderType: {
@@ -19,6 +23,9 @@ vi.mock("../../store/global.store", () => ({
 vi.mock("../../lib/is-electron", () => ({
     isElectron: vi.fn(() => true),
 }));
+vi.mock("@/app/lib/open-directory-as-workspace", () => ({
+    migrateWebOnlyNotesToDirectory: mocks.migrateNotes,
+}));
 
 describe("shortcut-items", () => {
     const dispatch = {
@@ -26,11 +33,18 @@ describe("shortcut-items", () => {
         directoryBrowserDialog: vi.fn(),
         recentNotesDialog: vi.fn(),
         setAiDrawer: vi.fn(),
+        switchWorkspace: vi.fn(),
         theme: vi.fn(),
     };
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.openFileOrDirectory.mockResolvedValue({ path: "/workspace", isDirectory: true });
+        mocks.migrateNotes.mockResolvedValue(undefined);
+        Object.defineProperty(window, "electronAPI", {
+            configurable: true,
+            value: { fs: { openFileOrDirectory: mocks.openFileOrDirectory } },
+        });
         (useGlobalStore as any).mockReturnValue([{ theme: "dark" }, dispatch]);
     });
 
@@ -97,5 +111,27 @@ describe("shortcut-items", () => {
         openTabs?.action();
 
         expect(dispatch.commander).toHaveBeenCalledWith(true, "OpenTabs");
+    });
+
+    it("migrates local-only notes before switching workspaces from Open...", async () => {
+        let finishMigration!: () => void;
+        const migration = new Promise<void>((resolve) => {
+            finishMigration = resolve;
+        });
+        mocks.migrateNotes.mockReturnValue(migration);
+
+        const { result } = renderHook(() => useWritemeShortcuts(), {
+            wrapper: MemoryRouter,
+        });
+        const openFolder = result.current.find((shortcut) => shortcut.description === "Open...");
+        if (!openFolder) throw new Error("Open... shortcut not found");
+        const opening = openFolder.action();
+
+        await waitFor(() => expect(mocks.migrateNotes).toHaveBeenCalledWith("/workspace"));
+        expect(dispatch.switchWorkspace).not.toHaveBeenCalled();
+
+        finishMigration();
+        await opening;
+        expect(dispatch.switchWorkspace).toHaveBeenCalledWith("/workspace");
     });
 });

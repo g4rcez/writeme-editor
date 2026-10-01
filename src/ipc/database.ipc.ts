@@ -75,6 +75,32 @@ export const databaseIpcHandler = () => {
         },
     );
 
+    ipcMain.handle(
+        "db:notes:updateContentIfUnchanged",
+        (
+            _,
+            id: string,
+            expected: { title: string; updatedAt: string; content: string },
+            content: string,
+            updatedAt: string,
+            updatedBy: string,
+        ) => {
+            const base = z.object({
+                title: z.string().max(10_000),
+                updatedAt: dateSchema,
+                content: contentSchema,
+            }).parse(expected);
+            return db.updateNoteContentIfUnchanged(
+                idSchema.parse(id),
+                base,
+                contentSchema.parse(content),
+                content.length,
+                dateSchema.parse(updatedAt),
+                z.string().max(1_024).parse(updatedBy),
+            );
+        },
+    );
+
     ipcMain.handle("db:notes:getHistory", (_, noteId: string) => {
         return db.getNoteHistory(idSchema.parse(noteId));
     });

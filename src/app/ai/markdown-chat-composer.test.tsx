@@ -7,7 +7,9 @@ import { MarkdownChatComposer } from "./markdown-chat-composer";
 
 const mocks = vi.hoisted(() => ({
     markdown: "",
+    html: "",
     handlePaste: vi.fn(),
+    onUpdate: vi.fn(),
     setContent: vi.fn(),
     setEditable: vi.fn(),
 }));
@@ -17,12 +19,24 @@ vi.mock("@/app/elements/code-block", () => ({ getThemeForMode: () => "light" }))
 vi.mock("@tiptap/react", async () => {
     const React = await import("react");
     return {
-        useEditor: (options: { editorProps: { handlePaste: (view: unknown, event: ClipboardEvent) => boolean } }) => {
+        useEditor: (options: {
+            editorProps: { handlePaste: (view: unknown, event: ClipboardEvent) => boolean };
+            onUpdate: (args: { editor: { getHTML: () => string } }) => void;
+        }) => {
             mocks.handlePaste.mockImplementation((event: ClipboardEvent) => options.editorProps.handlePaste({}, event));
+            mocks.onUpdate.mockImplementation(options.onUpdate);
             return {
+                storage: {},
                 getMarkdown: () => mocks.markdown,
+                getHTML: () => mocks.html,
                 setEditable: mocks.setEditable,
-                commands: { setContent: mocks.setContent },
+                commands: {
+                    setContent: (content: string) => {
+                        mocks.setContent(content);
+                        mocks.html = content;
+                        mocks.markdown = content.replace(/<\/?[^>]+>/g, "").trim();
+                    },
+                },
             };
         },
         EditorContent: () => React.createElement("div", { role: "textbox", "aria-label": "Message Workspace AI" }),
@@ -64,17 +78,28 @@ const adapter: AIAdapter = {
     },
 };
 
-function renderComposer(onSend = vi.fn(async () => true)) {
+function renderComposer(
+    onSend = vi.fn(async () => true),
+    onContentChange = vi.fn(),
+    content = "",
+) {
+    mocks.markdown = "";
+    mocks.html = "";
+    mocks.setContent.mockClear();
     const props: ComposerProps = {
         theme: "light" as ComposerProps["theme"],
         disabled: false,
         isStreaming: false,
         adapter,
+        content,
+        onContentChange,
+        allNotes: [],
+        mentionItems: [],
         onCancel: vi.fn(),
         onSend,
     };
     render(<MarkdownChatComposer {...props} />);
-    return onSend;
+    return { onSend, onContentChange };
 }
 
 function pasteEvent(files: File[], items: Array<{ kind: string; getAsFile(): File | null }> = []): ClipboardEvent {
@@ -82,6 +107,35 @@ function pasteEvent(files: File[], items: Array<{ kind: string; getAsFile(): Fil
     Object.defineProperty(event, "clipboardData", { value: { files, items } });
     return event as ClipboardEvent;
 }
+
+describe("MarkdownChatComposer drafts", () => {
+    it("reports editor HTML changes so each conversation can keep its own draft", () => {
+        const onContentChange = vi.fn();
+        renderComposer(undefined, onContentChange);
+
+        act(() => {
+            mocks.onUpdate({
+                editor: {
+                    getHTML: () => "<p>Unsent text</p>",
+                    getMarkdown: () => "Unsent text",
+                },
+            });
+        });
+
+        expect(onContentChange).toHaveBeenCalledWith("<p>Unsent text</p>");
+    });
+    it("enables sending after restoring a saved editor draft", async () => {
+        const onSend = vi.fn(async () => true);
+        renderComposer(onSend, vi.fn(), "<p>Return to this text</p>");
+
+        const sendButton = screen.getByRole("button", { name: "Send message" });
+        await waitFor(() => expect(sendButton).toBeEnabled());
+        fireEvent.click(sendButton);
+
+        await waitFor(() => expect(onSend).toHaveBeenCalledWith("Return to this text", []));
+    });
+
+});
 
 describe("MarkdownChatComposer attachments", () => {
     it("only consumes paste when a supported file is routed to attachments", async () => {
@@ -121,7 +175,7 @@ describe("MarkdownChatComposer attachments", () => {
     });
 
     it("routes dropped files into an attachment-only send and clears after success", async () => {
-        const onSend = renderComposer();
+        const { onSend } = renderComposer();
         const form = screen.getByRole("form", { name: "AI message composer" });
         const file = new File(["report"], "report.pdf", { type: "application/pdf" });
 

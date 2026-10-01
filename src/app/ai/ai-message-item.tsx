@@ -66,10 +66,12 @@ function AssistantRenderedBody({
     content,
     isStreaming,
     loadingIndex,
+    hasWorkspaceData,
 }: {
     content: string;
     isStreaming: boolean;
     loadingIndex: number;
+    hasWorkspaceData: boolean;
 }) {
     if (content.trim().length > 0) {
         return <AIAssistantMarkdown content={content} />;
@@ -77,7 +79,13 @@ function AssistantRenderedBody({
     if (isStreaming) {
         return <p className="text-sm text-muted-foreground italic">{getLoadingMessage(loadingIndex)}</p>;
     }
+    if (hasWorkspaceData) return null;
     return <p className="text-sm text-muted-foreground italic">No assistant response was returned.</p>;
+}
+
+function hasWorkspaceData(message: AIMessage): boolean {
+    const data = message.workspaceData;
+    return Boolean(data && (data.activities.length > 0 || data.sources.length > 0 || data.proposals.length > 0));
 }
 
 export function AIChatMessageItem({
@@ -131,13 +139,14 @@ export function AIChatMessageItem({
         <div className="flex w-full" aria-label="Assistant message">
             <div className="flex w-full flex-col gap-3 px-4 py-3 text-foreground">
                 <header className="flex items-center gap-1">
-                    <ChatCircleDotsIcon className="size-4 text-muted-foreground" />
+                    <ChatCircleDotsIcon aria-hidden="true" className="size-4 text-muted-foreground" />
                     <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Assistant</p>
                 </header>
                 <AssistantRenderedBody
                     content={message.content}
                     isStreaming={isStreaming}
                     loadingIndex={loadingIndex}
+                    hasWorkspaceData={hasWorkspaceData(message)}
                 />
             </div>
         </div>

@@ -4,7 +4,7 @@ This is designed to be a text editor that help you to interact with AI and took 
 
 ## Features
 
-- **AI-Powered Editing**: Native integration with AI for content generation, refinement, and intelligent note-taking.
+- **AI-Powered Editing**: Research workspace notes with source links; per-note Markdown proposals require explicit approval before application in database-backed storage. Filesystem-backed proposals remain review-only to avoid overwriting external edits.
 - **Markdown First**: Full Markdown support using Tiptap and Unified/Remark ecosystems.
 - **Graph Visualization**: Interactive 2D force-directed graph to visualize connections between notes and hashtags.
 - **Integrated Terminal**: Built-in terminal support (using xterm.js and node-pty) for developers.
@@ -12,6 +12,17 @@ This is designed to be a text editor that help you to interact with AI and took 
 - **Hybrid Storage**: Support for both local filesystem (direct file access) and database-backed (Dexie/SQLite) storage modes.
 - **Rich Media & Extensions**: Support for Excalidraw, Mermaid diagrams, KaTeX math, and Shiki syntax highlighting.
 - **Cross-Platform**: Available as an Electron desktop application and a Progressive Web App (PWA).
+
+## Demo
+
+Create a note in the browser, add a short plan, and find it again with search.
+
+<video controls playsinline preload="metadata" width="100%" poster="https://raw.githubusercontent.com/g4rcez/writeme-editor/main/docs/assets/writeme-browser-demo-poster.png">
+  <source src="https://raw.githubusercontent.com/g4rcez/writeme-editor/main/docs/assets/writeme-browser-demo.mp4" type="video/mp4">
+  <a href="https://raw.githubusercontent.com/g4rcez/writeme-editor/main/docs/assets/writeme-browser-demo.mp4">Download the demo video</a>
+</video>
+
+Recorded by the [Playwright demo test](tests/e2e/readme-demo.spec.ts).
 
 ## Installation
 
