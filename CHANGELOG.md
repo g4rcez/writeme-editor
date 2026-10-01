@@ -5,6 +5,10 @@
 - Preserve unsent AI conversation drafts per conversation and allow renaming conversations.
 - Add fuzzy @ suggestions for workspace notes and files in AI chat.
 
+### Build System
+
+- Use the Node.js version required by the package in GitHub Actions.
+
 ### Bug Fixes
 
 - Preserve local-only notes when opening a workspace folder from the explorer.
