@@ -1,3 +1,43 @@
+## [1.0.13](https://github.com/g4rcez/writeme-editor/compare/v1.0.12...v1.0.13) (2026-10-01)
+
+
+### Bug Fixes
+
+* bug improvements ([46e707b](https://github.com/g4rcez/writeme-editor/commit/46e707b559c6de988cd354ea55de8b501bcb3f08))
+* **ci:** split platform builds and prune foreign native binaries ([a52eaea](https://github.com/g4rcez/writeme-editor/commit/a52eaea42a16bb4112891ed9f57797ed4e667c74))
+* **ci:** use supported Node.js version in Actions ([5e0f693](https://github.com/g4rcez/writeme-editor/commit/5e0f693df926afbb461e9059622894586e89a0f9))
+* **database:** harden migration and credential persistence ([54057af](https://github.com/g4rcez/writeme-editor/commit/54057af6409e28a1106bc147387ca89dedaafe3e))
+* **editor:** improve theme contrast and floating note scrolling ([e40771d](https://github.com/g4rcez/writeme-editor/commit/e40771df264e9faf0eb4f7b3b245854116a4e990))
+* **packaging:** bundle native runtime dependencies and simplify code blocks ([87addcf](https://github.com/g4rcez/writeme-editor/commit/87addcfd65fbaf81aa5ca789fcbc5735bc25adaa))
+* prevent stale auth state and improve note search ([d28cac7](https://github.com/g4rcez/writeme-editor/commit/d28cac7267e6eb6b5b97bdc9e935acaee6bdf555))
+* **root-layout:** route keyboard tab switching through route updates ([1d0c7bb](https://github.com/g4rcez/writeme-editor/commit/1d0c7bb90f6ab4c6c2e7a5a603a5b87d8ed8018d))
+* **ui:** prevent redundant tab reopening when closing active note routes ([8e8df05](https://github.com/g4rcez/writeme-editor/commit/8e8df05e1a2316f148ec41c10d15ee081dd2523e))
+
+
+### Features
+
+* add Excalidraw note support and workspace AI chat ([2db984d](https://github.com/g4rcez/writeme-editor/commit/2db984d7cf4d2b49b9c5e321a4ce106f588cab3a))
+* add GitHub Gist import support ([fb1a7a0](https://github.com/g4rcez/writeme-editor/commit/fb1a7a010a2735ca7214defebbd0ab9227b4625f))
+* **ai:** harden attachments and provider model discovery ([c46e0bc](https://github.com/g4rcez/writeme-editor/commit/c46e0bc91e6a068055ff410248421f75b96aec14))
+* **editor:** add configurable rich/raw note editing with persisted preferences ([46ca263](https://github.com/g4rcez/writeme-editor/commit/46ca26352009a826855a505c11ff5735e1a60e29))
+* **editor:** add floating editor and improve document workflows ([458c57b](https://github.com/g4rcez/writeme-editor/commit/458c57bf20b98afd405ee736ea367f5dceccc94d))
+* **editor:** add frontmatter insertion actions ([f879f8b](https://github.com/g4rcez/writeme-editor/commit/f879f8be593710281551944cde45ee11b8a11119))
+* **editor:** align CodeMirror themes with app color tokens ([5c90694](https://github.com/g4rcez/writeme-editor/commit/5c90694b57b0928dfeba653d5bac91c9cc24264f))
+* **editor:** prevent stale cursor restoration and avoid redundant content syncs ([b6d1d0a](https://github.com/g4rcez/writeme-editor/commit/b6d1d0aa090746988da9f2d1ac2877771fd3386f))
+* **editor:** refine markdown controls and paste normalization ([6fa0d6a](https://github.com/g4rcez/writeme-editor/commit/6fa0d6a515598351fec57da14c95bdb1d264f711))
+* **editor:** support LaTeX nodes and Markdown paste formatting ([287de21](https://github.com/g4rcez/writeme-editor/commit/287de214c20bac9460d8dd1ea7c15bd1527f6f8f))
+* **explorer:** add streaming recursive file search ([80fd683](https://github.com/g4rcez/writeme-editor/commit/80fd6833606947bd7fc93a51421d5e6e5cccf85b))
+* **help:** unify shortcuts and command reference ([c477d08](https://github.com/g4rcez/writeme-editor/commit/c477d08afe68c1ad9a0978d533df469adfd72934))
+* implement multi-session terminal tabs with persistence ([7af47e3](https://github.com/g4rcez/writeme-editor/commit/7af47e393d3064dcc3ac58c6681eb3f390e037b5))
+* improvements at the AI chat ([2ac3277](https://github.com/g4rcez/writeme-editor/commit/2ac3277800e3de482a16bcb9489dacb2c1c96307))
+* layout improvements ([6a94365](https://github.com/g4rcez/writeme-editor/commit/6a9436523942184278508fdad005f37cfe5173fd))
+* **security:** implement comprehensive security hardening and performance optimizations ([af2095c](https://github.com/g4rcez/writeme-editor/commit/af2095cad9ce5bf33bb357aa5196bfb3b6381dcd))
+* **shortcuts:** add direct keyboard shortcuts for tab navigation ([7d8af9b](https://github.com/g4rcez/writeme-editor/commit/7d8af9bbddb4bf829194cff43a4f6340ba874ff0))
+* **sidebar:** toggle Explorer panel on click ([#14](https://github.com/g4rcez/writeme-editor/issues/14)) ([b0309a6](https://github.com/g4rcez/writeme-editor/commit/b0309a638fbb2ee02bb2621c91531fc824e6207a))
+* **theme:** adopt runtime theme tokens for @g4rcez/components v5 ([ac1ebd6](https://github.com/g4rcez/writeme-editor/commit/ac1ebd67c1c433a64a2e479ccff8dbb9cbab868a))
+* **ui:** refine dashboard and native surface theming ([0b68f2e](https://github.com/g4rcez/writeme-editor/commit/0b68f2ebf1476ab53cfb03aff7c4c5a660407c2c))
+* **workspace:** expand file support and editing workflows ([0b8be32](https://github.com/g4rcez/writeme-editor/commit/0b8be329e58f236b10554cd0a6d0e62329d345ef))
+* **workspace:** redesign the writing workbench and note discovery ([7a32830](https://github.com/g4rcez/writeme-editor/commit/7a32830e1dbadc41375a7b00dcd6734acaebd25b))
 ## Unreleased
 
 ### Features
