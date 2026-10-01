@@ -4,6 +4,7 @@
 ### Bug Fixes
 
 * bug improvements ([46e707b](https://github.com/g4rcez/writeme-editor/commit/46e707b559c6de988cd354ea55de8b501bcb3f08))
+* **ci:** run Windows release builds on the Visual Studio version supported by node-gyp.
 * **ci:** split platform builds and prune foreign native binaries ([a52eaea](https://github.com/g4rcez/writeme-editor/commit/a52eaea42a16bb4112891ed9f57797ed4e667c74))
 * **ci:** use supported Node.js version in Actions ([5e0f693](https://github.com/g4rcez/writeme-editor/commit/5e0f693df926afbb461e9059622894586e89a0f9))
 * **database:** harden migration and credential persistence ([54057af](https://github.com/g4rcez/writeme-editor/commit/54057af6409e28a1106bc147387ca89dedaafe3e))
