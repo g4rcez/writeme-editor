@@ -253,6 +253,7 @@ jobs:
               with:
                   body_path: release-notes.md
                   files: artifacts/**
+                  overwrite_files: true
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -265,6 +266,8 @@ jobs:
             REF_NAME: ${{ github.ref_name }}
         steps:
             - uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
 
             - name: Download macOS artifacts
               run: |
