@@ -187,21 +187,6 @@ export const notesIpcHandler = async () => {
         return null;
     });
 
-    ipcMain.handle("context-menu:edit", async (event) => {
-        const win = BrowserWindow.fromWebContents(event.sender);
-        if (!win) return;
-        const menu = new Menu();
-        menu.append(new MenuItem({ role: "undo" }));
-        menu.append(new MenuItem({ role: "redo" }));
-        menu.append(new MenuItem({ type: "separator" }));
-        menu.append(new MenuItem({ role: "cut" }));
-        menu.append(new MenuItem({ role: "copy" }));
-        menu.append(new MenuItem({ role: "paste" }));
-        menu.append(new MenuItem({ role: "delete" }));
-        menu.append(new MenuItem({ type: "separator" }));
-        menu.append(new MenuItem({ role: "selectAll" }));
-        menu.popup({ window: win });
-    });
 
     ipcMain.handle("context-menu:link", async (event, text: string, url: string, x?: number, y?: number) => {
         const win = BrowserWindow.fromWebContents(event.sender);

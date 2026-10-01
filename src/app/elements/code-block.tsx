@@ -71,6 +71,7 @@ export const CodeBlockFrame = ({
         <NodeViewWrapper
             id={id}
             as="div"
+            spellCheck={false}
             aria-hidden={!isBodyVisible}
             data-print-fallback={printContent !== undefined ? "true" : undefined}
             className={clsx(

@@ -13,7 +13,7 @@ import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 import { vim } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     editorActionsGlobalRef,
     editorGlobalRef,
@@ -25,10 +25,23 @@ import {
 } from "../editor-global-ref";
 import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
 import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
+import { createMarkdownWritingAssistant } from "../writing-assistant/markdown-adapter";
+import type { WritingEditorAdapter } from "../writing-assistant/types";
+import { WritingAssistant } from "../writing-assistant/writing-assistant";
 
 const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
 const CURSOR_SCROLL_MARGIN_PX = 96;
 const setMarkdownSearchDecorations = StateEffect.define<DecorationSet>();
+
+function createMarkdownEditorContentAttributes(readonly: boolean, writingAssistantEnabled: boolean): Record<string, string> {
+    return {
+        role: "textbox",
+        "aria-label": "Markdown note editor",
+        "aria-multiline": "true",
+        "aria-readonly": String(readonly),
+        spellcheck: writingAssistantEnabled && !readonly ? "true" : "false",
+    };
+}
 
 const markdownSearchDecorations = StateField.define<DecorationSet>({
     create: () => Decoration.none,
@@ -179,6 +192,7 @@ type RawMarkdownEditorProps = {
     fontSize: number;
     vimMode?: boolean;
     active?: boolean;
+    writingAssistantEnabled: boolean;
 };
 
 function getEditorTopInScrollContainer(view: EditorView, scrollContainer: HTMLElement): number {
@@ -298,6 +312,7 @@ export function RawMarkdownEditor({
     fontSize,
     vimMode = false,
     active = true,
+    writingAssistantEnabled,
 }: RawMarkdownEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -314,7 +329,14 @@ export function RawMarkdownEditor({
     const editorThemeCompartmentRef = useRef(new Compartment());
     const editableCompartmentRef = useRef(new Compartment());
     const readOnlyCompartmentRef = useRef(new Compartment());
-    const activateRef = useRef<() => void>(() => {});
+    const contentAttributesCompartmentRef = useRef(new Compartment());
+    const activateRef = useRef<() => void>(() => { });
+    const [writingAssistantIntegration] = useState(() => createMarkdownWritingAssistant());
+    const [writingAssistantAdapter, setWritingAssistantAdapter] = useState<WritingEditorAdapter | null>(null);
+    const writingAssistantAdapterRef = useRef<WritingEditorAdapter | null>(null);
+    const initialWritingAssistantEnabledRef = useRef(writingAssistantEnabled);
+    const writingAssistantEnabledRef = useRef(writingAssistantEnabled);
+    const writingAssistantCompartmentRef = useRef(new Compartment());
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -352,6 +374,9 @@ export function RawMarkdownEditor({
                         pasteURLAsLink: true,
                     }),
                     markdownSearchDecorations,
+                    writingAssistantCompartmentRef.current.of(
+                        initialWritingAssistantEnabledRef.current ? writingAssistantIntegration.extension : [],
+                    ),
                     EditorView.lineWrapping,
                     indentationMarkers({
                         activeThickness: 2,
@@ -368,6 +393,14 @@ export function RawMarkdownEditor({
                     editorThemeCompartmentRef.current.of(createRawMarkdownEditorTheme(initialFontSizeRef.current)),
                     editableCompartmentRef.current.of(EditorView.editable.of(!initialReadonly)),
                     readOnlyCompartmentRef.current.of(EditorState.readOnly.of(initialReadonly)),
+                    contentAttributesCompartmentRef.current.of(
+                        EditorView.contentAttributes.of(
+                            createMarkdownEditorContentAttributes(
+                                initialReadonly,
+                                initialWritingAssistantEnabledRef.current,
+                            ),
+                        ),
+                    ),
                     EditorView.updateListener.of((update) => {
                         if (update.docChanged || update.selectionSet) {
                             scheduleCursorScroll(update.view);
@@ -388,6 +421,11 @@ export function RawMarkdownEditor({
         });
 
         viewRef.current = view;
+        if (initialWritingAssistantEnabledRef.current) {
+            const adapter = writingAssistantIntegration.createAdapter(view);
+            writingAssistantAdapterRef.current = adapter;
+            setWritingAssistantAdapter(adapter);
+        }
         searchController = createMarkdownSearchController(view);
         const actionHandle = {
             addFrontmatter: () => {
@@ -435,14 +473,44 @@ export function RawMarkdownEditor({
                 setEditorSearchGlobalRef(null);
             }
             if (activateRef.current === activation.activate) {
-                activateRef.current = () => {};
+                activateRef.current = () => { };
             }
+            writingAssistantAdapterRef.current?.dispose();
+            writingAssistantAdapterRef.current = null;
             searchController?.dispose();
             view.destroy();
             viewRef.current = null;
         };
     }, []);
 
+    useEffect(() => {
+        const view = viewRef.current;
+        if (!view || writingAssistantEnabledRef.current === writingAssistantEnabled) return;
+
+        writingAssistantAdapterRef.current?.dispose();
+        writingAssistantAdapterRef.current = null;
+        view.dispatch({
+            effects: [
+                writingAssistantCompartmentRef.current.reconfigure(
+                    writingAssistantEnabled ? writingAssistantIntegration.extension : [],
+                ),
+                contentAttributesCompartmentRef.current.reconfigure(
+                    EditorView.contentAttributes.of(
+                        createMarkdownEditorContentAttributes(readonly, writingAssistantEnabled),
+                    ),
+                ),
+            ],
+        });
+        writingAssistantEnabledRef.current = writingAssistantEnabled;
+
+        if (writingAssistantEnabled) {
+            const adapter = writingAssistantIntegration.createAdapter(view);
+            writingAssistantAdapterRef.current = adapter;
+            setWritingAssistantAdapter(adapter);
+        } else {
+            setWritingAssistantAdapter(null);
+        }
+    }, [readonly, writingAssistantEnabled, writingAssistantIntegration]);
     useEffect(() => {
         if (active) activateRef.current();
     }, [active]);
@@ -460,9 +528,14 @@ export function RawMarkdownEditor({
                 editorThemeCompartmentRef.current.reconfigure(createRawMarkdownEditorTheme(fontSize)),
                 editableCompartmentRef.current.reconfigure(EditorView.editable.of(!readonly)),
                 readOnlyCompartmentRef.current.reconfigure(EditorState.readOnly.of(readonly)),
+                contentAttributesCompartmentRef.current.reconfigure(
+                    EditorView.contentAttributes.of(
+                        createMarkdownEditorContentAttributes(readonly, writingAssistantEnabled),
+                    ),
+                ),
             ],
         });
-    }, [fontSize, readonly, theme, vimMode]);
+    }, [fontSize, readonly, theme, vimMode, writingAssistantEnabled]);
 
     useEffect(() => {
         const view = viewRef.current;
@@ -476,5 +549,16 @@ export function RawMarkdownEditor({
         });
     }, [value]);
 
-    return <div ref={containerRef} className="w-full print:block" data-raw-markdown-editor="true" />;
+    return (
+        <div className="w-full">
+            {writingAssistantEnabled && writingAssistantAdapter && (
+                <WritingAssistant adapter={writingAssistantAdapter} disabled={readonly} />
+            )}
+            <div
+                ref={containerRef}
+                className="w-full print:block"
+                data-raw-markdown-editor="true"
+            />
+        </div>
+    );
 }

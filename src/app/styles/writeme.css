@@ -288,6 +288,28 @@
 .writeme-block {
     @apply w-full xl:text-lg print:block print:h-auto print:overflow-visible;
 }
+.writeme-editor .writing-suggestion,
+.writeme-editor .cm-writing-assistant-suggestion {
+    cursor: pointer;
+    text-decoration: underline wavy hsl(var(--primary-DEFAULT));
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+.writeme-editor .writing-suggestion-active {
+    background-color: hsla(var(--primary-DEFAULT), 0.12);
+}
+
+@media (forced-colors: active) {
+    .writeme-editor .writing-suggestion,
+    .writeme-editor .cm-writing-assistant-suggestion {
+        text-decoration-color: currentColor;
+    }
+
+    .writeme-editor .writing-suggestion-active {
+        outline: 1px solid currentColor;
+    }
+}
 
 .writeme-editor-bubble {
     @apply isolate z-navbar print:hidden;

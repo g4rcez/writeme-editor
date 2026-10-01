@@ -49,6 +49,7 @@ import { EmojiPicker } from "./extensions/emoji-picker";
 import { Hashtag } from "./extensions/hashtag";
 import { LinkMark } from "./extensions/link-mark";
 import { SearchAndReplace } from "./extensions/search-replace";
+import { WritingAssistant } from "./extensions/writing-assistant";
 import { SlashCommand } from "./extensions/slash-command";
 import { Subscript } from "./extensions/subscript";
 import { suggestion } from "./extensions/suggestion";
@@ -328,6 +329,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
             searchResultClass: "search-result",
             caseSensitive: false,
         }),
+        WritingAssistant,
         SlashCommand,
         EmojiPicker,
         ReplacerCommands,
