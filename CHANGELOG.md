@@ -9,6 +9,7 @@
 
 - Use the Node.js version required by the package in GitHub Actions.
 - Build macOS, Windows, and Linux in independent workflows.
+- Pin Windows builds to `windows-2022` for node-gyp Visual Studio compatibility.
 - Remove ARM64 SQLite prebuilds from Linux x64 packages so RPM creation succeeds.
 
 ### Bug Fixes
