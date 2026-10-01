@@ -8,6 +8,8 @@
 ### Build System
 
 - Use the Node.js version required by the package in GitHub Actions.
+- Build macOS, Windows, and Linux in independent workflows.
+- Remove ARM64 SQLite prebuilds from Linux x64 packages so RPM creation succeeds.
 
 ### Bug Fixes
 

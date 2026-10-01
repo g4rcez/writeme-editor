@@ -181,10 +181,13 @@ jobs:
 
             - uses: oven-sh/setup-bun@v2
 
-            - name: Install rpm
-              run: sudo apt-get install -y rpm
+            - name: Install Linux package makers
+              run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
 
             - run: npm ci
+
+            - name: Prepare Linux package files
+              run: node scripts/prepare-linux-packaging.mjs
 
             - name: Build Electron app
               run: npm run make

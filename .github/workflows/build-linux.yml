@@ -1,4 +1,4 @@
-name: Build
+name: Build Linux
 
 on:
     push:
@@ -6,10 +6,7 @@ on:
 
 jobs:
     build:
-        strategy:
-            matrix:
-                os: [ubuntu-latest, windows-latest, macos-latest]
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
@@ -20,11 +17,13 @@ jobs:
 
             - uses: oven-sh/setup-bun@v2
 
-            - name: Install rpm (Linux only)
-              if: matrix.os == 'ubuntu-latest'
-              run: sudo apt-get install -y rpm
+            - name: Install Linux package makers
+              run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
 
             - run: npm ci
+
+            - name: Prepare Linux package files
+              run: node scripts/prepare-linux-packaging.mjs
 
             - run: npm run make
               env:
@@ -32,6 +31,6 @@ jobs:
 
             - uses: actions/upload-artifact@v4
               with:
-                  name: build-${{ matrix.os }}
+                  name: build-linux
                   path: out/make/**
                   if-no-files-found: error
