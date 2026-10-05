@@ -1,3 +1,13 @@
+# [1.1.0](https://github.com/g4rcez/writeme-editor/compare/v1.0.13...v1.1.0) (2026-10-05)
+
+
+### Features
+
+* add npm release bump command ([5d89631](https://github.com/g4rcez/writeme-editor/commit/5d896317f1d7e31abdc402e2f658f900aeff0f39))
+* add scoped writing reviews and refine editor UX ([af5b578](https://github.com/g4rcez/writeme-editor/commit/af5b5787fc94acc78bd6f7cb4e8497a3d0221d17))
+* **ai:** add safe writing reviews and stream error handling ([5bb5d32](https://github.com/g4rcez/writeme-editor/commit/5bb5d32ca25d265fd8c6eaf92bd68e3fe09a05fe))
+* **ai:** improve chat readability and workspace context ([005fe56](https://github.com/g4rcez/writeme-editor/commit/005fe56458fa7484736bb954759d6e3815efaa23))
+* **editor:** add AI writing review and spellcheck support ([7992e74](https://github.com/g4rcez/writeme-editor/commit/7992e740002a4835cc142be057695076344f8053))
 ## [1.0.13](https://github.com/g4rcez/writeme-editor/compare/v1.0.12...v1.0.13) (2026-10-01)
 
 ### Bug Fixes

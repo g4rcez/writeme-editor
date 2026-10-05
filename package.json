@@ -1,6 +1,6 @@
 {
     "name": "writeme",
-    "version": "1.0.13",
+    "version": "1.1.0",
     "private": true,
     "description": "Writeme is an Electron and PWA note-taking app with a rich Markdown editor powered by Tiptap. Features syntax highlighting via Shiki, Mermaid and Graphviz diagrams, Excalidraw drawing, math rendering with KaTeX and mathjs, AI chat integration, SQLite and IndexedDB dual storage, and full keyboard-driven navigation.",
     "keywords": [
