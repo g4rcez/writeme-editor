@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BUMP_TYPE="${1:-}"
-VALID="major|minor|patch|premajor|preminor|prepatch|prerelease"
-
-if [[ -z "$BUMP_TYPE" ]]; then
-  echo "Usage: $0 <${VALID}>"
+if [[ "$#" -ne 1 ]]; then
+  echo "Usage: npm run bump <patch|minor|major>"
   exit 1
 fi
 
+BUMP_TYPE="$1"
+
 case "$BUMP_TYPE" in
-  major|minor|patch|premajor|preminor|prepatch|prerelease) ;;
+  patch|minor|major) ;;
   *)
     echo "error: invalid bump type '${BUMP_TYPE}'"
-    echo "Usage: $0 <${VALID}>"
+    echo "Usage: npm run bump <patch|minor|major>"
     exit 1
     ;;
 esac
@@ -50,6 +49,6 @@ git push origin HEAD
 git push origin "$TAG"
 
 echo ""
-echo "Released ${TAG}"
+echo "Published tag ${TAG}; GitHub Actions will build artifacts and create the release."
 echo "CI: https://github.com/g4rcez/writeme-editor/actions"
 echo "Release: https://github.com/g4rcez/writeme-editor/releases/tag/${TAG}"

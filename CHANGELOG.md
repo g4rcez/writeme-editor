@@ -63,6 +63,7 @@
 - Pin Windows builds to `windows-2022` for node-gyp Visual Studio compatibility.
 - Remove ARM64 SQLite prebuilds from Linux x64 packages so RPM creation succeeds.
 - Move application source into `packages/editor` and update app tooling to build from the package.
+- Automate patch, minor, and major releases with `npm run bump <patch|minor|major>`.
 
 ### Bug Fixes
 
