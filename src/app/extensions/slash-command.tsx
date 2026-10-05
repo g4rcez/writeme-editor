@@ -12,6 +12,7 @@ import {
     PencilLineIcon,
     QuotesIcon,
     ScribbleLoopIcon,
+    SparkleIcon,
     TableIcon,
     TextHOneIcon,
     TextHThreeIcon,
@@ -24,6 +25,15 @@ import Suggestion from "@tiptap/suggestion";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { updatePosition } from "@/app/extensions/update-position";
+import type { WritingScope } from "../writing-assistant/types";
+import { hasWritingReviewHandler, requestWritingReview } from "../writing-assistant/review-requests";
+
+type SlashCommandRange = { from: number; to: number };
+
+function requestWritingReviewAtSlash(editor: Editor, range: SlashCommandRange, scope: WritingScope): void {
+    editor.chain().focus().deleteRange(range).run();
+    requestWritingReview(editor, { scope });
+}
 
 type SlashCommandItem = {
     label: string;
@@ -31,7 +41,7 @@ type SlashCommandItem = {
     icon: React.ElementType;
     group: string;
     needsModal?: "table" | "math" | "block-math";
-    command: (editor: any, range: any) => void;
+    command: (editor: Editor, range: SlashCommandRange) => void;
 };
 
 const SLASH_COMMANDS: SlashCommandItem[] = [
@@ -182,6 +192,27 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         group: "CodeBlock",
         command: (editor, range) =>
             editor.chain().focus().deleteRange(range).setCodeBlock({ language: "mermaid" }).run(),
+    },
+    {
+        label: "Improve paragraph",
+        description: "Suggest edits for the paragraph at the cursor",
+        icon: SparkleIcon,
+        group: "Improve with AI",
+        command: (editor, range) => requestWritingReviewAtSlash(editor, range, "paragraph"),
+    },
+    {
+        label: "Improve line",
+        description: "Suggest edits for the manual line at the cursor",
+        icon: SparkleIcon,
+        group: "Improve with AI",
+        command: (editor, range) => requestWritingReviewAtSlash(editor, range, "line"),
+    },
+    {
+        label: "Improve entire text",
+        description: "Suggest edits for all prose in this note",
+        icon: SparkleIcon,
+        group: "Improve with AI",
+        command: (editor, range) => requestWritingReviewAtSlash(editor, range, "note"),
     },
 ];
 
@@ -386,10 +417,8 @@ const SlashList = (props: any) => {
                                     id={`slash-command-${index}`}
                                     role="option"
                                     aria-selected={isSelected}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        selectItem(index);
-                                    }}
+                                    onMouseDown={(event) => event.preventDefault()}
+                                    onClick={() => selectItem(index)}
                                     onMouseEnter={() => setSelectedIndex(index)}
                                     className={`flex text-left w-full items-center gap-3 px-3 py-2 rounded-md transition-colors ${isSelected ? "bg-primary/10 text-foreground" : "hover:bg-muted/50 text-foreground"}`}
                                 >
@@ -415,12 +444,16 @@ const SlashList = (props: any) => {
 const slashSuggestion = {
     char: "/",
     startOfLine: false,
-    items: ({ query }: { query: string }) => {
+    allowSpaces: true,
+    allowedPrefixes: [" ", ".", "!", "?", ":", ";"],
+    items: ({ query, editor }: { query: string; editor: Editor }) => {
         try {
-            if (!query) return SLASH_COMMANDS;
             const q = query.toLowerCase();
+            const canImproveText = hasWritingReviewHandler(editor);
             return SLASH_COMMANDS.filter(
-                (item) => item.label?.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q),
+                (item) =>
+                    (canImproveText || item.group !== "Improve with AI") &&
+                    (!query || item.label.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)),
             );
         } catch {
             return [];
@@ -446,7 +479,7 @@ const slashSuggestion = {
                     editor: props.editor,
                 });
                 reactRenderer.element.style.position = "absolute";
-                reactRenderer.element.style.zIndex = "50";
+                reactRenderer.element.style.zIndex = "110";
                 document.body.appendChild(reactRenderer.element);
                 updatePosition(props.editor, reactRenderer.element);
             },

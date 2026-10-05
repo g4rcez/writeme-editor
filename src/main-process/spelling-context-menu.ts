@@ -30,6 +30,19 @@ export function registerSpellingContextMenus(): void {
                 });
             }
 
+            const selectionText = params.selectionText;
+            if (selectionText?.trim()) {
+                if (template.length > 0) template.push({ type: "separator" });
+                template.push({
+                    label: "Improve selected text",
+                    click: () => {
+                        if (!contents.isDestroyed() && !owner.isDestroyed()) {
+                            contents.send("writing-assistant:improve-selection");
+                        }
+                    },
+                });
+            }
+
             if (template.length > 0) template.push({ type: "separator" });
             template.push(
                 { role: "undo" },

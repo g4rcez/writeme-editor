@@ -1,5 +1,5 @@
 import { css } from "@g4rcez/components";
-import { Fragment, useCallback, useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
@@ -9,22 +9,30 @@ const SIDEBAR_MIN_WIDTH = 280;
 
 const SIDEBAR_MAX_WIDTH = 520;
 
+const SIDEBAR_MAX_VIEWPORT_RATIO = 0.4;
+
 export const Sidebar = () => {
     const [state, dispatch] = useGlobalStore();
     const [uiState, uiDispatch] = useUIStore();
+    const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+    const resizeOffset = useRef(0);
     const collapsed = !uiState.sidebarOpen;
-    const sidebarWidth = Math.min(Math.max(state.sidebarWidth, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH);
+    const sidebarMaxWidth = Math.max(
+        SIDEBAR_MIN_WIDTH,
+        Math.min(SIDEBAR_MAX_WIDTH, Math.round(viewportWidth * SIDEBAR_MAX_VIEWPORT_RATIO)),
+    );
+    const sidebarWidth = Math.min(Math.max(state.sidebarWidth, SIDEBAR_MIN_WIDTH), sidebarMaxWidth);
     const [isResizing, setIsResizing] = useState(false);
     const resize = useCallback(
         (e: MouseEvent) => {
             if (isResizing) {
-                const newWidth = e.clientX;
-                if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= SIDEBAR_MAX_WIDTH) {
+                const newWidth = e.clientX - resizeOffset.current;
+                if (newWidth >= SIDEBAR_MIN_WIDTH && newWidth <= sidebarMaxWidth) {
                     dispatch.setSidebarWidth(newWidth);
                 }
             }
         },
-        [dispatch, isResizing],
+        [dispatch, isResizing, sidebarMaxWidth],
     );
 
     useEffect(() => {
@@ -35,6 +43,12 @@ export const Sidebar = () => {
         window.addEventListener("mouseup", stopResizing, opts);
         return () => void controller.abort();
     }, [resize]);
+
+    useEffect(() => {
+        const updateViewportWidth = () => setViewportWidth(window.innerWidth);
+        window.addEventListener("resize", updateViewportWidth);
+        return () => window.removeEventListener("resize", updateViewportWidth);
+    }, []);
 
     useEffect(() => {
         const mql = window.matchMedia("(max-width: 767px)");
@@ -90,14 +104,17 @@ export const Sidebar = () => {
                     aria-orientation="vertical"
                     aria-valuenow={sidebarWidth}
                     className="writeme-aside-resize"
-                    aria-valuemax={SIDEBAR_MAX_WIDTH}
+                    aria-valuemax={sidebarMaxWidth}
                     aria-valuemin={SIDEBAR_MIN_WIDTH}
-                    onMouseDown={() => setIsResizing(true)}
+                    onMouseDown={(event) => {
+                        resizeOffset.current = event.clientX - sidebarWidth;
+                        setIsResizing(true);
+                    }}
                     onKeyDown={(e) => {
                         const step = e.shiftKey ? 32 : 16;
                         if (e.key === "ArrowRight") {
                             e.preventDefault();
-                            dispatch.setSidebarWidth(Math.min(sidebarWidth + step, SIDEBAR_MAX_WIDTH));
+                            dispatch.setSidebarWidth(Math.min(sidebarWidth + step, sidebarMaxWidth));
                         }
                         if (e.key === "ArrowLeft") {
                             e.preventDefault();

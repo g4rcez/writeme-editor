@@ -1,13 +1,13 @@
+import type { Root } from "mdast";
 import { history, undo } from "@codemirror/commands";
-import { EditorState } from "@codemirror/state";
+import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { fireEvent } from "@testing-library/dom";
-import { afterEach, describe, expect, it } from "vitest";
-import { unified } from "unified";
 import remarkParse from "remark-parse";
-import type { Root } from "mdast";
-import { createMarkdownWritingAssistant, extractMarkdownWritingSegments } from "./markdown-adapter";
+import { unified } from "unified";
+import { afterEach, describe, expect, it } from "vitest";
 import type { WritingEditorAdapter, WritingSnapshot, WritingSuggestion } from "./types";
+import { createMarkdownWritingAssistant, extractMarkdownWritingSegments } from "./markdown-adapter";
 
 const views: EditorView[] = [];
 const adapters: WritingEditorAdapter[] = [];
@@ -110,13 +110,25 @@ describe("raw Markdown writing review extraction", () => {
         const from = source.indexOf("Quoted") + 2;
         const to = source.indexOf("Quoted") + 7;
 
-        expect(extractMarkdownWritingSegments(source, { from, to }).map((segment) => segment.text)).toEqual([
-            "oted ",
-        ]);
+        expect(extractMarkdownWritingSegments(source, { from, to }).map((segment) => segment.text)).toEqual(["oted "]);
         expect(extractMarkdownWritingSegments(source, { from, to: from })).toEqual([]);
         expect(extractMarkdownWritingSegments(source, { from: -1, to })).toEqual([]);
     });
 
+    it("scopes paragraph and source-line reviews to the cursor's Markdown block", () => {
+        const source = "First line\nsecond line\n\nOther paragraph";
+        const { view, adapter } = createMarkdownEditor(source);
+        view.dispatch({ selection: EditorSelection.cursor(source.indexOf("second line") + 3) });
+
+        expect(adapter.snapshot("line").segments.map((segment) => segment.text)).toEqual(["second line"]);
+        const paragraphText = adapter
+            .snapshot("paragraph")
+            .segments.map((segment) => segment.text)
+            .join("");
+        expect(paragraphText).toContain("First line");
+        expect(paragraphText).toContain("second line");
+        expect(paragraphText).not.toContain("Other paragraph");
+    });
     it("skips parsed text whose Markdown escapes prevent exact source mapping", () => {
         const source = "\\*escaped emphasis*\n\nNormal prose.";
 

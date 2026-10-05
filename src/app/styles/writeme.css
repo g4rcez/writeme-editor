@@ -45,6 +45,13 @@
     transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .writeme-aside-panel,
+    .writeme-aside-panel-inner {
+        transition: none;
+    }
+}
+
 .writeme-aside-panel[data-resizing] .writeme-aside-panel-inner {
     transition: none;
 }
@@ -162,12 +169,49 @@
     @apply border-t p-2;
     border-color: hsla(var(--border), 0.4);
 }
+
+.writeme-sidebar-shell button {
+    @apply min-h-9;
+}
+
+.writeme-sidebar-shell header > button,
+.writeme-sidebar-shell button[aria-label="Find anything"] {
+    @apply min-w-9;
+}
+
+.writeme-sidebar-create-action {
+    @apply size-9;
+}
+
+.writeme-sidebar-v2-tree [role="treeitem"][aria-selected="true"] {
+    background-color: hsla(var(--primary-DEFAULT), 0.1);
+    box-shadow: inset 2px 0 0 hsla(var(--primary-DEFAULT), 0.75);
+}
 .writeme-sidebar-v2-tree [role="tree"] {
     @apply px-2 py-2;
 }
 
 .writeme-sidebar-v2-tree [role="treeitem"] {
     @apply min-w-0 text-muted-foreground hover:text-foreground;
+}
+
+@media (pointer: coarse) {
+    .writeme-sidebar-shell button {
+        @apply min-h-11;
+    }
+
+    .writeme-sidebar-shell header > button,
+    .writeme-sidebar-shell button[aria-label="Find anything"] {
+        @apply min-w-11;
+    }
+
+    .writeme-sidebar-create-action {
+        @apply size-11;
+    }
+
+    .writeme-sidebar-v2-tree [role="treeitem"] {
+        @apply min-h-11;
+    }
 }
 
 .writeme-sidebar-v2-group-list {
@@ -205,7 +249,7 @@
 .writeme-editor-page {
     @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
     gap: 0;
-    padding: 2rem clamp(1rem, 5vw, 2.5rem) 0;
+    padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 5vw, 2.5rem) 0;
 }
 
 .writeme-editor-column,
@@ -219,24 +263,25 @@
 }
 
 .writeme-note-header-top {
-    @apply flex min-h-8 items-center justify-between gap-3;
+    @apply flex min-h-9 items-center justify-between gap-3;
 }
 
 .writeme-note-title-editor {
     font-size: 1.75rem;
     line-height: 1.2;
+    letter-spacing: 0.05ch;
 }
 
 .writeme-note-header-actions {
-    @apply flex max-w-full shrink-0 flex-wrap items-center justify-center gap-0.5;
+    @apply flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1;
 }
 
 .writeme-note-tool-button {
-    @apply flex size-8 items-center justify-center rounded-none border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex size-9 shrink-0 items-center justify-center rounded-none border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] duration-150 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
 }
 
 .writeme-note-header-actions .writeme-table-of-contents-button {
-    @apply size-8 rounded-none shadow-none;
+    @apply size-9 rounded-none shadow-none;
     transform: none;
 }
 
@@ -245,14 +290,15 @@
 }
 
 .writeme-note-header-actions .writeme-editor-mode-toggle {
-    @apply h-8 items-center justify-center shadow-none;
+    @apply h-9 items-center justify-center gap-0.5 border border-border/60 bg-card-background/70 p-0.5 shadow-none;
 }
 
 .writeme-note-header-actions .writeme-editor-mode-toggle button {
-    @apply justify-center text-center;
+    @apply min-h-8 min-w-16 justify-center rounded-none text-center;
 }
 
 .writeme-markdown-vim-mode-toggle {
+    @apply min-h-9;
     min-width: 5.5rem;
 }
 
@@ -262,7 +308,7 @@
 
 .writeme-editor {
     @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
-    padding-top: 1rem;
+    padding-top: 1.25rem;
     padding-bottom: 3rem;
 }
 
@@ -274,6 +320,40 @@
 
 .writeme-formatting-toolbar[data-positioned="false"] {
     visibility: hidden;
+}
+
+@media (max-width: 40rem) {
+    .writeme-formatting-toolbar {
+        width: max-content;
+        max-width: calc(100vw - 2rem);
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .writeme-formatting-toolbar button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}
+
+@media (pointer: coarse) {
+    .writeme-note-tool-button,
+    .writeme-note-header-actions .writeme-table-of-contents-button {
+        @apply size-11;
+    }
+
+    .writeme-note-header-actions .writeme-editor-mode-toggle {
+        @apply h-11;
+    }
+
+    .writeme-note-header-actions .writeme-editor-mode-toggle button,
+    .writeme-markdown-vim-mode-toggle {
+        @apply min-h-11;
+    }
+
+    .writeme-formatting-toolbar button {
+        @apply min-h-11 min-w-11;
+    }
 }
 
 .writeme-editor-content {
@@ -469,10 +549,6 @@
     min-height: 100%;
 }
 
-.writeme-home-welcome {
-    max-width: 76rem;
-}
-
 .writeme-settings-card {
     @apply overflow-hidden rounded-none border border-border/45 bg-card-background shadow-none;
 }
@@ -585,6 +661,8 @@
     .writeme-note-header-actions {
         width: 100%;
         margin-inline: auto;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
     .writeme-note-title-editor {

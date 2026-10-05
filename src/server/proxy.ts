@@ -130,23 +130,18 @@ export function startProxyServer(port = 4079) {
             if (!targetUrl) {
                 return new Response("Missing X-Target-URL header", { status: 400 });
             }
-
             const forwardHeaders = createForwardHeaders(request.headers);
-
             let upstreamUrl: URL;
             try {
                 upstreamUrl = new URL(targetUrl);
             } catch {
                 return new Response("Invalid target URL", { status: 400 });
             }
-
             if (isPrivateOrBlockedHost(upstreamUrl)) {
                 return new Response("Target host blocked", { status: 403 });
             }
-
             const hasBody = request.method !== "GET" && request.method !== "HEAD";
             const body = hasBody ? await request.arrayBuffer() : undefined;
-
             try {
                 const upstream = await fetch(upstreamUrl, {
                     method: request.method,
@@ -165,7 +160,6 @@ export function startProxyServer(port = 4079) {
             }
         })
         .listen(port);
-
     console.log(`[proxy] running on http://localhost:${port}`);
     return app;
 }

@@ -13,7 +13,8 @@ import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 import { vim } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { WritingEditorAdapter } from "../writing-assistant/types";
 import {
     editorActionsGlobalRef,
     editorGlobalRef,
@@ -24,16 +25,18 @@ import {
     setEditorSearchGlobalRef,
 } from "../editor-global-ref";
 import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
-import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 import { createMarkdownWritingAssistant } from "../writing-assistant/markdown-adapter";
-import type { WritingEditorAdapter } from "../writing-assistant/types";
 import { WritingAssistant } from "../writing-assistant/writing-assistant";
+import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 
 const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
 const CURSOR_SCROLL_MARGIN_PX = 96;
 const setMarkdownSearchDecorations = StateEffect.define<DecorationSet>();
 
-function createMarkdownEditorContentAttributes(readonly: boolean, writingAssistantEnabled: boolean): Record<string, string> {
+function createMarkdownEditorContentAttributes(
+    readonly: boolean,
+    writingAssistantEnabled: boolean,
+): Record<string, string> {
     return {
         role: "textbox",
         "aria-label": "Markdown note editor",
@@ -330,9 +333,53 @@ export function RawMarkdownEditor({
     const editableCompartmentRef = useRef(new Compartment());
     const readOnlyCompartmentRef = useRef(new Compartment());
     const contentAttributesCompartmentRef = useRef(new Compartment());
-    const activateRef = useRef<() => void>(() => { });
+    const activateRef = useRef<() => void>(() => {});
     const [writingAssistantIntegration] = useState(() => createMarkdownWritingAssistant());
     const [writingAssistantAdapter, setWritingAssistantAdapter] = useState<WritingEditorAdapter | null>(null);
+    const writingAssistantSelectionContext = useMemo(() => {
+        const view = writingAssistantAdapter ? viewRef.current : null;
+        if (!view) return null;
+        return {
+            target: view.dom,
+            readSelection: () => {
+                const { from, to } = view.state.selection.main;
+                if (from < to) return { from, to };
+
+                const selection = view.dom.ownerDocument.getSelection();
+                if (
+                    selection &&
+                    !selection.isCollapsed &&
+                    selection.anchorNode &&
+                    selection.focusNode &&
+                    view.dom.contains(selection.anchorNode) &&
+                    view.dom.contains(selection.focusNode)
+                ) {
+                    try {
+                        const anchor = view.posAtDOM(selection.anchorNode, selection.anchorOffset);
+                        const head = view.posAtDOM(selection.focusNode, selection.focusOffset);
+                        const from = Math.min(anchor, head);
+                        const to = Math.max(anchor, head);
+                        if (from < to) return { from, to };
+                    } catch {
+                        return null;
+                    }
+                }
+                return null;
+            },
+            readAnchor: (selection?: { from: number; to: number }) => {
+                const currentSelection = selection ?? view.state.selection.main;
+                try {
+                    const lineStart = view.state.doc.lineAt(currentSelection.from).from;
+                    const start = view.coordsAtPos(lineStart);
+                    if (!start) return null;
+                    const end = view.coordsAtPos(currentSelection.to) ?? start;
+                    return { left: start.left, top: start.top, bottom: end.bottom };
+                } catch {
+                    return null;
+                }
+            },
+        };
+    }, [writingAssistantAdapter]);
     const writingAssistantAdapterRef = useRef<WritingEditorAdapter | null>(null);
     const initialWritingAssistantEnabledRef = useRef(writingAssistantEnabled);
     const writingAssistantEnabledRef = useRef(writingAssistantEnabled);
@@ -473,7 +520,7 @@ export function RawMarkdownEditor({
                 setEditorSearchGlobalRef(null);
             }
             if (activateRef.current === activation.activate) {
-                activateRef.current = () => { };
+                activateRef.current = () => {};
             }
             writingAssistantAdapterRef.current?.dispose();
             writingAssistantAdapterRef.current = null;
@@ -552,13 +599,13 @@ export function RawMarkdownEditor({
     return (
         <div className="w-full">
             {writingAssistantEnabled && writingAssistantAdapter && (
-                <WritingAssistant adapter={writingAssistantAdapter} disabled={readonly} />
+                <WritingAssistant
+                    adapter={writingAssistantAdapter}
+                    selectionContext={writingAssistantSelectionContext}
+                    disabled={readonly}
+                />
             )}
-            <div
-                ref={containerRef}
-                className="w-full print:block"
-                data-raw-markdown-editor="true"
-            />
+            <div ref={containerRef} className="w-full print:block" data-raw-markdown-editor="true" />
         </div>
     );
 }

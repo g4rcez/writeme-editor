@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/core";
-import { Fragment, type Mark as ProseMirrorMark } from "@tiptap/pm/model";
-import { closeHistory } from "@tiptap/pm/history";
 import type { Transaction } from "@tiptap/pm/state";
+import { closeHistory } from "@tiptap/pm/history";
+import { Fragment, type Mark as ProseMirrorMark } from "@tiptap/pm/model";
 import {
     activateTiptapWritingIssue,
     clearTiptapWritingIssues,
@@ -12,13 +12,9 @@ import {
     showTiptapWritingIssues,
     type TiptapWritingIssue,
 } from "@/app/extensions/writing-assistant";
-import { createWritingSegments } from "./segments";
-import {
-    getTiptapWritingTextRanges,
-    sameTiptapMarks,
-    type TiptapWritingSelection,
-} from "./tiptap-prose";
 import type { WritingEditorAdapter, WritingScope, WritingSegment, WritingSnapshot, WritingSuggestion } from "./types";
+import { createWritingSegments } from "./segments";
+import { getTiptapWritingTextRanges, sameTiptapMarks, type TiptapWritingSelection } from "./tiptap-prose";
 
 type EditorRange = TiptapWritingSelection;
 
@@ -42,6 +38,23 @@ function sameSuggestionIssues(
 
 export function extractTiptapWritingSegments(editor: Editor, selection?: EditorRange): WritingSegment[] {
     return createWritingSegments(getTiptapWritingTextRanges(editor.state.doc, selection));
+}
+function getTiptapWritingScopeRange(editor: Editor, scope: "paragraph" | "line"): EditorRange | null {
+    const { $head } = editor.state.selection;
+    const parent = $head.parent;
+    if (!["paragraph", "heading"].includes(parent.type.name)) return null;
+
+    const blockFrom = $head.start();
+    if (scope === "paragraph") return { from: blockFrom, to: $head.end() };
+
+    let lineFrom = 0;
+    let lineTo = parent.content.size;
+    parent.forEach((node, offset) => {
+        if (node.type.name !== "hardBreak") return;
+        if (offset < $head.parentOffset) lineFrom = offset + node.nodeSize;
+        else lineTo = Math.min(lineTo, offset);
+    });
+    return { from: blockFrom + lineFrom, to: blockFrom + lineTo };
 }
 
 export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorAdapter {
@@ -98,15 +111,21 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
         !disposed && !editor.isDestroyed && !editor.view.isDestroyed && editor.isEditable && editor.view.editable;
 
     return {
-        snapshot(scope: WritingScope): WritingSnapshot {
+        snapshot(scope: WritingScope, selectedRange?: EditorRange): WritingSnapshot {
             if (disposed || editor.isDestroyed) return { revision: lastPluginState?.revision ?? 0, segments: [] };
             const selection = editor.state.selection;
-            const segments =
+            const range =
                 scope === "selection"
-                    ? selection.empty
-                        ? []
-                        : extractTiptapWritingSegments(editor, { from: selection.from, to: selection.to })
-                    : extractTiptapWritingSegments(editor);
+                    ? (selectedRange ?? (selection.empty ? undefined : { from: selection.from, to: selection.to }))
+                    : scope === "paragraph" || scope === "line"
+                      ? getTiptapWritingScopeRange(editor, scope)
+                      : undefined;
+            const segments =
+                scope === "note"
+                    ? extractTiptapWritingSegments(editor)
+                    : range
+                      ? extractTiptapWritingSegments(editor, range)
+                      : [];
             return {
                 revision: getTiptapWritingAssistantState(editor.state)?.revision ?? 0,
                 segments,
@@ -174,7 +193,8 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
                 (segment) =>
                     segment.from <= issue.from &&
                     segment.to >= issue.to &&
-                    segment.text.slice(issue.from - segment.from, issue.to - segment.from) === issue.suggestion.original,
+                    segment.text.slice(issue.from - segment.from, issue.to - segment.from) ===
+                        issue.suggestion.original,
             );
             let marks: readonly ProseMirrorMark[] | null = null;
             let safeText = "";
@@ -247,4 +267,3 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
         },
     };
 }
-

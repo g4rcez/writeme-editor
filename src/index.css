@@ -86,6 +86,7 @@ h5,
 h6 {
     font-family: "IBM Plex Sans", sans-serif;
     font-weight: 700;
+    letter-spacing: 0.05ch;
 }
 
 pre,
@@ -298,72 +299,73 @@ code {
     @apply min-h-10 text-sm leading-6 text-typography-paragraph outline-none;
 }
 
-.writeme-chat-composer-content .ProseMirror {
-    @apply min-h-10 outline-none;
+.writeme-chat-composer-content:focus,
+.writeme-chat-composer-content:focus-visible {
+    outline: none;
 }
 
-.writeme-chat-composer-content .ProseMirror > :first-child {
+.writeme-chat-composer-content > :first-child {
     @apply mt-0;
 }
 
-.writeme-chat-composer-content .ProseMirror > :last-child {
+.writeme-chat-composer-content > :last-child {
     @apply mb-0;
 }
 
-.writeme-chat-composer-content .ProseMirror p {
+.writeme-chat-composer-content p {
     @apply my-1;
 }
 
-.writeme-chat-composer-content .ProseMirror h1,
-.writeme-chat-composer-content .ProseMirror h2,
-.writeme-chat-composer-content .ProseMirror h3 {
+.writeme-chat-composer-content h1,
+.writeme-chat-composer-content h2,
+.writeme-chat-composer-content h3 {
     @apply my-1 leading-snug font-semibold text-typography-title;
 }
 
-.writeme-chat-composer-content .ProseMirror ul,
-.writeme-chat-composer-content .ProseMirror ol {
+.writeme-chat-composer-content ul,
+.writeme-chat-composer-content ol {
     @apply my-1 pl-5;
 }
 
-.writeme-chat-composer-content .ProseMirror ul {
+.writeme-chat-composer-content ul {
     @apply list-disc;
 }
 
-.writeme-chat-composer-content .ProseMirror ol {
+.writeme-chat-composer-content ol {
     @apply list-decimal;
 }
 
-.writeme-chat-composer-content .ProseMirror a,
-.writeme-chat-composer-content .ProseMirror .mention {
+.writeme-chat-composer-content a,
+.writeme-chat-composer-content .mention {
     @apply text-typography-link underline decoration-typography-link underline-offset-2;
 }
 
-.writeme-chat-composer-content .ProseMirror code {
+.writeme-chat-composer-content code {
     @apply rounded bg-muted px-1 py-0.5 text-[0.85em] text-typography-paragraph;
 }
 
-.writeme-chat-composer-content .ProseMirror pre {
+.writeme-chat-composer-content pre {
     @apply my-2 overflow-x-auto rounded-lg border border-card-border bg-muted p-3;
 }
 
-.writeme-chat-composer-content .ProseMirror pre code {
+.writeme-chat-composer-content pre code {
     @apply bg-transparent p-0 text-xs leading-relaxed;
 }
 
-.writeme-chat-composer-content .ProseMirror table {
+.writeme-chat-composer-content table {
     @apply my-2 w-full border-collapse text-xs;
 }
 
-.writeme-chat-composer-content .ProseMirror th,
-.writeme-chat-composer-content .ProseMirror td {
+.writeme-chat-composer-content th,
+.writeme-chat-composer-content td {
     @apply border border-card-border px-2 py-1 align-top;
 }
 
-.writeme-chat-composer-content .ProseMirror blockquote {
+.writeme-chat-composer-content blockquote {
     @apply my-2 rounded-lg border border-card-border px-3 py-2 text-typography-paragraph;
 }
 
-.writeme-chat-composer-content .ProseMirror p.is-editor-empty:first-child::before {
+.writeme-chat-composer-content p.is-editor-empty:first-child::before {
     @apply pointer-events-none float-left h-0 text-muted-foreground;
     content: attr(data-placeholder);
 }

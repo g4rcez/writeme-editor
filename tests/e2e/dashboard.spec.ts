@@ -19,6 +19,19 @@ test.describe("Dashboard", () => {
         await expect(
             page.getByText("Star the notes you return to often and they will stay one gesture away."),
         ).toBeVisible();
+        await expect(page.getByText("No starred notes yet")).toBeVisible();
+        await expect(page.getByRole("link", { name: "Browse notes" })).toBeVisible();
+    });
+
+    test("fits a narrow viewport without horizontal page overflow", async ({ cleanPage: page }) => {
+        await page.setViewportSize({ width: 375, height: 812 });
+
+        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("button", { name: /^New note/ }).last()).toBeVisible();
+        await expect(page.getByRole("button", { name: "Start writing" })).toBeVisible();
+
+        const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(documentWidth).toBeLessThanOrEqual(375);
     });
 
     test("New note quick action opens the create note dialog", async ({ cleanPage: page }) => {
@@ -27,6 +40,11 @@ test.describe("Dashboard", () => {
             .getByRole("button", { name: /^New note/ })
             .first()
             .click();
+        await expect(page.getByRole("dialog", { name: /Create new note/i })).toBeVisible();
+    });
+
+    test("Start writing shortcut opens the create note dialog", async ({ cleanPage: page }) => {
+        await page.getByRole("button", { name: "Start writing" }).click();
         await expect(page.getByRole("dialog", { name: /Create new note/i })).toBeVisible();
     });
 

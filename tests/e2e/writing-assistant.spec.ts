@@ -2,7 +2,13 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
 type EditorMode = "formatted" | "markdown";
-type ReviewResponseMode = "correct-first" | "correct-second" | "empty" | "invalid" | "network-error" | "batch-fails-second";
+type ReviewResponseMode =
+    | "correct-first"
+    | "correct-second"
+    | "empty"
+    | "invalid"
+    | "network-error"
+    | "batch-fails-second";
 type PromptSegment = { id: string; text: string };
 type CompletionRequest = { targetUrl: string; segments: PromptSegment[]; body: unknown };
 type Deferred = { promise: Promise<void>; resolve: () => void };
@@ -170,11 +176,13 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
 
         const mode = state.responseMode;
         if (mode === "network-error" || (mode === "batch-fails-second" && state.completionRequests.length === 2)) {
-            await route.fulfill({
-                status: 503,
-                headers: { ...CORS_HEADERS, "content-type": "application/json" },
-                body: JSON.stringify({ error: "Synthetic provider failure." }),
-            }).catch(() => undefined);
+            await route
+                .fulfill({
+                    status: 400,
+                    headers: { ...CORS_HEADERS, "content-type": "application/json" },
+                    body: JSON.stringify({ error: "Synthetic provider failure." }),
+                })
+                .catch(() => undefined);
             return;
         }
 
@@ -191,11 +199,17 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
             responseText = createSuggestion(completion.segments, "first");
         }
 
-        await route.fulfill({
-            status: 200,
-            headers: { ...CORS_HEADERS, "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache" },
-            body: geminiEventStream(responseText),
-        }).catch(() => undefined);
+        await route
+            .fulfill({
+                status: 200,
+                headers: {
+                    ...CORS_HEADERS,
+                    "content-type": "text/event-stream; charset=utf-8",
+                    "cache-control": "no-cache",
+                },
+                body: geminiEventStream(responseText),
+            })
+            .catch(() => undefined);
     });
 }
 
@@ -218,61 +232,139 @@ function editorSelector(mode: EditorMode): string {
     return mode === "formatted" ? ".ProseMirror" : ".cm-content";
 }
 
-async function createNote(page: Page, title: string, mode: EditorMode, content: string) {
+async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
     await goHome(page);
-    await page.getByRole("main").getByRole("button", { name: /^New note/ }).first().click();
+    if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
+    await page
+        .getByRole("main")
+        .getByRole("button", { name: /^New note/ })
+        .first()
+        .click();
     const dialog = page.getByRole("dialog", { name: /Create new note/i });
-    await dialog.getByTitle("Note title").fill(title);
+    const titleInput = dialog.getByTitle("Note title");
+    await titleInput.fill(title);
+    await expect(titleInput).toHaveValue(title);
     await dialog.getByRole("button", { name: /^Create/ }).click();
+    await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/note\/[^/]+$/);
+    await expect(page.getByRole("textbox", { name: "Note title" })).toHaveValue(title);
 
-    await page.getByRole("toolbar", { name: "Note tools" }).getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true }).click();
+    await page
+        .getByRole("toolbar", { name: "Note tools" })
+        .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true })
+        .click();
     const editor = page.locator(editorSelector(mode)).first();
     await expect(editor).toBeVisible();
     await editor.fill(content);
     await expect(editor).toContainText(content.split("\n")[0] ?? "");
-    await page.waitForTimeout(1200);
+    await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 });
 
     const noteUrl = page.url();
     const noteId = new URL(noteUrl).pathname.split("/").at(-1) ?? "";
     return { editor, noteUrl, noteId };
 }
 
-async function openAssistant(page: Page, paneIndex = 0): Promise<Locator> {
-    await page.getByRole("button", { name: "Writing assistant", exact: true }).nth(paneIndex).click();
-    const panel = page.getByRole("region", { name: "Writing suggestions" }).nth(paneIndex);
+async function runImproveBySlash(
+    page: Page,
+    editor: Locator,
+    scope: "paragraph" | "line" | "entire text" = "entire text",
+): Promise<Locator> {
+    const editorTop = await editor.evaluate((root) => root.getBoundingClientRect().top);
+    await placeCaretAtStart(editor);
+    await editor.pressSequentially(`/improve ${scope}`);
+    const commandLabel = scope === "entire text" ? "Improve entire text" : `Improve ${scope}`;
+    await page.getByRole("option", { name: new RegExp(commandLabel, "i") }).click();
+    const panel = page.getByRole("dialog", { name: "Writing suggestions" }).last();
     await expect(panel).toBeVisible();
+
+    const lineStart = await editor.evaluate((root) => {
+        const text = document.createTreeWalker(root, NodeFilter.SHOW_TEXT).nextNode();
+        if (!text) throw new Error("Expected the editor to contain a line to anchor the review panel.");
+        const range = document.createRange();
+        range.setStart(text, 0);
+        range.collapse(true);
+        return range.getBoundingClientRect().left;
+    });
+    const panelLayout = await panel.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            left: rect.left,
+            width: rect.width,
+            viewportWidth: window.innerWidth,
+            position: window.getComputedStyle(element).position,
+            modal: element.matches(":modal"),
+        };
+    });
+    expect(panelLayout.position).toBe("fixed");
+    expect(panelLayout.width).toBeLessThan(panelLayout.viewportWidth);
+    expect(panelLayout.left).toBeLessThanOrEqual(lineStart + 16);
+    expect(panelLayout.modal).toBe(false);
+    expect(await editor.evaluate((root) => root.getBoundingClientRect().top)).toBe(editorTop);
     return panel;
 }
 
-async function selectRenderedText(editor: Locator, text: string): Promise<void> {
-    await editor.evaluate((root, target) => {
+async function placeCaretAtStart(editor: Locator): Promise<void> {
+    await expect(editor).toContainText(/\S/);
+    await editor.evaluate((root) => {
         root.focus();
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        let current: Node | null = walker.nextNode();
-        while (current) {
-            const value = current.textContent ?? "";
-            const offset = value.indexOf(target);
-            if (offset >= 0) {
-                const range = document.createRange();
-                range.setStart(current, offset);
-                range.setEnd(current, offset + target.length);
-                const selection = window.getSelection();
-                selection?.removeAllRanges();
-                selection?.addRange(range);
-                document.dispatchEvent(new Event("selectionchange"));
-                return;
-            }
-            current = walker.nextNode();
-        }
-        throw new Error(`Could not select visible text: ${target}`);
-    }, text);
+        const firstText = document.createTreeWalker(root, NodeFilter.SHOW_TEXT).nextNode();
+        if (!firstText) throw new Error("Expected the formatted editor to contain text.");
+        const range = document.createRange();
+        range.setStart(firstText, 0);
+        range.collapse(true);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        document.dispatchEvent(new Event("selectionchange"));
+    });
+}
+function exposeNativeWritingReviewBridge(): void {
+    Object.defineProperty(window, "electronAPI", {
+        configurable: true,
+        value: {
+            writingAssistant: {
+                onImproveSelectedText(callback: () => void) {
+                    const handler = (): void => callback();
+                    window.addEventListener("writeme-test-native-review", handler);
+                    return () => window.removeEventListener("writeme-test-native-review", handler);
+                },
+            },
+        },
+    });
+}
+
+async function installNativeWritingReviewBridge(page: Page): Promise<void> {
+    await page.addInitScript(exposeNativeWritingReviewBridge);
+    await page.evaluate(exposeNativeWritingReviewBridge);
+}
+
+async function improveEntireSelection(page: Page, editor: Locator): Promise<Locator> {
+    await editor.focus();
+    await editor.press("ControlOrMeta+a");
+    const hasSelectedSource = await editor.evaluate((root) => {
+        const selection = window.getSelection();
+        return Boolean(
+            selection &&
+            !selection.isCollapsed &&
+            selection.rangeCount > 0 &&
+            root.contains(selection.anchorNode) &&
+            root.contains(selection.focusNode),
+        );
+    });
+    if (!hasSelectedSource) throw new Error("Expected the Markdown editor to select its source.");
+    await editor.evaluate((root) => {
+        root.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+        window.dispatchEvent(new Event("writeme-test-native-review"));
+    });
+    const panel = page.getByRole("dialog", { name: "Writing suggestions" }).last();
+    await expect(panel).toBeVisible();
+    return panel;
 }
 
 async function chooseTheme(page: Page, theme: "light" | "dark"): Promise<void> {
     await page.goto("/settings/appearance");
     await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible();
-    await page.getByRole("combobox").selectOption(theme);
+    await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
     await page.getByRole("button", { name: "Save Appearance" }).click();
 }
 
@@ -281,16 +373,22 @@ for (const mode of ["formatted", "markdown"] as const) {
         const proxy = createProxyState();
         await installProviderProxy(page, proxy);
         await saveGeminiConfiguration(page);
-        const { editor, noteUrl } = await createNote(page, `Writing review ${mode}`, mode, "She go to school.\n\nAnother paragraph.");
+        const { editor, noteUrl } = await createNote(
+            page,
+            `Writing review ${mode}`,
+            mode,
+            "She go to school.\n\nAnother paragraph.",
+            mode === "markdown",
+        );
+        const startReview = (): Promise<Locator> =>
+            mode === "formatted" ? runImproveBySlash(page, editor) : improveEntireSelection(page, editor);
 
-        const panel = await openAssistant(page);
-        expect(proxy.completionRequests).toHaveLength(0);
-        await expect(panel.getByText(/Review sends the selected text or note prose to/)).toBeVisible();
-        await expect(panel.getByText(/Browser enhanced spellcheck may use a cloud service/)).toBeVisible();
+        expect(await page.getByRole("button", { name: "Writing assistant" }).count()).toBe(0);
+        const panel = await startReview();
 
-        await panel.getByRole("button", { name: /^Review note/ }).click();
         const firstSuggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
         await expect(firstSuggestion).toBeVisible();
+        expect(proxy.completionRequests).toHaveLength(1);
         await expect(editor.locator("[data-writing-suggestion-id]")).toContainText("go");
         expect(proxy.completionRequests[0]?.segments.map(({ text }) => text)).toContain("She go to school.");
         expect(proxy.completionRequests[0]?.segments.map(({ text }) => text)).toContain("Another paragraph.");
@@ -301,19 +399,19 @@ for (const mode of ["formatted", "markdown"] as const) {
         await editor.press("ControlOrMeta+z");
         await expect(editor).toContainText("She go to school.");
 
-        await panel.getByRole("button", { name: /^Review note/ }).click();
+        await startReview();
         const dismissedSuggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
         await expect(dismissedSuggestion).toBeVisible();
         await dismissedSuggestion.getByRole("button", { name: "Dismiss grammar suggestion 1 for go" }).click();
         await expect(editor).toContainText("She go to school.");
         await expect(panel.getByRole("article")).toHaveCount(0);
 
-        await panel.getByRole("button", { name: /^Review note/ }).click();
+        await startReview();
         const acceptedSuggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
         await expect(acceptedSuggestion).toBeVisible();
         await acceptedSuggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" }).click();
         await expect(editor).toContainText("She goes to school.");
-        await page.waitForTimeout(1200);
+        await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 });
         await page.reload();
         await expect(page).toHaveURL(noteUrl);
         const reloadedEditor = page.locator(editorSelector(mode)).first();
@@ -321,8 +419,71 @@ for (const mode of ["formatted", "markdown"] as const) {
         await expect(reloadedEditor.locator("[data-writing-suggestion-id]")).toHaveCount(0);
     });
 }
+test("slash commands review the cursor's manual line, paragraph, or entire note scope", async ({ cleanPage: page }) => {
+    const proxy = createProxyState();
+    await installProviderProxy(page, proxy);
+    await saveGeminiConfiguration(page);
+    const { editor } = await createNote(page, "Writing review scopes", "formatted", "");
+    await editor.focus();
+    await editor.pressSequentially("First line go wrong.");
+    await editor.press("Shift+Enter");
+    await editor.pressSequentially("Second line.");
+    await editor.press("Enter");
+    await editor.pressSequentially("Third paragraph.");
+    await placeCaretAtStart(editor);
 
-test("review selection and prose extraction leave Markdown structure and excluded content untouched", async ({ cleanPage: page }) => {
+    const linePanel = await runImproveBySlash(page, editor, "line");
+    await expect(linePanel.getByRole("article", { name: /Grammar suggestion 1 for go/ })).toBeVisible();
+    expect(proxy.completionRequests[0]?.segments.map(({ text }) => text)).toEqual(["First line go wrong."]);
+    await linePanel
+        .getByRole("article", { name: /Grammar suggestion 1 for go/ })
+        .getByRole("button", { name: "Dismiss grammar suggestion 1 for go" })
+        .click();
+
+    await placeCaretAtStart(editor);
+    const paragraphPanel = await runImproveBySlash(page, editor, "paragraph");
+    await expect(paragraphPanel.getByRole("article", { name: /Grammar suggestion 1 for go/ })).toBeVisible();
+    const paragraphSegments = proxy.completionRequests[1]?.segments.map(({ text }) => text).join("");
+    expect(paragraphSegments).toContain("First line go wrong.");
+    expect(paragraphSegments).toContain("Second line.");
+    expect(paragraphSegments).not.toContain("Third paragraph.");
+});
+
+test("slash commands expose a separate whole-note scope", async ({ cleanPage: page }) => {
+    const proxy = createProxyState();
+    await installProviderProxy(page, proxy);
+    await saveGeminiConfiguration(page);
+    const { editor } = await createNote(
+        page,
+        "Writing entire-note command",
+        "formatted",
+        "She go to school.\n\nAnother paragraph.",
+    );
+
+    await runImproveBySlash(page, editor, "entire text");
+    await expect(page.getByRole("article", { name: /Grammar suggestion 1 for go/ })).toBeVisible();
+    const reviewed = proxy.completionRequests[0]?.segments.map(({ text }) => text).join("");
+    expect(reviewed).toContain("She go to school.");
+    expect(reviewed).toContain("Another paragraph.");
+});
+test("writing suggestions float at the start of the reviewed line", async ({ cleanPage: page }) => {
+    const proxy = createProxyState();
+    await installProviderProxy(page, proxy);
+    await saveGeminiConfiguration(page);
+    const { editor } = await createNote(
+        page,
+        "Writing review floating panel",
+        "formatted",
+        "She go to school. Leave this sentence untouched.",
+    );
+
+    const panel = await runImproveBySlash(page, editor, "line");
+    await expect(panel.getByRole("article", { name: /Grammar suggestion 1 for go/ })).toBeVisible();
+});
+
+test("whole-note review and prose extraction leave Markdown structure and excluded content untouched", async ({
+    cleanPage: page,
+}) => {
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
@@ -348,30 +509,27 @@ test("review selection and prose extraction leave Markdown structure and exclude
         "[[wiki note]]",
         "![[embedded note]]",
     ].join("\n");
-    const { editor } = await createNote(page, "Writing review exclusions", "markdown", markdown);
-    const panel = await openAssistant(page);
-
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    const { editor } = await createNote(page, "Writing review exclusions", "markdown", markdown, true);
+    const panel = await improveEntireSelection(page, editor);
     const noteSuggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
     await expect(noteSuggestion).toBeVisible();
     const reviewedSegments = proxy.completionRequests[0]?.segments.map(({ text }) => text) ?? [];
     expect(reviewedSegments).toContain("She go to school.");
     expect(reviewedSegments).toContain("Another paragraph.");
     const reviewedText = reviewedSegments.join("\n");
-    for (const excluded of ["Hidden metadata", "private.test", "inline code", "x^2", "const hidden", "wiki note", "embedded note"]) {
+    for (const excluded of [
+        "Hidden metadata",
+        "private.test",
+        "inline code",
+        "x^2",
+        "const hidden",
+        "wiki note",
+        "embedded note",
+    ]) {
         expect(reviewedText).not.toContain(excluded);
     }
-    await noteSuggestion.getByRole("button", { name: "Dismiss grammar suggestion 1 for go" }).click();
 
-    await selectRenderedText(editor, "She go to school.");
-    const selectionReview = panel.getByRole("button", { name: /^Review selection/ });
-    await expect(selectionReview).toBeEnabled();
-    await selectionReview.click();
-    const selectedSuggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
-    await expect(selectedSuggestion).toBeVisible();
-    expect(proxy.completionRequests[1]?.segments).toEqual([{ id: expect.any(String), text: "She go to school." }]);
-
-    await selectedSuggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" }).click();
+    await noteSuggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" }).click();
     const sourceAfterAccept = (await editor.textContent()) ?? "";
     expect(sourceAfterAccept).toContain("**She goes to school.**");
     expect(sourceAfterAccept).toContain("[linked prose](https://private.test/path)");
@@ -384,19 +542,21 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
     const { editor } = await createNote(page, "Writing review states", "formatted", "She go to school.");
-    const panel = await openAssistant(page);
+    const panel = await runImproveBySlash(page, editor);
 
     proxy.responseMode = "empty";
-    await panel.getByRole("button", { name: /^Review note/ }).click();
-    await expect(panel.getByRole("status").filter({ hasText: "No suggestions found in the reviewed text" })).toBeVisible();
+    await runImproveBySlash(page, editor);
+    await expect(panel.getByRole("heading", { name: "Looks good" })).toBeVisible();
+    await expect(panel.getByRole("status")).toContainText("No meaningful changes suggested.");
+    await expect(panel.getByRole("button", { name: "Review entire note" })).toHaveCount(0);
     await expect(panel.getByRole("article")).toHaveCount(0);
 
     proxy.responseMode = "invalid";
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    await runImproveBySlash(page, editor);
     await expect(panel.getByRole("alert")).toContainText("could not be safely applied");
 
     proxy.responseMode = "network-error";
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    await runImproveBySlash(page, editor);
     await expect(panel.getByRole("alert")).toBeVisible();
     await expect(panel.getByRole("button", { name: "Retry review" })).toBeVisible();
     await expect(editor).toContainText("She go to school.");
@@ -404,7 +564,7 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
     proxy.responseMode = "correct-first";
     const held = { started: deferred(), release: deferred() };
     proxy.holdNextResponse = held;
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    await runImproveBySlash(page, editor);
     await held.started.promise;
     await expect(panel.getByRole("button", { name: "Stop review" })).toBeVisible();
     await panel.getByRole("button", { name: "Stop review" }).click();
@@ -417,38 +577,43 @@ test("a pending response cannot reappear after an editor-mode change", async ({ 
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
-    await createNote(page, "Writing review mode switch", "formatted", "She go to school.");
-    const panel = await openAssistant(page);
+    const { editor } = await createNote(page, "Writing review mode switch", "formatted", "She go to school.");
     const held = { started: deferred(), release: deferred() };
     proxy.holdNextResponse = held;
 
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    await runImproveBySlash(page, editor);
     await held.started.promise;
-    await page.getByRole("toolbar", { name: "Note tools" }).getByRole("button", { name: "Markdown", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 });
+    await page
+        .getByRole("toolbar", { name: "Note tools" })
+        .getByRole("button", { name: "Markdown", exact: true })
+        .click();
     const rawEditor = page.locator(".cm-content").first();
     await expect(rawEditor).toBeVisible();
     held.release.resolve();
     await page.waitForTimeout(100);
 
-    const rawPanel = await openAssistant(page);
-    await expect(rawPanel.getByRole("article")).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Writing suggestions" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Writing assistant" })).toHaveCount(0);
     await expect(rawEditor).toContainText("She go to school.");
 });
 
 test("missing configuration and missing provider credentials stay actionable", async ({ cleanPage: page }) => {
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
-    const { noteUrl } = await createNote(page, "Writing review setup", "formatted", "She go to school.");
-    const noConfigurationPanel = await openAssistant(page);
+    const { editor, noteUrl } = await createNote(page, "Writing review setup", "formatted", "She go to school.");
+    const noConfigurationPanel = await runImproveBySlash(page, editor);
     await expect(noConfigurationPanel).toContainText("No saved AI configuration is available");
     await expect(noConfigurationPanel.getByRole("link", { name: "Configure AI" })).toBeVisible();
     expect(proxy.completionRequests).toHaveLength(0);
 
     await saveGeminiConfiguration(page, false);
     await page.goto(noteUrl);
-    const missingCredentialsPanel = await openAssistant(page);
-    await missingCredentialsPanel.getByRole("button", { name: /^Review note/ }).click();
-    await expect(missingCredentialsPanel.getByRole("alert")).toContainText("Not authenticated");
+    const missingCredentialsEditor = page.locator(".ProseMirror").first();
+    const missingCredentialsPanel = await runImproveBySlash(page, missingCredentialsEditor);
+    await expect(missingCredentialsPanel.getByRole("alert")).toContainText(
+        "Unable to access this provider's credentials",
+    );
     expect(proxy.completionRequests).toHaveLength(0);
 });
 
@@ -456,12 +621,10 @@ test("a second-batch provider failure does not publish first-batch suggestions",
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
-    const longText = "word ".repeat(1_640);
-    await createNote(page, "Writing review batches", "markdown", longText);
-    const panel = await openAssistant(page);
+    const longText = "word ".repeat(1_640).trimEnd();
+    const { editor } = await createNote(page, "Writing review batches", "markdown", longText, true);
     proxy.responseMode = "batch-fails-second";
-
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    const panel = await improveEntireSelection(page, editor);
     await expect(panel.getByRole("alert")).toBeVisible();
     expect(proxy.completionRequests).toHaveLength(2);
     const batchLengths = proxy.completionRequests.map((request) =>
@@ -477,14 +640,15 @@ test("a second-batch provider failure does not publish first-batch suggestions",
 });
 
 for (const theme of ["light", "dark"] as const) {
-    test(`keeps the ${theme} review panel readable at regular and narrow widths`, async ({ cleanPage: page }, testInfo) => {
+    test(`keeps the ${theme} review panel readable at regular and narrow widths`, async ({
+        cleanPage: page,
+    }, testInfo) => {
         const proxy = createProxyState();
         await installProviderProxy(page, proxy);
         await saveGeminiConfiguration(page);
         await chooseTheme(page, theme);
         const { editor } = await createNote(page, `Writing review ${theme} layout`, "formatted", "She go to school.");
-        const panel = await openAssistant(page);
-        await panel.getByRole("button", { name: /^Review note/ }).click();
+        const panel = await runImproveBySlash(page, editor);
         const suggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
         await expect(suggestion).toBeVisible();
         const accept = suggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" });
@@ -502,7 +666,10 @@ for (const theme of ["light", "dark"] as const) {
                 throw new Error("Expected the review panel, editor, and accept control to be visible.");
             }
             expect(acceptBounds.x + acceptBounds.width).toBeLessThanOrEqual(panelBounds.x + panelBounds.width + 1);
-            expect(panelBounds.y + panelBounds.height).toBeLessThanOrEqual(editorBounds.y + 1);
+            expect(panelBounds.x).toBeGreaterThanOrEqual(0);
+            expect(panelBounds.x + panelBounds.width).toBeLessThanOrEqual(width);
+            expect(panelBounds.y).toBeGreaterThanOrEqual(0);
+            expect(panelBounds.y + panelBounds.height).toBeLessThanOrEqual(800);
             await page.screenshot({
                 path: testInfo.outputPath(`writing-assistant-${theme}-${width}.png`),
                 fullPage: true,
@@ -516,20 +683,28 @@ test("split panes keep review suggestions scoped to their own notes", async ({ c
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
     const first = await createNote(page, "Writing pane one", "formatted", "She go to school.");
-    await page.goto("/");
-    const second = await createNote(page, "Writing pane two", "formatted", "He go to school.");
+    const secondNoteId = await page.evaluate(async () => {
+        const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
+        const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
+        const { Note } = await loadModule("/src/store/note.ts");
+        const note = Note.new("Writing pane two", "He go to school.");
+        await db.notes.put(note);
+        return note.id;
+    });
+    await goHome(page);
+    await expect(
+        page.getByRole("list", { name: "Notes" }).getByRole("listitem").filter({ hasText: "Writing pane two" }),
+    ).toBeVisible();
 
     await page.goto(first.noteUrl);
     await page.getByRole("button", { name: "Open pane mode" }).click();
-    await page.getByRole("button", { name: "Add editor pane" }).click();
-    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(second.noteId);
+    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(secondNoteId);
     const editors = page.locator(".ProseMirror");
     await expect(editors).toHaveCount(2);
     await expect(editors.nth(0)).toContainText("She go to school.");
     await expect(editors.nth(1)).toContainText("He go to school.");
 
-    const panel = await openAssistant(page, 1);
-    await panel.getByRole("button", { name: /^Review note/ }).click();
+    const panel = await runImproveBySlash(page, editors.nth(1));
     const suggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
     await expect(suggestion).toBeVisible();
     expect(proxy.completionRequests.at(-1)?.segments.map(({ text }) => text)).toEqual(["He go to school."]);

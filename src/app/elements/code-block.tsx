@@ -52,6 +52,7 @@ export type CodeBlockFrameProps = {
     footer?: ReactNode;
     header?: ReactNode;
     printContent?: string;
+    contentClassName?: string;
     children: ReactNode;
     isBodyVisible?: boolean;
     isTransparent?: boolean;
@@ -64,6 +65,7 @@ export const CodeBlockFrame = ({
     printContent,
     children,
     className,
+    contentClassName,
     isBodyVisible = true,
     isTransparent = false,
 }: CodeBlockFrameProps) => {
@@ -92,7 +94,12 @@ export const CodeBlockFrame = ({
                     isBodyVisible ? "h-auto opacity-100" : "pointer-events-none h-0 overflow-hidden opacity-0",
                 )}
             >
-                <div className="relative w-full overflow-x-auto p-2 font-mono leading-loose whitespace-pre">
+                <div
+                    className={clsx(
+                        "relative w-full overflow-x-auto font-mono leading-loose whitespace-pre",
+                        contentClassName ?? "p-2",
+                    )}
+                >
                     {children}
                 </div>
             </div>

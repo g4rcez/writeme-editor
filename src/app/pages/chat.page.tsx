@@ -406,74 +406,83 @@ export default function ChatPage() {
 
     return (
         <section className="writeme-chat-page flex h-full min-h-0 w-full flex-col bg-background">
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border/45 px-4 py-3 sm:px-6">
-                <div className="min-w-0">
-                    <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">
-                        <SparkleIcon size={13} aria-hidden="true" />
-                        Workspace assistant
-                    </p>
-                    {isEditingTitle ? (
-                        <form className="mt-1 flex items-center gap-2" onSubmit={(event) => void renameConversation(event)}>
-                            <input
-                                aria-label="Conversation title"
-                                autoFocus
-                                value={titleDraft}
-                                onChange={(event) => setTitleDraft(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Escape") {
-                                        setTitleDraft(chat?.title ?? "");
-                                        setIsEditingTitle(false);
-                                    }
-                                }}
-                                className="min-w-0 rounded border border-border bg-card-background px-2 py-1 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!titleDraft.trim()}
-                                className="rounded px-2 py-1 text-xs font-medium text-primary hover:bg-muted disabled:opacity-50"
+            <header className="shrink-0 border-b border-border/45 px-4 py-3 sm:px-6">
+                <div
+                    className={`mx-auto flex w-full items-center justify-between gap-4 ${
+                        isReviewing ? "max-w-5xl" : "max-w-3xl"
+                    }`}
+                >
+                    <div className="min-w-0">
+                        <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">
+                            <SparkleIcon size={13} aria-hidden="true" />
+                            Workspace assistant
+                        </p>
+                        {isEditingTitle ? (
+                            <form
+                                className="mt-1 flex items-center gap-2"
+                                onSubmit={(event) => void renameConversation(event)}
                             >
-                                Save
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTitleDraft(chat?.title ?? "");
-                                    setIsEditingTitle(false);
-                                }}
-                                className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
-                            >
-                                Cancel
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="mt-1 flex items-center gap-2">
-                            <h1 className="truncate text-base font-semibold text-foreground">
-                                {isReviewing ? "Review suggested edits" : chat?.title || "New Chat"}
-                            </h1>
-                            {!isReviewing && chat ? (
+                                <input
+                                    aria-label="Conversation title"
+                                    autoFocus
+                                    value={titleDraft}
+                                    onChange={(event) => setTitleDraft(event.target.value)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Escape") {
+                                            setTitleDraft(chat?.title ?? "");
+                                            setIsEditingTitle(false);
+                                        }
+                                    }}
+                                    className="min-w-0 rounded border border-border bg-card-background px-2 py-1 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!titleDraft.trim()}
+                                    className="rounded px-2 py-1 text-xs font-medium text-primary hover:bg-muted disabled:opacity-50"
+                                >
+                                    Save
+                                </button>
                                 <button
                                     type="button"
-                                    aria-label="Rename conversation"
                                     onClick={() => {
-                                        setTitleDraft(chat.title ?? "");
-                                        setIsEditingTitle(true);
+                                        setTitleDraft(chat?.title ?? "");
+                                        setIsEditingTitle(false);
                                     }}
-                                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
                                 >
-                                    <PencilSimpleIcon size={14} aria-hidden="true" />
+                                    Cancel
                                 </button>
-                            ) : null}
-                        </div>
-                    )}
+                            </form>
+                        ) : (
+                            <div className="mt-1 flex items-center gap-2">
+                                <h1 className="truncate text-base font-semibold text-foreground">
+                                    {isReviewing ? "Review suggested edits" : chat?.title || "New Chat"}
+                                </h1>
+                                {!isReviewing && chat ? (
+                                    <button
+                                        type="button"
+                                        aria-label="Rename conversation"
+                                        onClick={() => {
+                                            setTitleDraft(chat.title ?? "");
+                                            setIsEditingTitle(true);
+                                        }}
+                                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <PencilSimpleIcon size={14} aria-hidden="true" />
+                                    </button>
+                                ) : null}
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => navigate("/settings/ai")}
+                        className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <GearIcon size={15} aria-hidden="true" />
+                        AI settings
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => navigate("/settings/ai")}
-                    className="flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    <GearIcon size={15} aria-hidden="true" />
-                    AI settings
-                </button>
             </header>
             <div
                 ref={listRef}

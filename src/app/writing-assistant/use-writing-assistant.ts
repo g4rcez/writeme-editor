@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { repositories } from "@/store/global.store";
 import type { AIConfig } from "@/store/repositories/electron/ai.repository";
+import { repositories } from "@/store/global.store";
+import type {
+    WritingEditorAdapter,
+    WritingScope,
+    WritingSelectionRange,
+    WritingSnapshot,
+    WritingSuggestion,
+} from "./types";
 import { reviewWriting } from "./review";
-import type { WritingEditorAdapter, WritingScope, WritingSnapshot, WritingSuggestion } from "./types";
 
 type ReviewState = {
-    phase: "idle" | "reviewing" | "complete" | "stopped";
+    phase: "idle" | "reviewing" | "complete" | "empty" | "stopped";
     statusMessage: string | null;
     errorMessage: string | null;
     batchProgress: { current: number; total: number } | null;
@@ -17,9 +23,10 @@ type AdapterState = {
     statusMessage: string | null;
 };
 
-type ScopeCounts = {
-    noteCharacters: number;
-    selectionCharacters: number;
+type PendingReviewRequest = {
+    scope: WritingScope;
+    selection?: WritingSelectionRange;
+    snapshot: WritingSnapshot;
 };
 
 type ActiveRequest = {
@@ -43,10 +50,6 @@ function readAdapterState(adapter: WritingEditorAdapter): AdapterState {
     };
 }
 
-function countCharacters(snapshot: WritingSnapshot): number {
-    return snapshot.segments.reduce((total, segment) => total + segment.text.length, 0);
-}
-
 function getErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message.trim()) return error.message;
     return "Writing review failed. Check the selected AI configuration and try again.";
@@ -59,15 +62,14 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
     const [configurationsLoading, setConfigurationsLoading] = useState(false);
     const [configurationsError, setConfigurationsError] = useState<string | null>(null);
     const [reviewState, setReviewState] = useState<ReviewState>(IDLE_REVIEW);
-    const [scopeCounts, setScopeCounts] = useState<ScopeCounts>({ noteCharacters: 0, selectionCharacters: 0 });
     const [adapterState, setAdapterState] = useState(() => readAdapterState(adapter));
 
     const mountedRef = useRef(false);
     const disabledRef = useRef(disabled);
     const adapterRef = useRef(adapter);
-    const selectionSnapshotRef = useRef<WritingSnapshot | null>(null);
     const activeRequestRef = useRef<ActiveRequest | null>(null);
-    const lastReviewScopeRef = useRef<WritingScope | null>(null);
+    const pendingReviewRequestRef = useRef<PendingReviewRequest | null>(null);
+    const lastReviewRequestRef = useRef<Omit<PendingReviewRequest, "snapshot"> | null>(null);
     const requestIdRef = useRef(0);
     const configurationRequestIdRef = useRef(0);
     const configurationsLoadedRef = useRef(false);
@@ -97,29 +99,6 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
             setReviewState({ phase, statusMessage: message, errorMessage: null, batchProgress: null });
         }
     }, []);
-
-    const refreshNoteScope = useCallback((): void => {
-        const characterCount = countCharacters(adapter.snapshot("note"));
-        setScopeCounts((current) => {
-            if (current.noteCharacters === characterCount) return current;
-            return { ...current, noteCharacters: characterCount };
-        });
-    }, [adapter]);
-
-    const refreshSelectionScope = useCallback((): void => {
-        const snapshot = adapter.snapshot("selection");
-        selectionSnapshotRef.current = snapshot;
-        const characterCount = countCharacters(snapshot);
-        setScopeCounts((current) => {
-            if (current.selectionCharacters === characterCount) return current;
-            return { ...current, selectionCharacters: characterCount };
-        });
-    }, [adapter]);
-
-    const refreshScopes = useCallback((): void => {
-        refreshNoteScope();
-        refreshSelectionScope();
-    }, [refreshNoteScope, refreshSelectionScope]);
 
     const loadConfigurations = useCallback(async (): Promise<void> => {
         if (configurationsLoadedRef.current || configurationsLoadingRef.current) return;
@@ -155,13 +134,12 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
     const close = useCallback(
         (returnFocusToEditor = true): void => {
             invalidateReview(null);
+            pendingReviewRequestRef.current = null;
             adapter.clear();
             setReviewState(IDLE_REVIEW);
             isOpenRef.current = false;
             setIsOpen(false);
             if (returnFocusToEditor) adapter.focus();
-            selectionSnapshotRef.current = null;
-            setScopeCounts({ noteCharacters: 0, selectionCharacters: 0 });
         },
         [adapter, invalidateReview],
     );
@@ -169,16 +147,10 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
     const open = useCallback((): void => {
         if (disabledRef.current || !adapter.isEditable()) return;
         isOpenRef.current = true;
-        refreshScopes();
         setReviewState(IDLE_REVIEW);
         setIsOpen(true);
         void loadConfigurations();
-    }, [adapter, loadConfigurations, refreshScopes]);
-
-    const toggle = useCallback((): void => {
-        if (isOpen) close(true);
-        else open();
-    }, [close, isOpen, open]);
+    }, [adapter, loadConfigurations]);
 
     const selectConfiguration = useCallback(
         (configurationId: string): void => {
@@ -199,7 +171,7 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
     );
 
     const review = useCallback(
-        async (scope: WritingScope): Promise<void> => {
+        async (request: PendingReviewRequest): Promise<void> => {
             if (
                 disabledRef.current ||
                 !adapter.isEditable() ||
@@ -210,8 +182,16 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
                 return;
             }
 
-            const snapshot =
-                scope === "note" ? adapter.snapshot("note") : (selectionSnapshotRef.current ?? adapter.snapshot("selection"));
+            const { snapshot } = request;
+            if (adapter.snapshot("note").revision !== snapshot.revision) {
+                setReviewState({
+                    phase: "idle",
+                    statusMessage: "Text changed before the review started. Run the command again.",
+                    errorMessage: null,
+                    batchProgress: null,
+                });
+                return;
+            }
             if (snapshot.segments.length === 0) {
                 setReviewState({
                     phase: "idle",
@@ -221,7 +201,6 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
                 });
                 return;
             }
-            lastReviewScopeRef.current = scope;
 
             adapter.clear();
             const controller = new AbortController();
@@ -274,10 +253,10 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
 
                 adapter.show(suggestions, snapshot);
                 setReviewState({
-                    phase: "complete",
+                    phase: suggestions.length === 0 ? "empty" : "complete",
                     statusMessage:
                         suggestions.length === 0
-                            ? "No suggestions found in the reviewed text."
+                            ? "No meaningful changes suggested."
                             : `${suggestions.length} ${suggestions.length === 1 ? "suggestion" : "suggestions"} found.`,
                     errorMessage: null,
                     batchProgress: null,
@@ -297,13 +276,41 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
         [adapter, reviewState.phase, selectedConfiguration],
     );
 
+    const requestReview = useCallback(
+        (scope: WritingScope, selection?: WritingSelectionRange): void => {
+            if (disabledRef.current || !adapter.isEditable() || activeRequestRef.current) return;
+            const request: PendingReviewRequest = {
+                scope,
+                ...(selection ? { selection } : {}),
+                snapshot: adapter.snapshot(scope, selection),
+            };
+            pendingReviewRequestRef.current = request;
+            lastReviewRequestRef.current = { scope, ...(selection ? { selection } : {}) };
+            open();
+
+            if (selectedConfiguration && !configurationsLoadingRef.current) {
+                pendingReviewRequestRef.current = null;
+                void review(request);
+            }
+        },
+        [adapter, open, review, selectedConfiguration],
+    );
+
+    useEffect(() => {
+        if (!isOpen || configurationsLoading || !selectedConfiguration) return;
+        const pendingRequest = pendingReviewRequestRef.current;
+        if (!pendingRequest) return;
+        pendingReviewRequestRef.current = null;
+        void review(pendingRequest);
+    }, [configurationsLoading, isOpen, review, selectedConfiguration]);
+
     const stop = useCallback((): void => {
         invalidateReview("Review stopped.", "stopped");
     }, [invalidateReview]);
     const retry = useCallback((): void => {
-        const scope = lastReviewScopeRef.current;
-        if (scope) void review(scope);
-    }, [review]);
+        const lastRequest = lastReviewRequestRef.current;
+        if (lastRequest) requestReview(lastRequest.scope, lastRequest.selection);
+    }, [requestReview]);
 
     useLayoutEffect(() => {
         mountedRef.current = true;
@@ -329,18 +336,10 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
 
     useEffect(() => {
         if (!isOpen) return;
-
-        refreshScopes();
-        const unsubscribeDocument = adapter.subscribeDocument(() => {
+        return adapter.subscribeDocument(() => {
             invalidateReview("Text changed while reviewing. Review the updated text again.");
-            refreshScopes();
         });
-        const unsubscribeSelection = adapter.subscribeSelection(refreshSelectionScope);
-        return () => {
-            unsubscribeDocument();
-            unsubscribeSelection();
-        };
-    }, [adapter, invalidateReview, isOpen, refreshScopes, refreshSelectionScope]);
+    }, [adapter, invalidateReview, isOpen]);
 
     useLayoutEffect(() => {
         if (!disabled) return;
@@ -349,7 +348,6 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
 
     return {
         adapterState,
-        captureSelection: refreshSelectionScope,
         close,
         configurations,
         configurationsError,
@@ -357,20 +355,15 @@ export function useWritingAssistant(adapter: WritingEditorAdapter, disabled = fa
         isOpen,
         isReviewing: reviewState.phase === "reviewing",
         loadConfigurations,
-        noteCharacters: scopeCounts.noteCharacters,
-        open,
         phase: reviewState.phase,
-        review,
+        requestReview,
         retry,
         reviewError: reviewState.errorMessage,
         reviewStatus: adapterState.statusMessage ?? reviewState.statusMessage,
-        scopeCounts,
         selectConfiguration,
         selectedConfiguration,
         selectedConfigurationId: selectedConfigId,
-        selectionCharacters: scopeCounts.selectionCharacters,
         batchProgress: reviewState.batchProgress,
         stop,
-        toggle,
     };
 }

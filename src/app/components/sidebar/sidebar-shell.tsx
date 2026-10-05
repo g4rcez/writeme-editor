@@ -36,7 +36,9 @@ function SidebarNavItem({ icon, label, active, onClick }: SidebarNavItemProps): 
             className="w-full justify-start gap-2.5 border border-transparent px-2.5"
             theme={active ? "ghost-primary" : "ghost-muted"}
         >
-            <span className="shrink-0">{icon}</span>
+            <span className="shrink-0" aria-hidden="true">
+                {icon}
+            </span>
             <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         </Button>
     );
@@ -51,7 +53,9 @@ function SidebarFooterTab({ icon, label, active, onClick }: SidebarFooterTabProp
             className="gap-2 px-2"
             theme={active ? "ghost-primary" : "ghost-muted"}
         >
-            <span className="shrink-0 text-xs">{icon}</span>
+            <span className="shrink-0 text-xs" aria-hidden="true">
+                {icon}
+            </span>
             <span>{label}</span>
         </Button>
     );
@@ -79,7 +83,7 @@ export const SidebarShell = () => {
     const openSearch = () => dispatch.commander(true, CommanderType.Notes);
 
     return (
-        <div className="flex h-full min-h-0 flex-col overflow-hidden px-3">
+        <div className="writeme-sidebar-shell flex h-full min-h-0 flex-col overflow-hidden px-3">
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-1 py-3">
                 <button
                     type="button"
@@ -104,36 +108,27 @@ export const SidebarShell = () => {
                     title={uiState.sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                     aria-label={uiState.sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
                 >
-                    <SidebarIcon size={14} />
+                    <SidebarIcon size={14} aria-hidden="true" />
                 </Button>
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="shrink-0 py-3">
                     <div className="mb-2 flex items-center justify-between px-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                            Workspace
-                        </span>
+                        <h2 className="text-xs font-medium text-muted-foreground">Workspace</h2>
                         <span className="font-mono text-[10px] text-muted-foreground/60">{state.notes.length}</span>
                     </div>
                     <div className="grid grid-cols-[1fr_auto] gap-2">
-                        <Button
-                            size="small"
-                            theme="primary"
-                            onClick={createNewNote}
-                            className="justify-center gap-2"
-                            title="New note (⌘N)"
-                        >
+                        <Button size="small" theme="primary" onClick={createNewNote} title="New note (⌘N)">
                             <NotePencilIcon size={15} aria-hidden="true" />
                             <span>New note</span>
                         </Button>
                         <Button
                             size="small"
-                            theme="outlined"
+                            theme="muted"
                             onClick={openSearch}
                             aria-label="Find anything"
                             title="Find anything (⌘K)"
-                            className="px-2.5"
                         >
                             <FileSearchIcon size={16} aria-hidden="true" />
                         </Button>

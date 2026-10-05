@@ -153,11 +153,12 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
     ];
 
     return (
-        <div className="flex items-center">
+        <div className="writeme-editor-mode-toggle flex items-center" role="group" aria-label="Editor mode">
             {modes.map((item) => {
                 const active = item.value === mode;
                 return (
                     <Button
+                        type="button"
                         size="tiny"
                         key={item.value}
                         aria-pressed={active}
@@ -175,9 +176,10 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
 const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => {
     return (
         <Button
+            type="button"
             size="tiny"
             theme="muted"
-            className="h-fit"
+            className="writeme-markdown-vim-mode-toggle min-h-9"
             data-enabled={enabled.toString()}
             onClick={(event) => {
                 const isTrue = event.currentTarget.dataset.enabled === "true";
@@ -227,8 +229,10 @@ function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: (
 function ExportNoteButton({ note }: { note: Note }) {
     return (
         <Button
+            type="button"
             size="tiny"
             theme="ghost-primary"
+            className="writeme-note-tool-button"
             aria-label={`Export ${note.title}`}
             title="Export document (print or save as PDF)"
             onClick={() => printDocument({ title: note.title })}
@@ -396,14 +400,14 @@ export default function NotePage() {
                             </span>
                             {note.url ? <span className="truncate">/ {new URL(note.url).hostname}</span> : null}
                         </div>
-                        <div className="flex items-center" role="toolbar" aria-label="Note tools">
+                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
                             {activeEditorMode === "markdown" ? (
                                 <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                             ) : null}
                             {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
                             {isLatexSource ? null : <AddFrontmatterButton />}
                             <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
-                            <div className="flex flex-col items-center">
+                            <div className="flex items-center gap-1">
                                 <TableOfContents />
                                 <ExportNoteButton note={note} />
                             </div>

@@ -144,7 +144,7 @@ export function FormattingToolbar({ editor }: FormattingToolbarProps) {
         <div
             ref={toolbarRef}
             aria-label="Formatting toolbar"
-            className="writeme-formatting-toolbar absolute z-20 flex flex-wrap items-center gap-0.5 rounded-none border border-card-border bg-background/95 p-1 shadow-soft backdrop-blur print:hidden"
+            className="writeme-formatting-toolbar absolute z-20 flex flex-wrap items-center gap-1 rounded-card-radius border border-floating-border bg-floating-background/95 p-1.5 shadow-medium backdrop-blur print:hidden"
             data-positioned="false"
             role="toolbar"
         >
@@ -159,7 +159,7 @@ export function FormattingToolbar({ editor }: FormattingToolbarProps) {
                         aria-pressed={active}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={action.run}
-                        className={`rounded-none px-1.5 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
+                        className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-button-radius px-2 py-1 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
                             active
                                 ? "bg-primary text-primary-foreground"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"

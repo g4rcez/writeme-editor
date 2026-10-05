@@ -1,11 +1,12 @@
-import { Editor, Node, type JSONContent } from "@tiptap/core";
-import StarterKit from "@tiptap/starter-kit";
 import { fireEvent } from "@testing-library/dom";
+import { Editor, Node, type JSONContent } from "@tiptap/core";
+import { TextSelection } from "@tiptap/pm/state";
+import StarterKit from "@tiptap/starter-kit";
 import { afterEach, describe, expect, it } from "vitest";
-import { createExtensions } from "../extensions";
-import { createTiptapWritingEditorAdapter, extractTiptapWritingSegments } from "./tiptap-adapter";
-import { WritingAssistant } from "../extensions/writing-assistant";
 import type { WritingEditorAdapter, WritingSnapshot, WritingSuggestion } from "./types";
+import { createExtensions } from "../extensions";
+import { WritingAssistant } from "../extensions/writing-assistant";
+import { createTiptapWritingEditorAdapter, extractTiptapWritingSegments } from "./tiptap-adapter";
 
 const editors: Editor[] = [];
 const adapters: WritingEditorAdapter[] = [];
@@ -66,7 +67,11 @@ describe("formatted writing review extraction", () => {
                         { type: "text", text: " regular" },
                         { type: "text", text: "code", marks: [{ type: "code" }] },
                         { type: "text", text: " tail" },
-                        { type: "text", text: "link", marks: [{ type: "link", attrs: { href: "https://example.com" } }] },
+                        {
+                            type: "text",
+                            text: "link",
+                            marks: [{ type: "link", attrs: { href: "https://example.com" } }],
+                        },
                         { type: "text", text: " end" },
                         { type: "inlineMath", attrs: { latex: "x^2" } },
                         { type: "text", text: " after" },
@@ -124,14 +129,22 @@ describe("formatted writing review extraction", () => {
                     inline: true,
                     atom: true,
                     addAttributes: () => ({ latex: { default: "" } }),
-                    renderHTML: ({ node }) => ["span", { "data-math-source": node.attrs.latex }, String(node.attrs.latex)],
+                    renderHTML: ({ node }) => [
+                        "span",
+                        { "data-math-source": node.attrs.latex },
+                        String(node.attrs.latex),
+                    ],
                 }),
                 Node.create({
                     name: "blockMath",
                     group: "block",
                     atom: true,
                     addAttributes: () => ({ latex: { default: "" } }),
-                    renderHTML: ({ node }) => ["div", { "data-math-source": node.attrs.latex }, String(node.attrs.latex)],
+                    renderHTML: ({ node }) => [
+                        "div",
+                        { "data-math-source": node.attrs.latex },
+                        String(node.attrs.latex),
+                    ],
                 }),
                 WritingAssistant,
             ],
@@ -169,6 +182,39 @@ describe("formatted writing review extraction", () => {
             "bol",
         ]);
         expect(extractTiptapWritingSegments(editor, { from: 3, to: 3 })).toEqual([]);
+    });
+    it("scopes paragraph and manual-line reviews to the cursor's prose block", () => {
+        const editor = createEditor({
+            type: "doc",
+            content: [
+                {
+                    type: "paragraph",
+                    content: [
+                        { type: "text", text: "First line" },
+                        { type: "hardBreak" },
+                        { type: "text", text: "Second line" },
+                    ],
+                },
+                { type: "paragraph", content: [{ type: "text", text: "Other paragraph" }] },
+            ],
+        });
+        const adapter = attachAdapter(editor);
+        let secondLinePosition = 0;
+        editor.state.doc.descendants((node, position) => {
+            if (node.isText && node.text === "Second line") secondLinePosition = position + 3;
+        });
+        editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, secondLinePosition)));
+
+        expect(adapter.snapshot("line").segments.map((segment) => segment.text)).toEqual(["Second line"]);
+        expect(adapter.snapshot("paragraph").segments.map((segment) => segment.text)).toEqual([
+            "First line",
+            "Second line",
+        ]);
+        expect(adapter.snapshot("note").segments.map((segment) => segment.text)).toEqual([
+            "First line",
+            "Second line",
+            "Other paragraph",
+        ]);
     });
 });
 

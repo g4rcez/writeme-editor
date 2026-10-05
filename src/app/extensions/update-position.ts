@@ -5,14 +5,17 @@ export const updatePosition = (editor: any, element: HTMLElement) => {
     const virtualElement = {
         getBoundingClientRect: () => posToDOMRect(editor.view, editor.state.selection.from, editor.state.selection.to),
     };
-    computePosition(virtualElement, element, {
-        placement: "bottom-start",
-        strategy: "absolute",
-        middleware: [shift(), flip()],
-    }).then(({ x, y, strategy }) => {
-        element.style.width = "max-content";
-        element.style.position = strategy;
-        element.style.left = `${x}px`;
-        element.style.top = `${y}px`;
+    element.style.width = "max-content";
+    requestAnimationFrame(() => {
+        if (!element.isConnected) return;
+        void computePosition(virtualElement, element, {
+            placement: "bottom-start",
+            strategy: "absolute",
+            middleware: [flip(), shift()],
+        }).then(({ x, y, strategy }) => {
+            element.style.position = strategy;
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+        });
     });
 };

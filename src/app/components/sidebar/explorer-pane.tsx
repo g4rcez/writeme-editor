@@ -242,27 +242,26 @@ export const ExplorerPane = () => {
         <div className="flex h-full min-h-0 flex-col">
             <div className="flex items-center justify-between border-b border-border/40 px-1 py-2">
                 <div className="flex min-w-0 items-center gap-2">
-                    <FolderOpenIcon size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="truncate text-xs font-medium text-foreground">Files</span>
+                    <h2 className="truncate text-xs font-medium text-foreground">Files</h2>
                 </div>
                 <div className="flex items-center gap-0.5">
                     <button
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="writeme-sidebar-create-action flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         title="Create file"
                         aria-label="Create file"
                         onClick={() => requestRootCreate("file")}
                     >
-                        <FilePlusIcon size={15} />
+                        <FilePlusIcon size={15} aria-hidden="true" />
                     </button>
                     <button
                         type="button"
-                        className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="writeme-sidebar-create-action flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         title="Create folder"
                         aria-label="Create folder"
                         onClick={() => requestRootCreate("directory")}
                     >
-                        <FolderPlusIcon size={15} />
+                        <FolderPlusIcon size={15} aria-hidden="true" />
                     </button>
                 </div>
             </div>
@@ -270,10 +269,9 @@ export const ExplorerPane = () => {
                 <Input
                     optionalText=" "
                     value={searchQuery}
+                    placeholder="Filter files…"
                     onChange={(event) => layoutDispatch.setSearch(event.target.value)}
-                    placeholder="Search files…"
-                    title="Search files"
-                    right={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
+                    right={<MagnifyingGlassIcon className="size-4 text-muted-foreground" aria-hidden="true" />}
                 />
             </div>
             <div
@@ -286,11 +284,11 @@ export const ExplorerPane = () => {
                     onMove={handleMove}
                     onDelete={handleDelete}
                     onNewFile={handleNewFile}
+                    searchQuery={searchQuery}
                     onFileSelect={onFileSelect}
                     createRequest={createRequest}
                     onNewFolder={handleNewFolder}
                     rootPath={state.explorerRoot}
-                    searchQuery={searchQuery}
                 />
             </div>
         </div>

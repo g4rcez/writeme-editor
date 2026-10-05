@@ -4,7 +4,7 @@ const content = `# Code Runner
 The Coderunner feature allows you to execute code snippets directly within your notes. It uses Electron IPC to spawn a child process on your operating system, piping your code to STDIN and capturing STDOUT and STDERR.
 
 ## How it works
-1. Create a code block with a supported language.
+1. Create a code block with a supported language. Add \`title=filename.extension\` after the language to display a filename header.
 2. If the language is supported and the compiler/runner is installed on your system, a **Run** button will appear in the code block header.
 3. Click **Run** to execute the code.
 4. The output will be displayed below the code block, with ANSI colors and symbols supported (best viewed with a Nerd Font).
@@ -27,7 +27,7 @@ The editor currently supports the following execution environments:
 ## Try it out!
 Below is a JavaScript code block. If you have Node.js installed, you can run it right now:
 
-\`\`\`javascript
+\`\`\`javascript title=example.js
 const message = "Hello from the Writeme Coderunner!";
 console.log(message);
 console.log("Current Node version:", process.version);
@@ -40,6 +40,14 @@ echo "Current directory: $(pwd)"
 echo "Listing files:"
 ls -F
 \`\`\`
+
+## Named math code blocks
+The \`math\` language accepts the same filename parameter:
+
+\`\`\`math title=calculation.math
+1 + 1
+\`\`\`
+
 `;
 
 export default function CodeRunExamplePage() {

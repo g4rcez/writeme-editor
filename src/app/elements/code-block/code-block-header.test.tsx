@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CodeBlockHeader } from "./code-block-header";
 
 describe("CodeBlockHeader", () => {
-    it("renders a copy button before the language selector", () => {
+    it("renders the language selector and copy action", () => {
         render(
             <CodeBlockHeader
                 code="const answer = 42;"
@@ -22,7 +22,30 @@ describe("CodeBlockHeader", () => {
         );
 
         expect(screen.getByRole("button", { name: /^copy$/i })).toBeInTheDocument();
-        expect(screen.getByRole("combobox")).toBeInTheDocument();
+        expect(screen.getByRole("combobox", { name: "Code language" })).toBeInTheDocument();
+    });
+
+    it("renders a file header for titled code blocks", () => {
+        render(
+            <CodeBlockHeader
+                code="[keyboard.bindings]"
+                lines={1}
+                canRun={false}
+                language="toml"
+                title="alacritty.toml"
+                isRunning={false}
+                onFormat={vi.fn()}
+                onCopy={vi.fn()}
+                handleRun={vi.fn()}
+                isCopied={false}
+                isFormatting={false}
+                onChangeLanguage={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByText("alacritty.toml")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+        expect(screen.getByRole("combobox", { name: "Code language" })).toBeInTheDocument();
     });
 
     it("calls onCopy when the copy button is pressed", async () => {

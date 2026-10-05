@@ -58,7 +58,8 @@
 .writeme-editor-content h4,
 .writeme-editor-content h5,
 .writeme-editor-content h6 {
-    @apply mb-3 leading-tight font-semibold tracking-normal text-pretty text-typography-title;
+    @apply mb-3 leading-tight font-semibold text-pretty text-typography-title;
+    letter-spacing: 0.05ch;
 }
 
 .writeme-editor-content h1:first-child,
@@ -71,27 +72,27 @@
 }
 
 .writeme-editor-content h1 {
-    @apply mt-10 text-3xl font-semibold tracking-tight;
+    @apply mt-10 text-3xl font-semibold;
 }
 
 .writeme-editor-content h2 {
-    @apply mt-10 text-3xl font-bold tracking-tight;
+    @apply mt-10 text-2xl;
 }
 
 .writeme-editor-content h3 {
-    @apply mt-8 text-2xl font-bold tracking-tight;
+    @apply mt-8 text-xl;
 }
 
 .writeme-editor-content h4 {
-    @apply mt-6 text-xl;
+    @apply mt-6 text-lg;
 }
 
 .writeme-editor-content h5 {
-    @apply mt-4 text-lg;
+    @apply mt-4 text-base;
 }
 
 .writeme-editor-content h6 {
-    @apply mt-3 text-base;
+    @apply mt-3 text-sm;
 }
 
 .writeme-editor-content blockquote {
@@ -238,11 +239,10 @@
 
 .writeme-editor-content ul,
 .writeme-editor-content ol {
-    @apply mb-4 ml-0;
-    padding-left: 1.5rem;
+    @apply mb-1 ml-0;
+    padding-left: 0.5rem;
 }
 
-/* Unordered lists */
 .writeme-editor-content ul {
     @apply list-outside list-disc;
 }

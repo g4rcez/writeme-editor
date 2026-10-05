@@ -1,6 +1,8 @@
 export type WritingCategory = "spelling" | "grammar" | "clarity" | "enhancement";
 
-export type WritingScope = "note" | "selection";
+export type WritingScope = "note" | "selection" | "paragraph" | "line";
+
+export type WritingSelectionRange = { from: number; to: number };
 
 export type WritingSegment = {
     id: string;
@@ -26,7 +28,7 @@ export type WritingSuggestion = {
 };
 
 export type WritingEditorAdapter = {
-    snapshot(scope: WritingScope): WritingSnapshot;
+    snapshot(scope: WritingScope, selection?: WritingSelectionRange): WritingSnapshot;
     show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void;
     clear(): void;
     reveal(id: string): void;

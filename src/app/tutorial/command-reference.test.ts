@@ -16,6 +16,9 @@ describe("getCommandReference", () => {
                 expect.objectContaining({ trigger: ">>uuid", category: "Text command" }),
                 expect.objectContaining({ trigger: "/heading 1", category: "Slash command" }),
                 expect.objectContaining({ trigger: "/mermaid", category: "Slash command" }),
+                expect.objectContaining({ trigger: "/improve paragraph", category: "Slash command" }),
+                expect.objectContaining({ trigger: "/improve line", category: "Slash command" }),
+                expect.objectContaining({ trigger: "/improve entire text", category: "Slash command" }),
             ]),
         );
         expect(commands.some((command) => command.description.includes("shortcut reference"))).toBe(false);

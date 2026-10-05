@@ -48,6 +48,35 @@ describe("Markdown extension", () => {
         editor.destroy();
     });
 
+    it("parses and serializes filename parameters on fenced code blocks", () => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content:
+                "```toml title=alacritty.toml\n[keyboard.bindings]\n```\n\n```math title=calculation.math\n1 + 1\n```",
+        });
+
+        const codeBlocks: Array<{ language: string; title: string }> = [];
+        editor.state.doc.descendants((node) => {
+            if (node.type.name !== "codeBlock") return;
+            codeBlocks.push({
+                language: String(node.attrs.language),
+                title: String(node.attrs.title),
+            });
+        });
+
+        expect(codeBlocks).toEqual([
+            { language: "toml", title: "alacritty.toml" },
+            { language: "math", title: "calculation.math" },
+        ]);
+        expect(editor.getMarkdown()).toContain('```toml title="alacritty.toml"');
+        expect(editor.getMarkdown()).toContain('```math title="calculation.math"');
+
+        editor.destroy();
+    });
+
     it("pastes Markdown as formatted content instead of a code block", () => {
         const element = document.createElement("div");
         document.body.append(element);

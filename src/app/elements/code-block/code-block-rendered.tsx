@@ -246,6 +246,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     return (
         <CodeBlockFrame
             lineCount={lines}
+            contentClassName={title ? "px-6 py-2" : undefined}
             printContent={code}
             id={`code-block-${language}-${id}`}
             header={
