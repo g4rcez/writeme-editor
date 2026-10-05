@@ -7,9 +7,12 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
         alias: {
-            "@": path.resolve(__dirname, "./src"),
+            "@": path.resolve(__dirname, "./packages/editor/src"),
             solver: path.resolve(__dirname, "./packages/solver/src"),
-            "virtual:pwa-register/react": path.resolve(__dirname, "./src/lib/pwa-register-stub.ts"),
+            "virtual:pwa-register/react": path.resolve(
+                __dirname,
+                "./packages/editor/src/lib/pwa-register-stub.ts",
+            ),
             "use-sync-external-store/shim/with-selector": path.resolve(
                 __dirname,
                 "node_modules/use-sync-external-store/shim/with-selector.js",
@@ -19,7 +22,7 @@ export default defineConfig({
     test: {
         globals: true,
         environment: "jsdom",
-        setupFiles: "./src/test/setup.ts",
-        exclude: ["packages/**", "node_modules/**", "tests/**"],
+        setupFiles: "./packages/editor/src/test/setup.ts",
+        exclude: ["packages/cli/**", "packages/landing/**", "packages/solver/**", "node_modules/**", "tests/**"],
     },
 });

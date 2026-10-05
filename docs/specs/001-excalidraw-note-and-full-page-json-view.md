@@ -46,8 +46,8 @@ The JSON payload is the first `json` code fence. Saves should preserve the exist
 
 ### 1. Domain and creation plumbing
 
-- Extend `NoteType` in `src/store/note.ts` with `excalidraw = "excalidraw"`.
-- Extend `NoteCreationType` in `src/store/global.store.ts` to include `"excalidraw"`.
+- Extend `NoteType` in `packages/editor/src/store/note.ts` with `excalidraw = "excalidraw"`.
+- Extend `NoteCreationType` in `packages/editor/src/store/global.store.ts` to include `"excalidraw"`.
 - Update `CreateNoteDialog`:
   - title text: `Create Excalidraw note` when `type === "excalidraw"`.
   - default title should use `getUniqueNoteTitle` like normal notes.
@@ -61,8 +61,8 @@ The JSON payload is the first `json` code fence. Saves should preserve the exist
 
 ### 2. Full-page Excalidraw note view
 
-- Add a dedicated full-page renderer component, likely under `src/app/components/excalidraw-note-view.tsx` or `src/app/elements/excalidraw-note-view.tsx`.
-- Reuse the existing `@excalidraw/excalidraw` dependency and parsing logic from `src/app/elements/code-block/excalidraw.tsx`, but adapt it for the full object payload:
+- Add a dedicated full-page renderer component, likely under `packages/editor/src/app/components/excalidraw-note-view.tsx` or `packages/editor/src/app/elements/excalidraw-note-view.tsx`.
+- Reuse the existing `@excalidraw/excalidraw` dependency and parsing logic from `packages/editor/src/app/elements/code-block/excalidraw.tsx`, but adapt it for the full object payload:
   - parse first `json` code fence from markdown content.
   - accept `{ elements, appState, files }`.
   - tolerate legacy array payloads only inside this first-class Excalidraw note path by converting to `{ elements: array, appState: {}, files: {} }` if practical.
@@ -74,7 +74,7 @@ The JSON payload is the first `json` code fence. Saves should preserve the exist
 
 ### 3. Specialized full-page layout in `NotePage`
 
-- In `src/app/pages/note.page.tsx`, detect:
+- In `packages/editor/src/app/pages/note.page.tsx`, detect:
   - `isJson = note.noteType === NoteType.json`
   - `isExcalidraw = note.noteType === NoteType.excalidraw`
   - `isSpecializedFullPage = isJson || isExcalidraw`
@@ -89,9 +89,9 @@ The JSON payload is the first `json` code fence. Saves should preserve the exist
 
 Add/update focused Vitest tests where existing patterns support it:
 
-- `src/store/note.test.ts`: `NoteType.excalidraw` can be created and parsed.
-- `src/app/commander.test.tsx`: Commander includes `New excalidraw` and opens create dialog with `type: "excalidraw"`.
-- `src/app/components/create-note-dialog.test.tsx` if existing dialog test setup is practical; otherwise add a focused test for the helper that builds Excalidraw markdown content.
+- `packages/editor/src/store/note.test.ts`: `NoteType.excalidraw` can be created and parsed.
+- `packages/editor/src/app/commander.test.tsx`: Commander includes `New excalidraw` and opens create dialog with `type: "excalidraw"`.
+- `packages/editor/src/app/components/create-note-dialog.test.tsx` if existing dialog test setup is practical; otherwise add a focused test for the helper that builds Excalidraw markdown content.
 - Full-page Excalidraw parsing/saving helper tests:
   - extracts first JSON fence.
   - preserves frontmatter on save.

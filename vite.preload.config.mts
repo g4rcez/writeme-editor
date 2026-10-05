@@ -11,7 +11,7 @@ const removeForgeInlineDynamicImports = {
 
 export default defineConfig({
     plugins: [removeForgeInlineDynamicImports],
-    resolve: { alias: { "@": path.resolve(import.meta.dirname, "./src") } },
+    resolve: { alias: { "@": path.resolve(import.meta.dirname, "./packages/editor/src") } },
     build: {
         rolldownOptions: { output: { codeSplitting: false } },
     },

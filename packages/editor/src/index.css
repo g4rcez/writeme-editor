@@ -1,4 +1,4 @@
-@config "../tailwind.config.ts";
+@config "../../../tailwind.config.ts";
 @import "@fontsource-variable/jetbrains-mono";
 @import "@excalidraw/excalidraw/index.css";
 @import "@g4rcez/components/foundation.css";

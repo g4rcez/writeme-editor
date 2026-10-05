@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 
 describe("renderer component stylesheets", () => {
     it("exports every stylesheet imported from the component package", () => {
-        const stylesheet = readFileSync("src/index.css", "utf8");
+        const stylesheet = readFileSync("packages/editor/src/index.css", "utf8");
         const imports = stylesheet.match(/@g4rcez\/components\/[^"]+\.css/g) ?? [];
 
         expect(imports).toContain("@g4rcez/components/foundation.css");

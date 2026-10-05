@@ -738,8 +738,8 @@ test("split panes keep review suggestions scoped to their own notes", async ({ c
     const first = await createNote(page, "Writing pane one", "formatted", "She go to school.");
     const secondNoteId = await page.evaluate(async () => {
         const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-        const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
-        const { Note } = await loadModule("/src/store/note.ts");
+        const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
+        const { Note } = await loadModule("/packages/editor/src/store/note.ts");
         const note = Note.new("Writing pane two", "He go to school.");
         await db.notes.put(note);
         return note.id;

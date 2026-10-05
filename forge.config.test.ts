@@ -51,7 +51,7 @@ describe("Forge configuration", () => {
                             for (const command of ["serve", "build"]) {
                                 const mode = command === "serve" ? "development" : "production";
                                 const loaded = await loadConfigFromFile({ command, mode }, target.config);
-                                assert.equal(loaded.config.resolve.alias["@"], require("node:path").join(process.cwd(), "src"));
+                                assert.equal(loaded.config.resolve.alias["@"], require("node:path").join(process.cwd(), "packages/editor/src"));
                                 if (target.target === "main") assert.equal(loaded.config.build.rollupOptions.platform, "node");
                             }
                         }

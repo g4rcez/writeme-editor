@@ -10,7 +10,7 @@ export default defineConfig({
     endOfLine: "lf",
     embeddedLanguageFormatting: "auto",
     sortTailwindcss: {
-        stylesheet: "./src/index.css",
+        stylesheet: "./packages/editor/src/index.css",
         functions: ["clsx", "cn", "css"],
         preserveWhitespace: true,
         attributes: ["class", "className", "container", "containerClassName"],

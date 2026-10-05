@@ -22,7 +22,7 @@ export default {
     plugins: [...(config.plugins ?? []), typography, forms],
     content: [
         "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
+        "./packages/editor/src/**/*.{js,ts,jsx,tsx}",
         "./node_modules/@g4rcez/components/dist/**/*.{js,jsx,ts,tsx}",
     ],
     theme: {

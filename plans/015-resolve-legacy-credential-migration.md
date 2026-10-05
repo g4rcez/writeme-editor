@@ -7,7 +7,7 @@
 > **Planned at:** `54057af`
 >
 > **Drift check:**
-> `git diff --stat 54057af..HEAD -- src/lib/dexie-to-sqlite-migration.ts src/lib/dexie-to-sqlite-migration.test.ts src/main-process/credential-storage.ts src/main-process/credential-storage.test.ts`
+> `git diff --stat 54057af..HEAD -- packages/editor/src/lib/dexie-to-sqlite-migration.ts packages/editor/src/lib/dexie-to-sqlite-migration.test.ts packages/editor/src/main-process/credential-storage.ts packages/editor/src/main-process/credential-storage.test.ts`
 >
 > If any in-scope file changed, compare the live code with **Current state** and stop if the migration state machine or credential conflict rules no longer match.
 
@@ -15,8 +15,8 @@
 
 Commit `54057af` prevents new plaintext credential writes, rejects Electron Linux `basic_text`/`unknown` storage backends, repairs known plaintext rows, removes direct bulk-trash deletion IPC, and keyset-paginates generic Dexie migration. It is not safe to merge yet:
 
-1. `src/lib/dexie-to-sqlite-migration.ts` still uses migration marker `dexie_sqlite_migration_v2`. A state previously marked `verified` reaches `removeVerifiedDexie()` before the new credential checks run. If the app was updated between “verified” and cleanup, the next startup can delete the Dexie credential source without applying the stricter backend and plaintext rules.
-2. `src/main-process/credential-storage.ts` treats every `safeStorage.decryptString()` failure as proof of plaintext. A failure can instead mean ciphertext protected by an unavailable/changed OS key. Re-encrypting that ciphertext as though it were the logical credential corrupts the credential and can allow source deletion.
+1. `packages/editor/src/lib/dexie-to-sqlite-migration.ts` still uses migration marker `dexie_sqlite_migration_v2`. A state previously marked `verified` reaches `removeVerifiedDexie()` before the new credential checks run. If the app was updated between “verified” and cleanup, the next startup can delete the Dexie credential source without applying the stricter backend and plaintext rules.
+2. `packages/editor/src/main-process/credential-storage.ts` treats every `safeStorage.decryptString()` failure as proof of plaintext. A failure can instead mean ciphertext protected by an unavailable/changed OS key. Re-encrypting that ciphertext as though it were the logical credential corrupts the credential and can allow source deletion.
 
 The safe default is to retain both stores whenever the code cannot prove which value is plaintext and protected. Automatic cleanup must require a current credential-policy marker and successful protected-storage verification.
 
@@ -32,7 +32,7 @@ Alternatives require a separate product/security design because they either disc
 
 ### Legacy verified state is trusted before current credential checks
 
-`src/lib/dexie-to-sqlite-migration.ts`:
+`packages/editor/src/lib/dexie-to-sqlite-migration.ts`:
 
 ```ts
 const MIGRATION_KEY = "dexie_sqlite_migration_v2";
@@ -48,7 +48,7 @@ export async function migrateDexieToSqlite(): Promise<void> {
 
 ### Decrypt failure is classified as unprotected plaintext
 
-`src/main-process/credential-storage.ts`:
+`packages/editor/src/main-process/credential-storage.ts`:
 
 ```ts
 try {
@@ -67,10 +67,10 @@ Later conflict handling may select that returned value as the winner and pass it
 
 **In scope — only these files may change:**
 
-- `src/lib/dexie-to-sqlite-migration.ts`
-- `src/lib/dexie-to-sqlite-migration.test.ts`
-- `src/main-process/credential-storage.ts`
-- `src/main-process/credential-storage.test.ts`
+- `packages/editor/src/lib/dexie-to-sqlite-migration.ts`
+- `packages/editor/src/lib/dexie-to-sqlite-migration.test.ts`
+- `packages/editor/src/main-process/credential-storage.ts`
+- `packages/editor/src/main-process/credential-storage.test.ts`
 
 **Out of scope:**
 
@@ -97,7 +97,7 @@ Required behavior:
 - `removeVerifiedDexie()` must require both current policy and completed credential state before deleting Dexie.
 - If secure storage is unavailable/unsuitable, retain Dexie and keep cleanup ineligible while normal startup continues.
 
-Tests in `src/lib/dexie-to-sqlite-migration.test.ts`:
+Tests in `packages/editor/src/lib/dexie-to-sqlite-migration.test.ts`:
 
 1. Legacy `verified` v2 state plus a credential source does not delete Dexie before credential migration.
 2. The same state with `basic_text`, `unknown`, or unavailable storage remains retained.
@@ -107,7 +107,7 @@ Tests in `src/lib/dexie-to-sqlite-migration.test.ts`:
 Verification:
 
 ```sh
-npm test -- src/lib/dexie-to-sqlite-migration.test.ts
+npm test -- packages/editor/src/lib/dexie-to-sqlite-migration.test.ts
 ```
 
 Expected: all migration tests pass, including the four policy-version cases.
@@ -124,7 +124,7 @@ With the recommended policy:
 - Do not log, embed in errors, or return credential values.
 - Already decryptable/protected conflict behavior remains unchanged.
 
-Tests in `src/main-process/credential-storage.test.ts`:
+Tests in `packages/editor/src/main-process/credential-storage.test.ts`:
 
 1. Matching plaintext destination is rewritten protected.
 2. Differing undecryptable destination returns `skipped`; raw SQLite columns remain byte-for-byte unchanged.
@@ -135,7 +135,7 @@ Tests in `src/main-process/credential-storage.test.ts`:
 Verification:
 
 ```sh
-npm test -- src/main-process/credential-storage.test.ts
+npm test -- packages/editor/src/main-process/credential-storage.test.ts
 ```
 
 Expected: all credential tests pass, including ambiguous-destination retention.
@@ -143,7 +143,7 @@ Expected: all credential tests pass, including ambiguous-destination retention.
 ### Step 3: Run the complete focused database gate
 
 ```sh
-npm test -- src/ipc/database.ipc.test.ts src/lib/dexie-to-sqlite-migration.test.ts src/main-process/credential-storage.test.ts src/main-process/database.test.ts src/store/global.store.test.ts src/store/repositories/electron/notes.repository.test.ts
+npm test -- packages/editor/src/ipc/database.ipc.test.ts packages/editor/src/lib/dexie-to-sqlite-migration.test.ts packages/editor/src/main-process/credential-storage.test.ts packages/editor/src/main-process/database.test.ts packages/editor/src/store/global.store.test.ts packages/editor/src/store/repositories/electron/notes.repository.test.ts
 npm run typecheck
 npm run lint
 npm run browser:build
@@ -165,8 +165,8 @@ Expected:
 
 Follow the behavior-focused style already present in:
 
-- `src/lib/dexie-to-sqlite-migration.test.ts` for persisted migration state and delayed cleanup.
-- `src/main-process/credential-storage.test.ts` for real temporary SQLite rows and mocked safeStorage behavior.
+- `packages/editor/src/lib/dexie-to-sqlite-migration.test.ts` for persisted migration state and delayed cleanup.
+- `packages/editor/src/main-process/credential-storage.test.ts` for real temporary SQLite rows and mocked safeStorage behavior.
 
 Do not weaken tests to mock the expected status directly. Assert source retention/deletion calls, persisted migration state, SQLite row contents, and secure-storage calls.
 

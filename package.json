@@ -40,8 +40,8 @@
     "main": ".vite/build/main.js",
     "scripts": {
         "dev": "npm run native:dev",
-        "browser:dev": "concurrently -k \"tsx src/server/start.ts\" \"vite --host\"",
-        "proxy": "tsx src/server/start.ts",
+        "browser:dev": "concurrently -k \"tsx packages/editor/src/server/start.ts\" \"vite --host\"",
+        "proxy": "tsx packages/editor/src/server/start.ts",
         "browser:build": "vite build",
         "build": "npm run make",
         "native:dev": "electron-forge start",

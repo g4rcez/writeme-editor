@@ -21,9 +21,12 @@ export default defineConfig(({ mode }) => {
         server: { port: 5173 },
         resolve: {
             alias: {
-                "@": path.resolve(import.meta.dirname, "./src"),
+                "@": path.resolve(import.meta.dirname, "./packages/editor/src"),
                 solver: path.resolve(import.meta.dirname, "./packages/solver/src"),
-                "virtual:pwa-register/react": path.resolve(import.meta.dirname, "./src/lib/pwa-register-stub.ts"),
+                "virtual:pwa-register/react": path.resolve(
+                    import.meta.dirname,
+                    "./packages/editor/src/lib/pwa-register-stub.ts",
+                ),
             },
         },
         build: {

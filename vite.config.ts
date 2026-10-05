@@ -9,7 +9,7 @@ export default defineConfig({
     appType: "spa",
     resolve: {
         alias: {
-            "@": path.resolve(__dirname, "./src"),
+            "@": path.resolve(__dirname, "./packages/editor/src"),
             solver: path.resolve(__dirname, "./packages/solver/src"),
         },
     },

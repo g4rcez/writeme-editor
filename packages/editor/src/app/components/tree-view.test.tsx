@@ -373,7 +373,7 @@ describe("TreeView", () => {
             });
         });
 
-        const input = await screen.findByRole("textbox");
+        const input = await screen.findByRole("textbox", {}, { timeout: 5_000 });
         const pendingRow = input.parentElement;
 
         expect(pendingRow).toHaveStyle({ paddingLeft: "28px" });

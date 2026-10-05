@@ -182,7 +182,7 @@ test.describe("browser data safety", () => {
 
         const result = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { NotesRepository } = await loadModule("/src/store/repositories/browser/notes.repository.ts");
+            const { NotesRepository } = await loadModule("/packages/editor/src/store/repositories/browser/notes.repository.ts");
             const repository = new NotesRepository({} as never);
             const note = await repository.getOne("legacy-note");
             const { promise, resolve, reject } = Promise.withResolvers<{
@@ -301,9 +301,9 @@ test.describe("browser data safety", () => {
         await goHome(page);
         const count = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
-            const { NotesRepository } = await loadModule("/src/store/repositories/browser/notes.repository.ts");
-            const { Note } = await loadModule("/src/store/note.ts");
+            const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
+            const { NotesRepository } = await loadModule("/packages/editor/src/store/repositories/browser/notes.repository.ts");
+            const { Note } = await loadModule("/packages/editor/src/store/note.ts");
             const note = Note.new("History test", "# Original");
             await db.notes.put(note);
             await db.noteHistory.bulkAdd(
@@ -326,9 +326,9 @@ test.describe("browser data safety", () => {
         await goHome(page);
         const result = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
-            const { importFromFile } = await loadModule("/src/lib/data-migration.ts");
-            const { Note } = await loadModule("/src/store/note.ts");
+            const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
+            const { importFromFile } = await loadModule("/packages/editor/src/lib/data-migration.ts");
+            const { Note } = await loadModule("/packages/editor/src/store/note.ts");
             const now = new Date();
             const note = Note.new("Should roll back", "# Content");
             await db.settings.put({
@@ -386,8 +386,8 @@ test.describe("browser data safety", () => {
         await goHome(page);
         const id = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
-            const { Note } = await loadModule("/src/store/note.ts");
+            const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
+            const { Note } = await loadModule("/packages/editor/src/store/note.ts");
             const note = Note.parse({
                 title: "Expired trash note",
                 content: "# Still recoverable",
@@ -401,7 +401,7 @@ test.describe("browser data safety", () => {
 
         const retained = await page.evaluate(async (noteId) => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
+            const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
             return db.notes.get(noteId);
         }, id);
         expect(retained?.deletedAt).toBeTruthy();
