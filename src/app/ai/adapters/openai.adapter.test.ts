@@ -34,8 +34,37 @@ vi.mock("@/lib/proxy-fetch", () => ({
     proxyFetch: vi.fn(),
 }));
 
-async function* textStream(): AsyncGenerator<string> {
-    yield "ok";
+async function* responseStream(): AsyncGenerator<unknown> {
+    yield { type: "text-delta", text: "ok" };
+}
+
+let errorStreamDrained = false;
+async function* errorResponseStream(): AsyncGenerator<unknown> {
+    yield { type: "error", error: new Error("provider stream failed") };
+    yield { type: "text-delta", text: "discarded after provider error" };
+    errorStreamDrained = true;
+}
+
+async function* failedResponseStream(): AsyncGenerator<unknown> {
+    throw new Error("provider result failed");
+}
+
+type TextStreamOptions = {
+    onChunk?: (event: { chunk: unknown }) => Promise<void> | void;
+    onError?: (event: { error: unknown }) => Promise<void> | void;
+};
+
+function mockStreamTextOnce(stream: AsyncIterable<unknown>): void {
+    streamTextMock.mockImplementationOnce((options: TextStreamOptions) => ({
+        steps: (async () => {
+            for await (const chunk of stream) {
+                await options.onChunk?.({ chunk });
+                if (typeof chunk === "object" && chunk !== null && "type" in chunk && chunk.type === "error" && "error" in chunk) {
+                    await options.onError?.({ error: chunk.error });
+                }
+            }
+        })(),
+    }));
 }
 
 function createJwt(payload: object): string {
@@ -109,7 +138,7 @@ describe("createCodexRequestBody", () => {
 
 describe("OpenAIAdapter", () => {
     it("uses OpenAI chat completions for platform API keys", async () => {
-        streamTextMock.mockReturnValueOnce({ textStream: textStream() });
+        mockStreamTextOnce(responseStream());
 
         const adapter = new OpenAIAdapter();
         const events = [];
@@ -139,8 +168,40 @@ describe("OpenAIAdapter", () => {
         expect(stepCountIsMock).toHaveBeenCalledWith(5);
     });
 
+    it("forwards SDK stream errors without reporting completion", async () => {
+        errorStreamDrained = false;
+        mockStreamTextOnce(errorResponseStream());
+
+        const adapter = new OpenAIAdapter();
+        const events = [];
+
+        for await (const event of adapter.sendMessage([{ role: "user", content: { text: "Review this note" } }], {
+            credentials: { apiKey: "test-key" },
+        })) {
+            events.push(event);
+        }
+
+        expect(events).toEqual([{ type: "error", message: "provider stream failed" }]);
+        expect(errorStreamDrained).toBe(true);
+    });
+
+    it("maps a rejected SDK result to an error without completion", async () => {
+        mockStreamTextOnce(failedResponseStream());
+
+        const adapter = new OpenAIAdapter();
+        const events = [];
+
+        for await (const event of adapter.sendMessage([{ role: "user", content: { text: "Review this note" } }], {
+            credentials: { apiKey: "test-key" },
+        })) {
+            events.push(event);
+        }
+
+        expect(events).toEqual([{ type: "error", message: "provider result failed" }]);
+    });
+
     it("omits empty text parts from file-only messages", async () => {
-        streamTextMock.mockReturnValueOnce({ textStream: textStream() });
+        mockStreamTextOnce(responseStream());
         const adapter = new OpenAIAdapter();
 
         for await (const _event of adapter.sendMessage(
@@ -178,7 +239,7 @@ describe("OpenAIAdapter", () => {
     });
 
     it("routes ChatGPT OAuth credentials to the Codex responses backend", async () => {
-        streamTextMock.mockReturnValueOnce({ textStream: textStream() });
+        mockStreamTextOnce(responseStream());
 
         const adapter = new OpenAIAdapter();
         const events = [];
@@ -210,7 +271,7 @@ describe("OpenAIAdapter", () => {
     });
 
     it("derives the Codex account ID from older saved OAuth access tokens", async () => {
-        streamTextMock.mockReturnValueOnce({ textStream: textStream() });
+        mockStreamTextOnce(responseStream());
         const accessToken = createJwt({
             "https://api.openai.com/auth": {
                 chatgpt_account_id: "derived-chatgpt-account-id",

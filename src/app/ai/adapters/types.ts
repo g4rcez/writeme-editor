@@ -323,12 +323,93 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
 
 export type AIMessageContent = { text: string; files?: AIFile[] };
 export type AIStreamEvent = { type: "text"; delta: string } | { type: "done" } | { type: "error"; message: string };
+// Prevent browser tracing from leaving failed or aborted stream completions unhandled.
+export const DISABLED_AI_TELEMETRY = { isEnabled: false } as const;
+
+type TextStreamConsumer = {
+    steps: PromiseLike<unknown>;
+};
+
+export function isAIStreamAbortError(error: unknown): boolean {
+    return typeof error === "object" && error !== null && "name" in error && error.name === "AbortError";
+}
+
+export function getAIStreamErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+export function createTextStreamEventChannel() {
+    const channel = new TransformStream<AIStreamEvent, AIStreamEvent>();
+    const writer = channel.writable.getWriter();
+    let errorQueued = false;
+    let closed = false;
+
+    async function enqueue(event: AIStreamEvent): Promise<void> {
+        if (closed) return;
+        try {
+            await writer.write(event);
+        } catch {
+            // The event consumer has stopped reading.
+        }
+    }
+
+    async function queueError(error: unknown): Promise<void> {
+        if (errorQueued || isAIStreamAbortError(error)) return;
+        errorQueued = true;
+        await enqueue({ type: "error", message: getAIStreamErrorMessage(error) });
+    }
+
+    async function onChunk({ chunk }: { chunk: unknown }): Promise<void> {
+        if (typeof chunk !== "object" || chunk === null || !("type" in chunk)) return;
+        if (chunk.type === "text-delta" && "text" in chunk && typeof chunk.text === "string" && !errorQueued) {
+            await enqueue({ type: "text", delta: chunk.text });
+        } else if (chunk.type === "error" && "error" in chunk) {
+            await queueError(chunk.error);
+        }
+    }
+
+    async function close(): Promise<void> {
+        if (closed) return;
+        closed = true;
+        try {
+            await writer.close();
+        } catch {
+            // The event consumer has stopped reading.
+        }
+    }
+
+    async function* consume(result: TextStreamConsumer): AsyncGenerator<AIStreamEvent> {
+        const steps = Promise.resolve(result.steps);
+        const consuming = steps.then(
+            () => undefined,
+            queueError,
+        ).finally(close);
+        try {
+            for await (const event of channel.readable) {
+                yield event;
+                if (event.type === "error") return;
+            }
+            await consuming;
+            yield { type: "done" };
+        } finally {
+            await consuming;
+        }
+    }
+
+    return {
+        onChunk,
+        onError: ({ error }: { error: unknown }) => queueError(error),
+        consume,
+    };
+}
+
 export type AIModel = { id: string; name: string; contextWindow?: number; supportsVision?: boolean };
 export type SendOptions = {
     model?: string;
     systemPrompt?: string;
     temperature?: number;
     maxTokens?: number;
+    maxRetries?: number;
     baseUrl?: string;
     commandTemplate?: string;
     credentials: AuthCredentials;

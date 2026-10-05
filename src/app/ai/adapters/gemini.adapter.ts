@@ -11,7 +11,7 @@ import type {
     AuthCredentials,
     SendOptions,
 } from "./types";
-import { AI_FILE_CAPABILITIES, prepareFileForCapabilities } from "./types";
+import { AI_FILE_CAPABILITIES, createTextStreamEventChannel, DISABLED_AI_TELEMETRY, getAIStreamErrorMessage, isAIStreamAbortError, prepareFileForCapabilities } from "./types";
 
 export class GeminiAdapter implements AIAdapter {
     readonly id = "gemini";
@@ -131,27 +131,32 @@ export class GeminiAdapter implements AIAdapter {
         });
 
         try {
+            const eventChannel = createTextStreamEventChannel();
             const result = streamText({
                 model: google(model),
                 messages: mapped,
                 system: options.systemPrompt,
+                telemetry: DISABLED_AI_TELEMETRY,
+                maxRetries: options.maxRetries,
                 abortSignal: signal,
                 temperature: options.temperature,
                 maxOutputTokens: options.maxTokens,
                 tools: options.tools,
                 toolChoice: options.toolChoice,
                 stopWhen: options.tools ? stepCountIs(5) : undefined,
+                onChunk: eventChannel.onChunk,
+                onError: eventChannel.onError,
             });
 
-            for await (const chunk of result.textStream) {
-                yield { type: "text", delta: chunk };
+            for await (const event of eventChannel.consume(result)) {
+                yield event;
+                if (event.type === "error") return;
             }
-            yield { type: "done" };
-        } catch (err: any) {
-            if (err?.name === "AbortError") {
+        } catch (error: unknown) {
+            if (isAIStreamAbortError(error)) {
                 yield { type: "done" };
             } else {
-                yield { type: "error", message: err?.message ?? String(err) };
+                yield { type: "error", message: getAIStreamErrorMessage(error) };
             }
         }
     }

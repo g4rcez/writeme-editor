@@ -302,6 +302,7 @@ export async function reviewWriting(
             credentials,
             systemPrompt: WRITING_REVIEW_SYSTEM_PROMPT,
             toolChoice: "none" as const,
+            maxRetries: 0,
         };
 
         let responseText = "";

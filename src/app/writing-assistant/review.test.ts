@@ -99,6 +99,7 @@ describe("writing review provider contract", () => {
             model: "writing-model",
             baseUrl: "https://provider.example.test",
             systemPrompt: expect.stringContaining("never translate"),
+            maxRetries: 0,
             toolChoice: "none",
         });
         expect(options?.systemPrompt).not.toContain(config.systemPrompt);

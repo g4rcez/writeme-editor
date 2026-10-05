@@ -52,6 +52,7 @@
 - Refine the home dashboard hero, note previews, and empty-state shortcuts.
 - Preserve unsent AI conversation drafts per conversation and allow renaming conversations.
 - Add fuzzy @ suggestions for workspace notes and files in AI chat.
+- Add explicit AI writing review and safe inline suggestions to formatted and Markdown notes, plus native spellcheck corrections.
 
 ### Build System
 
@@ -62,6 +63,7 @@
 
 ### Bug Fixes
 
+- Prevent unhandled AI stream errors when provider requests fail or are cancelled in the browser.
 - Preserve local-only notes when opening a workspace folder from the explorer.
 - avoid renderer-side `node:path` access during workspace note discovery, fixing Open folder errors.
 - Keep browser IndexedDB history snapshots uncapped and preserve records across non-destructive schema/origin migrations without overwriting destination data.

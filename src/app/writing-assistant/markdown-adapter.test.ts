@@ -137,6 +137,29 @@ describe("raw Markdown writing review extraction", () => {
 });
 
 describe("raw Markdown writing review adapter", () => {
+    it("reinitializes editability after a Strict Mode effect cleanup", () => {
+        const assistant = createMarkdownWritingAssistant();
+        const createView = (): EditorView =>
+            new EditorView({
+                parent: document.body,
+                state: EditorState.create({
+                    doc: "She go.",
+                    extensions: [assistant.extension, history()],
+                }),
+            });
+
+        const firstView = createView();
+        const firstAdapter = assistant.createAdapter(firstView);
+        firstAdapter.dispose();
+        firstView.destroy();
+
+        const secondView = createView();
+        const secondAdapter = assistant.createAdapter(secondView);
+        views.push(secondView);
+        adapters.push(secondAdapter);
+        expect(secondAdapter.isEditable()).toBe(true);
+    });
+
     it("activates clicked findings, escapes punctuation literally, and isolates acceptance in undo history", () => {
         const source = "**She go.**";
         const { view, adapter } = createMarkdownEditor(source);

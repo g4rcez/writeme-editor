@@ -669,8 +669,175 @@ export function createMarkdownWritingAssistant(): {
                     return false;
                 }
 
+<<<<<<< Updated upstream
                 view.dispatch({ effects: activateSuggestionEffect.of(id) });
                 return false;
+||||||| Stash base
+  const createAdapter = (view: EditorView): WritingEditorAdapter => {
+    const dispatchEffect = (effect: MarkdownWritingEffect): void => {
+      if (adapterDisposed) return;
+      view.dispatch({ effects: effect });
+    };
+    const readState = (): MarkdownWritingState => view.state.field(reviewStateField);
+    const isEditable = (): boolean =>
+      !adapterDisposed && !view.state.facet(EditorState.readOnly) && view.state.facet(EditorView.editable);
+
+    const adapter: WritingEditorAdapter = {
+      snapshot(scope: WritingScope): WritingSnapshot {
+        const source = view.state.doc.toString();
+        const selection = view.state.selection.main;
+        const segments =
+          scope === "selection" && selection.from < selection.to
+            ? extractMarkdownWritingSegments(source, { from: selection.from, to: selection.to })
+            : scope === "selection"
+              ? []
+              : extractMarkdownWritingSegments(source);
+        return { revision, segments };
+      },
+      show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void {
+        if (adapterDisposed || snapshot.revision !== revision) return;
+
+        const source = view.state.doc.toString();
+        const eligibleSegments = extractMarkdownWritingSegments(source);
+        const segmentsById = new Map<string, WritingSegment>();
+        for (const segment of snapshot.segments) {
+          if (!segmentsById.has(segment.id)) segmentsById.set(segment.id, segment);
+        }
+
+        const candidates: { issue: MarkdownWritingIssue; order: number }[] = [];
+        const usedIds = new Set<string>();
+        for (const [order, suggestion] of suggestions.entries()) {
+          if (
+            !suggestion.id ||
+            usedIds.has(suggestion.id) ||
+            !isWritingCategory(suggestion.category) ||
+            !Number.isInteger(suggestion.from) ||
+            !Number.isInteger(suggestion.to) ||
+            suggestion.from < 0 ||
+            suggestion.from >= suggestion.to ||
+            !suggestion.original ||
+            suggestion.replacement === suggestion.original ||
+            /[\r\n\0]/u.test(suggestion.replacement)
+          ) {
+            continue;
+          }
+          usedIds.add(suggestion.id);
+
+          const segment = segmentsById.get(suggestion.segmentId);
+          if (!segment || suggestion.to > segment.text.length) continue;
+          if (
+            !isCodePointBoundary(segment.text, suggestion.from) ||
+            !isCodePointBoundary(segment.text, suggestion.to) ||
+            segment.from < 0 ||
+            segment.to > source.length ||
+            segment.to - segment.from !== segment.text.length ||
+            source.slice(segment.from, segment.to) !== segment.text
+          ) {
+            continue;
+          }
+          const isCurrentProse = eligibleSegments.some(
+            (eligible) =>
+              segment.from >= eligible.from &&
+              segment.to <= eligible.to &&
+              source.slice(segment.from, segment.to) === segment.text,
+          );
+          if (!isCurrentProse) continue;
+
+          const from = segment.from + suggestion.from;
+          const to = segment.from + suggestion.to;
+          if (source.slice(from, to) !== suggestion.original) continue;
+
+          candidates.push({
+            issue: {
+              suggestion: { ...suggestion },
+              from,
+              to,
+              segmentFrom: segment.from,
+              segmentTo: segment.to,
+=======
+  const createAdapter = (view: EditorView): WritingEditorAdapter => {
+    adapterDisposed = false;
+    const dispatchEffect = (effect: MarkdownWritingEffect): void => {
+      if (adapterDisposed) return;
+      view.dispatch({ effects: effect });
+    };
+    const readState = (): MarkdownWritingState => view.state.field(reviewStateField);
+    const isEditable = (): boolean =>
+      !adapterDisposed && !view.state.facet(EditorState.readOnly) && view.state.facet(EditorView.editable);
+
+    const adapter: WritingEditorAdapter = {
+      snapshot(scope: WritingScope): WritingSnapshot {
+        const source = view.state.doc.toString();
+        const selection = view.state.selection.main;
+        const segments =
+          scope === "selection" && selection.from < selection.to
+            ? extractMarkdownWritingSegments(source, { from: selection.from, to: selection.to })
+            : scope === "selection"
+              ? []
+              : extractMarkdownWritingSegments(source);
+        return { revision, segments };
+      },
+      show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void {
+        if (adapterDisposed || snapshot.revision !== revision) return;
+
+        const source = view.state.doc.toString();
+        const eligibleSegments = extractMarkdownWritingSegments(source);
+        const segmentsById = new Map<string, WritingSegment>();
+        for (const segment of snapshot.segments) {
+          if (!segmentsById.has(segment.id)) segmentsById.set(segment.id, segment);
+        }
+
+        const candidates: { issue: MarkdownWritingIssue; order: number }[] = [];
+        const usedIds = new Set<string>();
+        for (const [order, suggestion] of suggestions.entries()) {
+          if (
+            !suggestion.id ||
+            usedIds.has(suggestion.id) ||
+            !isWritingCategory(suggestion.category) ||
+            !Number.isInteger(suggestion.from) ||
+            !Number.isInteger(suggestion.to) ||
+            suggestion.from < 0 ||
+            suggestion.from >= suggestion.to ||
+            !suggestion.original ||
+            suggestion.replacement === suggestion.original ||
+            /[\r\n\0]/u.test(suggestion.replacement)
+          ) {
+            continue;
+          }
+          usedIds.add(suggestion.id);
+
+          const segment = segmentsById.get(suggestion.segmentId);
+          if (!segment || suggestion.to > segment.text.length) continue;
+          if (
+            !isCodePointBoundary(segment.text, suggestion.from) ||
+            !isCodePointBoundary(segment.text, suggestion.to) ||
+            segment.from < 0 ||
+            segment.to > source.length ||
+            segment.to - segment.from !== segment.text.length ||
+            source.slice(segment.from, segment.to) !== segment.text
+          ) {
+            continue;
+          }
+          const isCurrentProse = eligibleSegments.some(
+            (eligible) =>
+              segment.from >= eligible.from &&
+              segment.to <= eligible.to &&
+              source.slice(segment.from, segment.to) === segment.text,
+          );
+          if (!isCurrentProse) continue;
+
+          const from = segment.from + suggestion.from;
+          const to = segment.from + suggestion.to;
+          if (source.slice(from, to) !== suggestion.original) continue;
+
+          candidates.push({
+            issue: {
+              suggestion: { ...suggestion },
+              from,
+              to,
+              segmentFrom: segment.from,
+              segmentTo: segment.to,
+>>>>>>> Stashed changes
             },
         }),
     ];
