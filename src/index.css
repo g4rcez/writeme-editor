@@ -217,29 +217,35 @@ code {
 .ai-markdown > :last-child {
     @apply mb-0;
 }
+.ai-markdown {
+    overflow-wrap: anywhere;
+}
 
 .ai-markdown h1,
 .ai-markdown h2,
 .ai-markdown h3 {
-    @apply mt-4 mb-2 leading-tight font-semibold text-foreground;
+    @apply mt-5 mb-2 leading-tight font-semibold text-foreground;
 }
 
 .ai-markdown h1 {
+    @apply text-xl;
+}
+
+.ai-markdown h2 {
+    @apply text-lg;
+}
+
+.ai-markdown h3 {
     @apply text-base;
 }
 
-.ai-markdown h2,
-.ai-markdown h3 {
-    @apply text-sm;
-}
-
 .ai-markdown p {
-    @apply my-2;
+    @apply my-3;
 }
 
 .ai-markdown ul,
 .ai-markdown ol {
-    @apply my-2 space-y-1 pl-5;
+    @apply my-3 space-y-1 pl-5;
 }
 
 .ai-markdown ul {

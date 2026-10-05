@@ -39,6 +39,19 @@ describe("AIChatMessageItem", () => {
         expect(screen.getByLabelText("Your message")).toHaveTextContent("Hello AI");
         expect(screen.getByLabelText("Assistant message")).toHaveTextContent("Hello human");
     });
+    it("keeps assistant actions with the answer", () => {
+        render(
+            <AIChatMessageList
+                messages={[createMessage({ role: "assistant", content: "A researched answer." })]}
+                isStreaming={false}
+                loadingMessageIndex={0}
+                renderActions={() => <button type="button">Sources and activity</button>}
+            />,
+        );
+
+        const assistantMessage = screen.getByLabelText("Assistant message");
+        expect(assistantMessage).toContainElement(screen.getByRole("button", { name: "Sources and activity" }));
+    });
 
     it("renders system errors as alerts", () => {
         render(
@@ -82,7 +95,9 @@ describe("AIChatMessageItem", () => {
                     role: "assistant",
                     content: "",
                     workspaceData: {
-                        activities: [{ id: "activity-1", toolName: "readNote", label: "Read a note", status: "complete" }],
+                        activities: [
+                            { id: "activity-1", toolName: "readNote", label: "Read a note", status: "complete" },
+                        ],
                         sources: [{ noteId: "note-1", title: "Research" }],
                         proposals: [],
                     },

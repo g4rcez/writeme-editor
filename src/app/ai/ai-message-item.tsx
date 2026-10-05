@@ -53,7 +53,7 @@ export function AIAssistantMarkdown({ content, tone = "default" }: { content: st
     return (
         <div
             className={css(
-                "ai-markdown space-y-4 text-base leading-relaxed text-foreground",
+                "ai-markdown max-w-[72ch] text-base leading-7 text-foreground",
                 tone === "inherit" && "ai-markdown--inherit",
             )}
         >
@@ -93,11 +93,13 @@ export function AIChatMessageItem({
     isStreaming = false,
     loadingIndex,
     maxWidthClass = "max-w-safe",
+    assistantFooter = null,
 }: {
     message: AIMessage;
     isStreaming?: boolean;
     loadingIndex: number;
     maxWidthClass?: string;
+    assistantFooter?: ReactNode;
 }) {
     if (message.role === "system") {
         const error = isErrorMessage(message);
@@ -124,10 +126,7 @@ export function AIChatMessageItem({
         return (
             <article
                 aria-label="Your message"
-                className={css(
-                    "max-w-72 items-end rounded-xl rounded-br-md bg-button-primary-bg px-4 py-3 text-sm text-button-primary-text",
-                    maxWidthClass,
-                )}
+                className="w-fit max-w-[min(88%,42rem)] break-words rounded-2xl rounded-br-md bg-button-primary-bg px-4 py-3 text-sm leading-6 text-button-primary-text"
             >
                 {message.content ? <AIAssistantMarkdown content={message.content} tone="inherit" /> : null}
                 <MessageAttachments message={message} />
@@ -136,12 +135,20 @@ export function AIChatMessageItem({
     }
 
     return (
-        <div className="flex w-full" aria-label="Assistant message">
-            <div className="flex w-full flex-col gap-3 px-4 py-3 text-foreground">
-                <header className="flex items-center gap-1">
-                    <ChatCircleDotsIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Assistant</p>
-                </header>
+        <article
+            aria-label="Assistant message"
+            className={css(
+                "flex w-full min-w-0 flex-col gap-4 rounded-xl border border-card-border bg-card-background/50 px-4 py-4 text-foreground sm:px-5",
+                maxWidthClass,
+            )}
+        >
+            <header className="flex items-center gap-2">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <ChatCircleDotsIcon aria-hidden="true" className="size-4" />
+                </span>
+                <p className="text-sm font-semibold text-foreground">Assistant</p>
+            </header>
+            <div className="min-w-0">
                 <AssistantRenderedBody
                     content={message.content}
                     isStreaming={isStreaming}
@@ -149,7 +156,8 @@ export function AIChatMessageItem({
                     hasWorkspaceData={hasWorkspaceData(message)}
                 />
             </div>
-        </div>
+            {assistantFooter ? <div className="border-t border-card-border pt-3">{assistantFooter}</div> : null}
+        </article>
     );
 }
 
@@ -167,11 +175,12 @@ export function AIChatMessageList({
     maxWidthClass?: string;
 }) {
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
             {messages.map((message, index) => {
                 const isLastAssistantStreaming =
                     isStreaming && index === messages.length - 1 && message.role === "assistant";
                 const withAction = renderActions?.(message) ?? null;
+                const assistantFooter = message.role === "assistant" ? withAction : null;
                 return (
                     <div
                         key={message.id}
@@ -187,8 +196,11 @@ export function AIChatMessageList({
                             maxWidthClass={maxWidthClass}
                             loadingIndex={loadingMessageIndex}
                             isStreaming={isLastAssistantStreaming}
+                            assistantFooter={assistantFooter}
                         />
-                        {withAction ? <div className={css("mt-2", maxWidthClass)}>{withAction}</div> : null}
+                        {message.role !== "assistant" && withAction ? (
+                            <div className={css("mt-2", maxWidthClass)}>{withAction}</div>
+                        ) : null}
                     </div>
                 );
             })}

@@ -1,20 +1,20 @@
-import { ArrowsCounterClockwiseIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { ArrowDownIcon, ArrowsCounterClockwiseIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
 import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { AIFile } from "@/app/ai/adapters/types";
-import { createWorkspaceMentionItems, type WorkspaceMentionFile } from "@/app/ai/chat-mentions";
+import type { AIMessage, AINoteEditProposal, AIWorkspaceData } from "@/store/repositories/electron/ai.repository";
 import { adapterRegistry } from "@/app/ai/adapters/registry";
 import { AI_CHAT_LOADING_MESSAGES, AIChatMessageList } from "@/app/ai/ai-message-item";
-import { WorkspaceChatDetails, WorkspaceProposalReview } from "@/app/ai/workspace-chat-details";
+import { createWorkspaceMentionItems, type WorkspaceMentionFile } from "@/app/ai/chat-mentions";
 import { createWorkspaceTools } from "@/app/ai/chat-tools";
 import { MarkdownChatComposer } from "@/app/ai/markdown-chat-composer";
 import { useAIChat } from "@/app/ai/use-ai-chat";
+import { WorkspaceChatDetails, WorkspaceProposalReview } from "@/app/ai/workspace-chat-details";
 import { buildWorkspaceContextSummary, getWorkspaceChatScope } from "@/app/ai/workspace-context";
 import { isElectron } from "@/lib/is-electron";
 import { getStorageMode } from "@/lib/storage-mode";
-import type { AIMessage, AINoteEditProposal, AIWorkspaceData } from "@/store/repositories/electron/ai.repository";
 import { repositories, useGlobalStore } from "@/store/global.store";
 
 const FILESYSTEM_APPROVAL_UNAVAILABLE_REASON =
@@ -25,6 +25,8 @@ const PROMPT_EXAMPLES = [
     "Find notes that mention open decisions and group them by project.",
     "List recent writing drafts with tags and next suggested actions.",
 ];
+
+const CHAT_FOLLOW_DISTANCE = 80;
 
 function getComposerDraft(chatId: string): string {
     try {
@@ -47,10 +49,15 @@ export default function ChatPage() {
     const navigate = useNavigate();
     const listRef = useRef<HTMLDivElement | null>(null);
     const reviewFocusTargetIdRef = useRef<string | null>(null);
+    const shouldFollowMessagesRef = useRef(true);
     const [searchParams, setSearchParams] = useSearchParams();
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [titleDraft, setTitleDraft] = useState("");
+    const [messageScrollState, setMessageScrollState] = useState<{ chatId: string | null; isAtLatest: boolean }>({
+        chatId: null,
+        isAtLatest: true,
+    });
     const [composerDrafts, setComposerDrafts] = useState<Record<string, string>>({});
     const [state, dispatch] = useGlobalStore((s) => ({
         notes: s.notes,
@@ -92,6 +99,7 @@ export default function ChatPage() {
     }, [state.directory]);
 
     const selectedChatId = searchParams.get("chatId");
+    const isAtLatestMessage = messageScrollState.chatId !== selectedChatId || messageScrollState.isAtLatest;
     const chatScopeId = useMemo(() => getWorkspaceChatScope(state.directory), [state.directory]);
     const { chat, messages, isStreaming, isLoading, send, cancel, config, renameChat } = useAIChat(
         undefined,
@@ -103,10 +111,7 @@ export default function ChatPage() {
         () => buildWorkspaceContextSummary(state.directory, state.notes, supportsWorkspaceTools),
         [state.directory, state.notes, supportsWorkspaceTools],
     );
-    const workspaceToolSession = useMemo(
-        () => createWorkspaceTools((data) => setLiveWorkspaceData(data)),
-        [],
-    );
+    const workspaceToolSession = useMemo(() => createWorkspaceTools((data) => setLiveWorkspaceData(data)), []);
 
     const latestMessageContent = messages.at(-1)?.content ?? "";
     const adapter = config ? adapterRegistry.get(config.adapterId) : undefined;
@@ -146,6 +151,7 @@ export default function ChatPage() {
         setReviewMessageId(null);
         setLiveWorkspaceData(null);
         reviewFocusTargetIdRef.current = null;
+        shouldFollowMessagesRef.current = true;
     }, [selectedChatId]);
 
     useEffect(() => {
@@ -168,13 +174,13 @@ export default function ChatPage() {
         setIsEditingTitle(false);
     }, [chat?.id, chat?.title]);
 
-
     useEffect(() => {
         const container = listRef.current;
-        if (!container) return;
-        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        if (!container || !shouldFollowMessagesRef.current) return;
+        const behavior =
+            isStreaming || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
         container.scrollTo({ top: container.scrollHeight, behavior });
-    }, [messages.length, latestMessageContent, isStreaming]);
+    }, [messages.length, latestMessageContent, isStreaming, selectedChatId, isAtLatestMessage]);
 
     useEffect(() => {
         if (!isStreaming) {
@@ -187,10 +193,42 @@ export default function ChatPage() {
         return () => window.clearInterval(intervalId);
     }, [isStreaming]);
 
+    const updateMessageFollowState = (isAtLatest: boolean): void => {
+        setMessageScrollState((current) => {
+            if (current.chatId === selectedChatId && current.isAtLatest === isAtLatest) return current;
+            return { chatId: selectedChatId, isAtLatest };
+        });
+    };
+
+    const handleMessageListScroll = (): void => {
+        const container = listRef.current;
+        if (!container) return;
+        const isAtLatest =
+            container.scrollHeight - container.scrollTop - container.clientHeight <= CHAT_FOLLOW_DISTANCE;
+        shouldFollowMessagesRef.current = isAtLatest;
+        updateMessageFollowState(isAtLatest);
+    };
+
+    const scrollToLatestMessage = (): void => {
+        const container = listRef.current;
+        if (!container) return;
+        shouldFollowMessagesRef.current = true;
+        updateMessageFollowState(true);
+        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        container.scrollTo({ top: container.scrollHeight, behavior });
+    };
+
+    const handleJumpToLatest = (): void => {
+        scrollToLatestMessage();
+        listRef.current?.focus({ preventScroll: true });
+    };
+
     const submitPrompt = async (value: string, files: AIFile[] = []): Promise<boolean> => {
         const prompt = value.trim();
         if ((!prompt && files.length === 0) || !config || isLoading || isStreaming) return false;
         workspaceToolSession.reset();
+        shouldFollowMessagesRef.current = true;
+        updateMessageFollowState(true);
         setLiveWorkspaceData(null);
         const sent = await send(
             prompt,
@@ -240,9 +278,7 @@ export default function ChatPage() {
         const workspaceData: AIWorkspaceData = {
             ...currentData,
             proposals: currentData.proposals.map((candidate) =>
-                candidate.id === proposalId
-                    ? { ...candidate, status, updatedAt: new Date().toISOString() }
-                    : candidate,
+                candidate.id === proposalId ? { ...candidate, status, updatedAt: new Date().toISOString() } : candidate,
             ),
         };
         await repositories.ai.saveMessage({ ...persistedMessage, workspaceData });
@@ -309,7 +345,9 @@ export default function ChatPage() {
                         onApprove={(proposal) => approveProposal(reviewMessage, proposal)}
                         onReject={(proposal) => rejectProposal(reviewMessage, proposal)}
                         onBack={() => setReviewMessageId(null)}
-                        approvalUnavailableReason={isFilesystemStorage ? FILESYSTEM_APPROVAL_UNAVAILABLE_REASON : undefined}
+                        approvalUnavailableReason={
+                            isFilesystemStorage ? FILESYSTEM_APPROVAL_UNAVAILABLE_REASON : undefined
+                        }
                     />
                 </div>
             );
@@ -359,7 +397,10 @@ export default function ChatPage() {
         return (
             <div className="mx-auto w-full max-w-3xl">
                 {sourceError ? (
-                    <p role="alert" className="mb-3 rounded-md border border-danger/40 bg-danger-subtle px-3 py-2 text-sm text-danger">
+                    <p
+                        role="alert"
+                        className="mb-3 rounded-md border border-danger/40 bg-danger-subtle px-3 py-2 text-sm text-danger"
+                    >
                         {sourceError}
                     </p>
                 ) : null}
@@ -402,7 +443,6 @@ export default function ChatPage() {
         if (isStreaming || isLoading || !config) return;
         void submitPrompt(prompt, []);
     };
-
 
     return (
         <section className="writeme-chat-page flex h-full min-h-0 w-full flex-col bg-background">
@@ -484,17 +524,34 @@ export default function ChatPage() {
                     </button>
                 </div>
             </header>
-            <div
-                ref={listRef}
-                className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6"
-                role={isReviewing ? undefined : "log"}
-                aria-live={isReviewing ? undefined : "polite"}
-                aria-label={isReviewing ? "Suggested edits review" : "Chat messages"}
-            >
-                {renderChatContent()}
+            <div className="flex min-h-0 flex-1 flex-col">
+                <div
+                    ref={listRef}
+                    onScroll={handleMessageListScroll}
+                    className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6 sm:py-6"
+                    role={isReviewing ? undefined : "log"}
+                    aria-live={isReviewing ? undefined : "polite"}
+                    aria-label={isReviewing ? "Suggested edits review" : "Chat messages"}
+                    tabIndex={-1}
+                >
+                    {renderChatContent()}
+                </div>
+                {!isReviewing && messages.length > 0 && !isAtLatestMessage ? (
+                    <div className="flex shrink-0 justify-center py-2">
+                        <button
+                            type="button"
+                            onClick={handleJumpToLatest}
+                            aria-label="Jump to latest message"
+                            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-card-border bg-card-background px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <ArrowDownIcon size={16} aria-hidden="true" />
+                            Jump to latest
+                        </button>
+                    </div>
+                ) : null}
             </div>
             {isReviewing ? null : (
-                <div className="shrink-0 border-t border-border/45 bg-background px-4 pt-4 pb-4 sm:px-6">
+                <div className="shrink-0 border-t border-border/45 bg-background px-3 pt-3 pb-3 sm:px-6 sm:pt-4 sm:pb-4">
                     <div className="mx-auto w-full max-w-3xl">
                         {isStreaming ? (
                             <div className="mb-2 flex items-center justify-between rounded-lg border border-border/45 bg-card-background px-3 py-2 text-sm text-muted-foreground">

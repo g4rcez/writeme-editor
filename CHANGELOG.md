@@ -53,6 +53,8 @@
 - Preserve unsent AI conversation drafts per conversation and allow renaming conversations.
 - Add fuzzy @ suggestions for workspace notes and files in AI chat.
 - Add explicit AI writing review and safe inline suggestions to formatted and Markdown notes, plus native spellcheck corrections.
+- Keep long AI conversations readable with a wider message rhythm, clearer user bubbles, and a jump-to-latest control that respects manual scrolling.
+- Present AI answers as readable, lightly framed responses with source links and workspace activity close at hand.
 
 ### Build System
 

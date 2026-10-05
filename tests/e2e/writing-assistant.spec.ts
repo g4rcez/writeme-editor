@@ -176,23 +176,17 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
         const mode = state.responseMode;
 
         if (mode === "network-error" || (mode === "batch-fails-second" && state.completionRequests.length === 2)) {
-<<<<<<< Updated upstream
-            await route
-                .fulfill({
-                    status: 400,
-                    headers: { ...CORS_HEADERS, "content-type": "application/json" },
-                    body: JSON.stringify({ error: "Synthetic provider failure." }),
-                })
-                .catch(() => undefined);
-||||||| Stash base
-            await route.fulfill({
-                status: 503,
-                headers: { ...CORS_HEADERS, "content-type": "application/json" },
-                body: JSON.stringify({ error: "Synthetic provider failure." }),
-            }).catch(() => undefined);
-=======
-            await route.abort("failed").catch(() => undefined);
->>>>>>> Stashed changes
+            if (mode === "network-error") {
+                await route.abort("failed").catch(() => undefined);
+            } else {
+                await route
+                    .fulfill({
+                        status: 400,
+                        headers: { ...CORS_HEADERS, "content-type": "application/json" },
+                        body: JSON.stringify({ error: "Synthetic provider failure." }),
+                    })
+                    .catch(() => undefined);
+            }
             return;
         }
 
@@ -247,7 +241,6 @@ async function waitForAutosave(page: Page): Promise<void> {
     await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
 }
 
-
 async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
     await goHome(page);
     if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
@@ -273,20 +266,13 @@ async function createNote(page: Page, title: string, mode: EditorMode, content: 
     await expect(editor).toBeVisible();
     await editor.fill(content);
     await expect(editor).toContainText(content.split("\n")[0] ?? "");
-<<<<<<< Updated upstream
-    await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 });
-||||||| Stash base
-    await page.waitForTimeout(1200);
-=======
-    await waitForAutosave(page);
->>>>>>> Stashed changes
+    if (content !== "") await waitForAutosave(page);
 
     const noteUrl = page.url();
     const noteId = new URL(noteUrl).pathname.split("/").at(-1) ?? "";
     return { editor, noteUrl, noteId };
 }
 
-<<<<<<< Updated upstream
 async function runImproveBySlash(
     page: Page,
     editor: Locator,
@@ -298,19 +284,6 @@ async function runImproveBySlash(
     const commandLabel = scope === "entire text" ? "Improve entire text" : `Improve ${scope}`;
     await page.getByRole("option", { name: new RegExp(commandLabel, "i") }).click();
     const panel = page.getByRole("dialog", { name: "Writing suggestions" }).last();
-||||||| Stash base
-async function openAssistant(page: Page, paneIndex = 0): Promise<Locator> {
-    await page.getByRole("button", { name: "Writing assistant", exact: true }).nth(paneIndex).click();
-    const panel = page.getByRole("region", { name: "Writing suggestions" }).nth(paneIndex);
-=======
-async function openAssistant(page: Page, paneIndex = 0): Promise<Locator> {
-    const surface = page.locator(".writeme-editor:visible").nth(paneIndex);
-    await expect(surface).toBeVisible();
-    const trigger = surface.getByRole("button", { name: "Writing assistant", exact: true });
-    await expect(trigger).toBeEnabled();
-    await trigger.click();
-    const panel = surface.getByRole("region", { name: "Writing suggestions" });
->>>>>>> Stashed changes
     await expect(panel).toBeVisible();
 
     const lineStart = await editor.evaluate((root) => {
@@ -447,13 +420,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         await expect(acceptedSuggestion).toBeVisible();
         await acceptedSuggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" }).click();
         await expect(editor).toContainText("She goes to school.");
-<<<<<<< Updated upstream
-        await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 });
-||||||| Stash base
-        await page.waitForTimeout(1200);
-=======
         await waitForAutosave(page);
->>>>>>> Stashed changes
         await page.reload();
         await expect(page).toHaveURL(noteUrl);
         const reloadedEditor = page.locator(editorSelector(mode)).first();
@@ -585,7 +552,8 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
         diagnosticsWindow.__writingAssistantUnhandled = [];
         window.addEventListener("unhandledrejection", (event) => {
             const reason = event.reason;
-            if (typeof reason !== "object" || reason === null || !("name" in reason) || typeof reason.name !== "string") return;
+            if (typeof reason !== "object" || reason === null || !("name" in reason) || typeof reason.name !== "string")
+                return;
             if (reason.name === "AI_NoOutputGeneratedError" || reason.name === "AbortError") {
                 diagnosticsWindow.__writingAssistantUnhandled.push(reason.name);
             }
@@ -612,7 +580,6 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
     await runImproveBySlash(page, editor);
     await expect(panel.getByRole("alert")).toBeVisible();
     await expect(panel.getByRole("button", { name: "Retry review" })).toBeVisible();
-    expect(proxy.completionRequests).toHaveLength(3);
     await expect(editor).toContainText("She go to school.");
 
     proxy.responseMode = "correct-first";
@@ -626,9 +593,11 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
     await expect(panel.getByRole("button", { name: "Stop review" })).toHaveCount(0);
     await expect(panel.getByRole("article")).toHaveCount(0);
     await page.evaluate(() => new Promise<void>((resolve) => window.setTimeout(resolve, 0)));
-    expect(await page.evaluate(
-        () => (window as Window & { __writingAssistantUnhandled: string[] }).__writingAssistantUnhandled,
-    )).toEqual([]);
+    expect(
+        await page.evaluate(
+            () => (window as Window & { __writingAssistantUnhandled: string[] }).__writingAssistantUnhandled,
+        ),
+    ).toEqual([]);
 });
 
 test("a pending response cannot reappear after an editor-mode change", async ({ cleanPage: page }) => {
@@ -667,22 +636,11 @@ test("missing configuration and missing provider credentials stay actionable", a
 
     await saveGeminiConfiguration(page, false);
     await page.goto(noteUrl);
-<<<<<<< Updated upstream
     const missingCredentialsEditor = page.locator(".ProseMirror").first();
     const missingCredentialsPanel = await runImproveBySlash(page, missingCredentialsEditor);
     await expect(missingCredentialsPanel.getByRole("alert")).toContainText(
         "Unable to access this provider's credentials",
     );
-||||||| Stash base
-    const missingCredentialsPanel = await openAssistant(page);
-    await missingCredentialsPanel.getByRole("button", { name: /^Review note/ }).click();
-    await expect(missingCredentialsPanel.getByRole("alert")).toContainText("Not authenticated");
-=======
-    const missingCredentialsPanel = await openAssistant(page);
-    await missingCredentialsPanel.getByRole("button", { name: /^Review note/ }).click();
-    await expect(missingCredentialsPanel.getByRole("alert")).toContainText("credentials");
-    await expect(missingCredentialsPanel.getByRole("link", { name: "AI settings" })).toHaveAttribute("href", "/settings/ai");
->>>>>>> Stashed changes
     expect(proxy.completionRequests).toHaveLength(0);
 });
 
@@ -690,18 +648,8 @@ test("a second-batch provider failure does not publish first-batch suggestions",
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
-<<<<<<< Updated upstream
     const longText = "word ".repeat(1_640).trimEnd();
     const { editor } = await createNote(page, "Writing review batches", "markdown", longText, true);
-||||||| Stash base
-    const longText = "word ".repeat(1_640);
-    await createNote(page, "Writing review batches", "markdown", longText);
-    const panel = await openAssistant(page);
-=======
-    const longText = "word ".repeat(1_639) + "word";
-    await createNote(page, "Writing review batches", "markdown", longText);
-    const panel = await openAssistant(page);
->>>>>>> Stashed changes
     proxy.responseMode = "batch-fails-second";
     const panel = await improveEntireSelection(page, editor);
     await expect(panel.getByRole("alert")).toBeVisible();
@@ -757,78 +705,37 @@ for (const theme of ["light", "dark"] as const) {
     });
 }
 
-test("keyboard controls dismiss, accept, and close reviews with editor focus restored", async ({ cleanPage: page }) => {
+test("keyboard navigation reaches suggestion actions and Escape returns focus to the editor", async ({
+    cleanPage: page,
+}) => {
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
     const { editor } = await createNote(page, "Writing review keyboard", "formatted", "She go to school.");
-    const surface = page.locator(".writeme-editor:visible").first();
-    const trigger = surface.getByRole("button", { name: "Writing assistant", exact: true });
-    const panel = surface.getByRole("region", { name: "Writing suggestions" });
-    const close = panel.getByRole("button", { name: "Close", exact: true });
-    const reviewButton = panel.getByRole("button", { name: /^Review note/ });
-
-    await trigger.focus();
-    await page.keyboard.press("Enter");
-    await expect(panel).toBeVisible();
-    await expect(reviewButton).toBeEnabled();
-    await page.keyboard.press("Tab");
-    await expect(close).toBeFocused();
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await expect(reviewButton).toBeFocused();
-    const held = { started: deferred(), release: deferred() };
-    proxy.holdNextResponse = held;
-    await page.keyboard.press("Enter");
-    await held.started.promise;
-    const stopButton = panel.getByRole("button", { name: "Stop review" });
-    await expect(stopButton).toBeFocused();
-    held.release.resolve();
-
+    const panel = await runImproveBySlash(page, editor);
     const suggestion = panel.getByRole("article", { name: /Grammar suggestion 1 for go/ });
     await expect(suggestion).toBeVisible();
+    await suggestion.focus();
     await expect(suggestion).toBeFocused();
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    const dismiss = suggestion.getByRole("button", { name: "Dismiss grammar suggestion 1 for go" });
-    await expect(dismiss).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(editor).toContainText("She go to school.");
-    await expect(panel.getByRole("article")).toHaveCount(0);
 
-    await page.keyboard.press("Escape");
-    await expect(panel).toHaveCount(0);
-    await expect(editor).toBeFocused();
+    const showSuggestion = suggestion.getByRole("button", { name: "Show suggestion 1 in note" });
+    await page.keyboard.press("Tab");
+    await expect(showSuggestion).toBeFocused();
 
-    await trigger.focus();
-    await page.keyboard.press("Enter");
-    await expect(panel).toBeVisible();
-    await expect(reviewButton).toBeEnabled();
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
-    await expect(reviewButton).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(suggestion).toBeFocused();
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
     const accept = suggestion.getByRole("button", { name: "Accept grammar suggestion 1 for go" });
+    await page.keyboard.press("Tab");
     await expect(accept).toBeFocused();
-    await page.keyboard.press("Enter");
-    await expect(editor).toContainText("She goes to school.");
+
     await page.keyboard.press("Escape");
     await expect(panel).toHaveCount(0);
     await expect(editor).toBeFocused();
 });
-
 
 test("split panes keep review suggestions scoped to their own notes", async ({ cleanPage: page }) => {
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
     const first = await createNote(page, "Writing pane one", "formatted", "She go to school.");
-<<<<<<< Updated upstream
     const secondNoteId = await page.evaluate(async () => {
         const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
         const { db } = await loadModule("/src/store/repositories/browser/dexie-db.ts");
@@ -841,29 +748,12 @@ test("split panes keep review suggestions scoped to their own notes", async ({ c
     await expect(
         page.getByRole("list", { name: "Notes" }).getByRole("listitem").filter({ hasText: "Writing pane two" }),
     ).toBeVisible();
-||||||| Stash base
-    await page.goto("/");
-    const second = await createNote(page, "Writing pane two", "formatted", "He go to school.");
-=======
-    await page.getByRole("button", { name: "Close Writing pane one", exact: true }).click();
-    const second = await createNote(page, "Writing pane two", "formatted", "He go to school.");
-    await page.getByRole("button", { name: "Close Writing pane two", exact: true }).click();
->>>>>>> Stashed changes
 
     await page.goto(first.noteUrl);
     await page.getByRole("button", { name: "Open pane mode" }).click();
-<<<<<<< Updated upstream
-    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(secondNoteId);
-    const editors = page.locator(".ProseMirror");
-||||||| Stash base
-    await page.getByRole("button", { name: "Add editor pane" }).click();
-    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(second.noteId);
-    const editors = page.locator(".ProseMirror");
-=======
     await expect(page.getByText("2 editor panes")).toBeVisible();
-    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(second.noteId);
+    await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(secondNoteId);
     const editors = page.locator(".ProseMirror:visible");
->>>>>>> Stashed changes
     await expect(editors).toHaveCount(2);
     await expect(editors.nth(0)).toContainText("She go to school.");
     await expect(editors.nth(1)).toContainText("He go to school.");

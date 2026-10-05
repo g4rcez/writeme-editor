@@ -5,13 +5,13 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { type DragEvent, type KeyboardEvent, type SubmitEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { AIAdapter, AIFile } from "@/app/ai/adapters/types";
 import type { EditorMentionItem } from "@/lib/editor-storage";
-import type { Note } from "@/store/note";
 import type { Theme } from "@/store/global.store";
+import type { Note } from "@/store/note";
 import { AIFileAttachment, getClipboardFiles, useAIFileAttachments } from "@/app/ai/ai-file-attachment";
 import { getThemeForMode } from "@/app/elements/code-block";
-import { setEditorAllNotes, setEditorMentionItems } from "@/lib/editor-storage";
 import { createExtensions } from "@/app/extensions";
 import { refreshMentionSuggestions } from "@/app/extensions/suggestion";
+import { setEditorAllNotes, setEditorMentionItems } from "@/lib/editor-storage";
 
 type MarkdownChatComposerProps = {
     theme: Theme;
@@ -96,7 +96,6 @@ export function MarkdownChatComposer({
         setMarkdown(editor.getMarkdown().trim());
     }, [content, editor]);
 
-
     useEffect(() => {
         if (!editor) return;
         setEditorAllNotes(editor, allNotes);
@@ -109,10 +108,7 @@ export function MarkdownChatComposer({
     }, [disabled, editor, isStreaming]);
 
     const canSend =
-        (markdown.length > 0 || files.length > 0) &&
-        !disabled &&
-        !isStreaming &&
-        !attachmentController.isPreparing;
+        (markdown.length > 0 || files.length > 0) && !disabled && !isStreaming && !attachmentController.isPreparing;
 
     async function submit(): Promise<void> {
         if (!editor || !canSend) return;
@@ -167,7 +163,7 @@ export function MarkdownChatComposer({
             onDragOverCapture={handleDragOver}
             onDropCapture={handleDrop}
             aria-label="AI message composer"
-            className="rounded-xl border border-card-border bg-card-background px-3 py-2 transition-colors focus-within:border-primary/50"
+            className="rounded-2xl border border-card-border bg-card-background px-4 py-3 transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30 sm:px-5"
         >
             {adapter?.supportsFiles ? (
                 <AIFileAttachment files={files} controller={attachmentController} disabled={disabled || isStreaming} />
@@ -181,7 +177,7 @@ export function MarkdownChatComposer({
                     onClick={isStreaming ? onCancel : undefined}
                     disabled={isStreaming ? false : !canSend}
                     className={css(
-                        "mb-1 inline-flex size-8 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
+                        "mb-1 inline-flex size-10 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
                         isStreaming
                             ? "bg-danger text-button-primary-text"
                             : "bg-button-primary-bg text-button-primary-text",

@@ -92,16 +92,9 @@ test.describe("Create note flow", () => {
         await expect(editor).toContainText(NOTE_BODY);
 
         const noteUrl = page.url();
-<<<<<<< Updated upstream
-        await expect(page.locator(".writeme-editor-status-bar output")).toHaveText("Saved", { timeout: 10_000 });
-||||||| Stash base
-        // editor debounces saves at 500ms — wait for autosave flush before reload
-        await page.waitForTimeout(1200);
-=======
         const saveStatus = page.locator(".writeme-editor-status-bar output").first();
         await expect(saveStatus).toHaveText("Unsaved changes");
         await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
->>>>>>> Stashed changes
         await page.reload();
         await expect(page).toHaveURL(noteUrl);
         await expect(page.locator(".ProseMirror").first()).toContainText(NOTE_BODY);
