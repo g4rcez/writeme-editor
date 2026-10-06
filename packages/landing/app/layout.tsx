@@ -16,13 +16,13 @@ const fontMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "WriteMe: Just you and your thoughts",
+  title: "Write Me — a space to think",
   description:
-    "A zero-distraction workspace for your mind. Privacy by design, focus by nature. Local-first, lightning-fast.",
+    "A local-first writing app for notes, drafts, and ideas, with Markdown, search, keyboard shortcuts, and AI assistance on web and desktop.",
   openGraph: {
-    title: "WriteMe: Just you and your thoughts",
+    title: "Write Me — a space to think",
     description:
-      "A zero-distraction workspace for your mind. Privacy by design, focus by nature. Local-first, lightning-fast.",
+      "A local-first writing app for notes, drafts, and ideas, with Markdown, search, keyboard shortcuts, and AI assistance on web and desktop.",
     type: "website",
     url: "https://app.writeme.dev",
   },

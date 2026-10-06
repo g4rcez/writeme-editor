@@ -74,7 +74,7 @@ export function HexagonBackground({
         className
       )}
     >
-      <div className="absolute inset-0 overflow-hidden opacity-80">
+      <div className="absolute inset-0 overflow-hidden opacity-100">
         {Array.from({ length: grid.rows }).map((_, rowIndex) => {
           const isOddRow = rowIndex % 2 === 1
           const marginLeft = isOddRow
@@ -96,13 +96,10 @@ export function HexagonBackground({
                 <div
                   key={`${rowIndex}-${colIndex}`}
                   className={cn(
-                    "relative shrink-0 transition-colors duration-700",
-                    "ease-out [clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]",
-                    "before:absolute before:inset-0 before:bg-[var(--border-color)] before:transition-colors before:duration-700",
-                    "after:absolute after:inset-(--margin) after:bg-background after:transition-colors after:duration-500",
-                    "after:[clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]",
-                    "hover:before:bg-[var(--glow-color)] hover:before:shadow-[0_0_20px_var(--glow-color)] hover:before:duration-0",
-                    "hover:after:bg-card hover:after:duration-0"
+                    "hive-cell relative shrink-0 [clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]",
+                    "before:absolute before:inset-0 before:bg-[var(--border-color)]",
+                    "after:absolute after:inset-(--margin) after:bg-background",
+                    "after:[clip-path:polygon(50%_0%,100%_25%,100%_75%,50%_100%,0%_75%,0%_25%)]"
                   )}
                   style={hexagonStyle}
                 />
@@ -113,10 +110,10 @@ export function HexagonBackground({
       </div>
 
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-60"
         style={{
           background:
-            "radial-gradient(ellipse at 30% 20%, color-mix(in oklch, var(--primary) 20%, transparent) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 52%)",
+            "radial-gradient(ellipse at 30% 20%, color-mix(in oklch, var(--emphasis) 23%, transparent) 0%, transparent 48%), radial-gradient(ellipse at 70% 80%, color-mix(in oklch, var(--emphasis) 13%, transparent) 0%, transparent 54%)",
         }}
       />
 
@@ -124,7 +121,7 @@ export function HexagonBackground({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at center, transparent 0%, transparent 40%, var(--background) 100%)",
+            "radial-gradient(ellipse at center, transparent 0%, transparent 68%, color-mix(in oklch, var(--background) 22%, transparent) 100%)",
         }}
       />
 

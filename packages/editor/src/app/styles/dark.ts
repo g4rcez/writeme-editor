@@ -1,7 +1,7 @@
 import type { WritemeThemeTokens } from "./theme-css";
 
-const foreground = "hsla(131, 20%, 80%)";
-const mutedForeground = "hsla(131, 20%, 74%)";
+const foreground = "hsla(42, 22%, 91%)";
+const mutedForeground = "hsla(42, 10%, 70%)";
 
 export const darkTheme = {
     custom: {
@@ -29,9 +29,9 @@ export const darkTheme = {
         },
         emphasis: {
             foreground: "hsla(0, 0%, 9%)",
-            DEFAULT: "hsla(90, 74%, 57%)",
-            subtle: "hsla(90, 74%, 15%)",
-            hover: "hsla(90, 74%, 50%)",
+            DEFAULT: "hsla(258, 100%, 80%)",
+            subtle: "hsla(258, 40%, 16%)",
+            hover: "hsla(258, 100%, 74%)",
         },
         primary: {
             foreground: "hsla(0, 0%, 9%)",

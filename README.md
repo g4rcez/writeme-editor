@@ -44,17 +44,18 @@ brew install --cask writeme
 brew install g4rcez/writeme/writeme
 ```
 
-### Other platforms
+### Desktop downloads
 
-Download the latest release for your platform from the [releases page](https://github.com/g4rcez/writeme-editor/releases):
+Download the **v1.1.0** desktop release for your platform:
 
-| Platform              | File                           |
-| --------------------- | ------------------------------ |
-| macOS (Apple Silicon) | `writeme-<version>-arm64.dmg`  |
-| macOS (Intel)         | `writeme-<version>-x64.dmg`    |
-| Windows               | `writeme-setup.exe`            |
-| Linux (Debian/Ubuntu) | `writeme_<version>_amd64.deb`  |
-| Linux (Fedora/RHEL)   | `writeme-<version>.x86_64.rpm` |
+| Platform                      | Package            | Download                                                                                                       |
+| ----------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| macOS (Apple Silicon / ARM64) | Unsigned `.dmg`    | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-arm64-unsigned.dmg) |
+| Windows (x64)                 | Installer (`.exe`) | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-setup.exe)          |
+| Linux (Debian/Ubuntu, x64)    | `.deb`             | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-amd64.deb)          |
+| Linux (Fedora/RHEL, x64)      | `.rpm`             | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-x86_64.rpm)         |
+
+The v1.1.0 macOS download targets Apple Silicon only and is unsigned. See the [release notes](https://github.com/g4rcez/writeme-editor/releases/tag/v1.1.0) for first-launch steps.
 
 ---
 

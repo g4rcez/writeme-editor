@@ -1,7 +1,7 @@
 import type { WritemeThemeTokens } from "./theme-css";
 
-const foreground = "hsla(131, 20%, 16%)";
-const mutedForeground = "hsla(131, 10%, 30%)";
+const foreground = "hsla(225, 20%, 16%)";
+const mutedForeground = "hsla(225, 10%, 34%)";
 const background = "hsla(245, 20%, 99%)";
 const surface = "hsla(245, 24%, 96%)";
 const surfaceRaised = "hsla(245, 20%, 99%)";
@@ -12,7 +12,7 @@ const primarySubtle = "hsla(258, 65%, 94%)";
 const secondary = "hsla(245, 44%, 34%)";
 const secondaryHover = "hsla(245, 44%, 28%)";
 const secondarySubtle = "hsla(245, 55%, 94%)";
-const emphasis = "hsla(90, 60%, 22%)";
+const emphasis = primary;
 const info = "hsla(185, 90%, 20%)";
 const warn = "hsla(45, 100%, 20%)";
 const danger = "hsla(0, 72%, 32%)";
@@ -45,10 +45,10 @@ export const lightTheme = {
             hover: surface,
         },
         emphasis: {
-            foreground: onWarn,
+            foreground: onDark,
             DEFAULT: emphasis,
-            subtle: "hsla(90, 60%, 92%)",
-            hover: "hsla(90, 64%, 18%)",
+            subtle: primarySubtle,
+            hover: primaryHover,
         },
         primary: {
             foreground: onDark,

@@ -58,6 +58,7 @@
 - Review prose more thoroughly without forcing edits; show a concise “Looks good” state and offer a full-note
   review when a selected-text review finds no changes.
 - Refine editor typography and responsive toolbar controls.
+- Redesign the landing page around the real product screenshot and a responsive hive-hover hero.
 - Improve sidebar hierarchy, responsive sizing, and file-tree focus states.
 - Refine the home dashboard hero, note previews, and empty-state shortcuts.
 - Preserve unsent AI conversation drafts per conversation and allow renaming conversations.
@@ -65,6 +66,7 @@
 - Add explicit AI writing review and safe inline suggestions to formatted and Markdown notes, plus native spellcheck corrections.
 - Keep long AI conversations readable with a wider message rhythm, clearer user bubbles, and a jump-to-latest control that respects manual scrolling.
 - Present AI answers as readable, lightly framed responses with source links and workspace activity close at hand.
+- Add recognizable Windows, Apple, and Linux icons to desktop download options.
 
 ### Build System
 
@@ -84,6 +86,7 @@
 - Require explicit web note deletion and surface storage startup failures instead of rendering an empty workspace.
 - Close floating notes on Escape before editor suggestions can consume the key.
 - Align the chat heading with its content column, remove the editor’s inner focus outline, and apply composer styles to the ProseMirror root.
+- Restore purple emphasis and neutral foreground colors in the default light and dark themes.
 
 ## [1.0.6](https://github.com/g4rcez/writeme-editor/compare/v1.0.5...v1.0.6) (2026-05-20)
 

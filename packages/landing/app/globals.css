@@ -6,47 +6,49 @@
 
 :root,
 .dark {
-  --background: hsla(0, 0%, 9%);
-  --foreground: hsla(131, 20%, 80%);
-  --card: hsla(245, 2%, 9%);
-  --card-foreground: hsla(131, 20%, 80%);
-  --popover: hsla(245, 2%, 9%);
-  --popover-foreground: hsla(131, 20%, 80%);
-  --primary: hsla(258, 100%, 80%);
-  --primary-foreground: hsla(0, 0%, 9%);
-  --primary-hover: hsla(258, 100%, 74%);
-  --primary-subtle: hsla(258, 40%, 25%);
-  --secondary: hsla(245, 44%, 36%);
-  --secondary-foreground: hsla(131, 20%, 80%);
-  --secondary-hover: hsla(245, 44%, 44%);
-  --secondary-background: hsla(245, 44%, 22%);
-  --muted: hsla(0, 0%, 20%);
-  --muted-foreground: hsla(131, 20%, 70%);
-  --accent: hsla(258, 40%, 25%);
-  --accent-foreground: hsla(258, 100%, 80%);
-  --emphasis: hsla(90, 74%, 57%);
-  --emphasis-foreground: hsla(0, 0%, 9%);
-  --emphasis-subtle: hsla(90, 74%, 15%);
-  --destructive: hsla(0, 85%, 65%);
-  --destructive-foreground: hsla(0, 0%, 9%);
-  --destructive-hover: hsla(0, 85%, 60%);
-  --border: hsla(245, 12%, 15%);
-  --input: hsla(245, 12%, 19%);
-  --ring: hsla(258, 100%, 80%);
-  --chart-1: hsla(258, 100%, 80%);
-  --chart-2: hsla(90, 74%, 57%);
-  --chart-3: hsla(185, 90%, 65%);
-  --chart-4: hsla(45, 100%, 60%);
-  --chart-5: hsla(0, 85%, 65%);
+  color-scheme: dark;
+  --background: hsl(225 20% 6%);
+  --foreground: hsl(42 22% 91%);
+  --card: hsl(225 17% 9%);
+  --card-foreground: hsl(42 22% 91%);
+  --popover: hsl(225 17% 9%);
+  --popover-foreground: hsl(42 22% 91%);
+  --primary: hsl(258 100% 80%);
+  --primary-foreground: hsl(0 0% 9%);
+  --primary-hover: hsl(258 100% 74%);
+  --primary-subtle: hsl(258 40% 16%);
+  --secondary: hsl(225 12% 14%);
+  --secondary-foreground: hsl(42 16% 88%);
+  --secondary-hover: hsl(225 11% 19%);
+  --secondary-background: hsl(224 14% 12%);
+  --muted: hsl(225 14% 12%);
+  --muted-foreground: hsl(42 10% 70%);
+  --accent: hsl(258 40% 16%);
+  --accent-foreground: hsl(258 100% 85%);
+  --emphasis: hsl(258 100% 80%);
+  --emphasis-foreground: hsl(0 0% 9%);
+  --emphasis-subtle: hsl(258 40% 16%);
+  --destructive: hsl(4 74% 60%);
+  --destructive-foreground: hsl(222 25% 7%);
+  --destructive-hover: hsl(4 74% 55%);
+  --border: hsl(223 10% 19%);
+  --input: hsl(223 10% 24%);
+  --ring: hsl(258 100% 80%);
+  --chart-1: hsl(258 100% 80%);
+  --chart-2: hsl(185 76% 62%);
+  --chart-3: hsl(31 86% 64%);
+  --chart-4: hsl(262 72% 74%);
+  --chart-5: hsl(4 74% 60%);
   --radius: 0.55rem;
-  --sidebar: hsla(245, 2%, 9%);
-  --sidebar-foreground: hsla(131, 20%, 80%);
-  --sidebar-primary: hsla(258, 100%, 80%);
-  --sidebar-primary-foreground: hsla(0, 0%, 9%);
-  --sidebar-accent: hsla(258, 40%, 25%);
-  --sidebar-accent-foreground: hsla(258, 100%, 80%);
-  --sidebar-border: hsla(245, 12%, 15%);
-  --sidebar-ring: hsla(258, 100%, 80%);
+  --sidebar: hsl(225 17% 9%);
+  --sidebar-foreground: hsl(42 22% 91%);
+  --sidebar-primary: hsl(258 100% 80%);
+  --sidebar-primary-foreground: hsl(0 0% 9%);
+  --sidebar-accent: hsl(258 40% 16%);
+  --sidebar-accent-foreground: hsl(258 100% 85%);
+  --sidebar-border: hsl(223 10% 19%);
+  --sidebar-ring: hsl(258 100% 80%);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @theme inline {
@@ -105,11 +107,13 @@
 @layer base {
   html {
     @apply scroll-smooth font-sans;
+    scroll-padding-top: 5rem;
   }
 
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "cv01", "cv02", "cv03", "cv04", "ss01";
+    caret-color: var(--emphasis);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -125,5 +129,57 @@
       scroll-behavior: auto !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+::selection {
+  background: var(--emphasis);
+  color: var(--emphasis-foreground);
+}
+
+.hero-wash {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--background) 35%, transparent) 0%,
+      color-mix(in oklab, var(--background) 15%, transparent) 38%,
+      transparent 68%
+    ),
+    linear-gradient(0deg, color-mix(in oklab, var(--background) 34%, transparent) 0%, transparent 55%);
+}
+
+.hive-cell {
+  transition: filter 360ms var(--ease-out);
+}
+
+.hive-cell::after {
+  transition: background-color 320ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hive-cell:hover {
+    z-index: 1;
+    filter:
+      drop-shadow(0 0 8px color-mix(in oklch, var(--emphasis) 76%, transparent))
+      drop-shadow(0 0 28px color-mix(in oklch, var(--emphasis) 54%, transparent))
+      drop-shadow(0 0 58px color-mix(in oklch, var(--emphasis) 25%, transparent));
+    transition-duration: 60ms;
+  }
+
+  .hive-cell:hover::after {
+    background-color: color-mix(in oklch, var(--emphasis) 18%, var(--background));
+    transition-duration: 60ms;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-wash {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 24%, transparent) 0%,
+        color-mix(in oklab, var(--background) 12%, transparent) 40%,
+        transparent 64%
+      );
   }
 }
