@@ -1,3 +1,9 @@
+/* Hallmark · genre: editorial · macrostructure: Workbench · design-system: DESIGN.md · designed-as-app
+ * tone: austere · anchor hue: violet
+ * audience: writers in general · use: web app or desktop
+ * nav: existing N1b-like · footer: existing Ft2-like
+ * pre-emit critique: P5 H4 E4 S5 R5 V4
+ */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -107,11 +113,13 @@
 @layer base {
   html {
     @apply scroll-smooth font-sans;
+    overflow-x: clip;
     scroll-padding-top: 5rem;
   }
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: clip;
     font-feature-settings: "cv01", "cv02", "cv03", "cv04", "ss01";
     caret-color: var(--emphasis);
   }
@@ -132,6 +140,11 @@
   }
 }
 
+.landing-page :is(h1, h2, h3) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 ::selection {
   background: var(--emphasis);
   color: var(--emphasis-foreground);
@@ -145,7 +158,11 @@
       color-mix(in oklab, var(--background) 15%, transparent) 38%,
       transparent 68%
     ),
-    linear-gradient(0deg, color-mix(in oklab, var(--background) 34%, transparent) 0%, transparent 55%);
+    linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--background) 34%, transparent) 0%,
+      transparent 55%
+    );
 }
 
 .hive-cell {
@@ -159,27 +176,35 @@
 @media (hover: hover) and (pointer: fine) {
   .hive-cell:hover {
     z-index: 1;
-    filter:
-      drop-shadow(0 0 8px color-mix(in oklch, var(--emphasis) 76%, transparent))
-      drop-shadow(0 0 28px color-mix(in oklch, var(--emphasis) 54%, transparent))
-      drop-shadow(0 0 58px color-mix(in oklch, var(--emphasis) 25%, transparent));
+    filter: drop-shadow(
+        0 0 8px color-mix(in oklch, var(--emphasis) 76%, transparent)
+      )
+      drop-shadow(
+        0 0 28px color-mix(in oklch, var(--emphasis) 54%, transparent)
+      )
+      drop-shadow(
+        0 0 58px color-mix(in oklch, var(--emphasis) 25%, transparent)
+      );
     transition-duration: 60ms;
   }
 
   .hive-cell:hover::after {
-    background-color: color-mix(in oklch, var(--emphasis) 18%, var(--background));
+    background-color: color-mix(
+      in oklch,
+      var(--emphasis) 18%,
+      var(--background)
+    );
     transition-duration: 60ms;
   }
 }
 
 @media (max-width: 767px) {
   .hero-wash {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--background) 24%, transparent) 0%,
-        color-mix(in oklab, var(--background) 12%, transparent) 40%,
-        transparent 64%
-      );
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--background) 24%, transparent) 0%,
+      color-mix(in oklab, var(--background) 12%, transparent) 40%,
+      transparent 64%
+    );
   }
 }
