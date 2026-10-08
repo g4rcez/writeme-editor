@@ -25,10 +25,14 @@ function retryDelay(attempt: number, retryAfterHeader: string | null): number {
 
 export async function proxyFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const targetUrl = resolveUrl(input);
-    const proxyInit: RequestInit = {
-        ...init,
-        headers: normalizeHeaders(init?.headers, { "x-target-url": targetUrl }),
-    };
+    const headers = normalizeHeaders(init?.headers, { "x-target-url": targetUrl });
+    const proxyInit: RequestInit = { ...init, headers };
+    const getProxyToken = window.electronAPI?.ai?.getProxyToken;
+    if (getProxyToken) {
+        headers.set("x-writeme-proxy-token", await getProxyToken());
+        // Keep the local session token from following an upstream redirect.
+        proxyInit.redirect = "error";
+    }
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         const response = await fetch(PROXY_URL, proxyInit);

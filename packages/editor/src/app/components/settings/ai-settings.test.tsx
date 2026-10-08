@@ -8,7 +8,7 @@ import type {
     TextareaHTMLAttributes,
 } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AISettings } from "./ai-settings";
 
 const mocks = vi.hoisted(() => ({
@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => ({
     listOpenAIModels: vi.fn(),
     listOllamaModels: vi.fn(),
     setAlert: vi.fn(),
+    isElectron: vi.fn(),
+    prepareCredentialStorage: vi.fn(),
+    copyDeviceCode: vi.fn(),
 }));
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -52,6 +55,14 @@ type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> & {
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
     optionalText?: string;
+    hiddenLabel?: boolean;
+};
+type ModalProps = {
+    open: boolean;
+    onChange: (open: boolean) => void;
+    title: ReactNode;
+    children: ReactNode;
+    footer: ReactNode;
 };
 
 vi.mock("@g4rcez/components", () => ({
@@ -60,7 +71,9 @@ vi.mock("@g4rcez/components", () => ({
             {children}
         </button>
     ),
-    Input: ({ container: _container, hiddenLabel: _hiddenLabel, ...props }: InputProps) => <input {...props} />,
+    Input: ({ container: _container, hiddenLabel: _hiddenLabel, title, ...props }: InputProps) => (
+        <input aria-label={title} {...props} />
+    ),
     Select: ({ ref, hiddenLabel: _hiddenLabel, loading, options, placeholder, title, ...props }: SelectProps) => (
         <select ref={ref} aria-label={title} aria-busy={loading} {...props}>
             {placeholder && <option value="">{placeholder}</option>}
@@ -71,7 +84,16 @@ vi.mock("@g4rcez/components", () => ({
             ))}
         </select>
     ),
-    Textarea: ({ optionalText: _optionalText, ...props }: TextareaProps) => <textarea {...props} />,
+    Textarea: ({ optionalText: _optionalText, hiddenLabel: _hiddenLabel, title, ...props }: TextareaProps) => (
+        <textarea aria-label={title} {...props} />
+    ),
+    Modal: ({ open, title, children, footer }: ModalProps) =>
+        open ? (
+            <dialog open aria-label={typeof title === "string" ? title : undefined}>
+                {children}
+                {footer}
+            </dialog>
+        ) : null,
     css: (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" "),
 }));
 
@@ -118,7 +140,8 @@ vi.mock("@/app/ai/auth/auth-manager", () => ({
     },
 }));
 
-vi.mock("@/lib/is-electron", () => ({ isElectron: () => false }));
+vi.mock("@/lib/is-electron", () => ({ isElectron: mocks.isElectron }));
+vi.mock("@/lib/copy-device-code", () => ({ copyDeviceCode: mocks.copyDeviceCode }));
 
 vi.mock("@/store/repositories", () => ({
     repositories: {
@@ -157,8 +180,20 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
+async function allowStorage(): Promise<void> {
+    fireEvent.click(await screen.findByRole("button", { name: "Allow and continue" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.isElectron.mockReturnValue(false);
+    mocks.prepareCredentialStorage.mockResolvedValue(undefined);
+    mocks.copyDeviceCode.mockResolvedValue(true);
+    mocks.saveCredentials.mockResolvedValue(undefined);
+    vi.stubGlobal("electronAPI", { ai: { prepareCredentialStorage: mocks.prepareCredentialStorage } });
     mocks.getConfigs.mockResolvedValue([openAIConfig("gpt-5-mini")]);
     mocks.loadCredentials.mockImplementation(async (adapterId: string) =>
         adapterId === "openai" ? { adapterId, accessToken: "stored-token", accountId: "account-id" } : null,
@@ -262,6 +297,7 @@ describe("AISettings OpenAI models", () => {
         const modelSelect = await screen.findByRole("combobox", { name: "Model" });
         await waitFor(() => expect(modelSelect).toBeDisabled());
         fireEvent.click(screen.getByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
         fireEvent.click(await screen.findByRole("button", { name: "Complete sign-in" }));
 
         await waitFor(() => expect(modelSelect).toHaveValue("gpt-5"));
@@ -278,6 +314,7 @@ describe("AISettings OpenAI models", () => {
         render(<AISettings />);
 
         fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
         await waitFor(() => expect(anthropicButton).toHaveTextContent("Needs setup"));
@@ -300,6 +337,7 @@ describe("AISettings OpenAI models", () => {
         render(<AISettings />);
 
         fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
         fireEvent.click(await screen.findByRole("button", { name: "Complete sign-in" }));
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
@@ -426,7 +464,8 @@ describe("AISettings OpenAI models", () => {
         fireEvent.click(anthropicButton);
         const apiKeyInput = await screen.findByPlaceholderText("Starts with sk-ant-");
         fireEvent.change(apiKeyInput, { target: { value: "stale-api-key" } });
-        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+        fireEvent.click(screen.getByRole("button", { name: "Verify and save key" }));
+        await allowStorage();
         await waitFor(() => expect(mocks.listAnthropicModels).toHaveBeenCalledTimes(1));
 
         const ollamaButton = screen.getByRole("button", { name: /Ollama/ });
@@ -492,8 +531,9 @@ describe("AISettings OpenAI models", () => {
         render(<AISettings />);
 
         fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
         fireEvent.click(await screen.findByRole("button", { name: "Complete sign-in" }));
-        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        fireEvent.click(screen.getByRole("button", { name: "Cancel sign-in" }));
         expect(mocks.cancelOAuthFlow).toHaveBeenCalledTimes(1);
 
         await act(async () => {
@@ -503,5 +543,291 @@ describe("AISettings OpenAI models", () => {
 
         expect(mocks.setAlert).not.toHaveBeenCalledWith(expect.objectContaining({ type: "success" }));
         expect(screen.getByRole("button", { name: "Sign in with OpenAI" })).toBeInTheDocument();
+    });
+});
+
+describe("AISettings secure setup", () => {
+    beforeEach(() => {
+        mocks.loadCredentials.mockResolvedValue(null);
+        mocks.listOpenAIModels.mockResolvedValue([]);
+    });
+
+    it("shows a browser storage warning and waits for consent before sign-in", async () => {
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        expect(screen.getByRole("dialog", { name: "Store credentials in this browser?" })).toHaveTextContent(
+            "without system Keychain protection",
+        );
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        expect(mocks.prepareCredentialStorage).not.toHaveBeenCalled();
+        await allowStorage();
+        expect(mocks.startOAuthFlow).toHaveBeenCalledExactlyOnceWith("openai");
+    });
+
+    it("cancels setup without opening the provider or requesting native access", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        expect(mocks.prepareCredentialStorage).not.toHaveBeenCalled();
+    });
+
+    it("identifies an outdated production bridge instead of blaming Keychain", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.prepareCredentialStorage.mockRejectedValue(
+            new Error("Error invoking remote method: No handler registered for 'ai:prepare-credential-storage'"),
+        );
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Allow and continue" }));
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("outdated desktop bridge");
+        expect(alert).not.toHaveTextContent("Keychain");
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+    });
+
+    it("distinguishes a denied setup window from encryption unavailability", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.prepareCredentialStorage.mockRejectedValue(new Error("AI setup access denied."));
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Allow and continue" }));
+        expect(await screen.findByRole("alert")).toHaveTextContent("main Write Me window");
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+    });
+
+    it("offers production diagnostics without displaying a raw native exception", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.prepareCredentialStorage.mockRejectedValue(new Error("Synthetic private exception"));
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Allow and continue" }));
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("View > Toggle Developer Tools");
+        expect(alert).not.toHaveTextContent("Synthetic private exception");
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+    });
+
+    it("checks native encrypted storage before opening sign-in", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
+        expect(mocks.prepareCredentialStorage).toHaveBeenCalledOnce();
+        expect(mocks.prepareCredentialStorage.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.startOAuthFlow.mock.invocationCallOrder[0] ?? 0,
+        );
+    });
+
+    it("blocks sign-in when storage access is denied and allows a retry", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.prepareCredentialStorage.mockRejectedValue(new Error("Access denied"));
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(screen.getByRole("button", { name: "Allow and continue" }));
+        expect(await screen.findByRole("alert")).toHaveTextContent("login Keychain");
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        expect(mocks.saveCredentials).not.toHaveBeenCalled();
+        mocks.prepareCredentialStorage.mockResolvedValue(undefined);
+        await allowStorage();
+        expect(mocks.startOAuthFlow).toHaveBeenCalledOnce();
+    });
+
+    it("does not start stale sign-in after switching providers during storage preparation", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        const storage = deferred<void>();
+        mocks.prepareCredentialStorage.mockReturnValue(storage.promise);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(screen.getByRole("button", { name: "Allow and continue" }));
+        await waitFor(() => expect(mocks.prepareCredentialStorage).toHaveBeenCalledOnce());
+        fireEvent.click(screen.getByRole("button", { name: /Anthropic \(Claude\)/ }));
+        await act(async () => {
+            storage.resolve();
+            await storage.promise;
+        });
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /Anthropic \(Claude\)/ })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("does not start sign-in after canceling a pending storage request", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        const storage = deferred<void>();
+        mocks.prepareCredentialStorage.mockReturnValue(storage.promise);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        fireEvent.click(screen.getByRole("button", { name: "Allow and continue" }));
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        await act(async () => {
+            storage.resolve();
+            await storage.promise;
+        });
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("lets the user cancel sign-in while the device-code request is pending", async () => {
+        const signIn = deferred<{ message: string }>();
+        mocks.startOAuthFlow.mockReturnValue(signIn.promise);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
+        fireEvent.click(screen.getByRole("button", { name: "Cancel sign-in" }));
+        expect(mocks.cancelOAuthFlow).toHaveBeenCalledOnce();
+        await act(async () => {
+            signIn.resolve({ message: "Canceled sign-in instructions" });
+            await signIn.promise;
+        });
+        expect(screen.queryByText("Canceled sign-in instructions")).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Sign in with OpenAI" })).toBeEnabled();
+    });
+
+    it("retains an entered API key if native storage fails before verification", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.prepareCredentialStorage.mockRejectedValue(new Error("Access denied"));
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));
+        const key = await screen.findByLabelText("API key");
+        fireEvent.change(key, { target: { value: "synthetic-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Verify and save key" }));
+        expect(mocks.listAnthropicModels).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole("button", { name: "Allow and continue" }));
+        expect(await screen.findByRole("alert")).toHaveTextContent("No new credentials have been saved");
+        expect(key).toHaveValue("synthetic-api-key");
+        expect(mocks.listAnthropicModels).not.toHaveBeenCalled();
+        expect(mocks.saveCredentials).not.toHaveBeenCalled();
+    });
+
+    it("shows the copied device code and offers a manual copy retry", async () => {
+        mocks.startOAuthFlow.mockResolvedValue({
+            message: "Enter your code.",
+            deviceCode: {
+                userCode: "ABCD-1234",
+                verificationUrl: "https://auth.openai.com/codex/device",
+                copied: false,
+            },
+        });
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
+        const code = await screen.findByLabelText("Device authorization code");
+        expect(code).toHaveValue("ABCD-1234");
+        expect(code).toHaveAttribute("readonly");
+        fireEvent.focus(code);
+        if (!(code instanceof HTMLInputElement)) throw new Error("Expected a code input");
+        expect(code.selectionStart).toBe(0);
+        expect(code.selectionEnd).toBe("ABCD-1234".length);
+        expect(screen.getByRole("status")).toHaveTextContent("Automatic copy was unavailable");
+        fireEvent.click(screen.getByRole("button", { name: "Copy code" }));
+        await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Code copied to clipboard."));
+        expect(mocks.copyDeviceCode).toHaveBeenCalledExactlyOnceWith("ABCD-1234");
+    });
+
+    it("announces clipboard success without exposing the device authentication identifier", async () => {
+        mocks.startOAuthFlow.mockResolvedValue({
+            message: "Enter your code.",
+            deviceCode: {
+                userCode: "ABCD-1234",
+                verificationUrl: "https://auth.openai.com/codex/device",
+                copied: true,
+            },
+        });
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: "Sign in with OpenAI" }));
+        await allowStorage();
+        expect(await screen.findByText("Code copied to clipboard.")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Open OpenAI sign-in page" })).toHaveAttribute(
+            "href",
+            "https://auth.openai.com/codex/device",
+        );
+    });
+
+    it("keeps keyless local Ollama usable without credential-storage permission", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        mocks.listOllamaModels.mockResolvedValue([{ id: "llama3.2", name: "Llama" }]);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Ollama/ }));
+        fireEvent.click(screen.getByRole("button", { name: "Load models" }));
+        await waitFor(() => expect(screen.getByRole("combobox", { name: "Model" })).toHaveValue("llama3.2"));
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(mocks.prepareCredentialStorage).not.toHaveBeenCalled();
+    });
+
+    it("prevents sign-in while API-key verification is pending", async () => {
+        const models = deferred<{ id: string; name: string }[]>();
+        mocks.listAnthropicModels.mockReturnValue(models.promise);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));
+        fireEvent.change(await screen.findByLabelText("API key"), { target: { value: "synthetic-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Verify and save key" }));
+        await allowStorage();
+        await waitFor(() => expect(mocks.listAnthropicModels).toHaveBeenCalledOnce());
+        const signIn = screen.getByRole("button", { name: "Sign in with Claude" });
+        expect(signIn).toBeDisabled();
+        fireEvent.click(signIn);
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(mocks.startOAuthFlow).not.toHaveBeenCalled();
+        await act(async () => {
+            models.resolve([{ id: "claude-test", name: "Claude" }]);
+            await models.promise;
+        });
+        expect(await screen.findByText(/Credentials saved/)).toBeInTheDocument();
+    });
+
+    it("prevents key verification while browser sign-in is pending", async () => {
+        const signIn = deferred<{ message: string }>();
+        mocks.startOAuthFlow.mockReturnValue(signIn.promise);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));
+        fireEvent.change(await screen.findByLabelText("API key"), { target: { value: "synthetic-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Sign in with Claude" }));
+        await allowStorage();
+        await waitFor(() => expect(mocks.startOAuthFlow).toHaveBeenCalledOnce());
+        const verify = screen.getByRole("button", { name: "Verify and save key" });
+        expect(verify).toBeDisabled();
+        fireEvent.click(verify);
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(mocks.listAnthropicModels).not.toHaveBeenCalled();
+        await act(async () => {
+            signIn.resolve({ message: "Continue on the provider page." });
+            await signIn.promise;
+        });
+        expect(await screen.findByText("Continue on the provider page.")).toBeInTheDocument();
+    });
+
+    it("waits for credential persistence before reporting success", async () => {
+        const save = deferred<void>();
+        mocks.saveCredentials.mockReturnValue(save.promise);
+        mocks.listAnthropicModels.mockResolvedValue([{ id: "claude-test", name: "Claude" }]);
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));
+        fireEvent.change(await screen.findByLabelText("API key"), { target: { value: "synthetic-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Verify and save key" }));
+        await allowStorage();
+        await waitFor(() => expect(mocks.saveCredentials).toHaveBeenCalledOnce());
+        expect(screen.queryByText(/Credentials saved/)).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Save Configuration" })).toBeDisabled();
+        await act(async () => {
+            save.resolve();
+            await save.promise;
+        });
+        expect(await screen.findByText(/Credentials saved/)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Save Configuration" })).toBeEnabled();
+    });
+
+    it("reports a key-save failure inline without discarding the entered key", async () => {
+        mocks.listAnthropicModels.mockResolvedValue([{ id: "claude-test", name: "Claude" }]);
+        mocks.saveCredentials.mockRejectedValue(new Error("Storage unavailable after verification"));
+        render(<AISettings />);
+        fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));
+        const key = await screen.findByLabelText("API key");
+        fireEvent.change(key, { target: { value: "synthetic-api-key" } });
+        fireEvent.click(screen.getByRole("button", { name: "Verify and save key" }));
+        await allowStorage();
+        expect(await screen.findByRole("alert")).toHaveTextContent("Storage unavailable after verification");
+        expect(key).toHaveValue("synthetic-api-key");
     });
 });

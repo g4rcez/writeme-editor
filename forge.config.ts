@@ -29,7 +29,18 @@ const osxSign = hasAppleNotarizeCredentials
           ...(appleSigningIdentity ? { identity: appleSigningIdentity } : {}),
           continueOnError: false,
       }
-    : undefined;
+    : {
+          identity: "-",
+          identityValidation: false,
+          preAutoEntitlements: false,
+          continueOnError: false,
+          optionsForFile: (): { entitlements: string[]; hardenedRuntime: boolean; timestamp: string } => ({
+              entitlements: [],
+              // Ad-hoc signatures have no team ID for library validation.
+              hardenedRuntime: false,
+              timestamp: "none",
+          }),
+      };
 
 const runtimePaths = ["public", "packages/cli/dist", "node_modules/better-sqlite3", "node_modules/node-pty"];
 
@@ -54,7 +65,7 @@ const config: ForgeConfig = {
             NSDocumentsFolderUsageDescription:
                 "Writeme needs access to the Documents folder to open and save your notes.",
         },
-        ...(osxSign ? { osxSign } : {}),
+        osxSign,
         ...(osxNotarize ? { osxNotarize } : {}),
     },
     rebuildConfig: {},

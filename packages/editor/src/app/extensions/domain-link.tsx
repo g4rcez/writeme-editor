@@ -47,9 +47,19 @@ export const DOMAIN_CONFIGS: DomainConfig[] = [
         },
     },
     {
-        regex: /^https?:\/\/(?:www\.)?youtube\.com\/(?:@|c\/|user\/)?([^/?#\s]+)/,
+        regex: /^https?:\/\/(?:www\.)?youtu\.be\/([^/?#\s]+)/,
         icon: () => <YoutubeLogoIcon weight="fill" />,
-        title: (match) => match[1] ?? "",
+        title: () => "youtube.com",
+    },
+    {
+        regex: /^https?:\/\/(?:www\.)?youtube\.com\/(?:@|c\/|user\/|channel\/)?([^/?#\s]+)/,
+        icon: () => <YoutubeLogoIcon weight="fill" />,
+        title: (match) => {
+            const channelOrPath = match[1] ?? "";
+            return /^(?:watch|shorts|embed|live|playlist|clip|results)$/i.test(channelOrPath)
+                ? "youtube.com"
+                : channelOrPath;
+        },
     },
     {
         regex: /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/([^/?#\s]+)/,

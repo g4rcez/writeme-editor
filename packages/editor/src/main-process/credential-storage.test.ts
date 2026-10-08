@@ -13,7 +13,7 @@ let manager: DatabaseManager;
 const secureStorage = {
     isEncryptionAvailable: vi.fn(() => true),
     getSelectedStorageBackend: vi.fn(() => "gnome_libsecret"),
-    encryptString: vi.fn((value: string) => Buffer.from(`encrypted:${value}`)),
+    encryptString: vi.fn<(value: string) => Buffer | Promise<Buffer>>((value) => Buffer.from(`encrypted:${value}`)),
     decryptString: vi.fn((value: Buffer) => {
         const stored = value.toString();
         if (!stored.startsWith("encrypted:")) throw new Error("Not encrypted");
@@ -39,20 +39,22 @@ afterEach(async () => {
 });
 
 describe("credential migration", () => {
-    it("rejects credential persistence instead of returning plaintext when encryption is unavailable", () => {
+    it("rejects credential persistence instead of returning plaintext when encryption is unavailable", async () => {
         const source = { adapterId: "openai", apiKey: "secret" };
         secureStorage.isEncryptionAvailable.mockReturnValue(false);
 
-        expect(() => persistCredentialRow(source, secureStorage)).toThrow("Secure credential storage is unavailable");
+        await expect(persistCredentialRow(source, secureStorage)).rejects.toThrow(
+            "Secure credential storage is unavailable",
+        );
         expect(secureStorage.encryptString).not.toHaveBeenCalled();
         expect(source).toEqual({ adapterId: "openai", apiKey: "secret" });
     });
 
-    it("retains the source credential when encryption is unavailable", () => {
+    it("retains the source credential when encryption is unavailable", async () => {
         const source = { adapterId: "openai", apiKey: "secret" };
         secureStorage.isEncryptionAvailable.mockReturnValue(false);
 
-        expect(migrateCredentialRow(source, manager, secureStorage)).toEqual({
+        expect(await migrateCredentialRow(source, manager, secureStorage)).toEqual({
             status: "skipped",
         });
         expect(
@@ -61,47 +63,54 @@ describe("credential migration", () => {
         expect(source.apiKey).toBe("secret");
     });
 
-    it("uses available secure storage without backend inspection on non-Linux platforms", () => {
+    it("uses available secure storage without backend inspection on non-Linux platforms", async () => {
         vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
         secureStorage.getSelectedStorageBackend.mockImplementation(() => {
             throw new Error("backend should not be inspected");
         });
 
-        const persisted = persistCredentialRow({ adapterId: "openai", apiKey: "secret" }, secureStorage);
+        const persisted = await persistCredentialRow({ adapterId: "openai", apiKey: "secret" }, secureStorage);
 
         expect(persisted.apiKey).toBe(Buffer.from("encrypted:secret").toString("base64"));
         expect(secureStorage.getSelectedStorageBackend).not.toHaveBeenCalled();
     });
 
-    it.each(["basic_text", "unknown"])("rejects Linux %s persistence and retains the migration source", (backend) => {
-        vi.spyOn(process, "platform", "get").mockReturnValue("linux");
-        secureStorage.getSelectedStorageBackend.mockReturnValue(backend);
-        const source = { adapterId: "openai", apiKey: "secret" };
+    it.each(["basic_text", "unknown"])(
+        "rejects Linux %s persistence and retains the migration source",
+        async (backend) => {
+            vi.spyOn(process, "platform", "get").mockReturnValue("linux");
+            secureStorage.getSelectedStorageBackend.mockReturnValue(backend);
+            const source = { adapterId: "openai", apiKey: "secret" };
 
-        expect(() => persistCredentialRow(source, secureStorage)).toThrow("Secure credential storage is unavailable");
-        expect(migrateCredentialRow(source, manager, secureStorage)).toEqual({ status: "skipped" });
-        expect(
-            manager.db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?").get(source.adapterId),
-        ).toBeUndefined();
-        expect(source.apiKey).toBe("secret");
-        expect(secureStorage.encryptString).not.toHaveBeenCalled();
-    });
+            await expect(persistCredentialRow(source, secureStorage)).rejects.toThrow(
+                "Secure credential storage is unavailable",
+            );
+            expect(await migrateCredentialRow(source, manager, secureStorage)).toEqual({ status: "skipped" });
+            expect(
+                manager.db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?").get(source.adapterId),
+            ).toBeUndefined();
+            expect(source.apiKey).toBe("secret");
+            expect(secureStorage.encryptString).not.toHaveBeenCalled();
+        },
+    );
 
-    it("fails closed when Linux storage backend inspection fails", () => {
+    it("fails closed when Linux storage backend inspection fails", async () => {
         vi.spyOn(process, "platform", "get").mockReturnValue("linux");
         secureStorage.getSelectedStorageBackend.mockImplementation(() => {
             throw new Error("backend unavailable");
         });
         const source = { adapterId: "openai", apiKey: "secret" };
 
-        expect(() => persistCredentialRow(source, secureStorage)).toThrow("Secure credential storage is unavailable");
-        expect(migrateCredentialRow(source, manager, secureStorage)).toEqual({ status: "skipped" });
+        await expect(persistCredentialRow(source, secureStorage)).rejects.toThrow(
+            "Secure credential storage is unavailable",
+        );
+        expect(await migrateCredentialRow(source, manager, secureStorage)).toEqual({ status: "skipped" });
         expect(manager.db.prepare("SELECT * FROM aiCredentials").all()).toEqual([]);
     });
 
-    it("reports success only after writing with a secure Linux backend", () => {
+    it("reports success only after writing with a secure Linux backend", async () => {
         vi.spyOn(process, "platform", "get").mockReturnValue("linux");
-        const result = migrateCredentialRow(
+        const result = await migrateCredentialRow(
             {
                 adapterId: "openai",
                 apiKey: "secret",
@@ -119,13 +128,13 @@ describe("credential migration", () => {
         expect(secureStorage.encryptString).toHaveBeenCalledWith("secret");
     });
 
-    it("rewrites a matching plaintext credential before reporting success", () => {
+    it("rewrites a matching plaintext credential before reporting success", async () => {
         const timestamp = "2026-01-02T00:00:00.000Z";
         manager.db
             .prepare("INSERT INTO aiCredentials (adapterId, apiKey, createdAt, updatedAt) VALUES (?, ?, ?, ?)")
             .run("openai", "secret", timestamp, timestamp);
 
-        const result = migrateCredentialRow(
+        const result = await migrateCredentialRow(
             {
                 adapterId: "openai",
                 apiKey: "secret",
@@ -146,7 +155,7 @@ describe("credential migration", () => {
         });
     });
 
-    it("protects a differing plaintext destination without adopting an older source", () => {
+    it("protects a differing plaintext destination without adopting an older source", async () => {
         const destinationCreatedAt = "2026-01-01T00:00:00.000Z";
         const destinationUpdatedAt = "2026-01-03T00:00:00.000Z";
         manager.db
@@ -164,7 +173,7 @@ describe("credential migration", () => {
                 destinationUpdatedAt,
             );
 
-        const result = migrateCredentialRow(
+        const result = await migrateCredentialRow(
             {
                 adapterId: "openai",
                 apiKey: "source-secret",
@@ -196,7 +205,7 @@ describe("credential migration", () => {
         expect(secureStorage.encryptString).not.toHaveBeenCalledWith("source-secret");
     });
 
-    it("replaces a plaintext destination with a newer protected source", () => {
+    it("replaces a plaintext destination with a newer protected source", async () => {
         const destinationCreatedAt = "2026-01-01T00:00:00.000Z";
         manager.db
             .prepare(
@@ -212,7 +221,7 @@ describe("credential migration", () => {
                 "2026-01-02T00:00:00.000Z",
             );
 
-        const result = migrateCredentialRow(
+        const result = await migrateCredentialRow(
             {
                 adapterId: "openai",
                 apiKey: "source-secret",
@@ -236,5 +245,63 @@ describe("credential migration", () => {
         });
         expect(secureStorage.encryptString).toHaveBeenCalledWith("source-secret");
         expect(secureStorage.encryptString).not.toHaveBeenCalledWith("destination-secret");
+    });
+
+    it.each(["2025-01-01T00:00:00.000Z", "2027-01-01T00:00:00.000Z"])(
+        "retains unreadable encrypted credentials instead of treating ciphertext as plaintext (%s)",
+        async (updatedAt) => {
+            const encrypted = Buffer.from("v10:existing-secret").toString("base64");
+            manager.db
+                .prepare("INSERT INTO aiCredentials (adapterId, apiKey, createdAt, updatedAt) VALUES (?, ?, ?, ?)")
+                .run("openai", encrypted, "2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z");
+            const before = manager.db.prepare("SELECT * FROM aiCredentials").all();
+            expect(
+                await migrateCredentialRow(
+                    {
+                        adapterId: "openai",
+                        apiKey: "source-secret",
+                        updatedAt,
+                    },
+                    manager,
+                    secureStorage,
+                ),
+            ).toEqual({ status: "skipped" });
+            expect(manager.db.prepare("SELECT * FROM aiCredentials").all()).toEqual(before);
+            expect(secureStorage.encryptString).not.toHaveBeenCalled();
+        },
+    );
+
+    it("does not overwrite a destination changed while encryption was pending", async () => {
+        manager.db
+            .prepare("INSERT INTO aiCredentials (adapterId, apiKey, createdAt, updatedAt) VALUES (?, ?, ?, ?)")
+            .run(
+                "openai",
+                Buffer.from("encrypted:old-key").toString("base64"),
+                "2026-01-01T00:00:00.000Z",
+                "2026-01-02T00:00:00.000Z",
+            );
+        let finish: (value: Buffer) => void = () => undefined;
+        const encryption = new Promise<Buffer>((resolve) => {
+            finish = resolve;
+        });
+        secureStorage.encryptString.mockReturnValueOnce(encryption);
+        const migration = migrateCredentialRow(
+            {
+                adapterId: "openai",
+                apiKey: "migration-key",
+                updatedAt: "2026-01-03T00:00:00.000Z",
+            },
+            manager,
+            secureStorage,
+        );
+        await vi.waitFor(() => expect(secureStorage.encryptString).toHaveBeenCalledOnce());
+        manager.db
+            .prepare("UPDATE aiCredentials SET apiKey = ?, updatedAt = ? WHERE adapterId = ?")
+            .run(Buffer.from("encrypted:new-key").toString("base64"), "2026-01-04T00:00:00.000Z", "openai");
+        const before = manager.db.prepare("SELECT * FROM aiCredentials").all();
+        finish(Buffer.from("encrypted:migration-key"));
+        expect(await migration).toEqual({ status: "skipped" });
+        expect(manager.db.prepare("SELECT * FROM aiCredentials").all()).toEqual(before);
+        expect(manager.db.inTransaction).toBe(false);
     });
 });

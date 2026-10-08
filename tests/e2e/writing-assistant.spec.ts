@@ -224,7 +224,11 @@ async function saveGeminiConfiguration(page: Page, withCredentials = true): Prom
 
     if (withCredentials) {
         await page.getByPlaceholder("Google AI Studio API key").fill(GEMINI_API_KEY);
-        await page.getByRole("button", { name: "Save", exact: true }).click();
+        await page.getByRole("button", { name: "Verify and save key", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Store credentials in this browser?" })
+            .getByRole("button", { name: "Allow and continue" })
+            .click();
         await expect(page.getByRole("combobox", { name: "Model" })).toHaveValue(GEMINI_MODEL);
     }
 

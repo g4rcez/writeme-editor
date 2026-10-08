@@ -2,9 +2,14 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 describe("Forge configuration", () => {
-    it.each(["forge-first", "config-first"])(
-        "loads ESM configs without competing startup overrides when loaded %s",
-        (loadOrder) => {
+    it.each([
+        ["forge-first", false],
+        ["config-first", false],
+        ["forge-first", true],
+        ["config-first", true],
+    ] as const)(
+        "loads ESM configs with final signing when loaded %s (notarization: %s)",
+        (loadOrder, notarization) => {
             // Vitest's module loader must not hide duplicate modules in Forge's Node process.
             const result = spawnSync(
                 process.execPath,
@@ -22,6 +27,31 @@ describe("Forge configuration", () => {
                     (async () => {
                         const config = await loadForgeConfig(process.cwd());
                         assert.equal(config.packagerConfig.icon, "./public/icon");
+                        if (process.argv[2] === "notarized") {
+                            assert.deepEqual(config.packagerConfig.osxSign, {
+                                identity: "Developer ID Application: Signing Fixture",
+                                continueOnError: false,
+                            });
+                            assert.deepEqual(config.packagerConfig.osxNotarize, {
+                                appleId: "fixture@example.invalid",
+                                appleIdPassword: "fixture-password",
+                                teamId: "FIXTURETEAM",
+                            });
+                        } else {
+                            const { optionsForFile, ...signing } = config.packagerConfig.osxSign;
+                            assert.deepEqual(signing, {
+                                identity: "-",
+                                identityValidation: false,
+                                preAutoEntitlements: false,
+                                continueOnError: false,
+                            });
+                            assert.deepEqual(optionsForFile("writeme.app"), {
+                                entitlements: [],
+                                hardenedRuntime: false,
+                                timestamp: "none",
+                            });
+                            assert.equal(config.packagerConfig.osxNotarize, undefined);
+                        }
                         const squirrelMaker = config.makers.find(maker => maker.name === "squirrel");
                         const dmgMaker = config.makers.find(maker => maker.name === "dmg");
                         assert.equal(squirrelMaker.configOrConfigFetcher.setupIcon, "./public/icon.ico");
@@ -63,8 +93,20 @@ describe("Forge configuration", () => {
                     });
                     `,
                     loadOrder,
+                    notarization ? "notarized" : "ad-hoc",
                 ],
-                { cwd: process.cwd(), encoding: "utf8", timeout: 10_000 },
+                {
+                    cwd: process.cwd(),
+                    encoding: "utf8",
+                    timeout: 10_000,
+                    env: {
+                        ...process.env,
+                        APPLE_ID: notarization ? "fixture@example.invalid" : "",
+                        APPLE_APP_SPECIFIC_PASSWORD: notarization ? "fixture-password" : "",
+                        APPLE_TEAM_ID: notarization ? "FIXTURETEAM" : "",
+                        APPLE_SIGNING_IDENTITY: notarization ? "Developer ID Application: Signing Fixture" : "",
+                    },
+                },
             );
 
             expect(result.error).toBeUndefined();

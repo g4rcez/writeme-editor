@@ -1,5 +1,4 @@
-import { Node, nodeInputRule, PasteRule } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Node, nodeInputRule } from "@tiptap/core";
 import { ReactNodeViewRenderer, type ReactNodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { identifyDomain } from "../../lib/url-utils";
 
@@ -35,8 +34,6 @@ export const YoutubeBlock = Node.create({
     group: "block",
     atom: true,
     draggable: true,
-    priority: 1000, // High priority to run before other handlers
-
     addAttributes() {
         return {
             url: {
@@ -71,54 +68,6 @@ export const YoutubeBlock = Node.create({
 
     addNodeView() {
         return ReactNodeViewRenderer(YoutubeView);
-    },
-
-    addProseMirrorPlugins() {
-        return [
-            new Plugin({
-                key: new PluginKey("youtube-paste-handler"),
-                props: {
-                    handlePaste: (view, event) => {
-                        if (!view.editable) return false;
-
-                        const text = event.clipboardData?.getData("text/plain");
-                        if (!text) return false;
-
-                        const info = identifyDomain(text);
-                        if (info && info.domain === "youtube") {
-                            const { state, dispatch } = view;
-                            const node = state.schema.nodes.youtubeBlock!.create({
-                                url: info.url,
-                                videoId: info.id,
-                            });
-                            const tr = state.tr.replaceSelectionWith(node);
-                            dispatch(tr);
-                            return true; // We handled it!
-                        }
-                        return false;
-                    },
-                },
-            }),
-        ];
-    },
-
-    addPasteRules() {
-        return [
-            new PasteRule({
-                find: /https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/\S+/g,
-                handler: ({ match, chain, range }) => {
-                    const info = identifyDomain(match[0]);
-                    if (info && info.domain === "youtube") {
-                        chain()
-                            .insertContentAt(range, {
-                                type: this.name,
-                                attrs: { url: info.url, videoId: info.id },
-                            })
-                            .run();
-                    }
-                },
-            }),
-        ];
     },
 
     addInputRules() {

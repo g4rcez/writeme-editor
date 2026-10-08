@@ -1,3 +1,4 @@
+import { copyDeviceCode } from "@/lib/copy-device-code";
 import { isElectron } from "@/lib/is-electron";
 import { proxyFetch } from "@/lib/proxy-fetch";
 import { repositories } from "@/store/global.store";
@@ -179,6 +180,11 @@ export function createOpenAIApiKeyExchangeBody(idToken: string): URLSearchParams
         name: `Writeme (${new Date().toISOString().slice(0, 10)})`,
     });
 }
+
+export type OAuthStartResult = {
+    message: string;
+    deviceCode?: { userCode: string; verificationUrl: string; copied: boolean };
+};
 
 type OpenAIDeviceCode = {
     verificationUrl: string;
@@ -405,7 +411,7 @@ class AuthManager {
         this._invalidateOAuthFlow();
     }
 
-    async startOAuthFlow(adapterId: string): Promise<{ message: string }> {
+    async startOAuthFlow(adapterId: string): Promise<OAuthStartResult> {
         const generation = this._beginOAuthFlow();
         if (adapterId === "anthropic") {
             return this._openAnthropicBrowser(generation);
@@ -460,7 +466,7 @@ class AuthManager {
         };
     }
 
-    private async _startOpenAIDeviceFlow(generation: number): Promise<{ message: string }> {
+    private async _startOpenAIDeviceFlow(generation: number): Promise<OAuthStartResult> {
         const resp = await proxyFetch(`${OPENAI_ISSUER}/api/accounts/deviceauth/usercode`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -483,7 +489,7 @@ class AuthManager {
         this._assertCurrentOAuthFlow(generation);
 
         const userCode = data.user_code ?? data.usercode;
-        if (!userCode) {
+        if (typeof userCode !== "string" || !userCode.trim()) {
             throw new Error("OpenAI device authorization did not return a user code.");
         }
 
@@ -499,20 +505,26 @@ class AuthManager {
 
         try {
             const trustedVerificationUrl = parseTrustedOAuthUrl(deviceCode.verificationUrl, OPENAI_AUTH_ORIGIN);
+            const copied = await copyDeviceCode(deviceCode.userCode);
+            this._assertCurrentOAuthFlow(generation);
             if (isElectron()) {
                 await window.electronAPI.ai.startOAuth(trustedVerificationUrl);
             } else {
                 openTrustedOAuthUrl(trustedVerificationUrl);
             }
             this._assertCurrentOAuthFlow(generation);
+            return {
+                message: `Your browser opened. Enter code ${deviceCode.userCode} on the OpenAI page, then return here and complete sign-in.`,
+                deviceCode: {
+                    userCode: deviceCode.userCode,
+                    verificationUrl: trustedVerificationUrl,
+                    copied,
+                },
+            };
         } catch (error: unknown) {
             if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
             throw error;
         }
-
-        return {
-            message: `Your browser opened. Enter code ${deviceCode.userCode} on the OpenAI page, then return here and complete sign-in.`,
-        };
     }
 
     private async _openGeminiBrowser(generation: number): Promise<{ message: string }> {

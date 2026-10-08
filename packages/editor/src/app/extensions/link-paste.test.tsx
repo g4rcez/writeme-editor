@@ -36,6 +36,34 @@ describe("link paste", () => {
         editor.destroy();
     });
 
+    it("pastes YouTube URLs as shortened domain links instead of video embeds", async () => {
+        const url = "https://www.youtube.com/watch?v=video-id";
+        const editor = createEditor("");
+        editor.commands.setTextSelection(1);
+
+        const pasteEvent = new Event("paste", { bubbles: true, cancelable: true });
+        Object.defineProperty(pasteEvent, "clipboardData", {
+            value: {
+                getData: (type: string) => (type === "text/plain" ? url : ""),
+            },
+        });
+        editor.view.dom.dispatchEvent(pasteEvent);
+
+        const content = editor.getJSON().content?.[0]?.content;
+        expect(content).toMatchObject([{ type: "domainLink", attrs: { href: url, text: url } }]);
+        expect(content?.some((node) => node.type === "youtubeBlock")).toBe(false);
+
+        const { container, unmount } = render(<EditorContent editor={editor} />);
+        await waitFor(() => {
+            const link = container.querySelector<HTMLElement>("[data-link-url]");
+            expect(link?.getAttribute("data-link-url")).toBe(url);
+            expect(link?.textContent).toBe("youtube.com");
+        });
+
+        unmount();
+        editor.destroy();
+    });
+
     it("keeps explicitly labelled markdown links as text links", () => {
         const editor = createEditor("[Project docs](https://example.com/docs)");
 

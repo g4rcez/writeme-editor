@@ -1,16 +1,19 @@
-import { Button, Input, Select, Textarea, css } from "@g4rcez/components";
+import { Button, Input, Modal, Select, Textarea, css } from "@g4rcez/components";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOut";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { PlugIcon } from "@phosphor-icons/react/dist/csr/Plug";
+import { ShieldCheckIcon } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
 import { TerminalIcon } from "@phosphor-icons/react/dist/csr/Terminal";
 import { XCircleIcon } from "@phosphor-icons/react/dist/csr/XCircle";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { v7 as uuid } from "uuid";
 import type { AIModel } from "@/app/ai/adapters/types";
 import type { AIConfig } from "@/store/repositories/electron/ai.repository";
 import { adapterRegistry } from "@/app/ai/adapters/registry";
-import { authManager } from "@/app/ai/auth/auth-manager";
+import { authManager, type OAuthStartResult } from "@/app/ai/auth/auth-manager";
+import { copyDeviceCode } from "@/lib/copy-device-code";
 import { isElectron } from "@/lib/is-electron";
 import { repositories } from "@/store/repositories";
 import { uiDispatch } from "@/store/ui.store";
@@ -152,7 +155,7 @@ function ProviderLogoGlyph({ id, colored }: { id: string; colored: boolean }) {
         return (
             <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
                 <path
-                    fill={colored ? "#f4f4f5" : "currentColor"}
+                    fill="currentColor"
                     d="M7.5 5.75c0-1.52 1.23-2.75 2.75-2.75h3.5c1.52 0 2.75 1.23 2.75 2.75v2.08l1.45 1.27A3.1 3.1 0 0 1 19 11.43V18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6.57c0-.9.39-1.76 1.05-2.33L7.5 7.83zm2.75-.75a.75.75 0 0 0-.75.75v2.98l-2.13 1.86c-.24.21-.37.51-.37.84V18c0 .55.45 1 1 1h8a1 1 0 0 0 1-1v-6.57c0-.33-.13-.63-.37-.84L14.5 8.73V5.75a.75.75 0 0 0-.75-.75zm-.75 8.25a1 1 0 1 1-2 0a1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0a1 1 0 0 1 2 0M9.25 16.5h5.5v1.5h-5.5z"
                 />
             </svg>
@@ -186,7 +189,7 @@ function ExternalProviderLink({ href, label }: { href: string; label: string }) 
     );
 }
 
-export const AISettings = () => {
+export const AISettings = (): ReactElement => {
     const adapters = adapterRegistry.getAll();
     const [adapterId, setAdapterId] = useState(adapters[0]?.id ?? "anthropic");
     const [configLoading, setConfigLoading] = useState(true);
@@ -208,6 +211,14 @@ export const AISettings = () => {
     const [oauthPending, setOauthPending] = useState(false);
     const [oauthCode, setOauthCode] = useState("");
     const [oauthInstruction, setOauthInstruction] = useState("");
+    const [oauthDeviceCode, setOauthDeviceCode] = useState<OAuthStartResult["deviceCode"]>();
+    const [codeCopying, setCodeCopying] = useState(false);
+    const [authError, setAuthError] = useState("");
+    const [storageConsent, setStorageConsent] = useState<"oauth" | "api-key" | null>(null);
+    const [storagePreparing, setStoragePreparing] = useState(false);
+    const [storageError, setStorageError] = useState("");
+    const desktop = isElectron();
+    const connectionBusy = authLoading || storagePreparing || testStatus === "testing";
 
     const adapter = adapterRegistry.get(adapterId);
     const meta = PROVIDER_META[adapterId];
@@ -216,6 +227,7 @@ export const AISettings = () => {
     const credentialRequestId = useRef(0);
     const testRequestId = useRef(0);
     const authRequestId = useRef(0);
+    const storageRequestId = useRef(0);
     const openAIModelSelectRef = useRef<HTMLSelectElement>(null);
     const focusOpenAIModelAfterRetryRef = useRef(false);
     const pendingCredentialClears = useRef(new Map<string, Promise<void>>());
@@ -307,6 +319,7 @@ export const AISettings = () => {
             disposed = true;
             credentialRequestId.current += 1;
             authRequestId.current += 1;
+            storageRequestId.current += 1;
             openAIModelRequestId.current += 1;
             ollamaModelRequestId.current += 1;
             testRequestId.current += 1;
@@ -316,6 +329,14 @@ export const AISettings = () => {
 
     const handleAdapterChange = async (id: string) => {
         if (id === adapterId) return;
+        storageRequestId.current += 1;
+        setStorageConsent(null);
+        setStoragePreparing(false);
+        setStorageError("");
+        setAuthError("");
+        setOauthDeviceCode(undefined);
+        setCodeCopying(false);
+        setOauthInstruction("");
         authRequestId.current += 1;
         credentialRequestId.current += 1;
         testRequestId.current += 1;
@@ -409,7 +430,7 @@ export const AISettings = () => {
             const savedCreds = await repositories.ai.loadCredentials(OLLAMA_ADAPTER_ID);
             const models = await ollamaAdapter.listModels({
                 ...(savedCreds ?? {}),
-                ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+                ...(!silent && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
                 baseUrl: baseUrl.trim(),
             });
 
@@ -471,23 +492,25 @@ export const AISettings = () => {
         const enteredApiKey = apiKey.trim();
         const isCurrentRequest = (): boolean => requestId === testRequestId.current;
 
-        if (adapterId === OLLAMA_ADAPTER_ID) {
-            const loaded = await loadOllamaModels(false);
-            if (!isCurrentRequest() || !loaded) return;
-            if (enteredApiKey) {
-                await authManager.saveCredentials(adapterId, {
-                    apiKey: enteredApiKey,
-                    baseUrl: baseUrl.trim(),
-                });
-                if (!isCurrentRequest()) return;
-                setApiKey("");
-            }
-            return;
-        }
-
         setTestStatus("testing");
         setTestError("");
         try {
+            if (adapterId === OLLAMA_ADAPTER_ID) {
+                const loaded = await loadOllamaModels(false);
+                if (!isCurrentRequest() || !loaded) return;
+                if (enteredApiKey) {
+                    setTestStatus("testing");
+                    await authManager.saveCredentials(adapterId, {
+                        apiKey: enteredApiKey,
+                        baseUrl: baseUrl.trim(),
+                    });
+                    if (!isCurrentRequest()) return;
+                    setApiKey("");
+                    setTestStatus("success");
+                }
+                return;
+            }
+
             const savedCreds = await repositories.ai.loadCredentials(adapterId);
             if (!isCurrentRequest()) return;
             const creds = {
@@ -502,7 +525,6 @@ export const AISettings = () => {
             const models = await adapter.listModels(creds);
             if (!isCurrentRequest()) return;
             if (models.length > 0) {
-                setTestStatus("success");
                 setAvailableModels(models);
                 if (enteredApiKey) {
                     await authManager.saveCredentials(adapterId, {
@@ -513,6 +535,7 @@ export const AISettings = () => {
                 }
                 if (!isCurrentRequest()) return;
                 setCredentialStatus("connected");
+                setTestStatus("success");
             } else {
                 setTestStatus("error");
                 setTestError("Could not reach the API. Check your credentials and try again.");
@@ -524,34 +547,32 @@ export const AISettings = () => {
         }
     };
 
-    // Phase 1: open external browser
-    const handleConnectOAuth = async () => {
+    const handleConnectOAuth = async (): Promise<void> => {
         const requestId = ++authRequestId.current;
         const authAdapterId = adapterId;
+        setAuthError("");
         setAuthLoading(true);
         try {
             const result = await authManager.startOAuthFlow(authAdapterId);
             if (requestId !== authRequestId.current) return;
             setOauthInstruction(result.message);
+            setOauthDeviceCode(result.deviceCode);
             setOauthPending(true);
             setOauthCode("");
         } catch (err: unknown) {
             if (requestId !== authRequestId.current) return;
-            uiDispatch.setAlert({
-                open: true,
-                message: err instanceof Error ? err.message : "OAuth failed.",
-                type: "error",
-            });
+            setAuthError(err instanceof Error ? err.message : "Sign-in could not start. Try again.");
         } finally {
             if (requestId === authRequestId.current) setAuthLoading(false);
         }
     };
 
-    // Phase 2: exchange the pasted code or complete device authorization
-    const handleSubmitOAuthCode = async () => {
-        if (adapterId !== OPENAI_ADAPTER_ID && !oauthCode.trim()) return;
+    const handleSubmitOAuthCode = async (): Promise<void> => {
+        if (authLoading || (adapterId !== OPENAI_ADAPTER_ID && !oauthCode.trim())) return;
+        setCodeCopying(false);
         const requestId = ++authRequestId.current;
         const authAdapterId = adapterId;
+        setAuthError("");
         setAuthLoading(true);
         try {
             await authManager.completeOAuthFlow(authAdapterId, oauthCode.trim());
@@ -570,11 +591,7 @@ export const AISettings = () => {
             });
         } catch (err: unknown) {
             if (requestId !== authRequestId.current) return;
-            uiDispatch.setAlert({
-                open: true,
-                message: err instanceof Error ? err.message : "OAuth code exchange failed.",
-                type: "error",
-            });
+            setAuthError(err instanceof Error ? err.message : "Sign-in could not finish. Try again.");
         } finally {
             if (requestId === authRequestId.current) setAuthLoading(false);
         }
@@ -587,11 +604,91 @@ export const AISettings = () => {
         setOauthPending(false);
         setOauthCode("");
         setOauthInstruction("");
+        setOauthDeviceCode(undefined);
+        setCodeCopying(false);
+        setAuthError("");
+    };
+
+    const requestConnection = (action: "oauth" | "api-key"): void => {
+        if (connectionBusy) return;
+        setAuthError("");
+        setTestStatus("idle");
+        setTestError("");
+        setStorageError("");
+        setStorageConsent(action);
+    };
+
+    const requestTestConnection = (): void => {
+        if (connectionBusy) return;
+        if (apiKey.trim()) requestConnection("api-key");
+        else void handleTestConnection();
+    };
+
+    const handleCancelStorage = (): void => {
+        storageRequestId.current += 1;
+        setStorageConsent(null);
+        setStoragePreparing(false);
+        setStorageError("");
+    };
+
+    const handleAllowStorage = async (): Promise<void> => {
+        const action = storageConsent;
+        if (!action || storagePreparing) return;
+        const requestId = ++storageRequestId.current;
+        setStoragePreparing(true);
+        setStorageError("");
+        try {
+            if (desktop) await window.electronAPI.ai.prepareCredentialStorage();
+            if (requestId !== storageRequestId.current) return;
+            setStorageConsent(null);
+            setStoragePreparing(false);
+            if (action === "oauth") await handleConnectOAuth();
+            else await handleTestConnection();
+        } catch (error: unknown) {
+            if (requestId !== storageRequestId.current) return;
+            const message = error instanceof Error ? error.message : "";
+            if (
+                typeof window.electronAPI?.ai?.prepareCredentialStorage !== "function" ||
+                /No handler registered|not a function/.test(message)
+            ) {
+                setStorageError(
+                    "This window is using an outdated desktop bridge. Quit all Write Me windows and reopen the updated app, then try again. No new credentials have been saved.",
+                );
+            } else if (message.includes("AI setup access denied")) {
+                setStorageError(
+                    "This window cannot start AI setup. Open AI settings in the main Write Me window and try again. No new credentials have been saved.",
+                );
+            } else {
+                setStorageError(
+                    "Secure storage is unavailable. Encrypted storage could not be initialized. No new credentials have been saved. On macOS, unlock your login Keychain and allow Write Me access if asked. Use View > Toggle Developer Tools to check storage availability.",
+                );
+            }
+        } finally {
+            if (requestId === storageRequestId.current) setStoragePreparing(false);
+        }
+    };
+
+    const handleCopyCode = async (): Promise<void> => {
+        if (!oauthDeviceCode || codeCopying) return;
+        const requestId = authRequestId.current;
+        const userCode = oauthDeviceCode.userCode;
+        setCodeCopying(true);
+        const copied = await copyDeviceCode(userCode);
+        if (requestId !== authRequestId.current) return;
+        setOauthDeviceCode((current) => (current ? { ...current, copied } : current));
+        setCodeCopying(false);
     };
 
     const handleDisconnect = async () => {
         const requestId = ++authRequestId.current;
         const disconnectedAdapterId = adapterId;
+        storageRequestId.current += 1;
+        setStorageConsent(null);
+        setStoragePreparing(false);
+        setStorageError("");
+        setAuthError("");
+        setOauthDeviceCode(undefined);
+        setCodeCopying(false);
         credentialRequestId.current += 1;
         testRequestId.current += 1;
         openAIModelRequestId.current += 1;
@@ -651,10 +748,10 @@ export const AISettings = () => {
                 message: "AI configuration saved.",
                 type: "success",
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             uiDispatch.setAlert({
                 open: true,
-                message: err?.message ?? "Failed to save configuration.",
+                message: err instanceof Error ? err.message : "Failed to save configuration.",
                 type: "error",
             });
         } finally {
@@ -674,24 +771,78 @@ export const AISettings = () => {
 
     return (
         <>
-            <div className="max-w-6xl space-y-8">
-                <section className="space-y-3">
-                    <div>
-                        <span className="text-sm font-semibold text-foreground">Provider</span>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            Choose the model runtime. Logos stay quiet until hover or active state.
-                        </p>
+            <Modal
+                open={storageConsent !== null}
+                onChange={(open) => {
+                    if (!open) handleCancelStorage();
+                }}
+                title={desktop ? "Allow secure credential storage?" : "Store credentials in this browser?"}
+                footer={
+                    <div className="flex flex-wrap justify-end gap-2">
+                        <Button theme="ghost-muted" onClick={handleCancelStorage}>
+                            Cancel
+                        </Button>
+                        <Button disabled={storagePreparing} onClick={handleAllowStorage}>
+                            {storagePreparing ? "Checking secure storage..." : "Allow and continue"}
+                        </Button>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                }
+            >
+                <div className="space-y-4 text-sm leading-relaxed text-foreground">
+                    <p>
+                        {desktop
+                            ? "Write Me needs your permission to encrypt and save this provider's credentials on your device."
+                            : "This provider's credentials will be saved in this browser profile, without system Keychain protection. Use the desktop app for encrypted credential storage."}
+                    </p>
+                    {desktop && (
+                        <p>
+                            Your operating system may ask for access to its credential store. On macOS, unlock your
+                            login Keychain and allow Write Me access. Sign-in will only start after encrypted storage is
+                            available.
+                        </p>
+                    )}
+                    <p>Your prompts and the note content you send will be shared with the selected provider.</p>
+                    {storagePreparing && (
+                        <output className="block">
+                            Checking encrypted storage. Respond to any system permission prompt.
+                        </output>
+                    )}
+                    {storageError && (
+                        <p role="alert" className="text-danger">
+                            {storageError}
+                        </p>
+                    )}
+                </div>
+            </Modal>
+            <div className="grid max-w-6xl min-w-0 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+                <section className="min-w-0 space-y-3" aria-labelledby="ai-provider-heading">
+                    <div>
+                        <h2 id="ai-provider-heading" className="text-sm font-semibold text-foreground">
+                            Provider
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Choose an account or a local runtime.</p>
+                    </div>
+                    <Select
+                        title="Provider"
+                        hiddenLabel
+                        container="lg:hidden"
+                        value={adapterId}
+                        disabled={saving}
+                        onChange={(event) => void handleAdapterChange(event.target.value)}
+                        options={visibleAdapters.map((candidate) => ({ value: candidate.id, label: candidate.name }))}
+                    />
+                    <div className="hidden gap-2 lg:grid">
                         {visibleAdapters.map((a) => {
                             const aMeta = PROVIDER_META[a.id];
                             const isSelected = adapterId === a.id;
                             const statusText =
-                                credentialStatus === "connected"
-                                    ? "Connected"
-                                    : credentialStatus === "loading"
-                                      ? "Checking"
-                                      : "Needs setup";
+                                a.id === "cli"
+                                    ? "Local command"
+                                    : credentialStatus === "connected"
+                                      ? "Connected"
+                                      : credentialStatus === "loading"
+                                        ? "Checking"
+                                        : "Needs setup";
 
                             return (
                                 <button
@@ -699,11 +850,11 @@ export const AISettings = () => {
                                     type="button"
                                     onClick={() => handleAdapterChange(a.id)}
                                     aria-pressed={isSelected}
+                                    disabled={saving}
                                     className={css(
-                                        "group flex min-h-28 items-start gap-3 rounded-card-radius border bg-card-background/70 p-4 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                                        isSelected &&
-                                            "border-primary/45 bg-primary/10 shadow-soft ring-1 ring-primary/35",
-                                        !isSelected && "border-card-border",
+                                        "group flex min-w-0 items-start gap-3 rounded-button-radius border p-3 text-left transition-colors hover:bg-secondary-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+                                        isSelected && "border-primary bg-secondary-background",
+                                        !isSelected && "border-transparent",
                                     )}
                                 >
                                     <ProviderLogo id={a.id} active={isSelected} />
@@ -736,332 +887,493 @@ export const AISettings = () => {
                     </div>
                 </section>
 
-                {/* Credentials section */}
-                {adapterId === "cli" ? (
-                    <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium">CLI Command Template</span>
-                        <p className="text-xs text-muted-foreground">
-                            Use <code>{"{{prompt}}"}</code> for the user message, <code>{"{{system_prompt}}"}</code> for
-                            the system prompt, <code>{"{{context}}"}</code> for the note content.
-                        </p>
-                        <Input
-                            hiddenLabel
-                            value={commandTemplate}
-                            placeholder="claude --dangerously-skip-permissions {{context}}"
-                            onChange={(e: any) => setCommandTemplate(e.target.value)}
-                        />
-                    </div>
-                ) : adapterId === OLLAMA_ADAPTER_ID ? (
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                            <span className="text-sm font-medium">Base URL</span>
-                            <Input
-                                hiddenLabel
-                                value={baseUrl}
-                                placeholder={DEFAULT_OLLAMA_BASE_URL}
-                                onChange={(e: any) => setBaseUrl(e.target.value)}
-                                onKeyDown={(e: any) => e.key === "Enter" && handleTestConnection()}
-                            />
-                            <p className="text-[10px] text-muted-foreground">
-                                Use <code>{DEFAULT_OLLAMA_BASE_URL}</code> for local Ollama, or a cloud Ollama
-                                OpenAI-compatible base URL. Running models load from the same host via{" "}
-                                <code>/api/ps</code>.
-                            </p>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <span className="text-sm font-medium">API Key (optional)</span>
-                            <div className="flex gap-2">
-                                <Input
-                                    hiddenLabel
-                                    type="password"
-                                    value={apiKey}
-                                    container="flex-1"
-                                    placeholder={meta?.keyHint ?? "Optional API key"}
-                                    onChange={(e: any) => setApiKey(e.target.value)}
-                                    onKeyDown={(e: any) => e.key === "Enter" && handleTestConnection()}
-                                />
-                                <Button
-                                    size="small"
-                                    disabled={!baseUrl.trim() || testStatus === "testing" || ollamaModelsLoading}
-                                    onClick={handleTestConnection}
-                                >
-                                    {testStatus === "testing" || ollamaModelsLoading ? (
-                                        <SpinnerIcon size={14} className="animate-spin" />
-                                    ) : (
-                                        <span className="flex items-center gap-1.5">
-                                            <PlugIcon size={14} />
-                                            Load models
-                                        </span>
-                                    )}
-                                </Button>
-                            </div>
-                            {testStatus === "success" && (
-                                <span className="flex items-center gap-1 text-xs text-success">
-                                    <CheckCircleIcon size={12} />
-                                    Connected — {availableModels.length} model
-                                    {availableModels.length !== 1 ? "s" : ""} available
-                                </span>
-                            )}
-                            {testStatus === "error" && (
-                                <span className="text-destructive flex items-center gap-1 text-xs">
-                                    <XCircleIcon size={12} />
-                                    {testError}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                ) : adapter?.supportsOAuth ? (
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                            <span className="text-sm font-medium">Authentication</span>
-                            {credentialStatus === "connected" ? (
-                                <div className="flex gap-2">
-                                    <Button size="small" theme="ghost-danger" onClick={handleDisconnect}>
-                                        {meta?.disconnectLabel ?? "Disconnect"}
-                                    </Button>
+                <div className="min-w-0 space-y-8">
+                    <section className="space-y-5" aria-labelledby="ai-connection-heading">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <ProviderLogo id={adapterId} active />
+                                <div className="min-w-0">
+                                    <h2 id="ai-connection-heading" className="text-lg font-semibold text-foreground">
+                                        {adapter?.name ?? adapterId}
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground">{meta?.description}</p>
                                 </div>
-                            ) : oauthPending ? (
+                            </div>
+                            <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+                                {adapterId !== "cli" && <ProviderStatusIcon status={credentialStatus} />}
+                                {adapterId === "cli"
+                                    ? "Local command"
+                                    : credentialStatus === "connected"
+                                      ? "Connected"
+                                      : credentialStatus === "loading"
+                                        ? "Checking..."
+                                        : "Not connected"}
+                            </span>
+                        </div>
+                        {adapterId !== "cli" && (
+                            <div className="flex items-start gap-3 rounded-card-radius bg-secondary-background p-4 text-sm leading-relaxed text-foreground">
+                                <ShieldCheckIcon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                                <div className="space-y-1">
+                                    <p className="font-medium">Before you connect</p>
+                                    <p>
+                                        {desktop
+                                            ? "Allow access to your system credential store when asked. Write Me checks encrypted storage before sign-in."
+                                            : "Credentials stay in this browser profile. The desktop app uses your system credential store to encrypt them."}
+                                    </p>
+                                    <p>
+                                        {adapterId === OLLAMA_ADAPTER_ID
+                                            ? "Local Ollama does not need a key. Cloud endpoints receive the prompts and note content you send."
+                                            : "Your provider receives the prompts and note content you send. AI usage may incur provider charges."}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        {authError && (
+                            <p role="alert" className="text-sm text-danger">
+                                {authError}
+                            </p>
+                        )}
+                        {adapterId === "cli" ? (
+                            <div className="flex flex-col gap-2">
+                                <span className="text-sm font-medium">CLI Command Template</span>
+                                <p className="text-xs text-muted-foreground">
+                                    Use <code>{"{{prompt}}"}</code> for the user message,{" "}
+                                    <code>{"{{system_prompt}}"}</code> for the system prompt,{" "}
+                                    <code>{"{{context}}"}</code> for the note content.
+                                </p>
+                                <Input
+                                    title="CLI command template"
+                                    hiddenLabel
+                                    value={commandTemplate}
+                                    placeholder="claude --dangerously-skip-permissions {{context}}"
+                                    onChange={(e: any) => setCommandTemplate(e.target.value)}
+                                />
+                            </div>
+                        ) : adapterId === OLLAMA_ADAPTER_ID ? (
+                            <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2">
-                                    <p className="text-xs text-muted-foreground">{oauthInstruction}</p>
+                                    <span className="text-sm font-medium">Base URL</span>
+                                    <Input
+                                        title="Base URL"
+                                        hiddenLabel
+                                        value={baseUrl}
+                                        placeholder={DEFAULT_OLLAMA_BASE_URL}
+                                        onChange={(event) => setBaseUrl(event.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "Enter") requestTestConnection();
+                                        }}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Use <code>{DEFAULT_OLLAMA_BASE_URL}</code> for local Ollama, or a cloud Ollama
+                                        OpenAI-compatible base URL. Running models load from the same host via{" "}
+                                        <code>/api/ps</code>.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium">API Key (optional)</span>
                                     <div className="flex gap-2">
-                                        {adapterId !== "openai" && (
-                                            <Input
-                                                hiddenLabel
-                                                value={oauthCode}
-                                                container="flex-1"
-                                                placeholder="Paste authorization code here"
-                                                onChange={(e: any) => setOauthCode(e.target.value)}
-                                                onKeyDown={(e: any) => e.key === "Enter" && handleSubmitOAuthCode()}
-                                            />
-                                        )}
+                                        <Input
+                                            title="API key (optional)"
+                                            hiddenLabel
+                                            type="password"
+                                            value={apiKey}
+                                            container="min-w-0 flex-1"
+                                            autoComplete="off"
+                                            onChange={(event) => setApiKey(event.target.value)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === "Enter") requestTestConnection();
+                                            }}
+                                            placeholder={meta?.keyHint ?? "Optional API key"}
+                                        />
                                         <Button
                                             size="small"
-                                            disabled={authLoading || (adapterId !== "openai" && !oauthCode.trim())}
-                                            onClick={handleSubmitOAuthCode}
+                                            disabled={!baseUrl.trim() || connectionBusy || ollamaModelsLoading}
+                                            onClick={requestTestConnection}
                                         >
-                                            {authLoading ? (
+                                            {testStatus === "testing" || ollamaModelsLoading ? (
                                                 <SpinnerIcon size={14} className="animate-spin" />
-                                            ) : adapterId === "openai" ? (
-                                                "Complete sign-in"
                                             ) : (
-                                                "Submit"
+                                                <span className="flex items-center gap-1.5">
+                                                    <PlugIcon size={14} />
+                                                    Load models
+                                                </span>
                                             )}
                                         </Button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleCancelOAuth}
-                                        className="w-fit text-[11px] text-muted-foreground hover:text-foreground"
-                                    >
-                                        Cancel
-                                    </button>
+                                    {testStatus === "success" && (
+                                        <span className="flex items-center gap-1 text-xs text-success">
+                                            <CheckCircleIcon size={12} />
+                                            Connected — {availableModels.length} model
+                                            {availableModels.length !== 1 ? "s" : ""} available
+                                        </span>
+                                    )}
+                                    {testStatus === "error" && (
+                                        <span className="text-destructive flex items-center gap-1 text-xs">
+                                            <XCircleIcon size={12} />
+                                            {testError}
+                                        </span>
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="flex gap-2">
-                                    <Button size="small" disabled={authLoading} onClick={handleConnectOAuth}>
-                                        {authLoading ? "Opening browser..." : (meta?.oauthLabel ?? "Connect")}
-                                    </Button>
+                            </div>
+                        ) : adapter?.supportsOAuth ? (
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-sm font-medium">Authentication</span>
+                                    {credentialStatus === "connected" ? (
+                                        <div className="flex gap-2">
+                                            <Button size="small" theme="ghost-danger" onClick={handleDisconnect}>
+                                                {meta?.disconnectLabel ?? "Disconnect"}
+                                            </Button>
+                                        </div>
+                                    ) : oauthPending ? (
+                                        <div className="space-y-4">
+                                            {oauthDeviceCode ? (
+                                                <div className="space-y-3">
+                                                    <p className="text-sm text-foreground">
+                                                        Enter this code on the OpenAI page, then return here to complete
+                                                        sign-in.
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <Input
+                                                            title="Device authorization code"
+                                                            hiddenLabel
+                                                            readOnly
+                                                            value={oauthDeviceCode.userCode}
+                                                            container="w-full sm:w-52"
+                                                            className="font-mono text-xl"
+                                                            onFocus={(event) => event.currentTarget.select()}
+                                                        />
+                                                        <Button
+                                                            size="small"
+                                                            theme="ghost-muted"
+                                                            disabled={codeCopying || authLoading}
+                                                            onClick={handleCopyCode}
+                                                        >
+                                                            <CopyIcon size={16} aria-hidden="true" />
+                                                            {codeCopying ? "Copying..." : "Copy code"}
+                                                        </Button>
+                                                    </div>
+                                                    <output className="block text-sm text-foreground">
+                                                        {oauthDeviceCode.copied
+                                                            ? "Code copied to clipboard."
+                                                            : "Automatic copy was unavailable. Use Copy code or select and copy the code above."}
+                                                    </output>
+                                                    <ExternalProviderLink
+                                                        href={oauthDeviceCode.verificationUrl}
+                                                        label="Open OpenAI sign-in page"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-foreground">{oauthInstruction}</p>
+                                            )}
+                                            <div className="flex flex-wrap gap-2">
+                                                {adapterId !== "openai" && (
+                                                    <Input
+                                                        title="Authorization code"
+                                                        hiddenLabel
+                                                        value={oauthCode}
+                                                        autoComplete="one-time-code"
+                                                        container="min-w-0 flex-1"
+                                                        placeholder="Paste authorization code here"
+                                                        onChange={(e: any) => setOauthCode(e.target.value)}
+                                                        onKeyDown={(e: any) =>
+                                                            e.key === "Enter" && handleSubmitOAuthCode()
+                                                        }
+                                                    />
+                                                )}
+                                                <Button
+                                                    size="small"
+                                                    disabled={
+                                                        authLoading || (adapterId !== "openai" && !oauthCode.trim())
+                                                    }
+                                                    onClick={handleSubmitOAuthCode}
+                                                >
+                                                    {authLoading ? (
+                                                        <SpinnerIcon size={14} className="animate-spin" />
+                                                    ) : adapterId === "openai" ? (
+                                                        "Complete sign-in"
+                                                    ) : (
+                                                        "Submit"
+                                                    )}
+                                                </Button>
+                                            </div>
+                                            <Button size="small" theme="ghost-muted" onClick={handleCancelOAuth}>
+                                                Cancel sign-in
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="small"
+                                                disabled={connectionBusy}
+                                                onClick={() => requestConnection("oauth")}
+                                            >
+                                                {authLoading ? "Opening browser..." : (meta?.oauthLabel ?? "Connect")}
+                                            </Button>
+                                            {authLoading && (
+                                                <Button size="small" theme="ghost-muted" onClick={handleCancelOAuth}>
+                                                    Cancel sign-in
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                        {adapterId !== "openai" && (
+                                {adapterId !== "openai" && !oauthPending && (
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-sm font-medium">Or use API Key</span>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                title="API key"
+                                                hiddenLabel
+                                                type="password"
+                                                value={apiKey}
+                                                container="min-w-0 flex-1"
+                                                autoComplete="off"
+                                                placeholder={meta?.keyHint ?? "API key"}
+                                                onChange={(event) => setApiKey(event.target.value)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter" && apiKey.trim()) requestTestConnection();
+                                                }}
+                                            />
+                                            <Button
+                                                size="small"
+                                                disabled={!apiKey.trim() || connectionBusy}
+                                                onClick={requestTestConnection}
+                                            >
+                                                {testStatus === "testing" ? "Verifying..." : "Verify and save key"}
+                                            </Button>
+                                        </div>
+                                        {meta?.consoleUrl && (
+                                            <ExternalProviderLink href={meta.consoleUrl} label="Get API key" />
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
                             <div className="flex flex-col gap-2">
-                                <span className="text-sm font-medium">Or use API Key</span>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">API Key</span>
+                                    {meta?.consoleUrl && (
+                                        <ExternalProviderLink href={meta.consoleUrl} label="Get key" />
+                                    )}
+                                </div>
                                 <div className="flex gap-2">
                                     <Input
+                                        title="API key"
                                         hiddenLabel
                                         type="password"
                                         value={apiKey}
-                                        container="flex-1"
-                                        placeholder={meta?.keyHint ?? "API key"}
-                                        onChange={(e: any) => setApiKey(e.target.value)}
-                                        onKeyDown={(e: any) => e.key === "Enter" && handleTestConnection()}
+                                        autoComplete="off"
+                                        container="min-w-0 flex-1"
+                                        placeholder={
+                                            credentialStatus === "connected"
+                                                ? "key saved (paste new to replace)"
+                                                : (meta?.keyHint ?? "Paste your API key")
+                                        }
+                                        onChange={(event) => setApiKey(event.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === "Enter") requestTestConnection();
+                                        }}
                                     />
-                                    <Button size="small" disabled={!apiKey.trim()} onClick={handleTestConnection}>
-                                        Save
+                                    <Button
+                                        size="small"
+                                        disabled={
+                                            connectionBusy || (!apiKey.trim() && credentialStatus !== "connected")
+                                        }
+                                        onClick={requestTestConnection}
+                                    >
+                                        {testStatus === "testing" ? (
+                                            <SpinnerIcon size={14} className="animate-spin" />
+                                        ) : (
+                                            <span className="flex items-center gap-1.5">
+                                                <PlugIcon size={14} />
+                                                {apiKey.trim() ? "Connect" : "Test"}
+                                            </span>
+                                        )}
                                     </Button>
                                 </div>
-                                {meta?.consoleUrl && (
-                                    <ExternalProviderLink href={meta.consoleUrl} label="Get API key" />
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">API Key</span>
-                            {meta?.consoleUrl && <ExternalProviderLink href={meta.consoleUrl} label="Get key" />}
-                        </div>
-                        <div className="flex gap-2">
-                            <Input
-                                hiddenLabel
-                                type="password"
-                                value={apiKey}
-                                container="flex-1"
-                                placeholder={
-                                    credentialStatus === "connected"
-                                        ? "key saved (paste new to replace)"
-                                        : (meta?.keyHint ?? "Paste your API key")
-                                }
-                                onChange={(e: any) => setApiKey(e.target.value)}
-                                onKeyDown={(e: any) => e.key === "Enter" && handleTestConnection()}
-                            />
-                            <Button
-                                size="small"
-                                disabled={!apiKey.trim() && credentialStatus !== "connected"}
-                                onClick={handleTestConnection}
-                            >
-                                {testStatus === "testing" ? (
-                                    <SpinnerIcon size={14} className="animate-spin" />
-                                ) : (
-                                    <span className="flex items-center gap-1.5">
-                                        <PlugIcon size={14} />
-                                        {apiKey.trim() ? "Connect" : "Test"}
+
+                                {/* Test result feedback */}
+                                {testStatus === "success" && (
+                                    <span className="flex items-center gap-1 text-xs text-success">
+                                        <CheckCircleIcon size={12} />
+                                        Connected — {availableModels.length} model
+                                        {availableModels.length !== 1 ? "s" : ""} available
                                     </span>
                                 )}
-                            </Button>
-                        </div>
-
-                        {/* Test result feedback */}
-                        {testStatus === "success" && (
-                            <span className="flex items-center gap-1 text-xs text-success">
-                                <CheckCircleIcon size={12} />
-                                Connected — {availableModels.length} model
-                                {availableModels.length !== 1 ? "s" : ""} available
-                            </span>
-                        )}
-                        {testStatus === "error" && (
-                            <span className="text-destructive flex items-center gap-1 text-xs">
-                                <XCircleIcon size={12} />
-                                {testError}
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {/* Model */}
-                {adapterId !== "cli" && (
-                    <div className="flex flex-col gap-2">
-                        <span className="text-sm font-medium">Model</span>
-                        {adapterId === OPENAI_ADAPTER_ID ? (
-                            <Select
-                                ref={openAIModelSelectRef}
-                                hiddenLabel
-                                value={
-                                    availableModels.some((availableModel) => availableModel.id === model) ? model : ""
-                                }
-                                title="Model"
-                                required={false}
-                                loading={credentialStatus === "loading" || openAIModelsLoading}
-                                disabled={
-                                    credentialStatus !== "connected" ||
-                                    openAIModelsLoading ||
-                                    availableModels.length === 0
-                                }
-                                placeholder={
-                                    credentialStatus === "loading" || openAIModelsLoading
-                                        ? "Loading OpenAI models..."
-                                        : credentialStatus !== "connected"
-                                          ? "Connect OpenAI to load models"
-                                          : openAIModelsError
-                                            ? "OpenAI models unavailable"
-                                            : "No OpenAI models available"
-                                }
-                                onChange={(event) => setModel(event.target.value)}
-                                options={availableModels.map((availableModel) => ({
-                                    value: availableModel.id,
-                                    label: availableModel.name,
-                                }))}
-                            />
-                        ) : availableModels.length > 0 ? (
-                            <Select
-                                hiddenLabel
-                                value={model}
-                                title="Model"
-                                onChange={(e) => setModel(e.target.value)}
-                                options={availableModels.map((m) => ({
-                                    value: m.id,
-                                    label: m.name,
-                                }))}
-                            />
-                        ) : adapterId === OLLAMA_ADAPTER_ID ? (
-                            <Select
-                                hiddenLabel
-                                value=""
-                                title="Model"
-                                disabled
-                                options={[
-                                    {
-                                        value: "",
-                                        label:
-                                            testStatus === "testing" || ollamaModelsLoading
-                                                ? "Loading running models..."
-                                                : "Load running models from Ollama first",
-                                    },
-                                ]}
-                            />
-                        ) : (
-                            <Input
-                                hiddenLabel
-                                value={model}
-                                placeholder={adapter?.defaultModel ?? "Model name"}
-                                onChange={(e: any) => setModel(e.target.value)}
-                            />
-                        )}
-                        {adapterId === OPENAI_ADAPTER_ID && openAIModelsError ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p role="alert" className="text-destructive text-xs">
-                                    {openAIModelsError}
-                                </p>
-                                <Button
-                                    size="small"
-                                    disabled={openAIModelsLoading || credentialStatus !== "connected"}
-                                    onClick={() => {
-                                        focusOpenAIModelAfterRetryRef.current = true;
-                                        void loadOpenAIModels();
-                                    }}
-                                >
-                                    {openAIModelsLoading ? "Retrying..." : "Retry loading models"}
-                                </Button>
+                                {testStatus === "error" && (
+                                    <span className="text-destructive flex items-center gap-1 text-xs">
+                                        <XCircleIcon size={12} />
+                                        {testError}
+                                    </span>
+                                )}
                             </div>
-                        ) : adapterId === OPENAI_ADAPTER_ID && openAIModelsLoading ? (
-                            <p role="status" className="text-[10px] text-muted-foreground">
-                                Loading models available to your OpenAI account...
-                            </p>
-                        ) : adapterId === OPENAI_ADAPTER_ID && availableModels.length > 0 ? (
-                            <p role="status" className="text-[10px] text-muted-foreground">
-                                {availableModels.length} model
-                                {availableModels.length === 1 ? "" : "s"} available
-                            </p>
-                        ) : adapterId === OLLAMA_ADAPTER_ID && ollamaModelsLoading ? (
-                            <p className="text-[10px] text-muted-foreground">
-                                Loading running models from <code>{baseUrl.trim()}</code> via <code>/api/ps</code>...
-                            </p>
-                        ) : (
-                            <p className="text-[10px] text-muted-foreground">
-                                Default: <code>{adapter?.defaultModel}</code>
+                        )}
+
+                        {adapter?.supportsOAuth && testStatus === "error" && (
+                            <p role="alert" className="text-sm text-danger">
+                                {testError}
                             </p>
                         )}
+                        {adapter?.supportsOAuth && testStatus === "success" && (
+                            <output className="block text-sm text-foreground">
+                                Credentials saved — {availableModels.length} model
+                                {availableModels.length === 1 ? "" : "s"} available.
+                            </output>
+                        )}
+                    </section>
+
+                    {adapterId !== "cli" && (
+                        <section
+                            className="flex flex-col gap-3 border-t border-border pt-6"
+                            aria-labelledby="ai-model-heading"
+                        >
+                            <h2 id="ai-model-heading" className="text-sm font-semibold text-foreground">
+                                Model
+                            </h2>
+                            {adapterId === OPENAI_ADAPTER_ID ? (
+                                <Select
+                                    ref={openAIModelSelectRef}
+                                    hiddenLabel
+                                    value={
+                                        availableModels.some((availableModel) => availableModel.id === model)
+                                            ? model
+                                            : ""
+                                    }
+                                    title="Model"
+                                    required={false}
+                                    loading={credentialStatus === "loading" || openAIModelsLoading}
+                                    disabled={
+                                        credentialStatus !== "connected" ||
+                                        openAIModelsLoading ||
+                                        availableModels.length === 0
+                                    }
+                                    placeholder={
+                                        credentialStatus === "loading" || openAIModelsLoading
+                                            ? "Loading OpenAI models..."
+                                            : credentialStatus !== "connected"
+                                              ? "Connect OpenAI to load models"
+                                              : openAIModelsError
+                                                ? "OpenAI models unavailable"
+                                                : "No OpenAI models available"
+                                    }
+                                    onChange={(event) => setModel(event.target.value)}
+                                    options={availableModels.map((availableModel) => ({
+                                        value: availableModel.id,
+                                        label: availableModel.name,
+                                    }))}
+                                />
+                            ) : availableModels.length > 0 ? (
+                                <Select
+                                    hiddenLabel
+                                    value={model}
+                                    title="Model"
+                                    onChange={(e) => setModel(e.target.value)}
+                                    options={availableModels.map((m) => ({
+                                        value: m.id,
+                                        label: m.name,
+                                    }))}
+                                />
+                            ) : adapterId === OLLAMA_ADAPTER_ID ? (
+                                <Select
+                                    hiddenLabel
+                                    value=""
+                                    title="Model"
+                                    disabled
+                                    options={[
+                                        {
+                                            value: "",
+                                            label:
+                                                testStatus === "testing" || ollamaModelsLoading
+                                                    ? "Loading running models..."
+                                                    : "Load running models from Ollama first",
+                                        },
+                                    ]}
+                                />
+                            ) : (
+                                <Input
+                                    title="Model"
+                                    hiddenLabel
+                                    value={model}
+                                    placeholder={adapter?.defaultModel ?? "Model name"}
+                                    onChange={(e: any) => setModel(e.target.value)}
+                                />
+                            )}
+                            {adapterId === OPENAI_ADAPTER_ID && openAIModelsError ? (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p role="alert" className="text-destructive text-xs">
+                                        {openAIModelsError}
+                                    </p>
+                                    <Button
+                                        size="small"
+                                        disabled={openAIModelsLoading || credentialStatus !== "connected"}
+                                        onClick={() => {
+                                            focusOpenAIModelAfterRetryRef.current = true;
+                                            void loadOpenAIModels();
+                                        }}
+                                    >
+                                        {openAIModelsLoading ? "Retrying..." : "Retry loading models"}
+                                    </Button>
+                                </div>
+                            ) : adapterId === OPENAI_ADAPTER_ID && openAIModelsLoading ? (
+                                <p role="status" className="text-[10px] text-muted-foreground">
+                                    Loading models available to your OpenAI account...
+                                </p>
+                            ) : adapterId === OPENAI_ADAPTER_ID && availableModels.length > 0 ? (
+                                <p role="status" className="text-[10px] text-muted-foreground">
+                                    {availableModels.length} model
+                                    {availableModels.length === 1 ? "" : "s"} available
+                                </p>
+                            ) : adapterId === OLLAMA_ADAPTER_ID && ollamaModelsLoading ? (
+                                <p className="text-[10px] text-muted-foreground">
+                                    Loading running models from <code>{baseUrl.trim()}</code> via <code>/api/ps</code>
+                                    ...
+                                </p>
+                            ) : (
+                                <p className="text-[10px] text-muted-foreground">
+                                    Default: <code>{adapter?.defaultModel}</code>
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    <section
+                        className="space-y-3 border-t border-border pt-6"
+                        aria-labelledby="ai-instructions-heading"
+                    >
+                        <h2 id="ai-instructions-heading" className="text-sm font-semibold text-foreground">
+                            Writing instructions
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Optional instructions used with your prompts, such as tone, language, or writing style.
+                        </p>
+                        <Textarea
+                            title="System prompt"
+                            hiddenLabel
+                            rows={4}
+                            optionalText=" "
+                            value={systemPrompt}
+                            placeholder="You are a helpful writing assistant..."
+                            onChange={(event) => setSystemPrompt(event.target.value)}
+                        />
+                    </section>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+                        <p className="text-sm text-muted-foreground">Save to use this provider as your default.</p>
+                        <Button
+                            size="small"
+                            disabled={
+                                saving ||
+                                authLoading ||
+                                storagePreparing ||
+                                testStatus === "testing" ||
+                                !hasValidOpenAIModel
+                            }
+                            onClick={handleSaveConfig}
+                        >
+                            {saving ? "Saving..." : "Save Configuration"}
+                        </Button>
                     </div>
-                )}
-
-                {/* System prompt */}
-                <div className="flex flex-col gap-2">
-                    <span className="text-sm font-medium">System Prompt</span>
-                    <Textarea
-                        rows={3}
-                        optionalText=" "
-                        value={systemPrompt}
-                        placeholder="You are a helpful writing assistant..."
-                        onChange={(e: any) => setSystemPrompt(e.target.value)}
-                    />
-                </div>
-
-                <div className="flex justify-end border-t border-border/50 pt-4">
-                    <Button size="small" disabled={saving || !hasValidOpenAIModel} onClick={handleSaveConfig}>
-                        {saving ? "Saving..." : "Save Configuration"}
-                    </Button>
                 </div>
             </div>
         </>

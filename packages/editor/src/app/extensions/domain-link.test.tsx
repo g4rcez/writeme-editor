@@ -7,6 +7,8 @@ describe("getLinkTitleDomain", () => {
         ["https://www.instagram.com/g4rcez/", "g4rcez"],
         ["https://github.com/g4rcez/writeme-editor/issues", "g4rcez/writeme-editor"],
         ["https://youtube.com/@writeme/videos", "writeme"],
+        ["https://youtube.com/watch?v=video-id", "youtube.com"],
+        ["https://youtu.be/video-id", "youtube.com"],
         ["https://x.com/g4rcez/status/1", "@g4rcez"],
         ["https://www.linkedin.com/in/g4rcez/details", "g4rcez"],
     ])("returns the domain-specific title for %s", (url, expected) => {

@@ -9,6 +9,7 @@ const STRIPPED_HEADERS = new Set([
     "referer",
     "x-target-url",
     "x-upstream-user-agent",
+    "x-writeme-proxy-token",
     "connection",
     "content-length",
     "keep-alive",
@@ -34,7 +35,8 @@ const STRIPPED_RESPONSE_HEADERS = new Set([
 const PRIVATE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"]);
 const LOCAL_OLLAMA_PORT = "11434";
 
-function isAllowedOrigin(origin: string | null): boolean {
+function isAllowedOrigin(origin: string | null, allowDesktopOrigin = false): boolean {
+    if (origin === null || origin === "null") return allowDesktopOrigin;
     if (!origin) return false;
     try {
         const parsed = new URL(origin);
@@ -100,66 +102,62 @@ export function createResponseHeaders(upstreamHeaders: Headers): Record<string, 
     return headers;
 }
 
-export function startProxyServer(port = 4079) {
-    const app = new Elysia({ adapter: node() })
-        .use(
-            cors({
-                origin: (request) => {
-                    const origin = (request as Request).headers.get("origin");
-                    return isAllowedOrigin(origin);
-                },
-                methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
-                allowedHeaders: [
-                    "content-type",
-                    "authorization",
-                    "x-target-url",
-                    "x-upstream-user-agent",
-                    "accept",
-                    "chatgpt-account-id",
-                    "originator",
-                    "openai-beta",
-                ],
-            }),
-        )
-        .all("/proxy", async ({ request }) => {
-            const targetUrl = request.headers.get("x-target-url");
-            const origin = request.headers.get("origin");
-            if (!isAllowedOrigin(origin)) {
-                return new Response("Forbidden", { status: 403 });
-            }
-            if (!targetUrl) {
-                return new Response("Missing X-Target-URL header", { status: 400 });
-            }
-            const forwardHeaders = createForwardHeaders(request.headers);
-            let upstreamUrl: URL;
-            try {
-                upstreamUrl = new URL(targetUrl);
-            } catch {
-                return new Response("Invalid target URL", { status: 400 });
-            }
-            if (isPrivateOrBlockedHost(upstreamUrl)) {
-                return new Response("Target host blocked", { status: 403 });
-            }
-            const hasBody = request.method !== "GET" && request.method !== "HEAD";
-            const body = hasBody ? await request.arrayBuffer() : undefined;
-            try {
-                const upstream = await fetch(upstreamUrl, {
-                    method: request.method,
-                    headers: forwardHeaders,
-                    body,
-                    redirect: "manual",
-                });
+export function createProxyApp(desktopToken?: string): Elysia {
+    const app = new Elysia({ adapter: node() });
+    app.use(
+        cors({
+            origin: (request) => {
+                const origin = (request as Request).headers.get("origin");
+                return isAllowedOrigin(origin, Boolean(desktopToken));
+            },
+            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+            allowedHeaders: true,
+        }),
+    ).all("/proxy", async ({ request }) => {
+        const targetUrl = request.headers.get("x-target-url");
+        const origin = request.headers.get("origin");
+        const isAuthenticatedDesktopRequest =
+            Boolean(desktopToken) && request.headers.get("x-writeme-proxy-token") === desktopToken;
+        if (!isAllowedOrigin(origin, isAuthenticatedDesktopRequest)) {
+            return new Response("Forbidden", { status: 403 });
+        }
+        if (!targetUrl) {
+            return new Response("Missing X-Target-URL header", { status: 400 });
+        }
+        const forwardHeaders = createForwardHeaders(request.headers);
+        let upstreamUrl: URL;
+        try {
+            upstreamUrl = new URL(targetUrl);
+        } catch {
+            return new Response("Invalid target URL", { status: 400 });
+        }
+        if (isPrivateOrBlockedHost(upstreamUrl)) {
+            return new Response("Target host blocked", { status: 403 });
+        }
+        const hasBody = request.method !== "GET" && request.method !== "HEAD";
+        const body = hasBody ? await request.arrayBuffer() : undefined;
+        try {
+            const upstream = await fetch(upstreamUrl, {
+                method: request.method,
+                headers: forwardHeaders,
+                body,
+                redirect: "manual",
+            });
 
-                return new Response(upstream.body, {
-                    status: upstream.status,
-                    statusText: upstream.statusText,
-                    headers: createResponseHeaders(upstream.headers),
-                });
-            } catch {
-                return new Response("Upstream fetch failed", { status: 502 });
-            }
-        })
-        .listen(port);
+            return new Response(upstream.body, {
+                status: upstream.status,
+                statusText: upstream.statusText,
+                headers: createResponseHeaders(upstream.headers),
+            });
+        } catch {
+            return new Response("Upstream fetch failed", { status: 502 });
+        }
+    });
+    return app;
+}
+
+export function startProxyServer(port = 4079, desktopToken?: string): Elysia {
+    const app = createProxyApp(desktopToken).listen(port);
     console.log(`[proxy] running on http://localhost:${port}`);
     return app;
 }

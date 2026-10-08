@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { AICredentialStorageStatus } from "./ipc/ai-setup.ipc";
 import type { DatabaseCollection, DatabaseRecord } from "./main-process/database-schema";
 import type { Note } from "./store/note";
 import type { GitPushResult, GitStatusResult } from "./types/git";
@@ -238,6 +239,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
         loadCredentials: (adapterId: string) => ipcRenderer.invoke("ai:load-credentials", adapterId),
         clearCredentials: (adapterId: string) => ipcRenderer.invoke("ai:clear-credentials", adapterId),
         startOAuth: (authUrl: string) => ipcRenderer.invoke("ai:oauth-start", authUrl) as Promise<void>,
+        getProxyToken: (): Promise<string> => ipcRenderer.invoke("ai:proxy-token"),
+        prepareCredentialStorage: (): Promise<void> => ipcRenderer.invoke("ai:prepare-credential-storage"),
+        getCredentialStorageStatus: (): Promise<AICredentialStorageStatus> =>
+            ipcRenderer.invoke("ai:credential-storage-status"),
+        copyDeviceCode: (code: string): Promise<void> => ipcRenderer.invoke("ai:copy-device-code", code),
     },
     terminal: {
         spawn: (id: string, cwd?: string) => ipcRenderer.send("terminal:spawn", id, cwd),
@@ -489,6 +495,10 @@ declare global {
                 loadCredentials(adapterId: string): Promise<any | null>;
                 clearCredentials(adapterId: string): Promise<void>;
                 startOAuth(authUrl: string): Promise<void>;
+                getProxyToken(): Promise<string>;
+                prepareCredentialStorage(): Promise<void>;
+                getCredentialStorageStatus(): Promise<AICredentialStorageStatus>;
+                copyDeviceCode(code: string): Promise<void>;
             };
             terminal: {
                 spawn(id: string, cwd?: string): void;

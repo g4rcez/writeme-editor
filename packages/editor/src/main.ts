@@ -5,7 +5,6 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
-  safeStorage,
   type BrowserWindowConstructorOptions,
   type MenuItemConstructorOptions,
   type NativeImage,
@@ -16,11 +15,15 @@ import {
 } from "electron";
 import started from "electron-squirrel-startup";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
+import { registerAIProxyHandlers } from "./ipc/ai-proxy.ipc";
+import { registerAISetupHandlers } from "./ipc/ai-setup.ipc";
+import { registerAICredentialHandlers } from "./ipc/ai-storage.ipc";
 import { appIpcHandler } from "./ipc/app.ipc";
 import { databaseIpcHandler } from "./ipc/database.ipc";
 import { executionIpcHandler } from "./ipc/execution.ipc";
@@ -31,9 +34,8 @@ import { terminalIpcHandler } from "./ipc/terminal.ipc";
 import { AIRunner } from "./main-process/ai-runner";
 import { installBundledCli } from "./main-process/cli-installer";
 import { notifyFileClosed, startCliServer, stopCliServer } from "./main-process/cli-server";
-import { migrateCredentialRow, persistCredentialRow, withStoredCredentials } from "./main-process/credential-storage";
+import { createApplicationMenuTemplate } from "./main-process/application-menu";
 import { dbManager } from "./main-process/database";
-import { parseAiCredentials } from "./main-process/database-schema";
 import { FileWatcher } from "./main-process/file-watcher";
 import { createFolderWindow } from "./main-process/folder-window";
 import {
@@ -152,61 +154,7 @@ function registerAIHandlers() {
     }
   });
 
-  ipcMain.handle("ai:save-credentials", (_, value: unknown) => {
-    try {
-      const creds = parseAiCredentials(value);
-      const now = new Date().toISOString();
-      const db = dbManager().db;
-      const encrypted = persistCredentialRow(creds, safeStorage);
-      db.prepare(
-        `
-        INSERT OR REPLACE INTO aiCredentials
-          (adapterId, accessToken, refreshToken, expiresAt, apiKey, baseUrl, accountId, idToken, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT createdAt FROM aiCredentials WHERE adapterId = ?), ?), ?)
-      `,
-      ).run(
-        creds.adapterId,
-        encrypted.accessToken ?? null,
-        encrypted.refreshToken ?? null,
-        creds.expiresAt ?? null,
-        encrypted.apiKey ?? null,
-        creds.baseUrl ?? null,
-        creds.accountId ?? null,
-        encrypted.idToken ?? null,
-        creds.adapterId,
-        now,
-        now,
-      );
-      return { success: true };
-    } catch (e: any) {
-      console.error("Error in ai:save-credentials:", e);
-      throw e;
-    }
-  });
-
-  ipcMain.handle("ai:migrate-credentials", (_, value: unknown) =>
-    migrateCredentialRow(value, dbManager(), safeStorage),
-  );
-
-  ipcMain.handle("ai:load-credentials", (_, adapterId: string) => {
-    try {
-      const row = dbManager().db.prepare("SELECT * FROM aiCredentials WHERE adapterId = ?").get(adapterId) as any;
-      return withStoredCredentials(row as Record<string, unknown>, safeStorage) ?? null;
-    } catch (e: any) {
-      console.error("Error in ai:load-credentials:", e);
-      return null;
-    }
-  });
-
-  ipcMain.handle("ai:clear-credentials", (_, adapterId: string) => {
-    try {
-      dbManager().db.prepare("DELETE FROM aiCredentials WHERE adapterId = ?").run(adapterId);
-      return { success: true };
-    } catch (e: any) {
-      console.error("Error in ai:clear-credentials:", e);
-      throw e;
-    }
-  });
+  registerAICredentialHandlers(dbManager);
 }
 
 async function checkLinuxUpdate() {
@@ -370,6 +318,7 @@ function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[]
           click: () => openSettings("/settings/appearance"),
         },
         { label: "Editor", click: () => openSettings("/settings/editor") },
+        { label: "AI", click: () => openSettings("/settings/ai") },
         {
           label: "Shortcuts",
           click: () => openSettings("/settings/shortcuts"),
@@ -439,6 +388,10 @@ const WORKSPACE_INSTANCE_FLAG = "--workspace-instance";
 const WORKSPACE_ARG = "--workspace";
 const WORKSPACE_INSTANCE_ENV = "WRITEME_WORKSPACE_INSTANCE";
 const WORKSPACE_ENV = "WRITEME_WORKSPACE";
+const AI_PROXY_TOKEN_ENV = "WRITEME_AI_PROXY_TOKEN";
+const aiProxyToken = process.env[AI_PROXY_TOKEN_ENV] || randomUUID();
+// Only workspace app instances inherit the proxy token, not user shell processes.
+delete process.env[AI_PROXY_TOKEN_ENV];
 const DEVELOPMENT_USER_DATA_DIR = "writeme-dev";
 
 function resolveArgPath(rawPath: string, workingDir?: string): string {
@@ -519,6 +472,7 @@ function spawnWorkspaceInstance(folderPath: string): void {
       ...process.env,
       [WORKSPACE_INSTANCE_ENV]: "1",
       [WORKSPACE_ENV]: folderPath,
+      [AI_PROXY_TOKEN_ENV]: aiProxyToken,
     },
     stdio: "ignore",
   });
@@ -592,7 +546,7 @@ async function main() {
   });
 
   if (!isWorkspaceInstance) {
-    startProxyServer();
+    startProxyServer(4079, aiProxyToken);
   }
 
   app.on("before-quit", () => {
@@ -605,6 +559,11 @@ async function main() {
     const preload = getPreloadPath();
     console.log("Main process starting, registering AI handlers...");
     registerAIHandlers();
+    const rendererUrl =
+      MAIN_WINDOW_VITE_DEV_SERVER_URL ||
+      pathToFileURL(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)).href;
+    registerAIProxyHandlers(aiProxyToken, rendererUrl);
+    registerAISetupHandlers(rendererUrl);
     await notesIpcHandler();
     databaseIpcHandler();
     appIpcHandler(
@@ -749,7 +708,7 @@ async function main() {
       }
     };
 
-    Menu.setApplicationMenu(null);
+    Menu.setApplicationMenu(Menu.buildFromTemplate(createApplicationMenuTemplate(createOsMenuTemplate(preload))));
     if (!isWorkspaceInstance && process.platform === "darwin" && app.dock) {
       try {
         app.dock.setIcon(createNativeAppIcon());
