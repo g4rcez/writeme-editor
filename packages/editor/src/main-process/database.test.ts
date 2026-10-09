@@ -43,19 +43,23 @@ describe("DatabaseManager persistence boundary", () => {
 
     it("round-trips validated workspace data and additively migrates older message tables", () => {
         const workspaceData = {
-            activities: [{ id: "activity-1", toolName: "proposeNoteEdit", label: "Staged proposal", status: "complete" }],
+            activities: [
+                { id: "activity-1", toolName: "proposeNoteEdit", label: "Staged proposal", status: "complete" },
+            ],
             sources: [{ noteId: "note-1", title: "Research" }],
-            proposals: [{
-                id: "proposal-1",
-                noteId: "note-1",
-                title: "Research",
-                rationale: "Clarify the summary",
-                baseUpdatedAt: "2026-04-05T06:07:08.000Z",
-                baseMarkdown: "# Current",
-                proposedMarkdown: "# Revised",
-                status: "pending",
-                createdAt: "2026-04-05T06:08:00.000Z",
-            }],
+            proposals: [
+                {
+                    id: "proposal-1",
+                    noteId: "note-1",
+                    title: "Research",
+                    rationale: "Clarify the summary",
+                    baseUpdatedAt: "2026-04-05T06:07:08.000Z",
+                    baseMarkdown: "# Current",
+                    proposedMarkdown: "# Revised",
+                    status: "pending",
+                    createdAt: "2026-04-05T06:08:00.000Z",
+                },
+            ],
         };
         manager.save("aiMessages", {
             id: "workspace-message",
@@ -65,8 +69,9 @@ describe("DatabaseManager persistence boundary", () => {
             createdAt: "2026-04-05T06:08:00.000Z",
             workspaceData,
         });
-        expect(manager.get<{ workspaceData: typeof workspaceData }>("aiMessages", "workspace-message")?.workspaceData)
-            .toStrictEqual(workspaceData);
+        expect(
+            manager.get<{ workspaceData: typeof workspaceData }>("aiMessages", "workspace-message")?.workspaceData,
+        ).toStrictEqual(workspaceData);
 
         const oldPath = path.join(directory, "old.sqlite");
         const oldDatabase = new Database(oldPath);
@@ -82,10 +87,14 @@ describe("DatabaseManager persistence boundary", () => {
 
         const upgraded = new DatabaseManager(oldPath);
         try {
-            expect(upgraded.db.prepare("SELECT name FROM pragma_table_info('aiMessages') WHERE name = 'workspaceData'").get())
-                .toStrictEqual({ name: "workspaceData" });
-            expect(upgraded.get<{ content: string; workspaceData?: unknown }>("aiMessages", "old-message"))
-                .toMatchObject({ content: "kept" });
+            expect(
+                upgraded.db
+                    .prepare("SELECT name FROM pragma_table_info('aiMessages') WHERE name = 'workspaceData'")
+                    .get(),
+            ).toStrictEqual({ name: "workspaceData" });
+            expect(
+                upgraded.get<{ content: string; workspaceData?: unknown }>("aiMessages", "old-message"),
+            ).toMatchObject({ content: "kept" });
         } finally {
             upgraded.close();
         }
@@ -109,25 +118,29 @@ describe("DatabaseManager persistence boundary", () => {
             { ...expected, updatedAt: "2026-04-05T06:07:09.000Z" },
             { ...expected, content: "# Changed elsewhere" },
         ]) {
-            expect(manager.updateNoteContentIfUnchanged(
-                "conditional-note",
-                staleBase,
-                "# Stale",
-                7,
-                "2026-04-06T00:00:00.000Z",
-                "test",
-            )).toBeNull();
+            expect(
+                manager.updateNoteContentIfUnchanged(
+                    "conditional-note",
+                    staleBase,
+                    "# Stale",
+                    7,
+                    "2026-04-06T00:00:00.000Z",
+                    "test",
+                ),
+            ).toBeNull();
             expect(manager.get<{ content: string }>("notes", "conditional-note")?.content).toBe("# Current");
         }
 
-        expect(manager.updateNoteContentIfUnchanged(
-            "conditional-note",
-            expected,
-            "# Approved",
-            10,
-            "2026-04-06T00:00:00.000Z",
-            "test",
-        )).toMatchObject({ title: "Research", content: "# Approved" });
+        expect(
+            manager.updateNoteContentIfUnchanged(
+                "conditional-note",
+                expected,
+                "# Approved",
+                10,
+                "2026-04-06T00:00:00.000Z",
+                "test",
+            ),
+        ).toMatchObject({ title: "Research", content: "# Approved" });
     });
 
     it("denies generic writes and deletes for immutable note history", () => {
@@ -273,6 +286,20 @@ describe("note history", () => {
 
         expect(manager.getNoteHistory("note")).toHaveLength(1);
         expect(manager.getNoteHistory("note")[0]).toMatchObject({ content: "changed", noteId: "note" });
+    });
+
+    it("keeps the replaced content in history when a previous version is restored", () => {
+        manager.save("notes", { id: "note", title: "note", content: "current" });
+        manager.saveNoteSnapshot("note", "older", "2026-01-01T00:00:00.000Z");
+        manager.saveNoteSnapshot("note", "current", "2026-01-02T00:00:00.000Z");
+
+        manager.updateNoteContent("note", "older", 5, "2026-01-03T00:00:00.000Z", "user");
+
+        expect(manager.getNoteHistory("note").map((snapshot) => snapshot.content)).toEqual([
+            "older",
+            "current",
+            "older",
+        ]);
     });
 
     it("deduplicates consecutive content, bounds entries, and deletes history permanently", () => {

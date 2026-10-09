@@ -9,7 +9,7 @@ describe("nativeTheme", () => {
     });
 
     it("publishes themed card and table surfaces for utility classes", () => {
-        const css = createWritemeThemeCss("html.native", nativeTheme, "dark");
+        const css = createWritemeThemeCss("native", nativeTheme, "dark");
 
         expect(css).toContain("--var-card-background: hsla(240, 3%, 11%)");
         expect(css).toContain("--var-card-border: hsla(240, 2%, 23%)");

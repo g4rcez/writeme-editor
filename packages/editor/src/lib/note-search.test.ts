@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Note } from "@/store/note";
-import { filterNotesByQuery, fzfScore } from "./note-search";
+import { filterNotesByQuery, fzfScore, getNoteSearchSnippet } from "./note-search";
 
 const createNote = (overrides: Partial<Note>): Note =>
     Note.parse({
@@ -39,6 +39,27 @@ describe("fzf note search", () => {
         expect(filterNotesByQuery([note], "productivity").map(({ id }) => id)).toEqual(["searchable"]);
         expect(filterNotesByQuery([note], "guide").map(({ id }) => id)).toEqual(["searchable"]);
         expect(filterNotesByQuery([note], "reference").map(({ id }) => id)).toEqual(["searchable"]);
+    });
+
+    it("shows a plain-text excerpt around matching note content", () => {
+        expect(
+            getNoteSearchSnippet(
+                `# Notes
+
+This page describes **deterministic local indexes** for search.`,
+                "local indexes",
+            ),
+        ).toBe("This page describes deterministic local indexes for search.");
+    });
+
+    it("limits long excerpts and keeps an ellipsis when content continues", () => {
+        const content = `Opening words. ${"details ".repeat(30)}important phrase ${"closing ".repeat(30)}`;
+        const excerpt = getNoteSearchSnippet(content, "important phrase", 60);
+
+        expect(excerpt).toContain("important phrase");
+        expect(excerpt.length).toBeLessThanOrEqual(62);
+        expect(excerpt.startsWith("…")).toBe(true);
+        expect(excerpt.endsWith("…")).toBe(true);
     });
 
     it("does not treat scattered characters as a note match", () => {

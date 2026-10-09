@@ -61,9 +61,9 @@ describe("CodeMirrorNodeCodeEditor", () => {
         const codeMirrorStyles = Array.from(
             document.querySelectorAll("style"),
             (style) => style.textContent ?? "",
-        ).find((css) => css.includes("var(--foreground)") && css.includes("var(--primary)"));
+        ).find((css) => css.includes("var(--var-color-foreground)") && css.includes("var(--var-color-primary)"));
 
-        expect(codeMirrorStyles).toContain("hsla(var(--primary), 0.45)");
+        expect(codeMirrorStyles).toContain("color-mix(in srgb, var(--var-color-primary) 45%, transparent)");
         expect(codeMirrorStyles).not.toContain("#cba6f7");
     });
 

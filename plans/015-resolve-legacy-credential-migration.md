@@ -1,36 +1,32 @@
 # Plan 015: Make legacy credential migration fail safe before Dexie cleanup
 
-> **Status:** BLOCKED — requires the maintainer decision under **Decision required**.
+> **Status:** COMPLETE — the approved safe policy, focused checks, and required builds pass. Repository-wide lint still reports six errors in untouched files; targeted lint on changed files passes.
 >
-> **Executor instructions:** Do not execute this plan until the decision is recorded. Once unblocked, follow each step in order, run every verification command, and stop on any STOP condition. The implementation starts from commit `54057af6409e28a1106bc147387ca89dedaafe3e` on branch `g4rcez/db-refactor-review`; do not start from `main` unless that commit has been integrated first.
+> **Executor instructions:** The safe default is approved. Follow each step in order, run the authorized verification commands, and stop on any STOP condition. The implementation starts from commit `54057af6409e28a1106bc147387ca89dedaafe3e`; do not start from `main` unless that commit has been integrated first.
 >
 > **Planned at:** `54057af`
 >
 > **Drift check:**
 > `git diff --stat 54057af..HEAD -- packages/editor/src/lib/dexie-to-sqlite-migration.ts packages/editor/src/lib/dexie-to-sqlite-migration.test.ts packages/editor/src/main-process/credential-storage.ts packages/editor/src/main-process/credential-storage.test.ts`
 >
-> If any in-scope file changed, compare the live code with **Current state** and stop if the migration state machine or credential conflict rules no longer match.
+> Before implementation, compare the live code with **Baseline findings** and stop if the migration state machine or credential conflict rules no longer match.
 
 ## Why this matters
 
-Commit `54057af` prevents new plaintext credential writes, rejects Electron Linux `basic_text`/`unknown` storage backends, repairs known plaintext rows, removes direct bulk-trash deletion IPC, and keyset-paginates generic Dexie migration. It is not safe to merge yet:
+Commit `54057af` added protections against plaintext credential writes, unsuitable Linux storage backends, and premature source cleanup. Review found two remaining risks in the baseline code; this plan addresses them:
 
-1. `packages/editor/src/lib/dexie-to-sqlite-migration.ts` still uses migration marker `dexie_sqlite_migration_v2`. A state previously marked `verified` reaches `removeVerifiedDexie()` before the new credential checks run. If the app was updated between “verified” and cleanup, the next startup can delete the Dexie credential source without applying the stricter backend and plaintext rules.
-2. `packages/editor/src/main-process/credential-storage.ts` treats every `safeStorage.decryptString()` failure as proof of plaintext. A failure can instead mean ciphertext protected by an unavailable/changed OS key. Re-encrypting that ciphertext as though it were the logical credential corrupts the credential and can allow source deletion.
+1. `packages/editor/src/lib/dexie-to-sqlite-migration.ts` used only the `dexie_sqlite_migration_v2` marker. A state marked `verified` could reach `removeVerifiedDexie()` before the current credential checks ran, allowing startup to delete the Dexie source without validating the stricter policy.
+2. `packages/editor/src/main-process/credential-storage.ts` treated decryption failures not matching its version-prefix heuristic as unprotected plaintext. A failure can instead mean ciphertext protected by an unavailable or changed OS key. Re-encrypting that ciphertext as a logical credential can corrupt it and allow source deletion.
 
 The safe default is to retain both stores whenever the code cannot prove which value is plaintext and protected. Automatic cleanup must require a current credential-policy marker and successful protected-storage verification.
 
-## Decision required
+## Approved decision
 
-Choose the behavior for an existing SQLite credential that cannot be decrypted and differs from the Dexie source.
+The user approved the safe default: treat a SQLite credential that cannot be decrypted and differs from the Dexie source as opaque. Return `skipped`, leave both stores unchanged, and require explicit credential re-entry later. Do not infer plaintext from a decryption failure, timestamps, or a version prefix. Exact equality with the Dexie source may establish a legacy plaintext value and allow protected rewrite. Do not delete the Dexie source until the current credential policy passes protected-storage verification.
 
-**Recommended:** treat it as opaque, return `skipped`, leave both SQLite and Dexie unchanged, and require explicit credential re-entry later. Never guess that the undecryptable value is plaintext and never delete the Dexie source.
+## Baseline findings
 
-Alternatives require a separate product/security design because they either discard a potentially newer credential or keep a potentially plaintext value active.
-
-## Current state
-
-### Legacy verified state is trusted before current credential checks
+### Legacy verified state was trusted before current credential checks
 
 `packages/editor/src/lib/dexie-to-sqlite-migration.ts`:
 
@@ -46,22 +42,9 @@ export async function migrateDexieToSqlite(): Promise<void> {
 
 `removeVerifiedDexie()` verifies generic collections but does not require a current credential-policy version before deleting Dexie.
 
-### Decrypt failure is classified as unprotected plaintext
+### Decrypt failure was classified as unprotected plaintext
 
-`packages/editor/src/main-process/credential-storage.ts`:
-
-```ts
-try {
-    return {
-        value: secureStorage.decryptString(Buffer.from(secret, "base64")),
-        protected: true,
-    };
-} catch {
-    return { value: secret, protected: false };
-}
-```
-
-Later conflict handling may select that returned value as the winner and pass it to `persistCredentialRow()`. That is safe only when equality with the Dexie source proves the stored value is plaintext; it is unsafe for a differing undecryptable value.
+`packages/editor/src/main-process/credential-storage.ts` used a version-prefix heuristic to identify some undecryptable values, but treated other decryption failures as plaintext. Later conflict handling could select such a value as the winner and pass it to `persistCredentialRow()`. That is safe only when equality with the Dexie source proves the stored value is plaintext; it is unsafe for a differing undecryptable value.
 
 ## Scope
 
@@ -116,7 +99,7 @@ Expected: all migration tests pass, including the four policy-version cases.
 
 Implement the approved decision.
 
-With the recommended policy:
+With the approved policy:
 
 - Keep the current repair when an undecryptable stored value exactly matches the Dexie source; equality establishes the plaintext value and it may be encrypted safely.
 - Keep current source-newer repair only when the destination is known plaintext by an explicit, reliable signal. A decrypt failure alone is not such a signal.
@@ -161,6 +144,14 @@ Expected:
 - Diff check exits 0.
 - Only the four in-scope files are modified before commit; the worktree is clean after commit.
 
+## Execution checkpoint — 2026-10-08
+
+- Six focused database test files passed (58 tests); `npm run typecheck` passed.
+- `npm run browser:build` and `npm run package:app` passed. The packaged app passed `codesign --verify --deep --strict`, and its configured Electron fuses were confirmed.
+- Targeted Oxlint on changed source and test files, targeted formatting, and the working-tree diff check passed.
+- Repository-wide `npm run lint` still fails on six unused-variable errors in untouched files: `packages/editor/src/lib/link-utils.ts`, `packages/editor/src/app/elements/callout.tsx`, `packages/editor/src/lib/url-utils.ts`, `packages/editor/src/lib/read-it-later-utils.ts`, and `.agents/skills/design-system/scripts/generate-tokens.cjs`. These files are outside this plan's scope and were not changed.
+- No files were staged or committed; the shared worktree contains unrelated work that must be preserved.
+
 ## Test plan
 
 Follow the behavior-focused style already present in:
@@ -172,20 +163,20 @@ Do not weaken tests to mock the expected status directly. Assert source retentio
 
 ## Done criteria
 
-- [ ] A legacy verified state cannot delete Dexie before current credential-policy validation.
-- [ ] Generic completed stores are not needlessly replayed during policy upgrade.
-- [ ] Unsuitable secure storage leaves credential source data retryable.
-- [ ] Differing undecryptable SQLite credentials are not rewritten or treated as plaintext without proof.
-- [ ] Matching known plaintext credentials are repaired to protected storage.
-- [ ] Focused tests, typecheck, browser build, and Electron package build pass.
-- [ ] No dependency, schema, index, package, or lockfile change.
-- [ ] Only in-scope files change.
+- [x] A legacy verified state cannot delete Dexie before current credential-policy validation.
+- [x] Generic completed stores are not needlessly replayed during policy upgrade.
+- [x] Unsuitable secure storage leaves credential source data retryable.
+- [x] Differing undecryptable SQLite credentials are not rewritten or treated as plaintext without proof.
+- [x] Matching known plaintext credentials are repaired to protected storage.
+- [x] Focused tests, typecheck, browser build, and Electron package build pass.
+- [x] No dependency, schema, index, package, or lockfile change for Plan 015.
+- [x] Plan 015 source/test changes are limited to its four approved paths; unrelated shared-worktree changes remain untouched.
 
 ## STOP conditions
 
 Stop and report instead of improvising if:
 
-- The maintainer has not answered **Decision required**.
+- The approved decision is not recorded.
 - Safe handling requires deleting or overwriting an ambiguous credential.
 - The implementation would make normal startup fail because migration or secure storage is unavailable.
 - Generic completed collections must be replayed to version credential policy.

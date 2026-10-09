@@ -236,13 +236,13 @@ function createRawMarkdownEditorTheme(fontSize: number) {
             minHeight: "60vh",
             width: "100%",
             background: "transparent",
-            color: "hsl(var(--foreground))",
+            color: "var(--var-color-foreground)",
             fontSize: `${fontSize}px`,
         },
         ".cm-content": {
             minHeight: "60vh",
             padding: "0 0 6rem",
-            caretColor: "hsl(var(--foreground))",
+            caretColor: "var(--var-color-foreground)",
             fontFamily:
                 "'JetBrains Mono', 'FiraCode Nerd Font', 'Symbols Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
             lineHeight: "1.7",
@@ -251,16 +251,16 @@ function createRawMarkdownEditorTheme(fontSize: number) {
             padding: "0",
         },
         ".cm-searchMatch": {
-            backgroundColor: "hsla(var(--primary), 0.2)",
+            backgroundColor: "color-mix(in srgb, var(--var-color-primary) 20%, transparent)",
             borderRadius: "2px",
         },
         ".cm-searchMatch-current": {
-            backgroundColor: "hsla(var(--primary), 0.45)",
+            backgroundColor: "color-mix(in srgb, var(--var-color-primary) 45%, transparent)",
             borderRadius: "2px",
-            boxShadow: "0 0 0 1px hsla(var(--primary), 0.7)",
+            boxShadow: "0 0 0 1px color-mix(in srgb, var(--var-color-primary) 70%, transparent)",
         },
         ".cm-cursor, .cm-dropCursor": {
-            borderLeftColor: "hsl(var(--foreground))",
+            borderLeftColor: "var(--var-color-foreground)",
         },
         ".cm-focused": {
             outline: "none",
@@ -273,24 +273,24 @@ function createRawMarkdownEditorTheme(fontSize: number) {
         ".cm-gutters": {
             backgroundColor: "transparent",
             border: "none",
-            color: "hsl(var(--muted-foreground))",
+            color: "var(--var-color-muted-foreground)",
         },
         ".cm-activeLine, .cm-activeLineGutter": {
-            backgroundColor: "hsla(var(--muted), 0.25)",
+            backgroundColor: "color-mix(in srgb, var(--var-color-muted) 25%, transparent)",
         },
         ".cm-vim-panel": {
-            borderTop: "1px solid hsl(var(--border))",
-            backgroundColor: "hsl(var(--background))",
-            color: "hsl(var(--foreground))",
+            borderTop: "1px solid var(--var-color-border)",
+            backgroundColor: "var(--var-color-background)",
+            color: "var(--var-color-foreground)",
             fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         },
         ".cm-vim-panel input": {
             backgroundColor: "transparent",
-            color: "hsl(var(--foreground))",
+            color: "var(--var-color-foreground)",
         },
         ".cm-fat-cursor": {
-            backgroundColor: "hsl(var(--foreground))",
-            outline: "solid 1px hsl(var(--foreground))",
+            backgroundColor: "var(--var-color-foreground)",
+            outline: "solid 1px var(--var-color-foreground)",
         },
         ".cm-fat-cursor .cm-cursor-primary": {
             borderLeftColor: "transparent",
@@ -299,10 +299,10 @@ function createRawMarkdownEditorTheme(fontSize: number) {
             caretColor: "transparent",
         },
         ".cm-indent-marker": {
-            borderLeftColor: "hsla(var(--border), 0.35)",
+            borderLeftColor: "color-mix(in srgb, var(--var-color-border) 35%, transparent)",
         },
         ".cm-indent-marker-active": {
-            borderLeftColor: "hsla(var(--primary), 0.55)",
+            borderLeftColor: "color-mix(in srgb, var(--var-color-primary) 55%, transparent)",
         },
     });
 }
@@ -430,10 +430,10 @@ export function RawMarkdownEditor({
                         hideFirstIndent: true,
                         markerType: "codeOnly",
                         colors: {
-                            light: "hsla(var(--border), 0.35)",
-                            dark: "hsla(var(--border), 0.35)",
-                            activeLight: "hsla(var(--primary), 0.55)",
-                            activeDark: "hsla(var(--primary), 0.55)",
+                            light: "color-mix(in srgb, var(--var-color-border) 35%, transparent)",
+                            dark: "color-mix(in srgb, var(--var-color-border) 35%, transparent)",
+                            activeLight: "color-mix(in srgb, var(--var-color-primary) 55%, transparent)",
+                            activeDark: "color-mix(in srgb, var(--var-color-primary) 55%, transparent)",
                         },
                     }),
                     visualThemeCompartmentRef.current.of(isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme()),

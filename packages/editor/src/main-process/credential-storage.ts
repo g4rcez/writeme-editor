@@ -56,7 +56,7 @@ async function inspectStoredCredentials(
         value[key] = revealed.value;
         if (stored.trim() && !revealed.protected) {
             protectedSecrets = false;
-            unreadable ||= /^v\d{2}$/.test(Buffer.from(stored, "base64").toString("ascii", 0, 3));
+            unreadable = true;
         }
     }
     return { value, protected: protectedSecrets, unreadable };
@@ -116,11 +116,11 @@ export async function migrateCredentialRow(
         | Record<string, unknown>
         | undefined;
     const inspected = existingRow ? await inspectStoredCredentials(existingRow, secureStorage) : null;
-    if (inspected?.unreadable) return { status: "skipped" };
     const existing = inspected?.value ?? null;
     const comparableKeys = [...CREDENTIAL_KEYS, "expiresAt", "baseUrl", "accountId"] as const;
     const sameSecrets = existing && comparableKeys.every((key) => (existing[key] ?? null) === (creds[key] ?? null));
     if (sameSecrets && inspected?.protected) return { status: "identical" };
+    if (inspected?.unreadable && !sameSecrets) return { status: "skipped" };
 
     const sourceTime = Date.parse(String(creds.updatedAt ?? ""));
     const destinationTime = Date.parse(String(existing?.updatedAt ?? ""));
@@ -130,7 +130,8 @@ export async function migrateCredentialRow(
         return { status: "skipped" };
     }
 
-    const winner = existing && !sourceIsNewer ? existing : creds;
+    const matchingUnreadableCredential = inspected?.unreadable === true && sameSecrets === true;
+    const winner = existing && (!sourceIsNewer || matchingUnreadableCredential) ? existing : creds;
     const now = new Date().toISOString();
     const encrypted = await persistCredentialRow(winner, secureStorage);
     return manager.db

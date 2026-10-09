@@ -8,6 +8,7 @@ import { useLocation, useOutlet } from "react-router-dom";
 import { ContextPane } from "@/app/components/context-pane";
 import { TabsBar } from "@/app/components/tabs-bar";
 import { TerminalWorkspace } from "@/app/components/terminal/terminal-workspace";
+import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { getCurrentRouteTabTarget } from "@/lib/tab-target";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
@@ -116,8 +117,8 @@ export const MainLayout = () => {
                             <button
                                 type="button"
                                 className="writeme-header-action"
-                                aria-label="Find anything"
-                                title="Find anything (⌘K)"
+                                aria-label="Open note"
+                                title={`Open note (${mapShortcutOS("mod+k")})`}
                                 onClick={() => dispatch.commander(true, CommanderType.Notes)}
                             >
                                 <MagnifyingGlassIcon size={17} aria-hidden="true" />
@@ -175,22 +176,7 @@ export const MainLayout = () => {
                     </Group>
                 </main>
                 {contextOpen && isNoteRoute && state.note ? (
-                    <>
-                        <button
-                            type="button"
-                            className="writeme-context-backdrop"
-                            tabIndex={-1}
-                            aria-label="Close note context"
-                            onClick={() => setContextOpen(false)}
-                            onKeyDown={(event) => {
-                                if (event.key === "Escape") {
-                                    event.preventDefault();
-                                    setContextOpen(false);
-                                }
-                            }}
-                        />
-                        <ContextPane note={state.note} notes={state.notes} onClose={() => setContextOpen(false)} />
-                    </>
+                    <ContextPane note={state.note} notes={state.notes} onClose={() => setContextOpen(false)} />
                 ) : null}
             </div>
         </div>

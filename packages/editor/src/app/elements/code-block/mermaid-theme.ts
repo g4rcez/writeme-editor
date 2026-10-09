@@ -161,28 +161,25 @@ export type MermaidThemeVariables = {
 
 export type MermaidTokenReader = (name: string) => string;
 
-export const cssVarToken = (name: string): string => `hsla(var(--${name}))`;
+export const cssVarToken = (name: string): string => `var(--${name})`;
 
 export const readThemeToken: MermaidTokenReader = (name: string): string => {
     if (typeof document === "undefined") return cssVarToken(name);
 
     const value = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
-
-    if (!value) return cssVarToken(name);
-    if (value.startsWith("hsl") || value.startsWith("rgb")) return value;
-    return `hsla(${value})`;
+    return value || cssVarToken(name);
 };
 
 export const createMermaidThemeVariables = (readToken: MermaidTokenReader = readThemeToken): MermaidThemeVariables => {
-    const background = readToken("background");
-    const foreground = readToken("foreground");
-    const border = readToken("border");
-    const cardBackground = readToken("card-background");
-    const cardMuted = readToken("card-muted");
-    const primary = readToken("primary-DEFAULT");
-    const primarySubtle = readToken("primary-subtle");
-    const warnBg = readToken("button-warn-bg");
-    const warnText = readToken("button-warn-text");
+    const background = readToken("var-color-background");
+    const foreground = readToken("var-color-foreground");
+    const border = readToken("var-color-border");
+    const cardBackground = readToken("var-card-background");
+    const cardMuted = readToken("var-card-muted");
+    const primary = readToken("var-color-primary");
+    const primarySubtle = readToken("var-color-primary-subtle");
+    const warnBg = readToken("var-color-warn");
+    const warnText = readToken("var-color-warn-foreground");
 
     return {
         fontFamily: "JetBrains Mono Variable, JetBrains Mono, monospace",

@@ -75,13 +75,13 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
         return () => observer.disconnect();
     }, []);
 
-    const bgColor = resolveVar("--background");
-    const textColor = resolveVar("--foreground");
-    const linkColor = resolveVar("--foreground");
+    const bgColor = resolveVar("--var-color-background");
+    const textColor = resolveVar("--var-color-foreground");
+    const linkColor = resolveVar("--var-color-foreground");
     const fileColor = state.theme === "dark" ? "hsla(215, 100%, 70%)" : "hsla(215, 100%, 70%)";
     const tagColor = state.theme === "dark" ? "hsla(35, 100%, 70%)" : "hsla(35, 100%, 70%)";
 
-    const mentionLinkColor = resolveVar("--primary");
+    const mentionLinkColor = resolveVar("--var-color-primary");
 
     return (
         <div ref={containerRef} className="w-full h-full">

@@ -1,18 +1,18 @@
 .mermaid svg {
-  max-width: 100%;
+    max-width: 100%;
 }
 
 .mermaid svg text {
-  font-family: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+    font-family: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 }
 
 .mermaid svg .cluster rect {
-  stroke: hsla(var(--foreground));
+    stroke: var(--var-color-foreground);
 }
 
 .mermaid svg .edgeLabel,
 .mermaid svg .labelBkg {
-  background-color: hsla(var(--background));
-  color: hsla(var(--foreground));
-  fill: hsla(var(--background));
+    background-color: var(--var-color-background);
+    color: var(--var-color-foreground);
+    fill: var(--var-color-background);
 }

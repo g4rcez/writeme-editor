@@ -155,7 +155,37 @@ describe("credential migration", () => {
         });
     });
 
-    it("protects a differing plaintext destination without adopting an older source", async () => {
+    it("repairs a matching plaintext value even when the destination timestamp is newer", async () => {
+        const destinationCreatedAt = "2026-01-01T00:00:00.000Z";
+        const destinationUpdatedAt = "2026-01-03T00:00:00.000Z";
+        manager.db
+            .prepare("INSERT INTO aiCredentials (adapterId, apiKey, createdAt, updatedAt) VALUES (?, ?, ?, ?)")
+            .run("openai", "secret", destinationCreatedAt, destinationUpdatedAt);
+
+        const result = await migrateCredentialRow(
+            {
+                adapterId: "openai",
+                apiKey: "secret",
+                createdAt: "2025-12-01T00:00:00.000Z",
+                updatedAt: "2026-01-02T00:00:00.000Z",
+            },
+            manager,
+            secureStorage,
+        );
+        const stored = manager.db
+            .prepare("SELECT apiKey, createdAt, updatedAt FROM aiCredentials WHERE adapterId = ?")
+            .get("openai");
+
+        expect(result).toEqual({ status: "updated" });
+        expect(stored).toEqual({
+            apiKey: Buffer.from("encrypted:secret").toString("base64"),
+            createdAt: destinationCreatedAt,
+            updatedAt: destinationUpdatedAt,
+        });
+        expect(secureStorage.encryptString).toHaveBeenCalledWith("secret");
+    });
+
+    it("keeps a newer protected destination instead of adopting an older source", async () => {
         const destinationCreatedAt = "2026-01-01T00:00:00.000Z";
         const destinationUpdatedAt = "2026-01-03T00:00:00.000Z";
         manager.db
@@ -166,7 +196,7 @@ describe("credential migration", () => {
             )
             .run(
                 "openai",
-                "destination-secret",
+                Buffer.from("encrypted:destination-secret").toString("base64"),
                 "https://destination.example",
                 "destination-account",
                 destinationCreatedAt,
@@ -192,7 +222,7 @@ describe("credential migration", () => {
             )
             .get("openai");
 
-        expect(result).toEqual({ status: "updated" });
+        expect(result).toEqual({ status: "skipped" });
         expect(stored).toEqual({
             adapterId: "openai",
             apiKey: Buffer.from("encrypted:destination-secret").toString("base64"),
@@ -201,11 +231,10 @@ describe("credential migration", () => {
             createdAt: destinationCreatedAt,
             updatedAt: destinationUpdatedAt,
         });
-        expect(secureStorage.encryptString).toHaveBeenCalledWith("destination-secret");
-        expect(secureStorage.encryptString).not.toHaveBeenCalledWith("source-secret");
+        expect(secureStorage.encryptString).not.toHaveBeenCalled();
     });
 
-    it("replaces a plaintext destination with a newer protected source", async () => {
+    it("replaces an older protected destination with a newer source", async () => {
         const destinationCreatedAt = "2026-01-01T00:00:00.000Z";
         manager.db
             .prepare(
@@ -215,7 +244,7 @@ describe("credential migration", () => {
             )
             .run(
                 "openai",
-                "destination-secret",
+                Buffer.from("encrypted:destination-secret").toString("base64"),
                 "https://destination.example",
                 destinationCreatedAt,
                 "2026-01-02T00:00:00.000Z",
@@ -248,12 +277,12 @@ describe("credential migration", () => {
     });
 
     it.each(["2025-01-01T00:00:00.000Z", "2027-01-01T00:00:00.000Z"])(
-        "retains unreadable encrypted credentials instead of treating ciphertext as plaintext (%s)",
+        "retains an opaque destination instead of treating it as plaintext (%s)",
         async (updatedAt) => {
-            const encrypted = Buffer.from("v10:existing-secret").toString("base64");
+            const opaqueValue = Buffer.from("opaque-ciphertext").toString("base64");
             manager.db
                 .prepare("INSERT INTO aiCredentials (adapterId, apiKey, createdAt, updatedAt) VALUES (?, ?, ?, ?)")
-                .run("openai", encrypted, "2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z");
+                .run("openai", opaqueValue, "2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z");
             const before = manager.db.prepare("SELECT * FROM aiCredentials").all();
             expect(
                 await migrateCredentialRow(

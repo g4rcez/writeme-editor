@@ -2,6 +2,7 @@ import { db } from "../store/repositories/browser/dexie-db";
 import { isElectron } from "./is-electron";
 
 const MIGRATION_KEY = "dexie_sqlite_migration_v2";
+const CREDENTIAL_POLICY_VERSION = 1;
 const MIGRATION_BATCH_SIZE = 500;
 const ISSUE_URL = "https://github.com/g4rcez/writeme-editor/issues/new";
 const COLLECTIONS = [
@@ -41,6 +42,7 @@ type StoreState = {
 type MigrationState = {
     status: "running" | "verified" | "verified-credentials-retained" | "cleaned";
     verifiedAt?: string;
+    credentialPolicyVersion?: number;
     stores: Record<string, StoreState>;
 };
 
@@ -145,7 +147,14 @@ async function migrateCredentials(): Promise<StoreState> {
 }
 
 async function removeVerifiedDexie(state: MigrationState): Promise<boolean> {
-    if (state.status !== "verified" || !state.verifiedAt) return false;
+    if (
+        state.status !== "verified" ||
+        !state.verifiedAt ||
+        state.credentialPolicyVersion !== CREDENTIAL_POLICY_VERSION ||
+        state.stores.aiCredentials?.status !== "complete"
+    ) {
+        return false;
+    }
 
     for (const name of COLLECTIONS) {
         const table = db.table(name);
@@ -260,6 +269,11 @@ export async function migrateDexieToSqlite(): Promise<void> {
 
         const genericComplete = COLLECTIONS.every((name) => state.stores[name]?.status === "complete");
         const credentialsComplete = state.stores.aiCredentials?.status === "complete";
+        if (credentialsComplete) {
+            state.credentialPolicyVersion = CREDENTIAL_POLICY_VERSION;
+        } else {
+            state.credentialPolicyVersion = undefined;
+        }
         if (genericComplete) {
             state.status = credentialsComplete ? "verified" : "verified-credentials-retained";
             if (credentialsComplete) state.verifiedAt = new Date().toISOString();
@@ -271,7 +285,22 @@ export async function migrateDexieToSqlite(): Promise<void> {
             failures &&
             window.confirm("Some local data could not be migrated. Open a GitHub issue with private values excluded?")
         ) {
-            window.open(migrationIssueUrl(state), "_blank", "noopener,noreferrer");
+            const issueUrl = new URL(migrationIssueUrl(state));
+            const trustedIssueUrl = new URL(ISSUE_URL);
+            if (
+                issueUrl.origin === trustedIssueUrl.origin &&
+                issueUrl.pathname === trustedIssueUrl.pathname &&
+                !issueUrl.username &&
+                !issueUrl.password
+            ) {
+                const link = document.createElement("a");
+                link.href = issueUrl.href;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                document.body.append(link);
+                link.click();
+                link.remove();
+            }
         }
     } catch (error) {
         console.error("Dexie to SQLite migration failed; continuing normal startup:", error);

@@ -1,30 +1,28 @@
 import {
     createThemeCss,
     defaultDarkThemeTokens,
-    defaultLightThemeTokens,
-    mergeThemeTokens,
-    type ThemeTokens,
-    type TokenTree,
+    type ThemeComponentOverrides,
+    type ThemeConfiguration,
+    type ThemeTokenOverrides,
 } from "@g4rcez/components";
 
-export type WritemeThemeTokens = ThemeTokens & {
+type LegacyColorTree = { [key: string]: string | LegacyColorTree };
+
+export type WritemeThemeTokens = {
+    colors: LegacyColorTree;
     custom?: Record<string, string>;
 };
 
 type ThemeBase = "light" | "dark";
+type ThemeName = "default" | "dark" | "catppuccin-mocha" | "tokyonight-night" | "native";
 
-const bases = {
-    light: defaultLightThemeTokens,
-    dark: defaultDarkThemeTokens,
-} satisfies Record<ThemeBase, ThemeTokens>;
-
-const isTree = (value: string | TokenTree | undefined): value is TokenTree =>
+const isTree = (value: string | LegacyColorTree | undefined): value is LegacyColorTree =>
     typeof value === "object" && value !== null;
 
-const get = (tree: TokenTree | undefined, path: string[], fallback = "transparent"): string => {
-    let value: string | TokenTree | undefined = tree;
+const get = (tree: LegacyColorTree | undefined, path: string[], fallback = "transparent"): string => {
+    let value: string | LegacyColorTree | undefined = tree;
     for (const key of path) {
-        if (!isTree(value)) return fallback;
+        if (!isTree(value) || !Object.hasOwn(value, key)) return fallback;
         value = value[key];
     }
     return typeof value === "string" ? value : fallback;
@@ -35,7 +33,41 @@ const alpha = (color: string, value: number): string => {
     return body ? `hsla(${body}, ${value})` : color;
 };
 
-const derivedComponentColors = (colors: TokenTree): TokenTree => {
+const toLibraryColors = (colors: LegacyColorTree): NonNullable<ThemeTokenOverrides["colors"]> => ({
+    background: get(colors, ["background"]),
+    border: get(colors, ["border"]),
+    danger: get(colors, ["danger", "DEFAULT"]),
+    "danger-foreground": get(colors, ["danger", "foreground"]),
+    "danger-hover": get(colors, ["danger", "hover"]),
+    "danger-subtle": get(colors, ["danger", "subtle"]),
+    disabled: get(colors, ["disabled"]),
+    foreground: get(colors, ["foreground"]),
+    info: get(colors, ["info", "DEFAULT"]),
+    "info-foreground": get(colors, ["info", "foreground"]),
+    "info-hover": get(colors, ["info", "hover"]),
+    "info-subtle": get(colors, ["info", "subtle"]),
+    muted: get(colors, ["muted", "DEFAULT"]),
+    "muted-foreground": get(colors, ["muted", "foreground"]),
+    primary: get(colors, ["primary", "DEFAULT"]),
+    "primary-foreground": get(colors, ["primary", "foreground"]),
+    "primary-hover": get(colors, ["primary", "hover"]),
+    "primary-subtle": get(colors, ["primary", "subtle"]),
+    ring: get(colors, ["ring"]),
+    secondary: get(colors, ["secondary", "DEFAULT"]),
+    "secondary-foreground": get(colors, ["secondary", "foreground"]),
+    "secondary-hover": get(colors, ["secondary", "hover"]),
+    "secondary-subtle": get(colors, ["secondary", "subtle"]),
+    success: get(colors, ["success", "DEFAULT"]),
+    "success-foreground": get(colors, ["success", "foreground"]),
+    "success-hover": get(colors, ["success", "hover"]),
+    "success-subtle": get(colors, ["success", "subtle"]),
+    warn: get(colors, ["warn", "DEFAULT"]),
+    "warn-foreground": get(colors, ["warn", "foreground"]),
+    "warn-hover": get(colors, ["warn", "hover"]),
+    "warn-subtle": get(colors, ["warn", "subtle"]),
+});
+
+const deriveComponentColors = (colors: LegacyColorTree): ThemeComponentOverrides => {
     const background = get(colors, ["background"]);
     const foreground = get(colors, ["foreground"]);
     const border = get(colors, ["border"]);
@@ -57,19 +89,44 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
         background: get(colors, [name, "DEFAULT"]),
         foreground: get(colors, [name, "foreground"]),
     });
-    const softState = (name: string) => ({
-        background: get(colors, [name, "subtle"], alpha(get(colors, [name, "DEFAULT"]), 0.14)),
-        foreground: get(colors, [name, "DEFAULT"]),
-        border: alpha(get(colors, [name, "DEFAULT"]), 0.35),
-    });
+    const softState = (name: string) => {
+        const value = get(colors, [name, "DEFAULT"]);
+        return {
+            background: get(colors, [name, "subtle"], alpha(value, 0.14)),
+            foreground: value,
+            border: alpha(value, 0.35),
+        };
+    };
+
+    const primaryAlert = softState("primary");
+    const infoAlert = softState("info");
+    const warnAlert = softState("warn");
+    const dangerAlert = softState("danger");
+    const successAlert = softState("success");
+    const primaryTag = state("primary");
+    const infoTag = state("info");
+    const warnTag = state("warn");
+    const dangerTag = state("danger");
+    const successTag = state("success");
+    const secondaryTag = state("secondary");
 
     return {
         alert: {
-            primary: softState("primary"),
-            info: softState("info"),
-            warn: softState("warn"),
-            danger: softState("danger"),
-            success: softState("success"),
+            "primary-background": primaryAlert.background,
+            "primary-foreground": primaryAlert.foreground,
+            "primary-border": primaryAlert.border,
+            "info-background": infoAlert.background,
+            "info-foreground": infoAlert.foreground,
+            "info-border": infoAlert.border,
+            "warn-background": warnAlert.background,
+            "warn-foreground": warnAlert.foreground,
+            "warn-border": warnAlert.border,
+            "danger-background": dangerAlert.background,
+            "danger-foreground": dangerAlert.foreground,
+            "danger-border": dangerAlert.border,
+            "success-background": successAlert.background,
+            "success-foreground": successAlert.foreground,
+            "success-border": successAlert.border,
         },
         autocomplete: {
             "option-background-hover": muted,
@@ -84,10 +141,8 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
             "empty-foreground": mutedForeground,
         },
         button: {
-            secondary: {
-                background: secondary,
-                foreground: secondaryForeground,
-            },
+            "secondary-background": secondary,
+            "secondary-foreground": secondaryForeground,
             "ghost-info-background-hover": alpha(get(colors, ["info", "DEFAULT"]), 0.2),
             "ghost-warn-background-hover": alpha(get(colors, ["warn", "DEFAULT"]), 0.2),
             "ghost-danger-background-hover": alpha(get(colors, ["danger", "DEFAULT"]), 0.2),
@@ -129,10 +184,6 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
             "surface-foreground": floatingForeground,
             "surface-border": floatingBorder,
         },
-        "free-text": {
-            "placeholder-foreground": mutedForeground,
-            "error-placeholder-foreground": get(colors, ["danger", "subtle"]),
-        },
         menu: {
             "surface-background": floatingBackground,
             "surface-foreground": floatingForeground,
@@ -170,18 +221,25 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
             "inline-placeholder-color": mutedForeground,
         },
         tag: {
-            primary: state("primary"),
-            info: state("info"),
-            warn: state("warn"),
-            muted: { background: muted, foreground: mutedForeground },
-            danger: state("danger"),
-            success: state("success"),
-            secondary: state("secondary"),
-            disabled: {
-                background: get(colors, ["disabled"], muted),
-                foreground: mutedForeground,
-            },
-            neutral: { background: "transparent", foreground, border },
+            "primary-background": primaryTag.background,
+            "primary-foreground": primaryTag.foreground,
+            "info-background": infoTag.background,
+            "info-foreground": infoTag.foreground,
+            "warn-background": warnTag.background,
+            "warn-foreground": warnTag.foreground,
+            "danger-background": dangerTag.background,
+            "danger-foreground": dangerTag.foreground,
+            "success-background": successTag.background,
+            "success-foreground": successTag.foreground,
+            "secondary-background": secondaryTag.background,
+            "secondary-foreground": secondaryTag.foreground,
+            "muted-background": muted,
+            "muted-foreground": mutedForeground,
+            "disabled-background": get(colors, ["disabled"], muted),
+            "disabled-foreground": mutedForeground,
+            "neutral-background": "transparent",
+            "neutral-foreground": foreground,
+            "neutral-border": border,
         },
         tooltip: {
             "surface-background": tooltipBackground,
@@ -199,39 +257,45 @@ const derivedComponentColors = (colors: TokenTree): TokenTree => {
     };
 };
 
-const toTuple = (color: string): string => color.match(/^hsla?\((.*)\)$/)?.[1] ?? color;
-
-const flattenLegacyColors = (tree: TokenTree, path: string[] = []): string[] =>
-    Object.entries(tree).flatMap(([key, value]) => {
-        const next = [...path, key];
-        if (isTree(value)) return flattenLegacyColors(value, next);
-
-        const body = toTuple(value);
-        if (key === "DEFAULT") {
-            const baseName = path.join("-");
-            return [`    --${baseName}: ${body};`, `    --${baseName}-DEFAULT: ${body};`];
-        }
-        return [`    --${next.join("-")}: ${body};`];
-    });
-
-const createLegacyCss = (selector: string, theme: WritemeThemeTokens, base: ThemeTokens): string => {
-    const merged = mergeThemeTokens(base, theme);
-    const colorLines = merged.colors ? flattenLegacyColors(merged.colors) : [];
-    const customLines = Object.entries(theme.custom ?? {}).map(([key, value]) => `    --${key}: ${value};`);
-    return `${selector} {\n${[...colorLines, ...customLines].join("\n")}\n}`;
+const mergeComponentOverrides = (
+    base: ThemeComponentOverrides,
+    overrides: ThemeComponentOverrides,
+): ThemeComponentOverrides => {
+    const componentNames = new Set([...Object.keys(base), ...Object.keys(overrides)]);
+    const merged = Object.fromEntries(
+        [...componentNames].map((name) => {
+            const component = name as keyof ThemeComponentOverrides;
+            return [
+                name,
+                {
+                    ...(base[component] as Record<string, string | undefined> | undefined),
+                    ...(overrides[component] as Record<string, string | undefined> | undefined),
+                },
+            ];
+        }),
+    );
+    return merged as ThemeComponentOverrides;
 };
 
-export const createWritemeThemeCss = (selector: string, theme: WritemeThemeTokens, baseName: ThemeBase): string => {
-    const base = bases[baseName];
-    const merged = mergeThemeTokens(base, theme);
-    const themed: WritemeThemeTokens = {
-        ...theme,
-        spacing: {
-            ...theme.spacing,
-            base: "0.875rem",
-        },
-        components: derivedComponentColors(merged.colors ?? {}),
+const createCustomCss = (name: ThemeName, theme: WritemeThemeTokens): string => {
+    const customLines = Object.entries(theme.custom ?? {}).map(([key, value]) => `    --${key}: ${value};`);
+    if (customLines.length === 0) return "";
+
+    const selector = name === "default" ? ":root" : `html.${name}`;
+    return `${selector} {\n${customLines.join("\n")}\n}`;
+};
+
+export const createWritemeThemeCss = (name: ThemeName, theme: WritemeThemeTokens, baseName: ThemeBase): string => {
+    const colors = toLibraryColors(theme.colors);
+    const components = deriveComponentColors(theme.colors);
+    const usesDarkBase = baseName === "dark";
+    const configuration: ThemeConfiguration = {
+        name,
+        colorScheme: baseName,
+        tokens: { spacing: "0.875rem" },
+        colors: usesDarkBase ? { ...defaultDarkThemeTokens.colors, ...colors } : colors,
+        components: usesDarkBase ? mergeComponentOverrides(defaultDarkThemeTokens.components, components) : components,
     };
 
-    return [createThemeCss(themed, { selector, base }), createLegacyCss(selector, themed, base)].join("\n\n");
+    return [createThemeCss(configuration), createCustomCss(name, theme)].filter(Boolean).join("\n\n");
 };

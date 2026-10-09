@@ -33,6 +33,23 @@ describe("useListSearch", () => {
         expect(result.current.selectedIndex).toBe(0);
     });
 
+    it("resets selection when a same-length result set changes", () => {
+        const { result, rerender } = renderHook(({ items }) => useListSearch({ items, onSelect }), {
+            initialProps: { items },
+        });
+
+        act(() => result.current.setSelectedIndex(2));
+        rerender({
+            items: [
+                { id: "4", title: "Replacement 1" },
+                { id: "5", title: "Replacement 2" },
+                { id: "6", title: "Replacement 3" },
+            ],
+        });
+
+        expect(result.current.selectedIndex).toBe(0);
+    });
+
     it("should handle ArrowDown to increment selectedIndex", () => {
         renderHook(() => useListSearch({ items, onSelect }));
 

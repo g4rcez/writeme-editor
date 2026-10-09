@@ -825,7 +825,7 @@ export const AISettings = (): ReactElement => {
                     <Select
                         title="Provider"
                         hiddenLabel
-                        container="lg:hidden"
+                        container="writeme-ai-provider-select"
                         value={adapterId}
                         disabled={saving}
                         onChange={(event) => void handleAdapterChange(event.target.value)}

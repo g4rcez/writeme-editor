@@ -13,6 +13,15 @@ vi.mock("@/store/global.store", () => ({
     repositories: { notes: { getQuicknoteByDate: mocks.getQuicknoteByDate } },
     useGlobalStore: () => [{ note: mocks.note }, { note: mocks.setNote }],
 }));
+vi.mock("@/store/repositories", () => ({
+    repositories: {
+        notes: {
+            getQuicknoteByDate: mocks.getQuicknoteByDate,
+            getOne: vi.fn(),
+            save: vi.fn(),
+        },
+    },
+}));
 vi.mock("@/store/settings", () => ({ SettingsService: { load: () => ({}) } }));
 vi.mock("@/lib/is-electron", () => ({ isElectron: () => false }));
 vi.mock("@/app/editor", async () => {
@@ -27,7 +36,7 @@ describe("FloatingNotePage keyboard handling", () => {
         const note = Note.parse({ id: "quick-note", title: "Quick Note", content: "", noteType: NoteType.quick });
         mocks.note = note;
         mocks.getQuicknoteByDate.mockResolvedValue(note);
-        const closeWindow = vi.spyOn(window, "close").mockImplementation(() => { });
+        const closeWindow = vi.spyOn(window, "close").mockImplementation(() => {});
 
         render(<FloatingNotePage kind="quick" />);
         const editor = await screen.findByTestId("quick-note-editor");

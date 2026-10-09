@@ -1,8 +1,6 @@
-import { startOfDay } from "date-fns";
 import { useEffect, useState } from "react";
 import { Editor } from "@/app/editor";
-import { isElectron } from "@/lib/is-electron";
-import { getDailyQuickNotePath, getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
+import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { SettingsService } from "@/store/settings";
@@ -18,57 +16,6 @@ type FloatingNoteConfig = {
 
 const MATH_INITIAL_CONTENT = "```math\n```";
 const MATH_NOTE_TITLE = "Math Scratchpad";
-
-async function getOrCreateDailyQuickNote(date: Date): Promise<Note> {
-    const day = startOfDay(date);
-    const settings = SettingsService.load();
-
-    if (isElectron() && settings.directory) {
-        const filePath = getDailyQuickNotePath(settings.directory, day);
-        const existingMetadata = await window.electronAPI.db.notes.getByFilePath(filePath);
-
-        if (existingMetadata) {
-            const existing = await repositories.notes.getOne(existingMetadata.id);
-            if (existing) return existing;
-
-            const recreateResult = await window.electronAPI.fs.writeFile(filePath, "");
-            if (!recreateResult.success) {
-                throw new Error(`Failed to recreate quick note: ${recreateResult.error}`);
-            }
-            return Note.parse({ ...existingMetadata, content: "" });
-        }
-
-        const statResult = await window.electronAPI.fs.statFile(filePath);
-        if (!statResult.success) {
-            throw new Error(`Failed to check quick note: ${statResult.error}`);
-        }
-
-        const readResult = statResult.exists ? await window.electronAPI.fs.readFile(filePath) : null;
-        if (readResult && !readResult.success) {
-            throw new Error(`Failed to read quick note: ${readResult.error}`);
-        }
-
-        const content = readResult?.content ?? "";
-        const fileResult = statResult.exists ? statResult : await window.electronAPI.fs.writeFile(filePath, content);
-
-        if (!fileResult.success) {
-            throw new Error(`Failed to create quick note: ${fileResult.error}`);
-        }
-
-        const note = Note.new(getDailyQuickNoteTitle(day), content, NoteType.quick);
-        note.setFilePath(filePath, new Date(fileResult.lastModified));
-        note.fileSize = fileResult.fileSize ?? content.length;
-        await repositories.notes.save(note);
-        return note;
-    }
-
-    const existing = await repositories.notes.getQuicknoteByDate(day);
-    if (existing) return existing;
-
-    const note = Note.new(getDailyQuickNoteTitle(day), "", NoteType.quick);
-    await repositories.notes.save(note);
-    return note;
-}
 
 async function getOrCreateMathScratchpad(): Promise<Note> {
     const { mathNoteId } = SettingsService.load();
@@ -120,7 +67,9 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
                 dispatch.note(note, false);
             } catch (error) {
                 console.error(`Failed to open ${config.kind} floating note:`, error);
-                if (!ignored) setError(`Failed to open ${config.errorLabel}`);
+                if (!ignored) {
+                    setError(error instanceof Error ? error.message : `Failed to open ${config.errorLabel}`);
+                }
             } finally {
                 if (!ignored) setLoading(false);
             }

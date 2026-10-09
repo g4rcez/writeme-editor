@@ -146,7 +146,8 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
                         wikilinks stay unchanged.
                     </p>
                     <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-                        Existing destination files are skipped. The vault itself is not changed.
+                        Markdown is copied as-is and existing destination files are skipped. Plugin behavior and app
+                        settings are not converted; the vault itself is not changed.
                     </p>
                 </div>
                 <Button

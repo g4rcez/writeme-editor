@@ -111,6 +111,15 @@ const expectedCollections = [
     "terminalSessions",
 ];
 
+const makeLegacyVerifiedState = (): string =>
+    JSON.stringify({
+        status: "verified",
+        verifiedAt: "2026-01-01T00:00:00.000Z",
+        stores: Object.fromEntries(
+            [...expectedCollections, "aiCredentials"].map((name) => [name, { status: "complete", attempts: 1 }]),
+        ),
+    });
+
 beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -375,6 +384,7 @@ describe("Dexie to SQLite migration", () => {
         expect(deleteDexie).not.toHaveBeenCalled();
         expect(JSON.parse(localStorage.getItem("dexie_sqlite_migration_v2") ?? "null")).toMatchObject({
             status: "verified",
+            credentialPolicyVersion: 1,
             stores: {
                 aiCredentials: {
                     status: "complete",
@@ -388,6 +398,59 @@ describe("Dexie to SQLite migration", () => {
         expect(vi.mocked(window.electronAPI.ai.migrateCredentials).mock.invocationCallOrder[0]).toBeLessThan(
             deleteDexie.mock.invocationCallOrder[0]!,
         );
+    });
+
+    it("revalidates a legacy verified state before deleting Dexie without replaying completed stores", async () => {
+        const credential = { adapterId: "openai", apiKey: "source-secret" };
+        credentialsToArray.mockResolvedValue([credential]);
+        localStorage.setItem("dexie_sqlite_migration_v2", makeLegacyVerifiedState());
+
+        await migrateDexieToSqlite();
+
+        expect(deleteDexie).not.toHaveBeenCalled();
+        expect(window.electronAPI.db.migrateCollection).not.toHaveBeenCalled();
+        expect(window.electronAPI.ai.migrateCredentials).toHaveBeenCalledWith(credential);
+        expect(JSON.parse(localStorage.getItem("dexie_sqlite_migration_v2") ?? "null")).toMatchObject({
+            status: "verified",
+            credentialPolicyVersion: 1,
+        });
+
+        await migrateDexieToSqlite();
+        expect(deleteDexie).toHaveBeenCalledOnce();
+    });
+
+    it("retains a legacy verified state when credential migration is skipped", async () => {
+        credentialsToArray.mockResolvedValue([{ adapterId: "openai", apiKey: "source-secret" }]);
+        vi.mocked(window.electronAPI.ai.migrateCredentials).mockResolvedValue({ status: "skipped" });
+        localStorage.setItem("dexie_sqlite_migration_v2", makeLegacyVerifiedState());
+
+        await migrateDexieToSqlite();
+        await migrateDexieToSqlite();
+
+        const state = JSON.parse(localStorage.getItem("dexie_sqlite_migration_v2") ?? "null");
+        expect(deleteDexie).not.toHaveBeenCalled();
+        expect(window.electronAPI.db.migrateCollection).not.toHaveBeenCalled();
+        expect(state.status).toBe("verified-credentials-retained");
+        expect(state).not.toHaveProperty("credentialPolicyVersion");
+    });
+
+    it("opens only the trusted migration issue link after confirmation", async () => {
+        credentialsToArray.mockResolvedValue([{ adapterId: "openai", apiKey: "source-secret" }]);
+        vi.mocked(window.electronAPI.ai.migrateCredentials).mockResolvedValue({ status: "skipped" });
+        vi.mocked(window.confirm).mockReturnValue(true);
+        const append = vi.spyOn(document.body, "append");
+        const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+        await migrateDexieToSqlite();
+
+        const link = append.mock.calls[0]?.[0];
+        expect(link).toBeInstanceOf(HTMLAnchorElement);
+        expect((link as HTMLAnchorElement).href).toMatch(
+            /^https:\/\/github\.com\/g4rcez\/writeme-editor\/issues\/new\?/,
+        );
+        expect((link as HTMLAnchorElement).target).toBe("_blank");
+        expect((link as HTMLAnchorElement).rel).toBe("noopener noreferrer");
+        expect(click).toHaveBeenCalledOnce();
     });
 
     it("retains credentials when secure storage cannot migrate them", async () => {

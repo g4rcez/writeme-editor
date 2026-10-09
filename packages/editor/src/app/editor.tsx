@@ -94,6 +94,7 @@ type LinkContextTarget = {
 };
 
 function createTiptapSearchHandle(editor: TipTapEditor): EditorSearchHandle {
+    // SAFETY: createExtensions installs SearchAndReplace; Tiptap does not type its storage here.
     const getStorage = (): SearchReplaceStorage =>
         (editor.storage as unknown as Record<string, SearchReplaceStorage>).searchReplace!;
 
@@ -223,6 +224,8 @@ const TiptapEditorCore = memo(
                 }
             },
             editorProps: {
+                scrollThreshold: { top: 0, right: 0, bottom: 80, left: 0 },
+                scrollMargin: { top: 5, right: 5, bottom: 80, left: 5 },
                 attributes: {
                     role: "textbox",
                     "aria-multiline": "true",
@@ -353,6 +356,7 @@ const TiptapEditorCore = memo(
                             type: "doc",
                             content: selectedContent.content.toJSON(),
                         };
+                        // SAFETY: The serializer renders children with forEach, shared by Node and Fragment.
                         const markdown = editor.storage.markdown.serializer!.serialize(
                             selectedContent.content as unknown as import("@tiptap/pm/model").Node,
                         );

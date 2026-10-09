@@ -322,7 +322,7 @@ function isCodeMirrorSelectionAtLastLine(view: EditorView): boolean {
 
 const CODE_MIRROR_EDITOR_THEME = EditorView.theme({
     "&": {
-        color: "hsl(var(--foreground))",
+        color: "var(--var-color-foreground)",
         background: "transparent",
         minHeight: "100%",
         fontFamily:
@@ -332,7 +332,7 @@ const CODE_MIRROR_EDITOR_THEME = EditorView.theme({
         background: "transparent",
     },
     ".cm-content": {
-        caretColor: "hsl(var(--foreground))",
+        caretColor: "var(--var-color-foreground)",
         fontFamily:
             "'JetBrains Mono', 'FiraCode Nerd Font', 'Symbols Nerd Font', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
         lineHeight: "1.5",
@@ -342,7 +342,7 @@ const CODE_MIRROR_EDITOR_THEME = EditorView.theme({
         zIndex: "10",
     },
     ".cm-cursor, .cm-dropCursor": {
-        borderLeft: "2px solid hsl(var(--foreground))",
+        borderLeft: "2px solid var(--var-color-foreground)",
     },
     ".cm-focused": {
         outline: "none",

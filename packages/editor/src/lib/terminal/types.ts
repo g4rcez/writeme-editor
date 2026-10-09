@@ -5,7 +5,7 @@ export type TerminalExitEvent = {
 
 export interface ITerminalBackend {
     /** Starts the backend process */
-    start(cwd?: string | null): void;
+    start(cwd?: string | null): Promise<void>;
 
     /** Writes data to the backend */
     write(data: string): void;

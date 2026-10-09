@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => {
         editorActionsGlobalRef: {
             current: { addFrontmatter: vi.fn() },
         },
+        getExistingDailyQuickNote: vi.fn(),
         dispatch,
         layoutDispatch: {
             setActivity: vi.fn(),
@@ -51,7 +52,7 @@ type CommandItem = {
     title?: string;
     shortcut?: string;
     items?: CommandItem[];
-    action?: (args: { setOpen: (value: boolean) => void }) => void;
+    action?: (args: { setOpen: (value: boolean) => void }) => void | Promise<void>;
 };
 
 type ConfirmState = {
@@ -109,6 +110,10 @@ vi.mock("@/app/editor-global-ref", () => ({
 
 vi.mock("@/app/notification-ref", () => ({
     notificationRef: { current: null },
+}));
+
+vi.mock("@/lib/daily-quick-note", () => ({
+    getExistingDailyQuickNote: mocks.getExistingDailyQuickNote,
 }));
 
 vi.mock("@/lib/editor-storage", () => ({
@@ -175,6 +180,49 @@ function getFlattenedCommands(): CommandItem[] {
 describe("Commander", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it("opens or creates today's note from the quick switcher", async () => {
+        mocks.getExistingDailyQuickNote.mockResolvedValue(null);
+        render(
+            <Commander
+                note={mocks.state.note}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Open today's note");
+        const setOpen = vi.fn();
+        await command?.action?.({ setOpen });
+
+        expect(setOpen).toHaveBeenCalledWith(false);
+        expect(mocks.dispatch.setCreateNoteDialog).toHaveBeenCalledWith({ isOpen: true, type: "quick" });
+    });
+
+    it("routes the quick switcher to content search", () => {
+        render(
+            <Commander
+                note={mocks.state.note}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Search note content");
+        const setOpen = vi.fn();
+        command?.action?.({ setOpen });
+
+        expect(setOpen).toHaveBeenCalledWith(false);
+        expect(mocks.layoutDispatch.setActivity).toHaveBeenCalledWith("search");
     });
 
     it("adds the frontmatter command for the current note", () => {

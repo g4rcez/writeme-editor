@@ -8,15 +8,16 @@ export class ElectronTerminalBackend implements ITerminalBackend {
 
     constructor(private readonly ptyId: string) {}
 
-    start(cwd?: string | null): void {
+    start(cwd?: string | null): Promise<void> {
         if (window.electronAPI?.terminal) {
             this.registerListeners();
             window.electronAPI.terminal.spawn(this.ptyId, cwd || undefined);
-            return;
+            return Promise.resolve();
         }
 
         console.error("Electron API for terminal not available");
         this.onDataCallback?.("\r\n\x1b[31mError: Terminal IPC not available\x1b[0m\r\n");
+        return Promise.resolve();
     }
 
     write(data: string): void {

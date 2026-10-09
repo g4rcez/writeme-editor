@@ -3,10 +3,10 @@ import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ClockC
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Note } from "@/store/note";
 import type { NoteSnapshot } from "@/store/note-history";
+import { editorSearchGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
 import { repositories } from "@/store/repositories";
-import { Confirm } from "./confirm";
 
 type NoteHistoryButtonProps = {
     onClick: () => void;
@@ -16,15 +16,14 @@ export function NoteHistoryButton({ onClick }: NoteHistoryButtonProps) {
     return (
         <Button
             type="button"
-            size="tiny"
-            theme="ghost-primary"
+            size="icon"
+            theme="ghost-muted"
             className="writeme-note-tool-button"
             aria-label="History"
             title="View note history"
+            icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
             onClick={onClick}
-        >
-            <ClockCounterClockwiseIcon aria-hidden="true" size={21} />
-        </Button>
+        />
     );
 }
 
@@ -84,6 +83,13 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
         () => snapshots.find((snapshot) => snapshot.id === selectedId) ?? snapshots[0] ?? null,
         [selectedId, snapshots],
     );
+    let liveEditorContent: string | undefined;
+    try {
+        liveEditorContent = editorSearchGlobalRef.current?.getContent();
+    } catch {
+        liveEditorContent = undefined;
+    }
+    const currentContent = liveEditorContent ?? note.content;
 
     const requestRestore = (snapshot: NoteSnapshot): void => {
         if (restoring) return;
@@ -118,7 +124,10 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
             <Modal
                 open={open}
                 onChange={(value) => {
-                    if (!value && !restoring) onClose();
+                    if (!value && !restoring) {
+                        setConfirmSnapshot(null);
+                        onClose();
+                    }
                 }}
                 title="Note history"
                 className="max-w-4xl"
@@ -128,6 +137,29 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
                     <p className="text-sm text-muted-foreground">
                         Saved versions are stored locally. Select a version to preview it before restoring.
                     </p>
+
+                    {confirmSnapshot ? (
+                        <fieldset className="m-0 flex min-w-0 flex-col gap-3 rounded border border-card-border bg-secondary-background p-4">
+                            <legend className="sr-only">Restore confirmation</legend>
+                            <p className="text-sm text-foreground">
+                                Restore the version from {formatSnapshotDate(confirmSnapshot)}? Your current content
+                                will be preserved in local history.
+                            </p>
+                            <div className="flex justify-end gap-2">
+                                <Button type="button" theme="ghost-muted" onClick={() => setConfirmSnapshot(null)}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    theme="primary"
+                                    disabled={restoring}
+                                    onClick={() => void restore()}
+                                >
+                                    {restoring ? "Restoring…" : "Restore"}
+                                </Button>
+                            </div>
+                        </fieldset>
+                    ) : null}
 
                     {error ? (
                         <div className="flex items-center justify-between gap-3 rounded border border-danger/40 bg-danger-subtle p-3 text-sm">
@@ -178,48 +210,49 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
                             </div>
 
                             {selectedSnapshot ? (
-                                <section className="flex min-h-0 flex-col gap-3" aria-label="Snapshot preview">
-                                    <div className="flex items-center justify-between gap-3 text-sm">
-                                        <div className="min-w-0">
-                                            <p className="font-medium text-foreground">Read-only preview</p>
-                                            <p className="truncate text-xs text-muted-foreground">
-                                                {formatSnapshotDate(selectedSnapshot)}
-                                            </p>
+                                <div className="grid min-h-0 flex-1 grid-rows-2 gap-4 md:grid-cols-2 md:grid-rows-1">
+                                    <section className="flex min-h-0 flex-col gap-3" aria-label="Current note">
+                                        <div className="flex min-h-10 items-center text-sm">
+                                            <div>
+                                                <p className="font-medium text-foreground">Current note</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {liveEditorContent === undefined
+                                                        ? "Last saved content"
+                                                        : "Live editor content"}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <Button
-                                            type="button"
-                                            theme="primary"
-                                            disabled={restoring}
-                                            onClick={() => requestRestore(selectedSnapshot)}
-                                        >
-                                            {restoring ? "Restoring…" : "Restore"}
-                                        </Button>
-                                    </div>
-                                    <pre
-                                        aria-readonly="true"
-                                        className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded border border-card-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground"
-                                    >
-                                        {selectedSnapshot.content}
-                                    </pre>
-                                </section>
+                                        <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded border border-card-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground">
+                                            {currentContent}
+                                        </pre>
+                                    </section>
+                                    <section className="flex min-h-0 flex-col gap-3" aria-label="Saved version preview">
+                                        <div className="flex min-h-10 items-center justify-between gap-3 text-sm">
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-foreground">Saved version</p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {formatSnapshotDate(selectedSnapshot)}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                theme="primary"
+                                                disabled={restoring}
+                                                onClick={() => requestRestore(selectedSnapshot)}
+                                            >
+                                                {restoring ? "Restoring…" : "Restore"}
+                                            </Button>
+                                        </div>
+                                        <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded border border-card-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground">
+                                            {selectedSnapshot.content}
+                                        </pre>
+                                    </section>
+                                </div>
                             ) : null}
                         </div>
                     )}
                 </div>
             </Modal>
-
-            <Confirm
-                open={confirmSnapshot !== null}
-                title="Restore note version?"
-                message={
-                    confirmSnapshot
-                        ? `Restore the version from ${formatSnapshotDate(confirmSnapshot)}? Your current content will be preserved in local history.`
-                        : "Restore this note version?"
-                }
-                confirmText="Restore"
-                onConfirm={() => void restore()}
-                onCancel={() => setConfirmSnapshot(null)}
-            />
         </>
     );
 }

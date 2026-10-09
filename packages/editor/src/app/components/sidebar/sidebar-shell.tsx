@@ -7,6 +7,7 @@ import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { useEffect, useMemo, type JSX } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { fishify } from "@/lib/fmt";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
@@ -127,8 +128,8 @@ export const SidebarShell = () => {
                             size="small"
                             theme="muted"
                             onClick={openSearch}
-                            aria-label="Find anything"
-                            title="Find anything (⌘K)"
+                            aria-label="Open note"
+                            title={`Open note (${mapShortcutOS("mod+k")})`}
                         >
                             <FileSearchIcon size={16} aria-hidden="true" />
                         </Button>

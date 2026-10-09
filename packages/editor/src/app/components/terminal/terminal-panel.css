@@ -1,0 +1,8 @@
+.writeme-terminal {
+    --term-font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", "Fira Code", monospace;
+    --term-font-size: 14px;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-variant-ligatures: common-ligatures contextual;
+}

@@ -1,8 +1,10 @@
+import { Modal } from "@g4rcez/components";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { Dates } from "@/lib/dates";
+import { findIncomingNoteLinks, resolveNoteLinks } from "@/lib/note-links";
 
 type OutlineHeading = {
     id: string;
@@ -73,12 +75,23 @@ function ContextSection({
 
 export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
     const [headings, setHeadings] = useState<OutlineHeading[]>([]);
-    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const [isNarrow, setIsNarrow] = useState(() => window.matchMedia?.("(max-width: 959px)").matches ?? false);
+    const openedInNarrowViewport = useRef(isNarrow);
 
     useEffect(() => {
+        const media = window.matchMedia?.("(max-width: 959px)");
+        if (!media) return;
+        const update = () => setIsNarrow(media.matches);
+        media.addEventListener("change", update);
+        return () => media.removeEventListener("change", update);
+    }, []);
+
+    useEffect(() => {
+        if (openedInNarrowViewport.current) return;
         const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        closeButtonRef.current?.focus();
-        return () => previousFocus?.focus();
+        return () => {
+            if (previousFocus?.isConnected) previousFocus.focus();
+        };
     }, []);
 
     useEffect(() => {
@@ -93,6 +106,7 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
     }, [note.id]);
 
     useEffect(() => {
+        if (isNarrow) return;
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape" && !event.defaultPrevented) {
                 event.preventDefault();
@@ -101,59 +115,135 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
         };
         document.addEventListener("keydown", handleKeyDown);
         return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [onClose]);
+    }, [isNarrow, onClose]);
 
-    const linkedNotes = useMemo(() => {
-        const linkedIds = new Set<string>();
-        const linkedTitles = new Set<string>();
-        for (const match of note.content.matchAll(/\[\[([^\]]+)\]\]|app:\/\/note\/([^\s<>"')\]]+)/g)) {
-            const value = match[1] ?? match[2];
-            if (!value) continue;
-            linkedIds.add(value);
-            linkedTitles.add(value);
-        }
-        return notes.filter(
-            (candidate) =>
-                candidate.id !== note.id && (linkedIds.has(candidate.id) || linkedTitles.has(candidate.title)),
-        );
-    }, [note.content, note.id, notes]);
-
+    const linkedNotes = useMemo(() => resolveNoteLinks(note, notes), [note, notes]);
+    const incomingNotes = useMemo(() => findIncomingNoteLinks(note, notes), [note, notes]);
     const tags = note.tags.filter((tag, index, allTags) => allTags.indexOf(tag) === index);
     const noteType = note.noteType === "note" ? "Markdown" : note.noteType;
 
-    const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
-        if (event.key === "Escape") {
-            event.preventDefault();
-            onClose();
-            return;
-        }
-        if (event.key !== "Tab") return;
-        const focusable = Array.from(
-            event.currentTarget.querySelectorAll<HTMLElement>(
-                'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
-            ),
+    const sections = (
+        <div className="writeme-context-pane-content">
+            <ContextSection title="On this page" count={headings.length} open={headings.length > 0}>
+                {headings.length > 0 ? (
+                    <ul className="writeme-context-list">
+                        {headings.map((heading) => (
+                            <li key={`${heading.id}-${heading.text}`}>
+                                <button
+                                    type="button"
+                                    className="writeme-context-list-button"
+                                    style={{ paddingLeft: `${0.625 + Math.max(0, heading.level - 1) * 0.75}rem` }}
+                                    onClick={() => scrollToHeading(heading.element)}
+                                >
+                                    <span className="line-clamp-2">{heading.text}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="writeme-context-empty">Headings will appear here as you structure the note.</p>
+                )}
+            </ContextSection>
+
+            <ContextSection title="Linked notes" count={linkedNotes.length}>
+                {linkedNotes.length > 0 ? (
+                    <ul className="writeme-context-list">
+                        {linkedNotes.map(({ note: linkedNote }) => (
+                            <li key={linkedNote.id}>
+                                <Link
+                                    className="writeme-context-list-button block truncate"
+                                    to={`/note/${linkedNote.id}`}
+                                >
+                                    {linkedNote.title || "Untitled"}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="writeme-context-empty">Links to other notes will show up here.</p>
+                )}
+            </ContextSection>
+
+            <ContextSection title="Incoming links" count={incomingNotes.length}>
+                {incomingNotes.length > 0 ? (
+                    <ul className="writeme-context-list">
+                        {incomingNotes.map(({ note: source, excerpt }) => (
+                            <li key={source.id} className="px-2 py-1.5">
+                                <Link
+                                    className="block truncate text-sm font-medium text-foreground hover:underline"
+                                    to={`/note/${source.id}`}
+                                >
+                                    {source.title || "Untitled"}
+                                </Link>
+                                <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{excerpt}</p>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="writeme-context-empty">Notes that link here will appear here.</p>
+                )}
+            </ContextSection>
+
+            <ContextSection title="Properties">
+                <dl className="mt-2">
+                    <div className="writeme-context-property">
+                        <dt>Type</dt>
+                        <dd>{noteType}</dd>
+                    </div>
+                    <div className="writeme-context-property">
+                        <dt>Updated</dt>
+                        <dd>{Dates.yearMonthDay(note.updatedAt)}</dd>
+                    </div>
+                    <div className="writeme-context-property">
+                        <dt>Created</dt>
+                        <dd>{Dates.yearMonthDay(note.createdAt)}</dd>
+                    </div>
+                    <div className="writeme-context-property">
+                        <dt>Location</dt>
+                        <dd title={note.filePath ?? undefined}>{note.filePath ? "Workspace file" : "Local note"}</dd>
+                    </div>
+                </dl>
+            </ContextSection>
+
+            <ContextSection title="Tags" count={tags.length}>
+                {tags.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5 px-2.5">
+                        {tags.map((tag) => (
+                            <span key={tag} className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="writeme-context-empty">Add tags to make this note easier to find.</p>
+                )}
+            </ContextSection>
+        </div>
+    );
+
+    if (isNarrow) {
+        return (
+            <Modal
+                open
+                onChange={(open) => {
+                    if (!open) onClose();
+                }}
+                type="drawer"
+                position="right"
+                forceType
+                title="Context"
+                ariaDescription={`Note context for ${note.title || "Untitled"}`}
+                className="writeme-context-modal"
+                bodyClassName="writeme-context-modal-body"
+            >
+                <p className="writeme-context-modal-note">{note.title || "Untitled"}</p>
+                {sections}
+            </Modal>
         );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (!first || !last) return;
-        if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-        }
-    };
+    }
 
     return (
-        <dialog
-            open
-            className="writeme-context-pane m-0 p-0"
-            aria-modal="true"
-            aria-labelledby="writeme-context-pane-title"
-            onKeyDown={handleKeyDown}
-        >
+        <aside className="writeme-context-pane" aria-labelledby="writeme-context-pane-title">
             <header className="writeme-context-pane-header">
                 <div className="min-w-0">
                     <h2
@@ -165,7 +255,6 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                     <p className="mt-0.5 truncate text-sm font-medium text-foreground">{note.title || "Untitled"}</p>
                 </div>
                 <button
-                    ref={closeButtonRef}
                     type="button"
                     className="writeme-header-action"
                     aria-label="Close note context"
@@ -175,84 +264,7 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                     <XIcon size={16} aria-hidden="true" />
                 </button>
             </header>
-            <div className="writeme-context-pane-content">
-                <ContextSection title="On this page" count={headings.length} open={headings.length > 0}>
-                    {headings.length > 0 ? (
-                        <ul className="writeme-context-list">
-                            {headings.map((heading) => (
-                                <li key={`${heading.id}-${heading.text}`}>
-                                    <button
-                                        type="button"
-                                        className="writeme-context-list-button"
-                                        style={{ paddingLeft: `${0.625 + Math.max(0, heading.level - 1) * 0.75}rem` }}
-                                        onClick={() => scrollToHeading(heading.element)}
-                                    >
-                                        <span className="line-clamp-2">{heading.text}</span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="writeme-context-empty">Headings will appear here as you structure the note.</p>
-                    )}
-                </ContextSection>
-
-                <ContextSection title="Linked notes" count={linkedNotes.length}>
-                    {linkedNotes.length > 0 ? (
-                        <ul className="writeme-context-list">
-                            {linkedNotes.map((linkedNote) => (
-                                <li key={linkedNote.id}>
-                                    <Link
-                                        className="writeme-context-list-button block truncate"
-                                        to={`/note/${linkedNote.id}`}
-                                    >
-                                        {linkedNote.title || "Untitled"}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="writeme-context-empty">Links to other notes will show up here.</p>
-                    )}
-                </ContextSection>
-
-                <ContextSection title="Properties">
-                    <dl className="mt-2">
-                        <div className="writeme-context-property">
-                            <dt>Type</dt>
-                            <dd>{noteType}</dd>
-                        </div>
-                        <div className="writeme-context-property">
-                            <dt>Updated</dt>
-                            <dd>{Dates.yearMonthDay(note.updatedAt)}</dd>
-                        </div>
-                        <div className="writeme-context-property">
-                            <dt>Created</dt>
-                            <dd>{Dates.yearMonthDay(note.createdAt)}</dd>
-                        </div>
-                        <div className="writeme-context-property">
-                            <dt>Location</dt>
-                            <dd title={note.filePath ?? undefined}>
-                                {note.filePath ? "Workspace file" : "Local note"}
-                            </dd>
-                        </div>
-                    </dl>
-                </ContextSection>
-
-                <ContextSection title="Tags" count={tags.length}>
-                    {tags.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1.5 px-2.5">
-                            {tags.map((tag) => (
-                                <span key={tag} className="rounded-full bg-primary/10 px-2 py-1 text-xs text-primary">
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="writeme-context-empty">Add tags to make this note easier to find.</p>
-                    )}
-                </ContextSection>
-            </div>
-        </dialog>
+            {sections}
+        </aside>
     );
 }

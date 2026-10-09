@@ -91,21 +91,15 @@ const platformConfiguration = (): void => {
 
 const themeConfiguration = () => {
     const head = globalThis.document.getElementsByTagName("head")[0]!;
-    head.append(createStyle("default-theme", createWritemeThemeCss(":root", lightTheme, "light")));
-    head.append(createStyle("dark-theme", createWritemeThemeCss("html.dark", darkTheme, "dark")));
+    head.append(createStyle("default-theme", createWritemeThemeCss("default", lightTheme, "light")));
+    head.append(createStyle("dark-theme", createWritemeThemeCss("dark", darkTheme, "dark")));
     head.append(
-        createStyle(
-            "catppuccin-mocha-theme",
-            createWritemeThemeCss("html.catppuccin-mocha", catppuccinMochaTheme, "dark"),
-        ),
+        createStyle("catppuccin-mocha-theme", createWritemeThemeCss("catppuccin-mocha", catppuccinMochaTheme, "dark")),
     );
     head.append(
-        createStyle(
-            "tokyonight-night-theme",
-            createWritemeThemeCss("html.tokyonight-night", tokyonightNightTheme, "dark"),
-        ),
+        createStyle("tokyonight-night-theme", createWritemeThemeCss("tokyonight-night", tokyonightNightTheme, "dark")),
     );
-    head.append(createStyle("native-theme", createWritemeThemeCss("html.native", nativeTheme, "dark")));
+    head.append(createStyle("native-theme", createWritemeThemeCss("native", nativeTheme, "dark")));
     if (globalState().theme !== "light") {
         document.documentElement.classList.add(globalState().theme);
     }
@@ -113,10 +107,7 @@ const themeConfiguration = () => {
 
 function StartupFailureScreen() {
     return (
-        <main
-            role="alert"
-            className="flex min-h-screen items-center justify-center p-8 text-foreground"
-        >
+        <main role="alert" className="flex min-h-screen items-center justify-center p-8 text-foreground">
             <div className="max-w-xl space-y-4">
                 <h1 className="text-xl font-semibold">Writeme stopped before loading this workspace</h1>
                 <p className="text-sm text-muted-foreground">

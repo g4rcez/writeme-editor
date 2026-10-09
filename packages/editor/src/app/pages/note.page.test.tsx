@@ -1,8 +1,8 @@
 import type { ChangeEventHandler, ReactNode, SelectHTMLAttributes } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSuppressedNoteRouteTabOpens, suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
@@ -41,13 +41,19 @@ vi.mock("@/lib/is-electron", () => ({
 
 vi.mock("@g4rcez/components", async () => {
     const actual = await vi.importActual<typeof import("@g4rcez/components")>("@g4rcez/components");
-    type TestSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> & {
+    type TestSelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange" | "size"> & {
         hiddenLabel?: boolean;
+        container?: string;
+        labelClassName?: string;
+        size?: string;
         options: Array<{ label: string; value: string }>;
         onChange?: ChangeEventHandler<HTMLSelectElement>;
     };
-    const TestSelect = ({ hiddenLabel, options, ...props }: TestSelectProps) => {
+    const TestSelect = ({ hiddenLabel, options, container, labelClassName, size, ...props }: TestSelectProps) => {
         void hiddenLabel;
+        void container;
+        void labelClassName;
+        void size;
         return (
             <select {...props}>
                 {options.map((option) => (
@@ -131,7 +137,19 @@ function renderNoteRoute() {
 }
 
 describe("NotePage route loading", () => {
+    beforeEach(() => {
+        vi.stubGlobal(
+            "ResizeObserver",
+            class {
+                observe(): void {}
+                unobserve(): void {}
+                disconnect(): void {}
+            },
+        );
+    });
+
     afterEach(() => {
+        vi.unstubAllGlobals();
         clearEditorPaneState();
         clearSuppressedNoteRouteTabOpens();
         vi.clearAllMocks();
@@ -176,8 +194,78 @@ describe("NotePage route loading", () => {
 
         renderNoteRoute();
 
-        expect(screen.getByRole("button", { name: "Add frontmatter" })).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+        const actions = screen.getByRole("group", { name: "Note actions" });
+        const toolbar = screen.getByRole("toolbar", { name: "Note tools" });
+        expect(toolbar).toContainElement(actions);
+        expect(actions).toContainElement(screen.getByRole("button", { name: "Add frontmatter" }));
+        expect(actions).toContainElement(screen.getByRole("button", { name: "History" }));
+        const modes = screen.getByRole("group", { name: "Editor mode" });
+        expect(modes).toContainElement(screen.getByRole("button", { name: "Markdown" }));
+        expect(modes).not.toContainElement(actions);
+        const formattedMode = within(modes).getByRole("button", { name: "Formatted" });
+        expect(formattedMode).toHaveAttribute("aria-pressed", "true");
+        expect(formattedMode).toHaveClass("__button--theme-ghost-primary");
+        expect(within(modes).getByRole("button", { name: "Markdown" })).toHaveClass("__button--theme-ghost-muted");
+        for (const button of within(actions).getAllByRole("button")) {
+            expect(button).toHaveAttribute("data-component", "button");
+            expect(button).toHaveClass("__button--theme-ghost-muted");
+        }
+    });
+
+    it("shows a workspace filename in the top toolbar", () => {
+        const dispatch = createDispatch();
+        const note = Note.parse({ ...createNote(), filePath: "/workspace/frontend.md" });
+        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        const toolbar = screen.getByRole("toolbar", { name: "Note tools" });
+        expect(within(toolbar).getByText("frontend.md")).toBeInTheDocument();
+        expect(screen.queryByText("frontend.md", { selector: ".writeme-note-metadata span" })).not.toBeInTheDocument();
+        expect(screen.queryByText(/Updated/, { selector: ".writeme-note-metadata" })).not.toBeInTheDocument();
+    });
+
+    it("places note modes and utility actions before the document title in keyboard order", async () => {
+        const user = userEvent.setup();
+        const dispatch = createDispatch();
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        await user.tab();
+        for (const name of [
+            "Markdown",
+            "Formatted",
+            "Add frontmatter",
+            "History",
+            "Add to favorites",
+            "Open pane mode",
+            "Export Loaded note",
+        ]) {
+            expect(screen.getByRole("button", { name })).toHaveFocus();
+            await user.tab();
+        }
+        expect(screen.getByRole("textbox", { name: "Note title" })).toHaveFocus();
+    });
+
+    it("uses the same toolbar for reading-list notes without showing history", () => {
+        const dispatch = createDispatch();
+        const note = createNote("note-1", NoteType["read-it-later"]);
+        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        expect(screen.getByRole("toolbar", { name: "Note tools" })).toContainElement(
+            screen.getByRole("group", { name: "Editor mode" }),
+        );
+        expect(screen.getByRole("group", { name: "Note actions" })).toContainElement(
+            screen.getByRole("button", { name: "Add frontmatter" }),
+        );
+        expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
+        expect(screen.getByText("Reading list")).toBeInTheDocument();
     });
 
     it("switches to Markdown mode and persists the editor mode preference", async () => {
@@ -194,7 +282,9 @@ describe("NotePage route loading", () => {
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-mode", "markdown");
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-vim-mode", "false");
 
-        await user.click(screen.getByRole("checkbox", { name: "Vim mode" }));
+        const vimMode = screen.getByRole("checkbox", { name: "Vim mode" });
+        expect(vimMode.closest("button")).toBeNull();
+        await user.click(vimMode);
 
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-vim-mode", "true");
         expect(SettingsService.save).toHaveBeenCalledWith({ editorMode: "markdown" });
@@ -217,12 +307,20 @@ describe("NotePage route loading", () => {
         renderNoteRoute();
 
         await user.click(screen.getByRole("button", { name: "Open pane mode" }));
+        expect(screen.getByRole("button", { name: "Exit pane mode" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: "Exit pane mode" })).toHaveClass("__button--theme-primary");
         expect(screen.getAllByTestId("editor")).toHaveLength(2);
-        expect(screen.getByRole("button", { name: "Exit panes" })).toBeInTheDocument();
+        expect(screen.getByRole("region", { name: "Editor group 1" })).toBeVisible();
+        expect(screen.getByRole("region", { name: "Editor group 2" })).toBeVisible();
+        expect(screen.getByRole("button", { name: "Editor group 1 actions" })).toBeInTheDocument();
 
         await user.click(screen.getByRole("button", { name: "Close pane 2" }));
         expect(screen.getAllByTestId("editor")).toHaveLength(1);
         expect(screen.getByRole("button", { name: "Close pane 1" })).toBeDisabled();
+        await user.click(screen.getByRole("button", { name: "Exit pane mode" }));
+        expect(screen.queryByRole("region", { name: "Editor groups" })).not.toBeInTheDocument();
+        expect(screen.getAllByTestId("editor")).toHaveLength(1);
+        expect(dispatch.addTab).not.toHaveBeenCalled();
     });
 
     it("opens LaTeX workspace files in the raw editor mode", () => {

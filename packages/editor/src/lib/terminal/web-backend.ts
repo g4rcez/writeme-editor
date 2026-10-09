@@ -1,3 +1,5 @@
+import { BashShell } from "@wterm/just-bash";
+import { defineCommand } from "just-bash";
 import type { ITerminalBackend, TerminalExitEvent } from "./types";
 
 export type CommandHandler = (
@@ -5,10 +7,12 @@ export type CommandHandler = (
     terminal: { write: (data: string) => void; writeln: (data: string) => void },
 ) => Promise<void> | void;
 
+const MAX_BUFFERED_INPUT = 64 * 1024;
+
 export class CommandRegistry {
     private commands = new Map<string, CommandHandler>();
 
-    register(name: string, handler: CommandHandler) {
+    register(name: string, handler: CommandHandler): void {
         this.commands.set(name, handler);
     }
 
@@ -23,118 +27,133 @@ export class CommandRegistry {
 
 export class WebTerminalBackend implements ITerminalBackend {
     private dataListeners: ((data: string) => void)[] = [];
-    private currentInput = "";
-    private cwd = "/workspace";
+    private shell: BashShell | null = null;
+    private startPromise: Promise<void> | null = null;
+    private pendingInput: string[] = [];
+    private pendingInputSize = 0;
+    private ready = false;
+    private stopped = false;
+    private inputOverflowReported = false;
     private registry = new CommandRegistry();
-
-    constructor() {
-        this.registerBuiltins();
-    }
-
-    private registerBuiltins() {
-        this.registry.register("help", (_, term) => {
-            term.writeln("Available commands:");
-            term.writeln("  help      - Show this help message");
-            term.writeln("  clear     - Clear the terminal");
-            term.writeln("  echo      - Echo the arguments");
-            term.writeln("  date      - Show current date and time");
-            const customs = this.registry.getAllNames().filter((c) => !["help", "clear", "echo", "date"].includes(c));
-            if (customs.length > 0) {
-                term.writeln("  " + customs.join(", "));
-            }
-        });
-
-        this.registry.register("clear", (_, term) => {
-            term.write("\x1b[2J\x1b[H");
-        });
-
-        this.registry.register("echo", (args, term) => {
-            term.writeln(args.join(" "));
-        });
-
-        this.registry.register("date", (_, term) => {
-            term.writeln(new Date().toString());
-        });
-    }
 
     public getRegistry(): CommandRegistry {
         return this.registry;
     }
 
-    start(cwd?: string | null): void {
-        if (cwd) {
-            this.cwd = cwd;
-        }
-        this.prompt();
+    start(_cwd?: string | null): Promise<void> {
+        if (this.startPromise) return this.startPromise;
+
+        this.stopped = false;
+        // The browser shell uses a virtual filesystem, never the host workspace path.
+        const shell = new BashShell({
+            cwd: "/workspace",
+            prompt: (cwd) => `\x1b[1;32muser@writeme\x1b[0m:\x1b[1;34m${cwd}\x1b[0m$ `,
+        });
+        this.shell = shell;
+
+        const startPromise = this.initialize(shell);
+        this.startPromise = startPromise.catch((error: unknown) => {
+            if (this.shell === shell) {
+                this.shell = null;
+                this.startPromise = null;
+                this.ready = false;
+                this.pendingInput = [];
+                this.pendingInputSize = 0;
+            }
+            throw error;
+        });
+        return this.startPromise;
     }
 
-    private prompt() {
-        this.emit(`\r\n\x1b[1;32muser@writeme\x1b[0m:\x1b[1;34m${this.cwd}\x1b[0m$ `);
-    }
+    private async initialize(shell: BashShell): Promise<void> {
+        await shell.attach((data) => {
+            if (!this.stopped && this.shell === shell) this.emit(data);
+        });
+        if (this.stopped || this.shell !== shell) return;
 
-    private emit(data: string) {
-        for (const listener of this.dataListeners) {
-            listener(data);
+        const bash = shell.bash;
+        if (!bash) throw new Error("The browser shell did not initialize");
+
+        for (const name of this.registry.getAllNames()) {
+            const handler = this.registry.get(name);
+            if (!handler) continue;
+
+            bash.registerCommand(
+                defineCommand(
+                    name,
+                    async (args) => {
+                        const output: string[] = [];
+                        try {
+                            await handler(args, {
+                                write: (data) => output.push(data),
+                                writeln: (data) => output.push(`${data}\n`),
+                            });
+                            return { stdout: output.join(""), stderr: "", exitCode: 0 };
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : String(error);
+                            return { stdout: output.join(""), stderr: `Error: ${message}\n`, exitCode: 1 };
+                        }
+                    },
+                    { trusted: false },
+                ),
+            );
         }
+
+        while (this.pendingInput.length > 0 && !this.stopped) {
+            const input = this.pendingInput.shift();
+            if (input === undefined) continue;
+            this.pendingInputSize -= input.length;
+            await this.handleInput(shell, input);
+        }
+        this.inputOverflowReported = false;
+        this.ready = !this.stopped;
     }
 
     write(data: string): void {
-        // Basic terminal emulation
-        switch (data) {
-            case "\r": // Enter
-                this.emit("\r\n");
-                this.processCommand(this.currentInput.trim());
-                this.currentInput = "";
-                this.prompt();
-                break;
-            case "\x7f": // Backspace
-            case "\b":
-                if (this.currentInput.length > 0) {
-                    this.currentInput = this.currentInput.slice(0, -1);
-                    this.emit("\b \b");
+        if (this.stopped) return;
+
+        const shell = this.shell;
+        if (!this.ready || !shell) {
+            if (this.pendingInputSize + data.length > MAX_BUFFERED_INPUT) {
+                if (!this.inputOverflowReported) {
+                    this.emit("\r\n\x1b[31mInput was not accepted while the browser shell was starting.\x1b[0m\r\n");
+                    this.inputOverflowReported = true;
                 }
-                break;
-            case "\x03": // Ctrl+C
-                this.emit("^C\r\n");
-                this.currentInput = "";
-                this.prompt();
-                break;
-            default:
-                // Ignore control characters
-                if (data >= String.fromCharCode(0x20) && data !== "\x7f") {
-                    this.currentInput += data;
-                    this.emit(data);
-                }
+                return;
+            }
+            this.pendingInput.push(data);
+            this.pendingInputSize += data.length;
+            return;
+        }
+
+        void this.handleInput(shell, data);
+    }
+
+    private async handleInput(shell: BashShell, data: string): Promise<void> {
+        try {
+            await shell.handleInput(data);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.emit(`\r\n\x1b[31mShell error: ${message}\x1b[0m\r\n`);
         }
     }
 
-    private async processCommand(input: string) {
-        if (!input) return;
-        const parts = input.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-        if (parts.length === 0) return;
-        const command = parts[0];
-        const args = parts.slice(1).map((p) => p.replace(/^"|"$/g, "")); // Strip surrounding quotes
-        const handler = this.registry.get(command!);
-
-        const termInterface = {
-            write: (d: string) => this.emit(d),
-            writeln: (d: string) => this.emit(d + "\r\n"),
-        };
-
-        if (handler) {
-            try {
-                await handler(args, termInterface);
-            } catch (err: any) {
-                termInterface.writeln(`\x1b[31mError: ${err.message}\x1b[0m`);
-            }
-        } else {
-            termInterface.writeln(`\x1b[31mCommand not found: ${command}\x1b[0m. Type 'help' for a list of commands.`);
-        }
+    private emit(data: string): void {
+        for (const listener of this.dataListeners) listener(data);
     }
 
     resize(_cols: number, _rows: number): void {}
 
     kill(): void {
+        const shell = this.shell;
+        this.stopped = true;
+        this.ready = false;
+        this.shell = null;
+        this.startPromise = null;
+        this.pendingInput = [];
+        this.pendingInputSize = 0;
+
+        if (shell) void shell.handleInput("\x03").catch(() => undefined);
         this.dataListeners = [];
     }
 
@@ -142,14 +161,12 @@ export class WebTerminalBackend implements ITerminalBackend {
         this.dataListeners.push(callback);
         return {
             dispose: () => {
-                this.dataListeners = this.dataListeners.filter((cb) => cb !== callback);
+                this.dataListeners = this.dataListeners.filter((listener) => listener !== callback);
             },
         };
     }
 
-    onExit(_callback: (event: TerminalExitEvent) => void): {
-        dispose: () => void;
-    } {
-        return { dispose: () => {} };
+    onExit(_callback: (event: TerminalExitEvent) => void): { dispose: () => void } {
+        return { dispose: () => undefined };
     }
 }

@@ -7,7 +7,7 @@ This is designed to be a text editor that help you to interact with AI and took 
 - **AI-Powered Editing**: Research workspace notes with source links; per-note Markdown proposals require explicit approval before application in database-backed storage. Filesystem-backed proposals remain review-only to avoid overwriting external edits.
 - **Markdown First**: Full Markdown support using Tiptap and Unified/Remark ecosystems.
 - **Graph Visualization**: Interactive 2D force-directed graph to visualize connections between notes and hashtags.
-- **Integrated Terminal**: Built-in terminal support (using xterm.js and node-pty) for developers.
+- **Integrated Terminal**: WTerm with Ghostty rendering and node-pty shells on desktop; a virtual just-bash shell in the browser.
 - **Read It Later**: Web content scraper that transforms articles into clean, readable notes.
 - **Hybrid Storage**: Support for both local filesystem (direct file access) and database-backed (Dexie/SQLite) storage modes.
 - **Rich Media & Extensions**: Support for Excalidraw, Mermaid diagrams, KaTeX math, and Shiki syntax highlighting.

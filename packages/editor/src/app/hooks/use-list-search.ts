@@ -13,10 +13,9 @@ interface UseListSearchOptions<T> {
 export function useListSearch<T>({ items, onSelect, isOpen = true }: UseListSearchOptions<T>) {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
-    // Reset selection when items change (e.g. on new search query)
     useEffect(() => {
         setSelectedIndex(0);
-    }, [items.length]);
+    }, [items]);
 
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {

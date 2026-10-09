@@ -3,6 +3,7 @@ import type { BundledTheme } from "shiki";
 import { Editor } from "@tiptap/core";
 import { Mathematics } from "@tiptap/extension-mathematics";
 import { Slice } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import { describe, expect, it } from "vitest";
 import { createExtensions } from "@/app/extensions";
@@ -10,6 +11,48 @@ import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { Markdown } from "./Markdown";
 
 describe("Markdown extension", () => {
+    it.each([
+        ["paragraph", ""],
+        ["paragraph", "predictable"],
+        ["codeBlock", ""],
+        ["codeBlock", "predictable"],
+    ])("pastes a single word into a %s containing %j", (nodeType, text) => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: [StarterKit, Markdown],
+            content: {
+                type: "doc",
+                content: [
+                    {
+                        type: nodeType,
+                        content: text ? [{ type: "text", text }] : [],
+                    },
+                ],
+            },
+        });
+
+        try {
+            editor.view.dispatch(
+                editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 1, text.length + 1)),
+            );
+            const event = {
+                clipboardData: {
+                    getData: (type: string) => (type === "text/plain" ? "unpredictable" : ""),
+                },
+                preventDefault: () => undefined,
+            } as unknown as ClipboardEvent;
+            expect(editor.view.pasteText("unpredictable", event)).toBe(true);
+            expect(editor.state.doc.firstChild?.type.name).toBe(nodeType);
+            expect(editor.state.doc.textContent).toBe("unpredictable");
+            expect(editor.state.selection.empty).toBe(true);
+        } finally {
+            editor.destroy();
+            element.remove();
+        }
+    });
+
     it("does not serialize a destroyed editor", () => {
         const element = document.createElement("div");
         document.body.append(element);

@@ -3,11 +3,13 @@ import { css } from "@g4rcez/components";
 import { ChatCircleDotsIcon, FileTextIcon, TerminalIcon } from "@phosphor-icons/react";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
+import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { GlobalDispatchers } from "@/store/global.store";
 import type { Tab } from "@/store/repositories/entities/tab";
 import type { TerminalSession } from "@/store/repositories/entities/terminal-session";
+import { ACTIVE_EDITOR_NOTE_EVENT, OPEN_EDITOR_NOTE_EVENT } from "@/lib/editor-tab-drag";
 import { suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import {
@@ -21,7 +23,9 @@ import {
 import { Note } from "@/store/note";
 import { uiDispatch } from "@/store/ui.store";
 import { useAiChatTabs } from "../hooks/use-ai-chat-tabs";
+import { useMotionTabDrop } from "../hooks/use-motion-tab-drop";
 import { useNoteTabs } from "../hooks/use-note-tabs";
+import { MotionEditorTab } from "./motion-editor-tab";
 
 type Props = {
     tabs: Tab[];
@@ -45,8 +49,24 @@ export const TabsBar = (props: Props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const scrollRef = useRef<HTMLDivElement>(null);
+    const listDropRef = useMotionTabDrop({
+        drop: ({ tab }) => {
+            const source = props.tabs.find((item) => item.id === tab.tabId);
+            if (!source || props.tabs[props.tabs.length - 1]?.id === source.id) return;
+            void dispatch.reorderTabs([...props.tabs.filter((item) => item.id !== source.id), source]);
+        },
+    });
     const [renamingTarget, setRenamingTarget] = useState<RenamingTarget | null>(null);
     const [renamingValue, setRenamingValue] = useState("");
+    const [activeGroupNoteId, setActiveGroupNoteId] = useState<string | null>(null);
+    useEffect(() => {
+        const update = (event: Event): void => {
+            if (event instanceof CustomEvent)
+                setActiveGroupNoteId(typeof event.detail === "string" ? event.detail : null);
+        };
+        window.addEventListener(ACTIVE_EDITOR_NOTE_EVENT, update);
+        return () => window.removeEventListener(ACTIVE_EDITOR_NOTE_EVENT, update);
+    }, []);
     const renameEscapedRef = useRef(false);
     const renameCommittedRef = useRef(false);
     const notesById = useNoteTabs(props.notes);
@@ -73,6 +93,7 @@ export const TabsBar = (props: Props) => {
     };
 
     const isCurrentTab = (tab: Tab): boolean => {
+        if (activeGroupNoteId) return getTabTarget(tab).type === "note" && tab.noteId === activeGroupNoteId;
         if (currentTarget) {
             return isSameTabTarget(getTabTarget(tab), currentTarget);
         }
@@ -136,9 +157,9 @@ export const TabsBar = (props: Props) => {
     };
 
     const onMiddleClick = (e: React.MouseEvent, tab: Tab) => {
-        e.stopPropagation();
-        e.preventDefault();
         if (e.button === 1) {
+            e.stopPropagation();
+            e.preventDefault();
             void onCloseTab(e, tab);
         }
     };
@@ -193,7 +214,15 @@ export const TabsBar = (props: Props) => {
 
     return (
         <div className="writeme-tabs-bar">
-            <div ref={scrollRef} className="writeme-tabs-bar-list tab-scrollbar select-none">
+            <motion.div
+                layoutScroll
+                ref={(element) => {
+                    scrollRef.current = element;
+                    listDropRef(element);
+                }}
+                data-editor-tab-drop-target
+                className="writeme-tabs-bar-list tab-scrollbar select-none"
+            >
                 {props.tabs.map((tab: Tab) => {
                     const isChatTab = isAiChatTab(tab);
                     const isTerminal = isTerminalTab(tab);
@@ -208,96 +237,120 @@ export const TabsBar = (props: Props) => {
                           : { type: "note", id: tab.noteId };
                     const isRenaming = renameTarget ? isSameRenamingTarget(renamingTarget, renameTarget) : false;
                     return (
-                        <Link
+                        <MotionEditorTab
                             key={tab.id}
-                            data-tab-id={tab.id}
-                            title={tabTitle}
-                            to={getRouteForTab(tab)}
-                            onMouseDown={(e) => onMiddleClick(e, tab)}
-                            onClick={(e) => {
-                                if (isRenaming) {
-                                    e.preventDefault();
-                                }
+                            tab={{ tabId: tab.id, noteId: tab.noteId }}
+                            title={title}
+                            disabled={isRenaming}
+                            className="relative flex h-full shrink-0"
+                            onDropTab={({ tab: dragged, x }, rect) => {
+                                if (!dragged?.tabId || dragged.tabId === tab.id) return;
+                                const source = props.tabs.find((item) => item.id === dragged.tabId);
+                                if (!source) return;
+                                const tabs = props.tabs.filter((item) => item.id !== source.id);
+                                const index = tabs.findIndex((item) => item.id === tab.id);
+                                tabs.splice(index + (x > rect.left + rect.width / 2 ? 1 : 0), 0, source);
+                                void dispatch.reorderTabs(tabs);
                             }}
-                            aria-current={isActive ? "page" : undefined}
-                            className={css(
-                                "group relative flex h-full min-w-28 max-w-xs items-center gap-1.5 border-r border-border/40 px-3",
-                                "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                                isActive
-                                    ? "bg-muted/50 text-foreground"
-                                    : "bg-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground",
-                            )}
                         >
-                            {isTerminal ? (
-                                <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                            ) : isChatTab ? (
-                                <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                            ) : (
-                                <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                            )}
-                            {renameTarget && isRenaming ? (
-                                <input
-                                    autoFocus
-                                    value={renamingValue}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onBlur={() => void commitRename(renameTarget)}
-                                    onChange={(e) => setRenamingValue(e.target.value)}
-                                    className="flex-1 text-xs bg-transparent outline-none min-w-0"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            commitRename(renameTarget);
-                                        }
-                                        if (e.key === "Escape") {
-                                            e.stopPropagation();
-                                            renameEscapedRef.current = true;
-                                            (e.target as HTMLInputElement).blur();
-                                        }
-                                    }}
-                                />
-                            ) : (
-                                <span
-                                    className="flex-1 text-xs truncate"
-                                    tabIndex={renameTarget ? 0 : undefined}
-                                    onDoubleClick={(e) => {
-                                        if (!renameTarget) return;
+                            <Link
+                                data-tab-id={tab.id}
+                                draggable={false}
+                                title={tabTitle}
+                                to={getRouteForTab(tab)}
+                                onMouseDown={(e) => onMiddleClick(e, tab)}
+                                onClick={(e) => {
+                                    if (isRenaming) {
                                         e.preventDefault();
-                                        renameCommittedRef.current = false;
-                                        setRenamingTarget(renameTarget);
-                                        setRenamingValue(title);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (!renameTarget) return;
-                                        if (e.key === "Enter" || e.key === "F2") {
+                                    } else if (!isChatTab && !isTerminal) {
+                                        const event = new CustomEvent(OPEN_EDITOR_NOTE_EVENT, {
+                                            detail: tab.noteId,
+                                            cancelable: true,
+                                        });
+                                        window.dispatchEvent(event);
+                                        if (event.defaultPrevented) e.preventDefault();
+                                    }
+                                }}
+                                aria-current={isActive ? "page" : undefined}
+                                className={css(
+                                    "group relative flex h-full min-w-28 max-w-xs items-center gap-1.5 border-r border-border/40 px-3",
+                                    "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                                    isActive
+                                        ? "bg-muted/50 text-foreground"
+                                        : "bg-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                                )}
+                            >
+                                {isTerminal ? (
+                                    <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                ) : isChatTab ? (
+                                    <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                ) : (
+                                    <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                )}
+                                {renameTarget && isRenaming ? (
+                                    <input
+                                        autoFocus
+                                        value={renamingValue}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onBlur={() => void commitRename(renameTarget)}
+                                        onChange={(e) => setRenamingValue(e.target.value)}
+                                        className="flex-1 text-xs bg-transparent outline-none min-w-0"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                commitRename(renameTarget);
+                                            }
+                                            if (e.key === "Escape") {
+                                                e.stopPropagation();
+                                                renameEscapedRef.current = true;
+                                                (e.target as HTMLInputElement).blur();
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <span
+                                        className="flex-1 text-xs truncate"
+                                        tabIndex={renameTarget ? 0 : undefined}
+                                        onDoubleClick={(e) => {
+                                            if (!renameTarget) return;
                                             e.preventDefault();
                                             renameCommittedRef.current = false;
                                             setRenamingTarget(renameTarget);
                                             setRenamingValue(title);
-                                        }
-                                    }}
-                                >
-                                    {title}
-                                </span>
-                            )}
-                            <button
-                                type="button"
-                                aria-label={`Close ${title}`}
-                                onClick={(e) => void onCloseTab(e, tab)}
-                                className={css(
-                                    "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
-                                    isActive
-                                        ? "opacity-60 group-hover:opacity-100"
-                                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (!renameTarget) return;
+                                            if (e.key === "Enter" || e.key === "F2") {
+                                                e.preventDefault();
+                                                renameCommittedRef.current = false;
+                                                setRenamingTarget(renameTarget);
+                                                setRenamingValue(title);
+                                            }
+                                        }}
+                                    >
+                                        {title}
+                                    </span>
                                 )}
-                            >
-                                <XIcon className="size-2.5" />
-                            </button>
-                            {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
-                        </Link>
+                                <button
+                                    type="button"
+                                    aria-label={`Close ${title}`}
+                                    onClick={(e) => void onCloseTab(e, tab)}
+                                    className={css(
+                                        "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
+                                        isActive
+                                            ? "opacity-60 group-hover:opacity-100"
+                                            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                                    )}
+                                >
+                                    <XIcon className="size-2.5" />
+                                </button>
+                                {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
+                            </Link>
+                        </MotionEditorTab>
                     );
                 })}
-            </div>
+            </motion.div>
             <button
                 type="button"
                 className="writeme-tabs-bar-new"

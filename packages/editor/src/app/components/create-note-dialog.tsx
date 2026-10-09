@@ -4,19 +4,26 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
+import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
-import { getUniqueNoteTitle } from "@/lib/file-utils";
+import { generateNotePath, getUniqueFilePath, getUniqueNoteTitle } from "@/lib/file-utils";
+import { isElectron } from "@/lib/is-electron";
 import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
 import { isFloatingEditorWindow } from "@/lib/window-mode";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
+import { WorkspaceFolderAutocomplete } from "./workspace-folder-autocomplete";
 
 export const CreateNoteDialog = () => {
     const [state, dispatch] = useGlobalStore();
     const [title, setTitle] = useState("");
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
     const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+    const [quickNoteDate, setQuickNoteDate] = useState<Date | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+    const [folderSelectionPending, setFolderSelectionPending] = useState(false);
     const { templates } = useTemplates();
     const { scripts } = useScripts();
     const navigate = useNavigate();
@@ -36,17 +43,26 @@ export const CreateNoteDialog = () => {
 
     useEffect(() => {
         if (isOpen) {
+            setError(null);
+            setSelectedFolderPath(null);
+            setFolderSelectionPending(false);
             if (type === "quick") {
-                setTitle(getDailyQuickNoteTitle(startOfDay(new Date())));
+                const date = new Date();
+                setQuickNoteDate(date);
+                setTitle(getDailyQuickNoteTitle(startOfDay(date)));
             } else {
+                setQuickNoteDate(null);
                 setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
             }
             setSelectedTemplateId(templateId || "");
             setVariableValues({});
         }
-    }, [isOpen, type, templateId, initialTitle, state.notes]);
+    }, [isOpen, type, templateId, initialTitle, state.notes, state.directory]);
 
     const onClose = () => {
+        setError(null);
+        setSelectedFolderPath(null);
+        setFolderSelectionPending(false);
         dispatch.setCreateNoteDialog({ isOpen: false, type });
     };
 
@@ -56,35 +72,53 @@ export const CreateNoteDialog = () => {
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!title.trim()) return;
+        if (!title.trim() || folderSelectionPending) return;
+        setError(null);
 
-        let content = type === "excalidraw" ? buildExcalidrawNoteContent() : "";
-        if (type === "note" && selectedTemplateId) {
-            const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
-            if (latestTemplate) {
-                content = substituteVariables(
-                    latestTemplate.content,
-                    {
-                        ...variableValues,
-                        TITLE: title,
-                    },
-                    scripts,
-                );
+        try {
+            let content = type === "excalidraw" ? buildExcalidrawNoteContent() : "";
+            if ((type === "note" || type === "quick") && selectedTemplateId) {
+                const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
+                if (latestTemplate) {
+                    content = substituteVariables(
+                        latestTemplate.content,
+                        {
+                            ...variableValues,
+                            TITLE: title,
+                        },
+                        scripts,
+                    );
+                }
             }
-        }
 
-        const noteType =
-            type === "excalidraw" ? NoteType.excalidraw : type === "quick" ? NoteType.quick : NoteType.note;
-        const note = Note.new(title, content, noteType);
-        await repositories.notes.save(note);
-        dispatch.note(note, !isFloatingEditorWindow);
-        onClose();
-        if (isFloatingEditorWindow) {
-            navigate("/floating-editor");
-        } else if (type === "quick") {
-            navigate(`/quicknote/${note.id}`);
-        } else {
-            navigate(`/note/${note.id}`);
+            const note =
+                type === "quick"
+                    ? await getOrCreateDailyQuickNote(quickNoteDate ?? new Date(), { title, content })
+                    : Note.new(title, content, type === "excalidraw" ? NoteType.excalidraw : NoteType.note);
+            if (type === "excalidraw" && selectedFolderPath) {
+                const folderResult = await window.electronAPI.fs.readDir(selectedFolderPath);
+                if (folderResult.error) throw new Error(`Could not access the selected folder: ${folderResult.error}`);
+
+                const candidatePath = generateNotePath(selectedFolderPath, title.trim());
+                note.filePath = await getUniqueFilePath(candidatePath, async (path) => {
+                    const result = await window.electronAPI.fs.statFile(path);
+                    if (!result.success)
+                        throw new Error(result.error ?? "Could not check whether the note already exists.");
+                    return result.exists;
+                });
+            }
+            if (type !== "quick") await repositories.notes.save(note);
+            dispatch.note(note, !isFloatingEditorWindow);
+            onClose();
+            if (isFloatingEditorWindow) {
+                navigate("/floating-editor");
+            } else if (type === "quick") {
+                navigate(`/quicknote/${note.id}`);
+            } else {
+                navigate(`/note/${note.id}`);
+            }
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "Failed to create the note.");
         }
     };
 
@@ -95,7 +129,7 @@ export const CreateNoteDialog = () => {
             className="max-w-md"
             title={
                 type === "quick"
-                    ? "Create quick note"
+                    ? "Today's quick note"
                     : type === "excalidraw"
                       ? "Create Excalidraw note"
                       : "Create new note"
@@ -111,7 +145,33 @@ export const CreateNoteDialog = () => {
                     onChange={(e) => setTitle(e.target.value)}
                 />
 
-                {type === "note" && templates.length > 0 && (
+                {type === "excalidraw" && isElectron() && state.directory ? (
+                    <WorkspaceFolderAutocomplete
+                        workspaceDirectory={state.directory}
+                        onSelectionChange={(path, isPending) => {
+                            setSelectedFolderPath(path);
+                            setFolderSelectionPending(isPending);
+                        }}
+                    />
+                ) : null}
+
+                {type === "quick" ? (
+                    <p className="text-xs leading-5 text-muted-foreground">
+                        This opens or creates today's note. A template applies only when the note is new; existing text
+                        is never replaced.
+                    </p>
+                ) : null}
+
+                {error ? (
+                    <p
+                        className="rounded border border-danger/40 bg-danger-subtle p-3 text-sm text-foreground"
+                        role="alert"
+                    >
+                        {error}
+                    </p>
+                ) : null}
+
+                {(type === "note" || type === "quick") && templates.length > 0 && (
                     <div className="flex flex-col gap-4">
                         <Autocomplete
                             required={false}
@@ -147,10 +207,12 @@ export const CreateNoteDialog = () => {
                 )}
 
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button theme="muted" onClick={onClose}>
+                    <Button type="button" theme="muted" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button type="submit">Create {selectedTemplate ? "from template" : ""}</Button>
+                    <Button type="submit" disabled={folderSelectionPending}>
+                        {type === "quick" ? "Open today's note" : `Create ${selectedTemplate ? "from template" : ""}`}
+                    </Button>
                 </div>
             </form>
         </Modal>

@@ -23,11 +23,20 @@ export type NoteItemProps = {
     isActive: boolean;
     onClick: () => void;
     onToggleFavorite: (e: React.MouseEvent) => void;
+    favoritePending?: boolean;
     onDelete?: (e: React.MouseEvent) => void;
     extra?: React.ReactNode;
 };
 
-export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, extra }: NoteItemProps) => {
+export const NoteItem = ({
+    note,
+    isActive,
+    onClick,
+    onToggleFavorite,
+    favoritePending = false,
+    onDelete,
+    extra,
+}: NoteItemProps) => {
     const itemRef = useRef<HTMLLIElement>(null);
     useEffect(() => {
         if (isActive && itemRef.current) {
@@ -88,11 +97,14 @@ export const NoteItem = ({ note, isActive, onClick, onToggleFavorite, onDelete, 
                         aria-label={
                             note.favorite ? `Unstar ${note.title || "Untitled"}` : `Star ${note.title || "Untitled"}`
                         }
+                        aria-pressed={note.favorite}
+                        title={note.favorite ? "Remove from favorites" : "Add to favorites"}
+                        disabled={favoritePending}
                         onClick={onToggleFavorite}
-                        className={`flex size-7 items-center justify-center rounded-none transition-[background-color,opacity] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        className={`flex size-8 items-center justify-center rounded-none transition-[background-color,color,opacity] hover:bg-background/80 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait ${
                             note.favorite
                                 ? "text-warn opacity-100"
-                                : "text-muted-foreground opacity-0 group-hover:opacity-100"
+                                : "text-muted-foreground/75 opacity-100 group-hover:text-muted-foreground"
                         }`}
                     >
                         <StarIcon aria-hidden="true" className={`size-3 ${note.favorite ? "fill-current" : ""}`} />
@@ -119,12 +131,30 @@ const NoteListItems = (props: {
     activeNoteId: string | undefined;
 }) => {
     const navigate = useNavigate();
+    const [pendingFavoriteIds, setPendingFavoriteIds] = useState<Set<string>>(() => new Set());
     const toggleFavorite = async (e: React.MouseEvent, note: NoteWithTags) => {
         e.stopPropagation();
+        if (pendingFavoriteIds.has(note.id)) return;
+        setPendingFavoriteIds((ids) => new Set(ids).add(note.id));
+        const originalNote = Note.parse(note);
         const updatedNote = Note.parse(note);
         updatedNote.favorite = !note.favorite;
-        await repositories.notes.update(note.id, updatedNote);
         globalDispatch.syncNoteState(updatedNote);
+        try {
+            await repositories.notes.update(note.id, updatedNote);
+        } catch (reason) {
+            globalDispatch.syncNoteState(originalNote);
+            notificationRef.current?.(
+                <span>{reason instanceof Error ? reason.message : "Failed to update favorites"}</span>,
+                { theme: "danger", closable: true, timeout: 4000 },
+            );
+        } finally {
+            setPendingFavoriteIds((ids) => {
+                const nextIds = new Set(ids);
+                nextIds.delete(note.id);
+                return nextIds;
+            });
+        }
     };
 
     const handleDelete = async (e: React.MouseEvent, note: NoteWithTags) => {
@@ -178,6 +208,7 @@ const NoteListItems = (props: {
                         isActive={note.id === props.activeNoteId}
                         onClick={() => navigate(`/note/${note.id}`)}
                         onToggleFavorite={(e) => toggleFavorite(e, note)}
+                        favoritePending={pendingFavoriteIds.has(note.id)}
                         onDelete={(e) => handleDelete(e, note)}
                     />
                 ))}
@@ -191,6 +222,7 @@ type SortBy = "updatedAt" | "createdAt" | "alphabetical";
 export const NoteListSidebar = () => {
     const [state, layoutDispatch] = useLayoutStore();
     const [globalState] = useGlobalStore();
+    const navigate = useNavigate();
     const [sortBy, setSortBy] = useState<SortBy>("createdAt");
     const { notes, loading } = useSidebarNotes({ sortBy });
     const params = useParams();
@@ -225,6 +257,7 @@ export const NoteListSidebar = () => {
     }
 
     const query = state.searchQuery.trim();
+    const isFavoritesView = state.activeActivity === "favorites";
     const hasNotes = globalState.notes.some((note) => {
         if (state.activeActivity === "favorites") return note.favorite;
         if (state.activeActivity === "tags" && state.activeView.type === "tag") {
@@ -307,15 +340,29 @@ export const NoteListSidebar = () => {
                     </span>
                     <div>
                         <p className="font-medium text-foreground">
-                            {query || hasNotes ? "No matching notes" : "No notes yet"}
+                            {query || hasNotes
+                                ? "No matching notes"
+                                : isFavoritesView
+                                  ? "No favorites yet"
+                                  : "No notes yet"}
                         </p>
                         <p className="mt-1 text-xs leading-5">
-                            {query || hasNotes
-                                ? "Try a different search or clear the filter."
-                                : "Create a note and your workspace will appear here."}
+                            {isFavoritesView && !query
+                                ? "Star a note to keep it close. Your favorites will appear here."
+                                : query || hasNotes
+                                  ? "Try a different search or clear the filter."
+                                  : "Create a note and your workspace will appear here."}
                         </p>
                     </div>
-                    {query || hasNotes ? (
+                    {isFavoritesView && !query ? (
+                        <button
+                            type="button"
+                            onClick={() => navigate("/notes")}
+                            className="min-h-9 rounded-none border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Browse notes
+                        </button>
+                    ) : query || hasNotes ? (
                         <button
                             type="button"
                             onClick={() => layoutDispatch.setSearch("")}

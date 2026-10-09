@@ -122,6 +122,49 @@ const getNoteSearchScore = (note: NoteSearchable, query: string): number | null 
     return bestScore;
 };
 
+export function getNoteSearchSnippet(content: string, query: string, maxLength = 120): string {
+    const lines = content
+        .split(/\r?\n/)
+        .map((line) =>
+            line
+                .replace(/^\s{0,3}#{1,6}\s+/, "")
+                .replace(
+                    /!?\[\[([^\]|]+)(?:[#^][^|\]]*)?(?:\|([^\]]+))?\]\]/g,
+                    (_match, target: string, alias?: string) => alias?.trim() || target.trim(),
+                )
+                .replace(/!?(?:\[([^\]]*)\])\([^)]*\)/g, "$1")
+                .replace(/^\s{0,3}>\s?/, "")
+                .replace(/[`*_~]/g, "")
+                .replace(/\s+/g, " ")
+                .trim(),
+        )
+        .filter(Boolean);
+    if (lines.length === 0) return "No preview available.";
+
+    const normalizedQuery = normalizeSearchText(query).trim();
+    const queryTokens = normalizedQuery.split(/\s+/u).filter(Boolean);
+    const snippet =
+        lines.find((line) => normalizeSearchText(line).includes(normalizedQuery)) ??
+        lines.find((line) => queryTokens.some((token) => normalizeSearchText(line).includes(token))) ??
+        lines[0] ??
+        "No preview available.";
+    const limit = Math.max(1, Math.floor(maxLength));
+    if (snippet.length <= limit) return snippet;
+
+    let matchIndex = -1;
+    if (query.trim()) {
+        const lowerSnippet = snippet.toLowerCase();
+        matchIndex = lowerSnippet.indexOf(query.trim().toLowerCase());
+        if (matchIndex < 0) {
+            const firstToken = query.trim().split(/\s+/u)[0]?.toLowerCase() ?? "";
+            matchIndex = lowerSnippet.indexOf(firstToken);
+        }
+    }
+    const start = Math.max(0, Math.min(snippet.length - limit, matchIndex - 32));
+    const end = Math.min(snippet.length, start + limit);
+    return `${start > 0 ? "…" : ""}${snippet.slice(start, end)}${end < snippet.length ? "…" : ""}`;
+}
+
 export function filterNotesByQuery<T extends NoteSearchable>(notes: readonly T[], query: string): T[] {
     if (!normalizeSearchText(query).trim()) return [...notes];
 

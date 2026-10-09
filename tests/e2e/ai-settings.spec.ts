@@ -65,6 +65,13 @@ async function prepareDeviceFlow(page: Page, denyFirstCopy = false): Promise<{ r
 async function chooseOpenAI(page: Page): Promise<void> {
     await page.goto("/settings/ai");
     await expect(page.getByRole("heading", { name: "AI", exact: true })).toBeVisible();
+    if ((page.viewportSize()?.width ?? 1280) < 1024) {
+        const openSidebar = page.locator(".writeme-aside-panel--open");
+        if (await openSidebar.count()) {
+            await page.keyboard.press("Escape");
+            await expect(openSidebar).toHaveCount(0);
+        }
+    }
     await expect(page.getByRole("heading", { name: "Provider", exact: true })).toBeVisible();
     const selector = page.getByRole("combobox", { name: "Provider", exact: true });
     if (await selector.isVisible()) await selector.selectOption("openai");

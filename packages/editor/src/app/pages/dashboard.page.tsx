@@ -9,9 +9,12 @@ import { TagIcon } from "@phosphor-icons/react/dist/csr/Tag";
 import { type ComponentType, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Note } from "@/store/note";
+import { useLayoutStore } from "@/app/contexts/layout-context";
+import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { Dates } from "@/lib/dates";
 import { tildaDir } from "@/lib/file-utils";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
+import { uiDispatch } from "@/store/ui.store";
 
 type DashboardIcon = ComponentType<{
     size?: number;
@@ -101,6 +104,7 @@ function RecentNoteRow({ note }: { note: Note }) {
 
 export default function DashboardPage() {
     const [state, dispatch] = useGlobalStore();
+    const [, layoutDispatch] = useLayoutStore();
     const navigate = useNavigate();
     const [cwd, setCwd] = useState<string | null>(null);
     const [greeting, setGreeting] = useState("");
@@ -124,6 +128,11 @@ export default function DashboardPage() {
     const onSearch = () => dispatch.commander(true, CommanderType.Notes);
     const createNewNote = () => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
     const openAiAssistant = () => navigate("/chat");
+    const viewAllFavorites = () => {
+        layoutDispatch.setActivity("favorites");
+        uiDispatch.setSidebarOpen(true);
+        navigate("/notes");
+    };
 
     const favoriteNotes = state.notes.filter((note: Note) => note.favorite);
     const favorites = favoriteNotes.slice(0, 4);
@@ -156,24 +165,18 @@ export default function DashboardPage() {
                                 </p>
                             </div>
                             <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto xl:shrink-0">
-                                <Button
-                                    type="button"
-                                    theme="primary"
-                                    onClick={createNewNote}
-                                >
+                                <Button type="button" theme="primary" onClick={createNewNote}>
                                     <FilePlusIcon size={17} aria-hidden="true" />
                                     <span>New note</span>
-                                    <kbd className="rounded bg-button-primary-text/15 px-1.5 py-0.5 font-mono text-xs text-button-primary-text/80">⌘ N</kbd>
+                                    <kbd className="rounded bg-button-primary-text/15 px-1.5 py-0.5 font-mono text-xs text-button-primary-text/80">
+                                        ⌘ N
+                                    </kbd>
                                 </Button>
-                                <Button
-                                    type="button"
-                                    theme="outlined"
-                                    onClick={onSearch}
-                                >
+                                <Button type="button" theme="outlined" onClick={onSearch}>
                                     <MagnifyingGlassIcon size={17} aria-hidden="true" />
-                                    <span>Find anything</span>
+                                    <span>Open note</span>
                                     <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                                        ⌘ K
+                                        {mapShortcutOS("mod+k")}
                                     </kbd>
                                 </Button>
                             </div>
@@ -276,9 +279,20 @@ export default function DashboardPage() {
                                         Starred notes
                                     </h2>
                                 </div>
-                                <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <StarIcon size={17} aria-hidden="true" />
-                                </span>
+                                {favorites.length > 0 ? (
+                                    <button
+                                        type="button"
+                                        onClick={viewAllFavorites}
+                                        className="inline-flex min-h-9 shrink-0 items-center gap-2 text-xs font-medium text-primary transition-colors hover:text-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <span>View all</span>
+                                        <ArrowRightIcon size={14} aria-hidden="true" />
+                                    </button>
+                                ) : (
+                                    <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <StarIcon size={17} aria-hidden="true" />
+                                    </span>
+                                )}
                             </div>
                             {favorites.length > 0 ? (
                                 <ul className="mt-4 divide-y divide-border/35">

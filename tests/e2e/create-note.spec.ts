@@ -114,6 +114,125 @@ test.describe("Create note flow", () => {
         await expect(page).toHaveURL(/\/$/);
     });
 
+    test("Excalidraw creation autocompletes and saves to a workspace folder", async ({ cleanPage: page }) => {
+        await page.evaluate(async () => {
+            const openRequest = indexedDB.open("writeme");
+            const database = await new Promise<IDBDatabase>((resolve, reject) => {
+                openRequest.onsuccess = () => resolve(openRequest.result);
+                openRequest.onerror = () => reject(openRequest.error);
+            });
+            const transaction = database.transaction("settings", "readwrite");
+            const settings = transaction.objectStore("settings");
+            const readSettings = settings.getAll();
+            await new Promise<void>((resolve, reject) => {
+                readSettings.onsuccess = () => {
+                    const existing = readSettings.result.find((entry) => entry.name === "directory");
+                    settings.put({
+                        ...existing,
+                        id: existing?.id ?? "e2e-workspace-directory",
+                        name: "directory",
+                        value: JSON.stringify("/workspace"),
+                        type: existing?.type ?? "setting",
+                        createdAt: existing?.createdAt ?? new Date(),
+                        updatedAt: new Date(),
+                    });
+                };
+                readSettings.onerror = () => reject(readSettings.error);
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+                transaction.onabort = () => reject(transaction.error);
+            });
+            database.close();
+        });
+
+        await page.reload();
+        await goHome(page);
+        await page.evaluate(() => {
+            Object.defineProperty(navigator, "userAgent", { configurable: true, value: "Electron" });
+
+            let fileSearchListener:
+                | ((event: {
+                      requestId: string;
+                      type: "batch" | "complete";
+                      entries?: Array<{ name: string; path: string; relativePath: string; type: "directory" }>;
+                      truncated?: boolean;
+                  }) => void)
+                | null = null;
+
+            Object.defineProperty(window, "electronAPI", {
+                configurable: true,
+                value: {
+                    fs: {
+                        onFileSearchEvent: (callback: typeof fileSearchListener) => {
+                            fileSearchListener = callback;
+                            return () => {
+                                fileSearchListener = null;
+                            };
+                        },
+                        startFileSearch: async (_rootPath: string, _query: string, requestId: string) => {
+                            window.setTimeout(() => {
+                                fileSearchListener?.({
+                                    requestId,
+                                    type: "batch",
+                                    entries: [
+                                        {
+                                            name: "Frontend tools",
+                                            path: "/workspace/Frontend tools",
+                                            relativePath: "Frontend tools",
+                                            type: "directory",
+                                        },
+                                    ],
+                                });
+                                fileSearchListener?.({ requestId, type: "complete", truncated: false });
+                            }, 10);
+                            return { success: true };
+                        },
+                        cancelFileSearch: async () => ({ success: true }),
+                        readDir: async () => ({ entries: [] }),
+                        statFile: async () => ({ success: true, exists: false }),
+                    },
+                },
+            });
+        });
+
+        await page.keyboard.press("ControlOrMeta+Shift+P");
+        const commandPalette = page.getByRole("dialog", { name: "Command palette" });
+        await commandPalette.getByPlaceholder("Search for...").fill("New excalidraw");
+        await commandPalette.getByText("New excalidraw", { exact: true }).click();
+
+        const dialog = page.getByRole("dialog", { name: "Create Excalidraw note" });
+        await dialog.getByTitle("Note title").fill("Folder autocomplete drawing");
+        await dialog.getByTitle("Folder (optional)").fill("frontend");
+        await dialog.getByRole("option", { name: "./Frontend tools" }).click();
+        await expect(dialog.getByRole("button", { name: /^Create/ })).toBeEnabled();
+        await dialog.getByRole("button", { name: /^Create/ }).click();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/);
+
+        const note = await page.evaluate(async () => {
+            const openRequest = indexedDB.open("writeme");
+            const database = await new Promise<IDBDatabase>((resolve, reject) => {
+                openRequest.onsuccess = () => resolve(openRequest.result);
+                openRequest.onerror = () => reject(openRequest.error);
+            });
+            const transaction = database.transaction("notes", "readonly");
+            const records = await new Promise<Array<{ title: string; noteType: string; filePath: string | null }>>(
+                (resolve, reject) => {
+                    const request = transaction.objectStore("notes").getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                },
+            );
+            database.close();
+            return records.find((record) => record.title === "Folder autocomplete drawing");
+        });
+
+        expect(note).toMatchObject({
+            title: "Folder autocomplete drawing",
+            noteType: "excalidraw",
+            filePath: "/workspace/Frontend tools/folder-autocomplete-drawing.md",
+        });
+    });
+
     test("created note appears with a preview in the dashboard recent list", async ({ cleanPage: page }) => {
         await page
             .getByRole("main")

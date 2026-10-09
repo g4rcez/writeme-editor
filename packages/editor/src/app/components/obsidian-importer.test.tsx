@@ -3,6 +3,32 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ObsidianImporter } from "./obsidian-importer";
 
+const markdownFixture = [
+    "---",
+    "aliases: [Project Plan]",
+    "tags: [research]",
+    "---",
+    "# Research plan",
+    "",
+    "[[Project|Roadmap]] and [[Project#Next steps]]",
+    "",
+    "- [ ] Review the source",
+    "",
+    "| Item | Status |",
+    "| --- | --- |",
+    "| Draft | Ready |",
+    "",
+    "$$",
+    "x^2 + y^2 = z^2",
+    "$$",
+    "",
+    "```ts",
+    "const answer = 42;",
+    "```",
+    "",
+    "![Diagram](./assets/diagram.svg)",
+].join("\n");
+
 const mocks = vi.hoisted(() => ({
     chooseObsidianVault: vi.fn(),
     readDirRecursive: vi.fn(),
@@ -79,6 +105,38 @@ describe("ObsidianImporter", () => {
         expect(mocks.copyFile).toHaveBeenCalledWith("/vault/assets/image.png", "/workspace/assets/image.png");
         expect(mocks.save).toHaveBeenCalledOnce();
         expect(mocks.dispatchNotes).toHaveBeenCalledWith([]);
+    });
+
+    it("copies Markdown constructs and relative asset links without rewriting them", async () => {
+        mocks.readDirRecursive.mockResolvedValueOnce({
+            success: true,
+            files: [
+                { name: "Plan.md", path: "/vault/Research/Plan.md", relativePath: "Research/Plan.md" },
+                {
+                    name: "diagram.svg",
+                    path: "/vault/Research/assets/diagram.svg",
+                    relativePath: "Research/assets/diagram.svg",
+                },
+            ],
+        });
+        mocks.readFile.mockResolvedValueOnce({
+            success: true,
+            content: markdownFixture,
+            fileSize: markdownFixture.length,
+            lastModified: "2026-01-01T00:00:00.000Z",
+        });
+        const user = userEvent.setup();
+        render(<ObsidianImporter destinationDirectory="/workspace" />);
+
+        await user.click(screen.getByRole("button", { name: "Choose vault" }));
+
+        expect(await screen.findByText(/Imported 1 note and 1 asset/)).toBeInTheDocument();
+        expect(mocks.writeFile).toHaveBeenCalledWith("/workspace/Research/Plan.md", markdownFixture);
+        expect(mocks.copyFile).toHaveBeenCalledWith(
+            "/vault/Research/assets/diagram.svg",
+            "/workspace/Research/assets/diagram.svg",
+        );
+        expect(mocks.save.mock.calls[0]?.[0].content).toBe(markdownFixture);
     });
 
     it("rejects a destination inside the source vault before scanning", async () => {

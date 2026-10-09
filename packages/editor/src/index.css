@@ -35,7 +35,6 @@
 @import "tailwindcss";
 
 :root {
-    color-scheme: light;
     --spacing-base: 0.25rem;
     --typography-base: 1rem;
     --default-size: 16px;
@@ -43,10 +42,11 @@
     --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     --shimmer-dur: 2000ms;
-    --shimmer-base: hsla(var(--muted-foreground), 0.8);
-    --shimmer-highlight: hsl(var(--foreground));
+    --shimmer-base: color-mix(in srgb, var(--var-color-muted-foreground) 80%, transparent);
+    --shimmer-highlight: var(--var-color-foreground);
     --shimmer-band: 400%;
     --shimmer-ease: linear;
+    --var-radius-base: 0.3rem;
 }
 
 html.dark,
@@ -103,12 +103,12 @@ code {
 }
 
 .search-result {
-    background-color: hsla(var(--warn-DEFAULT), 0.35);
+    background-color: color-mix(in srgb, var(--var-color-warn) 35%, transparent);
     border-radius: var(--button-radius);
 }
 
 .search-result-current {
-    background-color: hsla(var(--warn-DEFAULT), 0.65);
+    background-color: color-mix(in srgb, var(--var-color-warn) 65%, transparent);
     border-radius: var(--button-radius);
 }
 
@@ -207,7 +207,7 @@ code {
 }
 
 .ai-markdown.ai-markdown--inherit code {
-    background-color: hsla(var(--background), 0.18);
+    background-color: color-mix(in srgb, var(--var-color-background) 18%, transparent);
 }
 
 .ai-markdown > :first-child {
@@ -377,7 +377,7 @@ code {
 }
 
 *:focus-visible {
-    outline: 2px solid hsl(var(--ring));
+    outline: 2px solid var(--var-color-ring);
     outline-offset: 0.125rem;
     transition: outline-offset var(--transition-fast);
 }
@@ -407,7 +407,7 @@ code {
 
 .drag-handle {
     @apply fixed top-0 left-0 h-6 w-6 cursor-grab opacity-0 transition-opacity duration-200 ease-in-out;
-    background-color: hsla(var(--muted-foreground), 0.9);
+    background-color: color-mix(in srgb, var(--var-color-muted-foreground) 90%, transparent);
     -webkit-mask-image: url("data:image/svg+xml,%3csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M3,2 C2.44771525,2 2,1.55228475 2,1 C2,0.44771525 2.44771525,0 3,0 C3.55228475,0 4,0.44771525 4,1 C4,1.55228475 3.55228475,2 3,2 Z M3,6 C2.44771525,6 2,5.55228475 2,5 C2,4.44771525 2.44771525,4 3,4 C3.55228475,4 4,4.44771525 4,5 C4,5.55228475 3.55228475,6 3,6 Z M3,10 C2.44771525,10 2,9.55228475 2,9 C2,8.44771525 2.44771525,8 3,8 C3.55228475,8 4,8.44771525 4,9 C4,9.55228475 3.55228475,10 3,10 Z M7,2 C6.44771525,2 6,1.55228475 6,1 C6,0.44771525 6.44771525,0 7,0 C7.55228475,0 8,0.44771525 8,1 C8,1.55228475 7.55228475,2 7,2 Z M7,6 C6.44771525,6 6,5.55228475 6,5 C6,4.44771525 6.44771525,4 7,4 C7.55228475,4 8,4.44771525 8,5 C8,5.55228475 7.55228475,6 7,6 Z M7,10 C6.44771525,10 6,9.55228475 6,9 C6,8.44771525 6.44771525,8 7,8 C7.55228475,8 8,8.44771525 8,9 C8,9.55228475 7.55228475,10 7,10 Z'/%3e%3c/svg%3e");
     mask-image: url("data:image/svg+xml,%3csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M3,2 C2.44771525,2 2,1.55228475 2,1 C2,0.44771525 2.44771525,0 3,0 C3.55228475,0 4,0.44771525 4,1 C4,1.55228475 3.55228475,2 3,2 Z M3,6 C2.44771525,6 2,5.55228475 2,5 C2,4.44771525 2.44771525,4 3,4 C3.55228475,4 4,4.44771525 4,5 C4,5.55228475 3.55228475,6 3,6 Z M3,10 C2.44771525,10 2,9.55228475 2,9 C2,8.44771525 2.44771525,8 3,8 C3.55228475,8 4,8.44771525 4,9 C4,9.55228475 3.55228475,10 3,10 Z M7,2 C6.44771525,2 6,1.55228475 6,1 C6,0.44771525 6.44771525,0 7,0 C7.55228475,0 8,0.44771525 8,1 C8,1.55228475 7.55228475,2 7,2 Z M7,6 C6.44771525,6 6,5.55228475 6,5 C6,4.44771525 6.44771525,4 7,4 C7.55228475,4 8,4.44771525 8,5 C8,5.55228475 7.55228475,6 7,6 Z M7,10 C6.44771525,10 6,9.55228475 6,9 C6,8.44771525 6.44771525,8 7,8 C7.55228475,8 8,8.44771525 8,9 C8,9.55228475 7.55228475,10 7,10 Z'/%3e%3c/svg%3e");
     -webkit-mask-repeat: no-repeat;
@@ -439,7 +439,7 @@ code {
 }
 
 .drag-handle + .ProseMirror .ProseMirror-selectednode {
-    outline: 2px solid hsl(var(--success));
+    outline: 2px solid var(--var-color-success);
 }
 
 input[data-combikeysbypass] {
@@ -471,7 +471,7 @@ button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible,
 [role="tree"]:focus-visible {
-    outline: 2px solid hsl(var(--ring));
+    outline: 2px solid var(--var-color-ring);
     outline-offset: 0.125rem;
 }
 
@@ -496,11 +496,11 @@ a:focus-visible,
 }
 
 .tab-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: hsla(var(--primary-DEFAULT), 0.3);
+    background: color-mix(in srgb, var(--var-color-primary) 30%, transparent);
 }
 
 .tab-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsla(var(--primary-DEFAULT), 0.6);
+    background: color-mix(in srgb, var(--var-color-primary) 60%, transparent);
 }
 
 .react-renderer.node-codeBlock {

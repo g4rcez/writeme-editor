@@ -1,20 +1,26 @@
 @reference "../../tailwind.css";
 
 :root {
-    --wm-canvas: hsl(var(--background));
-    --wm-rail: hsl(var(--card-muted));
-    --wm-surface-1: hsl(var(--card-background));
-    --wm-surface-2: hsl(var(--muted));
-    --wm-surface-hover: hsl(var(--muted-hover, var(--muted)));
-    --wm-border: hsl(var(--border));
-    --wm-border-strong: hsl(var(--input-border, var(--border)));
-    --wm-ink: hsl(var(--foreground));
-    --wm-text: hsl(var(--foreground));
-    --wm-muted: hsl(var(--muted-foreground));
-    --wm-accent: hsl(var(--primary-DEFAULT));
-    --wm-accent-hover: hsl(var(--primary-hover, var(--primary-DEFAULT)));
-    --wm-accent-ink: hsl(var(--primary-foreground));
-    --wm-link: hsl(var(--primary-DEFAULT));
+    --wm-canvas: var(--var-color-background);
+    --wm-rail: var(--var-card-muted);
+    --wm-surface-1: var(--var-card-background);
+    --wm-surface-2: var(--var-color-muted);
+    --wm-surface-hover: var(--var-color-muted);
+    --wm-border: var(--var-color-border);
+    --wm-border-strong: var(--var-color-border);
+    --wm-ink: var(--var-color-foreground);
+    --wm-text: var(--var-color-foreground);
+    --wm-muted: var(--var-color-muted-foreground);
+    --wm-accent: var(--var-color-primary);
+    --wm-accent-hover: var(--var-color-primary-hover);
+    --wm-accent-ink: var(--var-color-primary-foreground);
+    --wm-link: var(--var-color-primary);
+}
+
+@media (min-width: 64rem) {
+    .writeme-ai-provider-select {
+        display: none;
+    }
 }
 
 .writeme-aside-panel {
@@ -32,7 +38,7 @@
 .writeme-aside-panel--open {
     @apply border-r opacity-100;
     width: var(--panel-w);
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-aside-panel--collapsed {
@@ -61,7 +67,7 @@
 }
 
 .writeme-aside-resize:hover {
-    background-color: hsla(var(--primary-DEFAULT), 0.55);
+    background-color: color-mix(in srgb, var(--var-color-primary) 55%, transparent);
 }
 
 .writeme-aside-collapsed-toggle {
@@ -71,7 +77,7 @@
 .writeme-aside-activity-bar {
     @apply relative z-10 flex h-full w-12 flex-col items-center border-r py-2 print:hidden;
     background-color: var(--wm-rail);
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-aside-activity-brand {
@@ -84,7 +90,7 @@
 
 .writeme-aside-activity-divider {
     @apply my-1 h-px w-5 shrink-0;
-    background-color: hsla(var(--border), 0.7);
+    background-color: color-mix(in srgb, var(--var-color-border) 70%, transparent);
 }
 
 .writeme-aside-activity-icon {
@@ -123,7 +129,7 @@
 
 .writeme-aside-nav {
     @apply flex h-full w-full flex-col border-r backdrop-blur-xl;
-    border-color: hsla(var(--border), 0.4);
+    border-color: color-mix(in srgb, var(--var-color-border) 40%, transparent);
 }
 
 .writeme-aside-nav-header {
@@ -149,7 +155,7 @@
 
 .writeme-aside-nav-item--active {
     @apply font-medium text-primary;
-    background-color: hsla(var(--primary-DEFAULT), 0.1);
+    background-color: color-mix(in srgb, var(--var-color-primary) 10%, transparent);
 }
 
 .writeme-aside-nav-item--inactive {
@@ -157,17 +163,17 @@
 }
 
 .writeme-aside-nav-item--inactive:hover {
-    background-color: hsla(var(--muted-DEFAULT), 0.5);
+    background-color: color-mix(in srgb, var(--var-color-muted) 50%, transparent);
 }
 
 .writeme-aside-nav-section {
     @apply mt-4 mb-1 px-2 py-1.5 text-xs font-semibold tracking-wider uppercase;
-    color: hsla(var(--foreground), 0.35);
+    color: color-mix(in srgb, var(--var-color-foreground) 35%, transparent);
 }
 
 .writeme-aside-nav-footer {
     @apply border-t p-2;
-    border-color: hsla(var(--border), 0.4);
+    border-color: color-mix(in srgb, var(--var-color-border) 40%, transparent);
 }
 
 .writeme-sidebar-shell button {
@@ -184,8 +190,8 @@
 }
 
 .writeme-sidebar-v2-tree [role="treeitem"][aria-selected="true"] {
-    background-color: hsla(var(--primary-DEFAULT), 0.1);
-    box-shadow: inset 2px 0 0 hsla(var(--primary-DEFAULT), 0.75);
+    background-color: color-mix(in srgb, var(--var-color-primary) 10%, transparent);
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--var-color-primary) 75%, transparent);
 }
 .writeme-sidebar-v2-tree [role="tree"] {
     @apply px-2 py-2;
@@ -248,8 +254,9 @@
 
 .writeme-editor-page {
     @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
+    container-type: inline-size;
     gap: 0;
-    padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 5vw, 2.5rem) 0;
+    padding: 0 clamp(1rem, 5vw, 2.5rem) 0;
 }
 
 .writeme-editor-column,
@@ -259,11 +266,38 @@
 }
 
 .writeme-note-header {
-    @apply pb-0;
+    @apply mx-auto flex flex-col gap-2 bg-background pb-3;
+    container-type: inline-size;
+    padding-top: clamp(1.25rem, 3vw, 2rem);
 }
 
-.writeme-note-header-top {
-    @apply flex min-h-9 items-center justify-between gap-3;
+.writeme-note-special-page {
+    container-type: inline-size;
+}
+
+.writeme-note-toolbar {
+    @apply mx-auto grid min-h-9 w-full min-w-0 items-center border-b border-border/50 bg-background print:hidden;
+    --var-button-small-height: 2rem;
+    --var-button-icon-font-size: 1rem;
+    max-width: min(100%, 760px);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: "leading filename actions";
+    padding-inline: clamp(0rem, 1vw, 0.75rem);
+}
+
+.writeme-note-toolbar-leading {
+    @apply flex min-w-0 items-center justify-start;
+    grid-area: leading;
+}
+
+.writeme-note-toolbar-file-name {
+    @apply max-w-[min(38vw,32rem)] truncate text-sm font-medium text-foreground/80;
+    grid-area: filename;
+}
+
+.writeme-note-toolbar-actions {
+    @apply justify-end;
+    grid-area: actions;
 }
 
 .writeme-note-title-editor {
@@ -272,44 +306,196 @@
     letter-spacing: 0.05ch;
 }
 
-.writeme-note-header-actions {
-    @apply flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1;
+.writeme-note-editor-controls {
+    @apply flex min-w-0 max-w-full flex-wrap items-center gap-3;
+}
+
+.writeme-editor-mode-toggle {
+    @apply m-0 flex min-w-0 items-center gap-1 border-0 p-0;
+}
+
+.writeme-note-actions-group {
+    @apply m-0 flex min-w-0 max-w-full flex-wrap items-center gap-1 border-0 p-0;
 }
 
 .writeme-note-tool-button {
-    @apply flex size-9 shrink-0 items-center justify-center rounded-none border border-border/60 bg-card-background/70 text-muted-foreground transition-[background-color,border-color,color] duration-150 hover:border-primary/30 hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-}
-
-.writeme-note-header-actions .writeme-table-of-contents-button {
-    @apply size-9 rounded-none shadow-none;
-    transform: none;
-}
-
-.writeme-note-header-actions .writeme-table-of-contents-button:hover {
-    transform: none;
-}
-
-.writeme-note-header-actions .writeme-editor-mode-toggle {
-    @apply h-9 items-center justify-center gap-0.5 border border-border/60 bg-card-background/70 p-0.5 shadow-none;
-}
-
-.writeme-note-header-actions .writeme-editor-mode-toggle button {
-    @apply min-h-8 min-w-16 justify-center rounded-none text-center;
+    @apply size-8 shrink-0;
 }
 
 .writeme-markdown-vim-mode-toggle {
-    @apply min-h-9;
-    min-width: 5.5rem;
+    @apply inline-flex min-h-8 shrink-0 items-center whitespace-nowrap text-xs text-muted-foreground;
+}
+
+@container (max-width: 42rem) {
+    .writeme-note-toolbar {
+        position: relative;
+        top: auto;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "filename"
+            "leading"
+            "actions";
+        justify-items: center;
+        row-gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .writeme-note-toolbar-file-name {
+        @apply max-w-full;
+    }
+
+    .writeme-note-toolbar-leading,
+    .writeme-note-toolbar-actions {
+        @apply w-full justify-center;
+    }
+
+    .writeme-note-editor-controls {
+        @apply w-full justify-center;
+    }
+
+    .writeme-note-table-of-contents {
+        @apply static;
+    }
+
+    .writeme-note-table-of-contents-popover {
+        @apply max-w-[calc(100vw-2rem)];
+    }
 }
 
 .writeme-note-metadata {
-    @apply flex flex-wrap items-center gap-x-3 gap-y-1 pb-3 text-xs text-muted-foreground;
+    @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground;
 }
 
 .writeme-editor {
     @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
     padding-top: 1.25rem;
-    padding-bottom: 3rem;
+    padding-bottom: 5rem;
+}
+
+.writeme-editor-page.writeme-editor-page--panes {
+    @apply h-full min-h-0 overflow-hidden p-0 print:block print:h-auto print:overflow-visible;
+}
+
+.writeme-editor-page--panes > .writeme-note-header {
+    @apply px-4 py-3;
+    padding-top: 0;
+}
+
+.writeme-editor-page--panes > .writeme-note-toolbar {
+    @apply shrink-0 px-4;
+}
+
+.writeme-editor-page--panes > .writeme-editor-status-bar {
+    @apply mt-0 shrink-0 px-4;
+}
+
+.writeme-editor-panes {
+    @apply flex min-h-0 w-full min-w-0 flex-1 flex-col;
+}
+
+.writeme-editor-drop-target {
+    @apply relative flex min-h-0 min-w-0 flex-1 flex-col;
+}
+
+[data-tab-drop-position]::after {
+    @apply pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-primary;
+    content: "";
+}
+[data-tab-drop-position="left"]::after {
+    left: 0;
+}
+[data-tab-drop-position="right"]::after {
+    right: 0;
+}
+
+.writeme-editor-drop-preview {
+    @apply pointer-events-none absolute inset-0 z-50 border-2 border-primary bg-primary/15;
+}
+.writeme-editor-drop-preview[data-side="left"] {
+    right: 50%;
+}
+.writeme-editor-drop-preview[data-side="right"] {
+    left: 50%;
+}
+.writeme-editor-drop-preview[data-side="top"] {
+    bottom: 50%;
+}
+.writeme-editor-drop-preview[data-side="bottom"] {
+    top: 50%;
+}
+
+.writeme-editor-group-tabs {
+    @apply flex min-w-0 flex-1 overflow-x-auto;
+}
+.writeme-editor-group-note-tab {
+    @apply flex h-10 shrink-0 items-center gap-1 border-r border-border/60 px-2 text-sm text-foreground;
+}
+.writeme-editor-group-note-tab[aria-selected="true"] {
+    @apply border-t-2 border-t-primary bg-background;
+}
+
+.writeme-editor-group {
+    @apply flex h-full min-h-0 min-w-0 flex-col;
+}
+
+.writeme-editor-group-header {
+    @apply flex h-10 min-w-0 shrink-0 items-center justify-between border-b border-border/60 bg-card-background print:hidden;
+}
+
+.writeme-editor-group-tab {
+    @apply flex h-full min-w-0 max-w-xs flex-1 items-center gap-1 border-r border-t-2 border-r-border/60 border-t-transparent px-2;
+}
+
+.writeme-editor-group[data-active="true"] .writeme-editor-group-tab {
+    @apply border-t-primary bg-background;
+}
+
+.writeme-editor-group-picker {
+    @apply min-w-0 flex-1;
+}
+
+.writeme-editor-group-picker-control {
+    @apply rounded-none border-0 bg-transparent shadow-none focus-within:outline focus-within:outline-2 focus-within:outline-primary;
+    outline-offset: -2px;
+}
+
+.writeme-editor-group-select {
+    @apply min-w-0 cursor-pointer truncate bg-transparent text-sm text-foreground;
+}
+
+.writeme-editor-group-controls {
+    @apply flex shrink-0 items-center gap-1 px-1;
+}
+
+.writeme-editor-group-action {
+    @apply flex size-8 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-50;
+}
+
+.writeme-editor-group-scroll-container {
+    @apply min-h-0 flex-1 overflow-auto overscroll-contain px-4 print:overflow-visible;
+    scroll-padding-block-end: 5rem;
+}
+
+.writeme-editor-group-separator {
+    @apply shrink-0 bg-border/60 hover:bg-primary focus-visible:bg-primary print:hidden;
+}
+
+.writeme-editor-group-separator[aria-orientation="vertical"] {
+    @apply w-1 cursor-col-resize;
+}
+
+.writeme-editor-group-separator[aria-orientation="horizontal"] {
+    @apply h-1 cursor-row-resize;
+}
+
+@media (max-width: 40rem) {
+    .writeme-editor-group-header {
+        @apply h-11;
+    }
+
+    .writeme-editor-group-action {
+        @apply size-11;
+    }
 }
 
 .writeme-formatting-toolbar {
@@ -336,21 +522,22 @@
     }
 }
 
-@media (pointer: coarse) {
-    .writeme-note-tool-button,
-    .writeme-note-header-actions .writeme-table-of-contents-button {
+@media (max-width: 40rem), (pointer: coarse) {
+    .writeme-note-toolbar {
+        --var-button-small-height: 2.75rem;
+        --var-button-min-height: 2.75rem;
+    }
+
+    .writeme-note-tool-button {
         @apply size-11;
     }
 
-    .writeme-note-header-actions .writeme-editor-mode-toggle {
-        @apply h-11;
-    }
-
-    .writeme-note-header-actions .writeme-editor-mode-toggle button,
     .writeme-markdown-vim-mode-toggle {
         @apply min-h-11;
     }
+}
 
+@media (pointer: coarse) {
     .writeme-formatting-toolbar button {
         @apply min-h-11 min-w-11;
     }
@@ -371,13 +558,13 @@
 .writeme-editor .writing-suggestion,
 .writeme-editor .cm-writing-assistant-suggestion {
     cursor: pointer;
-    text-decoration: underline wavy hsl(var(--primary-DEFAULT));
+    text-decoration: underline wavy var(--var-color-primary);
     text-decoration-thickness: 1px;
     text-underline-offset: 0.18em;
 }
 
 .writeme-editor .writing-suggestion-active {
-    background-color: hsla(var(--primary-DEFAULT), 0.12);
+    background-color: color-mix(in srgb, var(--var-color-primary) 12%, transparent);
 }
 
 @media (forced-colors: active) {
@@ -427,12 +614,14 @@
 
 .writeme-scroll-container {
     @apply min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-background print:block print:h-auto print:overflow-visible;
+    scroll-padding-block-start: 3.5rem;
+    scroll-padding-block-end: 5rem;
 }
 
 .writeme-app-header {
     @apply flex h-9 min-h-9 shrink-0 items-center justify-between gap-2 border-b pr-3 print:hidden;
     background-color: var(--wm-surface-1);
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-app-header-start {
@@ -467,7 +656,7 @@
 .writeme-tabs-bar {
     @apply relative flex h-9 min-h-9 shrink-0 items-stretch border-b print:hidden;
     background-color: var(--wm-canvas);
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-tabs-bar-list {
@@ -476,31 +665,42 @@
 
 .writeme-tabs-bar-new {
     @apply flex size-9 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-context-pane {
     @apply relative z-20 flex h-full min-h-0 w-72 shrink-0 flex-col border-l print:hidden;
     background-color: var(--wm-surface-1);
-    border-color: hsla(var(--border), 0.55);
-}
-
-.writeme-context-backdrop {
-    display: none;
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-context-pane-header {
     @apply flex h-10 min-h-10 items-center justify-between gap-2 border-b px-3;
-    border-color: hsla(var(--border), 0.55);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 .writeme-context-pane-content {
     @apply min-h-0 flex-1 overflow-y-auto p-2;
 }
 
+.writeme-context-modal.__modal--type-drawer {
+    width: min(20rem, 86vw);
+    min-width: min(20rem, 86vw);
+    max-width: 86vw;
+    height: 100vh;
+}
+
+.writeme-context-modal-body {
+    @apply flex min-h-0 flex-col overflow-hidden p-0;
+}
+
+.writeme-context-modal-note {
+    @apply shrink-0 truncate border-b border-border/40 px-3 py-2 text-sm font-medium text-foreground;
+}
+
 .writeme-context-section {
     @apply border-b py-2 last:border-b-0;
-    border-color: hsla(var(--border), 0.4);
+    border-color: color-mix(in srgb, var(--var-color-border) 40%, transparent);
 }
 
 .writeme-context-section summary {
@@ -567,8 +767,8 @@
 
 .writeme-editor-status-bar {
     @apply sticky bottom-0 z-10 mt-auto flex min-h-7 flex-wrap items-center justify-end gap-x-2 gap-y-1 border-t px-1 py-1 text-xs text-muted-foreground;
-    background-color: hsla(var(--background), 0.94);
-    border-color: hsla(var(--border), 0.55);
+    background-color: color-mix(in srgb, var(--var-color-background) 94%, transparent);
+    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 
 @media (max-width: 959px) {
@@ -579,7 +779,7 @@
         bottom: 0;
         left: 3.5rem;
         width: 0;
-        box-shadow: 1rem 0 2rem hsla(var(--background), 0.2);
+        box-shadow: 1rem 0 2rem color-mix(in srgb, var(--var-color-background) 20%, transparent);
     }
 
     .writeme-aside-panel--open {
@@ -597,22 +797,6 @@
 
     .writeme-mobile-sidebar-backdrop {
         @apply fixed inset-0 z-30 bg-floating-overlay;
-    }
-
-    .writeme-context-backdrop {
-        @apply fixed inset-0 z-30 bg-floating-overlay;
-    }
-
-    .writeme-context-pane {
-        position: absolute;
-        z-index: 40;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: auto;
-        width: min(320px, 86vw);
-        height: 100%;
-        box-shadow: -1rem 0 2rem hsla(var(--background), 0.2);
     }
 }
 
@@ -652,30 +836,12 @@
         @apply size-8 rounded-none;
     }
 
-    .writeme-note-header-top {
-        flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .writeme-note-header-actions {
-        width: 100%;
-        margin-inline: auto;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
     .writeme-note-title-editor {
         font-size: 1.5rem;
     }
 
-    .writeme-note-header-actions .writeme-editor-mode-toggle button {
-        padding-right: 0.5rem;
-        padding-left: 0.5rem;
-    }
-
     .writeme-editor-page {
-        padding: 1.25rem 1rem 0;
+        padding: 0 1rem 0;
     }
 
     .writeme-editor-column,

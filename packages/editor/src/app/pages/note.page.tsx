@@ -1,12 +1,17 @@
 import { Button, Checkbox, Tag } from "@g4rcez/components";
-import { ColumnsIcon } from "@phosphor-icons/react";
+import { BracketsCurlyIcon } from "@phosphor-icons/react/dist/csr/BracketsCurly";
+import { ColumnsIcon } from "@phosphor-icons/react/dist/csr/Columns";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
+import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
+import { OPEN_EDITOR_NOTE_EVENT, ACTIVE_EDITOR_NOTE_EVENT } from "@/lib/editor-tab-drag";
 import { getReadingTime } from "@/lib/file-utils";
 import { isElectron } from "@/lib/is-electron";
 import { findFirstMarkdownH1, replaceFirstMarkdownH1 } from "@/lib/markdown-title";
+import { resolveNoteLinks } from "@/lib/note-links";
 import { isNoteRouteTabOpenSuppressed } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { isNoteTabForNoteId } from "@/lib/tab-target";
@@ -15,6 +20,7 @@ import { Note, NoteType } from "@/store/note";
 import { type EditorMode, SettingsService } from "@/store/settings";
 import { useUIStore } from "@/store/ui.store";
 import { isLatexFilePath } from "@/types/workspace-files";
+import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { NoteFooter } from "../components/note-footer";
@@ -25,48 +31,22 @@ import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
 import { useEditorPanes } from "../hooks/use-editor-panes";
 
-function useNoteReferences(content: string) {
-    const [refs, setRefs] = useState<Note[]>([]);
-    useEffect(() => {
-        let cancelled = false;
-        async function resolve() {
-            const ids = new Set<string>();
-            for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
-                ids.add(m![2]!);
-            }
-            for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
-                ids.add(m![1]!);
-            }
-            const wikiMatches = [...content.matchAll(/\[\[([^\]]+)\]\]/g)];
-            if (wikiMatches.length > 0) {
-                const allNotes = await repositories.notes.getAll();
-                const byTitle = new Map(allNotes.map((n) => [n.title, n.id]));
-                const byId = new Set(allNotes.map((n) => n.id));
-                for (const m of wikiMatches) {
-                    const raw = m[1]!;
-                    if (byId.has(raw)) ids.add(raw);
-                    else if (byTitle.has(raw)) ids.add(byTitle.get(raw)!);
-                }
-            }
-            const settled = await Promise.all([...ids].map((id) => repositories.notes.getOne(id)));
-            if (!cancelled) setRefs(settled.filter((n): n is Note => n != null));
-        }
-        resolve();
-        return () => {
-            cancelled = true;
-        };
-    }, [content]);
-    return refs;
+function getUrlLabel(value: string): string {
+    try {
+        return new URL(value).hostname || value;
+    } catch {
+        return value;
+    }
 }
 
-function NoteReferences({ note }: { note: Note }) {
-    const refs = useNoteReferences(note.content ?? "");
+function NoteReferences({ note, notes }: { note: Note; notes: Note[] }) {
+    const refs = resolveNoteLinks(note, notes);
     if (refs.length === 0) return null;
     return (
         <footer className="my-4 flex flex-col gap-2 border-t border-card-border py-4">
             <p className="text-sm font-medium text-muted-foreground">Linked notes</p>
             <ul className="flex flex-wrap gap-2">
-                {refs.map((ref) => (
+                {refs.map(({ note: ref }) => (
                     <li key={ref.id}>
                         <Link
                             to={`/note/${ref.id}`}
@@ -81,7 +61,9 @@ function NoteReferences({ note }: { note: Note }) {
     );
 }
 
-const Wrapper = (props: PropsWithChildren) => <div className="writeme-editor-page">{props.children}</div>;
+const Wrapper = (props: PropsWithChildren<{ paneMode?: boolean }>) => (
+    <div className={`writeme-editor-page${props.paneMode ? " writeme-editor-page--panes" : ""}`}>{props.children}</div>
+);
 
 const PrintableNoteHeader = ({ note }: { note: Note }) => {
     return (
@@ -148,48 +130,43 @@ function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: s
 
 const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mode: EditorMode) => void }) => {
     const modes: Array<{ value: EditorMode; label: string }> = [
-        { value: "markdown", label: "Markdown" },
         { value: "formatted", label: "Formatted" },
+        { value: "markdown", label: "Markdown" },
     ];
 
     return (
-        <div className="writeme-editor-mode-toggle flex items-center" role="group" aria-label="Editor mode">
+        <fieldset className="writeme-editor-mode-toggle">
+            <legend className="sr-only">Editor mode</legend>
             {modes.map((item) => {
                 const active = item.value === mode;
                 return (
                     <Button
+                        size="min"
                         type="button"
-                        size="tiny"
                         key={item.value}
                         aria-pressed={active}
                         onClick={() => onChange(item.value)}
-                        theme={active ? "primary" : "muted"}
+                        theme={active ? "ghost-primary" : "ghost-muted"}
                     >
                         {item.label}
                     </Button>
                 );
             })}
-        </div>
+        </fieldset>
     );
 };
 
 const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => {
     return (
-        <Button
-            type="button"
+        <Checkbox
             size="tiny"
-            theme="muted"
-            className="writeme-markdown-vim-mode-toggle min-h-9"
-            data-enabled={enabled.toString()}
-            onClick={(event) => {
-                const isTrue = event.currentTarget.dataset.enabled === "true";
-                onChange(!isTrue);
-            }}
+            checked={enabled}
+            id="markdown-vim-mode"
+            container="writeme-markdown-vim-mode-toggle"
+            onChange={(event) => onChange(event.target.checked)}
         >
-            <Checkbox size="tiny" onChange={(e) => onChange(e.target.checked)} checked={enabled} id="markdown-vim-mode">
-                <span>Vim mode</span>
-            </Checkbox>
-        </Button>
+            Vim mode
+        </Checkbox>
     );
 };
 
@@ -197,15 +174,14 @@ function AddFrontmatterButton() {
     return (
         <Button
             type="button"
-            size="tiny"
-            theme="ghost-primary"
+            size="icon"
+            theme="ghost-muted"
             className="writeme-note-tool-button"
             aria-label="Add frontmatter"
             title="Add Markdown frontmatter"
+            icon={<BracketsCurlyIcon aria-hidden="true" />}
             onClick={addFrontmatterToCurrentEditor}
-        >
-            <ColumnsIcon aria-hidden="true" size={21} />
-        </Button>
+        />
     );
 }
 
@@ -213,16 +189,15 @@ function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: (
     return (
         <Button
             type="button"
-            size="tiny"
-            theme={open ? "primary" : "ghost-primary"}
+            size="icon"
+            theme={open ? "primary" : "ghost-muted"}
             className="writeme-note-tool-button"
             aria-label={open ? "Exit pane mode" : "Open pane mode"}
             aria-pressed={open}
             title={open ? "Exit pane mode" : "Open pane mode"}
+            icon={<ColumnsIcon aria-hidden="true" />}
             onClick={onChange}
-        >
-            <ColumnsIcon aria-hidden="true" size={21} />
-        </Button>
+        />
     );
 }
 
@@ -230,15 +205,33 @@ function ExportNoteButton({ note }: { note: Note }) {
     return (
         <Button
             type="button"
-            size="tiny"
-            theme="ghost-primary"
+            size="icon"
+            theme="ghost-muted"
             className="writeme-note-tool-button"
             aria-label={`Export ${note.title}`}
             title="Export document (print or save as PDF)"
+            icon={<PrinterIcon aria-hidden="true" />}
             onClick={() => printDocument({ title: note.title })}
-        >
-            <PrinterIcon aria-hidden="true" size={21} />
-        </Button>
+        />
+    );
+}
+
+function FavoriteNoteButton({ note, disabled, onToggle }: { note: Note; disabled: boolean; onToggle: () => void }) {
+    const label = note.favorite ? "Remove from favorites" : "Add to favorites";
+
+    return (
+        <Button
+            type="button"
+            size="icon"
+            theme="ghost-muted"
+            className={`writeme-note-tool-button ${note.favorite ? "text-warn" : ""}`}
+            aria-label={label}
+            aria-pressed={note.favorite}
+            title={label}
+            disabled={disabled}
+            icon={<StarIcon weight={note.favorite ? "fill" : "regular"} aria-hidden="true" />}
+            onClick={onToggle}
+        />
     );
 }
 
@@ -253,8 +246,34 @@ export default function NotePage() {
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
     const [rawEditorVimMode, setRawEditorVimMode] = useState<boolean>(() => SettingsService.load().rawEditorVimMode);
     const [historyOpen, setHistoryOpen] = useState(false);
-    const editorPanes = useEditorPanes(id ?? null, state.notes);
+    const [favoriteSaving, setFavoriteSaving] = useState(false);
+    const editorPanes = useEditorPanes(
+        id ?? null,
+        state.notes,
+        state.tabs.filter((tab) => isNoteTabForNoteId(tab, tab.noteId)).map((tab) => tab.noteId),
+    );
     const paneMode = editorPanes.state !== null;
+    useEffect(() => {
+        const panes = editorPanes.state;
+        if (!panes) return;
+        const openNote = (event: Event): void => {
+            if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
+            const selected = state.notes.find((note) => note.id === event.detail);
+            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw) return;
+            event.preventDefault();
+            editorPanes.selectNote(panes.activePaneId, selected.id);
+        };
+        window.dispatchEvent(
+            new CustomEvent(ACTIVE_EDITOR_NOTE_EVENT, {
+                detail: panes.panes.find((pane) => pane.id === panes.activePaneId)?.noteId,
+            }),
+        );
+        window.addEventListener(OPEN_EDITOR_NOTE_EVENT, openNote);
+        return () => {
+            window.removeEventListener(OPEN_EDITOR_NOTE_EVENT, openNote);
+            window.dispatchEvent(new CustomEvent(ACTIVE_EDITOR_NOTE_EVENT, { detail: null }));
+        };
+    }, [editorPanes.state, editorPanes.selectNote, state.notes]);
     const togglePaneMode = useCallback((): void => {
         if (paneMode) editorPanes.exit();
         else editorPanes.enter();
@@ -344,6 +363,24 @@ export default function NotePage() {
         [dispatch, isLatexSource, note],
     );
 
+    const toggleFavorite = useCallback(async (): Promise<void> => {
+        if (!note || favoriteSaving) return;
+        setFavoriteSaving(true);
+        const updatedNote = Note.parse({ ...note, favorite: !note.favorite });
+        dispatch.syncNoteState(updatedNote);
+        try {
+            await repositories.notes.update(updatedNote.id, updatedNote);
+        } catch (reason) {
+            dispatch.syncNoteState(note);
+            notificationRef.current?.(
+                <span>{reason instanceof Error ? reason.message : "Failed to update favorites"}</span>,
+                { theme: "danger", closable: true, timeout: 4000 },
+            );
+        } finally {
+            setFavoriteSaving(false);
+        }
+    }, [dispatch, favoriteSaving, note]);
+
     if (isLoading) {
         return <div className="flex items-center justify-center p-8">Fetching note...</div>;
     }
@@ -361,58 +398,80 @@ export default function NotePage() {
     const isExcalidraw = note.noteType === NoteType.excalidraw;
     const isHistoryEligible = note.noteType === NoteType.note && !isLatexSource;
     const activeEditorMode: EditorMode = isLatexSource ? "markdown" : editorMode;
+    const fileName = note.filePath?.split(/[\\/]/).filter(Boolean).at(-1);
+    const hasRichEditor = !isJson && !isExcalidraw;
+
+    const noteToolbar = (
+        <div className="writeme-note-toolbar" role="toolbar" aria-label="Note tools">
+            <div className="writeme-note-toolbar-leading">
+                {hasRichEditor ? (
+                    <div className="writeme-note-editor-controls">
+                        {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
+                        {activeEditorMode === "markdown" ? (
+                            <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+            <span className="writeme-note-toolbar-file-name" title={note.filePath ?? undefined}>
+                {fileName || note.title || "Untitled"}
+            </span>
+            <fieldset className="writeme-note-actions-group writeme-note-toolbar-actions">
+                <legend className="sr-only">Note actions</legend>
+                {hasRichEditor && !isLatexSource ? <AddFrontmatterButton /> : null}
+                {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}
+                <FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />
+                {hasRichEditor ? (
+                    <>
+                        <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
+                        <TableOfContents />
+                        <ExportNoteButton note={note} />
+                    </>
+                ) : null}
+            </fieldset>
+        </div>
+    );
 
     if (isJson || isExcalidraw) {
         return (
-            <div className="-my-8 flex h-[calc(100%+4rem)] min-h-0 w-full bg-background">
-                {isJson ? (
-                    <JsonGraph
-                        key={note.id}
-                        json={(() => {
-                            try {
-                                return JSON.parse(note.content);
-                            } catch {
-                                return { error: "Failed to parse JSON", raw: note.content };
-                            }
-                        })()}
-                        onChange={(newJson) => {
-                            const content = JSON.stringify(newJson, null, 2);
-                            repositories.notes.updateContent(note.id, content);
-                            dispatch.updateNoteContent(note.id, content);
-                        }}
-                    />
-                ) : (
-                    <ExcalidrawNoteView note={note} />
-                )}
+            <div className="writeme-note-special-page -my-8 flex h-[calc(100%+4rem)] min-h-0 w-full flex-col bg-background">
+                {noteToolbar}
+                <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
+                    <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+                        {note.title || "Untitled"}
+                    </h1>
+                </header>
+                <div className="flex min-h-0 flex-1">
+                    {isJson ? (
+                        <JsonGraph
+                            key={note.id}
+                            json={(() => {
+                                try {
+                                    return JSON.parse(note.content);
+                                } catch {
+                                    return { error: "Failed to parse JSON", raw: note.content };
+                                }
+                            })()}
+                            onChange={(newJson) => {
+                                const content = JSON.stringify(newJson, null, 2);
+                                repositories.notes.updateContent(note.id, content);
+                                dispatch.updateNoteContent(note.id, content);
+                            }}
+                        />
+                    ) : (
+                        <ExcalidrawNoteView note={note} />
+                    )}
+                </div>
             </div>
         );
     }
 
     return (
-        <Wrapper>
+        <Wrapper paneMode={paneMode}>
             <PrintableNoteHeader note={note} />
+            {noteToolbar}
             {note.noteType === "read-it-later" ? (
-                <header className="writeme-editor-column writeme-note-header flex flex-col gap-2 border-b border-border/50 print:hidden">
-                    <div className="writeme-note-header-top">
-                        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                            <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em]">
-                                Reading list
-                            </span>
-                            {note.url ? <span className="truncate">/ {new URL(note.url).hostname}</span> : null}
-                        </div>
-                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
-                            {activeEditorMode === "markdown" ? (
-                                <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
-                            ) : null}
-                            {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
-                            {isLatexSource ? null : <AddFrontmatterButton />}
-                            <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
-                            <div className="flex items-center gap-1">
-                                <TableOfContents />
-                                <ExportNoteButton note={note} />
-                            </div>
-                        </div>
-                    </div>
+                <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
                     <EditableNoteTitle
                         key={`${note.id}:${markdownTitle?.title ?? note.title}`}
                         value={markdownTitle?.title ?? note.title}
@@ -428,55 +487,33 @@ export default function NotePage() {
                             {note.url}
                         </Link>
                     ) : null}
-                    <span className="writeme-note-metadata">
+                    <div className="writeme-note-metadata">
+                        <span>Reading list</span>
+                        {note.url ? <span className="truncate">/ {getUrlLabel(note.url)}</span> : null}
                         <Tag size="small">Read it later</Tag>
                         <span aria-hidden="true">·</span>
                         <time dateTime={note.createdAt.toISOString()}>{Dates.yearMonthDay(note.createdAt)}</time>
                         <span aria-hidden="true">·</span>
                         <i>{getReadingTime(note.content).formatted}</i>
-                    </span>
+                    </div>
                 </header>
             ) : (
                 <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
-                    <div className="writeme-note-header-top">
-                        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                            {note.filePath ? (
-                                <span className="truncate" title={note.filePath}>
-                                    Workspace file
-                                </span>
-                            ) : (
-                                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em]">
-                                    Local note
-                                </span>
-                            )}
-                        </div>
-                        <div className="writeme-note-header-actions" role="toolbar" aria-label="Note tools">
-                            {activeEditorMode === "markdown" ? (
-                                <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
-                            ) : null}
-                            {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
-                            {isLatexSource ? null : <AddFrontmatterButton />}
-                            {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}
-                            <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
-                            <TableOfContents />
-                            <ExportNoteButton note={note} />
-                        </div>
-                    </div>
                     <EditableNoteTitle
                         key={`${note.id}:${markdownTitle?.title ?? note.title}`}
                         value={markdownTitle?.title ?? note.title}
                         onSave={saveTitle}
                     />
-                    <div className="writeme-note-metadata">
-                        <time dateTime={note.updatedAt.toISOString()}>
-                            Updated {Dates.yearMonthDay(note.updatedAt)}
-                        </time>
-                        {note.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="text-primary">
-                                #{tag}
-                            </span>
-                        ))}
-                    </div>
+                    {!fileName || note.tags.length > 0 ? (
+                        <div className="writeme-note-metadata">
+                            {!fileName ? <span>Local note</span> : null}
+                            {note.tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="text-primary">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
                 </header>
             )}
             {isHistoryEligible && historyOpen ? (
@@ -500,17 +537,21 @@ export default function NotePage() {
                     onRemove={editorPanes.remove}
                     onExit={editorPanes.exit}
                     canAdd={editorPanes.canAdd}
+                    onDropTab={editorPanes.dropTab}
+                    onCloseTab={editorPanes.closeTab}
                 />
             ) : (
-                <Editor
-                    note={note}
-                    key={note.id}
-                    content={note.content || ""}
-                    mode={activeEditorMode}
-                    rawEditorVimMode={rawEditorVimMode}
-                />
+                <EditorDropTarget onDropTab={editorPanes.dropTab}>
+                    <Editor
+                        note={note}
+                        key={note.id}
+                        content={note.content || ""}
+                        mode={activeEditorMode}
+                        rawEditorVimMode={rawEditorVimMode}
+                    />
+                </EditorDropTarget>
             )}
-            <NoteReferences note={note} />
+            <NoteReferences note={note} notes={state.notes ?? []} />
             <NoteFooter noteId={note.id} />
         </Wrapper>
     );

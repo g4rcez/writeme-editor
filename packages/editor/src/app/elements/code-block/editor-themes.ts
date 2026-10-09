@@ -3,24 +3,24 @@ import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 
 const colors = {
-    foreground: "hsl(var(--foreground))",
-    mutedForeground: "hsl(var(--muted-foreground))",
-    border: "hsl(var(--border))",
-    primary: "hsl(var(--primary))",
-    primarySubtle: "hsl(var(--primary-subtle))",
-    secondary: "hsl(var(--secondary))",
-    secondarySubtle: "hsl(var(--secondary-subtle))",
-    emphasis: "hsl(var(--emphasis))",
-    info: "hsl(var(--info))",
-    warn: "hsl(var(--warn))",
-    danger: "hsl(var(--danger))",
-    success: "hsl(var(--success))",
-    floating: "hsl(var(--floating-background))",
-    floatingForeground: "hsl(var(--floating-foreground))",
+    foreground: "var(--var-color-foreground)",
+    mutedForeground: "var(--var-color-muted-foreground)",
+    border: "var(--var-color-border)",
+    primary: "var(--var-color-primary)",
+    primarySubtle: "var(--var-color-primary-subtle)",
+    secondary: "var(--var-color-secondary)",
+    secondarySubtle: "var(--var-color-secondary-subtle)",
+    emphasis: "var(--var-color-primary)",
+    info: "var(--var-color-info)",
+    warn: "var(--var-color-warn)",
+    danger: "var(--var-color-danger)",
+    success: "var(--var-color-success)",
+    floating: "var(--var-dropdown-surface-background)",
+    floatingForeground: "var(--var-dropdown-surface-foreground)",
 };
 
 function createAppTheme(isDark: boolean) {
-    const selectionBackground = `hsla(var(--primary), ${isDark ? 0.45 : 0.28})`;
+    const selectionBackground = `color-mix(in srgb, var(--var-color-primary) ${isDark ? "45%" : "28%"}, transparent)`;
     const theme = EditorView.theme(
         {
             "&": {
@@ -48,17 +48,17 @@ function createAppTheme(isDark: boolean) {
                 borderTop: `1px solid ${colors.border}`,
             },
             ".cm-searchMatch": {
-                backgroundColor: "hsla(var(--warn), 0.25)",
+                backgroundColor: "color-mix(in srgb, var(--var-color-warn) 25%, transparent)",
                 outline: `1px solid ${colors.warn}`,
             },
             ".cm-searchMatch.cm-searchMatch-selected": {
-                backgroundColor: "hsla(var(--warn), 0.4)",
+                backgroundColor: "color-mix(in srgb, var(--var-color-warn) 40%, transparent)",
             },
             ".cm-activeLine": {
-                backgroundColor: "hsla(var(--muted), 0.5)",
+                backgroundColor: "color-mix(in srgb, var(--var-color-muted) 50%, transparent)",
             },
             ".cm-selectionMatch": {
-                backgroundColor: "hsla(var(--primary), 0.14)",
+                backgroundColor: "color-mix(in srgb, var(--var-color-primary) 14%, transparent)",
             },
             "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
                 backgroundColor: colors.secondarySubtle,
@@ -70,7 +70,7 @@ function createAppTheme(isDark: boolean) {
                 border: "none",
             },
             ".cm-activeLineGutter": {
-                backgroundColor: "hsla(var(--muted), 0.5)",
+                backgroundColor: "color-mix(in srgb, var(--var-color-muted) 50%, transparent)",
             },
             ".cm-foldPlaceholder": {
                 backgroundColor: "transparent",

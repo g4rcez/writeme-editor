@@ -172,7 +172,9 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
                             style={{
                                 backgroundColor: c.value,
                                 borderColor:
-                                    color === c.value && tool === "pen" ? "hsl(var(--primary))" : "hsl(var(--border))",
+                                    color === c.value && tool === "pen"
+                                        ? "var(--var-color-primary)"
+                                        : "var(--var-color-border)",
                             }}
                         />
                     ))}
@@ -189,8 +191,8 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
                             onClick={() => setSizeIndex(i)}
                             className="flex items-center justify-center rounded transition-colors px-2 py-1 text-xs"
                             style={{
-                                background: sizeIndex === i ? "hsl(var(--primary))" : "transparent",
-                                color: sizeIndex === i ? "hsl(var(--primary-foreground))" : "inherit",
+                                background: sizeIndex === i ? "var(--var-color-primary)" : "transparent",
+                                color: sizeIndex === i ? "var(--var-color-primary-foreground)" : "inherit",
                             }}
                         >
                             {s.label}

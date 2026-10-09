@@ -137,18 +137,18 @@ export const TableOfContents = () => {
     if (headings.length === 0) return null;
 
     return (
-        <div ref={popoverRef} className="relative shrink-0 print:hidden">
+        <div ref={popoverRef} className="writeme-note-table-of-contents relative shrink-0 print:hidden">
             <Button
-                size="tiny"
+                size="icon"
                 aria-expanded={isOpen}
                 aria-label="Open table of contents"
+                title="Table of contents"
+                icon={<ListBulletsIcon aria-hidden="true" />}
                 onClick={() => setIsOpen((open) => !open)}
-                className="writeme-table-of-contents-button"
+                className="writeme-table-of-contents-button writeme-note-tool-button"
                 aria-controls={isOpen ? popoverId : undefined}
-                theme={isOpen ? "ghost-neutral": "ghost-primary"}
-            >
-                <ListBulletsIcon size={21} />
-            </Button>
+                theme={isOpen ? "primary" : "ghost-muted"}
+            />
 
             <AnimatePresence>
                 {isOpen && (
@@ -161,7 +161,7 @@ export const TableOfContents = () => {
                         initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -8 }}
                         transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                         className={css(
-                            "absolute top-full left-auto right-0 z-50 m-0 mt-3 flex max-h-96 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card-radius",
+                            "writeme-note-table-of-contents-popover absolute top-full left-auto right-0 z-50 m-0 mt-3 flex max-h-96 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card-radius",
                             "border border-floating-border bg-floating-background text-floating-foreground shadow-medium",
                         )}
                     >
