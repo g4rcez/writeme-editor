@@ -1,0 +1,100 @@
+name: Meeting note verification
+
+on:
+    pull_request:
+        branches: [main]
+    workflow_dispatch:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    local-whisper:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/checkout@v4
+              with:
+                  repository: ggml-org/whisper.cpp
+                  ref: d1be6fde11ac6e0407606b4e42fe72d34add8037
+                  path: .whisper-test
+                  persist-credentials: false
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - run: sudo apt-get update && sudo apt-get install -y ffmpeg cmake
+            - run: npm ci
+            - run: npm exec playwright install --with-deps chromium
+            - run: npm run browser:build
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+            - name: Build the pinned CPU Whisper server
+              run: |
+                  cmake -S .whisper-test -B .whisper-test/build -DWHISPER_BUILD_SERVER=ON -DGGML_NATIVE=OFF
+                  cmake --build .whisper-test/build --target whisper-server --parallel 2
+                  bash .whisper-test/models/download-ggml-model.sh tiny
+                  sha256sum --check <<< 'be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21  .whisper-test/models/ggml-tiny.bin'
+            - name: Transcribe browser audio with the live local server
+              run: |
+                  .whisper-test/build/bin/whisper-server --model .whisper-test/models/ggml-tiny.bin --threads 4 --port 8097 --convert --language auto > "$RUNNER_TEMP/whisper-server.log" 2>&1 &
+                  WHISPER_PID=$!
+                  trap 'kill "$WHISPER_PID"' EXIT
+                  for attempt in {1..30}; do
+                      if curl --fail --silent http://localhost:8097/health >/dev/null; then break; fi
+                      sleep 1
+                  done
+                  curl --fail --silent http://localhost:8097/health >/dev/null
+                  export MEETING_AUDIO_FIXTURE="$PWD/.whisper-test/samples/jfk.wav"
+                  npm run test:e2e -- --config playwright.meeting-browser.config.ts --grep 'live local Whisper'
+              env:
+                  CI: "true"
+                  MEETING_WHISPER_ENDPOINT: http://localhost:8097/inference
+            - uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: meeting-live-whisper-failures
+                  path: |
+                      test-results/
+                      ${{ runner.temp }}/whisper-server.log
+                  if-no-files-found: ignore
+
+    verify:
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [macos-latest, windows-2022, ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - uses: oven-sh/setup-bun@v2
+            - run: npm ci
+            - run: npm run typecheck
+            - run: npm test
+            - run: npm exec playwright install --with-deps chromium
+            - run: npm run browser:build
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+            - run: npm run test:e2e -- --config playwright.meeting-browser.config.ts
+              env:
+                  CI: "true"
+            - run: npm run package:app
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+            - name: Verify Electron meeting persistence (macOS and Windows)
+              if: runner.os != 'Linux'
+              run: npm exec playwright test -- --config playwright.meeting-native.config.ts
+            - name: Verify Electron meeting persistence (Linux)
+              if: runner.os == 'Linux'
+              run: xvfb-run --auto-servernum npm exec playwright test -- --config playwright.meeting-native.config.ts
+            - uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: meeting-failures-${{ matrix.os }}
+                  path: test-results/
+                  if-no-files-found: ignore

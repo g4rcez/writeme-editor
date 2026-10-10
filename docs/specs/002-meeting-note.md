@@ -21,7 +21,7 @@ The model selector offers multilingual Whisper tiny, base, small, medium, large-
 Tiny and base prioritize lower memory usage; larger models generally favor accuracy. Multilingual models support Portuguese and mixed-language meetings. Presets send the selected ID to the endpoint; the server must support that ID. With whisper.cpp, the model file and quantization are configured on the server using `--model`; selecting a model here does not download or switch its loaded model. See the [Whisper model reference](https://github.com/openai/whisper/blob/main/README.md) and [whisper.cpp server options](https://github.com/ggml-org/whisper.cpp/blob/master/examples/server/README.md).
 
 - Local default: `http://localhost:8080/inference`, model `base`, matching whisper.cpp. After building whisper.cpp, installing FFmpeg and downloading `models/ggml-base.bin`, run `./build/bin/whisper-server --model models/ggml-base.bin --threads 4 --port 8080 --convert --language auto` from the whisper.cpp checkout. `--convert` accepts browser WebM/MP4 recordings; `--language auto` detects Portuguese and other languages. The app does not install or start Whisper. Existing endpoint settings remain unchanged, and OpenAI-compatible local servers can use their own endpoint. Custom servers must allow requests from the app through CORS.
-- OpenAI: `https://api.openai.com/v1/audio/transcriptions`. Enter an API key or select the existing saved OpenAI API key. ChatGPT OAuth credentials do not authorize this endpoint. The browser development server requires the existing proxy started by `npm run browser:dev`; Electron starts its proxy automatically.
+- OpenAI: `https://api.openai.com/v1/audio/transcriptions`. Enter an API key or select the existing saved OpenAI API key. ChatGPT OAuth credentials do not authorize this endpoint. Browser uploads go directly to the official API, including hosted PWAs; Electron uses its authenticated local proxy. No localhost proxy is required for browser transcription.
 - Whisper requests `verbose_json` with segment timestamps. Models with plain JSON responses may supply only a single block of text. `gpt-4o-transcribe-diarize` requests `diarized_json` with automatic chunking to preserve speaker labels.
 
 Microphone transcripts without speaker labels use the configured local name. System transcripts without speaker labels remain unattributed. Diarization labels distinguish voices; they do not identify real names. Names can be corrected in the transcript panel or preserved from imported captions. No live Meet, Zoom or Teams participant detection is implemented.
@@ -32,7 +32,9 @@ Each transcription request and caption import gets independent speaker identitie
 
 System audio is optional. Enable audio in the share picker; a video-only share produces an explicit error. Capture availability depends on the operating system and browser. Electron uses the native picker where available and an explicit screen choice otherwise. macOS builds declare microphone and system-audio usage descriptions.
 
-Recording stops when sharing ends, after one hour, or when a source reaches 24 MB. Uploads above 25 MB are rejected. Transcription happens after recording stops. Failed transcription retains audio for retry or download while the note stays open. Failed transcript saves retain the transcript for retry. Leaving the note requires acknowledging that unsaved audio or transcript data will be discarded. Audio is not stored permanently; the transcript is stored in IndexedDB or SQLite alongside note metadata. Editing transcript metadata does not overwrite markdown content.
+Recording stops when sharing ends, after one hour, or when a source reaches 24 MB. Uploads above 25 MB are rejected. Transcription happens after recording stops. Uploads time out after 15 minutes; users can also cancel transcription and retry or download the retained audio. Canceling recording setup immediately releases shared tracks, even while microphone permission is pending; a late permission grant is released without starting a recording. A failed upload cancels the other source's upload. Proxy rate-limit waits honor cancellation.
+
+Failed transcription retains audio for retry or download while the note stays open. Failed transcript saves retain the transcript for retry. Leaving the note requires acknowledging that unsaved audio or transcript data will be discarded. Audio is held in memory, so an application crash or forced closure loses an unfinished recording. The transcript is stored in IndexedDB or SQLite alongside note metadata. Editing transcript metadata does not overwrite markdown content.
 
 ## Transcript imports
 
@@ -40,8 +42,38 @@ Import `.vtt`, `.srt` or `.txt` files, or paste transcript text. Supported repre
 
 ## Verification
 
-Playwright exercises creation, caption import, speaker corrections, markdown and transcript persistence, real Chromium MediaRecorder output with a synthetic microphone, failed transcription and retry, and unavailable system audio. The transcription response is a fixture; no paid API calls are made. Service tests upload multipart audio to a real local HTTP server and cover diarization, cancellation, limits and media cleanup. Native physical-device system audio and production speech recognition require a configured transcription service and an OS device check.
+Verification uses Node 24.18.0 from `.nvmrc`. The isolated release snapshot passes all 1,260 unit tests and 14 production-browser Playwright scenarios. The optional live-Whisper scenario also passed separately: Chromium recorded the upstream JFK speech WAV through MediaRecorder, uploaded its WebM to a CPU-only whisper.cpp server using the multilingual tiny model and FFmpeg conversion, and persisted the resulting transcript across reload. Cloud requests use fixtures; no paid API calls were made.
 
-Final checks passed against an isolated snapshot containing only the meeting-note changes: 79 focused Vitest tests, all 12 meeting-note Playwright scenarios, TypeScript, lint, formatting for meeting-note modules, browser production build and main-process build. Browser coverage includes first-use onboarding, local endpoint and launch guidance, provider credentials, optional sample testing and retry, cleanup on cancel, failed settings writes, mobile bounds, model selection, caption imports, two-source recording, navigation recovery and independent speaker corrections across sources and later recordings. Unit tests also verify imported-speaker isolation and compatibility with existing transcript metadata. Tests use synthetic audio and fixture transcription responses, with no live cloud calls.
+The macOS arm64 app packaged successfully and passed `codesign --verify --deep --strict`; its microphone and audio usage descriptions are present. A native Playwright smoke test loaded the production Electron bundles with isolated user data, created a meeting note, imported a transcript through SQLite and verified persistence after reload. TypeScript and the browser production build pass. Two stale note-page tests now cover the current toolbar order and the editable reading-list title. Existing lint warnings in the note-page test mock remain.
 
-Two note-page unit tests previously failed identically against unchanged HEAD: keyboard order and Markdown title editing. Those failures were left unchanged. Existing lint and build warnings outside meeting-note code remain.
+The reusable `.github/workflows/meeting-verification.yml` runs unit tests, TypeScript, production-browser scenarios, packaging and the native SQLite smoke test on macOS, Windows and Linux. Its separate Linux job compiles a pinned whisper.cpp revision, verifies the tiny model checksum and runs the live browser transcription test. Release publication depends on this workflow succeeding. Windows and Linux jobs have not been run from this local macOS workspace.
+
+Local browser verification:
+
+```sh
+npm run browser:build
+npm run test:e2e -- --config playwright.meeting-browser.config.ts
+```
+
+After starting a local tiny-model Whisper server on port 8097, run the live scenario with its speech fixture:
+
+```sh
+MEETING_WHISPER_ENDPOINT=http://localhost:8097/inference \
+MEETING_AUDIO_FIXTURE=/absolute/path/to/whisper.cpp/samples/jfk.wav \
+npm run test:e2e -- --config playwright.meeting-browser.config.ts --grep 'live local Whisper'
+```
+
+After `npm run package:app`, run the native smoke test with `npm exec playwright test -- --config playwright.meeting-native.config.ts` (use `xvfb-run --auto-servernum` on headless Linux).
+
+## Release gates
+
+Full deployment to all targets remains unverified until the workflow passes for the release commit and physical audio checks pass on the supported OS/browser versions. Automated device fixtures do not verify privacy dialogs, drivers or actual system loopback. Record these results before publishing:
+
+| Target  | Required physical check                                                                                                                          | Current evidence                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| macOS   | Installed signed app: grant/deny microphone and audio sharing, record both sources, revoke sharing, retry denied permissions                     | Packaging, signature, usage descriptions and SQLite smoke test passed; physical audio pending    |
+| Windows | Installed app: microphone and screen loopback, picker cancellation, sharing ended, permissions denied                                            | CI configured; runner and physical audio pending                                                 |
+| Linux   | Installed app on supported audio/display stacks: microphone; shared audio where the stack supplies it; microphone-only fallback when it does not | CI configured; runner and physical audio pending                                                 |
+| Browser | Hosted HTTPS PWA: real microphone, tab sharing with audio when supported, denied permissions and local-server CORS/network permission            | Production Chromium and live local ASR passed with device fixtures; physical permissions pending |
+
+System audio is optional and cannot be promised on every Linux stack or browser. Microphone-only capture and caption imports remain available. Other browsers must be checked before advertising their recording support. Automatic real-name recognition and live platform participant detection are outside the implemented feature.

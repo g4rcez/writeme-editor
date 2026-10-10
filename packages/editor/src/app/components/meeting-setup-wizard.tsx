@@ -173,7 +173,10 @@ export function MeetingSetupWizard({
         setPhase("starting");
         controller.current = new AbortController();
         try {
-            const active = await startMeetingRecording({ includeSystemAudio: false });
+            const active = await startMeetingRecording({
+                includeSystemAudio: false,
+                signal: controller.current.signal,
+            });
             if (!mounted.current) {
                 active.dispose();
                 return;

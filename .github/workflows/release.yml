@@ -10,6 +10,9 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
+    meeting-verification:
+        uses: ./.github/workflows/meeting-verification.yml
+
     build-mac-arm64:
         runs-on: macos-latest
         steps:
@@ -220,7 +223,7 @@ jobs:
                   if-no-files-found: error
 
     release:
-        needs: [build-mac-arm64, build-windows, build-linux]
+        needs: [meeting-verification, build-mac-arm64, build-windows, build-linux]
         runs-on: ubuntu-latest
         permissions:
             contents: write

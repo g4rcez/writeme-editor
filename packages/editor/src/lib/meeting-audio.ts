@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isElectron } from "./is-electron";
 import { WHISPER_MODELS } from "./meeting-models";
 import { identifyMeetingSpeakers, type MeetingSegment } from "./meeting-transcript";
 import { proxyFetch } from "./proxy-fetch";
@@ -6,11 +7,34 @@ import { proxyFetch } from "./proxy-fetch";
 const MAX_RECORDING_BYTES = 24_000_000;
 const MAX_UPLOAD_BYTES = 25_000_000;
 const MAX_RECORDING_DURATION = 60 * 60 * 1000;
+const TRANSCRIPTION_TIMEOUT = 15 * 60 * 1000;
 const MIME_TYPES = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
 
 type AudioSource = "microphone" | "system";
 type RecordedAudio = { source: AudioSource; audio: Blob };
 type CapturedRecorder = { recorder: MediaRecorder; completed: Promise<RecordedAudio>; clear: () => void };
+
+async function acquireStream(request: Promise<MediaStream>, signal?: AbortSignal): Promise<MediaStream> {
+    const granted = request.then((stream) => {
+        if (signal?.aborted) {
+            for (const track of stream.getTracks()) track.stop();
+            signal.throwIfAborted();
+        }
+        return stream;
+    });
+    if (!signal) return granted;
+    let cancel: () => void = () => {};
+    const aborted = new Promise<never>((_, reject) => {
+        cancel = () => reject(signal.reason);
+        signal.addEventListener("abort", cancel, { once: true });
+        if (signal.aborted) cancel();
+    });
+    try {
+        return await Promise.race([granted, aborted]);
+    } finally {
+        signal.removeEventListener("abort", cancel);
+    }
+}
 
 export type MeetingRecording = {
     stop: () => Promise<RecordedAudio[]>;
@@ -20,8 +44,10 @@ export type MeetingRecording = {
 export async function startMeetingRecording(options: {
     includeSystemAudio: boolean;
     onEnded?: () => void;
+    signal?: AbortSignal;
 }): Promise<MeetingRecording> {
     z.object({ includeSystemAudio: z.boolean() }).parse(options);
+    options.signal?.throwIfAborted();
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
         throw new Error("Audio recording is unavailable in this browser.");
     }
@@ -40,6 +66,7 @@ export async function startMeetingRecording(options: {
 
     const release = (): void => {
         clearTimeout(durationTimer);
+        options.signal?.removeEventListener("abort", cancel);
         for (const { track, listener } of listeners) track.removeEventListener("ended", listener);
         for (const stream of streams) for (const track of stream.getTracks()) track.stop();
     };
@@ -56,6 +83,12 @@ export async function startMeetingRecording(options: {
         finish();
         options.onEnded?.();
     };
+    const cancel = (): void => {
+        disposed = true;
+        finish();
+        for (const { clear } of recorders) clear();
+    };
+    options.signal?.addEventListener("abort", cancel, { once: true });
     const capture = (stream: MediaStream, source: AudioSource): void => {
         const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
         const recorder = new MediaRecorder(new MediaStream(stream.getAudioTracks()), {
@@ -97,16 +130,24 @@ export async function startMeetingRecording(options: {
     try {
         let systemStream: MediaStream | undefined;
         if (options.includeSystemAudio) {
-            systemStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+            systemStream = await acquireStream(
+                navigator.mediaDevices.getDisplayMedia({ audio: true, video: true }),
+                options.signal,
+            );
             streams.push(systemStream);
+            options.signal?.throwIfAborted();
             if (!systemStream.getAudioTracks().some((track) => track.readyState === "live")) {
                 throw new Error(
                     "No system audio was shared. Select a source with audio enabled, or use microphone only.",
                 );
             }
         }
-        const microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const microphoneStream = await acquireStream(
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false }),
+            options.signal,
+        );
         streams.push(microphoneStream);
+        options.signal?.throwIfAborted();
         if (!microphoneStream.getAudioTracks().some((track) => track.readyState === "live")) {
             throw new Error("No microphone audio is available. Check microphone access and try again.");
         }
@@ -142,6 +183,7 @@ export async function startMeetingRecording(options: {
     } catch (error) {
         disposed = true;
         finish();
+        release();
         for (const { clear } of recorders) clear();
         throw error;
     }
@@ -212,30 +254,62 @@ export async function transcribeMeetingAudio(
     if (diarized) body.set("chunking_strategy", "auto");
     const headers = new Headers();
     if (settings.apiKey) headers.set("authorization", `Bearer ${settings.apiKey}`);
-    const request = url.origin === "https://api.openai.com" ? proxyFetch : fetch;
-    const response = await request(url, { method: "POST", body, headers, signal: options.signal, redirect: "error" });
-    if (!response.ok) {
-        throw new Error(
-            `Transcription failed (${response.status}). Check the endpoint, model and credentials, then retry.`,
-        );
-    }
-    const parsed = TranscriptionResponseSchema.safeParse(await response.json());
-    if (!parsed.success) throw new Error("The transcription endpoint returned an invalid transcript.");
-    const segments: NonNullable<z.infer<typeof TranscriptionResponseSchema>["segments"]> = parsed.data.segments?.length
-        ? parsed.data.segments
-        : parsed.data.text
-          ? [{ text: parsed.data.text }]
-          : [];
-    return identifyMeetingSpeakers(
-        segments
-            .filter((segment) => segment.text.trim())
-            .map((segment): MeetingSegment => ({
-                id: crypto.randomUUID(),
-                source: settings.source,
-                start: segment.start ?? 0,
-                end: segment.end ?? segment.start ?? 0,
-                speaker: segment.speaker?.trim() || (settings.source === "microphone" ? settings.localSpeaker : ""),
-                text: segment.text.trim(),
-            })),
+    const request = url.origin === "https://api.openai.com" && isElectron() ? proxyFetch : fetch;
+    const controller = new AbortController();
+    const cancel = (): void => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener("abort", cancel, { once: true });
+    const timer = setTimeout(
+        () =>
+            controller.abort(
+                new DOMException(
+                    "Transcription timed out after 15 minutes. Retry or download the audio.",
+                    "TimeoutError",
+                ),
+            ),
+        TRANSCRIPTION_TIMEOUT,
     );
+    try {
+        const response = await request(url, {
+            method: "POST",
+            body,
+            headers,
+            signal: controller.signal,
+            redirect: "error",
+        });
+        if (!response.ok) {
+            throw new Error(
+                `Transcription failed (${response.status}). Check the endpoint, model and credentials, then retry.`,
+            );
+        }
+        let value: unknown;
+        try {
+            value = await response.json();
+        } catch {
+            controller.signal.throwIfAborted();
+            throw new Error("The transcription endpoint returned invalid JSON.");
+        }
+        const parsed = TranscriptionResponseSchema.safeParse(value);
+        if (!parsed.success) throw new Error("The transcription endpoint returned an invalid transcript.");
+        const segments: NonNullable<z.infer<typeof TranscriptionResponseSchema>["segments"]> = parsed.data.segments
+            ?.length
+            ? parsed.data.segments
+            : parsed.data.text
+              ? [{ text: parsed.data.text }]
+              : [];
+        return identifyMeetingSpeakers(
+            segments
+                .filter((segment) => segment.text.trim())
+                .map((segment): MeetingSegment => ({
+                    id: crypto.randomUUID(),
+                    source: settings.source,
+                    start: segment.start ?? 0,
+                    end: segment.end ?? segment.start ?? 0,
+                    speaker: segment.speaker?.trim() || (settings.source === "microphone" ? settings.localSpeaker : ""),
+                    text: segment.text.trim(),
+                })),
+        );
+    } finally {
+        clearTimeout(timer);
+        options.signal?.removeEventListener("abort", cancel);
+    }
 }

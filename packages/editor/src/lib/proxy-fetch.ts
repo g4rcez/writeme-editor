@@ -23,7 +23,24 @@ function retryDelay(attempt: number, retryAfterHeader: string | null): number {
     return 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s
 }
 
+async function waitToRetry(delay: number, signal?: AbortSignal | null): Promise<void> {
+    signal?.throwIfAborted();
+    return new Promise<void>((resolve, reject) => {
+        const cancel = (): void => {
+            clearTimeout(timer);
+            signal?.removeEventListener("abort", cancel);
+            reject(signal?.reason);
+        };
+        const timer = setTimeout(() => {
+            signal?.removeEventListener("abort", cancel);
+            resolve();
+        }, delay);
+        signal?.addEventListener("abort", cancel, { once: true });
+    });
+}
+
 export async function proxyFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    init?.signal?.throwIfAborted();
     const targetUrl = resolveUrl(input);
     const headers = normalizeHeaders(init?.headers, { "x-target-url": targetUrl });
     const proxyInit: RequestInit = { ...init, headers };
@@ -37,7 +54,8 @@ export async function proxyFetch(input: RequestInfo | URL, init?: RequestInit): 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         const response = await fetch(PROXY_URL, proxyInit);
         if (response.status !== 429 || attempt === MAX_RETRIES) return response;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt, response.headers.get("retry-after"))));
+        await response.body?.cancel();
+        await waitToRetry(retryDelay(attempt, response.headers.get("retry-after")), init?.signal);
     }
 
     // unreachable but satisfies TypeScript

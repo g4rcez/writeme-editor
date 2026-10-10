@@ -54,10 +54,11 @@ export class SettingsService {
 
     static async save(settings: Partial<AppSettings>): Promise<AppSettings> {
         const updated = SettingsSchema.parse({ ...SettingsService.cache, ...settings });
-        SettingsService.cache = updated;
-        const promises = Object.entries(settings).map(([key, value]) => SettingsService.persistSetting(key, value));
+        const normalized = Object.fromEntries(Object.keys(settings).map((key) => [key, Reflect.get(updated, key)]));
+        const promises = Object.entries(normalized).map(([key, value]) => SettingsService.persistSetting(key, value));
         await Promise.all(promises);
-        return updated;
+        SettingsService.cache = SettingsSchema.parse({ ...SettingsService.cache, ...normalized });
+        return SettingsService.load();
     }
 
     private static async persistSetting(name: string, value: any): Promise<void> {

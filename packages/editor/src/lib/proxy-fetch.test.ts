@@ -15,6 +15,28 @@ afterEach(() => {
 });
 
 describe("proxyFetch", () => {
+    it("cancels during a rate-limit backoff without issuing another upload", async () => {
+        vi.useFakeTimers();
+        mockDesktopBridge();
+        const controller = new AbortController();
+        const send = vi.fn<typeof fetch>().mockResolvedValue(
+            new Response("limited", {
+                status: 429,
+                headers: { "retry-after": "600" },
+            }),
+        );
+        vi.stubGlobal("fetch", send);
+        const rejected = expect(
+            proxyFetch("https://api.openai.com/v1/audio/transcriptions", {
+                signal: controller.signal,
+            }),
+        ).rejects.toMatchObject({ name: "AbortError" });
+        await vi.advanceTimersByTimeAsync(0);
+        controller.abort();
+        await rejected;
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+    });
     it.each([
         "https://auth.openai.com/api/accounts/deviceauth/usercode",
         "https://api.openai.com/v1/models",

@@ -9,9 +9,15 @@ export const SettingsSchema = z.object({
     meetingOnboardingStatus: z.enum(["pending", "skipped", "completed"]).default("pending"),
     meetingTranscription: z
         .object({
-            endpoint: z.url().default(LOCAL_WHISPER_ENDPOINT),
-            model: z.string().min(1).default(LOCAL_WHISPER_MODEL),
-            localSpeaker: z.string().min(1).default("Me"),
+            endpoint: z
+                .url()
+                .refine((value) => {
+                    const url = new URL(value);
+                    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+                }, "Use an HTTP or HTTPS endpoint without embedded credentials.")
+                .default(LOCAL_WHISPER_ENDPOINT),
+            model: z.string().trim().min(1).max(200).default(LOCAL_WHISPER_MODEL),
+            localSpeaker: z.string().trim().min(1).max(200).default("Me"),
             includeSystemAudio: z.boolean().default(true),
         })
         .default({

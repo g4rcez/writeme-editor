@@ -10,6 +10,7 @@ export function registerMeetingCapture(session: Session, rendererUrl: string): v
                     if (
                         !request.userGesture ||
                         !frameUrl ||
+                        request.frame?.parent !== null ||
                         frameUrl.origin !== trustedUrl.origin ||
                         frameUrl.pathname !== trustedUrl.pathname
                     ) {

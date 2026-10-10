@@ -77,7 +77,37 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     async function transcribe(recordings: AudioRecording): Promise<void> {
         if (parseError) throw new Error(parseError);
         setPhase("transcribing");
-        controller.current = new AbortController();
+        const pending = new AbortController();
+        controller.current = pending;
+        const key = await resolveKey();
+        const batches = await Promise.all(
+            recordings.map((recording) =>
+                transcribeMeetingAudio(recording.audio, {
+                    ...settings,
+                    apiKey: key || undefined,
+                    source: recording.source,
+                    signal: pending.signal,
+                }),
+            ),
+        ).catch((reason: unknown) => {
+            pending.abort();
+            throw reason;
+        });
+        pending.signal.throwIfAborted();
+        if (!mounted.current) return;
+        const current = parseMeetingTranscript(noteRef.current.metadata.meetingTranscript);
+        const offset = current.segments.length
+            ? current.segments.reduce((end, segment) => Math.max(end, segment.end), 0) + 1
+            : 0;
+        const segments = batches
+            .flat()
+            .map((segment) => ({ ...segment, start: segment.start + offset, end: segment.end + offset }));
+        if (segments.length === 0)
+            throw new Error("No speech was detected. You can download the recording or try another model.");
+        await persist({ segments: [...current.segments, ...segments].sort((a, b) => a.start - b.start) });
+    }
+
+    async function resolveKey(): Promise<string> {
         let key = apiKey.trim();
         if (useOpenAIKey) {
             if (new URL(settings.endpoint).origin !== "https://api.openai.com") {
@@ -90,27 +120,9 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                 );
             key = credentials.apiKey;
         }
-        const batches = await Promise.all(
-            recordings.map((recording) =>
-                transcribeMeetingAudio(recording.audio, {
-                    ...settings,
-                    apiKey: key || undefined,
-                    source: recording.source,
-                    signal: controller.current?.signal,
-                }),
-            ),
-        );
-        if (!mounted.current) return;
-        const current = parseMeetingTranscript(noteRef.current.metadata.meetingTranscript);
-        const offset = current.segments.length
-            ? current.segments.reduce((end, segment) => Math.max(end, segment.end), 0) + 1
-            : 0;
-        const segments = batches
-            .flat()
-            .map((segment) => ({ ...segment, start: segment.start + offset, end: segment.end + offset }));
-        if (segments.length === 0)
-            throw new Error("No speech was detected. You can download the recording or try another model.");
-        await persist({ segments: [...current.segments, ...segments].sort((a, b) => a.start - b.start) });
+        if (new URL(settings.endpoint).origin === "https://api.openai.com" && !key)
+            throw new Error("An OpenAI API key is required for this transcription endpoint.");
+        return key;
     }
 
     async function stop(): Promise<void> {
@@ -135,13 +147,16 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
         setPhase("starting");
         setError(null);
         setNotice("");
+        controller.current = new AbortController();
         try {
             new URL(settings.endpoint);
             if (!settings.model.trim() || !settings.localSpeaker.trim())
                 throw new Error("Enter a model and your name.");
             await SettingsService.save({ meetingTranscription: settings });
+            await resolveKey();
             const active = await startMeetingRecording({
                 includeSystemAudio,
+                signal: controller.current.signal,
                 onEnded: () => {
                     void stop();
                 },
@@ -333,6 +348,21 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                       ? notice || "Ready to record"
                       : `${phase.charAt(0).toUpperCase()}${phase.slice(1)}...`}
             </output>
+            {phase === "transcribing" || phase === "starting" ? (
+                <Button
+                    theme="muted"
+                    onClick={() =>
+                        controller.current?.abort(
+                            new DOMException(
+                                "Cancelled. Recorded audio remains available for retry or download.",
+                                "AbortError",
+                            ),
+                        )
+                    }
+                >
+                    {phase === "starting" ? "Cancel recording setup" : "Cancel transcription"}
+                </Button>
+            ) : null}
             <div className="my-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <p className="text-sm text-muted-foreground">
                     {onboardingStatus === "completed"

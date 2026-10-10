@@ -45,6 +45,77 @@ describe("meeting transcription", () => {
         "endpoint"
     >;
 
+    it("sends browser OpenAI uploads directly to the official API", async () => {
+        const send = vi.fn().mockResolvedValue(new Response(JSON.stringify({ text: "Direct browser upload" })));
+        vi.stubGlobal("fetch", send);
+        await transcribeMeetingAudio(audio, {
+            ...settings,
+            endpoint: "https://api.openai.com/v1/audio/transcriptions",
+            apiKey: "fixture-key",
+        });
+        expect(send.mock.calls[0]?.[0].toString()).toBe("https://api.openai.com/v1/audio/transcriptions");
+        expect(send.mock.calls[0]?.[1].headers.get("authorization")).toBe("Bearer fixture-key");
+    });
+
+    it("authenticates desktop OpenAI uploads through the local proxy", async () => {
+        vi.stubGlobal("navigator", { userAgent: "Electron/44" });
+        vi.stubGlobal("window", { electronAPI: { ai: { getProxyToken: async () => "proxy-session" } } });
+        const send = vi.fn().mockResolvedValue(new Response(JSON.stringify({ text: "Desktop upload" })));
+        vi.stubGlobal("fetch", send);
+        await transcribeMeetingAudio(audio, {
+            ...settings,
+            endpoint: "https://api.openai.com/v1/audio/transcriptions",
+            apiKey: "fixture-key",
+        });
+        expect(send.mock.calls[0]?.[0]).toBe("http://localhost:4079/proxy");
+        expect(send.mock.calls[0]?.[1].headers.get("x-writeme-proxy-token")).toBe("proxy-session");
+    });
+
+    it("times out a stalled upload and releases its timer", async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                (_input: unknown, init: RequestInit) =>
+                    new Promise<Response>((_, reject) => {
+                        init.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+                    }),
+            ),
+        );
+        const rejected = expect(transcribeMeetingAudio(audio, { ...settings, endpoint })).rejects.toMatchObject({
+            name: "TimeoutError",
+            message: expect.stringContaining("Retry or download"),
+        });
+        await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+        await rejected;
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("cancels an upload already in progress", async () => {
+        const controller = new AbortController();
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                (_input: unknown, init: RequestInit) =>
+                    new Promise<Response>((_, reject) => {
+                        init.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+                    }),
+            ),
+        );
+        const rejected = expect(
+            transcribeMeetingAudio(audio, { ...settings, endpoint, signal: controller.signal }),
+        ).rejects.toMatchObject({ name: "AbortError" });
+        controller.abort();
+        await rejected;
+    });
+
+    it("does not expose an invalid upstream JSON body", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("secret-fixture-key")));
+        await expect(transcribeMeetingAudio(audio, { ...settings, endpoint })).rejects.toThrow(
+            "The transcription endpoint returned invalid JSON.",
+        );
+    });
+
     it("uploads multipart audio to a local endpoint without requiring an API key", async () => {
         const segments = await transcribeMeetingAudio(audio, { ...settings, endpoint });
 
@@ -261,6 +332,30 @@ function installRecordingDevices(systemAudio = true): { microphone: RecordingStr
 }
 
 describe("meeting audio capture", () => {
+    it("releases shared audio immediately when cancelled while microphone permission is pending", async () => {
+        const { microphone, system } = installRecordingDevices();
+        let grant: (stream: RecordingStream) => void = () => {};
+        const pending = new Promise<RecordingStream>((resolve) => {
+            grant = resolve;
+        });
+        vi.stubGlobal("navigator", {
+            mediaDevices: {
+                getDisplayMedia: async () => system,
+                getUserMedia: () => pending,
+            },
+        });
+        const controller = new AbortController();
+        const starting = startMeetingRecording({ includeSystemAudio: true, signal: controller.signal });
+        const rejected = expect(starting).rejects.toMatchObject({ name: "AbortError" });
+        await vi.waitFor(() => expect(system.getTracks()[0]?.readyState).toBe("live"));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        controller.abort();
+        expect(system.getTracks().every(({ readyState }) => readyState === "ended")).toBe(true);
+        await rejected;
+        grant(microphone);
+        await Promise.resolve();
+        expect(microphone.getTracks().every(({ readyState }) => readyState === "ended")).toBe(true);
+    });
     it("records microphone and system separately without recording screen video", async () => {
         const { microphone, system } = installRecordingDevices();
         const recording = await startMeetingRecording({ includeSystemAudio: true });

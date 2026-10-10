@@ -19,7 +19,7 @@ async function requestCapture(overrides: Partial<DisplayMediaRequestHandlerHandl
     const request = {
         userGesture: true,
         audioRequested: true,
-        frame: { url: "http://localhost:5173/" },
+        frame: { url: "http://localhost:5173/", parent: null },
         ...overrides,
     } as DisplayMediaRequestHandlerHandlerRequest;
     return new Promise((resolve) => handler(request, resolve));
@@ -48,5 +48,17 @@ describe("Electron meeting capture", () => {
         ]);
         vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 1, checkboxChecked: false });
         expect(await requestCapture()).toEqual({});
+    });
+
+    it("denies same-origin subframe requests", async () => {
+        expect(
+            await requestCapture({
+                frame: {
+                    url: "http://localhost:5173/",
+                    parent: { url: "http://localhost:5173/" },
+                } as Electron.WebFrameMain,
+            }),
+        ).toEqual({});
+        expect(desktopCapturer.getSources).not.toHaveBeenCalled();
     });
 });

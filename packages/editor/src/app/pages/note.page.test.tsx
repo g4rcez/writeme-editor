@@ -226,7 +226,7 @@ describe("NotePage route loading", () => {
         expect(screen.queryByText(/Updated/, { selector: ".writeme-note-metadata" })).not.toBeInTheDocument();
     });
 
-    it("places note modes and utility actions before the document title in keyboard order", async () => {
+    it("places note modes and utility actions before the local document editor in keyboard order", async () => {
         const user = userEvent.setup();
         const dispatch = createDispatch();
         vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);
@@ -236,8 +236,8 @@ describe("NotePage route loading", () => {
 
         await user.tab();
         for (const name of [
-            "Markdown",
             "Formatted",
+            "Markdown",
             "Add frontmatter",
             "History",
             "Add to favorites",
@@ -247,7 +247,11 @@ describe("NotePage route loading", () => {
             expect(screen.getByRole("button", { name })).toHaveFocus();
             await user.tab();
         }
-        expect(screen.getByRole("textbox", { name: "Note title" })).toHaveFocus();
+        expect(screen.queryByRole("textbox", { name: "Note title" })).not.toBeInTheDocument();
+        expect(
+            screen.getByRole("toolbar", { name: "Note tools" }).compareDocumentPosition(screen.getByTestId("editor")) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
     });
 
     it("uses the same toolbar for reading-list notes without showing history", () => {
@@ -342,10 +346,15 @@ describe("NotePage route loading", () => {
         expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
     });
 
-    it("derives and edits the title from the first Markdown H1", async () => {
+    it("derives and edits the reading-list title from the first Markdown H1", async () => {
         const user = userEvent.setup();
         const dispatch = createDispatch();
-        const note = Note.parse({ id: "note-1", title: "Old title", content: "\n# Markdown title\n\nBody" });
+        const note = Note.parse({
+            id: "note-1",
+            title: "Old title",
+            content: "\n# Markdown title\n\nBody",
+            noteType: NoteType["read-it-later"],
+        });
         vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
 

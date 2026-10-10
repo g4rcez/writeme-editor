@@ -1,7 +1,17 @@
 import type { Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
-test.use({ launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] } });
+test.use({
+    launchOptions: {
+        args: [
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+            ...(process.env.MEETING_AUDIO_FIXTURE
+                ? [`--use-file-for-fake-audio-capture=${process.env.MEETING_AUDIO_FIXTURE}`]
+                : []),
+        ],
+    },
+});
 
 async function createMeeting(page: Page, onboarding = false): Promise<void> {
     await page.addInitScript(() => {
@@ -368,6 +378,107 @@ test("records real browser audio, keeps failed uploads for retry and persists tr
     expect(uploadedModels).toEqual(["base", "Systran/faster-whisper-small"]);
     await page.reload();
     await expect(page.getByRole("list", { name: "Transcript entries" })).toContainText("The release is ready.");
+});
+
+test("cancels a pending upload and retries the retained browser recording", async ({ cleanPage: page }) => {
+    let uploads = 0;
+    let release: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    await page.route("http://localhost:8080/inference", async (route) => {
+        if (route.request().method() === "OPTIONS") {
+            await route.fulfill({ status: 204 });
+            return;
+        }
+        uploads++;
+        if (uploads === 1) await pending;
+        await route
+            .fulfill({
+                status: 200,
+                contentType: "application/json",
+                body: JSON.stringify({ text: "Retried recording" }),
+            })
+            .catch(() => {});
+    });
+    await createMeeting(page);
+    const panel = page.getByRole("region", { name: "Meeting transcription" });
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    await panel.getByLabel("Include meeting audio (screen or tab share)").uncheck();
+    await panel.getByRole("button", { name: "Start recording", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Stop and transcribe" })).toBeVisible();
+    await page.waitForFunction(() => Reflect.get(window, "meetingAudioReady"));
+    await panel.getByRole("button", { name: "Stop and transcribe" }).click();
+    await expect.poll(() => uploads).toBe(1);
+    await panel.getByRole("button", { name: "Cancel transcription", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Retry transcription" })).toBeEnabled();
+    await expect(panel.getByRole("button", { name: "Download audio" })).toBeVisible();
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).not.toBeVisible();
+    release();
+    await panel.getByRole("button", { name: "Retry transcription" }).click();
+    await expect(panel.getByRole("status")).toHaveText("Transcript saved");
+    await expect(panel.getByRole("list", { name: "Transcript entries" }).getByRole("listitem")).toHaveCount(1);
+    await page.reload();
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText("Retried recording");
+});
+
+test("uploads browser audio directly to OpenAI without requiring a localhost proxy", async ({ cleanPage: page }) => {
+    let uploads = 0;
+    await page.route("http://localhost:4079/**", (route) => route.abort());
+    await page.route("https://api.openai.com/v1/audio/transcriptions", async (route) => {
+        if (route.request().method() === "OPTIONS") {
+            await route.fulfill({ status: 204 });
+            return;
+        }
+        uploads++;
+        expect(route.request().headers().authorization).toBe("Bearer fixture-key");
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ text: "Browser cloud transcript" }),
+        });
+    });
+    await createMeeting(page);
+    const panel = page.getByRole("region", { name: "Meeting transcription" });
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    await panel.getByLabel("Include meeting audio (screen or tab share)").uncheck();
+    await panel.getByTitle("Transcription endpoint").fill("https://api.openai.com/v1/audio/transcriptions");
+    await panel.getByTitle("Transcription API key (optional)").fill("fixture-key");
+    await panel
+        .getByRole("combobox", { name: "Transcription model", exact: true })
+        .selectOption("gpt-4o-mini-transcribe");
+    await panel.getByRole("button", { name: "Start recording", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Stop and transcribe" })).toBeVisible();
+    await page.waitForFunction(() => Reflect.get(window, "meetingAudioReady"));
+    await panel.getByRole("button", { name: "Stop and transcribe" }).click();
+    await expect(panel.getByRole("status")).toHaveText("Transcript saved");
+    expect(uploads).toBe(1);
+    await page.reload();
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText("Browser cloud transcript");
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    await expect(panel.getByTitle("Transcription API key (optional)")).toHaveValue("");
+});
+
+test("transcribes browser MediaRecorder output with a live local Whisper server", async ({ cleanPage: page }) => {
+    test.setTimeout(90_000);
+    test.skip(
+        !process.env.MEETING_WHISPER_ENDPOINT || !process.env.MEETING_AUDIO_FIXTURE,
+        "Requires an explicit local Whisper server and speech fixture.",
+    );
+    await createMeeting(page);
+    const panel = page.getByRole("region", { name: "Meeting transcription" });
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    await panel.getByLabel("Include meeting audio (screen or tab share)").uncheck();
+    await panel.getByTitle("Transcription endpoint").fill(process.env.MEETING_WHISPER_ENDPOINT!);
+    await panel.getByRole("combobox", { name: "Transcription model", exact: true }).selectOption("tiny");
+    await panel.getByRole("button", { name: "Start recording", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Stop and transcribe" })).toBeVisible();
+    await page.waitForTimeout(12_000);
+    await panel.getByRole("button", { name: "Stop and transcribe" }).click();
+    await expect(panel.getByRole("status")).toHaveText("Transcript saved", { timeout: 60_000 });
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText(/country/i);
+    await page.reload();
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText(/country/i);
 });
 
 test("reports unavailable shared audio, releases sharing and avoids opening the microphone", async ({
