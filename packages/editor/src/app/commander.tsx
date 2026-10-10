@@ -286,6 +286,16 @@ export const Commander = (props: Props) => {
                     },
                 },
                 {
+                    title: "New meeting note",
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        setTimeout(() => {
+                            dispatch.setCreateNoteDialog({ isOpen: true, type: "meeting-note" });
+                        }, 50);
+                    },
+                },
+                {
                     title: "New excalidraw",
                     type: "shortcut",
                     action: (args) => {

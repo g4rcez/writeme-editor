@@ -24,6 +24,7 @@ const tagThemeMap: Record<Note["noteType"], { title: string; theme: TagProps["th
     "read-it-later": { theme: "info", title: "Read it later" },
     freehand: { theme: "secondary", title: "Freehand" },
     excalidraw: { theme: "neutral", title: "Excalidraw" },
+    "meeting-note": { theme: "info", title: "Meeting note" },
 };
 
 export default function TagPage() {

@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { BracketsCurlyIcon, PencilRulerIcon } from "@phosphor-icons/react";
+import { BracketsCurlyIcon, MicrophoneIcon, PencilRulerIcon } from "@phosphor-icons/react";
 import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
@@ -104,6 +104,11 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
+    "meeting-note": {
+        selectable: true,
+        icon: MicrophoneIcon,
+        iconClass: "text-info size-4",
+    },
     excalidraw: {
         selectable: true,
         icon: PencilRulerIcon,
@@ -127,6 +132,9 @@ const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 export const getFileConfig = (node: TreeNode, note: Note | null): FileExtensionConfig | undefined => {
+    if (note?.noteType === NoteType["meeting-note"]) {
+        return FILE_NAME_CONFIGS["meeting-note"];
+    }
     if (note?.noteType === NoteType.excalidraw) {
         return FILE_NAME_CONFIGS.excalidraw;
     }

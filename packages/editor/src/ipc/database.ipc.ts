@@ -61,6 +61,11 @@ export const databaseIpcHandler = () => {
         return db.getTemplates();
     });
 
+    ipcMain.handle("db:notes:updateMetadata", (_, id: string, metadata: unknown) => {
+        db.updateNoteMetadata(idSchema.parse(id), z.record(z.string(), z.unknown()).parse(metadata));
+        return true;
+    });
+
     ipcMain.handle(
         "db:notes:updateContent",
         (_, id: string, content: string, fileSize: number, updatedAt: string, updatedBy: string) => {

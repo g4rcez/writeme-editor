@@ -774,6 +774,13 @@ export class DatabaseManager {
   })();
  }
 
+ public updateNoteMetadata(id: string, metadata: Record<string, unknown>): void {
+  const result = this.db
+   .prepare("UPDATE notes SET metadata = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL")
+   .run(JSON.stringify(metadata), new Date().toISOString(), id);
+  if (result.changes === 0) throw new Error("Note not found.");
+ }
+
  public updateNoteContentIfUnchanged(
   id: string,
   expected: { title: string; updatedAt: string; content: string },

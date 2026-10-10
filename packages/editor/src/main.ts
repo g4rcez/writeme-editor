@@ -10,6 +10,7 @@ import {
     type NativeImage,
     nativeImage,
     net,
+    session,
     shell,
     Tray,
 } from "electron";
@@ -39,6 +40,7 @@ import { notifyFileClosed, startCliServer, stopCliServer } from "./main-process/
 import { dbManager } from "./main-process/database";
 import { FileWatcher } from "./main-process/file-watcher";
 import { createFolderWindow } from "./main-process/folder-window";
+import { registerMeetingCapture } from "./main-process/meeting-capture";
 import {
     createFloatingEditorWindow,
     createMathNoteWindow,
@@ -571,6 +573,7 @@ async function main() {
             MAIN_WINDOW_VITE_DEV_SERVER_URL ||
             pathToFileURL(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)).href;
         registerAIProxyHandlers(aiProxyToken, rendererUrl);
+        registerMeetingCapture(session.defaultSession, rendererUrl);
         registerAISetupHandlers(rendererUrl);
         await notesIpcHandler();
         databaseIpcHandler();

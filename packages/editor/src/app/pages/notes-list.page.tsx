@@ -22,6 +22,7 @@ const tag: Record<Note["noteType"], { title: string; theme: TagProps["theme"] }>
     "read-it-later": { theme: "info", title: "Read it later" },
     freehand: { theme: "secondary", title: "Freehand" },
     excalidraw: { theme: "neutral", title: "Excalidraw" },
+    "meeting-note": { theme: "info", title: "Meeting note" },
 };
 
 function AddToGroupModal({ noteIds, open, onClose }: { noteIds: string[]; open: boolean; onClose: () => void }) {

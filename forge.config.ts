@@ -62,6 +62,8 @@ const config: ForgeConfig = {
         appBundleId: "dev.writeme.app",
         icon: "./public/icon",
         extendInfo: {
+            NSMicrophoneUsageDescription: "Writeme uses your microphone to transcribe meeting notes.",
+            NSAudioCaptureUsageDescription: "Writeme captures meeting audio to transcribe it into your notes.",
             NSDocumentsFolderUsageDescription:
                 "Writeme needs access to the Documents folder to open and save your notes.",
         },

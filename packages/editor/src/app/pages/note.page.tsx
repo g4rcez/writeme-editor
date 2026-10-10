@@ -25,6 +25,7 @@ import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { NoteFooter } from "../components/note-footer";
+import { MeetingNotePanel } from "../components/meeting-note-panel";
 import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
@@ -260,7 +261,7 @@ export default function NotePage() {
         const openNote = (event: Event): void => {
             if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
             const selected = state.notes.find((note) => note.id === event.detail);
-            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw) return;
+            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw || selected.noteType === NoteType["meeting-note"]) return;
             event.preventDefault();
             editorPanes.selectNote(panes.activePaneId, selected.id);
         };
@@ -418,7 +419,7 @@ export default function NotePage() {
                 <FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />
                 {hasRichEditor ? (
                     <>
-                        <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
+                        {note.noteType !== NoteType["meeting-note"] ? <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} /> : null}
                         <TableOfContents />
                         <ExportNoteButton note={note} />
                     </>
@@ -514,6 +515,7 @@ export default function NotePage() {
                     onRestored={(restored) => dispatch.syncNoteState(restored)}
                 />
             ) : null}
+            {note.noteType === NoteType["meeting-note"] ? <MeetingNotePanel key={note.id} note={note} /> : null}
             {editorPanes.state ? (
                 <EditorPanes
                     state={editorPanes.state}

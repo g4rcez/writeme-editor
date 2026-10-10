@@ -236,6 +236,14 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     }
   }
 
+  async updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void> {
+    await db.transaction("rw", db.notes, async () => {
+      const note = await db.notes.get(id);
+      if (!note || note.deletedAt != null) throw new Error("Note not found.");
+      await db.notes.update(id, { metadata, updatedAt: new Date() });
+    });
+  }
+
   async updateContentIfUnchanged(
     id: string,
     expected: { title: string; updatedAt: Date; content: string },

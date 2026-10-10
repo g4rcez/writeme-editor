@@ -49,6 +49,24 @@ describe("Note", () => {
         expect(note.noteType).toBe("excalidraw");
     });
 
+    it("preserves meeting transcripts separately from written notes when reloading", () => {
+        const metadata = { meeting: { transcript: [{ speaker: "You", text: "Review the roadmap." }] } };
+        const note = Note.new(
+            "Roadmap meeting",
+            "My written notes",
+            NoteType["meeting-note"],
+            null,
+            null,
+            null,
+            metadata,
+        );
+        const reloaded = Note.parse(JSON.parse(JSON.stringify(note)));
+
+        expect(reloaded.noteType).toBe("meeting-note");
+        expect(reloaded.content).toBe("My written notes");
+        expect(reloaded.metadata).toEqual(metadata);
+    });
+
     it("should parse a note object", () => {
         const data = {
             title: "Parsed Title",

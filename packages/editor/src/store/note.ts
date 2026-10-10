@@ -11,6 +11,7 @@ export enum NoteType {
     json = "json",
     freehand = "freehand",
     excalidraw = "excalidraw",
+    "meeting-note" = "meeting-note",
 }
 
 export class Note implements EntityBase {
@@ -136,6 +137,7 @@ export interface INoteRepository extends Repository<Note> {
     getQuicknoteByDate: (date: Date) => Promise<Note | null>;
     getTemplates: () => Promise<Note[]>;
     updateContent: (id: string, content: string) => Promise<void>;
+    updateMetadata: (id: string, metadata: Record<string, unknown>) => Promise<void>;
     updateContentIfUnchanged: (
         id: string,
         expected: { title: string; updatedAt: Date; content: string },

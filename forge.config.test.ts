@@ -27,6 +27,8 @@ describe("Forge configuration", () => {
                     (async () => {
                         const config = await loadForgeConfig(process.cwd());
                         assert.equal(config.packagerConfig.icon, "./public/icon");
+                        assert.match(config.packagerConfig.extendInfo.NSMicrophoneUsageDescription, /microphone/);
+                        assert.match(config.packagerConfig.extendInfo.NSAudioCaptureUsageDescription, /meeting audio/);
                         if (process.argv[2] === "notarized") {
                             assert.deepEqual(config.packagerConfig.osxSign, {
                                 identity: "Developer ID Application: Signing Fixture",

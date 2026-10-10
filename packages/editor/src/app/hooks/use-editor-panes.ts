@@ -26,7 +26,12 @@ const paneStates = new Map<string, EditorPaneState>();
 const MAX_EDITOR_PANES = 4;
 
 function isPaneNote(note: Note): boolean {
-    return note.deletedAt === null && note.noteType !== NoteType.json && note.noteType !== NoteType.excalidraw;
+    return (
+        note.deletedAt === null &&
+        note.noteType !== NoteType.json &&
+        note.noteType !== NoteType.excalidraw &&
+        note.noteType !== NoteType["meeting-note"]
+    );
 }
 
 function createPane(noteId: string): EditorPane {

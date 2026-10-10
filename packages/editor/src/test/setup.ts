@@ -2,12 +2,12 @@ import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
 // Mock scrollIntoView
-window.HTMLElement.prototype.scrollIntoView = vi.fn();
+if (typeof window !== "undefined") window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
-if (!Range.prototype.getClientRects) {
+if (typeof Range !== "undefined" && !Range.prototype.getClientRects) {
     Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
 }
 
-if (!Range.prototype.getBoundingClientRect) {
+if (typeof Range !== "undefined" && !Range.prototype.getBoundingClientRect) {
     Range.prototype.getBoundingClientRect = () => new DOMRect();
 }

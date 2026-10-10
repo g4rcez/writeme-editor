@@ -10,7 +10,7 @@ import {
   isNoteTabForNoteId,
   isTerminalTab,
 } from "@/lib/tab-target";
-import type { Note } from "./note";
+import { Note } from "./note";
 import type { Tab } from "./repositories/entities/tab";
 import type { Toggle } from "./types";
 import { repositories } from "./repositories";
@@ -21,7 +21,7 @@ import { SettingsService } from "./settings";
 import { uiDispatch } from "./ui.store";
 import { createZustandCompatStore } from "./zustand-compat";
 
-export type NoteCreationType = "note" | "quick" | "excalidraw";
+export type NoteCreationType = "note" | "quick" | "excalidraw" | "meeting-note";
 
 const LOCAL_WORKSPACE_KEY = "__local__";
 
@@ -574,6 +574,15 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         uiDispatch.setError(error.message || "Failed to update note content");
         return get.state();
       }
+    },
+    updateNoteMetadata: async (id: string, metadata: Record<string, unknown>) => {
+      await repositories.notes.updateMetadata(id, metadata);
+      const state = get.state();
+      const patch = (note: Note): Note => Note.parse({ ...note, metadata, updatedAt: new Date() });
+      return {
+        notes: state.notes.map((note) => (note.id === id ? patch(note) : note)),
+        note: state.note?.id === id ? patch(state.note) : state.note,
+      };
     },
     updateNoteTitle: async (id: string, title: string) => {
       try {

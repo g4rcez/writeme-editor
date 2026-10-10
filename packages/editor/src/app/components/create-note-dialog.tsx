@@ -94,7 +94,7 @@ export const CreateNoteDialog = () => {
             const note =
                 type === "quick"
                     ? await getOrCreateDailyQuickNote(quickNoteDate ?? new Date(), { title, content })
-                    : Note.new(title, content, type === "excalidraw" ? NoteType.excalidraw : NoteType.note);
+                    : Note.new(title, content, NoteType[type]);
             if ((type === "note" || type === "excalidraw") && selectedFolderPath) {
                 const folderResult = await window.electronAPI.fs.readDir(selectedFolderPath);
                 if (folderResult.error) throw new Error(`Could not access the selected folder: ${folderResult.error}`);
@@ -139,7 +139,9 @@ export const CreateNoteDialog = () => {
                     ? "Today's quick note"
                     : type === "excalidraw"
                       ? "Create Excalidraw note"
-                      : "Create new note"
+                      : type === "meeting-note"
+                        ? "Create meeting note"
+                        : "Create new note"
             }
         >
             <form onSubmit={onSubmit} className="flex flex-col gap-4">

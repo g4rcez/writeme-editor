@@ -28,7 +28,10 @@ const paneNoteOptions = (notes: readonly Note[]): Array<{ label: string; value: 
     notes
         .filter(
             (note) =>
-                note.deletedAt === null && note.noteType !== NoteType.json && note.noteType !== NoteType.excalidraw,
+                note.deletedAt === null &&
+                note.noteType !== NoteType.json &&
+                note.noteType !== NoteType.excalidraw &&
+                note.noteType !== NoteType["meeting-note"],
         )
         .map((note) => ({
             label: note.filePath ? `${note.title} · ${note.filePath}` : note.title,

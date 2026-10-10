@@ -24,6 +24,10 @@ type WorkspaceNotesResult = {
 };
 
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
+    async updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void> {
+        await window.electronAPI.db.notes.updateMetadata(id, metadata);
+    }
+
     private filesystemLoadPromise: Promise<WorkspaceNotesResult> | null = null;
 
     public constructor(private readonly tabsRepository: ITabRepository) {

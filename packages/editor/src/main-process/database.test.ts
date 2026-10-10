@@ -22,6 +22,16 @@ afterEach(async () => {
 });
 
 describe("DatabaseManager persistence boundary", () => {
+    it("updates a meeting transcript without overwriting note content or title", () => {
+        manager.save("notes", { id: "meeting", title: "Standup", content: "My draft", noteType: "meeting-note" });
+        manager.updateNoteContent("meeting", "Newer draft", 11, "2026-01-01T00:00:00.000Z", "user");
+        manager.updateNoteMetadata("meeting", { meetingTranscript: JSON.stringify({ segments: [] }) });
+        expect(manager.get("notes", "meeting")).toMatchObject({
+            title: "Standup", content: "Newer draft", noteType: "meeting-note",
+            metadata: { meetingTranscript: JSON.stringify({ segments: [] }) },
+        });
+        expect(() => manager.updateNoteMetadata("missing", {})).toThrow("Note not found");
+    });
     it("uses a real temporary SQLite database and validates collection records", () => {
         const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
         const saved = manager.save("notes", {

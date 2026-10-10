@@ -169,6 +169,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
             restoreFromTrash: (id: string) => ipcRenderer.invoke("db:notes:restoreFromTrash", id),
             updateContent: (id: string, content: string, fileSize: number, updatedAt: string, updatedBy: string) =>
                 ipcRenderer.invoke("db:notes:updateContent", id, content, fileSize, updatedAt, updatedBy),
+            updateMetadata: (id: string, metadata: Record<string, unknown>) =>
+                ipcRenderer.invoke("db:notes:updateMetadata", id, metadata),
             updateContentIfUnchanged: (
                 id: string,
                 expected: { title: string; updatedAt: string; content: string },
@@ -420,6 +422,7 @@ declare global {
                         deletedAt: string,
                     ): Promise<void>;
                     restoreFromTrash(id: string): Promise<void>;
+                    updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void>;
                     updateContent(
                         id: string,
                         content: string,

@@ -1,10 +1,25 @@
 import { z } from "zod";
+import { LOCAL_WHISPER_ENDPOINT, LOCAL_WHISPER_MODEL } from "@/lib/meeting-models";
 
 export const SettingsSchema = z.object({
     directory: z.string().nullable().default(null),
     templatesDirectory: z.string().nullable().default(null),
     quicknotesDirectory: z.string().nullable().default(null),
     defaultAuthor: z.string().default("user"),
+    meetingOnboardingStatus: z.enum(["pending", "skipped", "completed"]).default("pending"),
+    meetingTranscription: z
+        .object({
+            endpoint: z.url().default(LOCAL_WHISPER_ENDPOINT),
+            model: z.string().min(1).default(LOCAL_WHISPER_MODEL),
+            localSpeaker: z.string().min(1).default("Me"),
+            includeSystemAudio: z.boolean().default(true),
+        })
+        .default({
+            endpoint: LOCAL_WHISPER_ENDPOINT,
+            model: LOCAL_WHISPER_MODEL,
+            localSpeaker: "Me",
+            includeSystemAudio: true,
+        }),
     autoSyncInterval: z.number().default(5000),
     conflictResolution: z.enum(["ask", "file-wins", "editor-wins"]).default("ask"),
     theme: z.enum(["light", "dark", "catppuccin-mocha", "tokyonight-night", "native"]).default("dark"),
