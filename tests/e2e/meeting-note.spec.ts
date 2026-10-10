@@ -422,6 +422,139 @@ test("cancels a pending upload and retries the retained browser recording", asyn
     await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText("Retried recording");
 });
 
+test("clears entered keys when manual settings change to another origin", async ({ cleanPage: page }) => {
+    await createMeeting(page);
+    const panel = page.getByRole("region", { name: "Meeting transcription" });
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    const endpoint = panel.getByTitle("Transcription endpoint");
+    const key = panel.getByTitle("Transcription API key (optional)");
+    await endpoint.fill("https://api.openai.com/v1/audio/transcriptions");
+    await key.fill("private-origin-key");
+    await endpoint.fill("https://api.openai.com/v1/audio/transcriptions?language=en");
+    await expect(key).toHaveValue("private-origin-key");
+    await panel.getByLabel("Use saved OpenAI API key").check();
+    await endpoint.fill("http://localhost:8080/inference");
+    await expect(key).toHaveValue("");
+    await expect(panel.getByLabel("Use saved OpenAI API key")).not.toBeChecked();
+});
+
+test("clears entered keys when setup changes custom server origins", async ({ cleanPage: page }) => {
+    await createMeeting(page, true);
+    const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
+    await setup.getByRole("radio", { name: "Custom server", exact: true }).check();
+    await setup.getByRole("button", { name: "Continue", exact: true }).click();
+    const endpoint = setup.getByTitle("Transcription endpoint");
+    const key = setup.getByTitle("Transcription API key (optional)");
+    await endpoint.fill("https://first-provider.example/audio");
+    await key.fill("private-origin-key");
+    await endpoint.fill("https://first-provider.example/v1/audio");
+    await expect(key).toHaveValue("private-origin-key");
+    await endpoint.fill("https://second-provider.example/audio");
+    await expect(key).toHaveValue("");
+});
+
+test("retains transcription after a failed save and retries without another upload", async ({ cleanPage: page }) => {
+    let uploads = 0;
+    await page.route("http://localhost:8080/inference", async (route) => {
+        if (route.request().method() === "OPTIONS") {
+            await route.fulfill({ status: 204 });
+            return;
+        }
+        uploads++;
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ text: "Recovered transcript" }),
+        });
+    });
+    await createMeeting(page);
+    const panel = page.getByRole("region", { name: "Meeting transcription" });
+    await panel.getByText("Recording and transcription settings", { exact: true }).click();
+    await panel.getByLabel("Include meeting audio (screen or tab share)").uncheck();
+    await panel.getByRole("button", { name: "Start recording", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Stop and transcribe" })).toBeVisible();
+    await page.waitForFunction(() => Reflect.get(window, "meetingAudioReady"));
+    await page.evaluate(() => {
+        const put = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+            if (
+                this.name === "notes" &&
+                typeof value === "object" &&
+                value !== null &&
+                JSON.stringify(Reflect.get(value, "metadata")).includes("Recovered transcript")
+            ) {
+                IDBObjectStore.prototype.put = put;
+                throw new DOMException("Transcript storage failed", "QuotaExceededError");
+            }
+            return put.call(this, value, key);
+        };
+    });
+    await panel.getByRole("button", { name: "Stop and transcribe" }).click();
+    await expect(panel.getByRole("alert")).toContainText("Transcript storage failed");
+    await expect(panel.getByRole("button", { name: "Download audio" })).toBeVisible();
+    await panel.getByText("Import meeting transcript", { exact: true }).click();
+    await expect(panel.getByTitle("Transcript text")).toBeDisabled();
+    await panel.getByRole("button", { name: "Retry saving", exact: true }).click();
+    await expect(panel.getByRole("status")).toHaveText("Transcript saved");
+    expect(uploads).toBe(1);
+    await page.reload();
+    await expect(panel.getByRole("list", { name: "Transcript entries" })).toContainText("Recovered transcript");
+});
+
+test("closes a recording setup immediately while dismissal storage is pending", async ({ cleanPage: page }) => {
+    await createMeeting(page, true);
+    const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
+    await setup.getByRole("button", { name: "Continue", exact: true }).click();
+    await setup.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.evaluate(() => {
+        const getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        let stream: MediaStream | undefined;
+        Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+            value: async (constraints: MediaStreamConstraints) => {
+                stream = await getUserMedia(constraints);
+                return stream;
+            },
+        });
+        Object.defineProperty(window, "dismissedSampleTracksEnded", {
+            get: () => stream?.getTracks().every((track) => track.readyState === "ended"),
+        });
+        const put = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+            const request = put.call(this, value, key);
+            if (
+                this.name === "settings" &&
+                typeof value === "object" &&
+                value !== null &&
+                Reflect.get(value, "name") === "meetingOnboardingStatus"
+            ) {
+                IDBObjectStore.prototype.put = put;
+                Object.defineProperty(request, "onsuccess", {
+                    configurable: true,
+                    set(listener: (event: Event) => void) {
+                        request.addEventListener(
+                            "success",
+                            (event) => {
+                                Reflect.set(window, "releaseDismissalStorage", () => listener.call(request, event));
+                            },
+                            { once: true },
+                        );
+                    },
+                });
+            }
+            return request;
+        };
+    });
+    await setup.getByRole("button", { name: "Test microphone and transcription" }).click();
+    await expect(setup.getByRole("button", { name: "Stop test and transcribe" })).toBeVisible();
+    await setup.getByRole("button", { name: "Skip for now" }).click();
+    await expect(setup).not.toBeVisible({ timeout: 2_000 });
+    expect(await page.evaluate(() => Reflect.get(window, "dismissedSampleTracksEnded"))).toBe(true);
+    await page.waitForFunction(() => typeof Reflect.get(window, "releaseDismissalStorage") === "function");
+    await page.evaluate(() => Reflect.get(window, "releaseDismissalStorage")());
+    await page.reload();
+    await expect(setup).not.toBeVisible();
+});
+
 test("uploads browser audio directly to OpenAI without requiring a localhost proxy", async ({ cleanPage: page }) => {
     let uploads = 0;
     await page.route("http://localhost:4079/**", (route) => route.abort());

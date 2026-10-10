@@ -2,7 +2,7 @@ import { Button, Checkbox, Input, Modal, Radiobox } from "@g4rcez/components";
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
 import type { AppSettings } from "@/store/settings";
-import { startMeetingRecording, transcribeMeetingAudio } from "@/lib/meeting-audio";
+import { isSameMeetingEndpointOrigin, startMeetingRecording, transcribeMeetingAudio } from "@/lib/meeting-audio";
 import {
     LOCAL_WHISPER_ENDPOINT,
     LOCAL_WHISPER_MODEL,
@@ -357,7 +357,14 @@ export function MeetingSetupWizard({
                             title="Transcription endpoint"
                             type="url"
                             value={draft.endpoint}
-                            onChange={(event) => update({ endpoint: event.target.value })}
+                            onChange={(event) => {
+                                const endpoint = event.target.value;
+                                if (!isSameMeetingEndpointOrigin(draft.endpoint, endpoint)) {
+                                    setKey("");
+                                    setSavedKey(false);
+                                }
+                                update({ endpoint });
+                            }}
                         />
                         <MeetingModelSelect
                             model={draft.model}

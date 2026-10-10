@@ -14,6 +14,21 @@ type AudioSource = "microphone" | "system";
 type RecordedAudio = { source: AudioSource; audio: Blob };
 type CapturedRecorder = { recorder: MediaRecorder; completed: Promise<RecordedAudio>; clear: () => void };
 
+export function isSameMeetingEndpointOrigin(before: string, after: string): boolean {
+    try {
+        const previous = new URL(before);
+        const next = new URL(after);
+        return (
+            ["http:", "https:"].includes(next.protocol) &&
+            !next.username &&
+            !next.password &&
+            previous.origin === next.origin
+        );
+    } catch {
+        return false;
+    }
+}
+
 async function acquireStream(request: Promise<MediaStream>, signal?: AbortSignal): Promise<MediaStream> {
     const granted = request.then((stream) => {
         if (signal?.aborted) {

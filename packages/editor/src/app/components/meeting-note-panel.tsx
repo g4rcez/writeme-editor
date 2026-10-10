@@ -3,7 +3,7 @@ import { MicrophoneIcon } from "@phosphor-icons/react/dist/csr/Microphone";
 import { useEffect, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
 import type { Note } from "@/store/note";
-import { startMeetingRecording, transcribeMeetingAudio } from "@/lib/meeting-audio";
+import { isSameMeetingEndpointOrigin, startMeetingRecording, transcribeMeetingAudio } from "@/lib/meeting-audio";
 import {
     importMeetingTranscript,
     meetingSpeakerKey,
@@ -207,17 +207,13 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     }
 
     async function dismissSetup(): Promise<void> {
-        if (onboardingStatus !== "pending") {
-            setSetupOpen(false);
-            return;
-        }
+        setSetupOpen(false);
+        if (onboardingStatus !== "pending") return;
         try {
             await SettingsService.save({ meetingOnboardingStatus: "skipped" });
             if (mounted.current) setOnboardingStatus("skipped");
         } catch (reason) {
             if (mounted.current) setError(messageOf(reason));
-        } finally {
-            if (mounted.current) setSetupOpen(false);
         }
     }
 
@@ -424,7 +420,14 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                         title="Transcription endpoint"
                         type="url"
                         value={settings.endpoint}
-                        onChange={(event) => setSettings({ ...settings, endpoint: event.target.value })}
+                        onChange={(event) => {
+                            const endpoint = event.target.value;
+                            if (!isSameMeetingEndpointOrigin(settings.endpoint, endpoint)) {
+                                setApiKey("");
+                                setUseOpenAIKey(false);
+                            }
+                            setSettings({ ...settings, endpoint });
+                        }}
                     />
                     <MeetingModelSelect
                         model={settings.model}
