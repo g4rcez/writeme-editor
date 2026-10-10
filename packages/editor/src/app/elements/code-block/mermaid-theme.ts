@@ -163,7 +163,7 @@ export type MermaidTokenReader = (name: string) => string;
 
 export const cssVarToken = (name: string): string => `var(--${name})`;
 
-export const readThemeToken: MermaidTokenReader = (name: string): string => {
+const readThemeToken: MermaidTokenReader = (name: string): string => {
     if (typeof document === "undefined") return cssVarToken(name);
 
     const value = getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();

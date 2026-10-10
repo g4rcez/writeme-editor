@@ -1,20 +1,6 @@
 import { type Node, type Edge, MarkerType } from "@xyflow/react";
 import dagre from "dagre";
 
-export type JsonNodeData = {
-    label: string;
-    value?: any;
-    raw: any;
-    type: "object" | "array" | "value";
-    isExpanded: boolean;
-    onToggle: () => void;
-    onValueChange?: (newValue: string) => void;
-    depth: number;
-    fullPath: string;
-    matchesSearch: boolean;
-    isPathToMatch: boolean;
-};
-
 const ROOT_NAME = "$";
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 80;
@@ -49,7 +35,7 @@ export const getDefaultExpandedPaths = (data: unknown, maxDepth = 2): Set<string
     return paths;
 };
 
-export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => {
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => {
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 

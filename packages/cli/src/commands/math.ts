@@ -9,7 +9,7 @@ const CURRENCY_HINT_RE = /[$€£¥₩₹₽₺฿₱₫]\s*\d|\b\d[\d.,]*\s+[A-
 
 const EXIT_COMMANDS = new Set([".exit", ".quit", "exit", "quit"]);
 
-export function getMathHistoryPath(): string {
+function getMathHistoryPath(): string {
     return path.join(homedir(), ".config", "writeme", "math-repl");
 }
 

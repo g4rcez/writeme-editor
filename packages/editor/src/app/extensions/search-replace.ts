@@ -5,6 +5,7 @@ import { Extension } from "@tiptap/core";
 import { Fragment } from "@tiptap/pm/model";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { escapeRegExp } from "@/lib/regex";
 
 export interface SearchReplaceOptions {
     searchResultClass: string;
@@ -30,11 +31,9 @@ function scrollToPos(view: EditorView, pos: number): void {
         const containerRect = container.getBoundingClientRect();
         const targetScrollTop = container.scrollTop + coords.top - containerRect.top - containerRect.height / 3;
         container.scrollTop = Math.max(0, targetScrollTop);
-    } catch {}
-}
-
-function escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    } catch {
+        return;
+    }
 }
 
 function findMatches(
@@ -47,7 +46,7 @@ function findMatches(
     const flags = caseSensitive ? "g" : "gi";
     let regex: RegExp;
     try {
-        regex = new RegExp(escapeRegex(searchTerm), flags);
+        regex = new RegExp(escapeRegExp(searchTerm), flags);
     } catch {
         return [];
     }

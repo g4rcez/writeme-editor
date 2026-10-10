@@ -5,6 +5,7 @@ import {
     isVideoAttachmentTarget,
     parseObsidianLink,
 } from "@/lib/obsidian-links";
+import { markdownLineToPlainText } from "./markdown-text";
 
 export type NoteLinkReference = {
     kind: "id" | "wiki";
@@ -153,18 +154,10 @@ function getReferenceExcerpt(content: string, reference: NoteLinkReference): str
     const lineStart = referenceIndex < 0 ? 0 : content.lastIndexOf("\n", referenceIndex) + 1;
     const lineEndIndex = content.indexOf("\n", Math.max(0, referenceIndex));
     const lineEnd = lineEndIndex < 0 ? content.length : lineEndIndex;
-    const excerpt = content
-        .slice(lineStart, lineEnd)
-        .replace(/!?(?:\[([^\]]*)\])\([^)]*\)/g, "$1")
-        .replace(
-            /!?\[\[([^\]|]+)(?:([#^][^|\]]*))?(?:\|([^\]]+))?\]\]/g,
-            (_match, target: string, subpath?: string, alias?: string) =>
-                alias?.trim() || `${target.trim()}${subpath ?? ""}`,
-        )
-        .replace(/`{1,3}/g, "")
+    const excerpt = markdownLineToPlainText(content.slice(lineStart, lineEnd), { includeWikiSubpath: true })
         .replace(/^\s{0,3}#{1,6}\s+/, "")
         .replace(/<[^>]*>/g, "")
-        .replace(/[*_~>]/g, "")
+        .replace(/>/g, "")
         .replace(/\s+/g, " ")
         .trim();
 

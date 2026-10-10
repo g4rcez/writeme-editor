@@ -18,7 +18,7 @@ import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 
-export type NoteItemProps = {
+type NoteItemProps = {
     note: NoteWithTags;
     isActive: boolean;
     onClick: () => void;
@@ -28,7 +28,7 @@ export type NoteItemProps = {
     extra?: React.ReactNode;
 };
 
-export const NoteItem = ({
+const NoteItem = ({
     note,
     isActive,
     onClick,

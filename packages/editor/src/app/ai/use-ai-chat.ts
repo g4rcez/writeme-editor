@@ -8,8 +8,6 @@ import { AI_ATTACHMENT_LIMITS, validateAIFileBatch, type AIConversationMessage, 
 import { authManager } from "./auth/auth-manager";
 import { AI_CHATS_CHANGED_EVENT } from "./events";
 
-export { AI_CHATS_CHANGED_EVENT } from "./events";
-
 const MARKDOWN_CHAT_SYSTEM_PROMPT = [
   "You are Writeme Workspace AI, an assistant for the current notes workspace.",
   "Always reply in readable markdown. Following the Github Flavoured Markdown.",

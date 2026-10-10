@@ -15,7 +15,7 @@ declare module "@tiptap/core" {
     }
 }
 
-export const inputRegex = /^\s*>(?<theme>info|warning|warn|alert|danger)?\s$/;
+const inputRegex = /^\s*>(?<theme>info|warning|warn|alert|danger)?\s$/;
 
 export const Blockquote = Node.create<BlockquoteOptions>({
     name: "blockquote",

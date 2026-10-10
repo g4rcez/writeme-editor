@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Tab } from "@/store/repositories/entities/tab";
 import type { TerminalSession } from "@/store/repositories/entities/terminal-session";
@@ -29,6 +29,8 @@ const mocks = vi.hoisted(() => {
         setInspectJsonDialog: vi.fn(),
         removeTab: vi.fn(),
         setNote: vi.fn(),
+        updateNoteContent: vi.fn(),
+        updateNoteTitle: vi.fn(),
         theme: vi.fn(),
     };
 
@@ -165,6 +167,7 @@ vi.mock("@/store/ui.store", () => ({
         openTasksDialog: vi.fn(),
         setError: vi.fn(),
         setSidebarOpen: vi.fn(),
+        setPrompt: vi.fn(),
         setConfirm: vi.fn(),
         clearConfirm: vi.fn(),
     },
@@ -223,6 +226,111 @@ describe("Commander", () => {
 
         expect(setOpen).toHaveBeenCalledWith(false);
         expect(mocks.layoutDispatch.setActivity).toHaveBeenCalledWith("search");
+    });
+
+    it("prefills the current note title and updates its first Markdown H1 when renaming", async () => {
+        render(
+            <Commander
+                note={{
+                    id: "note-1",
+                    title: "Current note",
+                    content: "\n# Current note\n\nBody",
+                    filePath: "/workspace/current-note.md",
+                } as never}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Rename current note");
+        expect(command).toBeDefined();
+
+        const setOpen = vi.fn();
+        command?.action?.({ setOpen });
+
+        expect(setOpen).toHaveBeenCalledWith(false);
+        expect(uiDispatch.setPrompt).toHaveBeenCalledWith(
+            expect.objectContaining({
+                open: true,
+                title: "Rename note",
+                initialValue: "Current note",
+                placeholder: "Note title",
+            }),
+        );
+
+        const prompt = vi.mocked(uiDispatch.setPrompt).mock.calls.at(-1)?.[0];
+        prompt?.onConfirm("Renamed note");
+
+        await waitFor(() => {
+            expect(mocks.dispatch.updateNoteContent).toHaveBeenCalledWith(
+                "note-1",
+                "\n# Renamed note\n\nBody",
+            );
+            expect(mocks.dispatch.updateNoteTitle).toHaveBeenCalledWith("note-1", "Renamed note");
+        });
+    });
+
+    it("renames notes without a Markdown H1", async () => {
+        render(
+            <Commander
+                note={{
+                    id: "note-1",
+                    title: "Current note",
+                    content: "Body",
+                    filePath: "/workspace/current-note.md",
+                } as never}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Rename current note");
+        command?.action?.({ setOpen: vi.fn() });
+        const prompt = vi.mocked(uiDispatch.setPrompt).mock.calls.at(-1)?.[0];
+        prompt?.onConfirm("Renamed note");
+
+        await waitFor(() => {
+            expect(mocks.dispatch.updateNoteTitle).toHaveBeenCalledWith("note-1", "Renamed note");
+        });
+        expect(mocks.dispatch.updateNoteContent).not.toHaveBeenCalled();
+    });
+
+    it("does not change LaTeX source when renaming a note", async () => {
+        render(
+            <Commander
+                note={{
+                    id: "note-1",
+                    title: "Paper",
+                    content: "\\documentclass{article}",
+                    filePath: "/workspace/paper.tex",
+                } as never}
+                tabs={mocks.state.tabs}
+                notes={mocks.state.notes}
+                noteGroups={mocks.state.noteGroups}
+                terminalSessions={mocks.state.terminalSessions}
+                commander={mocks.state.commander as never}
+                dispatch={mocks.dispatch as never}
+            />,
+        );
+
+        const command = getFlattenedCommands().find((item) => item.title === "Rename current note");
+        const setOpen = vi.fn();
+        command?.action?.({ setOpen });
+        const prompt = vi.mocked(uiDispatch.setPrompt).mock.calls.at(-1)?.[0];
+        prompt?.onConfirm("Updated paper title");
+
+        await waitFor(() => {
+            expect(mocks.dispatch.updateNoteTitle).toHaveBeenCalledWith("note-1", "Updated paper title");
+        });
+        expect(mocks.dispatch.updateNoteContent).not.toHaveBeenCalled();
     });
 
     it("adds the frontmatter command for the current note", () => {

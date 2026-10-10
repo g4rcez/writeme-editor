@@ -4,17 +4,7 @@
     --wm-canvas: var(--var-color-background);
     --wm-rail: var(--var-card-muted);
     --wm-surface-1: var(--var-card-background);
-    --wm-surface-2: var(--var-color-muted);
-    --wm-surface-hover: var(--var-color-muted);
-    --wm-border: var(--var-color-border);
-    --wm-border-strong: var(--var-color-border);
     --wm-ink: var(--var-color-foreground);
-    --wm-text: var(--var-color-foreground);
-    --wm-muted: var(--var-color-muted-foreground);
-    --wm-accent: var(--var-color-primary);
-    --wm-accent-hover: var(--var-color-primary-hover);
-    --wm-accent-ink: var(--var-color-primary-foreground);
-    --wm-link: var(--var-color-primary);
 }
 
 @media (min-width: 64rem) {
@@ -68,63 +58,6 @@
 
 .writeme-aside-resize:hover {
     background-color: color-mix(in srgb, var(--var-color-primary) 55%, transparent);
-}
-
-.writeme-aside-collapsed-toggle {
-    @apply flex h-full w-8 flex-shrink-0 items-start justify-center border-r border-border/40 bg-background pt-3 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground print:hidden;
-}
-
-.writeme-aside-activity-bar {
-    @apply relative z-10 flex h-full w-12 flex-col items-center border-r py-2 print:hidden;
-    background-color: var(--wm-rail);
-    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
-}
-
-.writeme-aside-activity-brand {
-    @apply mb-4 flex size-8 shrink-0 items-center justify-center rounded-none text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-}
-
-.writeme-aside-activity-icons {
-    @apply flex w-full flex-1 flex-col items-center gap-0.5;
-}
-
-.writeme-aside-activity-divider {
-    @apply my-1 h-px w-5 shrink-0;
-    background-color: color-mix(in srgb, var(--var-color-border) 70%, transparent);
-}
-
-.writeme-aside-activity-icon {
-    @apply relative flex size-8 items-center justify-center rounded-none transition-[background-color,color,transform] duration-150;
-}
-
-.writeme-aside-activity-icon--active {
-    @apply bg-primary/10 text-primary;
-}
-
-.writeme-aside-activity-icon--inactive {
-    @apply text-foreground/45 hover:bg-muted/60 hover:text-foreground;
-}
-
-.writeme-aside-activity-indicator {
-    @apply absolute -left-2 h-4 w-0.5 rounded-none bg-primary;
-}
-
-.writeme-aside-activity-badge {
-    @apply absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm;
-}
-
-.writeme-aside-activity-bottom {
-    @apply mt-auto flex w-full flex-col items-center gap-0.5;
-}
-
-@media (pointer: coarse) {
-    .writeme-aside-activity-bar {
-        @apply w-14;
-    }
-
-    .writeme-aside-activity-icon {
-        @apply size-11 rounded-none;
-    }
 }
 
 .writeme-aside-nav {
@@ -218,38 +151,6 @@
     .writeme-sidebar-v2-tree [role="treeitem"] {
         @apply min-h-11;
     }
-}
-
-.writeme-sidebar-v2-group-list {
-    @apply flex flex-col gap-2;
-}
-
-.writeme-sidebar-v2-legacy-pane {
-    @apply h-full min-h-0 overflow-hidden rounded-none border border-border/40 bg-card-background/70 shadow-sm shadow-background/10;
-}
-
-.writeme-sidebar-v2-group {
-    @apply rounded-none border border-border/40 bg-card-background/70 px-2.5 py-1.5 shadow-sm shadow-background/10;
-}
-
-.writeme-sidebar-v2-group-button {
-    @apply flex w-full items-center gap-2 rounded-none px-1.5 py-1 text-left text-sm transition-colors hover:bg-muted/40 disabled:cursor-default disabled:hover:bg-transparent;
-}
-
-.writeme-sidebar-v2-file {
-    @apply flex items-center gap-2 rounded-none px-1.5 py-1 text-left text-sm transition-colors hover:bg-muted/40;
-}
-
-.writeme-sidebar-v2-file--active {
-    @apply bg-primary/10 text-primary;
-}
-
-.writeme-sidebar-v2-footer-tab {
-    @apply flex items-center justify-center gap-2 rounded-none border border-border/50 bg-card-background px-2.5 py-1.5 text-xs font-medium text-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground;
-}
-
-.writeme-sidebar-v2-footer-tab--active {
-    @apply border-primary/20 bg-primary text-primary-foreground;
 }
 
 .writeme-editor-page {
@@ -424,80 +325,6 @@
     top: 50%;
 }
 
-.writeme-editor-group-tabs {
-    @apply flex min-w-0 flex-1 overflow-x-auto;
-}
-.writeme-editor-group-note-tab {
-    @apply flex h-10 shrink-0 items-center gap-1 border-r border-border/60 px-2 text-sm text-foreground;
-}
-.writeme-editor-group-note-tab[aria-selected="true"] {
-    @apply border-t-2 border-t-primary bg-background;
-}
-
-.writeme-editor-group {
-    @apply flex h-full min-h-0 min-w-0 flex-col;
-}
-
-.writeme-editor-group-header {
-    @apply flex h-10 min-w-0 shrink-0 items-center justify-between border-b border-border/60 bg-card-background print:hidden;
-}
-
-.writeme-editor-group-tab {
-    @apply flex h-full min-w-0 max-w-xs flex-1 items-center gap-1 border-r border-t-2 border-r-border/60 border-t-transparent px-2;
-}
-
-.writeme-editor-group[data-active="true"] .writeme-editor-group-tab {
-    @apply border-t-primary bg-background;
-}
-
-.writeme-editor-group-picker {
-    @apply min-w-0 flex-1;
-}
-
-.writeme-editor-group-picker-control {
-    @apply rounded-none border-0 bg-transparent shadow-none focus-within:outline focus-within:outline-2 focus-within:outline-primary;
-    outline-offset: -2px;
-}
-
-.writeme-editor-group-select {
-    @apply min-w-0 cursor-pointer truncate bg-transparent text-sm text-foreground;
-}
-
-.writeme-editor-group-controls {
-    @apply flex shrink-0 items-center gap-1 px-1;
-}
-
-.writeme-editor-group-action {
-    @apply flex size-8 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-50;
-}
-
-.writeme-editor-group-scroll-container {
-    @apply min-h-0 flex-1 overflow-auto overscroll-contain px-4 print:overflow-visible;
-    scroll-padding-block-end: 5rem;
-}
-
-.writeme-editor-group-separator {
-    @apply shrink-0 bg-border/60 hover:bg-primary focus-visible:bg-primary print:hidden;
-}
-
-.writeme-editor-group-separator[aria-orientation="vertical"] {
-    @apply w-1 cursor-col-resize;
-}
-
-.writeme-editor-group-separator[aria-orientation="horizontal"] {
-    @apply h-1 cursor-row-resize;
-}
-
-@media (max-width: 40rem) {
-    .writeme-editor-group-header {
-        @apply h-11;
-    }
-
-    .writeme-editor-group-action {
-        @apply size-11;
-    }
-}
-
 .writeme-formatting-toolbar {
     top: 0;
     left: 0;
@@ -576,14 +403,6 @@
     .writeme-editor .writing-suggestion-active {
         outline: 1px solid currentColor;
     }
-}
-
-.writeme-editor-bubble {
-    @apply isolate z-navbar print:hidden;
-}
-
-.writeme-editor-bubble-actions {
-    @apply flex max-w-48 gap-0.5 overflow-y-auto rounded-none border-floating-border bg-floating-background p-1.5 shadow-lg;
 }
 
 .quicknote-window-drag-region {
@@ -744,11 +563,6 @@
     @apply min-w-0 truncate text-right text-foreground;
 }
 
-.writeme-home-shell,
-.writeme-settings-shell {
-    min-height: 100%;
-}
-
 .writeme-settings-card {
     @apply overflow-hidden rounded-none border border-border/45 bg-card-background shadow-none;
 }
@@ -830,10 +644,6 @@
 
     .writeme-app-header-start {
         @apply gap-1;
-    }
-
-    .writeme-header-action {
-        @apply size-8 rounded-none;
     }
 
     .writeme-note-title-editor {

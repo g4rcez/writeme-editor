@@ -150,7 +150,7 @@ export class OllamaAdapter implements AIAdapter {
     }
 }
 
-export function normalizeBaseUrl(baseUrl?: string): string {
+function normalizeBaseUrl(baseUrl?: string): string {
     const trimmed = baseUrl?.trim() || DEFAULT_OLLAMA_BASE_URL;
     const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
     return withoutTrailingSlash.endsWith("/v1") ? withoutTrailingSlash : `${withoutTrailingSlash}/v1`;

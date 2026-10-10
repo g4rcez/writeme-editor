@@ -59,9 +59,9 @@ function splitIntoChunks(text: string): string[] {
     return chunks.filter((c) => c.trim().length > 0);
 }
 
-export type WorkerInMessage = { text: string; gen: number };
+type WorkerInMessage = { text: string; gen: number };
 
-export type WorkerOutMessage =
+type WorkerOutMessage =
     | { type: "start"; gen: number; totalChunks: number }
     | {
           type: "chunk";

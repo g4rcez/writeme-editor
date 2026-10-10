@@ -22,9 +22,7 @@ export type SettingsSection = {
     platform: "all" | SettingsPlatform;
 };
 
-export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = "quick";
-
-export const SETTINGS_SECTIONS: SettingsSection[] = [
+const SETTINGS_SECTIONS: SettingsSection[] = [
     {
         id: "quick",
         label: "Quick Settings",
@@ -97,7 +95,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     },
 ];
 
-export function getSettingsPlatform(): SettingsPlatform {
+function getSettingsPlatform(): SettingsPlatform {
     return isElectron() ? "electron" : "web";
 }
 
@@ -111,8 +109,4 @@ export function isSettingsSectionAvailable(
 
 export function getSettingsSections(platform: SettingsPlatform = getSettingsPlatform()): SettingsSection[] {
     return SETTINGS_SECTIONS.filter((section) => section.platform === "all" || section.platform === platform);
-}
-
-export function getSettingsPath(sectionId: SettingsSectionId): string {
-    return `/settings/${sectionId}`;
 }

@@ -1,4 +1,3 @@
-import type { ParsedCurrency } from "./types";
 import { InvalidCurrencyError } from "./types";
 
 /**
@@ -114,50 +113,12 @@ const VALID_CURRENCY_CODES = new Set([
 ]);
 
 /**
- * Parse currency conversion expression
- * Supports formats:
- *  - "100 USD to EUR"
- *  - "50.5 BRL in USD"
- *  - "1000 JPY to EUR" (spaces flexible)
- *
- * @param expr - The expression to parse (e.g., "100 USD to EUR")
- * @returns Parsed currency data or null if invalid format
- */
-export function parseCurrencyExpression(expr: string): ParsedCurrency | null {
-    const normalized = expr.trim().replace(/\s+/g, " ");
-    const pattern = /^([\d,]+\.?\d*)\s+([A-Z]{3})\s+(to|in)\s+([A-Z]{3})$/i;
-    const match = normalized.match(pattern);
-    if (!match) {
-        return null;
-    }
-    const [, amountStr, from, , to] = match;
-    if (!amountStr || !from || !to) return null;
-    const amount = parseFloat(amountStr.replace(/,/g, ""));
-    if (isNaN(amount) || amount <= 0) {
-        return null;
-    }
-    const fromCode = normalizeCurrencyCode(from);
-    const toCode = normalizeCurrencyCode(to);
-
-    // Validate currency codes
-    if (!isValidCurrencyCode(fromCode) || !isValidCurrencyCode(toCode)) {
-        return null;
-    }
-
-    return {
-        amount,
-        from: fromCode,
-        to: toCode,
-    };
-}
-
-/**
  * Check if a currency code is valid
  *
  * @param code - Currency code to validate
  * @returns true if valid, false otherwise
  */
-export function isValidCurrencyCode(code: string): boolean {
+function isValidCurrencyCode(code: string): boolean {
     const normalized = normalizeCurrencyCode(code);
     return VALID_CURRENCY_CODES.has(normalized);
 }
@@ -168,7 +129,7 @@ export function isValidCurrencyCode(code: string): boolean {
  * @param code - Currency code to normalize
  * @returns Normalized currency code
  */
-export function normalizeCurrencyCode(code: string): string {
+function normalizeCurrencyCode(code: string): string {
     return code.trim().toUpperCase();
 }
 
@@ -183,11 +144,3 @@ export function validateCurrencyCode(code: string): void {
         throw new InvalidCurrencyError(code);
     }
 }
-
-/**
- * Get a list of all supported currency codes
- *
- * @returns Array of supported currency codes
- */
-export const getSupportedCurrencies = (): string[] =>
-    Array.from(VALID_CURRENCY_CODES).toSorted((a, b) => a.localeCompare(b));

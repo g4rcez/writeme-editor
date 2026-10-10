@@ -6,11 +6,12 @@ import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { notificationRef } from "@/app/notification-ref";
+import { saveNoteTitle } from "@/app/note-title";
 import { Dates } from "@/lib/dates";
 import { OPEN_EDITOR_NOTE_EVENT, ACTIVE_EDITOR_NOTE_EVENT } from "@/lib/editor-tab-drag";
 import { getReadingTime } from "@/lib/file-utils";
 import { isElectron } from "@/lib/is-electron";
-import { findFirstMarkdownH1, replaceFirstMarkdownH1 } from "@/lib/markdown-title";
+import { findFirstMarkdownH1 } from "@/lib/markdown-title";
 import { resolveNoteLinks } from "@/lib/note-links";
 import { isNoteRouteTabOpenSuppressed } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
@@ -352,15 +353,9 @@ export default function NotePage() {
     const saveTitle = useCallback(
         async (title: string): Promise<void> => {
             if (!note) return;
-            if (!isLatexSource) {
-                const updatedContent = replaceFirstMarkdownH1(note.content || "", title);
-                if (updatedContent !== null && updatedContent !== note.content) {
-                    await dispatch.updateNoteContent(note.id, updatedContent);
-                }
-            }
-            await dispatch.updateNoteTitle(note.id, title);
+            await saveNoteTitle(note, title, dispatch);
         },
-        [dispatch, isLatexSource, note],
+        [dispatch, note],
     );
 
     const toggleFavorite = useCallback(async (): Promise<void> => {
@@ -498,13 +493,8 @@ export default function NotePage() {
                     </div>
                 </header>
             ) : (
-                <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
-                    <EditableNoteTitle
-                        key={`${note.id}:${markdownTitle?.title ?? note.title}`}
-                        value={markdownTitle?.title ?? note.title}
-                        onSave={saveTitle}
-                    />
-                    {!fileName || note.tags.length > 0 ? (
+                !fileName || note.tags.length > 0 ? (
+                    <header className="writeme-editor-column writeme-note-header empty:border-b-transparent border-b border-border/50 print:hidden">
                         <div className="writeme-note-metadata">
                             {!fileName ? <span>Local note</span> : null}
                             {note.tags.slice(0, 3).map((tag) => (
@@ -513,13 +503,13 @@ export default function NotePage() {
                                 </span>
                             ))}
                         </div>
-                    ) : null}
-                </header>
+                    </header>
+                ) : null
             )}
             {isHistoryEligible && historyOpen ? (
                 <NoteHistoryDialog
-                    note={note}
                     open
+                    note={note}
                     onClose={() => setHistoryOpen(false)}
                     onRestored={(restored) => dispatch.syncNoteState(restored)}
                 />

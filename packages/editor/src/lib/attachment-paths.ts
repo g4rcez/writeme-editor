@@ -1,8 +1,8 @@
 const EXTERNAL_SRC_PATTERN = /^(?:[a-z][a-z0-9+.-]*:|#)/i;
 
-export const DEFAULT_ATTACHMENT_DIR = "attachments";
+const DEFAULT_ATTACHMENT_DIR = "attachments";
 
-export function slugifyAttachmentScope(value: string): string {
+function slugifyAttachmentScope(value: string): string {
     const slug = value.replace(/[^a-z0-9]/gi, "_").toLowerCase();
     return slug || "untitled";
 }

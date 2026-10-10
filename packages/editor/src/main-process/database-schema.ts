@@ -8,7 +8,7 @@ const boolean = z.boolean().optional();
 
 const withId = <T extends z.ZodRawShape>(shape: T) => z.object({ id: z.string().optional(), ...shape });
 
-export const databaseSchemas = {
+const databaseSchemas = {
     notes: withId({
         type: text,
         title: text,

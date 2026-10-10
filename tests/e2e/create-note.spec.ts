@@ -233,6 +233,51 @@ test.describe("Create note flow", () => {
         });
     });
 
+    test("renames the current note from the command palette", async ({ cleanPage: page }) => {
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
+        const createDialog = page.getByRole("dialog", { name: /Create new note/i });
+        await createDialog.getByTitle("Note title").fill("Current note title");
+        await createDialog.getByRole("button", { name: /^Create/ }).click();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/);
+
+        const editor = page.locator(".ProseMirror").first();
+        await editor.click();
+        await page.keyboard.press("ControlOrMeta+Alt+1");
+        await page.keyboard.type("Current note title");
+        await page.keyboard.press("Enter");
+        await page.keyboard.type("Body");
+        await expect(editor.locator("h1")).toHaveText("Current note title");
+        const saveStatus = page.locator(".writeme-editor-status-bar output").first();
+        await expect(saveStatus).toHaveText("Unsaved changes");
+        await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
+
+        await page.keyboard.press("ControlOrMeta+Shift+P");
+        const commandPalette = page.getByRole("dialog", { name: "Command palette" });
+        await commandPalette.getByPlaceholder("Search for...").fill("Rename current note");
+        await commandPalette.getByText("Rename current note", { exact: true }).click();
+
+        const renameDialog = page.getByRole("dialog", { name: "Rename note" });
+        const titleInput = renameDialog.getByPlaceholder("Note title");
+        await expect(titleInput).toHaveValue("Current note title");
+        await titleInput.fill("Renamed note");
+        await renameDialog.getByRole("button", { name: "OK" }).click();
+
+        await expect(page.getByRole("button", { name: "Close Renamed note" })).toBeVisible();
+        await expect(editor.locator("h1")).toHaveText("Renamed note");
+        await page.getByRole("button", { name: "Close Renamed note" }).click();
+        await expect(page).toHaveURL(/\/$/);
+
+        const savedNote = page.getByRole("link", { name: /Renamed note/ });
+        await expect(savedNote).toBeVisible();
+        await savedNote.click();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/);
+        await expect(page.locator(".ProseMirror h1")).toHaveText("Renamed note");
+    });
+
     test("created note appears with a preview in the dashboard recent list", async ({ cleanPage: page }) => {
         await page
             .getByRole("main")

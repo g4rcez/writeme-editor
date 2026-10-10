@@ -8,7 +8,7 @@ const HSL_SOURCE = "hsla?\\(\\s*\\d{1,3}\\s*,\\s*[\\d.]+%?\\s*,\\s*[\\d.]+%?(?:\
 
 const COLOR_PATTERN = new RegExp(`^(?:${HEX_SOURCE}|${RGB_SOURCE}|${HSL_SOURCE})$`, "i");
 
-export const isColorValue = (text: string): boolean => COLOR_PATTERN.test(text.trim());
+const isColorValue = (text: string): boolean => COLOR_PATTERN.test(text.trim());
 
 const ColorCodeView = (props: any) => {
     const value: string = props.node.attrs.value || "";

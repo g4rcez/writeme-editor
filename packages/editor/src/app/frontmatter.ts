@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/core";
 import { editorActionsGlobalRef, editorGlobalRef } from "./editor-global-ref";
 
-export const EMPTY_MARKDOWN_FRONTMATTER = "---\n\n---";
+const EMPTY_MARKDOWN_FRONTMATTER = "---\n\n---";
 
 const MARKDOWN_FRONTMATTER_PATTERN = /^\uFEFF?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
 

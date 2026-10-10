@@ -76,15 +76,6 @@ export function isPdfAttachmentTarget(target: string): boolean {
     return getExtension(target) === "pdf";
 }
 
-export function escapeHtml(value: string): string {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 function getExtension(target: string): string {
     const clean = target.split(/[?#]/)[0] ?? target;
     return clean.split(".").pop()?.toLowerCase() ?? "";

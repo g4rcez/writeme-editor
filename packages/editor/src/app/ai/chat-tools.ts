@@ -46,16 +46,19 @@ function toSafeNoteSummary(note: WorkspaceNote): Record<string, unknown> {
     };
 }
 
-function toSerializedValue(value: unknown): unknown {
+type SerializedValue = null | boolean | number | string | SerializedValue[] | { [key: string]: SerializedValue };
+
+function toSerializedValue(value: unknown): SerializedValue {
     if (value instanceof Date) return value.toISOString();
     if (value == null) return null;
-    if (Array.isArray(value)) return value.map((item) => toSerializedValue(item));
+    if (Array.isArray(value)) return value.map(toSerializedValue);
     if (typeof value === "object") {
-        const out: Record<string, unknown> = {};
+        const out: { [key: string]: SerializedValue } = {};
         for (const [key, nested] of Object.entries(value as Record<string, unknown>)) out[key] = toSerializedValue(nested);
         return out;
     }
-    return value;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+    return String(value);
 }
 
 function toQueryRows(rows: Record<string, unknown>[]) {
@@ -251,11 +254,3 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
 export function createWorkspaceTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceToolSession {
     return createTools(onChange);
 }
-
-export type WorkspaceTools = ToolSet;
-
-export const workspaceToolsPromptNote = [
-    "You can use listNotes, readNote, searchNotes, runNotesQuery, and proposeNoteEdit.",
-    "Call workspace tools before recommendations about current note contents. For a proposal, first read the full note including content and updatedAt, then submit its exact updatedAt with the full proposed Markdown.",
-    "Proposals only stage changes for user review; never claim a note was changed until the user explicitly approves it.",
-].join("\n");

@@ -1,6 +1,6 @@
 import type { WritingSegment } from "./types";
 
-export const MAX_WRITING_SEGMENT_LENGTH = 4_000;
+const MAX_WRITING_SEGMENT_LENGTH = 4_000;
 
 export type WritingTextRange = {
     text: string;

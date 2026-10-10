@@ -60,7 +60,7 @@ export const SYSTEM_VARIABLES: SystemVariable[] = [
 /**
  * Extracts all {{VARIABLE}} placeholders from content
  */
-export const extractVariables = (content: string): string[] => {
+const extractVariables = (content: string): string[] => {
     const regex = /\{\{([^{}]+)\}\}/g;
     const matches = new Set<string>();
     let match;

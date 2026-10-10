@@ -14,5 +14,5 @@ export const OpenFolderArgsSchema = z.object({
     folderPath: z.string().refine((p) => path.isAbsolute(p), "folderPath must be absolute"),
 });
 
-export type OpenFileArgs = z.infer<typeof OpenFileArgsSchema>;
-export type OpenFolderArgs = z.infer<typeof OpenFolderArgsSchema>;
+type OpenFileArgs = z.infer<typeof OpenFileArgsSchema>;
+type OpenFolderArgs = z.infer<typeof OpenFolderArgsSchema>;

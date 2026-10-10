@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { stepCountIs, streamText } from "ai";
 import { v4 as uuidv4 } from "uuid";
 import { proxyFetch } from "@/lib/proxy-fetch";
+import { decodeJwtPayload } from "@/lib/jwt";
 import type {
   AIAdapter,
   AIConversationMessage,
@@ -29,21 +30,8 @@ type OpenAIAuthClaims = {
   };
 };
 
-function parseJwtPayload<T extends object>(token: string | undefined): T | null {
-  if (!token) return null;
-  const [, payload] = token.split(".");
-  if (!payload) return null;
-  try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
-    return JSON.parse(atob(padded)) as T;
-  } catch {
-    return null;
-  }
-}
-
 function extractAccountIdFromToken(token: string | undefined): string | undefined {
-  const claims = parseJwtPayload<OpenAIAuthClaims>(token);
+  const claims = decodeJwtPayload<OpenAIAuthClaims>(token);
   const authClaims = claims?.["https://api.openai.com/auth"];
   return (
     claims?.chatgpt_account_id ??

@@ -4,14 +4,14 @@ import { getEditorAllNotes } from "@/lib/editor-storage";
 import { innerUrl } from "@/lib/encoding";
 import { createNoteLinkPreview, LinkPreview, NoteMentionPreview } from "./link-preview";
 
-export type LinkRendererProps = {
+type LinkRendererProps = {
     href: string;
     title?: string;
     className?: string;
     children: ReactNode;
 };
 
-export type LinkRenderer = ComponentType<LinkRendererProps>;
+type LinkRenderer = ComponentType<LinkRendererProps>;
 
 const DefaultLink = ({ href, title, className, children }: LinkRendererProps) => (
     <a data-component="default-link" href={href} title={title} className={className}>

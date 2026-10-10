@@ -95,17 +95,24 @@ export const CreateNoteDialog = () => {
                 type === "quick"
                     ? await getOrCreateDailyQuickNote(quickNoteDate ?? new Date(), { title, content })
                     : Note.new(title, content, type === "excalidraw" ? NoteType.excalidraw : NoteType.note);
-            if (type === "excalidraw" && selectedFolderPath) {
+            if ((type === "note" || type === "excalidraw") && selectedFolderPath) {
                 const folderResult = await window.electronAPI.fs.readDir(selectedFolderPath);
                 if (folderResult.error) throw new Error(`Could not access the selected folder: ${folderResult.error}`);
 
                 const candidatePath = generateNotePath(selectedFolderPath, title.trim());
-                note.filePath = await getUniqueFilePath(candidatePath, async (path) => {
+                const filePath = await getUniqueFilePath(candidatePath, async (path) => {
                     const result = await window.electronAPI.fs.statFile(path);
                     if (!result.success)
                         throw new Error(result.error ?? "Could not check whether the note already exists.");
                     return result.exists;
                 });
+                const writeResult = await window.electronAPI.fs.writeFile(filePath, note.content);
+                if (!writeResult.success) {
+                    throw new Error(`Could not write the note to the selected folder: ${writeResult.error}`);
+                }
+                note.filePath = filePath;
+                note.fileSize = writeResult.fileSize;
+                note.lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : new Date();
             }
             if (type !== "quick") await repositories.notes.save(note);
             dispatch.note(note, !isFloatingEditorWindow);
@@ -144,8 +151,7 @@ export const CreateNoteDialog = () => {
                     title="Note title"
                     onChange={(e) => setTitle(e.target.value)}
                 />
-
-                {type === "excalidraw" && isElectron() && state.directory ? (
+                {(type === "note" || type === "excalidraw") && isElectron() && state.directory ? (
                     <WorkspaceFolderAutocomplete
                         workspaceDirectory={state.directory}
                         onSelectionChange={(path, isPending) => {
@@ -154,14 +160,12 @@ export const CreateNoteDialog = () => {
                         }}
                     />
                 ) : null}
-
                 {type === "quick" ? (
                     <p className="text-xs leading-5 text-muted-foreground">
                         This opens or creates today's note. A template applies only when the note is new; existing text
                         is never replaced.
                     </p>
                 ) : null}
-
                 {error ? (
                     <p
                         className="rounded border border-danger/40 bg-danger-subtle p-3 text-sm text-foreground"
@@ -170,7 +174,6 @@ export const CreateNoteDialog = () => {
                         {error}
                     </p>
                 ) : null}
-
                 {(type === "note" || type === "quick") && templates.length > 0 && (
                     <div className="flex flex-col gap-4">
                         <Autocomplete

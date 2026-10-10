@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 
-export type EditorSearchState = {
+type EditorSearchState = {
     searchTerm: string;
     replaceTerm: string;
     resultsCount: number;

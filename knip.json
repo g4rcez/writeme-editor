@@ -1,0 +1,25 @@
+{
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "tags": ["-lintignore"],
+    "workspaces": {
+        ".": {
+            "entry": ["forge.config.js", "public/print.css!"],
+            "ignore": [".agents/**"],
+            "ignoreDependencies": ["@fontsource-variable/jetbrains-mono", "conventional-changelog-cli"],
+            "ignoreBinaries": ["act"],
+            "vite": {
+                "config": ["vite.config.ts", "vite.{main,preload,renderer}.config.mts"]
+            }
+        },
+        "packages/cli": {},
+        "packages/editor": {
+            "entry": ["src/main.ts!", "src/preload.ts!", "src/renderer.ts!"],
+            "ignoreFiles": ["src/app/components/workspace-setup.tsx", "src/lib/migration-service.ts"],
+            "ignoreIssues": {
+                "src/app/ai/auth/auth-manager.ts": ["duplicates"]
+            }
+        },
+        "packages/landing": {},
+        "packages/solver": {}
+    }
+}

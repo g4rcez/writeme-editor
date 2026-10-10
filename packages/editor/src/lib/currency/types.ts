@@ -3,46 +3,6 @@
  */
 
 /**
- * ISO 4217 currency codes
- * Subset of commonly used currencies for type safety
- */
-export type CurrencyCode =
-    | "USD" // US Dollar
-    | "EUR" // Euro
-    | "GBP" // British Pound
-    | "JPY" // Japanese Yen
-    | "CNY" // Chinese Yuan
-    | "BRL" // Brazilian Real
-    | "CAD" // Canadian Dollar
-    | "AUD" // Australian Dollar
-    | "INR" // Indian Rupee
-    | "MXN" // Mexican Peso
-    | "CHF" // Swiss Franc
-    | "SEK" // Swedish Krona
-    | "NZD" // New Zealand Dollar
-    | "SGD" // Singapore Dollar
-    | "HKD" // Hong Kong Dollar
-    | "KRW" // South Korean Won
-    | "TRY" // Turkish Lira
-    | "RUB" // Russian Ruble
-    | "ZAR" // South African Rand
-    | "AED" // UAE Dirham
-    | "ARS" // Argentine Peso
-    | "CLP" // Chilean Peso
-    | "COP" // Colombian Peso
-    | "CZK" // Czech Koruna
-    | "DKK" // Danish Krone
-    | "HUF" // Hungarian Forint
-    | "IDR" // Indonesian Rupiah
-    | "ILS" // Israeli Shekel
-    | "MYR" // Malaysian Ringgit
-    | "NOK" // Norwegian Krone
-    | "PHP" // Philippine Peso
-    | "PLN" // Polish Zloty
-    | "THB" // Thai Baht
-    | "VND"; // Vietnamese Dong
-
-/**
  * Exchange rate data from API
  */
 export interface ExchangeRateData {
@@ -119,21 +79,9 @@ export interface FrankfurterAPIResponse {
 }
 
 /**
- * Parsed currency expression
- */
-export interface ParsedCurrency {
-    /** Amount to convert */
-    amount: number;
-    /** Source currency code */
-    from: string;
-    /** Target currency code */
-    to: string;
-}
-
-/**
  * Custom error types for better error handling
  */
-export class CurrencyError extends Error {
+class CurrencyError extends Error {
     constructor(
         message: string,
         public code: string,

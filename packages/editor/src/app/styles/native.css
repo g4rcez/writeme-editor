@@ -1,6 +1,5 @@
 html.native {
     --native-liquid-glass-bg: color-mix(in srgb, var(--var-dropdown-surface-background) 46%, transparent);
-    --native-liquid-glass-bg-soft: color-mix(in srgb, var(--var-color-background) 18%, transparent);
     --native-liquid-glass-bg-strong: color-mix(in srgb, var(--var-card-background) 56%, transparent);
     --native-liquid-glass-border: color-mix(in srgb, var(--var-color-border) 42%, transparent);
     accent-color: hsla(var(--native-system-accent, 210, 100%, 52%));
@@ -21,10 +20,7 @@ html.native h6 {
 }
 
 html.native .writeme-editor,
-html.native .writeme-block,
-html.native .writeme-sidebar-v2-legacy-pane,
-html.native .writeme-sidebar-v2-group,
-html.native .writeme-sidebar-v2-footer-tab {
+html.native .writeme-block {
     box-shadow: none;
 }
 
@@ -51,10 +47,7 @@ html.native.platform-web [data-treeroot="true"] {
     background-color: var(--var-color-background);
 }
 
-html.native.platform-web .tab-scrollbar,
-html.native.platform-web .writeme-sidebar-v2-legacy-pane,
-html.native.platform-web .writeme-sidebar-v2-group,
-html.native.platform-web .writeme-sidebar-v2-footer-tab {
+html.native.platform-web .tab-scrollbar {
     border-color: color-mix(in srgb, var(--var-color-border) 42%, transparent);
     background-color: var(--var-card-background);
 }
@@ -78,7 +71,6 @@ html.native.platform-electron .writeme-aside-activity-bar,
 html.native.platform-electron .writeme-aside-panel,
 html.native.platform-electron .writeme-aside-nav,
 html.native.platform-electron .tab-scrollbar,
-html.native.platform-electron .writeme-editor-bubble-actions,
 html.native.platform-electron .writeme-main-surface,
 html.native.platform-electron .writeme-print-export-button {
     border-color: var(--native-liquid-glass-border);
@@ -109,13 +101,6 @@ html.native.platform-electron .writeme-print-export-button:focus-visible {
     border-color: color-mix(in srgb, var(--var-color-primary) 42%, transparent);
 }
 
-html.native.platform-electron .writeme-sidebar-v2-legacy-pane,
-html.native.platform-electron .writeme-sidebar-v2-group,
-html.native.platform-electron .writeme-sidebar-v2-footer-tab {
-    border-color: var(--native-liquid-glass-border);
-    background-color: var(--native-liquid-glass-bg-soft);
-}
-
 html.native.platform-electron .writeme-editor {
     border: 0;
     border-radius: 0;
@@ -128,7 +113,6 @@ html.native.platform-electron .writeme-editor {
     html.native.platform-electron .writeme-aside-panel,
     html.native.platform-electron .writeme-aside-nav,
     html.native.platform-electron .tab-scrollbar,
-    html.native.platform-electron .writeme-editor-bubble-actions,
     html.native.platform-electron .writeme-main-surface,
     html.native.platform-electron .writeme-print-export-button {
         background-color: color-mix(in srgb, var(--var-card-background) 92%, transparent);

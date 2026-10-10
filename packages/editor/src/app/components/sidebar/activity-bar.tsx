@@ -36,14 +36,20 @@ const ActivityIcon = ({ icon: Icon, label, badge, active, onClick }: ActivityIco
                 title={label}
                 onClick={onClick}
                 className={css(
-                    "writeme-aside-activity-icon",
-                    active ? "writeme-aside-activity-icon--active" : "writeme-aside-activity-icon--inactive",
+                    "writeme-aside-activity-icon relative flex size-8 items-center justify-center rounded-none transition-[background-color,color,transform] duration-150 pointer-coarse:size-11",
+                    active
+                        ? "writeme-aside-activity-icon--active bg-primary/10 text-primary"
+                        : "writeme-aside-activity-icon--inactive text-foreground/45 hover:bg-muted/60 hover:text-foreground",
                 )}
             >
                 <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-                {active ? <div className="writeme-aside-activity-indicator" /> : null}
+                {active ? (
+                    <div className="writeme-aside-activity-indicator absolute -left-2 h-4 w-0.5 rounded-none bg-primary" />
+                ) : null}
                 {badge !== undefined && badge > 0 && (
-                    <span className="writeme-aside-activity-badge">{badge > 99 ? "99+" : badge}</span>
+                    <span className="writeme-aside-activity-badge absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm">
+                        {badge > 99 ? "99+" : badge}
+                    </span>
                 )}
             </button>
         }
@@ -75,17 +81,20 @@ export const ActivityBar = () => {
     };
 
     return (
-        <nav className="writeme-aside-activity-bar" aria-label="Workspace navigation">
+        <nav
+            className="writeme-aside-activity-bar relative z-10 flex h-full w-12 flex-col items-center border-r border-[color:color-mix(in_srgb,var(--var-color-border)_55%,transparent)] bg-(--wm-rail) py-2 pointer-coarse:w-14 print:hidden"
+            aria-label="Workspace navigation"
+        >
             <button
                 type="button"
-                className="writeme-aside-activity-brand"
+                className="writeme-aside-activity-brand mb-4 flex size-8 shrink-0 items-center justify-center rounded-none text-foreground transition-colors hover:bg-muted/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Go to home"
                 title="Go to home"
                 onClick={() => navigate("/")}
             >
                 <WritemeLogo className="size-6" aria-hidden="true" />
             </button>
-            <div className="writeme-aside-activity-icons">
+            <div className="writeme-aside-activity-icons flex w-full flex-1 flex-col items-center gap-0.5">
                 <ActivityIcon
                     icon={FilesIcon}
                     label="Explorer"
@@ -145,7 +154,10 @@ export const ActivityBar = () => {
                     onClick={() => onActivityClick("trash")}
                     active={layout.activeActivity === "trash"}
                 />
-                <div className="writeme-aside-activity-divider" aria-hidden="true" />
+                <div
+                    className="writeme-aside-activity-divider my-1 h-px w-5 shrink-0 bg-[color:color-mix(in_srgb,var(--var-color-border)_70%,transparent)]"
+                    aria-hidden="true"
+                />
                 <ActivityIcon
                     icon={ChatCircleDotsIcon}
                     label="Workspace AI"
@@ -158,7 +170,7 @@ export const ActivityBar = () => {
                     }}
                 />
             </div>
-            <div className="writeme-aside-activity-bottom">
+            <div className="writeme-aside-activity-bottom mt-auto flex w-full flex-col items-center gap-0.5">
                 <ActivityIcon
                     icon={SidebarIcon}
                     onClick={() => uiDispatch.toggleSidebar()}

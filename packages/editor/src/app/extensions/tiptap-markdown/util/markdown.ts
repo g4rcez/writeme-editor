@@ -58,7 +58,7 @@ function scanDelims(text: string, pos: number): { can_open: boolean; can_close: 
     return { can_open, can_close };
 }
 
-export function shiftDelim(text: string, delim: string, start: number, offset: number): string {
+function shiftDelim(text: string, delim: string, start: number, offset: number): string {
     let res = text.substring(0, start) + text.substring(start + delim.length);
     res = res.substring(0, start + offset) + delim + res.substring(start + offset);
     return res;

@@ -21,6 +21,9 @@ import { useMotionTabDrop } from "../hooks/use-motion-tab-drop";
 import { EditorDropTarget } from "./editor-drop-target";
 import { MotionEditorTab } from "./motion-editor-tab";
 
+const editorGroupActionClassName =
+    "writeme-editor-group-action flex size-8 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-50 [@media(max-width:40rem)]:size-11";
+
 const paneNoteOptions = (notes: readonly Note[]): Array<{ label: string; value: string }> =>
     notes
         .filter(
@@ -160,7 +163,7 @@ export function EditorPanes({
                               <Separator
                                   key={`${child.id}:separator`}
                                   aria-label={`Resize editor groups ${index} and ${index + 1}`}
-                                  className="writeme-editor-group-separator"
+                                  className="writeme-editor-group-separator shrink-0 bg-border/60 hover:bg-primary focus-visible:bg-primary print:hidden aria-[orientation=vertical]:w-1 aria-[orientation=vertical]:cursor-col-resize aria-[orientation=horizontal]:h-1 aria-[orientation=horizontal]:cursor-row-resize"
                                   onDoubleClick={resetLayout}
                               />,
                               content,
@@ -252,17 +255,17 @@ function PaneContent({
             <section
                 aria-label={`Editor group ${index + 1}`}
                 data-active={active}
-                className="writeme-editor-group"
+                className="writeme-editor-group group/editor flex h-full min-h-0 min-w-0 flex-col"
                 onFocusCapture={() => onActivate(pane.id)}
                 onPointerDownCapture={() => onActivate(pane.id)}
             >
-                <header className="writeme-editor-group-header">
+                <header className="writeme-editor-group-header flex h-10 min-w-0 shrink-0 items-center justify-between border-b border-border/60 bg-card-background print:hidden [@media(max-width:40rem)]:h-11">
                     <motion.div
                         layoutScroll
                         role="tablist"
                         tabIndex={-1}
                         aria-label={`Tabs in editor group ${index + 1}`}
-                        className="writeme-editor-group-tabs"
+                        className="writeme-editor-group-tabs flex min-w-0 flex-1 overflow-x-auto"
                         ref={tabListRef}
                         data-editor-tab-drop-target
                     >
@@ -287,7 +290,7 @@ function PaneContent({
                                         role="tab"
                                         aria-selected={id === pane.noteId}
                                         tabIndex={id === pane.noteId ? 0 : -1}
-                                        className="writeme-editor-group-note-tab"
+                                        className="writeme-editor-group-note-tab flex h-10 shrink-0 items-center gap-1 border-r border-border/60 px-2 text-sm text-foreground aria-selected:border-t-2 aria-selected:border-t-primary aria-selected:bg-background"
                                         draggable={false}
                                         onClick={() => onSelectNote(pane.id, id)}
                                         onKeyDown={(event) => {
@@ -317,7 +320,7 @@ function PaneContent({
                                     </button>
                                     <button
                                         type="button"
-                                        className="writeme-editor-group-action"
+                                        className={editorGroupActionClassName}
                                         aria-label={`Close ${tabNote.title} in group ${index + 1}`}
                                         onClick={() => onCloseTab?.(pane.id, id)}
                                     >
@@ -327,16 +330,19 @@ function PaneContent({
                             );
                         })}
                     </motion.div>
-                    <div className="writeme-editor-group-tab" title={note.filePath ?? note.title}>
+                    <div
+                        className="writeme-editor-group-tab flex h-full min-w-0 max-w-xs flex-1 items-center gap-1 border-r border-t-2 border-r-border/60 border-t-transparent px-2 group-data-[active=true]/editor:border-t-primary group-data-[active=true]/editor:bg-background"
+                        title={note.filePath ?? note.title}
+                    >
                         <FileTextIcon aria-hidden="true" size={16} className="shrink-0 text-foreground" />
                         <Select
                             hiddenLabel
                             size="small"
                             aria-label={`Select note for pane ${index + 1}`}
                             title={`Select note for pane ${index + 1}`}
-                            container="writeme-editor-group-picker"
-                            labelClassName="writeme-editor-group-picker-control"
-                            className="writeme-editor-group-select"
+                            container="writeme-editor-group-picker min-w-0 flex-1"
+                            labelClassName="writeme-editor-group-picker-control rounded-none border-0 bg-transparent shadow-none focus-within:outline focus-within:outline-2 focus-within:outline-primary -outline-offset-2"
+                            className="writeme-editor-group-select min-w-0 cursor-pointer truncate bg-transparent text-sm text-foreground"
                             options={options}
                             value={note.id}
                             onChange={(event) => onSelectNote(pane.id, event.target.value)}
@@ -345,7 +351,7 @@ function PaneContent({
                             type="button"
                             size="tiny"
                             theme="ghost-muted"
-                            className="writeme-editor-group-action"
+                            className={editorGroupActionClassName}
                             disabled={paneCount <= 1}
                             aria-label={`Close pane ${index + 1}`}
                             title={paneCount > 1 ? "Close editor group" : "At least one editor must remain open"}
@@ -354,12 +360,12 @@ function PaneContent({
                             <XIcon aria-hidden="true" size={16} />
                         </Button>
                     </div>
-                    <div className="writeme-editor-group-controls">
+                    <div className="writeme-editor-group-controls flex shrink-0 items-center gap-1 px-1">
                         <Button
                             type="button"
                             size="tiny"
                             theme="ghost-muted"
-                            className="writeme-editor-group-action"
+                            className={editorGroupActionClassName}
                             disabled={!canAdd}
                             aria-label="Add editor pane"
                             title={canAdd ? "Split editor" : "Maximum editor panes reached"}
@@ -372,7 +378,7 @@ function PaneContent({
                             onChange={setMenuOpen}
                             aria-label={`Editor group ${index + 1} actions`}
                             buttonProps={{
-                                className: "writeme-editor-group-action",
+                                className: editorGroupActionClassName,
                                 "aria-label": `Editor group ${index + 1} actions`,
                                 title: "Editor group actions",
                             }}
@@ -413,7 +419,7 @@ function PaneContent({
                     </div>
                 </header>
                 <EditorDropTarget onDropTab={(tab, side, copy) => onDropTab?.(tab, side, copy, pane.id)}>
-                    <div className="writeme-editor-group-scroll-container">
+                    <div className="writeme-editor-group-scroll-container min-h-0 flex-1 overflow-auto overscroll-contain px-4 [scroll-padding-block-end:5rem] print:overflow-visible">
                         <Editor
                             id={pane.id}
                             note={note}

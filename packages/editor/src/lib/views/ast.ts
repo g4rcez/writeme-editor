@@ -73,10 +73,10 @@ export type SelectClause = {
 
 export type ComparisonOp = "=" | "!=" | ">" | "<" | ">=" | "<=" | "CONTAINS" | "STARTS_WITH" | "LIKE";
 
-export type StringLiteral = { type: "String"; value: string };
-export type NumberLiteral = { type: "Number"; value: number };
-export type BooleanLiteral = { type: "Boolean"; value: boolean };
-export type NullLiteral = { type: "Null" };
+type StringLiteral = { type: "String"; value: string };
+type NumberLiteral = { type: "Number"; value: number };
+type BooleanLiteral = { type: "Boolean"; value: boolean };
+type NullLiteral = { type: "Null" };
 
 export type LiteralValue = StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral;
 
@@ -113,7 +113,7 @@ export type OrderByClause = {
     direction: "ASC" | "DESC";
 };
 
-export type JoinCondition = {
+type JoinCondition = {
     type: "JoinCondition";
     left: ColumnRef;
     right: ColumnRef;

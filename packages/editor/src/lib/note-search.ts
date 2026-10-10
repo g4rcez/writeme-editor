@@ -1,4 +1,5 @@
 import type { Note } from "@/store/note";
+import { markdownLineToPlainText } from "./markdown-text";
 
 type SearchValue = string | null | undefined;
 type NoteSearchable = Pick<Note, "title" | "content" | "description" | "tags" | "url" | "filePath">;
@@ -126,16 +127,9 @@ export function getNoteSearchSnippet(content: string, query: string, maxLength =
     const lines = content
         .split(/\r?\n/)
         .map((line) =>
-            line
+            markdownLineToPlainText(line.replace(/`/g, ""))
                 .replace(/^\s{0,3}#{1,6}\s+/, "")
-                .replace(
-                    /!?\[\[([^\]|]+)(?:[#^][^|\]]*)?(?:\|([^\]]+))?\]\]/g,
-                    (_match, target: string, alias?: string) => alias?.trim() || target.trim(),
-                )
-                .replace(/!?(?:\[([^\]]*)\])\([^)]*\)/g, "$1")
                 .replace(/^\s{0,3}>\s?/, "")
-                .replace(/[`*_~]/g, "")
-                .replace(/\s+/g, " ")
                 .trim(),
         )
         .filter(Boolean);

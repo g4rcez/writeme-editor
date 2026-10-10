@@ -3,7 +3,7 @@ import { createZustandCompatStore } from "./zustand-compat";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
 
-export type AlertType = "info" | "success" | "error";
+type AlertType = "info" | "success" | "error";
 export type EditorSaveStatus = "saved" | "saving" | "unsaved" | "error";
 
 export type MediaSource = {
@@ -154,9 +154,3 @@ export const useUIStore = createZustandCompatStore(
 );
 
 export const uiDispatch = useUIStore.dispatchers;
-
-export const contentWidthClasses: Record<ContentWidth, string> = {
-    narrow: "max-w-xl",
-    medium: "max-w-3xl",
-    wide: "max-w-5xl",
-};

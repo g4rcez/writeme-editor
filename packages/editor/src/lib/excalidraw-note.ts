@@ -20,7 +20,7 @@ export const EMPTY_EXCALIDRAW_PAYLOAD: ExcalidrawNotePayload = {
 
 const NON_PORTABLE_APP_STATE_KEYS = new Set(["collaborators"]);
 
-export function sanitizeExcalidrawAppState(appState: unknown): Record<string, unknown> {
+function sanitizeExcalidrawAppState(appState: unknown): Record<string, unknown> {
     if (!appState || typeof appState !== "object") return {};
 
     return Object.fromEntries(

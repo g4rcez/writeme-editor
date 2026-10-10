@@ -32,7 +32,7 @@ export function getRelativePath(from: string, to: string): string {
     return normalizedTo;
 }
 
-export function sanitizeFilename(title: string): string {
+function sanitizeFilename(title: string): string {
     const invalidChars = /[<>:"/\\|?*\x00-\x1F]/g;
     const sanitized = title
         .replace(invalidChars, "") // Remove invalid characters
@@ -46,7 +46,7 @@ export function sanitizeFilename(title: string): string {
     return truncated || "untitled";
 }
 
-export const mdExtension = (s: string) => (s.endsWith(".md") ? s : `${s}.md`);
+const mdExtension = (s: string) => (s.endsWith(".md") ? s : `${s}.md`);
 
 export function generateNotePath(rootDir: string, noteTitle: string): string {
     if (noteTitle.startsWith("/")) {
@@ -75,18 +75,6 @@ export async function getUniqueFilePath(
         counter++;
     }
     return testPath;
-}
-
-export function parseNotePath(
-    filePath: string,
-    rootDir: string,
-): {
-    filename: string;
-} {
-    const relativePath = getRelativePath(rootDir, filePath);
-    const parts = relativePath.split(/[/\\]/);
-    const filename = parts[parts.length - 1] || "";
-    return { filename };
 }
 
 export function createStandaloneNote(filePath: string, content: string) {

@@ -7,7 +7,7 @@
         "skipLibCheck": true,
         "strict": true,
         "lib": ["ESNext", "DOM"],
-        "types": ["bun-types", "node"],
+        "types": ["bun", "node"],
         "paths": {
             "solver": ["../solver/src/index.ts"],
             "solver/*": ["../solver/src/*"]

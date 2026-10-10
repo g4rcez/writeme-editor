@@ -175,7 +175,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
     });
 }
 
-export const handleMediaFile = async (
+const handleMediaFile = async (
     currentEditor: TipTapEditor,
     file: File,
     pos: number | null = null,

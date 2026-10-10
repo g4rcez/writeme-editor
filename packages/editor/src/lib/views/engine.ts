@@ -22,7 +22,7 @@ function prefixRow(tableName: string, obj: object): Row {
     return row;
 }
 
-export function resolveField(row: Row, column: ColumnRef, fromTable: string, queryTables: Set<string>): unknown {
+function resolveField(row: Row, column: ColumnRef, fromTable: string, queryTables: Set<string>): unknown {
     const path = column.path;
     let tableName: string;
     let fieldPath: string[];

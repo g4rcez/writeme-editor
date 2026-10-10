@@ -16,9 +16,17 @@ test.describe("editor workbench", () => {
         await expect(first.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Working text");
         await expect(second.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Reference text");
         await expect(first).toHaveAttribute("data-active", "true");
+        const header = first.locator(".writeme-editor-group-header");
+        const filenameTab = first.locator(".writeme-editor-group-tab");
+        await expect(filenameTab).not.toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+        const picker = first.getByRole("combobox", { name: "Select note for pane 1" });
+        await picker.focus();
+        await expect(first.locator(".writeme-editor-group-picker-control")).toHaveCSS("outline-style", "solid");
+        await expect(picker).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
         await second.getByRole("textbox", { name: "Note editor", exact: true }).click();
         await expect(second).toHaveAttribute("data-active", "true");
         await expect(first).toHaveAttribute("data-active", "false");
+        await expect(filenameTab).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
         await expect(page).toHaveURL(workingUrl);
 
         const separator = page.getByRole("separator", { name: "Resize editor groups 1 and 2" });
@@ -79,6 +87,12 @@ test.describe("editor workbench", () => {
                     return width < 640 ? b.y > a.y && Math.abs(b.x - a.x) <= 1 : b.x > a.x;
                 })
                 .toBe(true);
+            await expect(header).toHaveCSS("height", width <= 640 ? "44px" : "40px");
+            await expect(first.getByRole("button", { name: "Editor group 1 actions" })).toHaveCSS(
+                "width",
+                width <= 640 ? "44px" : "32px",
+            );
+            await expect(separator).toHaveCSS("cursor", width < 640 ? "row-resize" : "col-resize");
             expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
             const footer = page.locator(".writeme-editor-status-bar");
             const groupBottom = await second.evaluate((element) => element.getBoundingClientRect().bottom);
@@ -86,6 +100,14 @@ test.describe("editor workbench", () => {
             expect(groupBottom).toBeLessThanOrEqual(footerTop + 1);
             await page.screenshot({ path: testInfo.outputPath(`editor-groups-${width}.png`) });
         }
+
+        await page.emulateMedia({ media: "print" });
+        await expect(header).toHaveCSS("display", "none");
+        await expect(
+            page.getByRole("separator", { name: "Resize editor groups 1 and 2", includeHidden: true }),
+        ).toHaveCSS("display", "none");
+        await expect(first.locator(".writeme-editor-group-scroll-container")).toHaveCSS("overflow-y", "visible");
+        await page.emulateMedia({ media: "screen" });
 
         await first.getByRole("button", { name: "Editor group 1 actions" }).click();
         await page
@@ -188,20 +210,24 @@ test.describe("editor workbench", () => {
                 const parent = list.parentElement?.querySelector(":scope > p");
                 const child = list.querySelector("li > p");
                 if (!parent || !child) throw new Error("Expected parent and child list paragraphs");
+                const parentSibling = list.parentElement?.parentElement?.querySelector(":scope > li + li");
+                if (!parentSibling) throw new Error("Expected a sibling parent list item");
                 const parentStyle = getComputedStyle(parent);
                 const childStyle = getComputedStyle(child);
                 const listStyle = getComputedStyle(list);
                 return {
                     parentLineHeight: parseFloat(parentStyle.lineHeight),
+                    parentGap: parseFloat(getComputedStyle(parentSibling).marginTop),
                     childLineHeight: parseFloat(childStyle.lineHeight),
                     childFontSize: parseFloat(childStyle.fontSize),
                     top: parseFloat(listStyle.marginTop),
                     bottom: parseFloat(listStyle.marginBottom),
                 };
             });
-            expect(spacing.childLineHeight / spacing.childFontSize).toBeCloseTo(1.5, 1);
+            expect(spacing.parentGap).toBeGreaterThan(4);
+            expect(spacing.childLineHeight / spacing.childFontSize).toBeCloseTo(1.3, 1);
             expect(spacing.childLineHeight).toBeLessThan(spacing.parentLineHeight);
-            expect(spacing.top).toBeLessThanOrEqual(4);
+            expect(spacing.top).toBe(0);
             expect(spacing.bottom).toBeLessThanOrEqual(4);
             expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
             await editor.screenshot({ path: testInfo.outputPath(`editor-list-${width}.png`) });

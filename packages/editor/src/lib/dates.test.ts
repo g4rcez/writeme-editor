@@ -1,3 +1,4 @@
+import { Dates as SolverDates } from "solver/dates";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Dates } from "./dates";
 
@@ -150,6 +151,14 @@ describe("Dates.evaluateDaysUntil", () => {
 
     it("accepts 'after' as synonym for 'since'", () => {
         expect(Dates.evaluateDaysUntil("days after May 1 2025")).toBe("2 days");
+    });
+
+    it("keeps the editor grammar narrower than the shared solver parser", () => {
+        const expression = "how many days to May 4 2025";
+
+        expect(Dates.evaluateDaysUntil(expression)).toBeNull();
+        expect(Dates.evaluateNatural(expression)).toBeNull();
+        expect(SolverDates.evaluateDaysUntil(expression)).toBe("1 day");
     });
 });
 

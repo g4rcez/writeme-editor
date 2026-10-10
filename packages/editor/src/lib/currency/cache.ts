@@ -23,7 +23,9 @@ export function getCachedRates(baseCurrency: string): CachedRates | null {
         console.error("Error reading currency cache:", error);
         try {
             localStorage.removeItem(cacheKey);
-        } catch {}
+        } catch (removeError) {
+            console.error("Error removing invalid currency cache:", removeError);
+        }
         return null;
     }
 }
@@ -69,7 +71,7 @@ export function setCachedRates(baseCurrency: string, data: ExchangeRateData): vo
  * @param cached - Cached rates to validate
  * @returns true if cache is still valid, false if expired
  */
-export function isCacheValid(cached: CachedRates): boolean {
+function isCacheValid(cached: CachedRates): boolean {
     const now = Date.now();
     return now < cached.expiresAt;
 }
@@ -95,33 +97,6 @@ export function getStaleCachedRates(baseCurrency: string): CachedRates | null {
     } catch (error) {
         console.error("Error reading stale currency cache:", error);
         return null;
-    }
-}
-
-/**
- * Clear all currency caches
- * Useful for debugging or manual cache reset
- */
-export function clearCurrencyCache(): void {
-    try {
-        const keysToRemove: string[] = [];
-
-        // Find all currency cache keys
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(CACHE_KEY_PREFIX)) {
-                keysToRemove.push(key);
-            }
-        }
-
-        // Remove them
-        keysToRemove.forEach((key) => {
-            localStorage.removeItem(key);
-        });
-
-        console.log(`Cleared ${keysToRemove.length} currency cache entries`);
-    } catch (error) {
-        console.error("Error clearing currency cache:", error);
     }
 }
 
@@ -189,55 +164,4 @@ function getCacheDuration(): number {
     } catch {
         return DEFAULT_CACHE_DURATION;
     }
-}
-
-/**
- * Get cache statistics for debugging
- *
- * @returns Cache statistics
- */
-export function getCacheStats(): {
-    totalEntries: number;
-    totalSize: number;
-    oldestEntry: number | null;
-    newestEntry: number | null;
-} {
-    let totalEntries = 0;
-    let totalSize = 0;
-    let oldestEntry: number | null = null;
-    let newestEntry: number | null = null;
-
-    try {
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(CACHE_KEY_PREFIX)) {
-                totalEntries++;
-                const value = localStorage.getItem(key);
-                if (value) {
-                    totalSize += value.length;
-
-                    try {
-                        const cached: CachedRates = JSON.parse(value);
-                        if (oldestEntry === null || cached.fetchedAt < oldestEntry) {
-                            oldestEntry = cached.fetchedAt;
-                        }
-                        if (newestEntry === null || cached.fetchedAt > newestEntry) {
-                            newestEntry = cached.fetchedAt;
-                        }
-                    } catch {
-                        // Ignore parse errors
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error("Error getting cache stats:", error);
-    }
-
-    return {
-        totalEntries,
-        totalSize,
-        oldestEntry,
-        newestEntry,
-    };
 }

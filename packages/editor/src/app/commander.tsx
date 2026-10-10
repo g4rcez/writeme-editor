@@ -1,7 +1,7 @@
 import { type CommandItemTypes, CommandPalette, uuid } from "@g4rcez/components";
 import { ChatCircleDotsIcon, NoteIcon, TerminalIcon } from "@phosphor-icons/react";
 import { GithubLogoIcon } from "@phosphor-icons/react/dist/csr/GithubLogo";
-import { Fragment, useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { NoteGroup } from "@/store/repositories/entities/note-group";
 import type { Tab } from "@/store/repositories/entities/tab";
@@ -9,6 +9,7 @@ import type { TerminalSession } from "@/store/repositories/entities/terminal-ses
 import { version } from "@/../../../package.json";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { addFrontmatterToCurrentEditor } from "@/app/frontmatter";
+import { saveNoteTitle } from "@/app/note-title";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { notificationRef } from "@/app/notification-ref";
 import { getExistingDailyQuickNote } from "@/lib/daily-quick-note";
@@ -28,11 +29,6 @@ import { editorGlobalRef } from "./editor-global-ref";
 import { mapShortcutOS, Type, useShortcuts, useWritemeShortcuts } from "./elements/shortcut-items";
 import { useAiChatTabs } from "./hooks/use-ai-chat-tabs";
 import { useNoteTabs } from "./hooks/use-note-tabs";
-
-export const CommanderPreview = (props: { command: CommandItemTypes; text: string }) => {
-    if (props.command.type !== "shortcut") return <Fragment />;
-    return <Fragment />;
-};
 
 const GithubProjectLink = () => (
     <a
@@ -274,6 +270,7 @@ export const Commander = (props: Props) => {
             return openedTabsGroup;
         }
 
+        const currentNote = props.note;
         const notesItem: CommandItemTypes = {
             title: "Notes",
             type: "group",
@@ -347,6 +344,26 @@ export const Commander = (props: Props) => {
                               action: (args: { setOpen: (v: boolean) => void }) => {
                                   args.setOpen(false);
                                   addFrontmatterToCurrentEditor();
+                              },
+                          },
+                      ]
+                    : []),
+                ...(currentNote
+                    ? [
+                          {
+                              title: "Rename current note",
+                              type: "shortcut" as const,
+                              action: (args: { setOpen: (value: boolean) => void }) => {
+                                  args.setOpen(false);
+                                  uiDispatch.setPrompt({
+                                      open: true,
+                                      title: "Rename note",
+                                      initialValue: currentNote.title,
+                                      placeholder: "Note title",
+                                      onConfirm: (title) => {
+                                          void saveNoteTitle(currentNote, title, dispatch);
+                                      },
+                                  });
                               },
                           },
                       ]

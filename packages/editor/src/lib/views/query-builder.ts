@@ -1,4 +1,4 @@
-import type { BinaryLogical, ColumnRef, Comparison, ComparisonOp, Expression } from "./ast";
+import type { ColumnRef, Comparison, ComparisonOp, Expression } from "./ast";
 
 export type FilterRow = {
     id: string;
@@ -49,44 +49,6 @@ export function filterGroupToQueryString(
         parts.push(`ORDER BY ${options.orderBy.field} ${options.orderBy.dir}`);
     }
     return parts.join("\n");
-}
-
-export function filterGroupToAST(group: FilterGroup): Expression | null {
-    const comparisons = group.filters
-        .filter((f) => f.field && f.value !== "")
-        .map((f): Comparison => {
-            const path = f.field.split(".");
-            const field: ColumnRef = { type: "Column", path };
-            let value: Comparison["value"];
-            if (f.value === "null") {
-                value = { type: "Null" };
-            } else if (f.value === "true") {
-                value = { type: "Boolean", value: true };
-            } else if (f.value === "false") {
-                value = { type: "Boolean", value: false };
-            } else {
-                const num = Number(f.value);
-                if (!isNaN(num) && f.value !== "") {
-                    value = { type: "Number", value: num };
-                } else {
-                    value = { type: "String", value: f.value };
-                }
-            }
-            return { type: "Comparison", field, op: f.operator, value };
-        });
-
-    if (comparisons.length === 0) return null;
-    if (comparisons.length === 1) return comparisons[0]!;
-
-    return comparisons.slice(1).reduce<Expression>((acc, comp) => {
-        const node: BinaryLogical = {
-            type: "BinaryLogical",
-            op: group.logic,
-            left: acc,
-            right: comp,
-        };
-        return node;
-    }, comparisons[0]!);
 }
 
 function isSimpleComparison(expr: Expression): Comparison | null {

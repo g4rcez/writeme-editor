@@ -14,7 +14,7 @@ export type TaskItemOptions = {
     };
 };
 
-export const inputRegex = /^\s*([-*+])?\s*(\[([( |x])?\])\s$/;
+const inputRegex = /^\s*([-*+])?\s*(\[([( |x])?\])\s$/;
 
 const parseChecked = (a: any): boolean => {
     if (typeof a === "object") return !a.checked;
@@ -28,7 +28,7 @@ const parseChecked = (a: any): boolean => {
 
 const taskFinishedAtPattern = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
 
-export const formatTaskFinishedAt = (date = new Date()): string => `${Dates.yearMonthDay(date)} ${Dates.time(date)}`;
+const formatTaskFinishedAt = (date = new Date()): string => `${Dates.yearMonthDay(date)} ${Dates.time(date)}`;
 
 const getTaskParagraph = (taskNode: ProseMirrorNode, taskPos: number) => {
     const paragraph = taskNode.firstChild;

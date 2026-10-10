@@ -125,11 +125,11 @@ const THEME_MAP = {
 
 export const getThemeForMode = (mode: string): BundledTheme => (mode === "light" ? THEME_MAP.light : THEME_MAP.dark);
 
-export function getShiki() {
+function getShiki() {
     return highlighter;
 }
 
-export function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter | undefined> | undefined {
+function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter | undefined> | undefined {
     if (!highlighter && !highlighterPromise) {
         const bundledLangs = opts.languages.filter(isBundledShikiLanguage);
         const customLangs = [
@@ -149,7 +149,7 @@ export function loadHighlighter(opts: HighlighterOptions): Promise<Highlighter |
     return undefined;
 }
 
-export async function loadTheme(theme: BundledTheme) {
+async function loadTheme(theme: BundledTheme) {
     if (
         highlighter &&
         !highlighter.getLoadedThemes().includes(theme) &&
@@ -164,7 +164,7 @@ export async function loadTheme(theme: BundledTheme) {
     return false;
 }
 
-export async function loadLanguage(language: string | null | undefined) {
+async function loadLanguage(language: string | null | undefined) {
     if (!highlighter || !language || isLoadedLanguage(language)) return false;
     if (loadingLanguages.has(language as SupportedShikiLanguage)) return false;
 
@@ -185,7 +185,7 @@ export async function loadLanguage(language: string | null | undefined) {
     return false;
 }
 
-export async function initHighlighter({
+async function initHighlighter({
     doc,
     name,
     defaultTheme,

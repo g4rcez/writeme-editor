@@ -12,9 +12,3 @@ export const getStorageMode = (directory?: string | null): StorageMode => {
     if (!isElectron()) return "indexeddb";
     return directory ? "filesystem" : "indexeddb";
 };
-
-/**
- * Convenience helper to check if filesystem storage is available.
- * Useful for conditionally showing filesystem-related UI.
- */
-export const hasFilesystemAccess = (directory?: string | null) => getStorageMode(directory) === "filesystem";

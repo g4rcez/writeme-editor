@@ -49,7 +49,7 @@ function MessageAttachments({ message }: { message: AIMessage }) {
     );
 }
 
-export function AIAssistantMarkdown({ content, tone = "default" }: { content: string; tone?: "default" | "inherit" }) {
+function AIAssistantMarkdown({ content, tone = "default" }: { content: string; tone?: "default" | "inherit" }) {
     return (
         <div
             className={css(

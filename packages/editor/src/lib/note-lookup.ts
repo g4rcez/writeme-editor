@@ -25,12 +25,6 @@ export function findCompatibleNote(notes: Note[], target: CompatibleNoteTarget |
     return findByLookupValues(notes, lookupValues);
 }
 
-export function createLookupValues(target: CompatibleNoteTarget | string): Set<string> {
-    return createNormalizedValueSet(getRawTargetValues(target), {
-        includeBasename: true,
-    });
-}
-
 function findByLookupValues(notes: Note[], lookupValues: Set<string>): Note | undefined {
     if (lookupValues.size === 0) return undefined;
 

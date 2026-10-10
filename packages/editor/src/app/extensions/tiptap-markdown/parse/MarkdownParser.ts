@@ -1,5 +1,6 @@
 import { Editor } from "@tiptap/core";
 import { Marked } from "marked";
+import { escapeHtml } from "@/lib/html";
 import {
     isImageAttachmentTarget,
     isPdfAttachmentTarget,
@@ -17,15 +18,6 @@ function parseFenceInfo(raw: string): { lang: string; title: string | null } {
     const beforeTitle = titleMatch ? stripped.slice(0, stripped.indexOf("title=")).trim() : stripped;
     const lang = beforeTitle.split(/\s+/)[0] ?? "";
     return { lang, title };
-}
-
-function htmlEscape(str: string): string {
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
 }
 
 const appNoteUrlExtension = {
@@ -72,9 +64,9 @@ const appNoteUrlExtension = {
                 return undefined;
             },
             renderer(token: { label: string; path: string; id: string }) {
-                const label = htmlEscape(token.label);
-                const path = htmlEscape(token.path);
-                const id = htmlEscape(token.id);
+                const label = escapeHtml(token.label);
+                const path = escapeHtml(token.path);
+                const id = escapeHtml(token.id);
                 return `<a href="${path}" data-type="mention" data-id="${id}" data-label="${label}" data-path="${path}" class="mention" title="writeme-mention:${id}">${label}</a>`;
             },
         },
@@ -105,11 +97,11 @@ const appNoteUrlExtension = {
                 subpath: string | null;
                 display: string;
             }) {
-                const raw = htmlEscape(token.raw);
-                const target = htmlEscape(token.target);
-                const subpath = htmlEscape(token.subpath ?? "");
-                const alias = htmlEscape(token.alias ?? "");
-                const display = htmlEscape(token.display);
+                const raw = escapeHtml(token.raw);
+                const target = escapeHtml(token.target);
+                const subpath = escapeHtml(token.subpath ?? "");
+                const alias = escapeHtml(token.alias ?? "");
+                const display = escapeHtml(token.display);
                 const embed = token.embed ? "true" : "false";
 
                 if (token.embed && isImageAttachmentTarget(token.target)) {
@@ -142,8 +134,8 @@ export class MarkdownParser {
             renderer: {
                 code(token: { raw: string; text: string }) {
                     const { lang, title } = parseFenceInfo(token.raw);
-                    const escaped = htmlEscape(token.text);
-                    const titleAttr = title ? ` data-title="${htmlEscape(title)}"` : "";
+                    const escaped = escapeHtml(token.text);
+                    const titleAttr = title ? ` data-title="${escapeHtml(title)}"` : "";
                     const langClass = lang ? ` class="language-${lang}"` : "";
                     return `<pre${titleAttr}><code${langClass}>${escaped}</code></pre>\n`;
                 },
@@ -212,11 +204,12 @@ export class MarkdownParser {
             const startSpaces = content.match(/^\s+/)?.[0] ?? "";
             const endSpaces = !nextElementSibling ? (content.match(/\s+$/)?.[0] ?? "") : "";
             if (content.match(/^\n\n/)) {
-                firstParagraph.innerHTML = `${firstParagraph.innerHTML}${endSpaces}`;
+                if (endSpaces) firstParagraph.append(document.createTextNode(endSpaces));
                 return;
             }
             unwrapElement(firstParagraph);
-            node.innerHTML = `${startSpaces}${node.innerHTML}${endSpaces}`;
+            if (startSpaces) node.insertBefore(document.createTextNode(startSpaces), node.firstChild);
+            if (endSpaces) node.append(document.createTextNode(endSpaces));
         }
     }
 }

@@ -2,8 +2,6 @@ import { v7 as uuid } from "uuid";
 import type { NoteSnapshot } from "./note-history";
 import type { EntityBase, Repository } from "./repository";
 
-export type { NoteSnapshot } from "./note-history";
-
 export enum NoteType {
     note = "note",
     quick = "quick",
@@ -35,7 +33,7 @@ export class Note implements EntityBase {
         public url: string | null,
         public description: string | null,
         public favicon: string | null,
-        public metadata: Record<string, any> = {},
+        public metadata: Record<string, unknown> = {},
         public favorite: boolean = false,
         public deletedAt: Date | null = null,
     ) { }
@@ -47,7 +45,7 @@ export class Note implements EntityBase {
         url: string | null = null,
         description: string | null = null,
         favicon: string | null = null,
-        metadata: Record<string, any> = {},
+        metadata: Record<string, unknown> = {},
         favorite: boolean = false,
     ) {
         const now = new Date();

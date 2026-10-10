@@ -20,7 +20,7 @@ export type GitStatusResult =
     | ({ kind: "ok" } & ParsedStatus)
     | { kind: "error"; stderr: string };
 
-export type GitPushStage = "add" | "commit" | "push";
+type GitPushStage = "add" | "commit" | "push";
 
 export type GitPushResult =
     | { kind: "success"; pushedRefs: string }

@@ -2,7 +2,7 @@ import type { AppSettings } from "@/store/settings";
 import { TEXT_COMMAND_REFERENCE } from "@/app/commands/commands";
 import { SLASH_COMMAND_REFERENCE } from "@/app/extensions/slash-command";
 
-export type CommandReferenceCategory = "Keyboard" | "Text command" | "Slash command";
+type CommandReferenceCategory = "Keyboard" | "Text command" | "Slash command";
 
 export type CommandReferenceItem = {
     trigger: string;

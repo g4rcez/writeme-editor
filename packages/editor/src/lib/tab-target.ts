@@ -4,7 +4,7 @@ export const NOTE_TAB_TYPE = "tab";
 export const AI_CHAT_TAB_TYPE = "ai-chat-tab";
 export const TERMINAL_TAB_TYPE = "terminal-tab";
 
-export type TabTargetType = "note" | "ai-chat" | "terminal";
+type TabTargetType = "note" | "ai-chat" | "terminal";
 
 export type TabTarget = {
     type: TabTargetType;
@@ -31,7 +31,7 @@ export function isNoteTabForNoteId(tab: Pick<TabTargetCandidate, "noteId" | "typ
     return isNoteTab(tab) && tab.noteId === noteId;
 }
 
-export function getTabTargetType(tab: { type?: string | null }): TabTargetType {
+function getTabTargetType(tab: { type?: string | null }): TabTargetType {
     if (isAiChatTab(tab)) return "ai-chat";
     if (isTerminalTab(tab)) return "terminal";
     return "note";

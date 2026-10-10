@@ -61,7 +61,7 @@ function fileExtension(name: string): string | undefined {
     return name.split(".").pop()?.toLowerCase();
 }
 
-export function getAttachmentMimeType(file: Pick<File, "name" | "type">): string {
+function getAttachmentMimeType(file: Pick<File, "name" | "type">): string {
     if (TEXT_FILE_EXTENSIONS.has(fileExtension(file.name) ?? "")) return "text/plain";
     const declaredType = file.type.trim().toLowerCase();
     return declaredType || "application/octet-stream";
@@ -321,7 +321,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
     });
 }
 
-export type AIMessageContent = { text: string; files?: AIFile[] };
+type AIMessageContent = { text: string; files?: AIFile[] };
 export type AIStreamEvent = { type: "text"; delta: string } | { type: "done" } | { type: "error"; message: string };
 // Prevent browser tracing from leaving failed or aborted stream completions unhandled.
 export const DISABLED_AI_TELEMETRY = { isEnabled: false } as const;
@@ -416,7 +416,7 @@ export type SendOptions = {
     tools?: ToolSet;
     toolChoice?: ToolChoice<ToolSet>;
 };
-export type MessageRole = "user" | "assistant" | "system";
+type MessageRole = "user" | "assistant" | "system";
 export type AIConversationMessage = { role: MessageRole; content: AIMessageContent };
 
 export interface AIAdapter {

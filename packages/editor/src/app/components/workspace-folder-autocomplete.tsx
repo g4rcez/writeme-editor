@@ -1,6 +1,5 @@
-import { Input } from "@g4rcez/components";
-import { FolderSimpleIcon } from "@phosphor-icons/react/dist/csr/FolderSimple";
-import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
+import { Autocomplete } from "@g4rcez/components";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type SyntheticEvent } from "react";
 import type { FileSearchEntry, FileSearchEvent } from "@/types/tree";
 
 const MAX_FOLDER_SUGGESTIONS = 8;
@@ -23,10 +22,11 @@ export const WorkspaceFolderAutocomplete = ({
     const [entries, setEntries] = useState<FileSearchEntry[]>([]);
     const [status, setStatus] = useState<SearchStatus>("idle");
     const [error, setError] = useState<string | null>(null);
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(0);
     const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
-    const listboxId = useId();
+    const [autocompleteKey, setAutocompleteKey] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const autocompleteRef = useRef<HTMLInputElement>(null);
+    const refocusAfterClear = useRef(false);
 
     const folders = useMemo(() => {
         const seen = new Set<string>();
@@ -41,10 +41,19 @@ export const WorkspaceFolderAutocomplete = ({
             .slice(0, MAX_FOLDER_SUGGESTIONS);
     }, [entries]);
 
+    const options = useMemo(
+        () =>
+            folders.map((folder) => ({
+                value: folder.path,
+                label: `./${normalizeRelativePath(folder.relativePath)}`,
+            })),
+        [folders],
+    );
+
     useEffect(() => {
         const normalizedQuery = query.trim();
         if (!normalizedQuery || selectedFolderPath) {
-            setEntries([]);
+            if (!selectedFolderPath) setEntries([]);
             setStatus("idle");
             setError(null);
             return;
@@ -58,7 +67,6 @@ export const WorkspaceFolderAutocomplete = ({
         setEntries([]);
         setStatus("loading");
         setError(null);
-        setSelectedIndex(0);
 
         const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
             if (!isCurrentRequest || event.requestId !== requestId) return;
@@ -101,73 +109,85 @@ export const WorkspaceFolderAutocomplete = ({
     }, [query, selectedFolderPath, workspaceDirectory]);
 
     const selectFolder = (folder: FileSearchEntry): void => {
-        const relativePath = normalizeRelativePath(folder.relativePath);
-        setQuery(relativePath);
         setSelectedFolderPath(folder.path);
-        setIsOpen(false);
         onSelectionChange(folder.path, false);
     };
 
-    const clearFolder = (): void => {
+    const clearSelection = (): void => {
         setQuery("");
         setSelectedFolderPath(null);
-        setIsOpen(false);
+        setEntries([]);
+        setStatus("idle");
+        setError(null);
         onSelectionChange(null, false);
     };
 
-    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
-        if (event.key === "Escape") {
-            setIsOpen(false);
-            return;
-        }
-        if (!isOpen || folders.length === 0) return;
-
-        if (event.key === "ArrowDown") {
-            event.preventDefault();
-            setSelectedIndex((current) => Math.min(current + 1, folders.length - 1));
-        } else if (event.key === "ArrowUp") {
-            event.preventDefault();
-            setSelectedIndex((current) => Math.max(current - 1, 0));
-        } else if (event.key === "Enter") {
-            const folder = folders[selectedIndex];
-            if (!folder) return;
-            event.preventDefault();
-            event.stopPropagation();
-            selectFolder(folder);
-        }
+    const clearFolder = (): void => {
+        clearSelection();
+        refocusAfterClear.current = true;
+        setAutocompleteKey((current) => current + 1);
     };
 
-    const activeOptionId = isOpen && folders[selectedIndex] ? `${listboxId}-option-${selectedIndex}` : undefined;
-    const isPending = Boolean(query.trim() && isOpen);
+    const handleInputCapture = (event: SyntheticEvent<HTMLDivElement>): void => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement)) return;
+
+        if (input === autocompleteRef.current) {
+            if (!input.value) clearSelection();
+            return;
+        }
+
+        const nextQuery = input.value;
+        setQuery(nextQuery);
+        setSelectedFolderPath(null);
+        onSelectionChange(null, Boolean(nextQuery.trim()));
+    };
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
+        const folder = folders.find((entry) => entry.path === event.target.value);
+        if (folder) selectFolder(folder);
+    };
+
+    useEffect(() => {
+        if (!refocusAfterClear.current) return;
+        refocusAfterClear.current = false;
+        containerRef.current?.querySelector<HTMLInputElement>('input[data-shadow="true"]')?.focus();
+    }, [autocompleteKey]);
+
+    const isPending = Boolean(query.trim() && !selectedFolderPath);
+
+    const directoryCount = entries.filter((entry) => entry.type === "directory").length;
+    const feedback =
+        status === "loading"
+            ? "Searching folders..."
+            : directoryCount > folders.length
+              ? `Choose a folder or refine your search to see the first ${MAX_FOLDER_SUGGESTIONS} matches. Leave this empty to save at the workspace root.`
+              : "Choose an existing folder. Leave this empty to save at the workspace root.";
 
     return (
-        <div className="relative flex flex-col gap-2">
-            <Input
+        <div ref={containerRef} className="flex flex-col gap-2" onInputCapture={handleInputCapture}>
+            <Autocomplete
+                key={autocompleteKey}
+                ref={autocompleteRef}
                 title="Folder (optional)"
-                value={query}
+                value={selectedFolderPath ?? ""}
                 placeholder="Search workspace folders..."
-                autoComplete="off"
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={Boolean(isOpen && query.trim())}
-                aria-controls={listboxId}
-                aria-activedescendant={activeOptionId}
-                aria-describedby={`${listboxId}-help`}
-                onFocus={() => setIsOpen(Boolean(query.trim() && !selectedFolderPath))}
-                onChange={(event) => {
-                    const nextQuery = event.target.value;
-                    setQuery(nextQuery);
-                    setSelectedFolderPath(null);
-                    setIsOpen(Boolean(nextQuery.trim()));
-                    onSelectionChange(null, Boolean(nextQuery.trim()));
-                }}
-                onKeyDown={handleKeyDown}
+                options={options}
+                loading={status === "loading"}
+                error={status === "error" ? `Could not search folders: ${error ?? "Unknown error"}` : undefined}
+                emptyMessage={
+                    status === "complete"
+                        ? "No matching folders. Clear the search to use the workspace root."
+                        : "Type to search workspace folders."
+                }
+                feedback={feedback}
+                onChange={handleChange}
                 right={
-                    query ? (
+                    query || selectedFolderPath ? (
                         <button
                             type="button"
-                            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
                             aria-label="Clear folder search"
+                            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={clearFolder}
                         >
@@ -176,70 +196,7 @@ export const WorkspaceFolderAutocomplete = ({
                     ) : null
                 }
             />
-            <p id={`${listboxId}-help`} className="text-xs leading-5 text-muted-foreground">
-                Choose an existing folder. Leave this empty to save at the workspace root.
-            </p>
-
-            {isOpen && query.trim() && (
-                <div className="absolute top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-card-border bg-floating-background shadow-lg">
-                    {status === "loading" && (
-                        <p className="px-3 py-2 text-sm text-muted-foreground" role="status">
-                            Searching folders...
-                        </p>
-                    )}
-                    {status === "error" && (
-                        <p className="px-3 py-2 text-sm text-danger" role="alert">
-                            Could not search folders: {error}
-                        </p>
-                    )}
-                    {status === "complete" && folders.length === 0 && (
-                        <p className="px-3 py-2 text-sm text-muted-foreground" role="status">
-                            No matching folders. Clear the search to use the workspace root.
-                        </p>
-                    )}
-                    {folders.length > 0 && (
-                        <ul
-                            id={listboxId}
-                            role="listbox"
-                            aria-label="Workspace folders"
-                            className="max-h-56 overflow-y-auto p-1"
-                        >
-                            {folders.map((folder, index) => {
-                                const relativePath = normalizeRelativePath(folder.relativePath);
-                                const isSelected = selectedIndex === index;
-                                return (
-                                    <li
-                                        key={folder.path}
-                                        id={`${listboxId}-option-${index}`}
-                                        role="option"
-                                        aria-selected={isSelected}
-                                        tabIndex={-1}
-                                        className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm ${
-                                            isSelected ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                                        }`}
-                                        onMouseDown={(event) => event.preventDefault()}
-                                        onMouseEnter={() => setSelectedIndex(index)}
-                                        onClick={() => selectFolder(folder)}
-                                    >
-                                        <FolderSimpleIcon size={16} aria-hidden="true" />
-                                        <span className="truncate">./{relativePath}</span>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                    {status === "complete" &&
-                        entries.filter((entry) => entry.type === "directory").length > folders.length && (
-                            <p
-                                className="border-t border-card-border px-3 py-2 text-xs text-muted-foreground"
-                                role="status"
-                            >
-                                Showing {MAX_FOLDER_SUGGESTIONS} matches. Refine your search to see more.
-                            </p>
-                        )}
-                </div>
-            )}
-            {isPending && status === "complete" && folders.length === 0 ? (
+            {isPending ? (
                 <span className="sr-only">Select a matching folder or clear the search before creating the note.</span>
             ) : null}
         </div>

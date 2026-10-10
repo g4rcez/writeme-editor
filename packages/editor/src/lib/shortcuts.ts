@@ -1,4 +1,4 @@
-export enum Key {
+enum Key {
     Shift = "shift",
     Control = "control",
     Command = "cmd",
@@ -7,29 +7,29 @@ export enum Key {
     Enter = "enter",
 }
 
-export type ShortcutOptions = {
+type ShortcutOptions = {
     prevent?: boolean;
     multiPlatform?: boolean;
     description?: string;
     eventType: keyof WindowEventMap;
 };
 
-export type Undef<T> = undefined | T;
+type Undef<T> = undefined | T;
 
-export type BrowserOptions = Partial<{
+type BrowserOptions = Partial<{
     capture: Undef<boolean>;
     once: Undef<boolean>;
     passive: Undef<boolean>;
     signal: Undef<AbortSignal>;
 }>;
 
-export type ShortcutValue = {
+type ShortcutValue = {
     target: EventListener;
     options: ShortcutOptions;
     nativeOptions: BrowserOptions;
 };
 
-export const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
+const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
     const shortcutMap = new Map<string, ShortcutValue>();
     const incrementUserAction = (e: KeyboardEvent, options: Partial<ShortcutOptions>) => {
         if (!e.key) return;

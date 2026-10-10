@@ -18,7 +18,7 @@ type MarkdownSerializerNode = {
     };
 };
 
-export type DomainConfig = {
+type DomainConfig = {
     regex: RegExp;
     icon: () => React.ReactNode;
     title: (match: RegExpMatchArray) => string;
@@ -31,7 +31,7 @@ const externalHttpUrlRegex = /^https?:\/\/[^\s<>"')]+$/i;
 const externalHttpPasteRegex = /https?:\/\/[^\s<>"')]+/gi;
 const externalHttpInputRegex = /(?:^|\s)(https?:\/\/[^\s<>"')]+)\s$/i;
 
-export const DOMAIN_CONFIGS: DomainConfig[] = [
+const DOMAIN_CONFIGS: DomainConfig[] = [
     {
         regex: /^https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s]+)/,
         icon: () => <InstagramLogoIcon aria-hidden="true" />,
@@ -138,7 +138,7 @@ const DomainLinkView = (props: NodeViewProps) => {
     );
 };
 
-export const getStringAttribute = (value: unknown): string => (typeof value === "string" ? value : "");
+const getStringAttribute = (value: unknown): string => (typeof value === "string" ? value : "");
 
 export const DomainLink = Node.create({
     atom: true,

@@ -7,7 +7,7 @@ type WorkspaceTagCount = {
     count: number;
 };
 
-export const WORKSPACE_CHAT_SCOPE_PREFIX = "workspace:";
+const WORKSPACE_CHAT_SCOPE_PREFIX = "workspace:";
 
 export function getWorkspaceChatScope(directory: string | null): string {
     return `${WORKSPACE_CHAT_SCOPE_PREFIX}${getWorkspaceKey(directory)}`;

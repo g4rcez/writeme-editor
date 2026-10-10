@@ -30,7 +30,7 @@ let server: net.Server | null = null;
 let windowRef: BrowserWindow | null = null;
 let cliServerOptions: CliServerOptions = {};
 
-export function getSocketPath(): string {
+function getSocketPath(): string {
     if (process.platform === "win32") {
         return "\\\\.\\pipe\\writeme-cli";
     }
@@ -95,7 +95,7 @@ export function markCliRendererReady(webContents: WebContents, workspacePath: st
     }
 }
 
-export function sendToRendererWhenReady(
+function sendToRendererWhenReady(
     targetWindow: BrowserWindow,
     channel: string,
     payload: Record<string, unknown>,

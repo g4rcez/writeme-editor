@@ -19,7 +19,7 @@ export const ADMONITION_MAP = {
     danger: { label: "DANGER", theme: "danger" as AlertTheme, Icon: FireIcon },
 } as const;
 
-export type AdmonitionType = keyof typeof ADMONITION_MAP;
+type AdmonitionType = keyof typeof ADMONITION_MAP;
 
 export interface CalloutOptions {
     HTMLAttributes: Record<string, unknown>;
@@ -61,7 +61,7 @@ export function parseDocusaurusAdmonitions(element: HTMLElement): void {
     }
 }
 
-export const inputRegex = /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
+const inputRegex = /^\|>(info|danger|success|primary|default|note|tip|important|warning|caution)? \s?(.*)$/;
 
 const CalloutNodeView = ({ node }: NodeViewProps) => {
     const type = node.attrs.type as string;

@@ -87,7 +87,7 @@ export function base64ToUtf8(str: string): string {
     return new TextDecoder().decode(bytes);
 }
 
-export const SAFE_MARKDOWN = /^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/;
+const SAFE_MARKDOWN = /^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/;
 
 export const safeMarkdown = (s: string = "") => s.replace(SAFE_MARKDOWN, "");
 

@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { createExtensions } from "@/app/extensions";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { Markdown } from "./Markdown";
+import { MarkdownParser } from "./parse/MarkdownParser";
 
 describe("Markdown extension", () => {
     it.each([
@@ -47,6 +48,33 @@ describe("Markdown extension", () => {
             expect(editor.state.doc.firstChild?.type.name).toBe(nodeType);
             expect(editor.state.doc.textContent).toBe("unpredictable");
             expect(editor.state.selection.empty).toBe(true);
+        } finally {
+            editor.destroy();
+            element.remove();
+        }
+    });
+
+    it("preserves inline boundary spaces without reparsing generated HTML", () => {
+        const element = document.createElement("div");
+        document.body.append(element);
+        const editor = new Editor({
+            element,
+            extensions: [StarterKit, Markdown],
+            content: "Hello",
+        });
+
+        try {
+            const parser = new MarkdownParser(editor, {});
+            const container = document.createElement("div");
+            const paragraph = document.createElement("p");
+            const bold = document.createElement("strong");
+            bold.textContent = "bold";
+            paragraph.append(bold);
+            container.append(paragraph);
+
+            parser.normalizeInline(container, "  bold  ");
+
+            expect(container.innerHTML).toBe("  <strong>bold</strong>  ");
         } finally {
             editor.destroy();
             element.remove();

@@ -5,11 +5,9 @@
 }
 
 .writeme-editor-content p {
-    @apply text-pretty text-typography-paragraph proportional-nums;
+    @apply text-pretty text-typography-paragraph whitespace-pre-wrap proportional-nums;
     line-height: 1.82;
     word-spacing: normal;
-    white-space-collapse: preserve-breaks;
-    white-space: pre-line;
     break-before: column;
     word-break: auto-phrase;
 }
@@ -97,7 +95,9 @@
 
 .writeme-editor-content blockquote {
     @apply my-6 ml-0 rounded-lg px-4 py-3;
-    background-color: color-mix(in srgb, var(--var-color-primary) 5%, transparent);
+    background-color: color-mix(in srgb,
+            var(--var-color-primary) 5%,
+            transparent);
     border: 1px solid color-mix(in srgb, var(--var-color-primary) 20%, transparent);
 }
 
@@ -139,12 +139,12 @@
     @apply flex items-start;
 }
 
-.writeme-editor-content ul[data-type="taskList"] li > label {
+.writeme-editor-content ul[data-type="taskList"] li>label {
     @apply mr-0 select-none;
     flex: 0 0 auto;
 }
 
-.writeme-editor-content ul[data-type="taskList"] li > div {
+.writeme-editor-content ul[data-type="taskList"] li>div {
     @apply items-center;
     flex: 1 1 auto;
 }
@@ -186,8 +186,8 @@
     vertical-align: top;
 }
 
-.writeme-editor-content table td > *,
-.writeme-editor-content table th > * {
+.writeme-editor-content table td>*,
+.writeme-editor-content table th>* {
     margin-bottom: 0;
 }
 
@@ -247,23 +247,23 @@
     @apply list-outside list-disc ml-2;
 }
 
-.writeme-editor-content li > p {
+.writeme-editor-content li>p {
     @apply mb-0;
 }
 
-.writeme-editor-content ul[data-type="taskList"] li > div > p {
+.writeme-editor-content ul[data-type="taskList"] li>div>p {
     @apply mb-0;
 }
 
-.writeme-editor-content li > ul,
-.writeme-editor-content li > ol {
+.writeme-editor-content li>ul,
+.writeme-editor-content li>ol {
     @apply mt-1 mb-1 w-full;
     word-break: break-all;
 }
 
-.writeme-editor-content li li,
-.writeme-editor-content li li p {
-    line-height: 1.5;
+.writeme-editor-content>ul:not([data-type="taskList"])>li+li,
+.writeme-editor-content>ol>li+li {
+    @apply mt-2;
 }
 
 .writeme-editor-content ul ul {
@@ -290,23 +290,33 @@
     min-width: 1.25rem;
 }
 
-.writeme-editor-content ol li > p {
+.writeme-editor-content ol li>p {
     @apply mb-0 flex-1;
 }
 
-.writeme-editor-content ol li > ol {
+.writeme-editor-content ol li>ol {
     @apply ml-6;
     counter-reset: section;
 }
 
-.writeme-editor-content ol li > ul {
+.writeme-editor-content ol li>p+ol,
+.writeme-editor-content ul li>p+ul {
+    @apply mt-0;
+}
+
+.writeme-editor-content ol li>ul {
     @apply ml-6;
 }
 
-.writeme-editor-content ul li > ul {
+.writeme-editor-content ul li>ul {
     @apply ml-4;
 }
 
 .writeme-editor-content .tiptap-mathematics-render[data-type="inline-math"] {
     @apply mx-2 rounded-lg p-1 px-2 text-center text-sm;
+}
+
+.writeme-editor-content ol li>p+ol>li:first-child,
+.writeme-editor-content ul li>p+ul>li:first-child {
+    @apply mt-0;
 }

@@ -2,7 +2,7 @@ import type { Editor } from "@tiptap/core";
 
 const externalHttpUrlRegex = /^https?:\/\/[^\s<>"')]+$/i;
 
-export function getPastedExternalHttpUrl(text: string | undefined): string | null {
+function getPastedExternalHttpUrl(text: string | undefined): string | null {
     const href = text?.trim();
 
     if (!href || !externalHttpUrlRegex.test(href)) {

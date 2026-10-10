@@ -29,6 +29,20 @@ Plan 015's safe default is implemented and its focused tests, typecheck, and bui
 
 Plan 016's layout and link UI work does not depend on 015. Its phases run in the listed order after approval; changes to storage, formats, or broader search infrastructure need a separate scoped decision.
 
+## Styling inventory
+
+[CSS class ownership and component reuse audit](css-class-migration-audit.md) maps
+class-related assignments and DOM references across the current working tree.
+It separates existing component owners, new reuse candidates, and CSS that must
+remain for editor, native, print, or third-party behavior. This is an inventory,
+not an approved bulk rewrite or a claim of measured bundle savings.
+
+## Dependency and bundle audit
+
+See [dependency-bundle-audit.md](dependency-bundle-audit.md) for package cleanup
+candidates, measured JavaScript and source-map sizes, and bounded loading
+optimizations. No manifest or dependency change is approved by this audit.
+
 ## Findings considered and rejected
 
 - **Unstable UUIDv7 for ID-less Dexie migration rows:** rejected. Current Dexie stores use required inline primary keys; a valid ID-less source row cannot exist. Malformed non-string IDs now fail validation and retain source data.

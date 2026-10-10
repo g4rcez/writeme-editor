@@ -1,4 +1,4 @@
-import type { Node as ProseMirrorNode } from "prosemirror-model";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import {
     DndContext,
     type DragEndEvent,
@@ -162,7 +162,7 @@ function findInsertPosForStack(doc: ProseMirrorNode, stack: Stack, insertBeforeC
     return doc.content.size;
 }
 
-export function moveTaskItemBetweenStacks(
+function moveTaskItemBetweenStacks(
     editor: NonNullable<typeof editorGlobalRef.current>,
     card: Card,
     targetStack: Stack,

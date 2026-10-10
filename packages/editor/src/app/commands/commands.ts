@@ -19,7 +19,7 @@ export type ReplacerCommand = {
     replace: (thing: ExtendedRegExpMatchArray, props: ReplacerHandlerParams, editor: Editor) => string;
 };
 
-export const CurrencyCommand: ReplacerCommand = {
+const CurrencyCommand: ReplacerCommand = {
     trigger: ">>money 10USD to EUR=",
     description: "Convert an amount between currencies.",
     find: />>money (?<from>\d+(\.\d+)?[A-Z]{3})\s+(to|in)\s+(?<to>[A-Z]{3})\s*=$/i,
@@ -58,7 +58,7 @@ const EvalCommand: ReplacerCommand = {
     },
 };
 
-export const TimeCommand: ReplacerCommand = {
+const TimeCommand: ReplacerCommand = {
     trigger: ">>time",
     description: "Insert the current local time.",
     find: />>time $/,
@@ -69,7 +69,7 @@ export const TimeCommand: ReplacerCommand = {
     },
 };
 
-export const DateCommand: ReplacerCommand = {
+const DateCommand: ReplacerCommand = {
     trigger: ">>date",
     description: "Insert the current ISO date.",
     find: />>date $/,
@@ -80,7 +80,7 @@ export const DateCommand: ReplacerCommand = {
     },
 };
 
-export const DateTimeCommand: ReplacerCommand = {
+const DateTimeCommand: ReplacerCommand = {
     trigger: ">>datetime",
     description: "Insert the current local date and time.",
     find: />>datetime $/,
@@ -102,7 +102,7 @@ export const UuidCommand: ReplacerCommand = {
     },
 };
 
-export const LatexInlineCommand: ReplacerCommand = {
+const LatexInlineCommand: ReplacerCommand = {
     trigger: ">>expr",
     description: "Open the inline math expression prompt.",
     find: />>expr $/,
@@ -143,7 +143,7 @@ export const FrontmatterCommand: ReplacerCommand = {
     },
 };
 
-export const TableCommand: ReplacerCommand = {
+const TableCommand: ReplacerCommand = {
     trigger: ">>table(3x4)",
     description: "Insert a table with the specified columns and rows.",
     find: />>table ?\(\d+[x,]\d+\)$/,
@@ -163,15 +163,19 @@ const Rule3Command: ReplacerCommand = {
     find: />>rule3\s*\([^)]+\)$/,
     replace: (capture) => {
         const match = capture[0].trim();
-        const innerMatch = match.match(/rule3\s*\(\s*([^)]+)\)/);
-        if (!innerMatch) return match;
-        const result = solveRule3(innerMatch[1]!);
+        const inner = match.match(/rule3\s*\(\s*([^)]+)\)/)?.[1];
+        if (!inner) return match;
+        const values = inner.split(",").map((value) => value.trim());
+        const expression = values.length === 4
+            ? `${values[0]}/${values[1]},${values[2]}/${values[3]}`
+            : inner;
+        const result = solveRule3(expression);
         if (!result.ok) return match;
         return `${result.variable} = ${result.value}`;
     },
 };
 
-export const LatexInlineTransformerCommand: ReplacerCommand = {
+const LatexInlineTransformerCommand: ReplacerCommand = {
     trigger: "$$expression$$",
     description: "Convert LaTeX text to inline math.",
     find: /\$\$[^$]+\$\$ /,

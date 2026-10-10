@@ -60,7 +60,7 @@ function writeState(state: MigrationState): void {
     localStorage.setItem(MIGRATION_KEY, JSON.stringify(state));
 }
 
-export function migrationIssueUrl(state: MigrationState): string {
+function migrationIssueUrl(state: MigrationState): string {
     const failed = Object.entries(state.stores)
         .filter(([, value]) => value.status === "failed")
         .map(([name, value]) => `${name}: attempts=${value.attempts}, found=${value.counts?.found ?? "unknown"}`);

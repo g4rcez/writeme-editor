@@ -1,5 +1,6 @@
 import { copyDeviceCode } from "@/lib/copy-device-code";
 import { isElectron } from "@/lib/is-electron";
+import { decodeJwtPayload } from "@/lib/jwt";
 import { proxyFetch } from "@/lib/proxy-fetch";
 import { repositories } from "@/store/global.store";
 import type { AIAdapter, AuthCredentials } from "../adapters/types";
@@ -45,21 +46,8 @@ function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function parseJwtPayload<T extends object>(token: string | undefined): T | null {
-    if (!token) return null;
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    try {
-        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-        const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
-        return JSON.parse(atob(padded)) as T;
-    } catch {
-        return null;
-    }
-}
-
 function parseJwtExpiresAt(token: string | undefined): number | undefined {
-    const claims = parseJwtPayload<{ exp?: number }>(token);
+    const claims = decodeJwtPayload<{ exp?: number }>(token);
     return claims?.exp ? claims.exp * 1000 : undefined;
 }
 
@@ -116,7 +104,7 @@ type OpenAIPlatformClaims = {
 };
 
 function getOpenAIAuthClaims(idToken: string | undefined) {
-    return parseJwtPayload<OpenAIPlatformClaims>(idToken)?.[OPENAI_AUTH_CLAIMS_KEY];
+    return decodeJwtPayload<OpenAIPlatformClaims>(idToken)?.[OPENAI_AUTH_CLAIMS_KEY];
 }
 
 function getDefaultOpenAIOrganizationId(organizations: OpenAIOrganization[] | undefined): string | undefined {
@@ -127,19 +115,19 @@ function getDefaultOpenAIOrganizationId(organizations: OpenAIOrganization[] | un
 }
 
 export function parseOpenAIPlatformOrganizationId(idToken: string | undefined): string | undefined {
-    const claims = parseJwtPayload<OpenAIPlatformClaims>(idToken);
+    const claims = decodeJwtPayload<OpenAIPlatformClaims>(idToken);
     return claims?.organization_id ?? claims?.org_id ?? claims?.[OPENAI_AUTH_CLAIMS_KEY]?.organization_id;
 }
 
 export function parseOpenAIPlatformProjectId(idToken: string | undefined): string | undefined {
-    const claims = parseJwtPayload<OpenAIPlatformClaims>(idToken);
+    const claims = decodeJwtPayload<OpenAIPlatformClaims>(idToken);
     return claims?.project_id ?? claims?.[OPENAI_AUTH_CLAIMS_KEY]?.project_id;
 }
 
 export const parseOpenAIOrganizationId = parseOpenAIPlatformOrganizationId;
 
 export function parseOpenAIAccountId(token: string | undefined): string | undefined {
-    const claims = parseJwtPayload<OpenAIPlatformClaims>(token);
+    const claims = decodeJwtPayload<OpenAIPlatformClaims>(token);
     return (
         claims?.chatgpt_account_id ??
         claims?.[OPENAI_AUTH_CLAIMS_KEY]?.chatgpt_account_id ??

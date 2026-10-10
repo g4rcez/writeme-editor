@@ -1,3 +1,5 @@
+import { escapeHtml } from "./html";
+
 type MathToken = {
     type: string;
     raw: string;
@@ -15,14 +17,6 @@ type MarkdownExtension = {
 export type MarkedLike = {
     use(extension: { extensions: MarkdownExtension[] }): void;
 };
-
-const escapeAttribute = (value: string): string =>
-    value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
 
 const blockMathExtension = {
     name: "blockMath",
@@ -44,7 +38,7 @@ const blockMathExtension = {
         };
     },
     renderer(token: MathToken): string {
-        return `<div data-type="block-math" data-latex="${escapeAttribute(token.latex)}"></div>\n`;
+        return `<div data-type="block-math" data-latex="${escapeHtml(token.latex)}"></div>\n`;
     },
 };
 
@@ -65,7 +59,7 @@ const inlineMathExtension = {
         };
     },
     renderer(token: MathToken): string {
-        return `<span data-type="inline-math" data-latex="${escapeAttribute(token.latex)}"></span>`;
+        return `<span data-type="inline-math" data-latex="${escapeHtml(token.latex)}"></span>`;
     },
 };
 
