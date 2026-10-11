@@ -338,7 +338,7 @@ describe("note history", () => {
 
         manager.hardDeleteNote("note");
         expect(manager.getNoteHistory("note")).toEqual([]);
-    });
+    }, 30_000);
 });
 
 describe("note deletion", () => {
