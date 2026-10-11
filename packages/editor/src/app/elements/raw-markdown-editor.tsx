@@ -27,6 +27,8 @@ import {
 import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
 import { createMarkdownWritingAssistant } from "../writing-assistant/markdown-adapter";
 import { WritingAssistant } from "../writing-assistant/writing-assistant";
+import { supportsAI } from "@/lib/platform";
+import { markdownCompletion } from "../extensions/markdown-completion";
 import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 
 const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
@@ -188,6 +190,7 @@ export function createMarkdownSearchController(
 }
 
 type RawMarkdownEditorProps = {
+    noteId?: string;
     value: string;
     onChange: (value: string) => void;
     readonly?: boolean;
@@ -308,6 +311,7 @@ function createRawMarkdownEditorTheme(fontSize: number) {
 }
 
 export function RawMarkdownEditor({
+    noteId,
     value,
     onChange,
     readonly = false,
@@ -413,6 +417,7 @@ export function RawMarkdownEditor({
             state: EditorState.create({
                 doc: valueRef.current,
                 extensions: [
+                    markdownCompletion(noteId),
                     keymapCompartmentRef.current.of(createKeymapExtensions(initialVimModeRef.current)),
                     minimalSetup,
                     markdown({
@@ -598,7 +603,7 @@ export function RawMarkdownEditor({
 
     return (
         <div className="w-full">
-            {writingAssistantEnabled && writingAssistantAdapter && (
+            {supportsAI() && writingAssistantEnabled && writingAssistantAdapter && (
                 <WritingAssistant
                     adapter={writingAssistantAdapter}
                     selectionContext={writingAssistantSelectionContext}

@@ -4,8 +4,9 @@ import type { DatabaseCollection, DatabaseRecord } from "./main-process/database
 import type { Note } from "./store/note";
 import type { GitPushResult, GitStatusResult } from "./types/git";
 import type { DirectoryAccessResult, FileSearchEvent, FileSearchStartResult, ReadDirResult } from "./types/tree";
+import { FEATURES } from "./lib/build-features";
 
-contextBridge.exposeInMainWorld("electronAPI", {
+const electronAPI = {
     env: {
         getHome: () => ipcRenderer.invoke("env:getHome"),
     },
@@ -73,6 +74,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
         writeFile: async (filePath: string, content: string) => {
             return ipcRenderer.invoke("fs:writeFile", filePath, content);
         },
+        createFile: async (filePath: string, content: string) => ipcRenderer.invoke("fs:createFile", filePath, content),
         compareAndWriteFile: async (filePath: string, expectedContent: string, content: string) =>
             ipcRenderer.invoke("fs:compareAndWriteFile", filePath, expectedContent, content),
         copyFile: async (sourcePath: string, targetPath: string) => {
@@ -87,6 +89,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
         readBinaryFile: async (filePath: string) => {
             return ipcRenderer.invoke("fs:readBinaryFile", filePath);
         },
+        writeBinaryFile: async (filePath: string, data: Uint8Array): Promise<{ success: boolean; error?: string }> =>
+            ipcRenderer.invoke("fs:writeBinaryFile", filePath, data),
         statFile: async (filePath: string) => {
             return ipcRenderer.invoke("fs:statFile", filePath);
         },
@@ -292,7 +296,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.on("context-menu:action", handler);
         return () => ipcRenderer.removeListener("context-menu:action", handler);
     },
-});
+};
+
+if (!FEATURES.ai) Reflect.deleteProperty(electronAPI, "ai");
+if (!FEATURES.terminal) Reflect.deleteProperty(electronAPI, "terminal");
+if (!FEATURES.codeExecution) Reflect.deleteProperty(electronAPI, "execution");
+if (!FEATURES.git) Reflect.deleteProperty(electronAPI, "git");
+if (!FEATURES.cli) Reflect.deleteProperty(electronAPI.app, "installCli");
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);
 
 declare global {
     interface Window {
@@ -338,6 +349,16 @@ declare global {
                 chooseObsidianVault(): Promise<string | null>;
                 requestDirectoryAccess(dirPath: string): Promise<DirectoryAccessResult>;
                 writeFile(filePath: string, content: string): Promise<any>;
+                createFile(
+                    filePath: string,
+                    content: string,
+                ): Promise<{
+                    success: boolean;
+                    exists?: boolean;
+                    fileSize?: number;
+                    lastModified?: Date;
+                    error?: string;
+                }>;
                 compareAndWriteFile(
                     filePath: string,
                     expectedContent: string,
@@ -352,6 +373,7 @@ declare global {
                 copyFile(sourcePath: string, targetPath: string): Promise<any>;
                 readFile(filePath: string): Promise<any>;
                 readBinaryFile(filePath: string): Promise<{ success: boolean; data?: Uint8Array; error?: string }>;
+                writeBinaryFile(filePath: string, data: Uint8Array): Promise<{ success: boolean; error?: string }>;
                 statFile(filePath: string): Promise<any>;
                 mkdir(dirPath: string): Promise<any>;
                 deleteFile(filePath: string): Promise<any>;

@@ -1,5 +1,7 @@
 import { Script } from "@/store/repositories/entities/script";
+import { FEATURES } from "./build-features";
 import { Dates } from "./dates";
+import { runTemplateScript } from "./run-template-script";
 
 export type SystemVariable = {
     name: string;
@@ -82,8 +84,7 @@ export const getUserVariables = (content: string, scriptNames: string[] = []): s
 
 const executeScript = (script: Script, context: any): string => {
     try {
-        const fn = new Function("context", script.content);
-        const result = fn(context);
+        const result = runTemplateScript(script.content, context);
         return result?.toString() || "";
     } catch (error) {
         console.error(`Failed to execute script ${script.name}:`, error);
@@ -118,6 +119,7 @@ export const substituteVariables = (
         }
         const script = scripts.find((script) => compareScriptName(name, script));
         if (script) {
+            if (!FEATURES.templateScripts) return `{{${name}}}`;
             return executeScript(script, { userValues, content });
         }
         return "";

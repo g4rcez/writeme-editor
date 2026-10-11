@@ -9,18 +9,15 @@ import {
     type MenuItemConstructorOptions,
     type NativeImage,
     nativeImage,
-    net,
     session,
     shell,
     Tray,
 } from "electron";
 import started from "electron-squirrel-startup";
-import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { registerAIOAuthHandlers } from "./ipc/ai-oauth.ipc";
 import { registerAIProxyHandlers } from "./ipc/ai-proxy.ipc";
 import { registerAISetupHandlers } from "./ipc/ai-setup.ipc";
@@ -32,8 +29,10 @@ import { gitIpcHandler } from "./ipc/git.ipc";
 import { notesIpcHandler } from "./ipc/notes.ipc";
 import { readItLaterIpcHandler } from "./ipc/read-it-later.ipc";
 import { terminalIpcHandler } from "./ipc/terminal.ipc";
+import { FEATURES } from "./lib/build-features";
 import { getOrCreateAiProxyToken } from "./main-process/ai-proxy-token";
 import { AIRunner } from "./main-process/ai-runner";
+import { startAppUpdater } from "./main-process/app-updater";
 import { createApplicationMenuTemplate } from "./main-process/application-menu";
 import { installBundledCli } from "./main-process/cli-installer";
 import { notifyFileClosed, startCliServer, stopCliServer } from "./main-process/cli-server";
@@ -48,9 +47,11 @@ import {
 } from "./main-process/quicknote-window";
 import { registerSpellingContextMenus } from "./main-process/spelling-context-menu";
 import { handleWindowClose } from "./main-process/window-lifecycle";
+import { launchWorkspaceProcess } from "./main-process/workspace-instance";
 import { startProxyServer } from "./server/proxy";
 
 function registerAIHandlers() {
+    if (!FEATURES.ai) return;
     console.log("Registering AI IPC handlers...");
     ipcMain.on("ai:query", async (event, { commandTemplate, prompt, selection, context, systemPrompt }) => {
         console.log("AI Query received", { prompt });
@@ -160,33 +161,6 @@ function registerAIHandlers() {
     registerAICredentialHandlers(dbManager);
 }
 
-async function checkLinuxUpdate() {
-    try {
-        const response = await net.fetch("https://api.github.com/repos/g4rcez/writeme-editor/releases/latest");
-        const release = (await response.json()) as {
-            tag_name: string;
-            html_url: string;
-        };
-        const latest = release.tag_name.replace(/^v/, "");
-        const current = app.getVersion();
-        if (latest !== current) {
-            const { response: btn } = await dialog.showMessageBox({
-                type: "info",
-                title: "Update available",
-                message: `A new version (${latest}) is available. You are running ${current}.`,
-                buttons: ["Download", "Later"],
-                defaultId: 0,
-                cancelId: 1,
-            });
-            if (btn === 0) {
-                shell.openExternal(release.html_url);
-            }
-        }
-    } catch {
-        // no internet or API error — silently ignore
-    }
-}
-
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
@@ -272,6 +246,7 @@ function openSettings(pathname: string = "/settings/quick"): void {
 }
 
 async function installCliFromMenu(): Promise<void> {
+    if (!FEATURES.cli) return;
     try {
         const result = await installBundledCli({ appPath: app.getAppPath() });
         await dialog.showMessageBox({
@@ -321,7 +296,7 @@ function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[]
                     click: () => openSettings("/settings/appearance"),
                 },
                 { label: "Editor", click: () => openSettings("/settings/editor") },
-                { label: "AI", click: () => openSettings("/settings/ai") },
+                ...(FEATURES.ai ? [{ label: "AI", click: () => openSettings("/settings/ai") }] : []),
                 {
                     label: "Shortcuts",
                     click: () => openSettings("/settings/shortcuts"),
@@ -332,12 +307,16 @@ function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[]
                 },
             ],
         },
-        {
-            label: "Install CLI",
-            click: () => {
-                void installCliFromMenu();
-            },
-        },
+        ...(FEATURES.cli
+            ? [
+                  {
+                      label: "Install CLI",
+                      click: () => {
+                          void installCliFromMenu();
+                      },
+                  },
+              ]
+            : []),
         { type: "separator" },
         {
             label: "Quick note",
@@ -469,17 +448,17 @@ function configureWorkspaceSessionData(workspacePath: string | null, isWorkspace
 }
 
 function spawnWorkspaceInstance(folderPath: string): void {
-    const child = spawn(process.execPath, getAppRelaunchArgs([WORKSPACE_INSTANCE_FLAG, WORKSPACE_ARG, folderPath]), {
-        detached: true,
-        env: {
-            ...process.env,
-            [WORKSPACE_INSTANCE_ENV]: "1",
-            [WORKSPACE_ENV]: folderPath,
-            [AI_PROXY_TOKEN_ENV]: aiProxyToken,
-        },
-        stdio: "ignore",
+    if (!FEATURES.multiInstance) {
+        showMainWindow();
+        createFolderWindow(getPreloadPath(), folderPath);
+        return;
+    }
+    launchWorkspaceProcess(getAppRelaunchArgs([WORKSPACE_INSTANCE_FLAG, WORKSPACE_ARG, folderPath]), {
+        ...process.env,
+        [WORKSPACE_INSTANCE_ENV]: "1",
+        [WORKSPACE_ENV]: folderPath,
+        [AI_PROXY_TOKEN_ENV]: aiProxyToken,
     });
-    child.unref();
 }
 
 function sendOpenFile(filePath: string, wait: boolean, requestId: string): void {
@@ -503,7 +482,8 @@ async function main() {
     configureDevelopmentUserData();
 
     const isWorkspaceInstance =
-        process.env[WORKSPACE_INSTANCE_ENV] === "1" || process.argv.includes(WORKSPACE_INSTANCE_FLAG);
+        FEATURES.multiInstance &&
+        (process.env[WORKSPACE_INSTANCE_ENV] === "1" || process.argv.includes(WORKSPACE_INSTANCE_FLAG));
     let launchWorkspacePath = getInitialWorkspacePath(process.argv);
     configureWorkspaceSessionData(launchWorkspacePath, isWorkspaceInstance);
 
@@ -555,13 +535,13 @@ async function main() {
         }
     });
 
-    if (!isWorkspaceInstance) {
+    if (FEATURES.localProxy && !isWorkspaceInstance) {
         startProxyServer(4079, aiProxyToken);
     }
 
     app.on("before-quit", () => {
         isQuitting = true;
-        stopCliServer();
+        if (FEATURES.cli) stopCliServer();
     });
     app.on("will-quit", () => globalShortcut.unregisterAll());
     registerSpellingContextMenus();
@@ -572,9 +552,11 @@ async function main() {
         const rendererUrl =
             MAIN_WINDOW_VITE_DEV_SERVER_URL ||
             pathToFileURL(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)).href;
-        registerAIProxyHandlers(aiProxyToken, rendererUrl);
-        registerMeetingCapture(session.defaultSession, rendererUrl);
-        registerAISetupHandlers(rendererUrl);
+        if (FEATURES.ai) {
+            registerAIProxyHandlers(aiProxyToken, rendererUrl);
+            registerAISetupHandlers(rendererUrl);
+        }
+        if (FEATURES.meetingNotes) registerMeetingCapture(session.defaultSession, rendererUrl);
         await notesIpcHandler();
         databaseIpcHandler();
         appIpcHandler(
@@ -584,15 +566,15 @@ async function main() {
                 launchWorkspacePath = workspacePath;
             },
         );
-        executionIpcHandler();
-        terminalIpcHandler();
+        if (FEATURES.codeExecution) executionIpcHandler();
+        if (FEATURES.terminal) terminalIpcHandler();
         readItLaterIpcHandler();
-        gitIpcHandler();
+        if (FEATURES.git) gitIpcHandler();
         ipcMain.handle("fs:watcher:start", (_, directory: string) => {
             if (mainWindow) FileWatcher.start(directory, mainWindow);
         });
         ipcMain.handle("app:file-closed", (_, requestId: string) => {
-            notifyFileClosed(requestId);
+            if (FEATURES.cli) notifyFileClosed(requestId);
             return true;
         });
         ipcMain.handle("app:open-folder", (_, { folderPath }: { folderPath: string }) => {
@@ -735,8 +717,8 @@ async function main() {
         if (!isWorkspaceInstance) {
             createTray();
         }
-        if (mainWindow) registerAIOAuthHandlers(mainWindow);
-        if (mainWindow && !isWorkspaceInstance) {
+        if (FEATURES.ai && mainWindow) registerAIOAuthHandlers(mainWindow);
+        if (FEATURES.cli && mainWindow && !isWorkspaceInstance) {
             startCliServer(mainWindow, {
                 getCurrentWorkspacePath: () => launchWorkspacePath,
                 openWorkspaceInNewInstance: spawnWorkspaceInstance,
@@ -757,20 +739,7 @@ async function main() {
             }
         }
 
-        if (!isWorkspaceInstance && app.isPackaged) {
-            if (process.platform !== "linux") {
-                updateElectronApp({
-                    updateSource: {
-                        type: UpdateSourceType.ElectronPublicUpdateService,
-                        repo: "g4rcez/writeme-editor",
-                    },
-                    updateInterval: "1 hour",
-                    notifyUser: true,
-                });
-            } else {
-                checkLinuxUpdate();
-            }
-        }
+        if (FEATURES.autoUpdate && !isWorkspaceInstance && app.isPackaged) void startAppUpdater();
 
         if (mainWindow && !isWorkspaceInstance) {
             try {

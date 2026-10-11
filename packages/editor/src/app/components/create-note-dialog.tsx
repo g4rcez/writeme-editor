@@ -1,12 +1,13 @@
 import { Autocomplete, Button, Input, Modal } from "@g4rcez/components";
 import { startOfDay } from "date-fns";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
 import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
 import { generateNotePath, getUniqueFilePath, getUniqueNoteTitle } from "@/lib/file-utils";
+import { buildFreehandNoteContent } from "@/lib/freehand-note";
 import { isElectron } from "@/lib/is-electron";
 import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
@@ -22,8 +23,11 @@ export const CreateNoteDialog = () => {
     const [variableValues, setVariableValues] = useState<Record<string, string>>({});
     const [quickNoteDate, setQuickNoteDate] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [pdfFile, setPdfFile] = useState<File | null>(null);
+    const [importing, setImporting] = useState(false);
     const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
     const [folderSelectionPending, setFolderSelectionPending] = useState(false);
+    const initializedDialog = useRef<string | null>(null);
     const { templates } = useTemplates();
     const { scripts } = useScripts();
     const navigate = useNavigate();
@@ -42,8 +46,12 @@ export const CreateNoteDialog = () => {
     }, [selectedTemplate, scripts]);
 
     useEffect(() => {
+        const key = isOpen ? JSON.stringify([type, templateId, initialTitle]) : null;
+        if (key === initializedDialog.current) return;
+        initializedDialog.current = key;
         if (isOpen) {
             setError(null);
+            setPdfFile(null);
             setSelectedFolderPath(null);
             setFolderSelectionPending(false);
             if (type === "quick") {
@@ -60,6 +68,7 @@ export const CreateNoteDialog = () => {
     }, [isOpen, type, templateId, initialTitle, state.notes, state.directory]);
 
     const onClose = () => {
+        if (importing) return;
         setError(null);
         setSelectedFolderPath(null);
         setFolderSelectionPending(false);
@@ -72,11 +81,26 @@ export const CreateNoteDialog = () => {
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!title.trim() || folderSelectionPending) return;
+        if (!title.trim() || folderSelectionPending || importing) return;
         setError(null);
 
         try {
-            let content = type === "excalidraw" ? buildExcalidrawNoteContent() : "";
+            if (type === "pdf") {
+                if (!pdfFile) throw new Error("Choose a PDF to import.");
+                setImporting(true);
+                const { importPdfNote } = await import("@/lib/pdf-import");
+                const note = await importPdfNote(pdfFile, title.trim());
+                await dispatch.note(note, !isFloatingEditorWindow);
+                dispatch.setCreateNoteDialog({ isOpen: false, type });
+                navigate(isFloatingEditorWindow ? "/floating-editor" : `/note/${note.id}`);
+                return;
+            }
+            let content =
+                type === "excalidraw"
+                    ? buildExcalidrawNoteContent()
+                    : type === "freehand"
+                      ? buildFreehandNoteContent()
+                      : "";
             if ((type === "note" || type === "quick") && selectedTemplateId) {
                 const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
                 if (latestTemplate) {
@@ -95,7 +119,7 @@ export const CreateNoteDialog = () => {
                 type === "quick"
                     ? await getOrCreateDailyQuickNote(quickNoteDate ?? new Date(), { title, content })
                     : Note.new(title, content, NoteType[type]);
-            if ((type === "note" || type === "excalidraw") && selectedFolderPath) {
+            if ((type === "note" || type === "excalidraw" || type === "freehand") && selectedFolderPath) {
                 const folderResult = await window.electronAPI.fs.readDir(selectedFolderPath);
                 if (folderResult.error) throw new Error(`Could not access the selected folder: ${folderResult.error}`);
 
@@ -115,7 +139,7 @@ export const CreateNoteDialog = () => {
                 note.lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : new Date();
             }
             if (type !== "quick") await repositories.notes.save(note);
-            dispatch.note(note, !isFloatingEditorWindow);
+            await dispatch.note(note, !isFloatingEditorWindow);
             onClose();
             if (isFloatingEditorWindow) {
                 navigate("/floating-editor");
@@ -126,6 +150,8 @@ export const CreateNoteDialog = () => {
             }
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : "Failed to create the note.");
+        } finally {
+            setImporting(false);
         }
     };
 
@@ -135,16 +161,39 @@ export const CreateNoteDialog = () => {
             onChange={onClose}
             className="max-w-md"
             title={
-                type === "quick"
+                type === "pdf"
+                    ? "Import PDF"
+                    : type === "quick"
                     ? "Today's quick note"
                     : type === "excalidraw"
                       ? "Create Excalidraw note"
-                      : type === "meeting-note"
-                        ? "Create meeting note"
-                        : "Create new note"
+                      : type === "freehand"
+                        ? "Create handwritten note"
+                        : type === "meeting-note"
+                          ? "Create meeting note"
+                          : "Create new note"
             }
         >
             <form onSubmit={onSubmit} className="flex flex-col gap-4">
+                {type === "pdf" ? (
+                    <label className="flex flex-col gap-2 text-sm text-foreground">
+                        PDF document
+                        <input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            aria-label="PDF document"
+                            required
+                            disabled={importing}
+                            onChange={(event) => {
+                                const file = event.target.files?.[0] ?? null;
+                                setPdfFile(file);
+                                setError(null);
+                                if (file) setTitle(getUniqueNoteTitle(file.name.replace(/\.pdf$/i, ""), state.notes));
+                            }}
+                        />
+                        {importing ? <span role="status">Importing PDF…</span> : null}
+                    </label>
+                ) : null}
                 <Input
                     required
                     autoFocus
@@ -153,7 +202,9 @@ export const CreateNoteDialog = () => {
                     title="Note title"
                     onChange={(e) => setTitle(e.target.value)}
                 />
-                {(type === "note" || type === "excalidraw") && isElectron() && state.directory ? (
+                {(type === "note" || type === "excalidraw" || type === "freehand") &&
+                isElectron() &&
+                state.directory ? (
                     <WorkspaceFolderAutocomplete
                         workspaceDirectory={state.directory}
                         onSelectionChange={(path, isPending) => {
@@ -212,11 +263,11 @@ export const CreateNoteDialog = () => {
                 )}
 
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" theme="muted" onClick={onClose}>
+                    <Button type="button" theme="muted" onClick={onClose} disabled={importing}>
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={folderSelectionPending}>
-                        {type === "quick" ? "Open today's note" : `Create ${selectedTemplate ? "from template" : ""}`}
+                    <Button type="submit" disabled={folderSelectionPending || importing || (type === "pdf" && !pdfFile)}>
+                        {type === "pdf" ? "Import PDF" : type === "quick" ? "Open today's note" : `Create ${selectedTemplate ? "from template" : ""}`}
                     </Button>
                 </div>
             </form>

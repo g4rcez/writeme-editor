@@ -1,8 +1,10 @@
 import { Button } from "@g4rcez/components";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
+import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TagIcon } from "@phosphor-icons/react/dist/csr/Tag";
@@ -12,6 +14,7 @@ import type { Note } from "@/store/note";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { Dates } from "@/lib/dates";
+import { supportsAI } from "@/lib/platform";
 import { tildaDir } from "@/lib/file-utils";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
@@ -171,6 +174,14 @@ export default function DashboardPage() {
                                     <kbd className="rounded bg-button-primary-text/15 px-1.5 py-0.5 font-mono text-xs text-button-primary-text/80">
                                         ⌘ N
                                     </kbd>
+                                </Button>
+                                <Button type="button" theme="outlined" className="min-h-11" onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "freehand" })}>
+                                    <PencilSimpleIcon size={17} aria-hidden="true" />
+                                    <span>Handwritten note</span>
+                                </Button>
+                                <Button type="button" theme="outlined" className="min-h-11" onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "pdf" })}>
+                                    <FilePdfIcon size={17} aria-hidden="true" />
+                                    <span>Import PDF</span>
                                 </Button>
                                 <Button type="button" theme="outlined" onClick={onSearch}>
                                     <MagnifyingGlassIcon size={17} aria-hidden="true" />
@@ -368,13 +379,13 @@ export default function DashboardPage() {
                                 shortcut="⌘ K"
                                 onClick={onSearch}
                             />
-                            <ActionCard
+                            {supportsAI() && <ActionCard
                                 title="Ask AI"
                                 description="Bring in a second pair of eyes."
                                 icon={RobotIcon}
                                 shortcut={null}
                                 onClick={openAiAssistant}
-                            />
+                            />}
                         </div>
                     </section>
                 </div>

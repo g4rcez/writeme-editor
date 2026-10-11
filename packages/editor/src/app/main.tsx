@@ -4,7 +4,10 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { sortByNewest } from "@/lib/array";
 import { isElectron } from "@/lib/is-electron";
-import { isAiChatTab } from "@/lib/tab-target";
+import { isMobile, supportsAI } from "@/lib/platform";
+import { FEATURES } from "@/lib/build-features";
+import { initializeMobileRuntime } from "@/lib/mobile-runtime";
+import { isAiChatTab, isTerminalTab } from "@/lib/tab-target";
 import { runPurge } from "@/lib/trash/purge";
 import { migrateDexieToSqlite } from "../lib/dexie-to-sqlite-migration";
 import {
@@ -87,6 +90,7 @@ const platformConfiguration = (): void => {
     const isDesktop = isElectron();
     document.documentElement.classList.toggle("platform-electron", isDesktop);
     document.documentElement.classList.toggle("platform-web", !isDesktop);
+    document.documentElement.classList.toggle("platform-mobile", isMobile());
 };
 
 const themeConfiguration = () => {
@@ -127,9 +131,12 @@ export async function main() {
     if (!rootElement) {
         throw new Error("Root element not found");
     }
-    setupAIAdapters();
+    if (supportsAI()) setupAIAdapters();
     platformConfiguration();
     themeConfiguration();
+    void initializeMobileRuntime().catch((error: unknown) => {
+        console.error("Could not initialize mobile system features:", error);
+    });
     void applySystemAccentColor();
     watchSystemAccentColor();
 
@@ -139,8 +146,8 @@ export async function main() {
         await SettingsService.init();
         const settings = SettingsService.load();
         const launchWorkspace = isElectron() ? await window.electronAPI.app.getLaunchWorkspace() : null;
-        const directory = launchWorkspace ?? settings.directory;
-        const explorerRoot = launchWorkspace ?? settings.explorerRoot;
+        const directory = isMobile() ? null : launchWorkspace ?? settings.directory;
+        const explorerRoot = isMobile() ? null : launchWorkspace ?? settings.explorerRoot;
         if (isElectron()) {
             await window.electronAPI.app.setLaunchWorkspace(directory);
         }
@@ -154,7 +161,8 @@ export async function main() {
         const workspaceKey = getWorkspaceKey(directory);
         const shouldIncludeLegacyTabs = launchWorkspace === null;
         const workspaceTabs = allTabs.filter(
-            (tab) => tab.project === workspaceKey || (shouldIncludeLegacyTabs && !tab.project),
+            (tab) => (supportsAI() || !isAiChatTab(tab)) && (FEATURES.terminal || !isTerminalTab(tab)) &&
+                (tab.project === workspaceKey || (shouldIncludeLegacyTabs && !tab.project)),
         );
         const { tabs, duplicateTabs } = normalizeWorkspaceTabs(workspaceTabs, workspaceKey);
         await Promise.all([
@@ -169,7 +177,7 @@ export async function main() {
         if (duplicateTabs.length > 0) {
             await repositories.tabs.updateOrder(tabs);
         }
-        const terminalSessions = allTerminalSessions.filter((session) => session.project === workspaceKey);
+        const terminalSessions = !FEATURES.terminal || isMobile() ? [] : allTerminalSessions.filter((session) => session.project === workspaceKey);
         await globalDispatch.init(
             settings.theme,
             notes,

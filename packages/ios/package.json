@@ -1,0 +1,19 @@
+{
+    "name": "@writeme/ios",
+    "version": "1.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "sync": "node ../mobile/scripts/sync-profile.ts ios",
+        "open": "cap open ios",
+        "run": "cap run ios",
+        "build": "node ../mobile/scripts/build-native.ts ios"
+    },
+    "dependencies": {
+        "@capacitor/ios": "8.5.3",
+        "@writeme/mobile": "1.1.0"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "8.5.3"
+    }
+}

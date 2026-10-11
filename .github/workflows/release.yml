@@ -13,6 +13,9 @@ jobs:
     meeting-verification:
         uses: ./.github/workflows/meeting-verification.yml
 
+    handwriting-verification:
+        uses: ./.github/workflows/handwriting-e2e.yml
+
     build-mac-arm64:
         runs-on: macos-latest
         steps:
@@ -75,6 +78,23 @@ jobs:
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
                   CSC_LINK: ${{ secrets.CSC_LINK }}
                   CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+            - name: Install Playwright recording runtime
+              run: npm exec playwright -- install chromium
+
+            - name: Verify packaged handwriting before staging release
+              run: npm run test:e2e:handwriting:native -- --grep "packaged application"
+              env:
+                  WRITEME_PACKAGED_EXECUTABLE: out/writeme-darwin-arm64/writeme.app/Contents/MacOS/writeme
+
+            - name: Upload packaged handwriting evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: handwriting-release-macos
+                  path: artifacts/playwright/handwriting-native/
+                  if-no-files-found: warn
+                  retention-days: 14
 
             - name: Verify macOS signature and notarization
               if: env.MACOS_SIGNING_MODE == 'signed'
@@ -146,6 +166,21 @@ jobs:
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
 
+            - name: Install Playwright recording runtime
+              run: npm exec playwright -- install chromium
+
+            - name: Verify packaged handwriting before staging release
+              run: npm run test:e2e:handwriting:native -- --grep "packaged application"
+
+            - name: Upload packaged handwriting evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: handwriting-release-windows
+                  path: artifacts/playwright/handwriting-native/
+                  if-no-files-found: warn
+                  retention-days: 14
+
             - name: Stage artifacts
               shell: bash
               run: |
@@ -197,6 +232,21 @@ jobs:
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
 
+            - name: Install Playwright recording runtime
+              run: npm exec playwright -- install --with-deps chromium
+
+            - name: Verify packaged handwriting before staging release
+              run: xvfb-run --auto-servernum npm run test:e2e:handwriting:native -- --grep "packaged application"
+
+            - name: Upload packaged handwriting evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: handwriting-release-linux
+                  path: artifacts/playwright/handwriting-native/
+                  if-no-files-found: warn
+                  retention-days: 14
+
             - name: Stage artifacts
               run: |
                   VERSION="${GITHUB_REF_NAME#v}"
@@ -223,7 +273,7 @@ jobs:
                   if-no-files-found: error
 
     release:
-        needs: [meeting-verification, build-mac-arm64, build-windows, build-linux]
+        needs: [meeting-verification, handwriting-verification, build-mac-arm64, build-windows, build-linux]
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -232,8 +282,18 @@ jobs:
 
             - uses: actions/download-artifact@v4
               with:
+                  name: mac-arm64
                   path: artifacts
-                  merge-multiple: true
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: windows
+                  path: artifacts
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: linux
+                  path: artifacts
 
             - name: Extract release notes
               run: |

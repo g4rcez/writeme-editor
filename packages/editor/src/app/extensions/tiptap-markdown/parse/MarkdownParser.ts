@@ -1,6 +1,8 @@
 import { Editor } from "@tiptap/core";
 import { Marked } from "marked";
 import { escapeHtml } from "@/lib/html";
+import { decodeMarkdownFilePath } from "@/lib/markdown-links";
+import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
 import {
     isImageAttachmentTarget,
     isPdfAttachmentTarget,
@@ -51,14 +53,16 @@ const appNoteUrlExtension = {
                 return src.indexOf("[");
             },
             tokenizer(src: string) {
-                const match = src.match(/^\[([^\]]+)\]\(([^)"]+)\s+"writeme-mention:([^"]+)"\)/);
+                const match = src.match(/^\[((?:\\.|[^\]\\])+)\]\(([^)"]+)\s+"writeme-mention:((?:\\.|[^"\\])+)"\)/);
                 if (match) {
+                    const id = (match[3] ?? "").replace(/\\([\\"])/g, "$1");
+                    const path = match[2] ?? "";
                     return {
                         type: "mention_link",
                         raw: match[0],
-                        label: match[1],
-                        path: match[2],
-                        id: match[3],
+                        label: (match[1] ?? "").replace(/\\([\\[\]*_`~<>])/g, "$1"),
+                        path: id.startsWith("file:") ? decodeMarkdownFilePath(path) : path,
+                        id,
                     };
                 }
                 return undefined;
@@ -129,6 +133,7 @@ export class MarkdownParser {
     constructor(editor: Editor, { breaks }: { html?: boolean; breaks?: boolean }) {
         this.editor = editor;
         this.md = new Marked({ gfm: true, breaks: breaks ?? true });
+        configureHighlightMarkdown(this.md);
         this.md.use(appNoteUrlExtension);
         this.md.use({
             renderer: {

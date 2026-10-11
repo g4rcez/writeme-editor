@@ -1,4 +1,5 @@
 import { type BundledLanguage } from "shiki";
+import { runJavascript } from "./run-javascript";
 
 export interface ExecutionConfig {
     command: string;
@@ -14,7 +15,7 @@ export const EXECUTION_CONFIG: Partial<Record<BundledLanguage, ExecutionConfig>>
         browserRuntimeExec: async (code: string) => {
             console.log({ code });
             try {
-                const result = eval(code);
+                const result = runJavascript(code);
                 return { stdout: String(result), stderr: "" };
             } catch (e) {
                 return { stdout: "", stderr: String(e) };

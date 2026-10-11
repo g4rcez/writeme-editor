@@ -1,4 +1,5 @@
 import type { Toggle } from "./types";
+import { isMobile } from "@/lib/platform";
 import { createZustandCompatStore } from "./zustand-compat";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
@@ -81,7 +82,7 @@ const initialState: UISettings = {
     prompt: persistedState.prompt || null,
     confirm: null,
     focusMode: persistedState.focusMode || false,
-    sidebarOpen: persistedState.sidebarOpen ?? true,
+    sidebarOpen: persistedState.sidebarOpen ?? !isMobile(),
     mediaPreview: { open: false, sources: [], index: 0 },
     tasksDialog: { isOpen: false },
     gitDialog: { open: false },

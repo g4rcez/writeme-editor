@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { processMarkdown } from "./markdown.worker";
 
 describe("processMarkdown", () => {
+    it("preserves highlighted comment links in large-document parsing", () => {
+        const html = processMarkdown("[==Selected sentence==](./comments_advisor.md#selected-sentence) and `==code==`");
+        expect(html).toContain('<a href="./comments_advisor.md#selected-sentence"><mark>Selected sentence</mark></a>');
+        expect(html).toContain("<code>==code==</code>");
+    });
     it("converts a markdown heading to an HTML h1", () => {
         const html = processMarkdown("# Hello");
         expect(html).toContain("<h1");

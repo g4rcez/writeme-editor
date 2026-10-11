@@ -80,6 +80,11 @@ export class DatabaseManager {
         favorite INTEGER DEFAULT 0
       );
 
+      CREATE TABLE IF NOT EXISTS pdfAssets (
+        id TEXT PRIMARY KEY,
+        data TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS noteHistory (
         id TEXT PRIMARY KEY,
         type TEXT,
@@ -652,6 +657,7 @@ export class DatabaseManager {
 
  public hardDeleteNote(id: string): void {
   this.db.transaction(() => {
+   this.db.prepare("DELETE FROM pdfAssets WHERE id = ?").run(id);
    this.db.prepare("DELETE FROM aiMessages WHERE chatId IN (SELECT id FROM aiChats WHERE noteId = ?)").run(id);
    this.db.prepare("DELETE FROM aiChats WHERE noteId = ?").run(id);
    this.db.prepare("DELETE FROM tabs WHERE noteId = ?").run(id);

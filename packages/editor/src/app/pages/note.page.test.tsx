@@ -187,6 +187,23 @@ describe("NotePage route loading", () => {
         expect(dispatch.addTab).not.toHaveBeenCalled();
     });
 
+    it("preserves the comments companion title when its Markdown heading is read", () => {
+        const dispatch = createDispatch();
+        const note = Note.parse({
+            id: "note-1",
+            title: "comments_advisor",
+            content: "# comments_advisor\n\n## sentence\n> Sentence.\n- Comment",
+            metadata: { commentSourceId: "source-note" },
+        });
+        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+
+        renderNoteRoute();
+
+        expect(dispatch.updateNoteTitle).not.toHaveBeenCalled();
+        expect(screen.getByRole("heading", { name: /^comments_advisor$/ })).toBeVisible();
+    });
+
     it("shows the Add frontmatter and History actions for ordinary notes", () => {
         const dispatch = createDispatch();
         vi.mocked(useGlobalStore).mockReturnValue([{ note: createNote(), tabs: [createNoteTab()] }, dispatch] as never);

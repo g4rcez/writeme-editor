@@ -1,5 +1,7 @@
 import path from "node:path";
 import { defineConfig, type UserConfig } from "vite";
+import { buildFeaturePlugin } from "./build/feature-plugin.mts";
+import { desktopProfile } from "./build/profiles.mts";
 
 const removeForgeInlineDynamicImports = {
     name: "writeme-preload-rolldown-options",
@@ -10,7 +12,7 @@ const removeForgeInlineDynamicImports = {
 };
 
 export default defineConfig({
-    plugins: [removeForgeInlineDynamicImports],
+    plugins: [buildFeaturePlugin(desktopProfile(), "preload"), removeForgeInlineDynamicImports],
     resolve: { alias: { "@": path.resolve(import.meta.dirname, "./packages/editor/src") } },
     build: {
         rolldownOptions: { output: { codeSplitting: false } },

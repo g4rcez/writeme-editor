@@ -27,7 +27,7 @@ export default HardBreak.extend({
                             if (state.inTable) {
                                 HTMLNode.storage.markdown.serialize.call(this, state, node, parent);
                             } else {
-                                state.write("");
+                                state.write("  \n");
                             }
                             return;
                         }

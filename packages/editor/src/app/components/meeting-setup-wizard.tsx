@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import type { AppSettings } from "@/store/settings";
 import { isSameMeetingEndpointOrigin, startMeetingRecording, transcribeMeetingAudio } from "@/lib/meeting-audio";
 import {
+    detectMeetingInstallerOS,
+    downloadMeetingInstaller,
+    MEETING_INSTALLER_LABELS,
+    meetingInstaller,
+    type MeetingInstallerOS,
+} from "@/lib/meeting-installer";
+import {
     LOCAL_WHISPER_ENDPOINT,
     LOCAL_WHISPER_MODEL,
     OPENAI_TRANSCRIPTION_MODELS,
@@ -75,6 +82,9 @@ export function MeetingSetupWizard({
     const [phase, setPhase] = useState<Phase>("idle");
     const [error, setError] = useState<string | null>(null);
     const [sample, setSample] = useState<string | null>(null);
+    const [installerOS, setInstallerOS] = useState<MeetingInstallerOS | "">(() =>
+        detectMeetingInstallerOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints),
+    );
     const recording = useRef<Recording | null>(null);
     const controller = useRef<AbortController | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -258,8 +268,8 @@ export function MeetingSetupWizard({
             open
             title="Set up meeting notes"
             ariaDescription="Choose how to transcribe meetings, test your microphone, then save your configuration."
-            className="max-w-xl"
-            bodyClassName="min-w-0"
+            className="writeme-meeting-setup w-full max-w-3xl"
+            bodyClassName="min-h-0 min-w-0"
             footer={actions}
             closable={phase !== "saving"}
             onChange={(open) => {
@@ -334,15 +344,87 @@ export function MeetingSetupWizard({
                 {step === 1 ? (
                     <>
                         {provider === "local" ? (
-                            <p className="rounded-lg border border-border bg-background p-3 text-sm leading-6">
-                                Install FFmpeg, build whisper.cpp and download the base model first. From your
-                                whisper.cpp folder, start the server with:
-                                <code className="my-2 block break-all text-xs">
-                                    ./build/bin/whisper-server --model models/ggml-base.bin --threads 4 --port 8080
-                                    --convert --language auto
-                                </code>
-                                Use http://localhost:8080/inference below. For another model, change the model file in
-                                the server command. This wizard does not install or start the server.{" "}
+                            <section
+                                aria-label="Install local transcription"
+                                className="space-y-3 rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                            >
+                                <p>
+                                    Download and run the installer for your computer. It installs the required tools,
+                                    builds Whisper, downloads the multilingual base model (148 MB), and starts your
+                                    local transcription server. Installation may take several minutes and request your
+                                    system password or permission to install tools.
+                                </p>
+                                <label className="flex flex-col gap-1">
+                                    <span>Installer operating system</span>
+                                    <select
+                                        className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-foreground"
+                                        value={installerOS}
+                                        onChange={(event) => {
+                                            const value = event.target.value;
+                                            if (value === "macos" || value === "windows" || value === "linux")
+                                                setInstallerOS(value);
+                                        }}
+                                    >
+                                        <option value="" disabled>
+                                            Choose your computer's operating system
+                                        </option>
+                                        {Object.entries(MEETING_INSTALLER_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <Button
+                                    className="min-h-11"
+                                    theme="muted"
+                                    disabled={!installerOS}
+                                    onClick={() => {
+                                        if (!installerOS) return;
+                                        try {
+                                            downloadMeetingInstaller(installerOS);
+                                        } catch (reason) {
+                                            setError(errorMessage(reason));
+                                        }
+                                    }}
+                                >
+                                    {installerOS
+                                        ? `Download installer for ${MEETING_INSTALLER_LABELS[installerOS]}`
+                                        : "Download installer"}
+                                </Button>
+                                {installerOS ? (
+                                    <>
+                                        <p>
+                                            Save it in Downloads, then open{" "}
+                                            {installerOS === "windows" ? "PowerShell" : "Terminal"} and run:
+                                        </p>
+                                        <code className="block break-all rounded border border-border p-2 text-xs">
+                                            {meetingInstaller(installerOS).command}
+                                        </code>
+                                        {installerOS === "linux" ? (
+                                            <p className="text-xs text-muted-foreground">
+                                                Automatic dependency installation supports Debian/Ubuntu, Fedora and
+                                                Arch Linux.
+                                            </p>
+                                        ) : null}
+                                        {installerOS === "windows" ? (
+                                            <p className="text-xs text-muted-foreground">
+                                                Requires Windows App Installer (winget). Approve any build-tools
+                                                installation prompts.
+                                            </p>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <p>
+                                        Local installation needs a macOS, Windows or Linux computer. Choose the computer
+                                        that will run the server.
+                                    </p>
+                                )}
+                                <p>
+                                    Keep the terminal open while using transcription. The installer prints a restart
+                                    command for future meetings. Use http://localhost:8080/inference and the base model
+                                    below. For another model, change the model file in the server's restart script.
+                                </p>
                                 <a
                                     className="text-primary underline"
                                     href="https://github.com/ggml-org/whisper.cpp/blob/master/examples/server/README.md"
@@ -351,7 +433,7 @@ export function MeetingSetupWizard({
                                 >
                                     Local server guide
                                 </a>
-                            </p>
+                            </section>
                         ) : null}
                         <Input
                             title="Transcription endpoint"

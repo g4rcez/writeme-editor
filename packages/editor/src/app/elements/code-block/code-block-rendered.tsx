@@ -3,6 +3,7 @@ import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tipt
 import { Fragment, lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import { updateNodeContent } from "@/lib/editor-utils";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
+import { FEATURES } from "@/lib/build-features";
 import { isElectron } from "@/lib/is-electron";
 import { CodeBlockFrame } from "../code-block";
 import { canFormat, formatCode } from "../code-block-formatting";
@@ -113,7 +114,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     }, []);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!FEATURES.codeExecution || !isElectron()) return;
         const checkExecutable = async () => {
             const config = EXECUTION_CONFIG[language as BundledLanguage];
             if (config && config.command !== "browser") {
@@ -175,7 +176,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     };
 
     const config = EXECUTION_CONFIG[language as BundledLanguage];
-    const canRun = !!(config?.browserRuntimeExec || (isElectron() && executablePath));
+    const canRun = FEATURES.codeExecution && !!(config?.browserRuntimeExec || (isElectron() && executablePath));
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(code);
@@ -190,7 +191,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     };
 
     const handleRun = async () => {
-        if (!config) return;
+        if (!FEATURES.codeExecution || !config) return;
         setIsRunning(true);
         setOutput(null);
         try {

@@ -11,6 +11,11 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { assertCompiledProfiles, assertPackagePlatform, runtimePathsForProfile } from "./build/packaging.ts";
+import { desktopProfile, isStoreProfile } from "./build/profiles.mts";
+
+const buildProfile = desktopProfile();
+const storeBuild = isStoreProfile(buildProfile);
 
 const appleId = process.env.APPLE_ID;
 const appleIdPassword = process.env.APPLE_APP_SPECIFIC_PASSWORD;
@@ -42,7 +47,7 @@ const osxSign = hasAppleNotarizeCredentials
           }),
       };
 
-const runtimePaths = ["public", "packages/cli/dist", "node_modules/better-sqlite3", "node_modules/node-pty"];
+const runtimePaths = runtimePathsForProfile(buildProfile);
 
 async function copyRuntimePaths(buildPath: string): Promise<void> {
     await Promise.all(
@@ -56,24 +61,64 @@ async function copyRuntimePaths(buildPath: string): Promise<void> {
 
 const config: ForgeConfig = {
     packagerConfig: {
-        asar: { unpack: "packages/cli/dist/**" },
+        asar: buildProfile.features.cli ? { unpack: "packages/cli/dist/**" } : true,
         name: "writeme",
         executableName: "writeme",
         appBundleId: "dev.writeme.app",
         icon: "./public/icon",
         extendInfo: {
-            NSMicrophoneUsageDescription: "Writeme uses your microphone to transcribe meeting notes.",
-            NSAudioCaptureUsageDescription: "Writeme captures meeting audio to transcribe it into your notes.",
+            ...(buildProfile.features.meetingNotes
+                ? {
+                      NSMicrophoneUsageDescription: "Writeme uses your microphone to transcribe meeting notes.",
+                      NSAudioCaptureUsageDescription:
+                          "Writeme captures meeting audio to transcribe it into your notes.",
+                  }
+                : {}),
             NSDocumentsFolderUsageDescription:
                 "Writeme needs access to the Documents folder to open and save your notes.",
         },
-        osxSign,
-        ...(osxNotarize ? { osxNotarize } : {}),
+        osxSign: storeBuild
+            ? {
+                  identity: process.env.APPLE_MAS_SIGNING_IDENTITY,
+                  provisioningProfile: process.env.APPLE_MAS_PROVISIONING_PROFILE,
+                  optionsForFile: (filePath: string) => ({
+                      entitlements: path.resolve(
+                          import.meta.dirname,
+                          filePath.endsWith(".app") && !filePath.includes("/Frameworks/")
+                              ? "build/entitlements.mas.plist"
+                              : "build/entitlements.mas.inherit.plist",
+                      ),
+                      hardenedRuntime: false,
+                  }),
+              }
+            : osxSign,
+        ...(!storeBuild && osxNotarize ? { osxNotarize } : {}),
     },
     rebuildConfig: {},
     hooks: {
+        prePackage: async (_config, platform) => {
+            assertPackagePlatform(buildProfile, platform);
+            if (
+                storeBuild &&
+                (!process.env.APPLE_MAS_SIGNING_IDENTITY || !process.env.APPLE_MAS_PROVISIONING_PROFILE)
+            ) {
+                throw new Error(
+                    "Mac App Store packaging requires APPLE_MAS_SIGNING_IDENTITY and APPLE_MAS_PROVISIONING_PROFILE; ad-hoc signing is forbidden.",
+                );
+            }
+        },
+        preMake: async () => {
+            if (storeBuild)
+                throw new Error("Store profiles require store packaging; direct installer makers are disabled.");
+        },
         packageAfterCopy: async (_config, buildPath) => {
+            await assertCompiledProfiles(buildProfile, buildPath);
+            if (!buildProfile.features.cli)
+                await fs.rm(path.join(buildPath, "packages/cli"), { recursive: true, force: true });
+            if (!buildProfile.features.terminal)
+                await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });
             await copyRuntimePaths(buildPath);
+            await fs.writeFile(path.join(buildPath, "writeme-build.json"), JSON.stringify(buildProfile, null, 2));
         },
     },
     makers: [
@@ -111,13 +156,15 @@ const config: ForgeConfig = {
             },
         }),
     ],
-    publishers: [
-        new PublisherGithub({
-            repository: { owner: "g4rcez", name: "writeme-editor" },
-            prerelease: false,
-            generateReleaseNotes: true,
-        }),
-    ],
+    publishers: storeBuild
+        ? []
+        : [
+              new PublisherGithub({
+                  repository: { owner: "g4rcez", name: "writeme-editor" },
+                  prerelease: false,
+                  generateReleaseNotes: true,
+              }),
+          ],
     plugins: [
         new AutoUnpackNativesPlugin({}),
         new VitePlugin({

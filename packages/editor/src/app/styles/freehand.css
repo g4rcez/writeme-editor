@@ -1,0 +1,309 @@
+@reference "../../tailwind.css";
+
+.wm-notebook {
+    --wm-paper-background: #ffffff;
+    --wm-paper-line: #d7deea;
+    @apply relative isolate h-full min-h-0 w-full min-w-0 overflow-hidden text-foreground;
+    background: var(--wm-paper-background);
+    container-type: size;
+    font-family: inherit;
+}
+.wm-notebook-view {
+    @apply relative h-full min-h-0;
+}
+.wm-notebook-notice {
+    @apply absolute inset-x-3 z-10 mx-auto flex w-fit max-w-full flex-wrap items-center gap-2 rounded-lg border border-card-border bg-card-background p-2 text-xs text-foreground;
+    bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4.25rem));
+}
+.wm-notebook-notice p {
+    @apply m-0 max-w-sm;
+}
+
+.wm-writing-toolbar,
+.wm-notebook-footer {
+    @apply m-0 flex w-fit min-w-0 max-w-full flex-wrap items-center justify-center gap-1 rounded-xl border border-card-border bg-card-background p-1 text-xs;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--var-color-foreground) 8%, transparent);
+    pointer-events: auto;
+}
+
+.wm-writing-toolbar {
+    @apply absolute z-10;
+    top: max(0.75rem, env(safe-area-inset-top));
+    left: 50%;
+    width: max-content;
+    max-width: calc(100% - 1.5rem);
+    transform: translateX(-50%);
+}
+.wm-notebook-bottom {
+    @apply absolute inset-x-3 bottom-3 z-10 flex items-end justify-center;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    pointer-events: none;
+}
+.wm-show-tools {
+    @apply absolute left-3 top-3 z-10 rounded-xl border border-card-border bg-card-background;
+}
+.wm-options-actions .writeme-note-tool-button {
+    @apply min-h-11 min-w-11;
+}
+.wm-ink-group {
+    @apply m-0 flex min-w-0 items-center gap-0 border-0 p-0;
+}
+.wm-writing-toolbar .wm-ink-group + .wm-ink-group {
+    @apply border-l border-card-border pl-1;
+}
+
+.wm-ink-control {
+    @apply relative flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-2 font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-35;
+    touch-action: manipulation;
+}
+
+.wm-ink-control[aria-pressed="true"],
+.wm-ink-control[aria-expanded="true"] {
+    @apply bg-muted;
+}
+.wm-ink-control[aria-pressed="true"]::after {
+    content: "";
+    @apply absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-foreground;
+}
+.wm-options-panel {
+    @apply absolute m-0 right-0 z-20 flex flex-col gap-1 overflow-y-auto overscroll-contain rounded-xl border border-card-border bg-card-background p-2 text-sm text-foreground;
+    left: auto;
+    top: calc(100% + 0.5rem);
+    width: min(16rem, 100%);
+    max-height: calc(100cqh - 10rem);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--var-color-foreground) 10%, transparent);
+}
+.wm-options-heading {
+    @apply flex items-center justify-between pl-2 text-xs font-medium text-muted-foreground;
+}
+.wm-options-panel .wm-ink-group {
+    @apply justify-between border-0 p-0;
+}
+.wm-pen-types {
+    @apply m-0 grid grid-cols-2 gap-2 border-0 p-0;
+}
+.wm-pen-type {
+    @apply min-h-14 justify-start gap-2 text-xs;
+}
+.wm-pen-preview {
+    @apply h-11 w-full;
+}
+.wm-pen-description {
+    @apply m-0 px-2 pb-2 text-xs text-muted-foreground;
+}
+.wm-paper-toolbar {
+    @apply m-0 flex min-w-0 flex-col gap-1 border-0 p-0;
+}
+.wm-options-panel .wm-ink-label {
+    @apply justify-between px-2;
+}
+.wm-options-panel .wm-touch-toggle {
+    @apply px-2;
+}
+.wm-option-action {
+    @apply justify-start gap-2 text-xs;
+}
+.wm-options-actions {
+    @apply flex items-center justify-between gap-2;
+}
+.wm-ink-swatch {
+    @apply size-5 rounded-full border-2;
+    border-color: var(--wm-paper-background);
+}
+.wm-ink-label {
+    @apply flex items-center gap-2 text-xs text-muted-foreground;
+}
+.wm-ink-label select {
+    @apply min-h-11 min-w-20 rounded-lg border-0 bg-muted px-2 text-xs text-foreground focus-visible:outline-2 focus-visible:outline-primary;
+}
+.wm-paper-color {
+    @apply flex flex-col gap-1 px-2 py-1 text-xs text-muted-foreground;
+}
+.wm-paper-color-inputs {
+    @apply flex min-w-0 gap-2;
+}
+.wm-paper-color input {
+    @apply min-h-11 min-w-0 rounded-lg border border-border bg-muted px-2 text-xs text-foreground focus-visible:outline-2 focus-visible:outline-primary;
+}
+.wm-paper-color input[type="color"] {
+    @apply w-11 shrink-0 cursor-pointer p-1;
+    touch-action: manipulation;
+}
+.wm-paper-color input[type="text"] {
+    @apply w-full;
+}
+.wm-paper-toolbar:disabled {
+    opacity: 0.5;
+}
+.wm-touch-toggle {
+    @apply flex min-h-11 items-center gap-2 text-xs;
+    touch-action: manipulation;
+}
+.wm-touch-toggle input {
+    @apply size-4 rounded border border-border bg-card-background focus-visible:outline-2 focus-visible:outline-primary;
+    appearance: none;
+}
+.wm-touch-toggle input:checked {
+    @apply border-primary bg-button-primary-bg;
+    box-shadow: inset 0 0 0 3px var(--var-card-background);
+}
+.wm-paper-viewport {
+    @apply h-full w-full min-w-0 overflow-auto overscroll-contain;
+}
+.wm-paper-space {
+    position: relative;
+    min-width: 50%;
+}
+.wm-link-search {
+    @apply flex flex-col gap-1 px-2 text-xs text-muted-foreground;
+}
+.wm-link-search input {
+    @apply min-h-11 min-w-0 w-full rounded-lg border border-border bg-muted px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-primary;
+}
+.wm-link-results {
+    @apply m-0 list-none p-0;
+}
+.wm-link-result {
+    @apply flex min-h-11 w-full flex-col justify-center rounded-lg px-2 py-2 text-left text-xs text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary;
+    overflow-wrap: anywhere;
+}
+.wm-link-result small {
+    @apply text-muted-foreground;
+}
+.wm-link-empty {
+    @apply m-0 block px-2 py-3 text-xs text-muted-foreground;
+}
+.wm-sticky-link {
+    @apply absolute z-1 m-0 min-w-0 rounded-lg border border-card-border bg-card-background p-1 text-xs text-foreground;
+    width: min(13rem, calc(100% - 1.5rem));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--var-color-foreground) 8%, transparent);
+}
+.wm-sticky-link--placing {
+    @apply outline-2 outline-primary;
+}
+.wm-sticky-actions {
+    @apply flex items-center justify-between text-muted-foreground;
+}
+.wm-sticky-handle {
+    cursor: grab;
+    touch-action: none;
+}
+.wm-sticky-handle:active {
+    cursor: grabbing;
+}
+.wm-sticky-open {
+    @apply flex min-h-11 items-center justify-between gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary;
+    touch-action: manipulation;
+}
+.wm-sticky-open span,
+.wm-sticky-unavailable span {
+    @apply line-clamp-2;
+    overflow-wrap: anywhere;
+}
+.wm-sticky-open svg {
+    @apply shrink-0;
+}
+.wm-sticky-unavailable {
+    @apply flex min-h-11 flex-col justify-center gap-1 px-2 py-2;
+}
+.wm-sticky-unavailable small {
+    @apply text-muted-foreground;
+}
+.wm-link-placement {
+    @apply absolute inset-x-3 z-10 mx-auto flex w-fit max-w-full items-center gap-2 rounded-lg border border-card-border bg-card-background px-2 text-xs text-foreground;
+    bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4.25rem));
+}
+.wm-paper {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--wm-paper-background);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: crosshair;
+}
+.wm-paper--move {
+    cursor: grab;
+}
+.wm-paper--pdf {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+.wm-paper--reading {
+    pointer-events: none;
+}
+.wm-pdf-page {
+    position: absolute;
+    inset: 0;
+}
+.wm-pdf-page-number {
+    @apply min-h-11 w-16 rounded-lg border border-border bg-card-background px-2 text-foreground;
+}
+.wm-pdf-image,
+.wm-pdf-image canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.wm-pdf-text-layer {
+    --min-font-size: 1;
+    --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+    --min-font-size-inv: calc(1 / var(--min-font-size));
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    line-height: 1;
+    text-align: initial;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    user-select: text;
+}
+.wm-pdf-text-layer > :not(.markedContent),
+.wm-pdf-text-layer .markedContent span:not(.markedContent) {
+    --font-height: 0;
+    --scale-x: 1;
+    --rotate: 0deg;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.wm-pdf-text-layer .markedContent {
+    display: contents;
+}
+.wm-pdf-text-layer :is(span, br) {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0 0;
+}
+.wm-pdf-text-layer ::selection {
+    background: color-mix(in srgb, var(--var-color-primary) 25%, transparent);
+}
+.wm-pdf-loading {
+    @apply absolute inset-0 z-2 flex items-center justify-center bg-card-background p-6 text-foreground;
+}
+.wm-paper-rule {
+    fill: none;
+    stroke: var(--wm-paper-line);
+    stroke-width: var(--wm-paper-weight, 1);
+}
+.wm-paper-dot {
+    fill: var(--wm-paper-line);
+}
+.wm-save-state {
+    @apply flex items-center gap-2 px-2 text-xs text-muted-foreground;
+}
+.wm-saving {
+    animation: spin 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .wm-ink-control {
+        transition: none;
+    }
+    .wm-saving {
+        animation: none;
+    }
+}

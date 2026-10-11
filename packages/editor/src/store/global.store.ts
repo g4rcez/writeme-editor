@@ -17,11 +17,12 @@ import { repositories } from "./repositories";
 import { NoteGroup } from "./repositories/entities/note-group";
 import { NoteGroupMember } from "./repositories/entities/note-group-member";
 import { type TerminalSession, TERMINAL_SESSION_ENTITY_TYPE } from "./repositories/entities/terminal-session";
+import { requireFeature } from "@/lib/build-features";
 import { SettingsService } from "./settings";
 import { uiDispatch } from "./ui.store";
 import { createZustandCompatStore } from "./zustand-compat";
 
-export type NoteCreationType = "note" | "quick" | "excalidraw" | "meeting-note";
+export type NoteCreationType = "note" | "quick" | "freehand" | "excalidraw" | "meeting-note" | "pdf";
 
 const LOCAL_WORKSPACE_KEY = "__local__";
 
@@ -325,7 +326,10 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       type: NoteCreationType;
       templateId?: string;
       initialTitle?: string;
-    }) => ({ createNoteDialog }),
+    }) => {
+      if (createNoteDialog.isOpen && createNoteDialog.type === "meeting-note") requireFeature("meetingNotes");
+      return { createNoteDialog };
+    },
     setCreateTemplateDialog: (isOpen: boolean) => ({
       createTemplateDialog: { isOpen },
     }),
@@ -403,6 +407,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
     },
     addAiChatTab: async (chatId: string) => {
+      requireFeature("ai");
       const currentTabs = get.state().tabs;
       const existingTab = currentTabs.find((tab) => isAiChatTab(tab) && tab.noteId === chatId);
       if (existingTab) {
@@ -413,6 +418,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
     },
     ensureTerminalSession: async (sessionId: string) => {
+      requireFeature("terminal");
       const state = get.state();
       if (state.terminalSessions.some((item) => item.id === sessionId)) {
         return state;
@@ -426,6 +432,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { terminalSessions: state.terminalSessions.concat(session) };
     },
     addTerminalTab: async (sessionId: string) => {
+      requireFeature("terminal");
       const state = get.state();
       let terminalSessions = state.terminalSessions;
       let session = terminalSessions.find((item) => item.id === sessionId);

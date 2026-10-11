@@ -30,6 +30,8 @@ function isPaneNote(note: Note): boolean {
         note.deletedAt === null &&
         note.noteType !== NoteType.json &&
         note.noteType !== NoteType.excalidraw &&
+        note.noteType !== NoteType.freehand &&
+        note.noteType !== NoteType.pdf &&
         note.noteType !== NoteType["meeting-note"]
     );
 }

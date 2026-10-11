@@ -187,7 +187,6 @@ export const notesIpcHandler = async () => {
         return null;
     });
 
-
     ipcMain.handle("context-menu:link", async (event, text: string, url: string, x?: number, y?: number) => {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (!win) return;
@@ -323,6 +322,38 @@ export const notesIpcHandler = async () => {
         }
     });
 
+    ipcMain.handle("fs:createFile", async (_, filePath: string, content: string) =>
+        withFileWriteLock(filePath, async () => {
+            if (typeof content !== "string" || content.length > 50_000_000)
+                return { success: false, error: "Note content exceeds the supported size limit." };
+            const access = validatePaths(filePath, path.dirname(filePath));
+            if (!access.success) return access;
+            try {
+                const safety = await validateWritablePath(filePath);
+                if (!safety.success) return safety;
+                await fs.mkdir(path.dirname(filePath), { recursive: true });
+                const finalSafety = await validateWritablePath(filePath);
+                if (!finalSafety.success) return finalSafety;
+                FileWatcher.suppressNext(filePath);
+                await fs.writeFile(filePath, content, { encoding: "utf-8", flag: "wx" });
+                try {
+                    const stats = await fs.stat(filePath);
+                    return { success: true, fileSize: stats.size, lastModified: stats.mtime };
+                } catch {
+                    return { success: true, fileSize: Buffer.byteLength(content, "utf-8"), lastModified: new Date() };
+                }
+            } catch (error: unknown) {
+                const exists =
+                    typeof error === "object" && error !== null && "code" in error && error.code === "EEXIST";
+                return {
+                    success: false,
+                    exists,
+                    error: error instanceof Error ? error.message : "Could not create comments note.",
+                };
+            }
+        }),
+    );
+
     ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) =>
         withFileWriteLock(filePath, async () => {
             const access = validatePaths(filePath, path.dirname(filePath));
@@ -347,84 +378,82 @@ export const notesIpcHandler = async () => {
         }),
     );
 
-    ipcMain.handle(
-        "fs:compareAndWriteFile",
-        async (_, filePath: string, expectedContent: string, content: string) =>
-            withFileWriteLock(filePath, async () => {
-                if (
-                    typeof expectedContent !== "string" ||
-                    typeof content !== "string" ||
-                    expectedContent.length > 50_000_000 ||
-                    content.length > 50_000_000
-                ) {
-                    return { success: false, error: "Note content exceeds the supported size limit." };
-                }
-                const access = validatePaths(filePath, path.dirname(filePath));
-                if (!access.success) return access;
+    ipcMain.handle("fs:compareAndWriteFile", async (_, filePath: string, expectedContent: string, content: string) =>
+        withFileWriteLock(filePath, async () => {
+            if (
+                typeof expectedContent !== "string" ||
+                typeof content !== "string" ||
+                expectedContent.length > 50_000_000 ||
+                content.length > 50_000_000
+            ) {
+                return { success: false, error: "Note content exceeds the supported size limit." };
+            }
+            const access = validatePaths(filePath, path.dirname(filePath));
+            if (!access.success) return access;
+            try {
+                const pathSafety = await validateWritablePath(filePath);
+                if (!pathSafety.success) return pathSafety;
+                const handle = await fs.open(filePath, "r+");
                 try {
-                    const pathSafety = await validateWritablePath(filePath);
-                    if (!pathSafety.success) return pathSafety;
-                    const handle = await fs.open(filePath, "r+");
-                    try {
-                        const initialStats = await handle.stat();
-                        const currentContent = await handle.readFile("utf-8");
-                        const readStats = await handle.stat();
-                        const currentPathStats = await fs.stat(filePath);
-                        if (
-                            currentContent !== expectedContent ||
-                            initialStats.dev !== readStats.dev ||
-                            initialStats.ino !== readStats.ino ||
-                            initialStats.mtimeMs !== readStats.mtimeMs ||
-                            initialStats.size !== readStats.size ||
-                            readStats.dev !== currentPathStats.dev ||
-                            readStats.ino !== currentPathStats.ino
-                        ) {
-                            return { success: false, stale: true, error: "Note content changed since review." };
-                        }
-                        const finalPathSafety = await validateWritablePath(filePath);
-                        if (!finalPathSafety.success) return finalPathSafety;
-                        const finalStats = await handle.stat();
-                        const finalPathStats = await fs.stat(filePath);
-                        if (
-                            finalStats.dev !== readStats.dev ||
-                            finalStats.ino !== readStats.ino ||
-                            finalStats.mtimeMs !== readStats.mtimeMs ||
-                            finalStats.size !== readStats.size ||
-                            finalPathStats.dev !== readStats.dev ||
-                            finalPathStats.ino !== readStats.ino
-                        ) {
-                            return { success: false, stale: true, error: "Note content changed since review." };
-                        }
-                        FileWatcher.suppressNext(filePath);
-                        const buffer = Buffer.from(content, "utf-8");
-                        await handle.truncate(0);
-                        let written = 0;
-                        while (written < buffer.length) {
-                            const result = await handle.write(buffer, written, buffer.length - written, written);
-                            if (result.bytesWritten === 0) throw new Error("Filesystem write made no progress.");
-                            written += result.bytesWritten;
-                        }
-                        await handle.sync();
+                    const initialStats = await handle.stat();
+                    const currentContent = await handle.readFile("utf-8");
+                    const readStats = await handle.stat();
+                    const currentPathStats = await fs.stat(filePath);
+                    if (
+                        currentContent !== expectedContent ||
+                        initialStats.dev !== readStats.dev ||
+                        initialStats.ino !== readStats.ino ||
+                        initialStats.mtimeMs !== readStats.mtimeMs ||
+                        initialStats.size !== readStats.size ||
+                        readStats.dev !== currentPathStats.dev ||
+                        readStats.ino !== currentPathStats.ino
+                    ) {
+                        return { success: false, stale: true, error: "Note content changed since review." };
+                    }
+                    const finalPathSafety = await validateWritablePath(filePath);
+                    if (!finalPathSafety.success) return finalPathSafety;
+                    const finalStats = await handle.stat();
+                    const finalPathStats = await fs.stat(filePath);
+                    if (
+                        finalStats.dev !== readStats.dev ||
+                        finalStats.ino !== readStats.ino ||
+                        finalStats.mtimeMs !== readStats.mtimeMs ||
+                        finalStats.size !== readStats.size ||
+                        finalPathStats.dev !== readStats.dev ||
+                        finalPathStats.ino !== readStats.ino
+                    ) {
+                        return { success: false, stale: true, error: "Note content changed since review." };
+                    }
+                    FileWatcher.suppressNext(filePath);
+                    const buffer = Buffer.from(content, "utf-8");
+                    await handle.truncate(0);
+                    let written = 0;
+                    while (written < buffer.length) {
+                        const result = await handle.write(buffer, written, buffer.length - written, written);
+                        if (result.bytesWritten === 0) throw new Error("Filesystem write made no progress.");
+                        written += result.bytesWritten;
+                    }
+                    await handle.sync();
 
-                        const stats = await handle.stat();
-                        const pathStats = await fs.stat(filePath);
-                        if (pathStats.dev !== stats.dev || pathStats.ino !== stats.ino) {
-                            return { success: false, stale: true, error: "Note was replaced during review." };
-                        }
-                        return { success: true, filePath, fileSize: stats.size, lastModified: stats.mtime };
-                    } finally {
-                        await handle.close();
+                    const stats = await handle.stat();
+                    const pathStats = await fs.stat(filePath);
+                    if (pathStats.dev !== stats.dev || pathStats.ino !== stats.ino) {
+                        return { success: false, stale: true, error: "Note was replaced during review." };
                     }
-                } catch (error: unknown) {
-                    if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
-                        return { success: false, stale: true, error: "Note no longer exists." };
-                    }
-                    return {
-                        success: false,
-                        error: error instanceof Error ? error.message : "Filesystem write failed.",
-                    };
+                    return { success: true, filePath, fileSize: stats.size, lastModified: stats.mtime };
+                } finally {
+                    await handle.close();
                 }
-            }),
+            } catch (error: unknown) {
+                if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT") {
+                    return { success: false, stale: true, error: "Note no longer exists." };
+                }
+                return {
+                    success: false,
+                    error: error instanceof Error ? error.message : "Filesystem write failed.",
+                };
+            }
+        }),
     );
 
     ipcMain.handle("fs:writeImage", async (_, filePath: string, base64Data: string) => {
@@ -470,6 +499,25 @@ export const notesIpcHandler = async () => {
                 success: false,
                 error: error.message,
             };
+        }
+    });
+
+    ipcMain.handle("fs:writeBinaryFile", async (_, filePath: string, data: Uint8Array) => {
+        const pathAccess = validatePaths(filePath);
+        if (!pathAccess.success) return pathAccess;
+        if (!ArrayBuffer.isView(data) || Object.prototype.toString.call(data) !== "[object Uint8Array]") {
+            return { success: false, error: "Invalid binary file data" };
+        }
+        try {
+            const access = await validateWritablePath(filePath);
+            if (!access.success) return access;
+            await fs.mkdir(path.dirname(filePath), { recursive: true });
+            const finalAccess = await validateWritablePath(filePath);
+            if (!finalAccess.success) return finalAccess;
+            await fs.writeFile(filePath, Buffer.from(data), { flag: "wx" });
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : "Could not write binary file" };
         }
     });
 

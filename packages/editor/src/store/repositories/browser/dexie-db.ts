@@ -1,7 +1,9 @@
-import Dexie, { type EntityTable, type Transaction } from "dexie";
+import Dexie, { type EntityTable, type Table, type Transaction } from "dexie";
 import { v7 as uuid } from "uuid";
 import type { Note } from "../../note";
 import type { NoteSnapshot } from "../../note-history";
+import { noteCommentThreads, type NoteCommentThread } from "../../note-comment";
+import { getCommentReferenceHref } from "@/lib/note-comments";
 import type { AIChat, AIConfig, AIMessage } from "../electron/ai.repository";
 import type { AICredentials } from "../entities/ai";
 import type { CursorPosition } from "../entities/cursor-position";
@@ -127,6 +129,8 @@ async function migrateLegacyTemplates(tx: Transaction): Promise<void> {
 
 export const db = new Dexie("writeme") as Dexie & {
     notes: EntityTable<Note, "id">;
+    pdfAssets: EntityTable<{ id: string; data: Blob | Uint8Array }, "id">;
+    comments: Table<NoteCommentThread, [string, string]>;
     noteHistory: EntityTable<NoteSnapshot, "id">;
     projects: EntityTable<Project, "id">;
     tabs: EntityTable<Tab, "id">;
@@ -510,3 +514,36 @@ db.version(25).stores({
     await migrateLegacyProjects(tx);
     await migrateLegacyTemplates(tx);
 });
+
+db.version(26).stores({
+    comments: "[noteId+id], noteId, referenceNoteId",
+}).upgrade(async (tx) => {
+    const notes = await tx.table<Note>("notes").toArray();
+    const threads = notes.flatMap(noteCommentThreads);
+    if (threads.length) await tx.table("comments").bulkPut(threads);
+});
+
+db.version(27).stores({}).upgrade(async (tx) => {
+    const notes = await tx.table<Note>("notes").toArray();
+    const sources = new Map(notes.map((note) => [note.id, note]));
+    for (const reference of notes) {
+        const sourceId = reference.metadata?.commentSourceId;
+        if (typeof sourceId !== "string") continue;
+        const source = sources.get(sourceId);
+        if (!source) continue;
+        const aliases = source.metadata?.commentReferenceHrefs;
+        source.metadata = {
+            ...source.metadata,
+            commentReferenceHrefs: Array.from(new Set([
+                ...(Array.isArray(aliases) ? aliases.filter((alias): alias is string => typeof alias === "string") : []),
+                getCommentReferenceHref(reference),
+            ])),
+        };
+        await tx.table("notes").update(sourceId, { metadata: source.metadata });
+        await tx.table("comments").where("referenceNoteId").equals(reference.id).delete();
+        const threads = noteCommentThreads(reference);
+        if (threads.length) await tx.table("comments").bulkPut(threads);
+    }
+});
+
+db.version(28).stores({ pdfAssets: "&id" });

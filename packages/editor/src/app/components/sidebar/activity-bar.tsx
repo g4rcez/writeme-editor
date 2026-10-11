@@ -16,6 +16,7 @@ import { useLayoutStore, type ActivityType } from "@/app/contexts/layout-context
 import { useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { WritemeLogo } from "../logo";
+import { supportsAI } from "@/lib/platform";
 
 type ActivityIconProps = {
     icon: Icon;
@@ -158,7 +159,7 @@ export const ActivityBar = () => {
                     className="writeme-aside-activity-divider my-1 h-px w-5 shrink-0 bg-[color:color-mix(in_srgb,var(--var-color-border)_70%,transparent)]"
                     aria-hidden="true"
                 />
-                <ActivityIcon
+                {supportsAI() && <ActivityIcon
                     icon={ChatCircleDotsIcon}
                     label="Workspace AI"
                     active={location.pathname.startsWith("/chat") || layout.activeActivity === "ai"}
@@ -168,7 +169,7 @@ export const ActivityBar = () => {
                             navigate("/chat");
                         }
                     }}
-                />
+                />}
             </div>
             <div className="writeme-aside-activity-bottom mt-auto flex w-full flex-col items-center gap-0.5">
                 <ActivityIcon

@@ -1,0 +1,12 @@
+{
+    "extends": "../../tsconfig.json",
+    "include": [
+        "*.ts",
+        "scripts/*.ts",
+        "../editor/src/preload.ts",
+        "../editor/src/types/*.d.ts",
+        "../ios/capacitor.config.ts",
+        "../android/capacitor.config.ts"
+    ],
+    "compilerOptions": { "rootDir": "../..", "types": ["node", "vite/client"] }
+}

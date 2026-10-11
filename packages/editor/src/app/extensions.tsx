@@ -10,7 +10,6 @@ import {
 import { Color } from "@tiptap/extension-color";
 import FileHandler from "@tiptap/extension-file-handler";
 import { Heading } from "@tiptap/extension-heading";
-import Highlight from "@tiptap/extension-highlight";
 import { OrderedList, TaskList } from "@tiptap/extension-list";
 import { BlockMath as TiptapBlockMath, InlineMath as TiptapInlineMath } from "@tiptap/extension-mathematics";
 import Mention from "@tiptap/extension-mention";
@@ -45,15 +44,18 @@ import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { AssetCleanup } from "./extensions/asset-cleanup";
 import { DomainLink } from "./extensions/domain-link";
+import { EditorCompletion } from "./extensions/editor-completion";
+import { encodeMarkdownFilePath, escapeMarkdownLinkLabel } from "@/lib/markdown-links";
 import { EmojiPicker } from "./extensions/emoji-picker";
 import { Hashtag } from "./extensions/hashtag";
 import { LinkMark } from "./extensions/link-mark";
+import { MarkdownHighlight } from "./extensions/markdown-highlight";
 import { SearchAndReplace } from "./extensions/search-replace";
-import { WritingAssistant } from "./extensions/writing-assistant";
 import { SlashCommand } from "./extensions/slash-command";
 import { Subscript } from "./extensions/subscript";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
+import { WritingAssistant } from "./extensions/writing-assistant";
 
 const mentionNoteNamespacePattern = /^(?:https?:\/\/[^/]+\/)?@+mention\/note\//;
 
@@ -226,7 +228,7 @@ const handleMediaFile = async (
         .run();
 };
 
-export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtension[] => {
+export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): AnyExtension[] => {
     return [
         Frontmatter,
         ColorCode,
@@ -262,7 +264,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
                 allowTableNodeSelection: true,
             },
         }),
-        Highlight,
+        MarkdownHighlight,
         Blockquote,
         ColorReplacer,
         Color.configure({ types: [TextStyle.name] }),
@@ -324,6 +326,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
         YoutubeBlock,
         Callout,
         Hashtag,
+        ...(manualCompletion ? [EditorCompletion] : []),
         AssetCleanup,
         SearchAndReplace.configure({
             searchResultClass: "search-result",
@@ -500,7 +503,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
                 ];
             },
         }).configure({
-            suggestion: suggestion,
+            suggestion: { ...suggestion, allow: () => !manualCompletion },
             HTMLAttributes: { class: "mention" },
             ...({
                 markdown: {
@@ -517,10 +520,13 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme): AnyExtens
                                 );
                                 return;
                             }
-                            const label = node.attrs.label ?? node.attrs.id;
+                            const label = escapeMarkdownLinkLabel(String(node.attrs.label ?? node.attrs.id));
                             const path = node.attrs.path ?? innerUrl(node.attrs.id, "mention");
-                            const id = node.attrs.id;
-                            state.write(`[${label}](${normalizeMentionPath(path)} "writeme-mention:${id}")`);
+                            const id = String(node.attrs.id);
+                            const target = normalizeMentionPath(path);
+                            const destination = id.startsWith("file:") ? encodeMarkdownFilePath(target) : target;
+                            const titleId = id.replace(/[\\"]/g, "\\$&");
+                            state.write(`[${label}](${destination} "writeme-mention:${titleId}")`);
                         }
                     },
                 },

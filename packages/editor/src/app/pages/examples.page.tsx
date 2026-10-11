@@ -1,5 +1,6 @@
 import { Card } from "@g4rcez/components";
 import { Link } from "react-router-dom";
+import { FEATURES } from "@/lib/build-features";
 
 const examples = [
     {
@@ -47,7 +48,7 @@ const examples = [
 export default function AboutPage() {
     return (
         <ul className="grid grid-cols-1 gap-8 py-8 justify-start items-start mx-auto w-full lg:grid-cols-3 max-w-safe h-fit">
-            {examples.map((example) => (
+            {examples.filter((example) => FEATURES.codeExecution || !["/examples/eval", "/examples/code-run"].includes(example.to)).map((example) => (
                 <li key={example.title}>
                     <Link to={example.to} className="transition-colors duration-200 ease-out group hover:text-primary">
                         <Card title={example.title} className="block">

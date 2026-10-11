@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { createStandaloneNote } from "@/lib/file-utils";
 import { isElectron } from "@/lib/is-electron";
+import { supportsAI } from "@/lib/platform";
 import { shortcuts } from "@/lib/shortcuts";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -142,6 +143,7 @@ export const useWritemeShortcuts = () => {
             ]
                 // Filter out Electron-only shortcuts in browser mode
                 .filter((s) => isElectron() || !ELECTRON_ONLY_SHORTCUTS.includes(s.bind))
+                .filter((s) => supportsAI() || s.bind !== "mod+shift+a")
                 .toSorted((a, b) => a.bind.toLocaleLowerCase().localeCompare(b.bind.toLocaleLowerCase())),
         [state.theme, dispatch, navigate],
     );

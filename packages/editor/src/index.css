@@ -33,7 +33,18 @@
 @import "./app/styles/mermaid.css";
 @import "./app/styles/native.css";
 @import "./app/styles/writeme.css";
+@import "./app/styles/freehand.css";
+@import "./app/styles/mobile.css";
 @import "tailwindcss";
+
+.writeme-meeting-setup.__modal--type-dialog {
+    max-height: calc(100dvh - 3rem);
+}
+
+.writeme-meeting-setup .__modal__header,
+.writeme-meeting-setup .__modal__footer {
+    flex-shrink: 0;
+}
 
 :root {
     --spacing-base: 0.25rem;

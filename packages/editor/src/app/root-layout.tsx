@@ -24,6 +24,8 @@ import { TasksDialog } from "@/app/components/tasks-dialog";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { editorSearchGlobalRef, editorGlobalRef } from "@/app/editor-global-ref";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
+import { useMobileNavigation } from "@/app/hooks/use-mobile-navigation";
+import { isMobile, supportsAI } from "@/lib/platform";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { notificationRef } from "@/app/notification-ref";
@@ -65,9 +67,11 @@ export const RootLayout = () => {
     const [, layoutDispatch] = useLayoutStore();
     notificationRef.current = useNotification();
     usePwaUpdate();
+    useMobileNavigation();
     const navigate = useNavigate();
     const location = useLocation();
     const prevTabsRef = useRef(state.tabs);
+    const restoreTabOnStartup = useRef(location.pathname === "/");
     const isFloatingPanel =
         isFloatingEditorWindow ||
         window.location.hash.includes("quicknote") ||
@@ -102,6 +106,7 @@ export const RootLayout = () => {
     );
 
     const createNewAiChat = useCallback(async (): Promise<void> => {
+        if (!supportsAI()) return;
         const chat = await createWorkspaceAiChat(state.directory);
         await dispatch.addAiChatTab(chat.id);
         navigate(`/chat?chatId=${encodeURIComponent(chat.id)}`);
@@ -232,13 +237,18 @@ export const RootLayout = () => {
     }, [state.tabs]);
 
     useEffect(() => {
-        if (location.pathname !== "/" || state.activeTabId === null) return;
+        if (location.pathname !== "/") {
+            restoreTabOnStartup.current = false;
+            return;
+        }
+        if (!restoreTabOnStartup.current || state.activeTabId === null) return;
         const activeTab = state.tabs.find(
             (tab) =>
                 tab.id === state.activeTabId ||
                 (!isAiChatTab(tab) && !isTerminalTab(tab) && tab.noteId === state.activeTabId),
         );
         if (activeTab) {
+            restoreTabOnStartup.current = false;
             navigate(getRouteForTab(activeTab), { replace: true });
         }
     }, [location.pathname, navigate, state.activeTabId, state.tabs]);
@@ -385,7 +395,7 @@ export const RootLayout = () => {
                     hotkey: "Mod+P",
                     options: { preventDefault: false },
                     callback: (event) => {
-                        if (!state.note || !location.pathname.startsWith("/note/")) return;
+                        if (isMobile() || !state.note || !location.pathname.startsWith("/note/")) return;
                         event.preventDefault();
                         printDocument({ title: state.note.title });
                     },
@@ -467,7 +477,7 @@ export const RootLayout = () => {
                         <TasksDialog />
                         <GitSyncDialog />
                         <MediaPreview />
-                        <AIDrawer />
+                        {supportsAI() && <AIDrawer />}
                         <KeyboardClickHints />
                         {uiState.alert && (
                             <Alert
@@ -546,7 +556,7 @@ export const RootLayout = () => {
                 <TasksDialog />
                 <GitSyncDialog />
                 <MediaPreview />
-                <AIDrawer />
+                {supportsAI() && <AIDrawer />}
                 <KeyboardClickHints />
             </Fragment>
             <MainLayout />

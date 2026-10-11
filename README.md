@@ -11,7 +11,7 @@ This is designed to be a text editor that help you to interact with AI and took 
 - **Read It Later**: Web content scraper that transforms articles into clean, readable notes.
 - **Hybrid Storage**: Support for both local filesystem (direct file access) and database-backed (Dexie/SQLite) storage modes.
 - **Rich Media & Extensions**: Support for Excalidraw, Mermaid diagrams, KaTeX math, and Shiki syntax highlighting.
-- **Cross-Platform**: Available as an Electron desktop application and a Progressive Web App (PWA).
+- **Cross-Platform**: Electron desktop application, Progressive Web App (PWA), and Capacitor iOS/Android packages. AI is disabled in the mobile packages.
 
 ## Demo
 
@@ -63,6 +63,8 @@ The v1.1.0 macOS download targets Apple Silicon only and is unsigned. See the [r
 
 The project uses `npm` as the preferred package manager.
 
+For iOS and Android setup, native builds, and backup behavior, see the [mobile package guide](packages/mobile/README.md).
+
 1. **Clone the repository**
 2. **Install dependencies**
 
@@ -85,6 +87,17 @@ npm install
     ```
 
 ## How to build
+
+### Build profiles
+
+Store builds exclude restricted capabilities at build time. Direct desktop and Homebrew builds keep all features. See the [build profiles and store policy audit](docs/build-profiles.md) for the capability matrix, build commands, and submission requirements.
+
+```sh
+npm run build:profile -- macos-homebrew package
+npm run build:profile -- macos-app-store package
+npm run build:profile -- ios-app-store sync
+npm run build:profile -- android-google-play sync
+```
 
 ### Desktop (Electron)
 

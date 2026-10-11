@@ -1,11 +1,12 @@
-import { EditorContent, type NodeViewProps } from "@tiptap/react";
 import { act, render, screen } from "@testing-library/react";
-import { Editor } from "@tiptap/core";
 import userEvent from "@testing-library/user-event";
+import { Editor } from "@tiptap/core";
+import { EditorContent, type NodeViewProps } from "@tiptap/react";
 import { describe, expect, it } from "vitest";
 import { setEditorMentionItems } from "@/lib/editor-storage";
 import { MentionNodeView } from "../elements/mention";
 import { createExtensions } from "../extensions";
+import { completionMarkdown } from "./editor-completion-data";
 import { getMentionReplacementFrom, refreshMentionSuggestions, suggestion } from "./suggestion";
 
 describe("mention link serialization", () => {
@@ -121,6 +122,25 @@ describe("mention link serialization", () => {
         });
 
         expect(editor.getMarkdown()).toContain('[README.md](docs/README.md "writeme-mention:file:docs/README.md")');
+        editor.destroy();
+    });
+
+    it("round-trips completed filenames with brackets, spaces, hash signs and quotes", () => {
+        const editor = new Editor({ content: "", extensions: createExtensions(() => "github-dark") });
+        const attrs = {
+            id: 'file:docs/A [file] #1 "draft".md',
+            label: 'A [file] #1 "draft".md',
+            path: 'docs/A [file] #1 "draft".md',
+        };
+        editor.commands.insertContent({ type: "mention", attrs });
+        const markdown = editor.getMarkdown();
+        expect(markdown).toContain("docs/A%20%5Bfile%5D%20%231%20%22draft%22.md");
+        editor.commands.setContent(markdown);
+        expect(editor.state.doc.firstChild?.firstChild?.attrs).toMatchObject(attrs);
+        expect(editor.getMarkdown()).toBe(markdown);
+        editor.commands.setContent(completionMarkdown({ ...attrs, kind: "file" }));
+        expect(editor.state.doc.firstChild?.firstChild?.attrs).toMatchObject(attrs);
+        expect(editor.getMarkdown()).toBe(markdown);
         editor.destroy();
     });
 

@@ -40,6 +40,9 @@ coverage
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
+!/build/
+!/build/*.ts
+!/build/*.plist
 
 # Dependency directories
 node_modules/
@@ -111,6 +114,26 @@ dist/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/artifacts/playwright/
+/artifacts/build-profiles/
 
 # Yarn Plug-n-Play metadata (repo uses npm)
 .pnp.*
+
+# Native mobile build outputs and local signing settings
+packages/ios/build/
+packages/android/native/.gradle/
+packages/android/native/.idea/
+packages/android/native/local.properties
+packages/android/native/**/build/
+packages/android/native/app/src/main/assets/public/
+packages/android/native/app/src/main/assets/capacitor.config.json
+packages/android/native/app/src/main/assets/capacitor.plugins.json
+packages/android/native/capacitor-cordova-android-plugins/
+packages/ios/native/App/App/public/
+packages/ios/native/App/App/capacitor.config.json
+packages/ios/native/App/Pods/
+packages/ios/native/**/xcuserdata/
+packages/ios/native/**/.build/
+*.keystore
+*.jks

@@ -64,4 +64,11 @@ export class MarkdownSerializerState extends Base {
             start,
         };
     }
+
+    override esc(text: string, startOfLine = false): string {
+        const escaped = super.esc(text, startOfLine);
+        return this.inlines.some((inline) => inline.delimiter === "==" && inline.end === undefined)
+            ? escaped.replaceAll("=", "\\=")
+            : escaped;
+    }
 }

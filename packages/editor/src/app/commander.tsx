@@ -16,6 +16,7 @@ import { getExistingDailyQuickNote } from "@/lib/daily-quick-note";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { utf8ToBase64 } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
+import { availableCommands } from "@/lib/mobile-commands";
 import { suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
 import { printDocument } from "@/lib/print-document";
 import { getRouteForTab, isAiChatTab, isTerminalTab } from "@/lib/tab-target";
@@ -293,6 +294,24 @@ export const Commander = (props: Props) => {
                         setTimeout(() => {
                             dispatch.setCreateNoteDialog({ isOpen: true, type: "meeting-note" });
                         }, 50);
+                    },
+                },
+                {
+                    title: "New handwritten note",
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        setTimeout(() => {
+                            dispatch.setCreateNoteDialog({ isOpen: true, type: "freehand" });
+                        }, 50);
+                    },
+                },
+                {
+                    title: "Import PDF",
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        dispatch.setCreateNoteDialog({ isOpen: true, type: "pdf" });
                     },
                 },
                 {
@@ -741,14 +760,14 @@ export const Commander = (props: Props) => {
               }
             : null;
 
-        return [
+        return availableCommands([
             notesItem,
             templateItem,
             noteGroupsItem,
             ...(gitGroup ? [gitGroup] : []),
             ...(installerGroup ? [installerGroup] : []),
             ...otherStuff,
-        ];
+        ]);
     }, [
         props.commander,
         props.noteGroups,

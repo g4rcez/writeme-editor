@@ -9,6 +9,7 @@ const boolean = z.boolean().optional();
 const withId = <T extends z.ZodRawShape>(shape: T) => z.object({ id: z.string().optional(), ...shape });
 
 const databaseSchemas = {
+    pdfAssets: withId({ data: z.string().min(1) }),
     notes: withId({
         type: text,
         title: text,

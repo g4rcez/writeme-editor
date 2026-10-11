@@ -2,6 +2,9 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { defineConfig } from "vite";
+import { buildFeaturePlugin } from "./build/feature-plugin.mts";
+import { desktopProfile } from "./build/profiles.mts";
+import { pdfAssets } from "./scripts/pdf-assets.mts";
 
 export default defineConfig(({ mode }) => {
     const browserDefines = {
@@ -17,7 +20,7 @@ export default defineConfig(({ mode }) => {
                 transform: { define: browserDefines },
             },
         },
-        plugins: [tailwindcss(), react({})],
+        plugins: [buildFeaturePlugin(desktopProfile(), "renderer"), pdfAssets(), tailwindcss(), react({})],
         server: { port: 5173 },
         resolve: {
             alias: {

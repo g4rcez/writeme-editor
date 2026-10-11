@@ -10,6 +10,7 @@ export enum NoteType {
     template = "template",
     json = "json",
     freehand = "freehand",
+    pdf = "pdf",
     excalidraw = "excalidraw",
     "meeting-note" = "meeting-note",
 }

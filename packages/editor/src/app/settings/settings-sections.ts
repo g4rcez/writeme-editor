@@ -1,6 +1,7 @@
-import { isElectron } from "@/lib/is-electron";
+import { FEATURES } from "@/lib/build-features";
+import { getAppPlatform, type AppPlatform } from "@/lib/platform";
 
-export type SettingsPlatform = "electron" | "web";
+export type SettingsPlatform = AppPlatform;
 
 export type SettingsSectionId =
     | "quick"
@@ -12,7 +13,8 @@ export type SettingsSectionId =
     | "workspace"
     | "templates"
     | "variables"
-    | "migration";
+    | "migration"
+    | "backup";
 
 export type SettingsSection = {
     id: SettingsSectionId;
@@ -23,6 +25,13 @@ export type SettingsSection = {
 };
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
+    {
+        id: "backup",
+        label: "Backup",
+        description: "Export and restore your on-device notes and attachments.",
+        path: "/settings/backup",
+        platform: "mobile",
+    },
     {
         id: "quick",
         label: "Quick Settings",
@@ -96,17 +105,19 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
 ];
 
 function getSettingsPlatform(): SettingsPlatform {
-    return isElectron() ? "electron" : "web";
+    return getAppPlatform();
 }
 
 export function isSettingsSectionAvailable(
     sectionId: SettingsSectionId,
     platform: SettingsPlatform = getSettingsPlatform(),
 ): boolean {
+    if (sectionId === "ai" && (!FEATURES.ai || platform === "mobile")) return false;
+    if (sectionId === "variables" && !FEATURES.templateScripts) return false;
     const section = SETTINGS_SECTIONS.find((item) => item.id === sectionId);
     return section?.platform === "all" || section?.platform === platform;
 }
 
 export function getSettingsSections(platform: SettingsPlatform = getSettingsPlatform()): SettingsSection[] {
-    return SETTINGS_SECTIONS.filter((section) => section.platform === "all" || section.platform === platform);
+    return SETTINGS_SECTIONS.filter((section) => isSettingsSectionAvailable(section.id, platform));
 }

@@ -1,0 +1,19 @@
+{
+    "name": "@writeme/android",
+    "version": "1.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "sync": "node ../mobile/scripts/sync-profile.ts android",
+        "open": "cap open android",
+        "run": "cap run android",
+        "build": "node ../mobile/scripts/build-native.ts android"
+    },
+    "dependencies": {
+        "@capacitor/android": "8.5.3",
+        "@writeme/mobile": "1.1.0"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "8.5.3"
+    }
+}

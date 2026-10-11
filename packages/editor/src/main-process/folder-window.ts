@@ -1,5 +1,6 @@
 import { BrowserWindow } from "electron";
 import path from "node:path";
+import { FEATURES } from "../lib/build-features";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -11,7 +12,7 @@ export function createFolderWindow(preloadPath: string, folderPath: string): Bro
         center: true,
         webPreferences: {
             preload: preloadPath,
-            nodeIntegration: true,
+            nodeIntegration: FEATURES.codeExecution,
             contextIsolation: true,
             defaultEncoding: "utf-8",
         },

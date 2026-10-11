@@ -3,6 +3,7 @@ import { HashIcon } from "@phosphor-icons/react/dist/csr/Hash";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { findHashtags, hashtagKey } from "@/lib/hashtags";
 import type { Note } from "@/store/note";
 import { repositories, useGlobalStore } from "@/store/global.store";
 
@@ -23,6 +24,7 @@ const tagThemeMap: Record<Note["noteType"], { title: string; theme: TagProps["th
     template: { theme: "secondary", title: "Template" },
     "read-it-later": { theme: "info", title: "Read it later" },
     freehand: { theme: "secondary", title: "Freehand" },
+    pdf: { theme: "info", title: "PDF" },
     excalidraw: { theme: "neutral", title: "Excalidraw" },
     "meeting-note": { theme: "info", title: "Meeting note" },
 };
@@ -40,10 +42,13 @@ export default function TagPage() {
             try {
                 const [allNotes] = await Promise.all([repositories.notes.getAll()]);
                 const matchedNotes: TagNoteResult[] = [];
-                const regex = new RegExp(`#${id}\\b`, "gi");
+                const tag = hashtagKey(id);
                 for (const note of allNotes) {
-                    const matches = note.content.match(regex);
-                    if (matches && matches.length > 0) {
+                    const matches = findHashtags(note.content).filter((match) => {
+                        const key = hashtagKey(match.tag);
+                        return key === tag || key.startsWith(`${tag}/`);
+                    });
+                    if (matches.length > 0) {
                         const copy = Object.assign(Object.create(Object.getPrototypeOf(note)), note) as TagNoteResult;
                         copy.occurrences = matches.length;
                         matchedNotes.push(copy);

@@ -1,0 +1,40 @@
+html.platform-mobile,
+.platform-mobile body,
+.platform-mobile #root {
+    height: 100%;
+    width: 100%;
+}
+
+.platform-mobile body {
+    font-family: "IBM Plex Sans Variable", system-ui, sans-serif;
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    overscroll-behavior: none;
+}
+
+.platform-mobile #root > div {
+    height: 100%;
+}
+
+.platform-mobile .writeme-app-header {
+    height: auto;
+    min-height: 3rem;
+}
+
+.platform-mobile .writeme-header-action,
+.platform-mobile .writeme-aside-nav-item,
+.platform-mobile .writeme-aside-activity-icon {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.platform-mobile input,
+.platform-mobile textarea,
+.platform-mobile select {
+    font-size: max(16px, 1em);
+}
+
+.platform-mobile .__modal {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
+}

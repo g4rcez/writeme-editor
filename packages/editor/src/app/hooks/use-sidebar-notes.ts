@@ -84,7 +84,7 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
         } else {
             switch (activeView.type) {
                 case "all":
-                    result = result.filter((n) => n.noteType === "note" || n.noteType === "meeting-note");
+                    result = result.filter((n) => n.noteType === "note" || n.noteType === "meeting-note" || n.noteType === "freehand");
                     break;
                 case "quick":
                     result = result.filter((n) => n.noteType === "quick");

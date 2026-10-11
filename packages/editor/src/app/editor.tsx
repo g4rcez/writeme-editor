@@ -7,18 +7,23 @@ import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "
 import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
+import { supportsAI, isMobile } from "@/lib/platform";
+import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { getCommentId } from "@/lib/note-comments";
 import { findCompatibleNote } from "@/lib/note-lookup";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import "katex/dist/katex.min.css";
 import { isLatexFilePath } from "@/types/workspace-files";
 import type { SearchReplaceStorage } from "./extensions/search-replace";
 import type { WritingEditorAdapter } from "./writing-assistant/types";
+import { NoteComments } from "./comments/note-comments";
 import { FormattingToolbar } from "./components/formatting-toolbar";
 import {
     editorActionsGlobalRef,
@@ -183,7 +188,7 @@ const TiptapEditorCore = memo(
         dispatch,
         onSaveRef,
     }: TiptapEditorCoreProps) {
-        const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme)), [theme]);
+        const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme), true), [theme]);
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
         const generationRef = useRef(0);
@@ -203,7 +208,7 @@ const TiptapEditorCore = memo(
         const editor = useEditor({
             extensions,
             autofocus: active ?? true,
-            editable: !readonly,
+            editable: false,
             content: content ?? "",
             immediatelyRender: true,
             enableContentCheck: true,
@@ -258,6 +263,14 @@ const TiptapEditorCore = memo(
                     if (linkNode || mentionNode) {
                         const linkElement = (linkNode ?? mentionNode) as Element;
                         const href = linkElement.getAttribute("href");
+                        const commentId = noteRef.current ? getCommentId(href, noteRef.current) : null;
+                        if (commentId) {
+                            event.preventDefault();
+                            linkElement.dispatchEvent(
+                                new CustomEvent("writeme:open-comment", { bubbles: true, detail: commentId }),
+                            );
+                            return true;
+                        }
                         const mentionTarget = {
                             id: linkElement.getAttribute("data-id"),
                             label: linkElement.getAttribute("data-label"),
@@ -604,9 +617,16 @@ const TiptapEditorCore = memo(
         useEffect(() => {
             if (editor === null || readonly) return;
             let saveTimeout: NodeJS.Timeout | undefined;
+            let dirty = false;
 
             const getCurrentMarkdown = (): string | null => {
-                if (editor.isDestroyed || !editor.schema) return null;
+                if (
+                    editor.isDestroyed ||
+                    !editor.schema ||
+                    !editor.isEditable ||
+                    Reflect.get(editor.storage, "commentSourcePending")
+                )
+                    return null;
                 return getEditorMarkdown(editor);
             };
 
@@ -618,6 +638,7 @@ const TiptapEditorCore = memo(
                     } else if (noteRef.current) {
                         await dispatch.updateNoteContent(noteRef.current.id, markdown);
                     }
+                    if (getCurrentMarkdown() === markdown) dirty = false;
                     uiDispatch.setEditorSaveStatus("saved");
                 } catch (error) {
                     uiDispatch.setEditorSaveStatus("error");
@@ -628,8 +649,10 @@ const TiptapEditorCore = memo(
             const updateHandler = () => {
                 if (isSettingContent.current) {
                     if (saveTimeout) clearTimeout(saveTimeout);
+                    dirty = false;
                     return;
                 }
+                dirty = true;
                 uiDispatch.setEditorSaveStatus("unsaved");
                 if (!settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -642,11 +665,25 @@ const TiptapEditorCore = memo(
                 );
             };
             editor.on("update", updateHandler);
-            return () => {
-                editor.off("update", updateHandler);
+            editor.setEditable(true, false);
+            const flushPendingSave = (): void => {
+                if (!isMobile() || !dirty || !settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
                 const markdown = getCurrentMarkdown();
                 if (markdown !== null) void saveDocument(markdown);
+            };
+            const onVisibilityChange = (): void => {
+                if (document.visibilityState === "hidden") flushPendingSave();
+            };
+            window.addEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
+            document.addEventListener("visibilitychange", onVisibilityChange);
+            return () => {
+                window.removeEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
+                document.removeEventListener("visibilitychange", onVisibilityChange);
+                editor.off("update", updateHandler);
+                if (saveTimeout) clearTimeout(saveTimeout);
+                const markdown = getCurrentMarkdown();
+                if (dirty && markdown !== null) void saveDocument(markdown);
             };
         }, [dispatch, editor, readonly, settings]);
 
@@ -687,8 +724,78 @@ const TiptapEditorCore = memo(
                     </div>
                 )}
                 <EditorContext.Provider value={{ editor }}>
-                    <FormattingToolbar editor={editor} />
-                    {writingAssistantBinding?.editor === editor && (
+                    {note && editor ? (
+                        <NoteComments
+                            key={note.id}
+                            editor={editor}
+                            note={note}
+                            readonly={Boolean(readonly)}
+                            onSourcePersisted={(saved) => {
+                                dispatch.syncNoteFromRepository(saved);
+                                uiDispatch.setEditorSaveStatus("saved");
+                            }}
+                            onSaveSource={async (markdown, referenceHref) => {
+                                uiDispatch.setEditorSaveStatus("saving");
+                                try {
+                                    if (onSaveRef.current) await onSaveRef.current(markdown);
+                                    else {
+                                        const latest = await repositories.notes.getOne(note.id);
+                                        if (!latest)
+                                            throw new Error(
+                                                "The source note was deleted. Restore it before commenting.",
+                                            );
+                                        if (latest.content === markdown) dispatch.syncNoteFromRepository(latest);
+                                        else {
+                                            if (latest.content !== note.content || latest.title !== note.title)
+                                                throw new Error(
+                                                    "The source note changed in another editor. Reload it before saving its comment link.",
+                                                );
+                                            const saved = await repositories.notes.updateContentIfUnchanged(
+                                                note.id,
+                                                {
+                                                    title: latest.title,
+                                                    updatedAt: latest.updatedAt,
+                                                    content: latest.content,
+                                                },
+                                                markdown,
+                                            );
+                                            if (!saved)
+                                                throw new Error(
+                                                    "The source note changed in another editor. Reload it before saving its comment link.",
+                                                );
+                                            dispatch.syncNoteFromRepository(saved);
+                                        }
+                                    }
+                                    if (referenceHref) {
+                                        const saved = await repositories.notes.getOne(note.id);
+                                        if (!saved)
+                                            throw new Error(
+                                                "The source note was deleted. Restore it before commenting.",
+                                            );
+                                        const existing = saved.metadata.commentReferenceHrefs;
+                                        const aliases = Array.isArray(existing)
+                                            ? existing.filter((value): value is string => typeof value === "string")
+                                            : [];
+                                        if (!aliases.includes(referenceHref)) {
+                                            const metadata = {
+                                                ...saved.metadata,
+                                                commentReferenceHrefs: [...aliases, referenceHref],
+                                            };
+                                            await repositories.notes.updateMetadata(saved.id, metadata);
+                                            dispatch.syncNoteFromRepository(Note.parse({ ...saved, metadata }));
+                                        }
+                                    }
+                                    uiDispatch.setEditorSaveStatus("saved");
+                                } catch (reason) {
+                                    uiDispatch.setEditorSaveStatus("error");
+                                    throw reason;
+                                }
+                            }}
+                        />
+                    ) : (
+                        <FormattingToolbar editor={editor} />
+                    )}
+                    {supportsAI() && writingAssistantBinding?.editor === editor && (
                         <WritingAssistant
                             adapter={writingAssistantBinding.adapter}
                             editor={writingAssistantBinding.editor}
@@ -707,7 +814,7 @@ const TiptapEditorCore = memo(
         prev.content === next.content &&
         prev.readonly === next.readonly &&
         prev.active === next.active &&
-        prev.note?.id === next.note?.id,
+        prev.note === next.note,
 );
 
 const RawEditorCore = memo(
@@ -725,6 +832,7 @@ const RawEditorCore = memo(
         const noteRef = useRef(props.note);
         const latestContentRef = useRef(props.content ?? "");
         const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+        const dirtyRef = useRef(false);
         const settings = useMemo(() => SettingsService.load(), []);
 
         const saveContent = useCallback(
@@ -736,6 +844,7 @@ const RawEditorCore = memo(
                     } else if (noteRef.current) {
                         await props.dispatch.updateNoteContent(noteRef.current.id, content);
                     }
+                    if (latestContentRef.current === content) dirtyRef.current = false;
                     uiDispatch.setEditorSaveStatus("saved");
                 } catch (error) {
                     uiDispatch.setEditorSaveStatus("error");
@@ -754,17 +863,30 @@ const RawEditorCore = memo(
         }, [props.content]);
 
         useEffect(() => {
-            return () => {
+            const flushPendingSave = (): void => {
+                if (!isMobile() || props.readonly || !dirtyRef.current || !settings.autosave) return;
                 if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                if (!props.readonly) {
+                void saveContent(latestContentRef.current);
+            };
+            const onVisibilityChange = (): void => {
+                if (document.visibilityState === "hidden") flushPendingSave();
+            };
+            window.addEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
+            document.addEventListener("visibilitychange", onVisibilityChange);
+            return () => {
+                window.removeEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
+                document.removeEventListener("visibilitychange", onVisibilityChange);
+                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                if (!props.readonly && dirtyRef.current) {
                     void saveContent(latestContentRef.current);
                 }
             };
-        }, [props.readonly, saveContent]);
+        }, [props.readonly, saveContent, settings.autosave]);
 
         const handleChange = (nextContent: string): void => {
             latestContentRef.current = nextContent;
             if (props.readonly) return;
+            dirtyRef.current = true;
             uiDispatch.setEditorSaveStatus("unsaved");
             if (!settings.autosave) return;
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -783,6 +905,7 @@ const RawEditorCore = memo(
                 style={{ fontSize: `${settings.editorFontSize}px` }}
             >
                 <RawMarkdownEditor
+                    noteId={props.id}
                     value={props.content ?? ""}
                     onChange={handleChange}
                     readonly={props.readonly}
@@ -803,7 +926,7 @@ const RawEditorCore = memo(
         prev.readonly === next.readonly &&
         prev.active === next.active &&
         prev.note?.filePath === next.note?.filePath &&
-        prev.note?.id === next.note?.id,
+        prev.note === next.note,
 );
 
 const InnerEditor = (props: {

@@ -12,11 +12,11 @@ const handlers = vi.hoisted(() => new Map<string, (...args: any[]) => unknown>()
 
 vi.mock("electron", () => {
     class MockMenu {
-        append() { }
-        popup() { }
+        append() {}
+        popup() {}
     }
     class MockMenuItem {
-        constructor(public readonly options: unknown) { }
+        constructor(public readonly options: unknown) {}
     }
     return {
         BrowserWindow: { fromWebContents: vi.fn() },
@@ -42,6 +42,7 @@ vi.mock("../main-process/database", () => ({
 vi.mock("../main-process/file-search", () => ({ searchWorkspaceFiles: vi.fn() }));
 vi.mock("../main-process/file-watcher", () => ({ FileWatcher: { suppressNext: vi.fn() } }));
 
+import { createWorkspaceCompletionFileCache } from "../app/extensions/workspace-completion-files";
 import { notesIpcHandler } from "./notes.ipc";
 
 const invoke = async (channel: string, ...args: unknown[]) => {
@@ -73,6 +74,53 @@ afterEach(async () => {
 });
 
 describe("Obsidian filesystem IPC", () => {
+    it("creates a comments file exclusively and preserves the winner of simultaneous creation", async () => {
+        const filename = path.join(workspace, "plans", "comments_advisor.md");
+        const results = await Promise.all([
+            invoke("fs:createFile", filename, "First"),
+            invoke("fs:createFile", filename, "Second"),
+        ]);
+        expect(results.filter((result) => (result as { success: boolean }).success)).toHaveLength(1);
+        expect(results).toContainEqual(expect.objectContaining({ success: false, exists: true }));
+        const winner = (results[0] as { success: boolean }).success ? "First" : "Second";
+        await expect(readFile(filename, "utf8")).resolves.toBe(winner);
+    });
+    it("loads a large autocomplete workspace from disk and reuses the scan", async () => {
+        const paths: string[] = [];
+        for (let folder = 0; folder < 40; folder++) {
+            const directory = path.join(workspace, "documents", `folder-${folder}`);
+            await mkdir(directory, { recursive: true });
+            for (let file = 0; file < 125; file++) paths.push(path.join(directory, `document-${file}.md`));
+        }
+        for (let offset = 0; offset < paths.length; offset += 100)
+            await Promise.all(paths.slice(offset, offset + 100).map((file) => writeFile(file, "# Document")));
+        const cache = createWorkspaceCompletionFileCache();
+        const api = {
+            readDirRecursive: vi.fn(
+                async (directory: string, depth: number, allFiles: boolean) =>
+                    (await invoke("fs:readDirRecursive", directory, depth, allFiles)) as Awaited<
+                        ReturnType<typeof window.electronAPI.fs.readDirRecursive>
+                    >,
+            ),
+        };
+        try {
+            const start = performance.now();
+            const files = await cache.load(workspace, api);
+            const coldMs = performance.now() - start;
+            const warmStart = performance.now();
+            expect(await cache.load(workspace, api)).toBe(files);
+            const warmMs = performance.now() - warmStart;
+            expect(files).toHaveLength(5000);
+            expect(api.readDirRecursive).toHaveBeenCalledTimes(1);
+            expect(coldMs).toBeLessThan(2000);
+            expect(warmMs).toBeLessThan(100);
+            process.stdout.write(
+                `Autocomplete filesystem benchmark: ${files.length} files, cold ${coldMs.toFixed(1)} ms, warm ${warmMs.toFixed(1)} ms\n`,
+            );
+        } finally {
+            cache.clear();
+        }
+    });
     it("grants the selected vault and scans notes and assets recursively", async () => {
         await writeFile(path.join(vault, "Projects", "Idea.md"), "# Idea");
         await writeFile(path.join(vault, "Projects", "diagram.png"), "asset");
@@ -127,6 +175,16 @@ describe("Obsidian filesystem IPC", () => {
 
         expect(copied).toMatchObject({ success: true, filePath: target });
         await expect(readFile(target, "utf8")).resolves.toBe("# Idea");
+    });
+
+    it("writes PDF bytes inside the workspace without overwriting an existing document", async () => {
+        const target = path.join(workspace, "attachments", "book", "document.pdf");
+        const data = new TextEncoder().encode("%PDF-1.4\n");
+        await expect(invoke("fs:writeBinaryFile", target, data)).resolves.toEqual({ success: true });
+        expect(await readFile(target)).toEqual(Buffer.from(data));
+        await expect(invoke("fs:writeBinaryFile", target, new Uint8Array([0]))).resolves.toMatchObject({ success: false });
+        expect(await readFile(target)).toEqual(Buffer.from(data));
+        await expect(invoke("fs:writeBinaryFile", path.join(outside, "escape.pdf"), data)).resolves.toMatchObject({ success: false });
     });
 
     it("rejects symlink traversal for vault sources and workspace destinations", async () => {

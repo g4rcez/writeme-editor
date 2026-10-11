@@ -99,6 +99,7 @@ describe("editor groups", () => {
                     deleted,
                     Note.new("JSON note", "{}", NoteType.json),
                     Note.new("Drawing", "", NoteType.excalidraw),
+                    Note.new("Handwriting", "", NoteType.freehand),
                     Note.new("Meeting", "", NoteType["meeting-note"]),
                 ]}
             />,
@@ -111,6 +112,7 @@ describe("editor groups", () => {
         expect(within(picker).queryByRole("option", { name: "Deleted note" })).not.toBeInTheDocument();
         expect(within(picker).queryByRole("option", { name: "JSON note" })).not.toBeInTheDocument();
         expect(within(picker).queryByRole("option", { name: "Drawing" })).not.toBeInTheDocument();
+        expect(within(picker).queryByRole("option", { name: "Handwriting" })).not.toBeInTheDocument();
         expect(within(picker).queryByRole("option", { name: "Meeting" })).not.toBeInTheDocument();
     });
 

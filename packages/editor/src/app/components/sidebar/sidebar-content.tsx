@@ -1,4 +1,5 @@
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { supportsAI } from "@/lib/platform";
 import { NoteListSidebar } from "../note-list/note-list-sidebar";
 import { ChatSidebarContent } from "./chat-sidebar-content";
 import { ExplorerPane } from "./explorer-pane";
@@ -32,7 +33,7 @@ export const SidebarContent = () => {
         case "settings":
             return <QuickSettingsPane />;
         case "ai":
-            return <ChatSidebarContent />;
+            return supportsAI() ? <ChatSidebarContent /> : <ExplorerPane />;
         default:
             return <ExplorerPane />;
     }

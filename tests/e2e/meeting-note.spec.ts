@@ -44,6 +44,69 @@ async function createMeeting(page: Page, onboarding = false): Promise<void> {
     await expect(page.getByRole("heading", { name: "Weekly meeting", exact: true })).toBeVisible();
 }
 
+test("uses the available window height for local setup instructions", async ({ cleanPage: page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await createMeeting(page, true);
+    const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
+    await setup.getByRole("button", { name: "Continue", exact: true }).click();
+    await expect.poll(async () => (await setup.boundingBox())?.height ?? 0).toBeGreaterThan(800);
+    const bounds = await setup.boundingBox();
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(1000);
+    const instruction = setup.getByRole("region", { name: "Install local transcription" });
+    await expect(instruction).toBeInViewport();
+    await expect(setup.getByRole("button", { name: "Continue", exact: true })).toBeInViewport();
+    await page.screenshot({ path: "/tmp/writeme-meeting-setup-after.png" });
+    await page.setViewportSize({ width: 800, height: 480 });
+    await expect.poll(async () => (await setup.boundingBox())?.height ?? 1000).toBeLessThanOrEqual(432);
+    await setup.getByTitle("Transcription API key (optional)").scrollIntoViewIfNeeded();
+    await expect(setup.getByTitle("Transcription API key (optional)")).toBeInViewport();
+    await expect(setup.getByRole("button", { name: "Continue", exact: true })).toBeInViewport();
+    await page.screenshot({ path: "/tmp/writeme-meeting-setup-short.png" });
+    await setup.getByRole("button", { name: "Back", exact: true }).click();
+    await expect(setup.getByRole("heading", { name: "Choose a provider" })).toBeFocused();
+    await expect(setup.getByRole("heading", { name: "Choose a provider" })).toBeInViewport();
+});
+
+for (const { platform, name, os, extension, tool } of [
+    { platform: "MacIntel", name: "macOS", os: "macos", extension: "sh", tool: "brew install cmake ffmpeg" },
+    { platform: "Win32", name: "Windows", os: "windows", extension: "ps1", tool: "Kitware.CMake" },
+    { platform: "Linux x86_64", name: "Linux", os: "linux", extension: "sh", tool: "apt-get install" },
+]) {
+    test(`downloads the detected ${name} local transcription installer`, async ({ cleanPage: page }) => {
+        await page.addInitScript((platform) => {
+            Object.defineProperty(navigator, "platform", { value: platform });
+            Object.defineProperty(navigator, "maxTouchPoints", { value: 0 });
+        }, platform);
+        await createMeeting(page, true);
+        const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
+        await setup.getByRole("button", { name: "Continue", exact: true }).click();
+        await expect(setup.getByRole("combobox", { name: "Installer operating system" })).toHaveValue(os);
+        const downloading = page.waitForEvent("download");
+        await setup.getByRole("button", { name: `Download installer for ${name}` }).click();
+        const download = await downloading;
+        expect(download.suggestedFilename()).toBe(`writeme-install-whisper-${os}.${extension}`);
+        const stream = await download.createReadStream();
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream!) chunks.push(chunk);
+        const content = Buffer.concat(chunks).toString("utf8");
+        expect(content).toContain(tool);
+        expect(content).toContain("--convert --language auto");
+        expect(content).toContain("--host 127.0.0.1");
+        await setup
+            .getByRole("combobox", { name: "Installer operating system" })
+            .selectOption(os === "windows" ? "linux" : "windows");
+        await expect(
+            setup.getByRole("button", {
+                name: os === "windows" ? "Download installer for Linux" : "Download installer for Windows",
+            }),
+        ).toBeVisible();
+        await setup.getByRole("button", { name: "Back", exact: true }).click();
+        await setup.getByRole("radio", { name: "OpenAI", exact: true }).check();
+        await setup.getByRole("button", { name: "Continue", exact: true }).click();
+        await expect(setup.getByRole("combobox", { name: "Installer operating system" })).toHaveCount(0);
+    });
+}
+
 test("saves Whisper presets and custom model IDs without recording", async ({ cleanPage: page }) => {
     await createMeeting(page);
     const panel = page.getByRole("region", { name: "Meeting transcription" });
@@ -101,7 +164,7 @@ test("onboards a local provider, retries a sample, and persists the completed se
     await expect(setup.getByRole("radio", { name: "Local Whisper", exact: true })).toBeChecked();
     await setup.getByRole("button", { name: "Continue", exact: true }).click();
     await expect(setup.getByTitle("Transcription endpoint")).toHaveValue("http://localhost:8080/inference");
-    await expect(setup).toContainText("--convert --language auto");
+    await expect(setup).toContainText("downloads the multilingual base model");
     await setup.getByRole("combobox", { name: "Transcription model", exact: true }).selectOption("base");
     await setup.getByTitle("Your speaker name").fill("Allan");
     await setup.getByRole("button", { name: "Continue", exact: true }).click();

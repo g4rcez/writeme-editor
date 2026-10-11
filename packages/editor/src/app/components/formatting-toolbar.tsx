@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type FormattingToolbarProps = {
     editor: Editor | null;
+    onComment?: () => void;
 };
 
 type ToolbarAction = {
@@ -12,7 +13,7 @@ type ToolbarAction = {
     run: () => void;
 };
 
-export function FormattingToolbar({ editor }: FormattingToolbarProps) {
+export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps) {
     const [, forceUpdate] = useState(0);
     const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +170,17 @@ export function FormattingToolbar({ editor }: FormattingToolbarProps) {
                     </button>
                 );
             })}
+            {onComment && !activeEditor.isActive("codeBlock") && !activeEditor.isActive("code") && (
+                <button
+                    type="button"
+                    aria-label="Add comment"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={onComment}
+                    className="inline-flex min-h-11 items-center rounded-button-radius px-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    Comment
+                </button>
+            )}
             <span className="ml-auto hidden px-2 text-xs text-muted-foreground/70 md:inline">
                 Type <kbd className="rounded border border-border px-1">/</kbd> for more
             </span>

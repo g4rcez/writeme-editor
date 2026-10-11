@@ -1,0 +1,68 @@
+name: Handwriting end-to-end
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    workflow_dispatch:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    playwright:
+        name: Playwright on ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: macos-latest
+                      browsers: chromium webkit
+                      projects: --project desktop-macos --project android-phone --project ios-phone --project android-tablet --project ipad
+                    - os: ubuntu-latest
+                      browsers: chromium
+                      projects: --project desktop-linux
+                    - os: windows-latest
+                      browsers: chromium
+                      projects: --project desktop-windows
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - uses: oven-sh/setup-bun@v2
+            - run: npm ci
+            - name: Install Playwright browsers
+              run: npm exec playwright -- install --with-deps ${{ matrix.browsers }}
+            - run: npm run typecheck
+            - name: Check handwriting code
+              run: npm exec oxlint -- --deny-warnings packages/editor/src/lib/freehand-note.ts packages/editor/src/lib/freehand-ink.ts packages/editor/src/app/components/freehand-canvas.tsx packages/editor/src/app/components/freehand-note-links.tsx packages/editor/src/app/components/freehand-note-view.tsx tests/e2e/freehand-note.spec.ts tests/e2e/freehand-production.spec.ts tests/e2e/freehand-lifecycle.spec.ts tests/e2e/freehand-pens.spec.ts tests/e2e/freehand-pen-dots.spec.ts tests/device/freehand-note.spec.ts tests/native/freehand-note.spec.ts tests/helpers/handwriting.ts tests/helpers/packaged-electron.ts playwright.handwriting.config.ts playwright.handwriting-production.config.ts playwright.handwriting-native.config.ts playwright.handwriting-device.config.ts
+            - name: Check handwriting test types
+              run: npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler --skipLibCheck tests/e2e/freehand-lifecycle.spec.ts tests/e2e/freehand-pens.spec.ts tests/e2e/freehand-pen-dots.spec.ts tests/device/freehand-note.spec.ts playwright.handwriting-device.config.ts
+            - name: Run handwritten notebook scenarios and record videos
+              run: npm run test:e2e:handwriting -- ${{ matrix.projects }}
+            - name: Verify production bundle and offline persistence
+              run: npm run test:e2e:handwriting:production -- ${{ matrix.projects }}
+            - name: Build Electron application
+              run: npm run package:app
+              env:
+                  NODE_OPTIONS: --max-old-space-size=4096
+            - name: Verify compiled and packaged Electron persistence on macOS and Windows
+              if: runner.os != 'Linux'
+              run: npm run test:e2e:handwriting:native
+            - name: Verify compiled and packaged Electron persistence on Linux
+              if: runner.os == 'Linux'
+              run: xvfb-run --auto-servernum npm run test:e2e:handwriting:native
+            - name: Upload videos, screenshots, traces and report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: handwriting-playwright-${{ matrix.os }}
+                  path: artifacts/playwright/handwriting*/
+                  if-no-files-found: error
+                  retention-days: 14

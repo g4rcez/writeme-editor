@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { fishify } from "@/lib/fmt";
+import { supportsAI } from "@/lib/platform";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { WritemeLogo } from "../logo";
@@ -153,7 +154,7 @@ export const SidebarShell = () => {
                         icon={<ListBulletsIcon size={15} />}
                         onClick={() => uiDispatch.openTasksDialog()}
                     />
-                    <SidebarNavItem
+                    {supportsAI() && <SidebarNavItem
                         label="Workspace AI"
                         icon={<RobotIcon size={15} />}
                         active={location.pathname.startsWith("/chat")}
@@ -161,7 +162,7 @@ export const SidebarShell = () => {
                             layoutDispatch.setActivity("ai");
                             navigate("/chat");
                         }}
-                    />
+                    />}
                 </nav>
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">

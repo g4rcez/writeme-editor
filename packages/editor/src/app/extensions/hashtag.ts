@@ -2,14 +2,13 @@ import { Extension } from "@tiptap/core";
 import { Node as PmNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { findHashtags, hashtagKey } from "@/lib/hashtags";
 import { isElectron } from "../../lib/is-electron";
 import { repositories, globalState } from "../../store/global.store";
 
-const HASHTAG_RE = /#([\w-]+)/g;
-const HEX_COLOR_TAG_RE = /^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{4}$|^[0-9a-fA-F]{6}$|^[0-9a-fA-F]{8}$/;
-
 function makeDecoration(start: number, end: number, tag: string): Decoration {
-    const href = isElectron() ? `#/tags/${tag}` : `/tags/${tag}`;
+    const route = `/tags/${encodeURIComponent(tag)}`;
+    const href = isElectron() ? `#${route}` : route;
     return Decoration.inline(start, end, {
         nodeName: "a",
         class: "hashtag text-primary hover:underline cursor-pointer",
@@ -18,20 +17,19 @@ function makeDecoration(start: number, end: number, tag: string): Decoration {
 }
 
 function scanRange(doc: PmNode, from: number, to: number, out: Decoration[], tags: Set<string>) {
-    doc.nodesBetween(from, to, (node, pos) => {
-        if (!node.isText) return;
-        if (node.marks.some((m) => m.type.name === "code")) return;
+    doc.nodesBetween(from, to, (node, pos, parent) => {
+        if (["codeBlock", "frontmatter"].includes(node.type.name)) return false;
+        if (!node.isText) return true;
+        if (parent?.type.name === "codeBlock" || node.marks.some((m) => ["code", "link"].includes(m.type.name)))
+            return false;
         const text = node.text ?? "";
-        HASHTAG_RE.lastIndex = 0;
-        let m: RegExpExecArray | null;
-        while ((m = HASHTAG_RE.exec(text)) !== null) {
-            const start = pos + m.index;
-            const end = start + m[0].length;
-            const tag = m[1] ?? "";
-            if (HEX_COLOR_TAG_RE.test(tag)) continue;
-            tags.add(tag);
+        for (const { tag, index, length } of findHashtags(text)) {
+            const start = pos + index;
+            const end = start + length;
+            tags.add(hashtagKey(tag));
             out.push(makeDecoration(start, end, tag));
         }
+        return false;
     });
 }
 
@@ -150,6 +148,19 @@ export const Hashtag = Extension.create({
                     },
                 },
                 props: {
+                    handleClick: (_view, _pos, event) => {
+                        const anchor = event.target instanceof Element ? event.target.closest("a.hashtag") : null;
+                        const href = anchor?.getAttribute("href");
+                        const route = href?.startsWith("#/tags/") ? href.slice(1) : href;
+                        if (!route?.startsWith("/tags/")) return false;
+                        event.preventDefault();
+                        void import("../router")
+                            .then(({ router }) => router.navigate(route))
+                            .catch((error: unknown) => {
+                                console.error("Failed to open tag", error);
+                            });
+                        return true;
+                    },
                     decorations(state) {
                         return this.getState(state);
                     },

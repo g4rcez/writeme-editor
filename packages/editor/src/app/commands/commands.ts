@@ -5,7 +5,9 @@ import { type Editor, Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { INLINE_MATH_PATTERN, runInlineMath, solveRule3 } from "solver";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
+import { FEATURES } from "@/lib/build-features";
 import { Dates } from "@/lib/dates";
+import { runJavascript } from "@/lib/run-javascript";
 import { uiDispatch } from "@/store/ui.store";
 import type { ReplacerHandlerParams } from "./types";
 import { convertCurrency, formatConversionResult } from "../../lib/currency";
@@ -53,7 +55,7 @@ const EvalCommand: ReplacerCommand = {
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>eval /, "").trim();
         if (expr === "") return "";
-        const x = eval(expr);
+        const x = runJavascript(expr);
         return `${x}`;
     },
 };
@@ -166,9 +168,7 @@ const Rule3Command: ReplacerCommand = {
         const inner = match.match(/rule3\s*\(\s*([^)]+)\)/)?.[1];
         if (!inner) return match;
         const values = inner.split(",").map((value) => value.trim());
-        const expression = values.length === 4
-            ? `${values[0]}/${values[1]},${values[2]}/${values[3]}`
-            : inner;
+        const expression = values.length === 4 ? `${values[0]}/${values[1]},${values[2]}/${values[3]}` : inner;
         const result = solveRule3(expression);
         if (!result.ok) return match;
         return `${result.variable} = ${result.value}`;
@@ -201,7 +201,7 @@ const REPLACER_COMMANDS = [
     DateTimeCommand,
     TimeCommand,
     UuidCommand,
-    EvalCommand,
+    ...(FEATURES.codeExecution ? [EvalCommand] : []),
     CurrencyCommand,
     MathCommand,
     FrontmatterCommand,

@@ -1,6 +1,8 @@
 import { lazy } from "react";
 import { createHashRouter, createBrowserRouter, Navigate } from "react-router-dom";
 import { isElectron } from "../lib/is-electron";
+import { isMobile } from "../lib/platform";
+import { BUILD, FEATURES } from "../lib/build-features";
 import { RouteErrorBoundary } from "./components/route-error-boundary";
 import { RootLayout } from "./root-layout";
 
@@ -30,6 +32,7 @@ const SettingsEditorPage = lazy(() => import("./pages/settings/settings-editor.p
 const SettingsShortcutsPage = lazy(() => import("./pages/settings/settings-shortcuts.page"));
 const SettingsTrashPage = lazy(() => import("./pages/settings/settings-trash.page"));
 const SettingsAIPage = lazy(() => import("./pages/settings/settings-ai.page"));
+const SettingsBackupPage = lazy(() => import("./pages/settings/settings-backup.page"));
 const SettingsWorkspacePage = lazy(() => import("./pages/settings/settings-workspace.page"));
 const SettingsTemplatesPage = lazy(() => import("./pages/settings/settings-templates.page"));
 const SettingsVariablesPage = lazy(() => import("./pages/settings/settings-variables.page"));
@@ -53,7 +56,7 @@ const SettingsPlatformGate = lazy(() =>
     })),
 );
 
-const createRouter = isElectron() ? createHashRouter : createBrowserRouter;
+const createRouter = isElectron() || isMobile() || BUILD.os !== "web" ? createHashRouter : createBrowserRouter;
 
 export const router = createRouter([
     {
@@ -154,7 +157,11 @@ export const router = createRouter([
                     },
                     {
                         path: "ai",
-                        element: <SettingsAIPage />,
+                        element: <SettingsPlatformGate sectionId="ai"><SettingsAIPage /></SettingsPlatformGate>,
+                    },
+                    {
+                        path: "backup",
+                        element: <SettingsPlatformGate sectionId="backup"><SettingsBackupPage /></SettingsPlatformGate>,
                     },
                     {
                         path: "workspace",
@@ -170,7 +177,7 @@ export const router = createRouter([
                     },
                     {
                         path: "variables",
-                        element: <SettingsVariablesPage />,
+                        element: <SettingsPlatformGate sectionId="variables"><SettingsVariablesPage /></SettingsPlatformGate>,
                     },
                     {
                         path: "migration",
@@ -212,10 +219,10 @@ export const router = createRouter([
                 element: <ViewDetailPage />,
                 errorElement: <RouteErrorBoundary />,
             },
-            { path: "oauth/callback", element: <OAuthCallbackPage /> },
-            { path: "chat", element: <ChatPage /> },
-            { path: "terminal/:sessionId", element: <TerminalPage /> },
-            { path: "folder", element: <FolderWorkspacePage /> },
+            { path: "oauth/callback", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <OAuthCallbackPage /> },
+            { path: "chat", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <ChatPage /> },
+            { path: "terminal/:sessionId", element: !FEATURES.terminal || isMobile() ? <Navigate to="/" replace /> : <TerminalPage /> },
+            { path: "folder", element: isMobile() ? <Navigate to="/" replace /> : <FolderWorkspacePage /> },
             {
                 path: "examples",
                 children: [
@@ -233,7 +240,7 @@ export const router = createRouter([
                     },
                     {
                         path: "eval",
-                        element: <EvalExamplePage />,
+                        element: FEATURES.codeExecution ? <EvalExamplePage /> : <Navigate to="/examples" replace />,
                     },
                     {
                         path: "expr",
@@ -253,7 +260,7 @@ export const router = createRouter([
                     },
                     {
                         path: "code-run",
-                        element: <CodeRunExamplePage />,
+                        element: FEATURES.codeExecution ? <CodeRunExamplePage /> : <Navigate to="/examples" replace />,
                     },
                 ],
             },

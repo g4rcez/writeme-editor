@@ -5,6 +5,7 @@ import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { FilmStripIcon } from "@phosphor-icons/react/dist/csr/FilmStrip";
 import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
+import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { NoteType, type Note } from "@/store/note";
 import { type FlattenedNode, type TreeNode } from "@/types/tree";
@@ -104,6 +105,11 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
+    freehand: {
+        selectable: true,
+        icon: PencilSimpleIcon,
+        iconClass: "text-info size-4",
+    },
     "meeting-note": {
         selectable: true,
         icon: MicrophoneIcon,
@@ -132,6 +138,8 @@ const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 export const getFileConfig = (node: TreeNode, note: Note | null): FileExtensionConfig | undefined => {
+    if (note?.noteType === NoteType.pdf) return FILE_EXTENSION_CONFIGS[".pdf"];
+    if (note?.noteType === NoteType.freehand) return FILE_NAME_CONFIGS.freehand;
     if (note?.noteType === NoteType["meeting-note"]) {
         return FILE_NAME_CONFIGS["meeting-note"];
     }

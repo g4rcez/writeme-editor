@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, nativeTheme, systemPreferences } from "electron";
+import { FEATURES } from "../lib/build-features";
 import { installBundledCli } from "../main-process/cli-installer";
 import { markCliRendererReady } from "../main-process/cli-server";
 import { createFloatingEditorWindow, createQuickNoteWindow } from "../main-process/quicknote-window";
@@ -51,18 +52,19 @@ export const appIpcHandler = (
     });
     ipcMain.handle("app:renderer-ready", (event, workspacePath: string | null = null) => {
         setLaunchWorkspacePath(workspacePath);
-        markCliRendererReady(event.sender, workspacePath);
+        if (FEATURES.cli) markCliRendererReady(event.sender, workspacePath);
         return true;
     });
-    ipcMain.handle("app:install-cli", async () => {
-        try {
-            const result = await installBundledCli({ appPath: app.getAppPath() });
-            return { success: true, ...result };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            return { success: false, error: message };
-        }
-    });
+    if (FEATURES.cli)
+        ipcMain.handle("app:install-cli", async () => {
+            try {
+                const result = await installBundledCli({ appPath: app.getAppPath() });
+                return { success: true, ...result };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                return { success: false, error: message };
+            }
+        });
     ipcMain.handle("app:chdir", (_, dir: string) => {
         try {
             process.chdir(dir);

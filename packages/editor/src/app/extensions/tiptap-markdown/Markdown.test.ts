@@ -6,12 +6,77 @@ import { Slice } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import { describe, expect, it } from "vitest";
+import { getCommentAnchors } from "@/app/comments/note-comments";
 import { createExtensions } from "@/app/extensions";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
+import { Note } from "@/store/note";
 import { Markdown } from "./Markdown";
 import { MarkdownParser } from "./parse/MarkdownParser";
 
 describe("Markdown extension", () => {
+    it.each(["Cost == value", "First\nSecond"])("preserves highlighted text containing %j on reload", (text) => {
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
+        try {
+            const document = editor.schema.nodeFromJSON({
+                type: "doc",
+                content: [
+                    {
+                        type: "paragraph",
+                        content: text
+                            .split("\n")
+                            .flatMap((part, index) => [
+                                ...(index ? [{ type: "hardBreak" }] : []),
+                                {
+                                    type: "text",
+                                    text: part,
+                                    marks: [
+                                        { type: "link", attrs: { href: "./comments_advisor.md#words" } },
+                                        { type: "highlight" },
+                                    ],
+                                },
+                            ]),
+                    },
+                ],
+            });
+            editor.view.dispatch(editor.state.tr.replaceWith(0, editor.state.doc.content.size, document.content));
+            const markdown = editor.getMarkdown();
+            editor.commands.setContent(markdown);
+            expect(editor.state.doc.textBetween(0, editor.state.doc.content.size, "\n", "\n")).toBe(text);
+            expect(
+                getCommentAnchors(editor, Note.new("advisor", ""))
+                    .map((anchor) => anchor.text)
+                    .join("\n"),
+            ).toBe(text);
+        } finally {
+            editor.destroy();
+        }
+    });
+    it("round-trips highlighted comment links as Markdown and preserves other formatting", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            content: "[==Some important words==](./comments_advisor.md#some-important-words) and `==code==`.",
+        });
+        try {
+            expect(editor.getHTML()).toContain("<mark>");
+            expect(editor.getMarkdown()).toBe(
+                "[==Some important words==](./comments_advisor.md#some-important-words) and `==code==`.",
+            );
+            const again = editor.getMarkdown();
+            editor.commands.setContent(again);
+            expect(editor.getMarkdown()).toBe(again);
+            editor.commands.setContent("[==Some **important** words==](./comments_advisor.md#some-important-words)");
+            const formatted = editor.getMarkdown();
+            editor.commands.setContent(formatted);
+            expect(editor.getMarkdown()).toBe(formatted);
+            expect(editor.getHTML()).toContain("<strong>");
+            expect(editor.state.doc.textContent).toBe("Some important words");
+            expect(getCommentAnchors(editor, Note.new("advisor", ""))).toEqual([
+                { id: "some-important-words", text: "Some important words", from: 1, to: 21 },
+            ]);
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each([
         ["paragraph", ""],
         ["paragraph", "predictable"],

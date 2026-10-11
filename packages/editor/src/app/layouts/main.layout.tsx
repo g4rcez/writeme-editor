@@ -10,6 +10,9 @@ import { TabsBar } from "@/app/components/tabs-bar";
 import { TerminalWorkspace } from "@/app/components/terminal/terminal-workspace";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { getCurrentRouteTabTarget } from "@/lib/tab-target";
+import { isMobile } from "@/lib/platform";
+import { FEATURES } from "@/lib/build-features";
+import { MobileFileActions } from "@/app/components/mobile-file-actions";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { useJsonDrop } from "../hooks/use-json-drop";
@@ -114,6 +117,7 @@ export const MainLayout = () => {
                             />
                         </div>
                         <div className="writeme-app-header-actions">
+                            {isMobile() && <MobileFileActions />}
                             <button
                                 type="button"
                                 className="writeme-header-action"
@@ -162,7 +166,7 @@ export const MainLayout = () => {
                                         <RouteTransitionOutlet />
                                     </div>
                                 </div>
-                                <TerminalWorkspace
+                                {FEATURES.terminal && !isMobile() && <TerminalWorkspace
                                     tabs={state.tabs}
                                     terminalSessions={state.terminalSessions}
                                     restoredTerminalSessionIds={state.restoredTerminalSessionIds}
@@ -170,7 +174,7 @@ export const MainLayout = () => {
                                     directory={state.directory}
                                     dispatch={dispatch}
                                     className={activeTerminalSessionId ? "block" : "hidden"}
-                                />
+                                />}
                             </div>
                         </Panel>
                     </Group>

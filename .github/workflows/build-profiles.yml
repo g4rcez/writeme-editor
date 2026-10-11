@@ -1,0 +1,31 @@
+name: Build profiles
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    verify-profiles:
+        runs-on: macos-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - run: npm ci
+            - run: npm run typecheck && npm run mobile:typecheck
+            - run: npm run test:build-profiles
+            - run: npm exec -- playwright install chromium webkit
+            - run: npm run test:e2e:build-profiles
+            - run: WRITEME_BUILD_PROFILE=macos-app-store node --import tsx scripts/build-native-profile.ts
+            - run: npm exec -- playwright test --config playwright.build-profiles-native.config.ts
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: build-profile-verification
+                  path: |
+                      artifacts/playwright/build-profiles*/
+                      artifacts/build-profiles/**/writeme-build-*.json

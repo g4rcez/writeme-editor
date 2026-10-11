@@ -2,10 +2,12 @@
 import { Marked } from "marked";
 import { configureMathMarkdown } from "@/lib/latex-markdown";
 import { linkify } from "@/lib/link-utils";
+import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
 import { dedent } from "./dedent";
 
 const md = new Marked({ gfm: true, breaks: true });
 configureMathMarkdown(md);
+configureHighlightMarkdown(md);
 
 export function processMarkdown(text: string): string {
     const dedented = dedent(text);

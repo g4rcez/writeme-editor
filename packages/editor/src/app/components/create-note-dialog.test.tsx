@@ -112,4 +112,16 @@ describe("CreateNoteDialog", () => {
         expect(savedNote?.filePath).toBe("/workspace/Projects/meeting-notes.md");
         expect(savedNote?.fileSize).toBe(13);
     });
+
+    it("keeps the draft and folder when workspace notes refresh while the dialog is open", async () => {
+        const { rerender } = render(<CreateNoteDialog />);
+        fireEvent.change(screen.getByLabelText("Note title"), { target: { value: "Advisor" } });
+        fireEvent.click(screen.getByRole("button", { name: "Select Projects folder" }));
+        mocks.state.notes = [];
+        rerender(<CreateNoteDialog />);
+        expect(screen.getByLabelText("Note title")).toHaveValue("Advisor");
+        fireEvent.click(screen.getByRole("button", { name: /Create/ }));
+        await waitFor(() => expect(mocks.saveNote).toHaveBeenCalledTimes(1));
+        expect(mocks.writeFile).toHaveBeenCalledWith("/workspace/Projects/advisor.md", "");
+    });
 });

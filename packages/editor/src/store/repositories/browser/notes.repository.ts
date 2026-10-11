@@ -8,6 +8,7 @@ import { SettingsService } from "../../settings";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { BaseRepository } from "../base.repository";
 import { db } from "./dexie-db";
+import { syncCommentThreads } from "./comments.repository";
 
 export class NotesRepository extends BaseRepository<Note> implements INoteRepository {
   constructor(private readonly tabsRepository: ITabRepository) {
@@ -44,7 +45,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     if (!(await db.notes.get(id))) return false;
     await db.transaction(
       "rw",
-      [db.notes, db.noteHistory, db.tabs, db.noteGroupMembers, db.cursorPositions, db.aiChats, db.aiMessages],
+      [db.notes, db.pdfAssets, db.comments, db.noteHistory, db.tabs, db.noteGroupMembers, db.cursorPositions, db.aiChats, db.aiMessages],
       async () => {
         const chatIds = (await db.aiChats.where("noteId").equals(id).primaryKeys()) as string[];
         if (chatIds.length) {
@@ -55,6 +56,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         await db.noteGroupMembers.where("noteId").equals(id).delete();
         await db.cursorPositions.where("noteId").equals(id).delete();
         await db.noteHistory.where("noteId").equals(id).delete();
+        await db.comments.where("noteId").equals(id).delete();
+        await db.comments.where("referenceNoteId").equals(id).delete();
+        await db.pdfAssets.delete(id);
         await db.notes.delete(id);
       },
     );
@@ -104,7 +108,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     item.createdBy = settings.defaultAuthor;
     item.updatedBy = settings.defaultAuthor;
     item.fileSize = item.content.length;
-    const saved = await super.save(item);
+    const saved = await db.transaction("rw", [db.notes, db.comments], async () => {
+      const note = await super.save(item);
+      await syncCommentThreads(note);
+      return note;
+    });
     await this.saveSnapshot(saved.id, saved.content, saved.updatedAt);
     return saved;
   }
@@ -119,7 +127,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     item.updatedBy = settings.defaultAuthor;
     item.updatedAt = new Date();
     item.fileSize = item.content.length;
-    const updated = await super.update(id, item);
+    const updated = await db.transaction("rw", [db.notes, db.comments], async () => {
+      const note = await super.update(id, item);
+      await syncCommentThreads(note);
+      return note;
+    });
     if (existing.content !== updated.content) {
       await this.saveSnapshot(updated.id, updated.content, updated.updatedAt);
     }
@@ -225,11 +237,14 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     }
 
     const updatedAt = new Date();
-    await db.notes.update(id, {
-      content,
-      fileSize: content.length,
-      updatedAt,
-      updatedBy: settings.defaultAuthor,
+    await db.transaction("rw", [db.notes, db.comments], async () => {
+      await db.notes.update(id, {
+        content,
+        fileSize: content.length,
+        updatedAt,
+        updatedBy: settings.defaultAuthor,
+      });
+      await syncCommentThreads(Note.parse({ ...existing, content, updatedAt }));
     });
     if (existing.content !== content) {
       await this.saveSnapshot(id, content, updatedAt);
@@ -253,7 +268,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     const updatedAt = new Date();
     let updatedNote: Note | null = null;
 
-    await db.transaction("rw", db.notes, async () => {
+    await db.transaction("rw", [db.notes, db.comments], async () => {
       const rawNote = await db.notes.get(id);
       if (!rawNote || rawNote.deletedAt != null) return;
       const existing = Note.parse({ ...rawNote, content: rawNote.content || "" });
@@ -271,6 +286,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         updatedBy: settings.defaultAuthor,
       });
       updatedNote = Note.parse({ ...existing, content, fileSize: content.length, updatedAt, updatedBy: settings.defaultAuthor });
+      await syncCommentThreads(updatedNote);
     });
 
     if (updatedNote && expected.content !== content) await this.saveSnapshot(id, content, updatedAt);

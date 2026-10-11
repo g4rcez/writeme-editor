@@ -1,6 +1,7 @@
 import { app, BrowserWindow, screen } from "electron";
 import fs from "node:fs";
 import path from "node:path";
+import { FEATURES } from "../lib/build-features";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -132,7 +133,7 @@ function createFloatingPanel(
         visualEffectState: "active",
         webPreferences: {
             preload: preloadPath,
-            nodeIntegration: true,
+            nodeIntegration: FEATURES.codeExecution,
             contextIsolation: true,
             accessibleTitle: title,
         },

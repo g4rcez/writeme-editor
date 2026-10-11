@@ -22,6 +22,16 @@ afterEach(async () => {
 });
 
 describe("DatabaseManager persistence boundary", () => {
+    it("keeps PDF bytes separate from annotation content and removes them when the note is permanently deleted", () => {
+        manager.save("notes", { id: "book", title: "Book", content: "annotations", noteType: "pdf" });
+        manager.save("pdfAssets", { id: "book", data: "JVBERi0xLjQ=" });
+        manager.updateNoteContent("book", "new annotations", 15, "2026-01-01T00:00:00.000Z", "user");
+        expect(manager.get("pdfAssets", "book")).toMatchObject({ data: "JVBERi0xLjQ=" });
+        manager.softDeleteNote("book", "2026-01-01T00:00:00.000Z");
+        expect(manager.get("pdfAssets", "book")).toBeDefined();
+        manager.hardDeleteNote("book");
+        expect(manager.get("pdfAssets", "book")).toBeUndefined();
+    });
     it("updates a meeting transcript without overwriting note content or title", () => {
         manager.save("notes", { id: "meeting", title: "Standup", content: "My draft", noteType: "meeting-note" });
         manager.updateNoteContent("meeting", "Newer draft", 11, "2026-01-01T00:00:00.000Z", "user");

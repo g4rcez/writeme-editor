@@ -3,7 +3,7 @@ import { BracketsCurlyIcon } from "@phosphor-icons/react/dist/csr/BracketsCurly"
 import { ColumnsIcon } from "@phosphor-icons/react/dist/csr/Columns";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
-import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
+import { type PropsWithChildren, lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { notificationRef } from "@/app/notification-ref";
 import { saveNoteTitle } from "@/app/note-title";
@@ -24,14 +24,19 @@ import { isLatexFilePath } from "@/types/workspace-files";
 import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
+import { FreehandNoteView } from "../components/freehand-note-view";
 import { NoteFooter } from "../components/note-footer";
 import { MeetingNotePanel } from "../components/meeting-note-panel";
+import { FEATURES } from "@/lib/build-features";
+import { isMobile } from "@/lib/platform";
 import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
 import { useEditorPanes } from "../hooks/use-editor-panes";
+
+const PdfNoteView = lazy(() => import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })));
 
 function getUrlLabel(value: string): string {
     try {
@@ -204,6 +209,7 @@ function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: (
 }
 
 function ExportNoteButton({ note }: { note: Note }) {
+    if (isMobile()) return null;
     return (
         <Button
             type="button"
@@ -261,7 +267,7 @@ export default function NotePage() {
         const openNote = (event: Event): void => {
             if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
             const selected = state.notes.find((note) => note.id === event.detail);
-            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw || selected.noteType === NoteType["meeting-note"]) return;
+            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw || selected.noteType === NoteType.freehand || selected.noteType === NoteType.pdf || selected.noteType === NoteType["meeting-note"]) return;
             event.preventDefault();
             editorPanes.selectNote(panes.activePaneId, selected.id);
         };
@@ -344,7 +350,10 @@ export default function NotePage() {
     }, [dispatch, note]);
 
     const isLatexSource = note ? isLatexFilePath(note.filePath) : false;
-    const markdownTitle = !isLatexSource && note ? findFirstMarkdownH1(note.content || "") : null;
+    const markdownTitle =
+        !isLatexSource && note && !note.metadata.commentSourceId
+            ? findFirstMarkdownH1(note.content || "")
+            : null;
     const markdownTitleText = markdownTitle?.title;
     useEffect(() => {
         if (!note?.id || !markdownTitleText || markdownTitleText === note.title) return;
@@ -392,10 +401,12 @@ export default function NotePage() {
 
     const isJson = note.noteType === NoteType.json;
     const isExcalidraw = note.noteType === NoteType.excalidraw;
+    const isFreehand = note.noteType === NoteType.freehand;
+    const isPdf = note.noteType === NoteType.pdf;
     const isHistoryEligible = note.noteType === NoteType.note && !isLatexSource;
     const activeEditorMode: EditorMode = isLatexSource ? "markdown" : editorMode;
     const fileName = note.filePath?.split(/[\\/]/).filter(Boolean).at(-1);
-    const hasRichEditor = !isJson && !isExcalidraw;
+    const hasRichEditor = !isJson && !isExcalidraw && !isFreehand && !isPdf;
 
     const noteToolbar = (
         <div className="writeme-note-toolbar" role="toolbar" aria-label="Note tools">
@@ -427,6 +438,18 @@ export default function NotePage() {
             </fieldset>
         </div>
     );
+
+    if (isPdf) return <Suspense fallback={<p role="status">Opening PDF…</p>}><PdfNoteView key={note.id} note={note} actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />} /></Suspense>;
+
+    if (isFreehand) {
+        return (
+            <FreehandNoteView
+                key={note.id}
+                note={note}
+                actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
+            />
+        );
+    }
 
     if (isJson || isExcalidraw) {
         return (
@@ -515,7 +538,7 @@ export default function NotePage() {
                     onRestored={(restored) => dispatch.syncNoteState(restored)}
                 />
             ) : null}
-            {note.noteType === NoteType["meeting-note"] ? <MeetingNotePanel key={note.id} note={note} /> : null}
+            {FEATURES.meetingNotes && !isMobile() && note.noteType === NoteType["meeting-note"] ? <MeetingNotePanel key={note.id} note={note} /> : null}
             {editorPanes.state ? (
                 <EditorPanes
                     state={editorPanes.state}

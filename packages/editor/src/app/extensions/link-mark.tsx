@@ -23,6 +23,14 @@ function LinkMarkView({ mark, HTMLAttributes }: MarkViewProps) {
         "data-link-url": href,
     });
 
+    if (/^\.\/comments_[^#]+\.md#[^#]+$/.test(href)) {
+        return (
+            <a {...linkAttributes} target="_self" data-note-comment="true">
+                <MarkViewContent />
+            </a>
+        );
+    }
+
     return (
         <LinkPreview
             trigger={
