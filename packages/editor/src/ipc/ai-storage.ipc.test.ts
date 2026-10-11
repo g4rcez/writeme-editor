@@ -55,7 +55,6 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 
 beforeEach(async () => {
     vi.resetAllMocks();
-    vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
     mocks.handlers.clear();
     mocks.syncAvailable.mockReturnValue(false);
     mocks.asyncAvailable.mockResolvedValue(true);
@@ -65,6 +64,7 @@ beforeEach(async () => {
     mocks.syncDecrypt.mockImplementation((value) => value.toString().slice(4));
     directory = await mkdtemp(path.join(tmpdir(), "writeme-ai-storage-"));
     manager = new DatabaseManager(path.join(directory, "test.sqlite"));
+    vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
     registerAICredentialHandlers(() => manager);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 });

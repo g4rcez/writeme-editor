@@ -1,5 +1,5 @@
 import { lexer, walkTokens, type Tokens } from "marked";
-import { posix } from "node:path";
+import { posix, win32 } from "node:path";
 import type { JsonValue, SavedNote } from "./contracts.js";
 
 export type Heading = { text: string; level: number; offset: number; end: number };
@@ -132,7 +132,9 @@ export function noteLinks(note: SavedNote, notes: SavedNote[]): { href: string; 
         }
         if (!decoded) return { href, ref: note.ref };
         if (/^[a-z]+:/i.test(decoded) || decoded.startsWith("/")) return { href, ref: null };
-        const path = posix.normalize(posix.join(posix.dirname(note.path ?? note.title), decoded));
+        const sourcePath = note.path ?? note.title;
+        const paths = win32.isAbsolute(sourcePath) && !posix.isAbsolute(sourcePath) ? win32 : posix;
+        const path = paths.normalize(paths.join(paths.dirname(sourcePath), decoded));
         const candidates = notes.filter(
             (entry) =>
                 entry.root === note.root &&

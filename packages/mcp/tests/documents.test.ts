@@ -22,6 +22,17 @@ function note(ref: string, path: string, content: string): SavedNote {
     };
 }
 describe("pure saved documents", () => {
+    test.each(["C:\\workspace", "\\\\server\\workspace"])(
+        "resolves relative links in a Windows workspace at %s",
+        (directory) => {
+            const source = note("a", `${directory}\\a.md`, "[B](./b.md) [[b]]");
+            const target = note("b", `${directory}\\b.md`, "");
+            expect(noteLinks(source, [source, target])).toEqual([
+                { href: "./b.md", ref: "b" },
+                { href: "b", ref: "b" },
+            ]);
+        },
+    );
     test("section offsets preserve CRLF and omit frontmatter headings", () => {
         const text = "---\r\ntitle: Example\r\n---\r\n\r\n# First\r\nBody\r\n\r\n# Last\r\nLast body";
         const headings = outline(text);
