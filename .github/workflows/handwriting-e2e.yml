@@ -13,7 +13,7 @@ permissions:
 
 jobs:
     playwright:
-        name: Playwright on ${{ matrix.os }}
+        name: Playwright on ${{ matrix.profile }}
         runs-on: ${{ matrix.os }}
         timeout-minutes: 30
         strategy:
@@ -21,14 +21,26 @@ jobs:
             matrix:
                 include:
                     - os: macos-latest
-                      browsers: chromium webkit
-                      projects: --project desktop-macos --project android-phone --project ios-phone --project android-tablet --project ipad
+                      profile: desktop-macos
+                      browsers: webkit
+                    - os: macos-latest
+                      profile: android-phone
+                      browsers: chromium
+                    - os: macos-latest
+                      profile: ios-phone
+                      browsers: webkit
+                    - os: macos-latest
+                      profile: android-tablet
+                      browsers: chromium
+                    - os: macos-latest
+                      profile: ipad
+                      browsers: webkit
                     - os: ubuntu-latest
+                      profile: desktop-linux
                       browsers: chromium
-                      projects: --project desktop-linux
                     - os: windows-2022
+                      profile: desktop-windows
                       browsers: chromium
-                      projects: --project desktop-windows
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -45,15 +57,16 @@ jobs:
             - name: Check handwriting test types
               run: npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler --skipLibCheck tests/e2e/freehand-lifecycle.spec.ts tests/e2e/freehand-pens.spec.ts tests/e2e/freehand-pen-dots.spec.ts tests/device/freehand-note.spec.ts playwright.handwriting-device.config.ts
             - name: Run handwritten notebook scenarios and record videos
-              run: npm run test:e2e:handwriting -- ${{ matrix.projects }}
+              run: npm run test:e2e:handwriting -- --project ${{ matrix.profile }}
             - name: Verify production bundle and offline persistence
-              run: npm run test:e2e:handwriting:production -- ${{ matrix.projects }}
+              run: npm run test:e2e:handwriting:production -- --project ${{ matrix.profile }}
             - name: Build Electron application
+              if: startsWith(matrix.profile, 'desktop-')
               run: npm run package:app
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
             - name: Verify compiled and packaged Electron persistence on macOS and Windows
-              if: runner.os != 'Linux'
+              if: runner.os != 'Linux' && startsWith(matrix.profile, 'desktop-')
               run: npm run test:e2e:handwriting:native
             - name: Verify compiled and packaged Electron persistence on Linux
               if: runner.os == 'Linux'
@@ -62,7 +75,7 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v4
               with:
-                  name: handwriting-playwright-${{ matrix.os }}
+                  name: handwriting-playwright-${{ matrix.profile }}
                   path: artifacts/playwright/handwriting*/
                   if-no-files-found: error
                   retention-days: 14
