@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/g4rcez/writeme-editor/compare/v2.0.0...v2.0.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* restore release and cross-platform verification pipelines ([c8c1a4f](https://github.com/g4rcez/writeme-editor/commit/c8c1a4fcf7a7d5fc52a96b4c5d83be19e159ff80))
 # [1.1.0](https://github.com/g4rcez/writeme-editor/compare/v1.0.13...v1.1.0) (2026-10-05)
 
 
