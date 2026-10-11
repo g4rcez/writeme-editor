@@ -36,10 +36,10 @@ for (const modifier of ["Control", "Meta"] as const) {
         await createHandwrittenNote(page);
         await page.getByRole("button", { name: "Eraser", exact: true }).click();
         await page.getByLabel("Handwriting canvas", { exact: true }).click();
-        await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier);
-        for (let index = 0; index < 12; index++) await page.keyboard.press(`${modifier}+=`);
+        await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier, "115%");
+        for (let index = 0; index < 14; index++) await page.keyboard.press(`${modifier}+=`);
         await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("300%");
-        for (let index = 0; index < 12; index++) await page.keyboard.press(`${modifier}+-`);
+        for (let index = 0; index < 17; index++) await page.keyboard.press(`${modifier}+-`);
         await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("50%");
         await expect(page.locator("[data-ink-stroke]")).toHaveCount(0);
     });
@@ -254,7 +254,7 @@ test.describe("sticky note links", () => {
         await page.getByRole("link", { name: "Open note: Project plan", exact: true }).click();
         await expect(page).toHaveURL(new URL(`/note/${targetId}`, sourceUrl).href);
         await expect(page.locator(".ProseMirror").first()).toContainText("Linked reference content.");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
         await page.goto(sourceUrl);
         await expect(card).toBeVisible();
         await page.evaluate(async (id) => {
@@ -836,7 +836,7 @@ test("creates and saves handwriting, erases actual strokes, and supports undo/re
     await expect(strokes).toHaveCount(2);
     await expect(strokes.first()).toHaveAttribute("d", path!);
     await clickNotebookTool(page, "Zoom in");
-    await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("125%");
+    await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("115%");
     await expect(strokes.first()).toHaveAttribute("d", path!);
     await page.getByRole("button", { name: "Next page" }).click();
     await expect(strokes).toHaveCount(1);

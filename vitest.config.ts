@@ -17,9 +17,17 @@ export default defineConfig({
         },
     },
     test: {
+        include: ["packages/editor/src/**/*.{test,spec}.{ts,tsx}", "build/**/*.test.ts"],
         globals: true,
         environment: "jsdom",
         setupFiles: "./packages/editor/src/test/setup.ts",
-        exclude: ["packages/cli/**", "packages/landing/**", "packages/math/**", "packages/mcp/**", "node_modules/**", "tests/**"],
+        exclude: [
+            "packages/cli/**",
+            "packages/landing/**",
+            "packages/math/**",
+            "packages/mcp/**",
+            "node_modules/**",
+            "tests/**",
+        ],
     },
 });

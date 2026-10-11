@@ -252,7 +252,7 @@ export const CreateNoteDialog = () => {
                         {importing ? <span role="status">Importing PDF…</span> : null}
                     </label>
                 ) : null}
-                {type === "quick" || type === "pdf" ? (
+                {type === "quick" || type === "pdf" || !supportsFolders ? (
                     <Input
                         required
                         autoFocus

@@ -15,6 +15,20 @@ afterEach(() => {
 });
 
 describe("proxyFetch", () => {
+    it("preserves runtime fetch extensions while routing requests through the proxy", async () => {
+        mockDesktopBridge();
+        const response = new Response("ok");
+        const preconnect = vi.fn();
+        const send = Object.assign(vi.fn<typeof fetch>().mockResolvedValue(response), { preconnect });
+        vi.stubGlobal("fetch", send);
+        vi.resetModules();
+        const { proxyFetch: extendedFetch } = await import("./proxy-fetch");
+
+        expect(extendedFetch.preconnect).toBe(preconnect);
+        expect(await extendedFetch("https://api.openai.com/v1/models")).toBe(response);
+        expect(send).toHaveBeenCalledWith("http://localhost:4079/proxy", expect.any(Object));
+    });
+
     it("cancels during a rate-limit backoff without issuing another upload", async () => {
         vi.useFakeTimers();
         mockDesktopBridge();

@@ -39,7 +39,7 @@ async function waitToRetry(delay: number, signal?: AbortSignal | null): Promise<
     });
 }
 
-export async function proxyFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+async function fetchThroughProxy(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     init?.signal?.throwIfAborted();
     const targetUrl = resolveUrl(input);
     const headers = normalizeHeaders(init?.headers, { "x-target-url": targetUrl });
@@ -61,3 +61,5 @@ export async function proxyFetch(input: RequestInfo | URL, init?: RequestInit): 
     // unreachable but satisfies TypeScript
     return fetch(PROXY_URL, proxyInit);
 }
+
+export const proxyFetch: typeof globalThis.fetch = Object.assign(fetchThroughProxy, globalThis.fetch);

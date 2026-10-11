@@ -43,6 +43,8 @@ async function createMeetingPage(application: ElectronApplication, directory: st
     await palette.getByText("New meeting note", { exact: true }).click();
     const create = page.getByRole("dialog", { name: "Create meeting note" });
     await create.getByTitle("Note title").fill("Native meeting");
+    if (await create.getByTitle("Note title").getAttribute("aria-expanded") === "true")
+        await page.keyboard.press("Escape");
     await create.getByRole("button", { name: /^Create/ }).click();
     const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
     await expect(setup).toBeVisible();

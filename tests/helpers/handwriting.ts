@@ -11,6 +11,8 @@ export async function writeNotebook(page: Page): Promise<void> {
     await page.getByRole("button", { name: "Handwritten note", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Create handwritten note" });
     await dialog.getByTitle("Note title").fill("Release notebook");
+    if (await dialog.getByTitle("Note title").getAttribute("aria-expanded") === "true")
+        await page.keyboard.press("Escape");
     await dialog.getByRole("button", { name: /^Create/ }).click();
     const canvas = page.getByLabel("Handwriting canvas", { exact: true });
     await expect(canvas).toBeVisible();

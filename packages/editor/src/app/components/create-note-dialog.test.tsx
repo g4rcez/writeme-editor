@@ -121,6 +121,18 @@ describe("CreateNoteDialog", () => {
         expect(savedNote?.fileSize).toBe(13);
     });
 
+    it("uses a plain title input when folder suggestions are unavailable", async () => {
+        mocks.state.directory = "";
+        render(<CreateNoteDialog />);
+        const title = screen.getByLabelText("Note title");
+        expect(title).not.toHaveAttribute("data-dynamic");
+        fireEvent.change(title, { target: { value: "Browser note" } });
+        fireEvent.click(screen.getByRole("button", { name: "Create note" }));
+        await waitFor(() => expect(mocks.saveNote).toHaveBeenCalledTimes(1));
+        expect(mocks.saveNote.mock.calls[0]?.[0].title).toBe("Browser note");
+        expect(mocks.readDir).not.toHaveBeenCalled();
+    });
+
     it("uses clear template labels and names the create action", () => {
         mocks.templates.push({ id: "template-1", title: "Meeting", content: "Agenda" });
         render(<CreateNoteDialog />);

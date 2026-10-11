@@ -50,7 +50,7 @@ for (const modifier of ["Control", "Meta"] as const) {
     test(`${modifier} plus/minus zooms only the PDF canvas`, async ({ page }) => {
         await importPdf(page);
         await page.locator(".wm-pdf-text-layer").click();
-        await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier);
+        await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier, "115%");
         await expect(page.getByLabel("PDF page 1", { exact: true })).toHaveAttribute("data-pdf-ready", "true");
         await expect(page.locator("[data-ink-stroke]")).toHaveCount(0);
     });

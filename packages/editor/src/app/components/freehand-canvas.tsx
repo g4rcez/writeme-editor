@@ -555,13 +555,29 @@ export function FreehandCanvas({
     return (
         <section
             className="wm-notebook"
-            tabIndex={0}
+            tabIndex={-1}
             onPointerDownCapture={(event) => {
                 if (event.target instanceof Node && viewport.current?.contains(event.target))
                     event.currentTarget.focus({ preventScroll: true });
             }}
             onKeyDownCapture={(event) => {
-                if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+                if (event.altKey) return;
+                if (!(event.metaKey || event.ctrlKey)) {
+                    if (!fixedPages || event.target !== event.currentTarget) return;
+                    const direction =
+                        event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
+                            ? 1
+                            : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
+                              ? -1
+                              : 0;
+                    if (!direction) return;
+                    event.preventDefault();
+                    cancelDrawing();
+                    setPageIndex(Math.max(0, Math.min(notebook.pages.length - 1, pageIndex + direction)));
+                    setPlacingLinkId(null);
+                    viewport.current?.scrollTo(0, 0);
+                    return;
+                }
                 const direction = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : 0;
                 const reset = event.key === "0";
                 if (!direction && !reset) return;
@@ -570,26 +586,6 @@ export function FreehandCanvas({
                 if (reset) resetZoom();
                 else changeZoom(zoomRef.current + direction * ZOOM_STEP);
             }}
-            onKeyDown={
-                fixedPages
-                    ? (event) => {
-                          if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey)
-                              return;
-                          const direction =
-event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
-                                  ? 1
-                                  : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
-                                    ? -1
-                                    : 0;
-                          if (!direction) return;
-                          event.preventDefault();
-                          cancelDrawing();
-                          setPageIndex(Math.max(0, Math.min(notebook.pages.length - 1, pageIndex + direction)));
-                          setPlacingLinkId(null);
-                          viewport.current?.scrollTo(0, 0);
-                      }
-                    : undefined
-            }
             aria-label={fixedPages ? "PDF notebook" : "Handwritten notebook"}
             style={
                 {

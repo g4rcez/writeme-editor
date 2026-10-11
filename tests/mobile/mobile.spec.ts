@@ -58,7 +58,6 @@ test("imports, edits, saves on backgrounding and exports a note offline", async 
     await page.getByRole("button", { name: "New note", exact: true }).first().click();
     const dialog = page.getByRole("dialog", { name: "Create new note" });
     await dialog.getByTitle("Note title").fill("Offline note");
-    await page.keyboard.press("Escape");
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(dialog).toBeHidden();
     await expect(page).not.toHaveURL(noteUrl);

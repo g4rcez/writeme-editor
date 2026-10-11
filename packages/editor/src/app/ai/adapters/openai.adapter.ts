@@ -173,14 +173,14 @@ export function createCodexRequestBody(rawBody: string, fallbackInstructions?: s
   });
 }
 
-function createCodexFetch(fallbackInstructions?: string) {
-  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+function createCodexFetch(fallbackInstructions?: string): typeof globalThis.fetch {
+  return Object.assign(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const nextInit: RequestInit = { ...init };
     if (typeof init?.body === "string") {
       nextInit.body = createCodexRequestBody(init.body, fallbackInstructions);
     }
     return proxyFetch(input, nextInit);
-  };
+  }, globalThis.fetch);
 }
 
 export class OpenAIAdapter implements AIAdapter {

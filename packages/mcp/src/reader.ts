@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { copyFile, mkdtemp, open, readdir, realpath, rm, stat } from "node:fs/promises";
