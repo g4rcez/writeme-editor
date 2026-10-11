@@ -253,29 +253,40 @@ test("deno: installed npm CLI reads saved files with scoped filesystem permissio
         workspace,
     ];
     const client = new Client({ name: "scoped-deno-package-test", version: "1.0.0" });
+    const env = {
+        ...Object.fromEntries(
+            Object.entries(environment()).filter(
+                (entry): entry is [string, string] => typeof entry[1] === "string",
+            ),
+        ),
+        TMPDIR: scratch,
+        TMP: scratch,
+        TEMP: scratch,
+    };
     try {
         await client.connect(
             new StdioClientTransport({
                 command: "deno",
                 args,
                 cwd: project.directory,
-                env: {
-                    ...Object.fromEntries(
-                        Object.entries(environment()).filter(
-                            (entry): entry is [string, string] => typeof entry[1] === "string",
-                        ),
-                    ),
-                    TMPDIR: scratch,
-                    TMP: scratch,
-                    TEMP: scratch,
-                },
+                env,
             }),
         );
         const response = await client.callTool({
             name: "get_note",
             arguments: { ref: "scoped-note", format: "content", raw: true },
         });
-        assert.equal(response.isError ?? false, false, JSON.stringify(response));
+        let diagnostic = "";
+        if (response.isError) {
+            const entry = join(packageRoot, "scoped-reader.mjs");
+            writeFileSync(
+                entry,
+                `import { createWorkspaceReader } from '@writeme.dev/mcp';\nawait createWorkspaceReader(${JSON.stringify({ profile: "production", dataDir: profile, workspace })}).snapshot();\n`,
+            );
+            const result = runCommand("deno", [...args.slice(0, 7), entry], packageRoot, env);
+            diagnostic = result.stdout + result.stderr;
+        }
+        assert.equal(response.isError ?? false, false, JSON.stringify(response) + diagnostic);
         assert.deepEqual(
             (response.structuredContent as { content: { text: string } }).content.text,
             "Saved scoped-permission note.",
