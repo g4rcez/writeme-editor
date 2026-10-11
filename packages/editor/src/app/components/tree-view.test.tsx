@@ -361,11 +361,13 @@ describe("TreeView", () => {
         ];
         directoryEntries["/workspace/docs"] = [];
 
-        render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={vi.fn()} onNewFile={vi.fn()} />);
+        await act(async () => {
+            render(<TreeView rootPath="/workspace" map={new Map()} onFileSelect={vi.fn()} onNewFile={vi.fn()} />);
+        });
 
-        expect(await screen.findByText("docs")).toBeInTheDocument();
+        expect(screen.getByText("docs")).toBeInTheDocument();
 
-        act(() => {
+        await act(async () => {
             contextMenuAction?.({
                 action: "new-file",
                 filePath: "/workspace/docs",
