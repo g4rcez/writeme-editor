@@ -1,0 +1,78 @@
+name: MCP contract and saved-state verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - packages/mcp/**
+      - packages/editor/src/main-process/**
+      - packages/editor/src/store/**
+      - package.json
+      - package-lock.json
+      - .github/workflows/mcp.yml
+  push:
+    branches: [main]
+    paths:
+      - packages/mcp/**
+      - package.json
+      - package-lock.json
+      - .github/workflows/mcp.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-2022]
+        versions:
+          - node: "22.13.0"
+            deno: "2.2.0"
+          - node: "24.18.0"
+            deno: "2.4.5"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.versions.node }}
+          cache: npm
+          cache-dependency-path: packages/mcp/package-lock.json
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.versions.deno }}
+      - run: npm ci --ignore-scripts --workspaces=false
+        working-directory: packages/mcp
+      - run: npm run validate --workspaces=false
+        working-directory: packages/mcp
+
+  electron:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: npm ci
+      - run: npm run build --workspace @writeme.dev/mcp
+      - run: npm run package:app
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+      - run: npm run test:e2e --workspace @writeme.dev/mcp
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: mcp-electron-failures
+          path: .omo/evidence/mcp-integration/native/
+          include-hidden-files: true
+          if-no-files-found: ignore

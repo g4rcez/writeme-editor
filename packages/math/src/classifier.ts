@@ -1,4 +1,4 @@
-import type { MathLine } from "./types";
+import type { MathLine } from "./types.js";
 
 const HEX_RE = /^0[xX][0-9a-fA-F]/;
 const BIN_RE = /^0[bB][01]/;

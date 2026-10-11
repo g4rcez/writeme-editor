@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
+        "types": ["node"],
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+    },
+    "include": ["package-tests/**/*.mts"]
+}

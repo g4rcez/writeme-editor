@@ -46,6 +46,19 @@ Regenerate icons and splash screens from `assets/logo.svg` with `npm run mobile:
 
 ## Verification and distribution
 
+### Pipeline downloads
+
+The `Build Android` and `Build iOS` workflows run on pushes to `main` and can be started manually. Download their `build-android` and `build-ios` artifacts from GitHub Actions. Tagged releases call the same workflows, wait for both builds and their mobile Playwright checks, and publish the files alongside the desktop installers on the [release page](https://github.com/g4rcez/writeme-editor/releases).
+
+| Platform   | Release asset                         | Installation                                                                                                             |
+| ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Android    | `writeme-<version>-android-debug.apk` | Installable debug APK for testing; allow installation from the downloader app.                                           |
+| iOS/iPadOS | `writeme-<version>-ios-unsigned.ipa`  | Unsigned Release build for physical devices; requires an Apple certificate and provisioning profile before installation. |
+
+The pipeline uses the existing `android-google-play` and `ios-app-store` capability profiles, with AI and other restricted features excluded. It does not publish to Google Play, the App Store, or TestFlight. Release tags must match the root `package.json` version; the native version is set from that package and the build number from the workflow run number.
+
+Android debug signing keys can differ between workflow runs, so updating may require uninstalling the previous app. Export a library backup before uninstalling. The iOS IPA cannot be installed directly from the download, and the macOS Developer ID signing credentials are not used for iOS.
+
 `npm run mobile:test` covers touch controls, AI exclusion, rich-text and Markdown persistence, offline creation, note/PDF import and export, and backup success/failure in both browser engines. Unit tests cover native bridge integration and platform boundaries.
 
 Debug APK and unsigned simulator builds can be produced locally. App Store and Play Store releases require your signing credentials and developer accounts. Validate the share sheet, keyboard, background saving, system Back, and stylus input on physical devices before distribution. Browser emulation and simulator compilation do not verify those hardware behaviors.

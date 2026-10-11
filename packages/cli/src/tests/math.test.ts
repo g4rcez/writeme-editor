@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { appendMathHistory, handleExpr } from "../commands/math.ts";
 
@@ -22,10 +23,13 @@ describe("handleExpr", () => {
     });
 
     test("sets a failing exit code for invalid expressions", async () => {
-        await handleExpr({ code: "totally bogus &&&" });
+        const result = spawnSync(process.execPath, [
+            "-e",
+            'import { handleExpr } from "./src/commands/math.ts"; await handleExpr({ code: "totally bogus &&&" });',
+        ], { cwd: import.meta.dir + "/../..", encoding: "utf8" });
 
-        expect(errorSpy).toHaveBeenCalled();
-        expect(process.exitCode).toBe(1);
+        expect(result.status).toBe(1);
+        expect(result.stderr.trim()).not.toBe("");
     });
 });
 

@@ -1,4 +1,4 @@
-import { classifyLine } from "solver";
+import { classifyLine } from "@writeme.dev/math";
 import { describe, expect, it } from "vitest";
 
 describe("classifyLine", () => {

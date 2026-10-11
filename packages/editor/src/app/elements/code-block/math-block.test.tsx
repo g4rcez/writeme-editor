@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { __resetMathInstanceCache } from "solver";
+import { __resetMathInstanceCache } from "@writeme.dev/math";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchExchangeRates } from "../../../lib/currency";
 import { MathBlock } from "./math-block";

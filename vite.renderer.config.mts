@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
         resolve: {
             alias: {
                 "@": path.resolve(import.meta.dirname, "./packages/editor/src"),
-                solver: path.resolve(import.meta.dirname, "./packages/solver/src"),
+                "@writeme.dev/math": path.resolve(import.meta.dirname, "./packages/math/src"),
                 "virtual:pwa-register/react": path.resolve(
                     import.meta.dirname,
                     "./packages/editor/src/lib/pwa-register-stub.ts",

@@ -1,4 +1,4 @@
-import { __resetMathInstanceCache, classifyLine, evaluateMathBlock, getMathInstance, type MathLine } from "solver";
+import { __resetMathInstanceCache, classifyLine, evaluateMathBlock, getMathInstance, type MathLine } from "@writeme.dev/math";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const lines = (...raws: string[]): MathLine[] => raws.map(classifyLine);

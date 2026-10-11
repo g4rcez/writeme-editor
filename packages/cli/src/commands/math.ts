@@ -1,9 +1,9 @@
+import { evaluateCode, evaluateInlineMath, type EvaluatedLine, type ExchangeRateData } from "@writeme.dev/math";
 import { mkdir, readFile, appendFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { createInterface } from "node:readline";
-import { evaluateCode, evaluateInlineMath, type EvaluatedLine, type ExchangeRateData } from "solver";
 
 const CURRENCY_HINT_RE = /[$€£¥₩₹₽₺฿₱₫]\s*\d|\b\d[\d.,]*\s+[A-Za-z]{3}\s+(?:to|in)\s+[A-Za-z]{3}\b/i;
 
@@ -116,9 +116,16 @@ export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
         prompt: "math> ",
         history: history.toReversed(),
     });
+    let closed = false;
+    rl.once("close", () => {
+        closed = true;
+    });
+    const prompt = (): void => {
+        if (!closed) rl.prompt();
+    };
 
     console.log("Writeme math REPL. Type .exit to quit.");
-    rl.prompt();
+    prompt();
 
     for await (const line of rl) {
         const expression = line.trim();
@@ -128,7 +135,7 @@ export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
         }
 
         if (expression.length === 0) {
-            rl.prompt();
+            prompt();
             continue;
         }
 
@@ -143,6 +150,6 @@ export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
             if (rendered) console.log(rendered);
         }
 
-        rl.prompt();
+        prompt();
     }
 }

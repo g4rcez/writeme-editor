@@ -1,4 +1,4 @@
-import { Dates as SolverDates } from "solver/dates";
+import { Dates as SolverDates } from "@writeme.dev/math/dates";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Dates } from "./dates";
 

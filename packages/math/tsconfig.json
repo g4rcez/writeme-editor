@@ -12,7 +12,8 @@
         "noImplicitReturns": true,
         "noUncheckedIndexedAccess": true,
         "noImplicitOverride": true,
-        "verbatimModuleSyntax": true
+        "verbatimModuleSyntax": true,
+        "types": ["node"]
     },
-    "include": ["src"]
+    "include": ["src", "tests/**/*.ts", "vitest.config.ts"]
 }

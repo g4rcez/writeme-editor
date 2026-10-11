@@ -1,4 +1,4 @@
-import { INLINE_MATH_PATTERN, evaluateInlineMath, runInlineMath } from "solver";
+import { INLINE_MATH_PATTERN, evaluateInlineMath, runInlineMath } from "@writeme.dev/math";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("INLINE_MATH_PATTERN", () => {

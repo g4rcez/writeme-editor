@@ -1,0 +1,85 @@
+name: Build Android
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+    workflow_call:
+        inputs:
+            release:
+                type: boolean
+                default: false
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        env:
+            NODE_OPTIONS: --max-old-space-size=4096
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+
+            - uses: actions/setup-java@v4
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - uses: android-actions/setup-android@v3
+
+            - name: Install Android SDK
+              run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+            - run: npm ci
+
+            - name: Resolve artifact version
+              id: version
+              env:
+                  RELEASE_BUILD: ${{ inputs.release }}
+                  REF_NAME: ${{ github.ref_name }}
+              run: |
+                  VERSION=$(node -p "require('./package.json').version")
+                  if [ "$RELEASE_BUILD" = "true" ] && [ "${REF_NAME#v}" != "$VERSION" ]; then
+                    echo "::error::Tag ${REF_NAME} does not match package.json version ${VERSION}"
+                    exit 1
+                  fi
+                  echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+            - name: Build and sync Android assets
+              run: npm run android:sync
+
+            - name: Verify mobile editor
+              run: |
+                  npm exec -- playwright install --with-deps chromium
+                  npm exec -- playwright test --config playwright.mobile.config.ts --project android-chromium
+
+            - name: Build Android APK
+              working-directory: packages/android/native
+              run: ./gradlew assembleDebug -PwritemeVersionName="$VERSION" -PwritemeVersionCode="$GITHUB_RUN_NUMBER"
+
+            - name: Stage artifacts
+              id: stage
+              run: |
+                  mkdir -p release-artifacts
+                  cp packages/android/native/app/build/outputs/apk/debug/app-debug.apk "release-artifacts/writeme-${VERSION}-android-debug.apk"
+                  test -s "release-artifacts/writeme-${VERSION}-android-debug.apk"
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ inputs.release && 'android' || 'build-android' }}
+                  path: release-artifacts/
+                  if-no-files-found: error
+
+            - name: Upload verification failures
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: mobile-android-failures
+                  path: artifacts/playwright/mobile/
+                  if-no-files-found: ignore

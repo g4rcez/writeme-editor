@@ -3,7 +3,7 @@ import type { ExtendedRegExpMatchArray } from "@tiptap/react";
 import { uuid } from "@g4rcez/components";
 import { type Editor, Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { INLINE_MATH_PATTERN, runInlineMath, solveRule3 } from "solver";
+import { INLINE_MATH_PATTERN, runInlineMath, solveRule3 } from "@writeme.dev/math";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
 import { FEATURES } from "@/lib/build-features";
 import { Dates } from "@/lib/dates";

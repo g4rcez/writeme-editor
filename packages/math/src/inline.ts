@@ -1,7 +1,7 @@
-import type { EvaluatedResult, ExchangeRateData } from "./types";
-import { Dates } from "./dates";
-import { applyBasePreprocessors, errorMessage, formatResult } from "./evaluator";
-import { getMathInstance } from "./mathjs-extensions";
+import type { EvaluatedResult, ExchangeRateData } from "./types.js";
+import { Dates } from "./dates.js";
+import { applyBasePreprocessors, errorMessage, formatResult } from "./evaluator.js";
+import { getMathInstance } from "./mathjs-extensions.js";
 
 export const INLINE_MATH_PATTERN = />>math [^=]+ ?=$/;
 

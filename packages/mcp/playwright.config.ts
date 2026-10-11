@@ -1,0 +1,10 @@
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+    testDir: "./e2e",
+    workers: 1,
+    timeout: 90_000,
+    outputDir: "../../.omo/evidence/mcp-integration/native",
+    reporter: "list",
+    use: { trace: "retain-on-failure" },
+});

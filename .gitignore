@@ -102,6 +102,7 @@ typings/
 
 # Electron-Forge
 out/
+/release-artifacts/
 erl_crash.dump
 dev-dist
 dist/

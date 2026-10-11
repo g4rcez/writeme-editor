@@ -7,11 +7,7 @@
         "skipLibCheck": true,
         "strict": true,
         "lib": ["ESNext", "DOM"],
-        "types": ["bun", "node"],
-        "paths": {
-            "solver": ["../solver/src/index.ts"],
-            "solver/*": ["../solver/src/*"]
-        }
+        "types": ["bun", "node"]
     },
-    "include": ["src", "../solver/src"]
+    "include": ["src"]
 }

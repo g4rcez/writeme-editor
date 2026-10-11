@@ -1,6 +1,14 @@
-import { Database } from "bun:sqlite";
 import type { Hashtag, Note, Project, Setting } from "../types.ts";
 import { getDbPath } from "./paths.ts";
+
+const openDatabase = await (async () => {
+    if ("Bun" in globalThis) {
+        const { Database } = await import("bun:sqlite");
+        return (dbPath: string) => new Database(dbPath, { readonly: true });
+    }
+    const { DatabaseSync } = await import("node:sqlite");
+    return (dbPath: string) => new DatabaseSync(dbPath, { readOnly: true });
+})();
 
 export type QueryNotesOptions = {
     tag?: string;
@@ -14,7 +22,7 @@ export type QueryTagsOptions = {
 };
 
 export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[] {
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDatabase(dbPath);
     try {
         const limit = Math.min(opts.limit, 1000);
         const conditions: string[] = [];
@@ -59,7 +67,7 @@ export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[
 }
 
 export function queryTags(opts: QueryTagsOptions, dbPath = getDbPath()): Hashtag[] {
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDatabase(dbPath);
     try {
         if (opts.note) {
             const noteRow = db.prepare("SELECT filePath FROM notes WHERE id = ? LIMIT 1").get(opts.note) as {
@@ -78,7 +86,7 @@ export function queryTags(opts: QueryTagsOptions, dbPath = getDbPath()): Hashtag
 }
 
 export function querySettings(dbPath = getDbPath()): Setting[] {
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDatabase(dbPath);
     try {
         return db.prepare("SELECT * FROM settings ORDER BY name ASC").all() as Setting[];
     } finally {
@@ -87,7 +95,7 @@ export function querySettings(dbPath = getDbPath()): Setting[] {
 }
 
 export function queryProjects(dbPath = getDbPath()): Project[] {
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDatabase(dbPath);
     try {
         return db.prepare("SELECT * FROM projects ORDER BY title ASC").all() as Project[];
     } finally {

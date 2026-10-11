@@ -37,7 +37,7 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": path.join(root, "packages/editor/src"),
-            solver: path.join(root, "packages/solver/src"),
+            "@writeme.dev/math": path.join(root, "packages/math/src"),
             "virtual:pwa-register/react": path.join(root, "packages/editor/src/lib/pwa-register-stub.ts"),
         },
     },

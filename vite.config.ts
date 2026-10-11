@@ -21,7 +21,7 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./packages/editor/src"),
-            solver: path.resolve(__dirname, "./packages/solver/src"),
+            "@writeme.dev/math": path.resolve(__dirname, "./packages/math/src"),
             ...(!buildProfile.features.autoUpdate
                 ? {
                       "virtual:pwa-register/react": path.resolve(

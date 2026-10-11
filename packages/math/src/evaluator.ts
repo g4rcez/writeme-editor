@@ -1,8 +1,8 @@
 import { format } from "mathjs";
-import type { BlockScope, EvaluatedLine, EvaluatedResult, ExchangeRateData, MathLine } from "./types";
-import { classifyLine } from "./classifier";
-import { Dates } from "./dates";
-import { getMathInstance, reconfigureEm, type MathInstance } from "./mathjs-extensions";
+import type { BlockScope, EvaluatedLine, EvaluatedResult, ExchangeRateData, MathLine } from "./types.js";
+import { classifyLine } from "./classifier.js";
+import { Dates } from "./dates.js";
+import { getMathInstance, reconfigureEm, type MathInstance } from "./mathjs-extensions.js";
 import {
     bitwiseKeywords,
     currencySymbols,
@@ -11,8 +11,8 @@ import {
     normalizeCurrencyDirection,
     prevSubstitution,
     roundingUnitConversion,
-} from "./preprocessors";
-import { preprocessRule3 } from "./rule-of-three";
+} from "./preprocessors.js";
+import { preprocessRule3 } from "./rule-of-three.js";
 
 function toNumericValue(result: unknown): number | null {
     if (typeof result === "number" && Number.isFinite(result)) return result;

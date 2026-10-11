@@ -1,20 +1,51 @@
 {
-    "name": "@writeme/cli",
+    "name": "@writeme.dev/cli",
     "version": "1.0.0",
-    "private": true,
+    "private": false,
+    "description": "Writeme command-line tools for notes and math.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/g4rcez/writeme-editor.git",
+        "directory": "packages/cli"
+    },
+    "bin": {
+        "writeme": "./dist/index.js"
+    },
+    "files": [
+        "dist/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/**/*.js.map",
+        "README.md",
+        "LICENSE"
+    ],
     "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
     "scripts": {
-        "build": "bun build --compile src/index.ts --outfile dist/writeme",
+        "build": "tsc -p tsconfig.build.json",
         "dev": "bun src/index.ts",
-        "test": "bun test"
+        "test": "bun test src/tests",
+        "typecheck": "tsc --noEmit",
+        "prepack": "npm run build",
+        "build:standalone": "bun build --compile src/index.ts --outfile dist/writeme",
+        "test:runtime": "node --test tests/runtime.test.mjs",
+        "test:package": "node --experimental-strip-types --test tests/package.test.mts",
+        "typecheck:tests": "tsc -p tsconfig.tests.json",
+        "validate": "npm run build && npm run typecheck && npm run typecheck:tests && npm test && npm run test:runtime && npm run test:package",
+        "prepublishOnly": "npm run validate"
     },
     "dependencies": {
-        "solver": "file:../solver",
+        "@writeme.dev/math": "^1.0.0",
         "zod": "4.3.6"
     },
     "devDependencies": {
-        "@types/bun": "latest",
+        "@types/bun": "1.3.14",
         "@types/node": "22.19.19",
         "typescript": "5.9.3"
+    },
+    "engines": {
+        "node": ">=22.13.0"
     }
 }

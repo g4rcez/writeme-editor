@@ -272,8 +272,27 @@ jobs:
                   path: release-artifacts/
                   if-no-files-found: error
 
+    build-android:
+        uses: ./.github/workflows/build-android.yml
+        with:
+            release: true
+
+    build-ios:
+        uses: ./.github/workflows/build-ios.yml
+        with:
+            release: true
+
     release:
-        needs: [meeting-verification, handwriting-verification, build-mac-arm64, build-windows, build-linux]
+        needs:
+            [
+                meeting-verification,
+                handwriting-verification,
+                build-mac-arm64,
+                build-windows,
+                build-linux,
+                build-android,
+                build-ios,
+            ]
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -295,6 +314,16 @@ jobs:
                   name: linux
                   path: artifacts
 
+            - uses: actions/download-artifact@v4
+              with:
+                  name: android
+                  path: artifacts
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: ios
+                  path: artifacts
+
             - name: Extract release notes
               run: |
                   awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
@@ -311,6 +340,13 @@ jobs:
                   ```
                   EOF
                   fi
+                  cat >> release-notes.md <<'EOF'
+
+                  ### Mobile downloads
+
+                  - Android: `writeme-<version>-android-debug.apk` is an installable debug APK for testing. Allow installation from the app used to download it. Debug signing is not suitable for Google Play, and updates between releases may require uninstalling; export a library backup first.
+                  - iOS/iPadOS: `writeme-<version>-ios-unsigned.ipa` contains a Release build for physical devices. It must be signed with an Apple certificate and a provisioning profile before installation; it cannot be installed directly from this download. This is not an App Store or TestFlight release.
+                  EOF
 
             - uses: softprops/action-gh-release@v2
               with:

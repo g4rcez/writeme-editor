@@ -1,4 +1,4 @@
-import { Dates as SolverDates } from "solver/dates";
+import { Dates as SolverDates } from "@writeme.dev/math/dates";
 
 const EDITOR_DAYS_UNTIL_PATTERN = /^days?\s+(?:until|till|before|since|after)\s+(.+)$/i;
 

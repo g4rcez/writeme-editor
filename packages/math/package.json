@@ -1,0 +1,61 @@
+{
+    "name": "@writeme.dev/math",
+    "version": "1.0.0",
+    "private": false,
+    "description": "Runtime-independent math and date expression evaluation for Writeme.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/g4rcez/writeme-editor.git",
+        "directory": "packages/math"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./mathjs-extensions": {
+            "types": "./dist/mathjs-extensions.d.ts",
+            "import": "./dist/mathjs-extensions.js"
+        },
+        "./dates": {
+            "types": "./dist/dates.d.ts",
+            "import": "./dist/dates.js"
+        }
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "build": "tsc -p tsconfig.build.json",
+        "prepack": "npm run build",
+        "test": "vitest run --config vitest.config.ts",
+        "test:runtime": "node --test tests/runtime.test.mjs",
+        "test:package": "node --experimental-strip-types --test tests/package.test.mts",
+        "typecheck:tests": "tsc -p tsconfig.tests.json",
+        "validate": "npm run build && npm run typecheck && npm run typecheck:tests && npm test && npm run test:runtime && npm run test:package",
+        "prepublishOnly": "npm run validate"
+    },
+    "dependencies": {
+        "chrono-node": "2.9.1",
+        "date-fns": "4.4.0",
+        "mathjs": "15.2.0"
+    },
+    "devDependencies": {
+        "@types/node": "22.19.19",
+        "typescript": "6.0.3",
+        "vitest": "4.1.11"
+    },
+    "engines": {
+        "node": ">=22.13.0"
+    }
+}

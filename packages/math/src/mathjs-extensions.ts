@@ -1,5 +1,5 @@
 import { all, create } from "mathjs";
-import type { ExchangeRateData } from "./types";
+import type { ExchangeRateData } from "./types.js";
 
 export type MathInstance = ReturnType<typeof create>;
 

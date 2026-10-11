@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { evaluateCode, type EvaluatedResult } from "solver";
+import { evaluateCode, type EvaluatedResult } from "@writeme.dev/math";
 import { fetchExchangeRates, getCachedRates, setCachedRates, type ExchangeRateData } from "@/lib/currency";
 
 const ResultCell = ({ result, prefix = "", bold }: { result: EvaluatedResult; prefix?: string; bold?: boolean }) => {

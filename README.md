@@ -63,7 +63,7 @@ The v1.1.0 macOS download targets Apple Silicon only and is unsigned. See the [r
 
 The project uses `npm` as the preferred package manager.
 
-For iOS and Android setup, native builds, and backup behavior, see the [mobile package guide](packages/mobile/README.md).
+Android and iOS builds are available as GitHub Actions artifacts on `main` and are attached to new tagged releases alongside the desktop downloads. Android provides an installable debug APK; iOS provides an unsigned device IPA that requires signing before installation. See the [mobile pipeline downloads](packages/mobile/README.md#pipeline-downloads) for details, and the [mobile package guide](packages/mobile/README.md) for setup and backup behavior.
 
 1. **Clone the repository**
 2. **Install dependencies**

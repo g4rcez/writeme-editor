@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { parseArgs } from "node:util";
 import { handleExpr, handleMathRepl } from "./commands/math.ts";
 import { openFile } from "./commands/open-file.ts";

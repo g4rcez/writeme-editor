@@ -20,6 +20,6 @@
             }
         },
         "packages/landing": {},
-        "packages/solver": {}
+        "packages/math": {}
     }
 }

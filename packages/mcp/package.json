@@ -1,0 +1,85 @@
+{
+    "name": "@writeme.dev/mcp",
+    "version": "0.1.0",
+    "private": false,
+    "description": "Read-only MCP access to saved Writeme workspaces.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/g4rcez/writeme-editor.git",
+        "directory": "packages/mcp"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/public.d.ts",
+            "import": "./dist/public.js"
+        },
+        "./cli": "./dist/index.js",
+        "./contract/v1": "./contract/v1.json",
+        "./package.json": "./package.json"
+    },
+    "types": "./dist/public.d.ts",
+    "files": [
+        "dist/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/**/*.js.map",
+        "contract/v1.json",
+        "README.md",
+        "CONTRACT.md",
+        "LICENSE"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "bin": {
+        "writeme-mcp": "./dist/index.js"
+    },
+    "type": "module",
+    "scripts": {
+        "dev": "bun src/index.ts",
+        "build": "tsc -p tsconfig.build.json",
+        "prepack": "npm run build",
+        "typecheck": "tsc --noEmit",
+        "test": "bun test ./tests",
+        "test:contract": "bun test tests/contract.test.ts",
+        "test:contract:built": "bun run scripts/test-built.ts",
+        "test:package": "node --experimental-strip-types --test package-tests/npm.test.mts",
+        "typecheck:tests": "tsc -p tsconfig.tests.json",
+        "validate": "npm run check && npm run typecheck:tests && npm run test:package",
+        "prepublishOnly": "npm run validate",
+        "contract:check": "bun run scripts/contract.ts --check",
+        "contract:update": "bun run scripts/contract.ts --write",
+        "lint": "oxlint --config .oxlintrc.json --deny-warnings src scripts tests e2e package-tests",
+        "format:check": "prettier --check src scripts tests e2e package-tests package.json tsconfig.json tsconfig.build.json tsconfig.tests.json .prettierrc.json .oxlintrc.json",
+        "check": "npm run typecheck && npm run lint && npm run format:check && npm run contract:check && npm test && npm run build && npm run test:contract:built",
+        "test:e2e": "playwright test --config playwright.config.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/server": "2.3.1",
+        "marked": "18.0.11",
+        "yaml": "2.9.0",
+        "zod": "4.3.6"
+    },
+    "devDependencies": {
+        "@playwright/test": "1.62.1",
+        "@modelcontextprotocol/client": "2.3.1",
+        "@types/bun": "1.3.14",
+        "@types/node": "22.19.19",
+        "ajv": "8.20.0",
+        "ajv-formats": "3.0.1",
+        "oxlint": "1.81.0",
+        "prettier": "3.9.6",
+        "typescript": "5.9.3"
+    },
+    "engines": {
+        "node": ">=22.13.0"
+    },
+    "keywords": [
+        "mcp",
+        "writeme",
+        "notes",
+        "node",
+        "bun",
+        "deno"
+    ]
+}
