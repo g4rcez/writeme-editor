@@ -64,7 +64,7 @@ before(() => {
     }
     // Normal npm pack executes prepack; installation uses only the resulting tarball.
     project = installPackedPackages([packageName]);
-    project.directory = realpathSync(project.directory);
+    project.directory = realpathSync.native(project.directory);
     const nodeTypes = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"))
         .devDependencies["@types/node"] as string;
     captured(
@@ -221,7 +221,7 @@ for (const runtime of runtimes) {
 }
 
 test("deno: installed npm CLI reads saved files with scoped filesystem permissions and no network/ffi/run grants", async () => {
-    const packageRoot = realpathSync(project.directory);
+    const packageRoot = realpathSync.native(project.directory);
     const profile = join(packageRoot, "scoped-profile");
     const workspace = join(packageRoot, "scoped-workspace");
     const scratch = join(packageRoot, "snapshot-temp");
