@@ -66,6 +66,57 @@ const seedLongConversation = async (page: Page): Promise<void> => {
 };
 
 test.describe("AI chat layout", () => {
+    test("explains setup before inviting a conversation", async ({ cleanPage: page }) => {
+        await goHome(page);
+        await page.goto("/chat");
+        await expect(page.getByRole("heading", { name: "Connect AI to start chatting." })).toBeVisible();
+        await expect(
+            page.getByText("Choose an AI provider and a model in settings to start a conversation."),
+        ).toBeVisible();
+        await page.getByRole("button", { name: "Set up AI", exact: true }).click();
+        await expect(page).toHaveURL(/\/settings\/ai$/);
+    });
+
+    for (const adapterId of ["openai", "cli"]) {
+        test(`explains data sharing for the ${adapterId} provider`, async ({ cleanPage: page }) => {
+            await goHome(page);
+            await page.evaluate(async (adapterId) => {
+                const database = await new Promise<IDBDatabase>((resolve, reject) => {
+                    const request = indexedDB.open("writeme");
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                const transaction = database.transaction("aiConfigs", "readwrite");
+                transaction.objectStore("aiConfigs").put({
+                    id: "copy-test-provider",
+                    name: "Copy test provider",
+                    adapterId,
+                    model: "test-model",
+                    systemPrompt: "",
+                    isDefault: true,
+                });
+                await new Promise<void>((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                    transaction.onabort = () => reject(transaction.error);
+                });
+                database.close();
+            }, adapterId);
+            await page.goto("/chat");
+            await expect(
+                page.getByRole("heading", { name: "What would you like to do with your notes?" }),
+            ).toBeVisible();
+            await expect(page.getByRole("button", { name: "Set up AI", exact: true })).toHaveCount(0);
+            await expect(
+                page.getByText(
+                    adapterId === "cli"
+                        ? "Your configured command receives your message and any included note content. Where they are sent depends on that tool’s settings."
+                        : "Your messages, attachments, and note content used for replies are sent to your selected AI provider.",
+                ),
+            ).toBeVisible();
+        });
+    }
+
     test("keeps latest replies reachable and research details close to the answer", async ({ cleanPage: page }) => {
         await goHome(page);
         await seedLongConversation(page);

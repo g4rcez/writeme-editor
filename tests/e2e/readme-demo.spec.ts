@@ -35,7 +35,7 @@ test("README demo: create, write, and find a note", async ({ cleanPage: page }) 
 
     await page.getByRole("button", { name: "All notes", exact: true }).click();
     await expect(page).toHaveURL(/\/notes$/);
-    await expect(page.getByRole("heading", { name: "All Notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "All notes" })).toBeVisible();
     const noteLink = page.getByTestId("virtuoso-item-list").getByRole("link", { name: title });
     await expect(noteLink).toBeVisible();
     await page.waitForTimeout(500);

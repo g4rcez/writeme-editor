@@ -161,10 +161,10 @@ export default function DashboardPage() {
                                     {greeting || "Your private workspace"}
                                 </p>
                                 <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-                                    Make space for <span className="text-primary">the next idea.</span>
+                                    Your notes, <span className="text-primary">ready when you are.</span>
                                 </h1>
                                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-                                    Write, connect, and find your thinking without leaving your workspace.
+                                    Create a note, find something you wrote, or pick up where you left off.
                                 </p>
                             </div>
                             <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto xl:shrink-0">
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                                 </Button>
                                 <Button type="button" theme="outlined" onClick={onSearch}>
                                     <MagnifyingGlassIcon size={17} aria-hidden="true" />
-                                    <span>Open note</span>
+                                    <span>Find a note</span>
                                     <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                                         {mapShortcutOS("mod+k")}
                                     </kbd>
@@ -257,8 +257,7 @@ export default function DashboardPage() {
                                                 Start with one small thought.
                                             </p>
                                             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                                Your first note will become the starting point for everything you build
-                                                here.
+                                                Create a note to get started.
                                             </p>
                                         </div>
                                     </div>
@@ -335,7 +334,7 @@ export default function DashboardPage() {
                                 <div className="mt-4 rounded-xl border border-dashed border-border/55 bg-background/40 p-4">
                                     <p className="text-sm font-medium text-foreground">No starred notes yet</p>
                                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                        Star the notes you return to often and they will stay one gesture away.
+                                        Star a note to find it here next time.
                                     </p>
                                     <Link
                                         to="/notes"
@@ -373,8 +372,8 @@ export default function DashboardPage() {
                                 onClick={createNewNote}
                             />
                             <ActionCard
-                                title="Search everything"
-                                description="Jump to a note or action."
+                                title="Find a note"
+                                description="Search your notes."
                                 icon={MagnifyingGlassIcon}
                                 shortcut="⌘ K"
                                 onClick={onSearch}

@@ -8,7 +8,7 @@ export const test = base.extend<{ cleanPage: Page }>({
 
 export const goHome = async (page: Page) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
 };
 
 export const createNote = async (page: Page, title: string, content = ""): Promise<string> => {

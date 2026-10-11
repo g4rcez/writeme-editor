@@ -266,7 +266,7 @@ export const Callout = Node.create<CalloutOptions>({
                         const mappedPos = tr.mapping.map(cursorMatch.pos);
                         try {
                             tr.setSelection(TextSelection.near(tr.doc.resolve(mappedPos + 1)));
-                        } catch (_) {
+                        } catch {
                             /* ignore invalid positions */
                         }
                     }

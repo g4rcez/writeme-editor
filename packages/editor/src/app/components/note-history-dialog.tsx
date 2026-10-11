@@ -8,22 +8,25 @@ import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
 import { repositories } from "@/store/repositories";
 
+import { NoteToolTooltip } from "./note-tool-tooltip";
+
 type NoteHistoryButtonProps = {
     onClick: () => void;
 };
 
 export function NoteHistoryButton({ onClick }: NoteHistoryButtonProps) {
     return (
-        <Button
-            type="button"
-            size="icon"
-            theme="ghost-muted"
-            className="writeme-note-tool-button"
-            aria-label="History"
-            title="View note history"
-            icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
-            onClick={onClick}
-        />
+        <NoteToolTooltip title="Note history" description="View previous versions of this note and restore one.">
+            <Button
+                type="button"
+                size="icon"
+                theme="ghost-muted"
+                className="writeme-note-tool-button"
+                aria-label="History"
+                icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
+                onClick={onClick}
+            />
+        </NoteToolTooltip>
     );
 }
 

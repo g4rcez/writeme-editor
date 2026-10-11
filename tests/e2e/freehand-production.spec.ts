@@ -9,7 +9,7 @@ test("persists ink and paper in the production bundle", async ({ page }, testInf
     await writeNotebook(page);
     const url = page.url();
     await navigateHome(page);
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     await page.goto(url);
     await expectSavedNotebook(page);
     await page.screenshot({ path: testInfo.outputPath("production-notebook.png") });

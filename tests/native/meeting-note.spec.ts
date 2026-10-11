@@ -34,7 +34,7 @@ async function launchMeetingApp(): Promise<{ application: ElectronApplication; d
 
 async function createMeetingPage(application: ElectronApplication, directory: string): Promise<Page> {
     const page = await application.firstWindow();
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     const userData = await application.evaluate(({ app }) => app.getPath("userData"));
     expect(userData.startsWith(directory)).toBe(true);
     await page.keyboard.press("ControlOrMeta+Shift+P");

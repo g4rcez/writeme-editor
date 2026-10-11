@@ -7,6 +7,19 @@
     --wm-ink: var(--var-color-foreground);
 }
 
+.__tooltip:has(.writeme-note-tool-tooltip-content) {
+    --wm-note-tooltip-background: color-mix(
+        in srgb,
+        var(--var-tooltip-surface-background) 80%,
+        var(--var-modal-overlay-background)
+    );
+    background-color: var(--wm-note-tooltip-background);
+}
+
+.__tooltip:has(.writeme-note-tool-tooltip-content) .__tooltip__arrow {
+    fill: var(--wm-note-tooltip-background);
+}
+
 @media (min-width: 64rem) {
     .writeme-ai-provider-select {
         display: none;

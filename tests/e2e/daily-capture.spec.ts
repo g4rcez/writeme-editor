@@ -14,12 +14,16 @@ test.describe("daily quick capture", () => {
         await expect(page).toHaveURL(/\/templates\/[^/]+$/);
 
         await page.goto("/");
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
-        await page.getByRole("main", { name: "Home" }).getByRole("button", { name: "Open note", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+        await page
+            .getByRole("main", { name: "Home" })
+            .getByRole("button", { name: "Find a note", exact: true })
+            .first()
+            .click();
         await page.getByText("Open today's note", { exact: true }).click();
 
         const quickNoteDialog = page.getByRole("dialog", { name: "Today's quick note" });
-        const templateSelector = quickNoteDialog.getByRole("combobox", { name: "From Template (Optional)" });
+        const templateSelector = quickNoteDialog.getByRole("combobox", { name: "Template (optional)" });
         await templateSelector.fill("Daily capture template");
         await page.getByRole("option", { name: "Daily capture template", exact: true }).click();
         await quickNoteDialog.getByTitle("content").fill("Template body");
@@ -43,8 +47,12 @@ test.describe("daily quick capture", () => {
         await expect(page.locator(".ProseMirror").first()).toContainText("User addition");
 
         await page.goto("/");
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
-        await page.getByRole("main", { name: "Home" }).getByRole("button", { name: "Open note", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+        await page
+            .getByRole("main", { name: "Home" })
+            .getByRole("button", { name: "Find a note", exact: true })
+            .first()
+            .click();
         await page.getByText("Open today's note", { exact: true }).click();
         await expect(page).toHaveURL(new URL(`/note/${noteId}`, page.url()).href);
         await expect(page.locator(".ProseMirror").first()).toContainText("Template body");

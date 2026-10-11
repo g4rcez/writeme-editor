@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import type { FreehandNotebook } from "../../packages/editor/src/lib/freehand-note";
+import { expectCanvasZoomShortcuts, expectCanvasZoomWheel } from "../helpers/canvas-zoom";
 import { navigateHome } from "../helpers/handwriting";
 import { expect, goHome, test } from "./fixtures";
 
@@ -23,6 +24,25 @@ async function createHandwrittenNote(page: Page): Promise<void> {
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
     await expect(page.locator(".ProseMirror")).toHaveCount(0);
+}
+
+test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page }) => {
+    await createHandwrittenNote(page);
+    await expectCanvasZoomWheel(page);
+});
+
+for (const modifier of ["Control", "Meta"] as const) {
+    test(`${modifier} plus/minus zooms only the handwritten canvas`, async ({ page }) => {
+        await createHandwrittenNote(page);
+        await page.getByRole("button", { name: "Eraser", exact: true }).click();
+        await page.getByLabel("Handwriting canvas", { exact: true }).click();
+        await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier);
+        for (let index = 0; index < 12; index++) await page.keyboard.press(`${modifier}+=`);
+        await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("300%");
+        for (let index = 0; index < 12; index++) await page.keyboard.press(`${modifier}+-`);
+        await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("50%");
+        await expect(page.locator("[data-ink-stroke]")).toHaveCount(0);
+    });
 }
 
 async function draw(page: Page, y = 220): Promise<void> {
@@ -518,7 +538,7 @@ test.describe("production safeguards", () => {
         await expect(page).toHaveURL(url);
         await expect(page.getByRole("dialog", { name: "Unsaved notebook" })).toBeVisible();
         await page.evaluate(() => window.dispatchEvent(new Event("release-notebook-save")));
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await page.goto(url);
         await expect(page.getByLabel("Handwriting canvas", { exact: true }).locator("[data-ink-stroke]")).toHaveCount(
             1,

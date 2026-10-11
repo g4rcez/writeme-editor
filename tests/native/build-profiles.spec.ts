@@ -24,7 +24,7 @@ require(${JSON.stringify(path.join(buildRoot, "build/main.js"))});`,
     });
     try {
         const page = await application.firstWindow();
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         expect(
             await page.evaluate(() => ({
                 terminal: typeof window.electronAPI.terminal,
@@ -76,7 +76,7 @@ require(${JSON.stringify(path.join(buildRoot, "build/main.js"))});`,
         });
         expect(rejected).toEqual([true, true, true, true, true]);
         await page.goto(`${page.url().split("#")[0]}#/chat`);
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     } finally {
         await application.close();
         await rm(directory, { recursive: true, force: true });

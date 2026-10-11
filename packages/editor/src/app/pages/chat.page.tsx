@@ -116,11 +116,12 @@ const RenderChatContent = ({
                     <SparkleIcon size={22} aria-hidden="true" />
                 </span>
                 <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground">
-                    What should we work through?
+                    {isConfigured ? "What would you like to do with your notes?" : "Connect AI to start chatting."}
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                    Ask about notes, trends, drafts, or decisions in this workspace. Responses stay as readable
-                    markdown.
+                    {isConfigured
+                        ? "Ask questions about your notes, get help with a draft, or explore an idea."
+                        : "Choose an AI provider and a model in settings to start a conversation."}
                 </p>
                 <div className="mt-8 grid w-full gap-2 text-left sm:grid-cols-3">
                     {PROMPT_EXAMPLES.map((prompt) => (
@@ -141,7 +142,7 @@ const RenderChatContent = ({
                         onClick={onConfigureAI}
                         className="mt-6 rounded-md bg-button-primary-bg px-3 py-1.5 text-sm font-medium text-button-primary-text transition-opacity hover:opacity-90"
                     >
-                        Configure AI
+                        Set up AI
                     </button>
                 )}
             </div>
@@ -669,15 +670,17 @@ export default function ChatPage() {
                             disabled={!config || isLoading}
                             onContentChange={updateComposerDraft}
                         />
-                        {config ? null : (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                                Connect an AI provider in settings before starting a chat.
-                            </p>
-                        )}
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            {!config
+                                ? "Set up AI in settings to start chatting."
+                                : config.adapterId === "cli"
+                                  ? "Your configured command receives your message and any included note content. Where they are sent depends on that tool’s settings."
+                                  : "Your messages, attachments, and note content used for replies are sent to your selected AI provider."}
+                        </p>
                         {config?.adapterId === "cli" ? (
                             <p role="status" className="mt-2 text-xs text-muted-foreground">
-                                Workspace research and reviewable edits require a provider that exposes Writeme’s
-                                workspace tools. This local CLI adapter does not support those actions.
+                                This command can chat, but it can’t search your workspace or suggest note edits for
+                                review. Choose another AI provider in settings to use those features.
                             </p>
                         ) : null}
                     </div>

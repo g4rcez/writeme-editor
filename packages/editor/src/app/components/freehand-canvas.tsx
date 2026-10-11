@@ -19,6 +19,7 @@ import clsx from "clsx";
 import {
     memo,
     useEffect,
+    useEffectEvent,
     useId,
     useRef,
     useState,
@@ -43,6 +44,7 @@ import {
     type PenStyle,
 } from "@/lib/freehand-note";
 import { clampLinkPosition, NoteLinkPicker, StickyNoteLink, type NoteLinkTarget } from "./freehand-note-links";
+import { usePdfPageGestures } from "./use-pdf-page-gestures";
 
 type Tool = "pen" | "highlighter" | "eraser" | "hand";
 type Drawing = {
@@ -52,7 +54,11 @@ type Drawing = {
     before: FreehandNotebook;
     erased: InkStroke[];
 };
+
 type Touch = { x: number; y: number };
+
+const ZOOM_STEP = 0.15;
+
 const INKS = [
     { color: "#243047", label: "Graphite" },
     { color: "#2459c4", label: "Blue" },
@@ -239,6 +245,8 @@ export function FreehandCanvas({
     const showToolsButton = useRef<HTMLButtonElement>(null);
     const previouslyHidden = useRef(false);
     const zoomRef = useRef(zoom);
+    const zoomOptions = useRef<HTMLFieldSetElement>(null);
+    const zoomReset = useRef<HTMLButtonElement>(null);
     const [preview, setPreview] = useState<InkStroke | null>(null);
     const drawing = useRef<Drawing | null>(null);
     const touches = useRef(new Map<number, Touch>());
@@ -253,6 +261,33 @@ export function FreehandCanvas({
     const pageHeight = page.height ?? PAPER_HEIGHT;
     const appearance = notebook.appearance ?? DEFAULT_PAPER_APPEARANCE;
     const selectedPen = penTypes.find((pen) => pen.style === penStyle)!;
+    const readingPdf = fixedPages && tool === "hand" && !placingLinkId;
+    const pdfGestures = usePdfPageGestures({
+        enabled: readingPdf,
+        pageIndex,
+        zoom,
+        onZoom: changeZoom,
+        onTurn: (direction) => {
+            cancelDrawing();
+            setPageIndex((index) => Math.max(0, Math.min(notebook.pages.length - 1, index + direction)));
+            viewport.current?.scrollTo(0, 0);
+        },
+    });
+
+    const zoomWithWheel = useEffectEvent((event: WheelEvent): void => {
+        if (event.deltaY === 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        changeZoom(zoomRef.current + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    });
+
+    useEffect(() => {
+        const controls: (HTMLElement | null)[] = [zoomOptions.current, zoomReset.current];
+        for (const control of controls) control?.addEventListener("wheel", zoomWithWheel, { passive: false });
+        return () => {
+            for (const control of controls) control?.removeEventListener("wheel", zoomWithWheel);
+        };
+    }, [activePanel, toolsHidden]);
 
     useEffect(() => {
         if (toolsHidden) showToolsButton.current?.focus();
@@ -381,6 +416,11 @@ export function FreehandCanvas({
         const next = Math.min(3, Math.max(0.5, value));
         zoomRef.current = next;
         setZoom(next);
+    }
+
+    function resetZoom(): void {
+        changeZoom(1);
+        viewport.current?.scrollTo(0, 0);
     }
 
     function pointFromEvent(event: globalThis.PointerEvent, surface: SVGSVGElement): InkPoint {
@@ -515,16 +555,30 @@ export function FreehandCanvas({
     return (
         <section
             className="wm-notebook"
-            tabIndex={fixedPages ? 0 : undefined}
+            tabIndex={0}
+            onPointerDownCapture={(event) => {
+                if (event.target instanceof Node && viewport.current?.contains(event.target))
+                    event.currentTarget.focus({ preventScroll: true });
+            }}
+            onKeyDownCapture={(event) => {
+                if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+                const direction = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : 0;
+                const reset = event.key === "0";
+                if (!direction && !reset) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (reset) resetZoom();
+                else changeZoom(zoomRef.current + direction * ZOOM_STEP);
+            }}
             onKeyDown={
                 fixedPages
                     ? (event) => {
                           if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey)
                               return;
                           const direction =
-                              event.key === "ArrowRight" || event.key === "PageDown"
+event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
                                   ? 1
-                                  : event.key === "ArrowLeft" || event.key === "PageUp"
+                                  : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
                                     ? -1
                                     : 0;
                           if (!direction) return;
@@ -875,13 +929,18 @@ export function FreehandCanvas({
                                             />
                                             Draw with touch
                                         </label>
-                                        <fieldset className="wm-ink-group" aria-label="Page zoom">
+                                        <fieldset
+                                            ref={zoomOptions}
+                                            className="wm-ink-group"
+                                            aria-label="Page zoom"
+                                            title="Scroll up to zoom in, down to zoom out"
+                                        >
                                             <button
                                                 type="button"
                                                 className={controlClass}
                                                 aria-label="Zoom out"
                                                 disabled={zoom <= 0.5}
-                                                onClick={() => changeZoom(zoom - 0.25)}
+                                                onClick={() => changeZoom(zoom - ZOOM_STEP)}
                                             >
                                                 −
                                             </button>
@@ -891,7 +950,7 @@ export function FreehandCanvas({
                                                 className={controlClass}
                                                 aria-label="Zoom in"
                                                 disabled={zoom >= 3}
-                                                onClick={() => changeZoom(zoom + 0.25)}
+                                                onClick={() => changeZoom(zoom + ZOOM_STEP)}
                                             >
                                                 +
                                             </button>
@@ -1020,14 +1079,12 @@ export function FreehandCanvas({
                         ) : null}
                     </fieldset>
                     <button
+                        ref={zoomReset}
                         type="button"
                         className={controlClass}
                         aria-label="Reset zoom"
-                        title="Reset zoom"
-                        onClick={() => {
-                            changeZoom(1);
-                            viewport.current?.scrollTo(0, 0);
-                        }}
+                        title="Scroll to zoom; click to reset"
+                        onClick={resetZoom}
                     >
                         {Math.round(zoom * 100)}%
                     </button>
@@ -1063,10 +1120,27 @@ export function FreehandCanvas({
                     </button>
                 </output>
             )}
-            <div className="wm-paper-viewport" ref={viewport}>
+            <div
+                className={clsx(
+                    "wm-paper-viewport",
+                    fixedPages && "wm-paper-viewport--book",
+                    readingPdf && "wm-paper-viewport--reading",
+                )}
+                ref={viewport}
+                onPointerDown={pdfGestures.onPointerDown}
+                onPointerMove={pdfGestures.onPointerMove}
+                onPointerUp={pdfGestures.onPointerUp}
+                onPointerCancel={pdfGestures.onPointerCancel}
+                onLostPointerCapture={pdfGestures.onPointerCancel}
+            >
                 <div
                     className="wm-paper-space"
-                    style={{ width: `max(${zoom * 100}%, calc(100cqh * ${PAPER_WIDTH / pageHeight} * ${zoom}))` }}
+                    style={{
+                        width: fixedPages
+                            ? `calc(min(100cqw - 2rem, var(--wm-book-height) * ${PAPER_WIDTH / pageHeight}) * ${zoom})`
+                            : `max(${zoom * 100}%, calc(100cqh * ${PAPER_WIDTH / pageHeight} * ${zoom}))`,
+                        transform: pdfGestures.offset ? `translateX(${pdfGestures.offset}px)` : undefined,
+                    }}
                 >
                     {pageBackground?.(pageIndex, zoom)}
                     <svg

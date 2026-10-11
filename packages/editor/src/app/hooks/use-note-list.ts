@@ -133,10 +133,10 @@ export function useNoteList(options: UseNoteListOptions = {}) {
 
     const handleBatchDelete = async () => {
         const confirmed = await Modal.confirm({
-            title: "Delete Notes",
-            description: `Are you sure you want to delete ${selectedIds.size} notes?`,
+            title: `Move ${selectedIds.size} ${selectedIds.size === 1 ? "note" : "notes"} to Trash?`,
+            description: "You can restore them from Trash.",
             confirm: {
-                text: "Delete",
+                text: "Move to Trash",
                 theme: "danger",
             },
         });

@@ -30,6 +30,7 @@ import { MeetingNotePanel } from "../components/meeting-note-panel";
 import { FEATURES } from "@/lib/build-features";
 import { isMobile } from "@/lib/platform";
 import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
+import { NoteToolTooltip } from "../components/note-tool-tooltip";
 import { TableOfContents } from "../components/table-of-contents";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
@@ -179,48 +180,54 @@ const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChan
 
 function AddFrontmatterButton() {
     return (
-        <Button
-            type="button"
-            size="icon"
-            theme="ghost-muted"
-            className="writeme-note-tool-button"
-            aria-label="Add frontmatter"
-            title="Add Markdown frontmatter"
-            icon={<BracketsCurlyIcon aria-hidden="true" />}
-            onClick={addFrontmatterToCurrentEditor}
-        />
+        <NoteToolTooltip title="Add frontmatter" description="Add a metadata block at the start of this note.">
+            <Button
+                type="button"
+                size="icon"
+                theme="ghost-muted"
+                className="writeme-note-tool-button"
+                aria-label="Add frontmatter"
+                icon={<BracketsCurlyIcon aria-hidden="true" />}
+                onClick={addFrontmatterToCurrentEditor}
+            />
+        </NoteToolTooltip>
     );
 }
 
 function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: () => void }) {
     return (
-        <Button
-            type="button"
-            size="icon"
-            theme={open ? "primary" : "ghost-muted"}
-            className="writeme-note-tool-button"
-            aria-label={open ? "Exit pane mode" : "Open pane mode"}
-            aria-pressed={open}
+        <NoteToolTooltip
             title={open ? "Exit pane mode" : "Open pane mode"}
-            icon={<ColumnsIcon aria-hidden="true" />}
-            onClick={onChange}
-        />
+            description={open ? "Return to a single editor." : "Open notes side by side in editor panes."}
+        >
+            <Button
+                type="button"
+                size="icon"
+                theme={open ? "primary" : "ghost-muted"}
+                className="writeme-note-tool-button"
+                aria-label={open ? "Exit pane mode" : "Open pane mode"}
+                aria-pressed={open}
+                icon={<ColumnsIcon aria-hidden="true" />}
+                onClick={onChange}
+            />
+        </NoteToolTooltip>
     );
 }
 
 function ExportNoteButton({ note }: { note: Note }) {
     if (isMobile()) return null;
     return (
-        <Button
-            type="button"
-            size="icon"
-            theme="ghost-muted"
-            className="writeme-note-tool-button"
-            aria-label={`Export ${note.title}`}
-            title="Export document (print or save as PDF)"
-            icon={<PrinterIcon aria-hidden="true" />}
-            onClick={() => printDocument({ title: note.title })}
-        />
+        <NoteToolTooltip title="Export document" description="Print this note or save it as a PDF.">
+            <Button
+                type="button"
+                size="icon"
+                theme="ghost-muted"
+                className="writeme-note-tool-button"
+                aria-label={`Export ${note.title}`}
+                icon={<PrinterIcon aria-hidden="true" />}
+                onClick={() => printDocument({ title: note.title })}
+            />
+        </NoteToolTooltip>
     );
 }
 
@@ -228,18 +235,22 @@ function FavoriteNoteButton({ note, disabled, onToggle }: { note: Note; disabled
     const label = note.favorite ? "Remove from favorites" : "Add to favorites";
 
     return (
-        <Button
-            type="button"
-            size="icon"
-            theme="ghost-muted"
-            className={`writeme-note-tool-button ${note.favorite ? "text-warn" : ""}`}
-            aria-label={label}
-            aria-pressed={note.favorite}
+        <NoteToolTooltip
             title={label}
-            disabled={disabled}
-            icon={<StarIcon weight={note.favorite ? "fill" : "regular"} aria-hidden="true" />}
-            onClick={onToggle}
-        />
+            description={note.favorite ? "Remove this note from your favorites list." : "Keep this note in your favorites list for quick access."}
+        >
+            <Button
+                type="button"
+                size="icon"
+                theme="ghost-muted"
+                className={`writeme-note-tool-button ${note.favorite ? "text-warn" : ""}`}
+                aria-label={label}
+                aria-pressed={note.favorite}
+                disabled={disabled}
+                icon={<StarIcon weight={note.favorite ? "fill" : "regular"} aria-hidden="true" />}
+                onClick={onToggle}
+            />
+        </NoteToolTooltip>
     );
 }
 

@@ -34,7 +34,7 @@ for (const filesystem of [false, true]) {
             expect(
                 (await application.evaluate(({ app }) => app.getPath("userData"))).startsWith(directory + path.sep),
             ).toBe(true);
-            await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+            await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
             if (filesystem) {
                 await application.evaluate(({ dialog }, folder) => {
                     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });

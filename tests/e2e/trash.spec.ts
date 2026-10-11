@@ -18,7 +18,7 @@ const openTrashPane = async (page: Page) => {
 test.describe("Trash / soft-delete", () => {
     test.beforeEach(async ({ cleanPage }) => {
         await cleanPage.goto("/");
-        await expect(cleanPage.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(cleanPage.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     });
 
     test("deleting a note moves it to trash and hides it from the list", async ({ cleanPage: page }) => {
@@ -28,7 +28,7 @@ test.describe("Trash / soft-delete", () => {
         const row = page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Note to trash" });
         await expect(row).toBeVisible();
 
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await expect(row).toBeHidden();
         await expect(page.getByText(/moved to Trash/)).toBeVisible();
@@ -38,7 +38,7 @@ test.describe("Trash / soft-delete", () => {
         await createNote(page, "Note to undo");
 
         await page.goto("/notes");
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
 
         const undoButton = page.getByRole("button", { name: "Undo" });
         await expect(undoButton).toBeVisible();
@@ -51,7 +51,7 @@ test.describe("Trash / soft-delete", () => {
         await createNote(page, "Trashed note");
 
         await page.goto("/notes");
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
         await expect(page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Trashed note" })).toBeHidden();
 
         await openTrashPane(page);
@@ -62,7 +62,7 @@ test.describe("Trash / soft-delete", () => {
         await createNote(page, "Restorable note");
 
         await page.goto("/notes");
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await openTrashPane(page);
         await expect(page.getByText("Restorable note")).toBeVisible();
@@ -84,7 +84,7 @@ test.describe("Trash / soft-delete", () => {
         await createNote(page, "No permanent delete");
 
         await page.goto("/notes");
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await openTrashPane(page);
 
@@ -96,12 +96,12 @@ test.describe("Trash / soft-delete", () => {
     test("Empty Trash removes all trashed notes", async ({ cleanPage: page }) => {
         await createNote(page, "Trash item one");
         await page.goto("/notes");
-        await page.getByRole("button", { name: "Delete note" }).click();
+        await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await page.goto("/");
         await createNote(page, "Trash item two");
         await page.goto("/notes");
-        const buttons = page.getByRole("button", { name: "Delete note" });
+        const buttons = page.getByRole("button", { name: "Move to Trash" });
         await buttons.first().click();
 
         await openTrashPane(page);

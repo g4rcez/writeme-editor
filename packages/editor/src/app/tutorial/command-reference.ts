@@ -41,9 +41,9 @@ const APP_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("Mod+Shift+M", "Switch between light and dark themes."),
     keyboard("Mod+,", "Open settings."),
     keyboard("Mod+R", "Reload the current app window."),
-    keyboard("Mod+-", "Decrease the interface scale."),
-    keyboard("Mod+=", "Increase the interface scale."),
-    keyboard("Mod+0", "Reset the interface scale."),
+    keyboard("Mod+-", "Zoom out.", "PDF, Excalidraw and handwritten canvas"),
+    keyboard("Mod+=", "Zoom in.", "PDF, Excalidraw and handwritten canvas"),
+    keyboard("Mod+0", "Reset zoom to 100%.", "PDF, Excalidraw and handwritten canvas"),
     keyboard("Mod+/", "Show keyboard click hints for visible controls."),
 ];
 

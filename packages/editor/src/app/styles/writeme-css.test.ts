@@ -18,6 +18,10 @@ describe("editor stylesheet", () => {
             expect(result?.code).toContain(".bg-card-background");
             expect(result?.code).not.toMatch(/@apply\s/);
             expect(result?.code).toContain("--wm-rail:");
+            expect(result?.code).toContain(".__tooltip:has(.writeme-note-tool-tooltip-content)");
+            expect(result?.code).toContain("--wm-note-tooltip-background:");
+            expect(result?.code).toContain("var(--var-tooltip-surface-background) 80%");
+            expect(result?.code).toContain("fill: var(--wm-note-tooltip-background)");
             expect(result?.code).not.toContain(".writeme-aside-collapsed-toggle");
             expect(result?.code).not.toContain(".writeme-sidebar-v2-group");
             expect(result?.code).not.toContain(".writeme-editor-bubble");

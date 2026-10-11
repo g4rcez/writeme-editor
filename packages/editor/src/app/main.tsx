@@ -189,7 +189,7 @@ export async function main() {
             terminalSessions,
         );
         const tab = sortByNewest(tabs)[0];
-        if (tab && isAiChatTab(tab)) {
+        if (tab && (isAiChatTab(tab) || isTerminalTab(tab))) {
             globalDispatch.activeTabId(tab.id);
         } else {
             const find = notes.find((x) => x.id === tab?.noteId);

@@ -19,7 +19,7 @@ test("mobile shell has accessible touch controls and omits AI", async ({ page })
         if (/localhost:4079|api\.openai\.com|api\.anthropic\.com/.test(request.url())) aiRequests.push(request.url());
     });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     await expect(page.locator("html")).toHaveClass(/platform-mobile/);
     await expect(page.getByRole("button", { name: "Ask AI", exact: true })).toHaveCount(0);
     const menu = page.getByRole("button", { name: "Open workspace menu", exact: true });

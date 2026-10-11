@@ -75,6 +75,23 @@ test.describe("Create note flow", () => {
         expect(landscapeHeader.scrollWidth).toBeLessThanOrEqual(landscapeHeader.clientWidth);
     });
 
+    test("dynamic note names remain visible after leaving the autocomplete", async ({ cleanPage: page }) => {
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
+        const dialog = page.getByRole("dialog", { name: /Create new note/i });
+        const titleInput = dialog.getByRole("combobox", { name: "Note title" });
+        await titleInput.fill("New folder/New note");
+        await titleInput.press("Escape");
+        await titleInput.press("Tab");
+        await expect(titleInput).toHaveValue("New folder/New note");
+        await dialog.getByRole("button", { name: /^Create/ }).click();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/);
+        await expect(page.locator("[data-tab-id]").filter({ hasText: "New folder/New note" })).toBeVisible();
+    });
+
     test("typed content persists across reload", async ({ cleanPage: page }) => {
         await page
             .getByRole("main")
@@ -150,46 +167,34 @@ test.describe("Create note flow", () => {
         await page.evaluate(() => {
             Object.defineProperty(navigator, "userAgent", { configurable: true, value: "Electron" });
 
-            let fileSearchListener:
-                | ((event: {
-                      requestId: string;
-                      type: "batch" | "complete";
-                      entries?: Array<{ name: string; path: string; relativePath: string; type: "directory" }>;
-                      truncated?: boolean;
-                  }) => void)
-                | null = null;
-
             Object.defineProperty(window, "electronAPI", {
                 configurable: true,
                 value: {
                     fs: {
-                        onFileSearchEvent: (callback: typeof fileSearchListener) => {
-                            fileSearchListener = callback;
-                            return () => {
-                                fileSearchListener = null;
-                            };
-                        },
-                        startFileSearch: async (_rootPath: string, _query: string, requestId: string) => {
-                            window.setTimeout(() => {
-                                fileSearchListener?.({
-                                    requestId,
-                                    type: "batch",
-                                    entries: [
-                                        {
-                                            name: "Frontend tools",
-                                            path: "/workspace/Frontend tools",
-                                            relativePath: "Frontend tools",
-                                            type: "directory",
-                                        },
-                                    ],
-                                });
-                                fileSearchListener?.({ requestId, type: "complete", truncated: false });
-                            }, 10);
-                            return { success: true };
-                        },
-                        cancelFileSearch: async () => ({ success: true }),
-                        readDir: async () => ({ entries: [] }),
+                        readDir: async (path: string) => ({
+                            entries:
+                                path === "/workspace"
+                                    ? [
+                                          {
+                                              name: "Frontend tools",
+                                              path: "/workspace/Frontend tools",
+                                              type: "directory",
+                                          },
+                                          { name: ".git", path: "/workspace/.git", type: "directory" },
+                                      ]
+                                    : path === "/workspace/Frontend tools"
+                                      ? [
+                                            {
+                                                name: "Drafts",
+                                                path: "/workspace/Frontend tools/Drafts",
+                                                type: "directory",
+                                            },
+                                            { name: ".git", path: "/workspace/Frontend tools/.git", type: "directory" },
+                                        ]
+                                      : [],
+                        }),
                         statFile: async () => ({ success: true, exists: false }),
+                        writeFile: async () => ({ success: true, fileSize: 13, lastModified: Date.now() }),
                     },
                 },
             });
@@ -201,9 +206,16 @@ test.describe("Create note flow", () => {
         await commandPalette.getByText("New excalidraw", { exact: true }).click();
 
         const dialog = page.getByRole("dialog", { name: "Create Excalidraw note" });
-        await dialog.getByTitle("Note title").fill("Folder autocomplete drawing");
-        await dialog.getByTitle("Folder (optional)").fill("frontend");
-        await dialog.getByRole("option", { name: "./Frontend tools" }).click();
+        await expect(dialog.getByTitle("Folder (optional)")).toHaveCount(0);
+        const titleInput = dialog.getByRole("combobox", { name: "Note title" });
+        await expect(dialog.getByRole("option", { name: "/Frontend tools/", exact: true })).toBeVisible();
+        await expect(dialog.getByRole("option", { name: "/Frontend tools/Drafts/", exact: true })).toBeVisible();
+        await expect(dialog.getByRole("option", { name: /\.git/ })).toHaveCount(0);
+        await titleInput.fill("drafts");
+        await expect(dialog.getByRole("option", { name: "/Frontend tools/", exact: true })).toHaveCount(0);
+        await dialog.getByRole("option", { name: "/Frontend tools/Drafts/", exact: true }).click();
+        await expect(titleInput).toHaveValue("/Frontend tools/Drafts/");
+        await titleInput.fill("/Frontend tools/Drafts/Folder autocomplete drawing");
         await expect(dialog.getByRole("button", { name: /^Create/ })).toBeEnabled();
         await dialog.getByRole("button", { name: /^Create/ }).click();
         await expect(page).toHaveURL(/\/note\/[^/]+$/);
@@ -223,13 +235,13 @@ test.describe("Create note flow", () => {
                 },
             );
             database.close();
-            return records.find((record) => record.title === "Folder autocomplete drawing");
+            return records.find((record) => record.title === "/Frontend tools/Drafts/Folder autocomplete drawing");
         });
 
         expect(note).toMatchObject({
-            title: "Folder autocomplete drawing",
+            title: "/Frontend tools/Drafts/Folder autocomplete drawing",
             noteType: "excalidraw",
-            filePath: "/workspace/Frontend tools/folder-autocomplete-drawing.md",
+            filePath: "/workspace/Frontend tools/Drafts/folder-autocomplete-drawing.md",
         });
     });
 

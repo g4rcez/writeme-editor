@@ -34,7 +34,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     },
     {
         id: "quick",
-        label: "Quick Settings",
+        label: "Quick settings",
         description: "Fast access to the settings you change most often.",
         path: "/settings/quick",
         platform: "all",
@@ -42,7 +42,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     {
         id: "ai",
         label: "AI",
-        description: "Providers, credentials, models, and prompts.",
+        description: "Connect an AI provider and choose a model.",
         path: "/settings/ai",
         platform: "all",
     },
@@ -70,14 +70,14 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     {
         id: "trash",
         label: "Trash",
-        description: "Trash retention and auto-purge settings for the desktop app.",
+        description: "Choose how long deleted notes stay in Trash.",
         path: "/settings/trash",
         platform: "electron",
     },
     {
         id: "workspace",
         label: "Workspace",
-        description: "Folder-backed notes and template locations.",
+        description: "Choose folders for your notes and templates.",
         path: "/settings/workspace",
         platform: "electron",
     },

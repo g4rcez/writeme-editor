@@ -1,6 +1,42 @@
 import { createNote, goHome, test, expect } from "./fixtures";
 
 test.describe("note context layout", () => {
+    test("explains note tools on hover and keyboard focus", async ({ cleanPage: page }) => {
+        await goHome(page);
+        await createNote(page, "Tooltip note", "## A section");
+
+        const toolbar = page.getByRole("toolbar", { name: "Note tools" });
+        const tools = [
+            ["Add frontmatter", "Add frontmatter", "Add a metadata block at the start of this note."],
+            ["History", "Note history", "View previous versions of this note and restore one."],
+            ["Add to favorites", "Add to favorites", "Keep this note in your favorites list for quick access."],
+            ["Open pane mode", "Open pane mode", "Open notes side by side in editor panes."],
+            ["Open table of contents", "Table of contents", "Browse this note’s headings and jump to a section."],
+            ["Export Tooltip note", "Export document", "Print this note or save it as a PDF."],
+        ] as const;
+
+        for (const [label, title, description] of tools) {
+            const button = toolbar.getByRole("button", { name: label, exact: true });
+            await expect(button).not.toHaveAttribute("title");
+            await button.hover();
+            const tooltip = page.getByRole("tooltip");
+            await expect(tooltip).toBeVisible();
+            await expect(tooltip).toContainText(title);
+            await expect(tooltip).toContainText(description);
+            await page.keyboard.press("Escape");
+            await expect(tooltip).not.toBeVisible();
+        }
+
+        await page.mouse.move(0, 0);
+        await toolbar.getByRole("button", { name: "Formatted", exact: true }).focus();
+        await page.keyboard.press("Tab");
+        await page.keyboard.press("Tab");
+        await expect(toolbar.getByRole("button", { name: "Add frontmatter", exact: true })).toBeFocused();
+        await expect(page.getByRole("tooltip")).toContainText("Add a metadata block at the start of this note.");
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("tooltip")).not.toBeVisible();
+    });
+
     test("switches between a desktop panel and a narrow-screen drawer", async ({ cleanPage: page }, testInfo) => {
         await goHome(page);
         await createNote(page, "Context layout note");

@@ -28,7 +28,7 @@ test("completes headings, tags, words and real workspace files in compiled Elect
         ).toBe(true);
         const page = await application.firstWindow();
         await expect(page).toHaveURL(/^file:/);
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await application.evaluate(({ dialog }, selected) => {
             dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selected] });
         }, workspace);
@@ -44,7 +44,7 @@ test("completes headings, tags, words and real workspace files in compiled Elect
             });
         });
         await page.reload();
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await page
             .getByRole("main")
             .getByRole("button", { name: /^New note/ })

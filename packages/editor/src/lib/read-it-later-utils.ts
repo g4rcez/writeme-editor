@@ -90,7 +90,7 @@ export function parseReadItLaterHtml(
             if (url && !href.startsWith("http")) {
                 try {
                     favicon = new URL(href, url).href;
-                } catch (e) {
+                } catch {
                     favicon = href;
                 }
             } else {
@@ -100,7 +100,7 @@ export function parseReadItLaterHtml(
     } else if (url) {
         try {
             favicon = new URL("/favicon.ico", url).href;
-        } catch (e) {}
+        } catch {}
     }
 
     unwantedSelectors.forEach((selector) => {

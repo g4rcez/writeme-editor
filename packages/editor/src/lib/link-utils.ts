@@ -16,7 +16,7 @@ export function isValidUrl(text: string): boolean {
             url.hostname.includes(".") &&
             url.hostname.length > 2
         );
-    } catch (_) {
+    } catch {
         return false;
     }
 }

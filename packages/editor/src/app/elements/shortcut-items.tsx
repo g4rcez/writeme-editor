@@ -24,13 +24,6 @@ export type Shortcut = {
     type: Type;
 };
 
-const zoom = (op: (a: number, b: number) => number) => {
-    const value =
-        window.getComputedStyle(window.document.querySelector(":root")!).getPropertyValue("--default-size") || "1rem";
-    const int = value.replace(/rem$/g, "");
-    window.document.documentElement.style.setProperty("--default-size", `${op(+int, 0.25)}rem`);
-};
-
 export const useWritemeShortcuts = () => {
     const [state, dispatch] = useGlobalStore();
     const navigate = useNavigate();
@@ -64,24 +57,6 @@ export const useWritemeShortcuts = () => {
                     bind: "mod+r",
                     type: Type.Shortcut,
                     action: () => window.location.reload(),
-                },
-                {
-                    description: "Zoom out",
-                    bind: "mod+-",
-                    type: Type.Shortcut,
-                    action: () => zoom((a, b) => a - b),
-                },
-                {
-                    description: "Zoom in",
-                    bind: "mod+=",
-                    type: Type.Shortcut,
-                    action: () => zoom((a, b) => a + b),
-                },
-                {
-                    description: "Zoom normal",
-                    bind: "mod+0",
-                    type: Type.Shortcut,
-                    action: () => zoom(() => 1),
                 },
                 {
                     description: "Settings",

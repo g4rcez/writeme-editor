@@ -22,8 +22,3 @@ export const QuerySettingsArgsSchema = z.object({
 export const QueryProjectsArgsSchema = z.object({
     json: z.boolean().default(false),
 });
-
-type QueryNotesArgs = z.infer<typeof QueryNotesArgsSchema>;
-type QueryTagsArgs = z.infer<typeof QueryTagsArgsSchema>;
-type QuerySettingsArgs = z.infer<typeof QuerySettingsArgsSchema>;
-type QueryProjectsArgs = z.infer<typeof QueryProjectsArgsSchema>;

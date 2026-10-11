@@ -4,102 +4,109 @@ import { expect, goHome, test } from "./fixtures";
 const seedDatabase = async (
     page: Page,
     version: number,
-    options: { includeTemplate?: boolean; includeBase?: boolean; conflictingTemplate?: boolean; includeLegacyProject?: boolean } = {},
+    options: {
+        includeTemplate?: boolean;
+        includeBase?: boolean;
+        conflictingTemplate?: boolean;
+        includeLegacyProject?: boolean;
+    } = {},
 ) => {
     await page.goto("/favicon.ico");
-    await page.evaluate(({ version, options }) => {
-        const { promise, resolve, reject } = Promise.withResolvers<void>();
-        const request = indexedDB.open("writeme", version * 10);
-        request.onupgradeneeded = () => {
-            const database = request.result;
-            const notes = database.createObjectStore("notes", { keyPath: "id" });
-            const noteId = options.conflictingTemplate ? "legacy-template" : "legacy-note";
-            notes.put({
-                id: noteId,
-                type: "__writeme_note",
-                title: "Legacy note",
-                content: "# Preserved note",
-                project: "legacy-project",
-                createdAt: new Date("2025-01-01T00:00:00.000Z"),
-                updatedAt: new Date("2025-01-02T00:00:00.000Z"),
-                filePath: null,
-                fileSize: 16,
-                lastSynced: null,
-                tags: [],
-                createdBy: "user",
-                updatedBy: "user",
-                noteType: "note",
-                favorite: false,
-            });
-            if (version === 1) {
-                if (options.includeLegacyProject) {
-                    database.createObjectStore("project", { keyPath: "id" }).put({
-                        id: "legacy-project",
-                        title: "Legacy project",
-                        description: "Legacy description",
-                        notes: ["legacy-note"],
-                        createdAt: new Date("2025-01-01T00:00:00.000Z"),
-                        updatedAt: new Date("2025-01-02T00:00:00.000Z"),
-                    });
-                }
-            } else {
-                const tabs = database.createObjectStore("tabs", { keyPath: "id" });
-                tabs.put({ id: "legacy-tab", noteId, order: 0, project: "legacy-project", createdAt: new Date() });
-                database.createObjectStore("projects", { keyPath: "id" });
-            }
-            if (version >= 18) {
-                const stores: [string, string][] = [
-                    ["hashtags", "id"],
-                    ["settings", "id"],
-                    ["scripts", "id"],
-                    ["noteGroups", "id"],
-                    ["noteGroupMembers", "id"],
-                    ["aiConfigs", "id"],
-                    ["aiChats", "id"],
-                    ["aiMessages", "id"],
-                    ["aiCredentials", "adapterId"],
-                ];
-                for (const [name, keyPath] of stores) {
-                    database.createObjectStore(name, { keyPath });
-                }
-            }
-
-            if (options.includeTemplate) {
-                database.createObjectStore("templates", { keyPath: "id" }).put({
-                    id: "legacy-template",
-                    name: "Legacy template",
-                    content: "# Template body",
-                    createdAt: new Date("2025-01-03T00:00:00.000Z"),
-                    updatedAt: new Date("2025-01-04T00:00:00.000Z"),
+    await page.evaluate(
+        ({ version, options }) => {
+            const { promise, resolve, reject } = Promise.withResolvers<void>();
+            const request = indexedDB.open("writeme", version * 10);
+            request.onupgradeneeded = () => {
+                const database = request.result;
+                const notes = database.createObjectStore("notes", { keyPath: "id" });
+                const noteId = options.conflictingTemplate ? "legacy-template" : "legacy-note";
+                notes.put({
+                    id: noteId,
+                    type: "__writeme_note",
+                    title: "Legacy note",
+                    content: "# Preserved note",
+                    project: "legacy-project",
+                    createdAt: new Date("2025-01-01T00:00:00.000Z"),
+                    updatedAt: new Date("2025-01-02T00:00:00.000Z"),
+                    filePath: null,
+                    fileSize: 16,
+                    lastSynced: null,
+                    tags: [],
+                    createdBy: "user",
+                    updatedBy: "user",
+                    noteType: "note",
+                    favorite: false,
                 });
-            }
-            if (version >= 18 || options.includeBase) {
-                const bases = database.createObjectStore("bases", { keyPath: "id" });
-                if (options.includeBase) {
-                    bases.put({
-                        id: "legacy-base",
-                        title: "Legacy base",
-                        viewType: "table",
+                if (version === 1) {
+                    if (options.includeLegacyProject) {
+                        database.createObjectStore("project", { keyPath: "id" }).put({
+                            id: "legacy-project",
+                            title: "Legacy project",
+                            description: "Legacy description",
+                            notes: ["legacy-note"],
+                            createdAt: new Date("2025-01-01T00:00:00.000Z"),
+                            updatedAt: new Date("2025-01-02T00:00:00.000Z"),
+                        });
+                    }
+                } else {
+                    const tabs = database.createObjectStore("tabs", { keyPath: "id" });
+                    tabs.put({ id: "legacy-tab", noteId, order: 0, project: "legacy-project", createdAt: new Date() });
+                    database.createObjectStore("projects", { keyPath: "id" });
+                }
+                if (version >= 18) {
+                    const stores: [string, string][] = [
+                        ["hashtags", "id"],
+                        ["settings", "id"],
+                        ["scripts", "id"],
+                        ["noteGroups", "id"],
+                        ["noteGroupMembers", "id"],
+                        ["aiConfigs", "id"],
+                        ["aiChats", "id"],
+                        ["aiMessages", "id"],
+                        ["aiCredentials", "adapterId"],
+                    ];
+                    for (const [name, keyPath] of stores) {
+                        database.createObjectStore(name, { keyPath });
+                    }
+                }
+
+                if (options.includeTemplate) {
+                    database.createObjectStore("templates", { keyPath: "id" }).put({
+                        id: "legacy-template",
+                        name: "Legacy template",
+                        content: "# Template body",
                         createdAt: new Date("2025-01-03T00:00:00.000Z"),
                         updatedAt: new Date("2025-01-04T00:00:00.000Z"),
                     });
                 }
-            }
-            if (version >= 24) {
-                database.createObjectStore("views", { keyPath: "id" });
-                database.createObjectStore("cursorPositions", { keyPath: "noteId" });
-                database.createObjectStore("terminalSessions", { keyPath: "id" });
-                database.createObjectStore("noteHistory", { keyPath: "id" });
-            }
-
-        };
-        request.onsuccess = () => {
-            request.result.close();
-            resolve();
-        };
-        request.onerror = () => reject(request.error ?? new Error("Could not seed the legacy database."));
-        return promise;
-    }, { version, options });
+                if (version >= 18 || options.includeBase) {
+                    const bases = database.createObjectStore("bases", { keyPath: "id" });
+                    if (options.includeBase) {
+                        bases.put({
+                            id: "legacy-base",
+                            title: "Legacy base",
+                            viewType: "table",
+                            createdAt: new Date("2025-01-03T00:00:00.000Z"),
+                            updatedAt: new Date("2025-01-04T00:00:00.000Z"),
+                        });
+                    }
+                }
+                if (version >= 24) {
+                    database.createObjectStore("views", { keyPath: "id" });
+                    database.createObjectStore("cursorPositions", { keyPath: "noteId" });
+                    database.createObjectStore("terminalSessions", { keyPath: "id" });
+                    database.createObjectStore("noteHistory", { keyPath: "id" });
+                }
+            };
+            request.onsuccess = () => {
+                request.result.close();
+                resolve();
+            };
+            request.onerror = () => reject(request.error ?? new Error("Could not seed the legacy database."));
+            return promise;
+        },
+        { version, options },
+    );
 };
 
 test.describe("browser data safety", () => {
@@ -166,7 +173,8 @@ test.describe("browser data safety", () => {
                 };
                 sourceRequest.onsuccess = finish;
                 migratedRequest.onsuccess = finish;
-                transaction.onerror = () => reject(transaction.error ?? new Error("Could not read preserved templates."));
+                transaction.onerror = () =>
+                    reject(transaction.error ?? new Error("Could not read preserved templates."));
             };
             request.onerror = () => reject(request.error ?? new Error("Could not open the upgraded database."));
             return promise;
@@ -182,7 +190,9 @@ test.describe("browser data safety", () => {
 
         const result = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
-            const { NotesRepository } = await loadModule("/packages/editor/src/store/repositories/browser/notes.repository.ts");
+            const { NotesRepository } = await loadModule(
+                "/packages/editor/src/store/repositories/browser/notes.repository.ts",
+            );
             const repository = new NotesRepository({} as never);
             const note = await repository.getOne("legacy-note");
             const { promise, resolve, reject } = Promise.withResolvers<{
@@ -228,7 +238,9 @@ test.describe("browser data safety", () => {
         await seedDatabase(page, 5, { includeTemplate: true, conflictingTemplate: true });
         await page.goto("/");
 
-        await expect(page.getByRole("heading", { name: "Writeme stopped before loading this workspace" })).toBeVisible();
+        await expect(
+            page.getByRole("heading", { name: "Writeme stopped before loading this workspace" }),
+        ).toBeVisible();
         const records = await page.evaluate(() => {
             const { promise, resolve, reject } = Promise.withResolvers<{
                 version: number;
@@ -302,7 +314,9 @@ test.describe("browser data safety", () => {
         const count = await page.evaluate(async () => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);
             const { db } = await loadModule("/packages/editor/src/store/repositories/browser/dexie-db.ts");
-            const { NotesRepository } = await loadModule("/packages/editor/src/store/repositories/browser/notes.repository.ts");
+            const { NotesRepository } = await loadModule(
+                "/packages/editor/src/store/repositories/browser/notes.repository.ts",
+            );
             const { Note } = await loadModule("/packages/editor/src/store/note.ts");
             const note = Note.new("History test", "# Original");
             await db.notes.put(note);
@@ -397,7 +411,7 @@ test.describe("browser data safety", () => {
             return note.id;
         });
         await page.reload();
-        await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
 
         const retained = await page.evaluate(async (noteId) => {
             const loadModule = (path: string) => import(new URL(path, window.location.origin).href);

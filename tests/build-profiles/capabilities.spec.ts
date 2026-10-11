@@ -31,7 +31,7 @@ test("distribution controls routes, commands and runnable code while preserving 
     if (store) expect(manifest.excludedModules).toContain("packages/editor/src/lib/run-javascript.ts");
 
     await route(page, "/");
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     await route(page, "/settings/ai");
     if (store) await expect(page.getByRole("heading", { name: "Not found", exact: true })).toBeVisible();
     else await expect(page.getByRole("heading", { name: "AI", exact: true })).toBeVisible();
@@ -41,7 +41,7 @@ test("distribution controls routes, commands and runnable code while preserving 
     if (store) {
         for (const pathname of ["/chat", "/oauth/callback", "/terminal/saved-session"]) {
             await route(page, pathname);
-            await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+            await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         }
         await page.evaluate(() => {
             localStorage.setItem("WRITEME_ENABLE_FEATURES", "ai,terminal,codeExecution");

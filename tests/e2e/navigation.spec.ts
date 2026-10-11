@@ -8,7 +8,7 @@ test.describe("Navigation", () => {
     test("All notes link goes to notes list", async ({ cleanPage: page }) => {
         await page.getByRole("link", { name: "All notes" }).click();
         await expect(page).toHaveURL(/\/notes$/);
-        await expect(page.getByRole("heading", { name: "All Notes" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "All notes" })).toBeVisible();
     });
 
     test("direct URLs render core pages", async ({ cleanPage: page }) => {

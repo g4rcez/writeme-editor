@@ -4,6 +4,8 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
+import { NoteToolTooltip } from "./note-tool-tooltip";
+
 type Heading = {
     id: string;
     text: string;
@@ -138,17 +140,18 @@ export const TableOfContents = () => {
 
     return (
         <div ref={popoverRef} className="writeme-note-table-of-contents relative shrink-0 print:hidden">
-            <Button
-                size="icon"
-                aria-expanded={isOpen}
-                aria-label="Open table of contents"
-                title="Table of contents"
-                icon={<ListBulletsIcon aria-hidden="true" />}
-                onClick={() => setIsOpen((open) => !open)}
-                className="writeme-table-of-contents-button writeme-note-tool-button"
-                aria-controls={isOpen ? popoverId : undefined}
-                theme={isOpen ? "primary" : "ghost-muted"}
-            />
+            <NoteToolTooltip title="Table of contents" description="Browse this note’s headings and jump to a section.">
+                <Button
+                    size="icon"
+                    aria-expanded={isOpen}
+                    aria-label="Open table of contents"
+                    icon={<ListBulletsIcon aria-hidden="true" />}
+                    onClick={() => setIsOpen((open) => !open)}
+                    className="writeme-table-of-contents-button writeme-note-tool-button"
+                    aria-controls={isOpen ? popoverId : undefined}
+                    theme={isOpen ? "primary" : "ghost-muted"}
+                />
+            </NoteToolTooltip>
 
             <AnimatePresence>
                 {isOpen && (

@@ -47,7 +47,7 @@ export function identifyDomain(url: string): DomainIdentification | null {
             }
         }
         return null;
-    } catch (e) {
+    } catch {
         return null;
     }
 }

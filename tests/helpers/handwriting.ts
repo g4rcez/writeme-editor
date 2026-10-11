@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function writeNotebook(page: Page): Promise<void> {
-    await expect(page.getByRole("heading", { name: "Make space for the next idea." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     const collapse = page.getByRole("button", { name: "Collapse sidebar", exact: true });
     if (await collapse.isVisible()) await collapse.click();
     else {

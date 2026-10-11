@@ -1,6 +1,8 @@
 import { Button, Checkbox, createColumns, Input, Modal, Table, Tag, type TagProps } from "@g4rcez/components";
 import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FolderSimplePlusIcon } from "@phosphor-icons/react/dist/csr/FolderSimplePlus";
+import { SquaresFourIcon } from "@phosphor-icons/react/dist/csr/SquaresFour";
+import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { LinkIcon } from "@phosphor-icons/react/dist/csr/Link";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
@@ -8,6 +10,7 @@ import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Dates } from "@/lib/dates";
 import type { Note } from "@/store/note";
 import type { NoteGroup } from "@/store/repositories/entities/note-group";
 import { useNoteList, type NoteWithTags } from "@/app/hooks/use-note-list";
@@ -133,6 +136,7 @@ export default function NotesListPage() {
     const [, dispatch] = useGlobalStore();
     const [groupPickerNoteIds, setGroupPickerNoteIds] = useState<string[]>([]);
     const [batchGroupOpen, setBatchGroupOpen] = useState(false);
+    const [view, setView] = useState<"table" | "cards">("table");
 
     const createNewNote = () => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
 
@@ -145,7 +149,7 @@ export default function NotesListPage() {
                     </span>
                     <p className="mt-3 text-sm font-medium text-foreground">No notes yet.</p>
                     <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-                        Create your first note to start building your local workspace.
+                        Create a note to get started.
                     </p>
                     <Button type="button" theme="outlined" size="small" onClick={createNewNote} className="mt-4">
                         Create a note
@@ -157,13 +161,65 @@ export default function NotesListPage() {
         if (filteredNotes.length === 0) {
             return (
                 <div className="flex min-h-56 flex-col items-center justify-center px-6 py-12 text-center">
-                    <p className="text-sm font-medium text-foreground">No notes match “{search}”.</p>
+                    <p className="text-sm font-medium text-foreground">No notes found for “{search}”.</p>
                     <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-                        Try a different title, content, description, or tag, or clear the search to see every note.
+                        Try another word or clear your search.
                     </p>
                     <Button type="button" theme="outlined" size="small" onClick={() => setSearch("")} className="mt-4">
                         Clear search
                     </Button>
+                </div>
+            );
+        }
+
+        if (view === "cards") {
+            return (
+                <div className="mt-5">
+                    <Checkbox
+                        title="Select all notes"
+                        checked={filteredNotes.every((note) => selectedIds.has(note.id))}
+                        onChange={filteredNotes.every((note) => selectedIds.has(note.id)) ? deselectAll : selectAll}
+                    />
+                    <ul aria-label="Notes cards" className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {filteredNotes.map((note) => (
+                            <li key={note.id} className="flex min-w-0 flex-col gap-3 border border-border/45 bg-card-background p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <Checkbox
+                                        title={`Select ${note.title}`}
+                                        checked={selectedIds.has(note.id)}
+                                        onChange={() => toggleSelection(note.id)}
+                                    />
+                                    <Tag className="rounded-none" size="small" theme={tag[note.noteType].theme}>
+                                        {tag[note.noteType].title}
+                                    </Tag>
+                                </div>
+                                <Link
+                                    to={`/note/${note.id}`}
+                                    className="break-words text-lg font-medium text-primary hover:underline hover:text-primary-hover"
+                                >
+                                    {note.title}
+                                </Link>
+                                {note.description && (
+                                    <p className="line-clamp-3 break-words text-sm leading-6 text-muted-foreground">
+                                        {note.description}
+                                    </p>
+                                )}
+                                {note.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {note.tags.map((name) => (
+                                            <Tag key={name} size="small" theme="neutral">{name}</Tag>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/45 pt-3">
+                                    <span className="text-xs tabular-nums text-muted-foreground">
+                                        Updated {Dates.yearMonthDay(new Date(note.updatedAt))}
+                                    </span>
+                                    {renderNoteActions(note)}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             );
         }
@@ -180,6 +236,34 @@ export default function NotesListPage() {
             </div>
         );
     };
+
+    const renderNoteActions = (note: NoteWithTags): ReactNode => (
+        <div className="flex items-center gap-1">
+            <Button
+                type="button"
+                theme="ghost-neutral"
+                size="icon"
+                title="Add to group"
+                aria-label="Add to group"
+                onClick={(event) => {
+                    event.stopPropagation();
+                    setGroupPickerNoteIds([note.id]);
+                }}
+            >
+                <FolderSimplePlusIcon size={16} aria-hidden="true" />
+            </Button>
+            <Button
+                type="button"
+                theme="ghost-danger"
+                size="icon"
+                title="Move to Trash"
+                aria-label="Move to Trash"
+                onClick={(event) => handleDelete(event, note.id)}
+            >
+                <TrashIcon size={16} aria-hidden="true" />
+            </Button>
+        </div>
+    );
 
     const cols = createColumns<NoteWithTags>((col) => {
         col.add(
@@ -218,33 +302,11 @@ export default function NotesListPage() {
                 </Tag>
             ),
         });
-        col.add("tagCount", "Hashtags", {
+        col.add("tagCount", "Tags", {
             Element: (props) => props.row.tagCount,
         });
         col.add("createdAt", "Actions", {
-            Element: (props) => (
-                <div className="flex items-center gap-1">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setGroupPickerNoteIds([props.row.id]);
-                        }}
-                        className="rounded-none p-1.5 text-foreground/50 transition-colors hover:bg-muted/30 hover:text-foreground"
-                        title="Add to group"
-                    >
-                        <FolderSimplePlusIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleDelete(e, props.row.id)}
-                        className="rounded-none p-1.5 text-danger transition-colors hover:bg-danger/10"
-                        title="Delete note"
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                    </button>
-                </div>
-            ),
+            Element: (props) => renderNoteActions(props.row),
         });
     });
 
@@ -265,7 +327,7 @@ export default function NotesListPage() {
                             <ListBulletsIcon size={14} aria-hidden="true" />
                             Your workspace
                         </p>
-                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">All Notes</h1>
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">All notes</h1>
                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
                             Browse every note in your workspace, or search by title, content, description, or tag.
                         </p>
@@ -292,6 +354,28 @@ export default function NotesListPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
+                    <div role="group" aria-label="Notes view" className="flex shrink-0 gap-1 pb-1">
+                        <Button
+                            type="button"
+                            size="small"
+                            theme={view === "table" ? "primary" : "ghost-neutral"}
+                            aria-pressed={view === "table"}
+                            onClick={() => setView("table")}
+                        >
+                            <TableIcon size={16} aria-hidden="true" />
+                            Table
+                        </Button>
+                        <Button
+                            type="button"
+                            size="small"
+                            theme={view === "cards" ? "primary" : "ghost-neutral"}
+                            aria-pressed={view === "cards"}
+                            onClick={() => setView("cards")}
+                        >
+                            <SquaresFourIcon size={16} aria-hidden="true" />
+                            Cards
+                        </Button>
+                    </div>
                     <span className="shrink-0 pb-2 text-xs text-muted-foreground">
                         {filteredNotes.length} of {notes.length} {notes.length === 1 ? "note" : "notes"}
                     </span>
@@ -310,7 +394,7 @@ export default function NotesListPage() {
                         </Button>
                         <Button size="small" theme="ghost-danger" onClick={onBatchDelete}>
                             <TrashIcon className="size-4" />
-                            Delete
+                            Move to Trash
                         </Button>
                         <button
                             type="button"
