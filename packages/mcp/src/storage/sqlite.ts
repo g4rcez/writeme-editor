@@ -1,3 +1,5 @@
+import { assertSupportedRuntime } from "../config.js";
+
 export type ReadDatabase = {
     query: (sql: string) => { all: () => Record<string, unknown>[] };
     exec: (sql: string) => void;
@@ -9,6 +11,7 @@ export async function openReadonlyDatabase(location: string): Promise<ReadDataba
         const { Database } = await import("bun:sqlite");
         return new Database(location, { readonly: true, create: false });
     }
+    assertSupportedRuntime();
     const { DatabaseSync } = await import("node:sqlite");
     const database = new DatabaseSync(location, { readOnly: true, allowExtension: false });
     return {

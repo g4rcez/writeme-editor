@@ -13,10 +13,20 @@ Usage: writeme-mcp [options]
   --help                            Show this help
   --version                         Show package version
 
-Transport: stdio. Node.js >=22.13, Bun >=1.3, or Deno >=2.2.
+Transport: stdio. Node.js >=22.13, Bun >=1.3, or Deno >=2.2 (>=2.4.5 on Windows).
 No editor connection is needed. Deno requires read, write, env and sys permissions.
 Only saved data is exposed; no settings, notes, or editor state are changed.
 `;
+
+export function assertSupportedRuntime(
+    platform: NodeJS.Platform = process.platform,
+    denoVersion: string | undefined = Reflect.get(globalThis, "Deno")?.version?.deno,
+): void {
+    if (platform !== "win32" || !denoVersion) return;
+    const [major = 0, minor = 0, patch = 0] = denoVersion.split(".").map(Number);
+    if (major > 2 || (major === 2 && (minor > 4 || (minor === 4 && patch >= 5)))) return;
+    throw new Error("Deno 2.4.5 or newer is required on Windows to release SQLite snapshot files.");
+}
 
 export function defaultDataDir(
     profile: ReaderOptions["profile"],

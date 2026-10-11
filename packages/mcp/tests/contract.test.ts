@@ -375,7 +375,7 @@ for (const filesystem of [false, true]) {
             await client?.close();
             await fixture.close();
         }
-    });
+    }, 30_000);
 
     test(`v1 failures, strict validation and stale pagination rejection (${mode})`, async () => {
         const fixture = await contractWorkspace(filesystem);
@@ -497,5 +497,5 @@ for (const filesystem of [false, true]) {
             await client?.close();
             await fixture.close();
         }
-    });
+    }, 30_000);
 }

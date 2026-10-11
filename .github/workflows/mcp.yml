@@ -33,6 +33,12 @@ jobs:
             deno: "2.2.0"
           - node: "24.18.0"
             deno: "2.4.5"
+        exclude:
+          - os: windows-2022
+            versions: { node: "22.13.0", deno: "2.2.0" }
+        include:
+          - os: windows-2022
+            versions: { node: "22.13.0", deno: "2.4.5" }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

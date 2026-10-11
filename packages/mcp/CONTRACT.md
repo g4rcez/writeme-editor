@@ -74,7 +74,7 @@ The [MCP tools specification](https://modelcontextprotocol.io/specification/2026
 
 ## Distribution and runtime support
 
-The npm package targets Node.js 22.13+, Bun 1.3+, and Deno 2.2+. The distributed JavaScript uses built-in SQLite through a runtime adapter; the package does not require the editor workspace, Bun-specific declaration imports, or a native npm addon. Its root export is a side-effect-free library entry; `./cli` starts the stdio application. The executable's Node shebang is intentional; select Bun with `bunx --bun`, and Deno with `deno run ... npm:@writeme.dev/mcp/cli`.
+The npm package targets Node.js 22.13+, Bun 1.3+, and Deno 2.2+ (Deno 2.4.5+ on Windows, where older versions leave SQLite snapshot files locked after closing them). The distributed JavaScript uses built-in SQLite through a runtime adapter; the package does not require the editor workspace, Bun-specific declaration imports, or a native npm addon. Its root export is a side-effect-free library entry; `./cli` starts the stdio application. The executable's Node shebang is intentional; select Bun with `bunx --bun`, and Deno with `deno run ... npm:@writeme.dev/mcp/cli`.
 
 Public TypeScript declarations expose the server, reader, request/output schemas, and contract types. SDK-backed Node server types require a consumer's development `@types/node` dependency. Strict consumer typechecking must resolve the installed tarball and its installed dependencies, with no repository aliases or workspace links.
 

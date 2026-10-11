@@ -26,9 +26,14 @@ async function createHandwrittenNote(page: Page): Promise<void> {
     await expect(page.locator(".ProseMirror")).toHaveCount(0);
 }
 
-test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page }) => {
+test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page, browserName, isMobile }) => {
     await createHandwrittenNote(page);
-    await expectCanvasZoomWheel(page);
+    const input = browserName === "webkit" && isMobile ? "dom" : "native";
+    if (input === "dom") test.info().annotations.push({
+        type: "input",
+        description: "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
+    });
+    await expectCanvasZoomWheel(page, input);
 });
 
 for (const modifier of ["Control", "Meta"] as const) {

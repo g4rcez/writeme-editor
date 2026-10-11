@@ -4,7 +4,7 @@ Read saved Writeme notes and preferences from an MCP client over stdio. The desk
 
 ## Install and run
 
-Supported runtimes: **Node.js 22.13+**, **Bun 1.3+**, or **Deno 2.2+**. The CLI uses the runtime's built-in SQLite support; it does not require an external SQLite executable or a native npm addon. A saved desktop Writeme profile must already exist. Browser-only IndexedDB profiles are not supported.
+Supported runtimes: **Node.js 22.13+**, **Bun 1.3+**, or **Deno 2.2+** (**Deno 2.4.5+ on Windows**). Older Windows Deno versions leave SQLite snapshot files locked after closing them. The CLI uses the runtime's built-in SQLite support; it does not require an external SQLite executable or a native npm addon. A saved desktop Writeme profile must already exist. Browser-only IndexedDB profiles are not supported.
 
 Install a published version globally with npm:
 

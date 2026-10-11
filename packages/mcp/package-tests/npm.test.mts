@@ -221,9 +221,10 @@ for (const runtime of runtimes) {
 }
 
 test("deno: installed npm CLI reads saved files with scoped filesystem permissions and no network/ffi/run grants", async () => {
-    const profile = join(project.directory, "scoped-profile");
-    const workspace = join(project.directory, "scoped-workspace");
-    const scratch = join(project.directory, "snapshot-temp");
+    const packageRoot = realpathSync(project.directory);
+    const profile = join(packageRoot, "scoped-profile");
+    const workspace = join(packageRoot, "scoped-workspace");
+    const scratch = join(packageRoot, "snapshot-temp");
     for (const directory of [profile, workspace, scratch]) mkdirSync(directory);
     const notePath = join(workspace, "saved.md");
     writeFileSync(notePath, "Saved scoped-permission note.");
@@ -239,8 +240,9 @@ test("deno: installed npm CLI reads saved files with scoped filesystem permissio
     database.close();
     const args = [
         "run",
+        "--no-prompt",
         "--node-modules-dir=manual",
-        `--allow-read=${project.directory}`,
+        `--allow-read=${packageRoot}`,
         `--allow-write=${scratch}`,
         "--allow-env",
         "--allow-sys",
