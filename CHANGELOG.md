@@ -1,3 +1,14 @@
+## [2.0.2](https://github.com/g4rcez/writeme-editor/compare/v2.0.1...v2.0.2) (2026-10-11)
+
+
+### Bug Fixes
+
+* cover equivalent Windows paths in scoped Deno permissions ([21f6f4e](https://github.com/g4rcez/writeme-editor/commit/21f6f4e8ad45ba12072960fe09f5ff392ad7ad8f))
+* make Windows release test fixtures use native filesystem paths ([e893e31](https://github.com/g4rcez/writeme-editor/commit/e893e3196e14a20a3e02297028fc9e2614c69e64))
+* normalize Windows namespace paths for Deno permissions ([d9f0a8c](https://github.com/g4rcez/writeme-editor/commit/d9f0a8c6f3ea8e714406bc2d103be03288e58225))
+* resolve Windows temporary folder aliases for scoped Deno tests ([0044e52](https://github.com/g4rcez/writeme-editor/commit/0044e525c5ef8f03f94f9d79f6df93fccc9aec20))
+* run handwriting device profiles within separate CI budgets ([b57aeb8](https://github.com/g4rcez/writeme-editor/commit/b57aeb8b497c9560ed4003ed7c1f11a35ae16cf8))
+* verify mobile wheel input and supported Windows Deno runtimes ([f54ec7c](https://github.com/g4rcez/writeme-editor/commit/f54ec7cb2a01dbfc2bd35d4f66130f17e26a55eb))
 ## [2.0.1](https://github.com/g4rcez/writeme-editor/compare/v2.0.0...v2.0.1) (2026-10-11)
 
 
