@@ -1,3 +1,9 @@
+## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
+
+
+### Bug Fixes
+
+* allow Windows disk latency in snapshot history verification ([1a78aa4](https://github.com/g4rcez/writeme-editor/commit/1a78aa4a873352e5b67b16f8e59167ff5b42aecf))
 ## [2.0.2](https://github.com/g4rcez/writeme-editor/compare/v2.0.1...v2.0.2) (2026-10-11)
 
 
