@@ -278,22 +278,23 @@ describe("DatabaseManager persistence boundary", () => {
 
 describe("recent notes", () => {
     it("filters the workspace before applying the limit", () => {
+        const workspace = path.join(directory, "workspace");
         manager.save("notes", {
             id: "workspace",
             title: "workspace",
             noteType: "note",
-            filePath: "/workspace/note.md",
+            filePath: path.join(workspace, "note.md"),
             updatedAt: "2026-01-01T00:00:00.000Z",
         });
         manager.save("notes", {
             id: "other",
             title: "other",
             noteType: "note",
-            filePath: "/workspace-other/newer.md",
+            filePath: path.join(directory, "workspace-other", "newer.md"),
             updatedAt: "2026-01-02T00:00:00.000Z",
         });
 
-        expect(manager.getRecentNotes(1, "/workspace").map((note) => note.id)).toEqual(["workspace"]);
+        expect(manager.getRecentNotes(1, workspace).map((note) => note.id)).toEqual(["workspace"]);
     });
 });
 

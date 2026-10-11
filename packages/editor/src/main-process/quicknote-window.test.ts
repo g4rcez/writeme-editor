@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Point = {
@@ -231,7 +232,7 @@ describe("quick note floating panels", () => {
             firstWindow.triggerClosed();
 
             expect(fsMock.writeFileSync).toHaveBeenCalledWith(
-                `/user-data/${boundsName}-window-bounds.json`,
+                path.join("/user-data", `${boundsName}-window-bounds.json`),
                 JSON.stringify(savedBounds, null, 2),
                 "utf8",
             );
@@ -260,7 +261,7 @@ describe("quick note floating panels", () => {
             expect(win.options).toMatchObject(initialBounds);
             expect(win.setBounds).not.toHaveBeenCalled();
             expect(fsMock.readFileSync).toHaveBeenCalledExactlyOnceWith(
-                `/user-data/${boundsName}-window-bounds.json`,
+                path.join("/user-data", `${boundsName}-window-bounds.json`),
                 "utf8",
             );
             expect(screenMock.getCursorScreenPoint).toHaveBeenCalledTimes(1);
@@ -278,7 +279,7 @@ describe("quick note floating panels", () => {
             currentWindowBounds = { x: -1400, y: 180, width: 620, height: 480 };
             win.emit("moved");
             expect(fsMock.writeFileSync).toHaveBeenLastCalledWith(
-                `/user-data/${boundsName}-window-bounds.json`,
+                path.join("/user-data", `${boundsName}-window-bounds.json`),
                 JSON.stringify(currentWindowBounds, null, 2),
                 "utf8",
             );
@@ -286,7 +287,7 @@ describe("quick note floating panels", () => {
             currentWindowBounds = { ...currentWindowBounds, width: 800, height: 600 };
             win.emit("resized");
             expect(fsMock.writeFileSync).toHaveBeenLastCalledWith(
-                `/user-data/${boundsName}-window-bounds.json`,
+                path.join("/user-data", `${boundsName}-window-bounds.json`),
                 JSON.stringify(currentWindowBounds, null, 2),
                 "utf8",
             );

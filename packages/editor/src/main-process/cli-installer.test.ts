@@ -5,15 +5,17 @@ import { describe, expect, it } from "vitest";
 import { defaultCliInstallPath, installBundledCli, resolveBundledCliPath } from "./cli-installer";
 
 describe("cli-installer", () => {
-    it("resolves the unpacked CLI path when the app is inside app.asar", () => {
-        expect(resolveBundledCliPath("/App/Contents/Resources/app.asar")).toBe(
-            "/App/Contents/Resources/app.asar.unpacked/packages/cli/dist/writeme",
+    it.each(["darwin", "win32"] as const)("resolves the unpacked %s CLI path inside app.asar", (platform) => {
+        const resources = path.join("/App", "Contents", "Resources");
+        const executable = platform === "win32" ? "writeme.exe" : "writeme";
+        expect(resolveBundledCliPath(path.join(resources, "app.asar"), platform)).toBe(
+            path.join(resources, "app.asar.unpacked", "packages", "cli", "dist", executable),
         );
     });
 
     it("uses a per-user install path on POSIX", () => {
         expect(defaultCliInstallPath({ platform: "darwin", homeDir: "/Users/me" })).toBe(
-            "/Users/me/.local/bin/writeme",
+            path.join("/Users/me", ".local", "bin", "writeme"),
         );
     });
 

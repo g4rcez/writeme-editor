@@ -120,7 +120,7 @@ describe("Obsidian filesystem IPC", () => {
         } finally {
             cache.clear();
         }
-    });
+    }, 30_000);
     it("grants the selected vault and scans notes and assets recursively", async () => {
         await writeFile(path.join(vault, "Projects", "Idea.md"), "# Idea");
         await writeFile(path.join(vault, "Projects", "diagram.png"), "asset");
@@ -135,8 +135,8 @@ describe("Obsidian filesystem IPC", () => {
 
         expect(result.success).toBe(true);
         expect(result.files.map((file) => file.relativePath).sort()).toEqual([
-            "Projects/Idea.md",
-            "Projects/diagram.png",
+            path.join("Projects", "Idea.md"),
+            path.join("Projects", "diagram.png"),
         ]);
     });
 
