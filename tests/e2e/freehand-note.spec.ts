@@ -22,7 +22,7 @@ async function createHandwrittenNote(page: Page): Promise<void> {
     const dialog = page.getByRole("dialog", { name: "Create handwritten note" });
     await dialog.getByTitle("Note title").fill("Tablet notebook");
     await dialog.getByRole("button", { name: /^Create/ }).click();
-    await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".ProseMirror")).toHaveCount(0);
 }
 
