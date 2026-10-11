@@ -11,7 +11,7 @@ import {
     statSync,
     writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, toNamespacedPath } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -242,8 +242,8 @@ test("deno: installed npm CLI reads saved files with scoped filesystem permissio
         "run",
         "--no-prompt",
         "--node-modules-dir=manual",
-        `--allow-read=${packageRoot}`,
-        `--allow-write=${scratch}`,
+        `--allow-read=${[...new Set([packageRoot, toNamespacedPath(packageRoot)])].join(",")}`,
+        `--allow-write=${[...new Set([scratch, toNamespacedPath(scratch)])].join(",")}`,
         "--allow-env",
         "--allow-sys",
         "npm:@writeme.dev/mcp/cli",
