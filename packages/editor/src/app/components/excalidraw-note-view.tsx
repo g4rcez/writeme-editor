@@ -52,11 +52,9 @@ export function ExcalidrawNoteView(props: { note: Note }) {
     const lastSerializedPayloadRef = useRef<string>("");
     const [resetKey, setResetKey] = useState(0);
     const [localContent, setLocalContent] = useState(props.note.content || "");
-    const contentRef = useRef(localContent);
 
     useEffect(() => {
         setLocalContent(props.note.content || "");
-        contentRef.current = props.note.content || "";
         setResetKey((key) => key + 1);
     }, [props.note.id]);
 
@@ -86,15 +84,20 @@ export function ExcalidrawNoteView(props: { note: Note }) {
                 const serializablePayload = normalizeExcalidrawPayload(
                     JSON.parse(serializeAsJSON(elements, appState, files, "local")),
                 );
+                serializablePayload.appState = {
+                    ...serializablePayload.appState,
+                    scrollX: appState.scrollX,
+                    scrollY: appState.scrollY,
+                    zoom: appState.zoom,
+                };
                 const serializedPayload = JSON.stringify(serializablePayload);
                 if (serializedPayload === lastSerializedPayloadRef.current) return;
                 lastSerializedPayloadRef.current = serializedPayload;
-                const nextContent = replaceExcalidrawNotePayload(contentRef.current, serializablePayload);
-                contentRef.current = nextContent;
+                const nextContent = replaceExcalidrawNotePayload(localContent, serializablePayload);
                 void dispatch.updateNoteContent(props.note.id, nextContent);
             }, 500);
         },
-        [dispatch, props.note.id],
+        [dispatch, props.note.id, localContent],
     );
 
     const resetDrawing = () => {
@@ -102,7 +105,6 @@ export function ExcalidrawNoteView(props: { note: Note }) {
         const nextContent = replaceExcalidrawNotePayload(localContent, EMPTY_EXCALIDRAW_PAYLOAD);
         lastSerializedPayloadRef.current = JSON.stringify(EMPTY_EXCALIDRAW_PAYLOAD);
         setLocalContent(nextContent);
-        contentRef.current = nextContent;
         void dispatch.updateNoteContent(props.note.id, nextContent);
         setResetKey((key) => key + 1);
     };

@@ -12,17 +12,15 @@ export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; on
     const [global] = useGlobalStore();
     const [state, setState] = useState<ComponentProps<typeof Excalidraw>["initialData"] | null>(null);
     const lastElementsRef = useRef(props.code);
-    const onChangeRef = useRef(props.onChange);
-    useEffect(() => {
-        onChangeRef.current = props.onChange;
-    }, [props.onChange]);
-
-    const onChange: NonNullable<ComponentProps<typeof Excalidraw>["onChange"]> = useCallback((elements) => {
-        const serialized = JSON.stringify(elements);
-        if (serialized === lastElementsRef.current) return;
-        lastElementsRef.current = serialized;
-        onChangeRef.current?.(serialized);
-    }, []);
+    const onChange: NonNullable<ComponentProps<typeof Excalidraw>["onChange"]> = useCallback(
+        (elements) => {
+            const serialized = JSON.stringify(elements);
+            if (serialized === lastElementsRef.current) return;
+            lastElementsRef.current = serialized;
+            props.onChange?.(serialized);
+        },
+        [props.onChange],
+    );
 
     const onRequestFullScreen = async () => {
         const div = ref.current;

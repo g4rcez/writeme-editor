@@ -2,8 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 import { Note, NoteType } from "../../packages/editor/src/store/note";
 
 type DrawingElement = { type: string; width: number; height: number; isDeleted: boolean };
+type DrawingScene = { elements: DrawingElement[]; appState?: Record<string, unknown> };
 
-async function readDrawing(page: Page, embedded: boolean): Promise<DrawingElement[]> {
+async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene> {
     return page.evaluate(async (embedded) => {
         const db = await new Promise<IDBDatabase>((resolve, reject) => {
             const request = indexedDB.open("writeme");
@@ -17,9 +18,9 @@ async function readDrawing(page: Page, embedded: boolean): Promise<DrawingElemen
         });
         db.close();
         const json = notes[0]?.content.match(/```(?:json|excalidraw)\n([\s\S]*?)\n```/)?.[1];
-        if (!json) return [];
+        if (!json) return { elements: [] };
         const data = JSON.parse(json);
-        return embedded ? data : data.elements;
+        return embedded ? { elements: data } : { elements: data.elements, appState: data.appState };
     }, embedded);
 }
 
@@ -28,9 +29,10 @@ for (const embedded of [false, true]) {
         const errors: string[] = [];
         page.on("pageerror", (error) => errors.push(error.message));
         await page.goto("/");
+        const drawingViewport = { scrollX: -800, scrollY: 600, zoom: { value: 0.8 } };
         const content = embedded
             ? "# Embedded drawing\n\n```excalidraw\n[]\n```\n"
-            : '---\ntype: excalidraw\nview: excalidraw\nschemaVersion: 1\n---\n\n```json\n{"elements":[],"appState":{},"files":{}}\n```\n';
+            : `---\ntype: excalidraw\nview: excalidraw\nschemaVersion: 1\n---\n\n\`\`\`json\n${JSON.stringify({ elements: [], appState: drawingViewport, files: {} })}\n\`\`\`\n`;
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         const mobile = await page.locator("html").evaluate((element) => element.classList.contains("platform-mobile"));
         if (mobile) {
@@ -104,7 +106,7 @@ for (const embedded of [false, true]) {
         await expect
             .poll(
                 async () => {
-                    const elements = await readDrawing(page, embedded);
+                    const { elements } = await readDrawing(page, embedded);
                     return (
                         elements.length === 1 &&
                         elements[0]?.type === "rectangle" &&
@@ -117,6 +119,7 @@ for (const embedded of [false, true]) {
             )
             .toBe(true);
         const saved = await readDrawing(page, embedded);
+        if (!embedded) expect(saved.appState).toMatchObject(drawingViewport);
         await page.waitForTimeout(1200);
         expect(await readDrawing(page, embedded)).toEqual(saved);
         await page.reload();

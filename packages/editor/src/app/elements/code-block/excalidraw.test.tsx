@@ -62,6 +62,17 @@ describe("ExcalidrawCode", () => {
         expect(onChange).toHaveBeenCalledTimes(1);
     });
 
+    it("uses the current callback after a parent update", () => {
+        const original = vi.fn();
+        const replacement = vi.fn();
+        const autoDelete = () => {};
+        const { rerender } = render(<ExcalidrawCode code="[]" onChange={original} autoDelete={autoDelete} />);
+        rerender(<ExcalidrawCode code="[]" onChange={replacement} autoDelete={autoDelete} />);
+        screen.getByText("Change").click();
+        expect(original).not.toHaveBeenCalled();
+        expect(replacement).toHaveBeenCalledExactlyOnceWith(JSON.stringify([{ type: "rectangle", id: "1" }]));
+    });
+
     it("persists deleting the last element", async () => {
         const onChange = vi.fn();
         render(
