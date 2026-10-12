@@ -93,6 +93,19 @@ function TaskCard({ card, onEdit, onToggle }: { card: Card; onEdit: () => void; 
                 </button>
                 <button
                     type="button"
+                    className="wm-task-card-content"
+                    onClick={onEdit}
+                    aria-label={`Edit ${title}`}
+                >
+                    <span className={card.checked ? "wm-task-completed" : ""}>
+                        {title || "Untitled task"}
+                    </span>
+                    {card.description ? (
+                        <span className="wm-task-description">{card.description}</span>
+                    ) : null}
+                </button>
+                <button
+                    type="button"
                     className="wm-task-icon"
                     aria-label={`${card.checked ? "Reopen" : "Complete"} ${title}`}
                     aria-pressed={!!card.checked}
@@ -101,10 +114,6 @@ function TaskCard({ card, onEdit, onToggle }: { card: Card; onEdit: () => void; 
                     {card.checked ? <CheckCircleIcon weight="fill" size={18} /> : <CircleIcon size={18} />}
                 </button>
             </div>
-            <button type="button" className="wm-task-card-content" onClick={onEdit} aria-label={`Edit ${title}`}>
-                <span className={card.checked ? "wm-task-completed" : ""}>{title || "Untitled task"}</span>
-                {card.description ? <span className="wm-task-description">{card.description}</span> : null}
-            </button>
         </article>
     );
 }

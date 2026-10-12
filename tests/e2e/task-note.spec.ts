@@ -19,6 +19,16 @@ async function addTask(page: Page, title = "Ship task board"): Promise<void> {
     await page.getByRole("button", { name: "Create task", exact: true }).click();
     await expect(page.getByRole("button", { name: `Edit ${title}`, exact: true })).toBeVisible();
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
+    const handle = await page.getByRole("button", { name: `Move ${title}`, exact: true }).boundingBox();
+    const titleBounds = await page
+        .getByRole("button", { name: `Edit ${title}`, exact: true })
+        .locator("span")
+        .first()
+        .boundingBox();
+    if (!handle || !titleBounds) throw new Error("Missing task title or drag handle");
+    expect(titleBounds.x).toBeGreaterThanOrEqual(handle.x + handle.width);
+    expect(titleBounds.y).toBeLessThan(handle.y + handle.height);
+    expect(titleBounds.y + titleBounds.height).toBeGreaterThan(handle.y);
 }
 
 test("creates a full-page board, edits cards, moves columns and persists Markdown", async ({
