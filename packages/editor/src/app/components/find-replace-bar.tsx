@@ -5,6 +5,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { useUIStore } from "@/store/ui.store";
 
 export const FindReplaceBar = () => {
@@ -57,17 +58,7 @@ export const FindReplaceBar = () => {
         uiDispatch.closeFindReplace();
     }, [uiDispatch]);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                e.preventDefault();
-                close();
-            }
-        };
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, [close, isOpen]);
+    useEscapeLayer(EscapeLevel.panel, isOpen, close);
 
     if (!isOpen) return null;
 
@@ -99,9 +90,12 @@ export const FindReplaceBar = () => {
     return (
         <dialog
             open
+            data-escape-managed
             aria-label="Find and replace"
             className="fixed top-12 right-4 z-50 m-0 flex w-80 flex-col gap-1 rounded-lg border border-border bg-background p-2 text-sm shadow-lg"
-            onKeyDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+                if (e.key !== "Escape") e.stopPropagation();
+            }}
         >
             <div className="flex items-center gap-1">
                 <button

@@ -72,9 +72,12 @@ The renderer removes commands/settings/routes and filters restored AI/terminal t
 
 ```sh
 npm run test:build-profiles
-npm run test:e2e:build-profiles
+npm run test:e2e -- --platform osx --suite profiles
+npm run test:e2e -- --platform ios --suite profiles
+npm run test:e2e -- --platform android --suite profiles
+# Or reuse an already compiled native store restriction build:
 WRITEME_BUILD_PROFILE=macos-app-store node --import tsx scripts/build-native-profile.ts
-npm exec -- playwright test --config playwright.build-profiles-native.config.ts
+WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform osx --suite profiles --project native-store
 ```
 
 ## Submission requirements beyond flags

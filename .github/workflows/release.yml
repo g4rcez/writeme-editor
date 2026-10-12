@@ -10,11 +10,8 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
-    meeting-verification:
-        uses: ./.github/workflows/meeting-verification.yml
-
-    handwriting-verification:
-        uses: ./.github/workflows/handwriting-e2e.yml
+    platform-verification:
+        uses: ./.github/workflows/platform-verification.yml
 
     build-mac-arm64:
         runs-on: macos-latest
@@ -83,8 +80,9 @@ jobs:
               run: npm exec playwright -- install chromium
 
             - name: Verify packaged handwriting before staging release
-              run: npm run test:e2e:handwriting:native -- --grep "packaged application"
+              run: npm run test:e2e -- --platform osx --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
               env:
+                  WRITEME_E2E_PREBUILT: "1"
                   WRITEME_PACKAGED_EXECUTABLE: out/writeme-darwin-arm64/writeme.app/Contents/MacOS/writeme
 
             - name: Upload packaged handwriting evidence
@@ -92,7 +90,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: handwriting-release-macos
-                  path: artifacts/playwright/handwriting-native/
+                  path: artifacts/playwright/osx/native/
                   if-no-files-found: warn
                   retention-days: 14
 
@@ -170,14 +168,16 @@ jobs:
               run: npm exec playwright -- install chromium
 
             - name: Verify packaged handwriting before staging release
-              run: npm run test:e2e:handwriting:native -- --grep "packaged application"
+              run: npm run test:e2e -- --platform windows --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - name: Upload packaged handwriting evidence
               if: always()
               uses: actions/upload-artifact@v4
               with:
                   name: handwriting-release-windows
-                  path: artifacts/playwright/handwriting-native/
+                  path: artifacts/playwright/windows/native/
                   if-no-files-found: warn
                   retention-days: 14
 
@@ -236,14 +236,16 @@ jobs:
               run: npm exec playwright -- install --with-deps chromium
 
             - name: Verify packaged handwriting before staging release
-              run: xvfb-run --auto-servernum npm run test:e2e:handwriting:native -- --grep "packaged application"
+              run: xvfb-run --auto-servernum npm run test:e2e -- --platform linux --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - name: Upload packaged handwriting evidence
               if: always()
               uses: actions/upload-artifact@v4
               with:
                   name: handwriting-release-linux
-                  path: artifacts/playwright/handwriting-native/
+                  path: artifacts/playwright/linux/native/
                   if-no-files-found: warn
                   retention-days: 14
 
@@ -285,8 +287,7 @@ jobs:
     release:
         needs:
             [
-                meeting-verification,
-                handwriting-verification,
+                platform-verification,
                 build-mac-arm64,
                 build-windows,
                 build-linux,

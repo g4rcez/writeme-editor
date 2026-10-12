@@ -3,7 +3,7 @@ import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { NoteToolTooltip } from "./note-tool-tooltip";
 
 type Heading = {
@@ -123,18 +123,13 @@ export const TableOfContents = () => {
             setIsOpen(false);
         };
 
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setIsOpen(false);
-            }
-        };
         document.addEventListener("pointerdown", handlePointerDown);
-        document.addEventListener("keydown", handleKeyDown);
         return () => {
             document.removeEventListener("pointerdown", handlePointerDown);
-            document.removeEventListener("keydown", handleKeyDown);
         };
     }, [isOpen]);
+
+    useEscapeLayer(EscapeLevel.popover, isOpen, () => setIsOpen(false));
 
     if (headings.length === 0) return null;
 

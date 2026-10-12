@@ -4,16 +4,15 @@ Use Playwright as the primary feature check. Existing unit tests remain suppleme
 
 ```sh
 npm exec playwright -- install chromium webkit
-npm run test:e2e:handwriting
-npm run test:e2e:handwriting:report
-npm run test:e2e:handwriting:production
-npm run package:app
-npm run test:e2e:handwriting:native
+npm run test:e2e -- --platform osx --suite browser tests/e2e/freehand-note.spec.ts --project desktop-macos
+npm exec playwright -- show-report artifacts/playwright/osx/browser/report
+npm run test:e2e -- --platform osx --suite production --project desktop-macos
+npm run test:e2e -- --platform osx --suite native tests/native/freehand-note.spec.ts
 ```
 
-The matrix covers desktop macOS (WebKit), Linux and Windows (Chromium), Pixel 7, iPhone 13, Galaxy Tab S4 and iPad Pro 11 profiles. Every scenario records a WebM video, including successful tests. The HTML report embeds the videos; raw videos, screenshots and failed-test traces are in `artifacts/playwright/handwriting/results/`. JSON results include the requested platform and actual runner platform for each project.
+The five platform configs cover desktop macOS (WebKit handwriting and Chromium media/general tests), Linux and Windows (Chromium), Pixel 7, iPhone 13, Galaxy Tab S4 and iPad Pro 11 profiles. Every handwriting scenario records a WebM video, including successful tests. The HTML report embeds the videos; raw videos, screenshots and failed-test traces are in `artifacts/playwright/<platform>/<suite>/results/`. JSON results include the requested platform and actual runner platform for each project. See [platform suite selection](./platform-playwright.md) for the full test map and prebuilt bundle reuse.
 
-Device profiles emulate viewport, pixel density, user agent and touch capabilities. A desktop profile's browser runs on the current host OS. Running `desktop-windows` on a Mac does not verify Windows. `.github/workflows/handwriting-e2e.yml` runs desktop projects on their matching macOS, Linux and Windows hosts and uploads the complete reports and videos for 14 days. Mobile profiles run on macOS in CI; physical Android, iOS and Pencil behavior still require devices.
+Device profiles emulate viewport, pixel density, user agent and touch capabilities. A desktop profile's browser runs on the current host OS. Selecting `windows` on a Mac does not verify Windows. `.github/workflows/platform-verification.yml` runs desktop projects on their matching macOS, Linux and Windows hosts. Mobile profiles remain browser emulation; physical Android, iOS and Pencil behavior still require devices.
 
 The shared scenarios cover creation, drawing, highlighter, eraser, undo/redo, pages, reload persistence, touch input, responsive controls, save failure/retry, invalid content and legacy ink. Layout checks assert that the canvas fills the note workspace, floating controls leave writing space, remain stationary while panning, and can be hidden to access ink underneath. The compact toolbar is limited to 360px wide and 54px tall, with 44px touch targets. Ink and notebook panels are checked for keyboard focus, Escape dismissal, focus restoration, drawing outside the panel, reduced motion and reachable controls in portrait and landscape. Chromium projects additionally run browser-protocol tests for stylus pressure, palm input, touch pan/pinch and canceled pointers. These tests carry `@chromium-input`; WebKit projects run the portable touch scenario instead because CDP is a Chromium API.
 
@@ -27,7 +26,7 @@ Production pen scenarios verify all four types, visible dots, erasing, undo/redo
 
 Vite excludes Playwright artifacts from file watching so generated trace HTML and reports cannot reload the app during another test.
 
-The handwriting config uses a 60-second scenario timeout and no retries. Its managed development server sets `WRITEME_E2E=true` to disable file watching, so concurrent workspace edits cannot interrupt a scenario. Set the same variable when starting an external development server for these tests.
+The platform factory uses a 60-second browser scenario timeout and no retries. The browser suite uses Vite's development server so failure-injection and migration scenarios can import source modules; the production suite previews the built web bundle. Feature scenarios share one server per suite rather than starting separate feature servers. Set `WRITEME_E2E=true` if an external development server should disable file watching during a scenario.
 
 Production safeguards cover concurrent browser tabs, compare-and-set persistence, failed-save recovery downloads, navigation while saving, readable white ink on dark paper, preservation of extension fields, unsupported schemas and unsafe coordinates. Sparse imported strokes are tested with lengths up to one trillion canvas units; erasing runs in proportion to the number of points rather than segment length.
 
@@ -37,18 +36,18 @@ Chromium checks actual browser offline mode. WebKit checks an unavailable app se
 
 The native suite checks both the compiled Electron renderer and the actual packaged application with isolated temporary user profiles. Each scenario verifies SQLite persistence across renderer reload and application restart and records both launches. The packaged test uses Playwright's Chromium transport with the packaged executable, preserving its production fuses: [Playwright's Electron launcher requires Node inspection](https://playwright.dev/docs/api/class-electron), which the production package disables. Installer installation, notarization and operating-system prompts still require separate release validation.
 
-The handwriting workflow checks types, feature lint, development scenarios, production PWA behavior and compiled and packaged Electron persistence on native macOS, Linux and Windows runners. The release workflow depends on this gate and additionally runs the packaged test against each release build before staging its artifacts. Reports and videos are retained even when this check fails. Release downloads select only the three application artifact names so test videos are not published as application downloads.
+The platform verification workflow checks shared types and lint, browser scenarios, production PWA behavior and compiled and packaged Electron persistence on native macOS, Linux and Windows runners. The release workflow depends on this gate and additionally runs the packaged test against each release build before staging its artifacts. Reports and videos are retained even when this check fails. Release downloads select only the three application artifact names so test videos are not published as application downloads.
 
-Set `WRITEME_PACKAGED_EXECUTABLE` to test a specific executable, including one extracted from a release archive. Otherwise the native suite uses `out/writeme-<platform>-<architecture>/`. `PLAYWRIGHT_ARTIFACT_DIR` also works in the native config; its JSON report records the actual host OS and architecture.
+Set `WRITEME_PACKAGED_EXECUTABLE` to test a specific executable, including one extracted from a release archive. Otherwise the native suite uses `out/writeme-<platform>-<architecture>/`. Set `WRITEME_E2E_PREBUILT=1` after packaging to prevent a second package build. `PLAYWRIGHT_ARTIFACT_DIR` also works in the native suite; its JSON report records the actual host OS and architecture.
 
 To select one profile:
 
 ```sh
-npm run test:e2e:handwriting -- --project ipad
+npm run test:e2e -- --platform ios --suite browser --project ipad
 ```
 
-To target an already running app, set `PLAYWRIGHT_BASE_URL`. To isolate artifacts, set `PLAYWRIGHT_ARTIFACT_DIR`. These environment variables work in the device config without changing the default test suite.
+To target an already running web app, set `PLAYWRIGHT_BASE_URL`. To isolate artifacts, set `PLAYWRIGHT_ARTIFACT_DIR`. The physical-device suite instead requires `PLAYWRIGHT_DEVICE_BASE_URL` and never starts its own server.
 
 For an external dev server, use HTTPS or forward it through localhost inside the browser runner. A Docker browser visiting `http://host.docker.internal` does not get a secure context, so the text editor's `crypto.randomUUID` call fails when following a note link. A localhost TCP proxy preserves the normal development origin without changing browser security settings.
 
-The separate `npm run test:e2e:handwriting:device` command runs on a connected physical Android device. It does not participate in emulated CI and fails instead of skipping when prerequisites are absent. An operator draws two strokes with a real pen; the test measures trusted pen events and pressure variation, checks saved ink after reload and Chrome restart, and records both sessions. See [device setup and iPad/Android acceptance scenarios](./handwriting-device-checks.md) for commands and the remaining hardware checks.
+The separate `npm run test:e2e -- --platform android --suite device` command runs on a connected physical Android device. It does not participate in emulated CI and fails instead of skipping when prerequisites are absent. An operator draws two strokes with a real pen; the test measures trusted pen events and pressure variation, checks saved ink after reload and Chrome restart, and records both sessions. See [device setup and iPad/Android acceptance scenarios](./handwriting-device-checks.md) for commands and the remaining hardware checks.

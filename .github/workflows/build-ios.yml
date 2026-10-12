@@ -1,8 +1,6 @@
 name: Build iOS
 
 on:
-    push:
-        branches: [main]
     workflow_dispatch:
     workflow_call:
         inputs:
@@ -51,7 +49,9 @@ jobs:
             - name: Verify mobile editor
               run: |
                   npm exec -- playwright install webkit
-                  npm exec -- playwright test --config playwright.mobile.config.ts --project ios-webkit
+                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform ios --suite mobile
+                  npm run browser:build
+                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform ios --suite production tests/mobile/excalidraw.spec.ts --project ios-web-drawing
 
             - name: Archive unsigned iOS device app
               run: |
@@ -89,5 +89,5 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: mobile-ios-failures
-                  path: artifacts/playwright/mobile/
+                  path: artifacts/playwright/ios/
                   if-no-files-found: ignore

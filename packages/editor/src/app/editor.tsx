@@ -7,12 +7,12 @@ import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "
 import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
-import { supportsAI, isMobile } from "@/lib/platform";
-import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
 import { findCompatibleNote } from "@/lib/note-lookup";
+import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -40,6 +40,7 @@ import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
 import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
+import { registerNoteSaveShortcut } from "./note-save-shortcut";
 import { createTiptapWritingEditorAdapter } from "./writing-assistant/tiptap-adapter";
 import { WritingAssistant } from "./writing-assistant/writing-assistant";
 
@@ -240,6 +241,12 @@ const TiptapEditorCore = memo(
                     "aria-label": readonly ? "Read-only note editor" : "Note editor",
                 },
                 handleDOMEvents: {
+                    keydown: (view, event) => {
+                        if (event.key !== "Escape" || event.isComposing || view.composing) return false;
+                        // ProseMirror prevents every Escape by default, even when no keymap handles it.
+                        if (view.someProp("handleKeyDown", (handler) => handler(view, event))) event.preventDefault();
+                        return true;
+                    },
                     contextmenu: (_, event) => {
                         if (!isElectron()) return false;
                         const linkTarget = resolveLinkContextTarget(event.target);
@@ -582,9 +589,12 @@ const TiptapEditorCore = memo(
             worker.postMessage({ text, gen: myGen });
         };
 
+        const persistedContentRef = useRef<string | null>(null);
+
         useEffect(() => {
             if (!editor || content === undefined || editor.isDestroyed || !editor.schema) return;
             const currentMarkdown = getEditorMarkdown(editor);
+            if (content === persistedContentRef.current) return;
             if (content === currentMarkdown || content === lastEditorContentRef.current) {
                 lastEditorContentRef.current = currentMarkdown;
                 return;
@@ -618,6 +628,7 @@ const TiptapEditorCore = memo(
             if (editor === null || readonly) return;
             let saveTimeout: NodeJS.Timeout | undefined;
             let dirty = false;
+            let saveQueue = Promise.resolve();
 
             const getCurrentMarkdown = (): string | null => {
                 if (
@@ -630,20 +641,26 @@ const TiptapEditorCore = memo(
                 return getEditorMarkdown(editor);
             };
 
-            const saveDocument = async (markdown: string): Promise<void> => {
-                uiDispatch.setEditorSaveStatus("saving");
-                try {
-                    if (onSaveRef.current) {
-                        await onSaveRef.current(markdown);
-                    } else if (noteRef.current) {
-                        await dispatch.updateNoteContent(noteRef.current.id, markdown);
+            const saveDocument = (markdown: string): Promise<void> => {
+                const savingNote = noteRef.current;
+                const onSave = onSaveRef.current;
+                saveQueue = saveQueue.then(async () => {
+                    uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
+                    try {
+                        persistedContentRef.current = markdown;
+                        if (onSave) {
+                            await onSave(markdown);
+                        } else if (savingNote) {
+                            await dispatch.updateNoteContent(savingNote.id, markdown);
+                        }
+                        if (getCurrentMarkdown() === markdown) dirty = false;
+                        uiDispatch.setEditorSaveStatus(dirty ? "unsaved" : "saved", noteRef.current?.id ?? id);
+                    } catch (error) {
+                        uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
+                        console.error("Failed to save document:", error);
                     }
-                    if (getCurrentMarkdown() === markdown) dirty = false;
-                    uiDispatch.setEditorSaveStatus("saved");
-                } catch (error) {
-                    uiDispatch.setEditorSaveStatus("error");
-                    console.error("Failed to save document:", error);
-                }
+                });
+                return saveQueue;
             };
 
             const updateHandler = () => {
@@ -653,7 +670,7 @@ const TiptapEditorCore = memo(
                     return;
                 }
                 dirty = true;
-                uiDispatch.setEditorSaveStatus("unsaved");
+                uiDispatch.setEditorSaveStatus("unsaved", noteRef.current?.id ?? id);
                 if (!settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(
@@ -666,6 +683,15 @@ const TiptapEditorCore = memo(
             };
             editor.on("update", updateHandler);
             editor.setEditable(true, false);
+            const unregisterSaveShortcut = registerNoteSaveShortcut(
+                id,
+                () => {
+                    if (saveTimeout) clearTimeout(saveTimeout);
+                    const markdown = getCurrentMarkdown();
+                    if (markdown !== null) void saveDocument(markdown);
+                },
+                active,
+            );
             const flushPendingSave = (): void => {
                 if (!isMobile() || !dirty || !settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -678,6 +704,7 @@ const TiptapEditorCore = memo(
             window.addEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
             document.addEventListener("visibilitychange", onVisibilityChange);
             return () => {
+                unregisterSaveShortcut();
                 window.removeEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
                 document.removeEventListener("visibilitychange", onVisibilityChange);
                 editor.off("update", updateHandler);
@@ -685,7 +712,7 @@ const TiptapEditorCore = memo(
                 const markdown = getCurrentMarkdown();
                 if (dirty && markdown !== null) void saveDocument(markdown);
             };
-        }, [dispatch, editor, readonly, settings]);
+        }, [dispatch, editor, readonly, settings, id, active]);
 
         useEffect(() => {
             if (editor) {
@@ -732,10 +759,10 @@ const TiptapEditorCore = memo(
                             readonly={Boolean(readonly)}
                             onSourcePersisted={(saved) => {
                                 dispatch.syncNoteFromRepository(saved);
-                                uiDispatch.setEditorSaveStatus("saved");
+                                uiDispatch.setEditorSaveStatus("saved", noteRef.current?.id ?? id);
                             }}
                             onSaveSource={async (markdown, referenceHref) => {
-                                uiDispatch.setEditorSaveStatus("saving");
+                                uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
                                 try {
                                     if (onSaveRef.current) await onSaveRef.current(markdown);
                                     else {
@@ -785,9 +812,9 @@ const TiptapEditorCore = memo(
                                             dispatch.syncNoteFromRepository(Note.parse({ ...saved, metadata }));
                                         }
                                     }
-                                    uiDispatch.setEditorSaveStatus("saved");
+                                    uiDispatch.setEditorSaveStatus("saved", noteRef.current?.id ?? id);
                                 } catch (reason) {
-                                    uiDispatch.setEditorSaveStatus("error");
+                                    uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
                                     throw reason;
                                 }
                             }}
@@ -829,29 +856,48 @@ const RawEditorCore = memo(
         dispatch: GlobalDispatch;
         onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
     }) {
+        const { dispatch, onSaveRef, id } = props;
         const noteRef = useRef(props.note);
         const latestContentRef = useRef(props.content ?? "");
         const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
         const dirtyRef = useRef(false);
+        const saveQueueRef = useRef(Promise.resolve());
+        const [draft, setDraft] = useState({ source: props.content ?? "", content: props.content ?? "", dirty: false });
+        if (draft.source !== (props.content ?? "")) {
+            setDraft({
+                source: props.content ?? "",
+                content: draft.dirty ? draft.content : (props.content ?? ""),
+                dirty: draft.dirty,
+            });
+        }
         const settings = useMemo(() => SettingsService.load(), []);
 
         const saveContent = useCallback(
-            async (content: string): Promise<void> => {
-                uiDispatch.setEditorSaveStatus("saving");
-                try {
-                    if (props.onSaveRef.current) {
-                        await props.onSaveRef.current(content);
-                    } else if (noteRef.current) {
-                        await props.dispatch.updateNoteContent(noteRef.current.id, content);
+            (content: string): Promise<void> => {
+                const savingNote = noteRef.current;
+                const onSave = onSaveRef.current;
+                saveQueueRef.current = saveQueueRef.current.then(async () => {
+                    uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
+                    try {
+                        if (onSave) {
+                            await onSave(content);
+                        } else if (savingNote) {
+                            await dispatch.updateNoteContent(savingNote.id, content);
+                        }
+                        if (latestContentRef.current === content) dirtyRef.current = false;
+                        setDraft((current) => (current.content === content ? { ...current, dirty: false } : current));
+                        uiDispatch.setEditorSaveStatus(
+                            dirtyRef.current ? "unsaved" : "saved",
+                            noteRef.current?.id ?? id,
+                        );
+                    } catch (error) {
+                        uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
+                        console.error("Failed to save Markdown document:", error);
                     }
-                    if (latestContentRef.current === content) dirtyRef.current = false;
-                    uiDispatch.setEditorSaveStatus("saved");
-                } catch (error) {
-                    uiDispatch.setEditorSaveStatus("error");
-                    console.error("Failed to save Markdown document:", error);
-                }
+                });
+                return saveQueueRef.current;
             },
-            [props.dispatch, props.onSaveRef],
+            [dispatch, onSaveRef, id],
         );
 
         useEffect(() => {
@@ -859,8 +905,21 @@ const RawEditorCore = memo(
         }, [props.note]);
 
         useEffect(() => {
+            if (dirtyRef.current) return;
             latestContentRef.current = props.content ?? "";
         }, [props.content]);
+
+        useEffect(() => {
+            if (props.readonly) return;
+            return registerNoteSaveShortcut(
+                props.id,
+                () => {
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    void saveContent(latestContentRef.current);
+                },
+                props.active,
+            );
+        }, [props.id, props.active, props.readonly, saveContent]);
 
         useEffect(() => {
             const flushPendingSave = (): void => {
@@ -887,7 +946,8 @@ const RawEditorCore = memo(
             latestContentRef.current = nextContent;
             if (props.readonly) return;
             dirtyRef.current = true;
-            uiDispatch.setEditorSaveStatus("unsaved");
+            setDraft((current) => ({ ...current, content: nextContent, dirty: true }));
+            uiDispatch.setEditorSaveStatus("unsaved", noteRef.current?.id ?? props.id);
             if (!settings.autosave) return;
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             saveTimeoutRef.current = setTimeout(
@@ -906,7 +966,7 @@ const RawEditorCore = memo(
             >
                 <RawMarkdownEditor
                     noteId={props.id}
-                    value={props.content ?? ""}
+                    value={draft.content}
                     onChange={handleChange}
                     readonly={props.readonly}
                     theme={props.theme}

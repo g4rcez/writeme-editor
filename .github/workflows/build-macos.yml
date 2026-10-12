@@ -1,8 +1,7 @@
 name: Build macOS
 
 on:
-    push:
-        branches: [main]
+    workflow_dispatch:
     workflow_call:
 
 jobs:
@@ -23,6 +22,14 @@ jobs:
             - run: npm run make -- --arch=arm64
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
+
+            - name: Verify native Cmd+Q menu action
+              run: |
+                  npm exec -- electron-rebuild
+                  npm exec playwright -- install ffmpeg
+                  npm run test:e2e -- --platform osx --suite native tests/native/application-menu.spec.ts
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - uses: actions/upload-artifact@v4
               with:

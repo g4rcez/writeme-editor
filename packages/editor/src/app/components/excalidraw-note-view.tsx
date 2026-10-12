@@ -1,7 +1,7 @@
-import { Excalidraw, restore } from "@excalidraw/excalidraw";
+import { Excalidraw, restore, serializeAsJSON } from "@excalidraw/excalidraw";
 import { Button } from "@g4rcez/components";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
-import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import type { Note } from "@/store/note";
 import {
     EMPTY_EXCALIDRAW_PAYLOAD,
@@ -46,10 +46,6 @@ function toInitialData(payload: ExcalidrawNotePayload): ParsedState {
     }
 }
 
-function toSerializablePayload(payload: ExcalidrawNotePayload): ExcalidrawNotePayload {
-    return normalizeExcalidrawPayload(JSON.parse(JSON.stringify(payload)));
-}
-
 export function ExcalidrawNoteView(props: { note: Note }) {
     const [state, dispatch] = useGlobalStore((s) => ({ theme: s.theme }));
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,21 +75,30 @@ export function ExcalidrawNoteView(props: { note: Note }) {
         return () => {
             if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current);
         };
-    }, []);
+    }, [props.note.id]);
 
-    const savePayload = (payload: ExcalidrawNotePayload) => {
-        const serializablePayload = toSerializablePayload(payload);
-        const serializedPayload = JSON.stringify(serializablePayload);
-        if (serializedPayload === lastSerializedPayloadRef.current) return;
-        lastSerializedPayloadRef.current = serializedPayload;
-
-        if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(() => {
-            const nextContent = replaceExcalidrawNotePayload(localContent, serializablePayload);
-            setLocalContent(nextContent);
-            void dispatch.updateNoteContent(props.note.id, nextContent);
-        }, 500);
-    };
+    const onChange: NonNullable<ExcalidrawProps["onChange"]> = useCallback(
+        (elements, appState, files) => {
+            if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => {
+                const serializablePayload = normalizeExcalidrawPayload(
+                    JSON.parse(serializeAsJSON(elements, appState, files, "local")),
+                );
+                serializablePayload.appState = {
+                    ...serializablePayload.appState,
+                    scrollX: appState.scrollX,
+                    scrollY: appState.scrollY,
+                    zoom: appState.zoom,
+                };
+                const serializedPayload = JSON.stringify(serializablePayload);
+                if (serializedPayload === lastSerializedPayloadRef.current) return;
+                lastSerializedPayloadRef.current = serializedPayload;
+                const nextContent = replaceExcalidrawNotePayload(localContent, serializablePayload);
+                void dispatch.updateNoteContent(props.note.id, nextContent);
+            }, 500);
+        },
+        [dispatch, props.note.id, localContent],
+    );
 
     const resetDrawing = () => {
         if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current);
@@ -120,14 +125,6 @@ export function ExcalidrawNoteView(props: { note: Note }) {
             </div>
         );
     }
-
-    const onChange: NonNullable<ExcalidrawProps["onChange"]> = (elements, appState, files) => {
-        savePayload({
-            elements: [...elements],
-            appState: appState as unknown as Record<string, unknown>,
-            files: files as unknown as Record<string, unknown>,
-        });
-    };
 
     return (
         <div className="h-full min-h-0 w-full bg-background">

@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 
 type FormattingToolbarProps = {
     editor: Editor | null;
@@ -15,17 +16,22 @@ type ToolbarAction = {
 
 export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps) {
     const [, forceUpdate] = useState(0);
+    const [dismissedEditor, setDismissedEditor] = useState<Editor | null>(null);
     const toolbarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!editor) return;
         const update = () => forceUpdate((value) => value + 1);
-        editor.on("selectionUpdate", update);
+        const selectionUpdate = () => {
+            setDismissedEditor(null);
+            update();
+        };
+        editor.on("selectionUpdate", selectionUpdate);
         editor.on("transaction", update);
         editor.on("focus", update);
         editor.on("blur", update);
         return () => {
-            editor.off("selectionUpdate", update);
+            editor.off("selectionUpdate", selectionUpdate);
             editor.off("transaction", update);
             editor.off("focus", update);
             editor.off("blur", update);
@@ -39,12 +45,15 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
             ? activeEditor.state.doc.textBetween(selection.from, selection.to, "\n", "\n")
             : "";
     const hasSelectedText = Boolean(selection && !selection.empty && selectedText.length > 0);
+    const showToolbar = hasSelectedText && dismissedEditor !== activeEditor;
     const selectionFrom = selection?.from ?? null;
     const selectionTo = selection?.to ?? null;
 
+    useEscapeLayer(EscapeLevel.popover, Boolean(activeEditor && showToolbar), () => setDismissedEditor(activeEditor));
+
     useLayoutEffect(() => {
         const toolbar = toolbarRef.current;
-        if (!activeEditor || !hasSelectedText || selectionFrom === null || selectionTo === null || !toolbar) {
+        if (!activeEditor || !showToolbar || selectionFrom === null || selectionTo === null || !toolbar) {
             toolbar?.setAttribute("data-positioned", "false");
             return;
         }
@@ -80,9 +89,9 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
         } catch {
             toolbar.setAttribute("data-positioned", "false");
         }
-    }, [activeEditor, hasSelectedText, selectionFrom, selectionTo, selectedText]);
+    }, [activeEditor, showToolbar, selectionFrom, selectionTo, selectedText]);
 
-    if (!activeEditor || !hasSelectedText) return null;
+    if (!activeEditor || !showToolbar) return null;
 
     const actions: ToolbarAction[] = [
         {

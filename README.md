@@ -143,6 +143,18 @@ To build the web version and generate PWA assets:
 npm run pwa:build
 ```
 
+## Testing
+
+Select a platform and suite through the shared Playwright runner:
+
+```sh
+npm run test:e2e -- --platform osx --suite browser tests/e2e/data-safety.spec.ts --project chromium
+npm run test:e2e -- --platform osx --suite production --project desktop-macos
+npm run test:e2e -- --platform osx --suite native
+```
+
+See [platform suites, test coverage, and build reuse](docs/testing/platform-playwright.md) for all five platform configs, mobile/physical-device boundaries, and independent MCP package verification.
+
 ## Roadmap
 
 The following features are currently planned or in development:

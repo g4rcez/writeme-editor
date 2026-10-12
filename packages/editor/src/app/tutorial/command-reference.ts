@@ -99,7 +99,12 @@ const CONTEXTUAL_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("Enter", "Choose the selected slash command.", "Slash commands"),
     keyboard("Arrow keys", "Move through emoji suggestions.", "Emoji picker"),
     keyboard("Enter", "Insert the selected emoji.", "Emoji picker"),
-    keyboard("Escape", "Close the active suggestion menu, dialog, panel, or floating window.", "App"),
+    keyboard(
+        "Escape",
+        "Close the active suggestion menu, selection toolbar, dialog, panel, or floating window.",
+        "App",
+    ),
+    keyboard("Mod+Escape", "Close the floating window and all its overlays immediately.", "Floating windows"),
     keyboard("Enter", "Send a message.", "AI chat"),
     keyboard("Shift+Enter", "Insert a new line without sending.", "AI chat"),
     keyboard("Mod+Enter", "Submit the AI selection prompt.", "AI prompt"),

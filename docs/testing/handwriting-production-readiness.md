@@ -43,7 +43,7 @@ The pen follow-up passed 57 production checks without retries or skips, includin
 
 ## Automated release gate
 
-`.github/workflows/handwriting-e2e.yml` runs types, feature lint, recorded browser scenarios, production-bundle checks and both compiled and packaged Electron persistence on native macOS, Windows and Linux runners. It has no test retries. `.github/workflows/release.yml` requires this workflow and a packaged-app check inside each platform's release build before publication, and downloads only application artifacts into the release. These workflow changes are local until they land in the repository; Windows has not passed remotely for this working tree.
+`.github/workflows/platform-verification.yml` runs shared checks, recorded browser scenarios, production-bundle checks and both compiled and packaged Electron persistence on native macOS, Windows and Linux runners. It has no test retries. `.github/workflows/release.yml` requires this workflow and a packaged-app check inside each platform's release build before publication, and downloads only application artifacts into the release. The historical local evidence above is not proof of a Windows CI pass for a later revision.
 
 See [handwriting-playwright.md](./handwriting-playwright.md) for commands, profiles and artifact locations. CI includes the new lifecycle suite and checks its TypeScript directly because the application tsconfig excludes tests. The physical-device command is separate from emulated CI and does not silently skip absent hardware. The native smoke test isolates its profile from the user's notes and checks both renderer reload and application restart. Packaging verification here uses an ad-hoc macOS signature; it does not establish notarized installer behavior.
 

@@ -11,7 +11,8 @@ npm ci
 npm run mobile:dev
 npm run mobile:typecheck
 npm run typecheck
-npm run mobile:test
+npm run test:e2e -- --platform android --suite mobile
+npm run test:e2e -- --platform ios --suite mobile
 ```
 
 The development server runs only the mobile web interface; it does not start the desktop AI proxy. Playwright uses the production build in Chromium and WebKit. Install the Playwright browsers with `npm exec -- playwright install chromium webkit` when needed.
@@ -59,6 +60,6 @@ The pipeline uses the existing `android-google-play` and `ios-app-store` capabil
 
 Android debug signing keys can differ between workflow runs, so updating may require uninstalling the previous app. Export a library backup before uninstalling. The iOS IPA cannot be installed directly from the download, and the macOS Developer ID signing credentials are not used for iOS.
 
-`npm run mobile:test` covers touch controls, AI exclusion, rich-text and Markdown persistence, offline creation, note/PDF import and export, and backup success/failure in both browser engines. Unit tests cover native bridge integration and platform boundaries.
+The `mobile` suite on `android` and `ios` covers touch controls, AI exclusion, rich-text and Markdown persistence, offline creation, note/PDF import and export, and backup success/failure in Chromium and WebKit respectively. Each suite builds only the shared mobile assets unless `WRITEME_E2E_PREBUILT=1` is set. Unit tests cover native bridge integration and platform boundaries. See [platform suite selection](../../docs/testing/platform-playwright.md) for root-web drawing checks and build-profile reuse.
 
 Debug APK and unsigned simulator builds can be produced locally. App Store and Play Store releases require your signing credentials and developer accounts. Validate the share sheet, keyboard, background saving, system Back, and stylus input on physical devices before distribution. Browser emulation and simulator compilation do not verify those hardware behaviors.

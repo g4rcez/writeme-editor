@@ -21,17 +21,17 @@ In another terminal:
 adb start-server
 adb devices
 adb reverse tcp:5182 tcp:5182
-PLAYWRIGHT_DEVICE_BASE_URL=http://localhost:5182 npm run test:e2e:handwriting:device
+PLAYWRIGHT_DEVICE_BASE_URL=http://localhost:5182 npm run test:e2e -- --platform android --suite device
 ```
 
 If several devices are attached, select one with `PLAYWRIGHT_ANDROID_SERIAL`. With that selection, use `adb -s "$PLAYWRIGHT_ANDROID_SERIAL" reverse tcp:5182 tcp:5182`. On PowerShell set `$env:PLAYWRIGHT_DEVICE_BASE_URL = "http://localhost:5182"` before the npm command. An HTTPS test deployment can be used instead of the localhost server and forwarding.
 
 When the runner prints its instruction, draw exactly two separate strokes with the physical pen on the open canvas. Vary pressure from light to firm and keep fingers away for this measured step. It requires trusted `pointerType=pen` events, two completed strokes, pressure variation greater than 0.1, three saved strokes including the automated setup stroke, and identical saved paths after Chrome restarts. No synthetic pen input is sent in the measured step. The runner rejects Android emulators and never falls back to a desktop browser.
 
-Reports, device metadata, measured pen events, screenshots and videos from both launches are saved in `artifacts/playwright/handwriting-device/`. The serial number is not included in the report. Override this location with `PLAYWRIGHT_ARTIFACT_DIR`.
+Reports, device metadata, measured pen events, screenshots and videos from both launches are saved in `artifacts/playwright/android/device/`. The serial number is not included in the report. Override this location with `PLAYWRIGHT_ARTIFACT_DIR`.
 
 ```sh
-npm exec playwright -- show-report artifacts/playwright/handwriting-device/report
+npm exec playwright -- show-report artifacts/playwright/android/device/report
 adb reverse --remove tcp:5182
 ```
 

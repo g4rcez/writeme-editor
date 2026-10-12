@@ -140,8 +140,10 @@ describe("DirectoryBrowserDialog", () => {
             };
         });
 
-        render(<DirectoryBrowserDialog />);
-        await waitFor(() => expect(screen.getByRole("button", { name: /notes/ })).toBeInTheDocument());
+        await act(async () => {
+            render(<DirectoryBrowserDialog />);
+        });
+        expect(screen.getByRole("button", { name: /notes/ })).toBeInTheDocument();
 
         await act(async () => {
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
@@ -208,8 +210,10 @@ describe("DirectoryBrowserDialog", () => {
             entries: [{ name: "README.md", path: "/workspace/README.md", type: "file", extension: ".md" }],
         });
 
-        render(<DirectoryBrowserDialog />);
-        await waitFor(() => expect(screen.getByRole("button", { name: /README\.md/ })).toBeInTheDocument());
+        await act(async () => {
+            render(<DirectoryBrowserDialog />);
+        });
+        expect(screen.getByRole("button", { name: /README\.md/ })).toBeInTheDocument();
 
         await act(async () => {
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
@@ -232,8 +236,10 @@ describe("DirectoryBrowserDialog", () => {
             lastModified: "2026-01-01T00:00:00.000Z",
         });
 
-        render(<DirectoryBrowserDialog />);
-        await waitFor(() => expect(screen.getByRole("button", { name: /paper\.latex/ })).toBeInTheDocument());
+        await act(async () => {
+            render(<DirectoryBrowserDialog />);
+        });
+        expect(screen.getByRole("button", { name: /paper\.latex/ })).toBeInTheDocument();
 
         await act(async () => {
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));

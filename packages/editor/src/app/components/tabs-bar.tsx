@@ -21,7 +21,7 @@ import {
     isTerminalTab,
 } from "@/lib/tab-target";
 import { Note } from "@/store/note";
-import { uiDispatch } from "@/store/ui.store";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { useAiChatTabs } from "../hooks/use-ai-chat-tabs";
 import { useMotionTabDrop } from "../hooks/use-motion-tab-drop";
 import { useNoteTabs } from "../hooks/use-note-tabs";
@@ -45,6 +45,7 @@ const isSameRenamingTarget = (a: RenamingTarget | null, b: RenamingTarget): bool
     a?.type === b.type && a.id === b.id;
 
 export const TabsBar = (props: Props) => {
+    const [{ noteSaveStatuses }] = useUIStore();
     const dispatch = props.dispatch;
     const navigate = useNavigate();
     const location = useLocation();
@@ -228,6 +229,8 @@ export const TabsBar = (props: Props) => {
                     const isTerminal = isTerminalTab(tab);
                     const note = isChatTab || isTerminal ? undefined : notesById.get(tab.noteId);
                     const isActive = isCurrentTab(tab);
+                    const saveStatus = note ? noteSaveStatuses[tab.noteId] : undefined;
+                    const pending = saveStatus === "unsaved" || saveStatus === "saving" || saveStatus === "error";
                     const title = getTabTitle(tab);
                     const tabTitle = isTerminal ? title : isChatTab ? title : note?.filePath || title;
                     const renameTarget: RenamingTarget | null = isTerminal
@@ -255,6 +258,7 @@ export const TabsBar = (props: Props) => {
                         >
                             <Link
                                 data-tab-id={tab.id}
+                                data-save-status={saveStatus}
                                 draggable={false}
                                 title={tabTitle}
                                 to={getRouteForTab(tab)}
@@ -334,16 +338,29 @@ export const TabsBar = (props: Props) => {
                                 )}
                                 <button
                                     type="button"
-                                    aria-label={`Close ${title}`}
+                                    aria-label={`Close ${title}${pending ? " (unsaved changes)" : ""}`}
                                     onClick={(e) => void onCloseTab(e, tab)}
                                     className={css(
-                                        "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
-                                        isActive
+                                        "group/close flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
+                                        isActive || pending
                                             ? "opacity-60 group-hover:opacity-100"
                                             : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
                                     )}
                                 >
-                                    <XIcon className="size-2.5" />
+                                    {pending && (
+                                        <span
+                                            aria-hidden="true"
+                                            title={saveStatus === "error" ? "Save failed" : "Unsaved changes"}
+                                            className="size-2 rounded-full bg-current group-hover/close:hidden group-focus-visible/close:hidden"
+                                        />
+                                    )}
+                                    <XIcon
+                                        className={
+                                            pending
+                                                ? "hidden size-2.5 group-hover/close:block group-focus-visible/close:block"
+                                                : "size-2.5"
+                                        }
+                                    />
                                 </button>
                                 {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
                             </Link>

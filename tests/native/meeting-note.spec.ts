@@ -118,6 +118,7 @@ test("records native microphone audio, transcribes it and persists the result in
             await page.waitForFunction(() => Reflect.get(window, "nativeMeetingAudioReady"));
             await panel.getByRole("button", { name: "Stop and transcribe" }).click();
             await expect(panel.getByRole("status")).toHaveText("Transcript saved");
+            await expect(panel.getByRole("button", { name: "Start recording", exact: true })).toBeEnabled();
             expect(uploads).toBe(1);
             expect(uploadedAudio).toBe(true);
             await page.reload();
