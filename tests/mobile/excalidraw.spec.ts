@@ -1,7 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { Note, NoteType } from "../../packages/editor/src/store/note";
 
-async function readDrawing(page: Page, embedded: boolean): Promise<unknown[]> {
+type DrawingElement = { type: string; width: number; height: number; isDeleted: boolean };
+
+async function readDrawing(page: Page, embedded: boolean): Promise<DrawingElement[]> {
     return page.evaluate(async (embedded) => {
         const db = await new Promise<IDBDatabase>((resolve, reject) => {
             const request = indexedDB.open("writeme");
@@ -65,6 +67,7 @@ for (const embedded of [false, true]) {
             .locator(".excalidraw label")
             .filter({ has: page.getByRole("radio", { name: "Rectangle", exact: true }) })
             .tap();
+        await expect(page.getByRole("radio", { name: "Rectangle", exact: true })).toBeChecked();
         const bounds = await canvas.boundingBox();
         if (!bounds) throw new Error("Drawing canvas is missing.");
         const viewport = page.viewportSize();
@@ -76,10 +79,21 @@ for (const embedded of [false, true]) {
                 y: drawingY,
             }),
         ).toContain("excalidraw__canvas");
-        await page.mouse.move(bounds.x + bounds.width / 3, drawingY);
-        await page.mouse.down();
-        await page.mouse.move(bounds.x + (bounds.width * 2) / 3, drawingY + 80, { steps: 8 });
-        await page.mouse.up();
+        const pointer = {
+            pointerId: 1,
+            pointerType: "touch",
+            isPrimary: true,
+            button: 0,
+            buttons: 1,
+            clientX: bounds.x + bounds.width / 3,
+            clientY: drawingY,
+        };
+        await canvas.dispatchEvent("pointerdown", pointer);
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+        const end = { ...pointer, clientX: bounds.x + (bounds.width * 2) / 3, clientY: drawingY + 80 };
+        await canvas.dispatchEvent("pointermove", end);
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+        await canvas.dispatchEvent("pointerup", { ...end, buttons: 0 });
         if (embedded) {
             await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeEnabled();
             if (mobile) await page.evaluate(() => window.dispatchEvent(new Event("writeme:mobile-pause")));
@@ -87,7 +101,21 @@ for (const embedded of [false, true]) {
                 timeout: 15_000,
             });
         }
-        await expect.poll(async () => (await readDrawing(page, embedded)).length).toBe(1);
+        await expect
+            .poll(
+                async () => {
+                    const elements = await readDrawing(page, embedded);
+                    return (
+                        elements.length === 1 &&
+                        elements[0]?.type === "rectangle" &&
+                        !elements[0].isDeleted &&
+                        elements[0].width > 50 &&
+                        elements[0].height >= 70
+                    );
+                },
+                { timeout: 15_000 },
+            )
+            .toBe(true);
         const saved = await readDrawing(page, embedded);
         await page.waitForTimeout(1200);
         expect(await readDrawing(page, embedded)).toEqual(saved);
