@@ -24,6 +24,11 @@ jobs:
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
 
+            - name: Verify native Cmd+Q menu action
+              run: |
+                  npm exec -- electron-rebuild
+                  npm exec -- playwright test --config playwright.application-menu-native.config.ts
+
             - uses: actions/upload-artifact@v4
               with:
                   name: build-macos
