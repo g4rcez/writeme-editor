@@ -241,6 +241,12 @@ const TiptapEditorCore = memo(
                     "aria-label": readonly ? "Read-only note editor" : "Note editor",
                 },
                 handleDOMEvents: {
+                    keydown: (view, event) => {
+                        if (event.key !== "Escape" || event.isComposing || view.composing) return false;
+                        // ProseMirror prevents every Escape by default, even when no keymap handles it.
+                        if (view.someProp("handleKeyDown", (handler) => handler(view, event))) event.preventDefault();
+                        return true;
+                    },
                     contextmenu: (_, event) => {
                         if (!isElectron()) return false;
                         const linkTarget = resolveLinkContextTarget(event.target);

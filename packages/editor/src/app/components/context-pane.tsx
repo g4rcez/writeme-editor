@@ -3,6 +3,7 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { Dates } from "@/lib/dates";
 import { findIncomingNoteLinks, resolveNoteLinks } from "@/lib/note-links";
 
@@ -105,17 +106,7 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
         return () => observer.disconnect();
     }, [note.id]);
 
-    useEffect(() => {
-        if (isNarrow) return;
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape" && !event.defaultPrevented) {
-                event.preventDefault();
-                onClose();
-            }
-        };
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [isNarrow, onClose]);
+    useEscapeLayer(EscapeLevel.panel, !isNarrow, onClose);
 
     const linkedNotes = useMemo(() => resolveNoteLinks(note, notes), [note, notes]);
     const incomingNotes = useMemo(() => findIncomingNoteLinks(note, notes), [note, notes]);

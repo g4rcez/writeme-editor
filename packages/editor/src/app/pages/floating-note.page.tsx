@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NoteSaveStatus } from "@/app/components/note-save-status";
 import { Editor } from "@/app/editor";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
@@ -81,16 +82,7 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
         };
     }, [config, dispatch]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== "Escape") return;
-            event.preventDefault();
-            event.stopPropagation();
-            window.close();
-        };
-        window.addEventListener("keydown", handleKeyDown, true);
-        return () => window.removeEventListener("keydown", handleKeyDown, true);
-    }, []);
+    useEscapeLayer(EscapeLevel.window, true, () => window.close());
 
     if (loading || (!error && !state.note)) {
         return (
