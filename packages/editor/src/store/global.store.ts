@@ -577,9 +577,9 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         const notes = state.notes.map((n) => (n.id === id ? patch(n) : n));
         const note = state.note?.id === id ? patch(state.note) : state.note;
         return { notes, note };
-      } catch (error: any) {
-        uiDispatch.setError(error.message || "Failed to update note content");
-        return get.state();
+      } catch (error: unknown) {
+        uiDispatch.setError(error instanceof Error ? error.message : "Failed to update note content");
+        throw error;
       }
     },
     updateNoteMetadata: async (id: string, metadata: Record<string, unknown>) => {

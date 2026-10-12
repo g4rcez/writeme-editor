@@ -1,5 +1,5 @@
-import type { Toggle } from "./types";
 import { isMobile } from "@/lib/platform";
+import type { Toggle } from "./types";
 import { createZustandCompatStore } from "./zustand-compat";
 
 export type ContentWidth = "narrow" | "medium" | "wide";
@@ -61,6 +61,7 @@ export type UISettings = {
     gitDialog: { open: boolean };
     parsingContent: boolean;
     editorSaveStatus: EditorSaveStatus;
+    noteSaveStatuses: Record<string, EditorSaveStatus>;
 };
 
 const STORAGE_KEY = "WRITEME_UI_SETTINGS";
@@ -90,6 +91,7 @@ const initialState: UISettings = {
     findReplace: persistedState.findReplace || { isOpen: false },
     parsingContent: false,
     editorSaveStatus: "saved",
+    noteSaveStatuses: {},
 };
 
 export const useUIStore = createZustandCompatStore(
@@ -129,7 +131,10 @@ export const useUIStore = createZustandCompatStore(
         openGitDialog: () => ({ gitDialog: { open: true } }),
         closeGitDialog: () => ({ gitDialog: { open: false } }),
         setParsingContent: (value: boolean) => ({ parsingContent: value }),
-        setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus) => ({ editorSaveStatus }),
+        setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus, noteId?: string) => ({
+            editorSaveStatus,
+            ...(noteId ? { noteSaveStatuses: { ...get.state().noteSaveStatuses, [noteId]: editorSaveStatus } } : {}),
+        }),
     }),
     {
         interceptor: [
@@ -145,6 +150,7 @@ export const useUIStore = createZustandCompatStore(
                     gitDialog: _gitDialog,
                     parsingContent: _parsingContent,
                     editorSaveStatus: _editorSaveStatus,
+                    noteSaveStatuses: _noteSaveStatuses,
                     ...toPersist
                 } = state;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));

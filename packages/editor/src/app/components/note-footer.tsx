@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { editorGlobalRef, editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { HARD_LIMIT, WARN_THRESHOLD } from "@/lib/markdown-worker";
-import { useUIStore } from "@/store/ui.store";
+import { NoteSaveStatus } from "./note-save-status";
 
 type Counts = { chars: number; words: number; lines: number };
 
@@ -33,7 +33,6 @@ const HARD_LIMIT_LABEL = formatCount(HARD_LIMIT);
 
 export function NoteFooter({ noteId, content }: { noteId: string; content?: string }) {
     const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
-    const [{ editorSaveStatus }] = useUIStore();
     const counts = content === undefined ? editorCounts : getMarkdownCounts(content);
 
     useEffect(() => {
@@ -91,24 +90,10 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
     const color = usageColor(counts.chars);
     const isNearHardLimit = counts.chars >= HARD_LIMIT * 0.8;
     const title = `${formatCount(counts.chars)} used. Warning at ${WARNING_LABEL}; hard limit at ${HARD_LIMIT_LABEL}.${isNearHardLimit ? " Approaching hard limit." : ""}`;
-    const saveLabel =
-        editorSaveStatus === "saving"
-            ? "Saving…"
-            : editorSaveStatus === "unsaved"
-              ? "Unsaved changes"
-              : editorSaveStatus === "error"
-                ? "Save failed"
-                : "Saved";
 
     return (
         <div className="writeme-editor-status-bar print:hidden">
-            <output aria-live="polite" className="flex items-center gap-1.5">
-                <span
-                    aria-hidden="true"
-                    className={`size-1.5 rounded-full ${editorSaveStatus === "error" ? "bg-danger" : editorSaveStatus === "unsaved" ? "bg-warn" : "bg-success"}`}
-                />
-                {saveLabel}
-            </output>
+            <NoteSaveStatus noteId={noteId} />
             <span title={title} className={`flex items-center gap-1.5 tabular-nums ${color}`}>
                 <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-muted">
                     <span
