@@ -6,6 +6,8 @@ vi.mock("@excalidraw/excalidraw", () => ({
     Excalidraw: ({ onChange, initialData }: any) => (
         <div data-testid="excalidraw-mock">
             <button onClick={() => onChange([{ type: "rectangle", id: "1" }])}>Change</button>
+            <button onClick={() => onChange(initialData.elements)}>Unchanged</button>
+            <button onClick={() => onChange([])}>Clear</button>
             <span>Elements: {JSON.stringify(initialData?.elements)}</span>
         </div>
     ),
@@ -46,5 +48,37 @@ describe("ExcalidrawCode", () => {
         });
         screen.getByText("Change").click();
         expect(onChange).toHaveBeenCalledWith(JSON.stringify([{ type: "rectangle", id: "1" }]));
+    });
+
+    it("does not write unchanged scenes back into the editor", async () => {
+        const onChange = vi.fn();
+        render(
+            <ExcalidrawCode code='[{"type":"rectangle","id":"initial"}]' onChange={onChange} autoDelete={() => {}} />,
+        );
+        screen.getByText("Unchanged").click();
+        expect(onChange).not.toHaveBeenCalled();
+        screen.getByText("Change").click();
+        screen.getByText("Change").click();
+        expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it("uses the current callback after a parent update", () => {
+        const original = vi.fn();
+        const replacement = vi.fn();
+        const autoDelete = () => {};
+        const { rerender } = render(<ExcalidrawCode code="[]" onChange={original} autoDelete={autoDelete} />);
+        rerender(<ExcalidrawCode code="[]" onChange={replacement} autoDelete={autoDelete} />);
+        screen.getByText("Change").click();
+        expect(original).not.toHaveBeenCalled();
+        expect(replacement).toHaveBeenCalledExactlyOnceWith(JSON.stringify([{ type: "rectangle", id: "1" }]));
+    });
+
+    it("persists deleting the last element", async () => {
+        const onChange = vi.fn();
+        render(
+            <ExcalidrawCode code='[{"type":"rectangle","id":"initial"}]' onChange={onChange} autoDelete={() => {}} />,
+        );
+        screen.getByText("Clear").click();
+        expect(onChange).toHaveBeenCalledWith("[]");
     });
 });

@@ -52,6 +52,7 @@ jobs:
               run: |
                   npm exec -- playwright install webkit
                   npm exec -- playwright test --config playwright.mobile.config.ts --project ios-webkit
+                  npm exec -- playwright test --config playwright.excalidraw-web.config.ts --project ios-webkit
 
             - name: Archive unsigned iOS device app
               run: |
