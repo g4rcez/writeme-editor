@@ -1,8 +1,6 @@
 name: Build Android
 
 on:
-    push:
-        branches: [main]
     workflow_dispatch:
     workflow_call:
         inputs:
@@ -30,6 +28,10 @@ jobs:
               with:
                   distribution: temurin
                   java-version: "21"
+                  cache: gradle
+                  cache-dependency-path: |
+                      packages/android/native/**/*.gradle
+                      packages/android/native/gradle/wrapper/gradle-wrapper.properties
 
             - uses: android-actions/setup-android@v3
               with:
@@ -59,8 +61,9 @@ jobs:
             - name: Verify mobile editor
               run: |
                   npm exec -- playwright install --with-deps chromium
-                  npm exec -- playwright test --config playwright.mobile.config.ts --project android-chromium
-                  npm exec -- playwright test --config playwright.excalidraw-web.config.ts --project android-chromium
+                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform android --suite mobile
+                  npm run browser:build
+                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform android --suite production tests/mobile/excalidraw.spec.ts --project android-web-drawing
 
             - name: Build Android APK
               working-directory: packages/android/native
@@ -84,5 +87,5 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: mobile-android-failures
-                  path: artifacts/playwright/mobile/
+                  path: artifacts/playwright/android/
                   if-no-files-found: ignore

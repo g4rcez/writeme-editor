@@ -1,8 +1,7 @@
 name: Build macOS
 
 on:
-    push:
-        branches: [main]
+    workflow_dispatch:
     workflow_call:
 
 jobs:
@@ -27,7 +26,8 @@ jobs:
             - name: Verify native Cmd+Q menu action
               run: |
                   npm exec -- electron-rebuild
-                  npm exec -- playwright test --config playwright.application-menu-native.config.ts
+                  npm exec playwright -- install ffmpeg
+                  npm run test:e2e -- --platform osx --suite native tests/native/application-menu.spec.ts
 
             - uses: actions/upload-artifact@v4
               with:

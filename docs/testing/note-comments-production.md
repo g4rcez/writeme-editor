@@ -50,11 +50,9 @@ Screenshots from Playwright were inspected for the phone layouts, the production
 ```sh
 npm run typecheck
 npm run test -- --maxWorkers=4
-WRITEME_E2E=true PLAYWRIGHT_PORT=5284 npm run test:e2e -- tests/e2e/note-comments.spec.ts tests/e2e/data-safety.spec.ts
-npm run browser:build
-npm run test:e2e -- --config playwright.comments-production.config.ts
-npm run package:app
-npm run test:e2e -- --config playwright.comments-native.config.ts
+PLAYWRIGHT_PORT=5284 npm run test:e2e -- --platform osx --suite browser tests/e2e/note-comments.spec.ts tests/e2e/data-safety.spec.ts --project chromium
+npm run test:e2e -- --platform osx --suite production tests/e2e/note-comments-production.spec.ts --project chromium
+npm run test:e2e -- --platform osx --suite native tests/native/note-comments.spec.ts
 ```
 
 Native tests isolate application data and filesystem fixtures in temporary directories. They load the compiled packaged entry, rather than the development server. Generated JSON reports, traces, and screenshots are local artifacts under `artifacts/playwright/`, which is ignored by Git.
