@@ -329,8 +329,8 @@ function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[]
         { type: "separator" },
         {
             label: "Quit Writeme",
-            accelerator: "CommandOrControl+Shift+Q",
-            click: () => app.quit(),
+            role: "quit",
+            accelerator: "CommandOrControl+Q",
         },
     ];
 }
