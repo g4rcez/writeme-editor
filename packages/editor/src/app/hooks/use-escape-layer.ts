@@ -10,6 +10,15 @@ const overlaySelector =
 
 function captureEscape(event: KeyboardEvent): void {
     if (event.key !== "Escape" || event.repeat || event.isComposing) return;
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+        const windowLayer = Array.from(layers).find((layer) => layer.level === EscapeLevel.window);
+        if (windowLayer) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            windowLayer.close();
+            return;
+        }
+    }
     // Snapshot before a dialog or menu removes itself during this key press.
     if (
         Array.from(document.querySelectorAll<HTMLElement>(overlaySelector)).some(

@@ -15,6 +15,33 @@ async function escape(target: EventTarget = window, init: KeyboardEventInit = {}
 }
 
 describe("Escape layers", () => {
+    it.each(["ctrlKey", "metaKey"])(
+        "%s plus Escape bypasses higher layers and closes the floating window",
+        async (modifier) => {
+            const closeWindow = vi.fn();
+            const closePopover = vi.fn();
+            const view = render(
+                <>
+                    <Layer level={EscapeLevel.popover} close={closePopover} />
+                    <Layer level={EscapeLevel.window} close={closeWindow} />
+                </>,
+            );
+            const dialog = document.createElement("div");
+            dialog.setAttribute("role", "dialog");
+            vi.spyOn(dialog, "getClientRects").mockReturnValue({ length: 1 } as DOMRectList);
+            document.body.append(dialog);
+            const consume = vi.fn((event: KeyboardEvent) => event.preventDefault());
+            const input = screen.getByRole("textbox", { name: `Layer ${EscapeLevel.window}` });
+            input.addEventListener("keydown", consume);
+            await escape(input, { [modifier]: true });
+            expect(closeWindow).toHaveBeenCalledOnce();
+            expect(closePopover).not.toHaveBeenCalled();
+            expect(consume).not.toHaveBeenCalled();
+            dialog.remove();
+            view.unmount();
+        },
+    );
+
     it("closes one layer per press, highest priority first, then the window", async () => {
         const closeWindow = vi.fn();
         const closePanel = vi.fn();

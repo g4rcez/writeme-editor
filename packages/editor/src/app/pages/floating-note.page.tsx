@@ -81,7 +81,7 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
         };
     }, [config, dispatch]);
 
-    useEscapeLayer(EscapeLevel.window, !state.commander?.enabled, () => window.close());
+    useEscapeLayer(EscapeLevel.window, true, () => window.close());
 
     if (loading || (!error && !state.note)) {
         return (
