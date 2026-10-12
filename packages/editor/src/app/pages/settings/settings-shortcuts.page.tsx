@@ -17,6 +17,11 @@ type ReadonlyShortcut = {
 
 const APP_SHORTCUT_REFERENCE: ReadonlyShortcut[] = [
     {
+        bind: "mod+s",
+        title: "Save current note",
+        description: "Save the active editor immediately, including floating and quick notes.",
+    },
+    {
         bind: getTabNavigationHotkey("1-8", isElectron()),
         title: "Go to tab 1-8",
         description: "Switch directly to one of the first eight open tabs.",

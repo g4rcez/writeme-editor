@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { NoteSaveStatus } from "@/app/components/note-save-status";
 import { Editor } from "@/app/editor";
 import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { repositories, useGlobalStore } from "@/store/global.store";
@@ -109,7 +110,10 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
         <div className="container mx-auto flex h-full min-h-0 w-full max-w-safe flex-col bg-background print:block print:h-auto print:overflow-visible">
             <div className="quicknote-window-drag-region mt-4 mb-4 flex shrink-0 items-center justify-between border-b border-card-border py-2">
                 <h1 className="truncate text-lg font-semibold">{state.note.title}</h1>
-                <span className="text-xs text-disabled">Press Esc to close</span>
+                <div className="flex shrink-0 items-center gap-3">
+                    <NoteSaveStatus noteId={state.note.id} />
+                    <span className="text-xs text-disabled">Press Esc to close</span>
+                </div>
             </div>
             <div className="min-h-0 flex-1 p-8 overflow-y-auto overscroll-contain">
                 <Editor content={state.note.content} note={state.note} />
