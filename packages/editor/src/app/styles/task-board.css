@@ -1,0 +1,276 @@
+.wm-task-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    margin-block: 0;
+    color: var(--var-color-foreground);
+    background: var(--var-color-background);
+}
+.wm-task-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--var-color-border);
+}
+.wm-task-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wm-task-save {
+    margin-left: auto;
+    color: var(--var-color-muted-foreground);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.wm-task-view-switch,
+.wm-task-filters {
+    display: flex;
+    gap: 4px;
+}
+.wm-task-view-switch button,
+.wm-task-filters button {
+    padding: 7px 12px;
+    border-radius: 20px;
+    color: var(--var-color-muted-foreground);
+    font-size: 13px;
+    white-space: nowrap;
+}
+.wm-task-view-switch button[aria-pressed="true"],
+.wm-task-filters button[aria-pressed="true"] {
+    color: var(--var-color-foreground);
+    background: var(--var-color-muted);
+}
+.wm-task-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    flex-wrap: wrap;
+}
+.wm-task-toolbar input[type="search"] {
+    margin-left: auto;
+    width: 180px;
+}
+.wm-task-hide {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--var-color-muted-foreground);
+}
+.wm-task-board {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 20px;
+    overflow: auto;
+    padding: 8px 24px 24px;
+    align-items: stretch;
+}
+.wm-task-column {
+    flex: 0 0 300px;
+    padding: 12px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--var-color-muted) 35%, transparent);
+}
+.wm-task-column--over {
+    outline: 2px solid var(--var-color-primary);
+    outline-offset: -2px;
+}
+.wm-task-column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: var(--var-color-muted-foreground);
+}
+.wm-task-column-name {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--var-color-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wm-task-count {
+    font-size: 12px;
+    margin-right: auto;
+}
+.wm-task-column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 120px;
+}
+.wm-task-card {
+    background: var(--var-color-background);
+    border: 1px solid var(--var-color-border);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--var-color-foreground) 4%, transparent);
+}
+.wm-task-card--dragging {
+    opacity: 0.4;
+}
+.wm-task-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 0;
+    color: var(--var-color-muted-foreground);
+}
+.wm-task-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    flex-shrink: 0;
+}
+.wm-task-icon:hover {
+    background: var(--var-color-muted);
+    color: var(--var-color-foreground);
+}
+.wm-task-drag {
+    cursor: grab;
+    touch-action: none;
+}
+.wm-task-drag:active {
+    cursor: grabbing;
+}
+.wm-task-card-content {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 14px 16px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.wm-task-description {
+    font-size: 12px;
+    color: var(--var-color-muted-foreground);
+    white-space: pre-wrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+.wm-task-completed {
+    color: var(--var-color-muted-foreground);
+    text-decoration: line-through;
+}
+.wm-task-empty {
+    text-align: left;
+    padding: 12px;
+    border: 1px dashed var(--var-color-border);
+    border-radius: 8px;
+    color: var(--var-color-muted-foreground);
+    font-size: 12px;
+}
+.wm-task-board-empty {
+    margin: auto;
+    text-align: center;
+    color: var(--var-color-muted-foreground);
+}
+.wm-task-markdown {
+    flex: 1;
+    min-height: 0;
+    resize: none;
+    padding: 24px;
+    font-family: var(--var-font-mono);
+    line-height: 1.7;
+    border: 0;
+    border-radius: 0;
+    background: var(--var-color-background);
+    color: var(--var-color-foreground);
+}
+.wm-task-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--var-color-muted);
+    font-size: 13px;
+}
+.wm-task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.wm-task-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+}
+.wm-task-form input,
+.wm-task-form textarea,
+.wm-task-form select,
+.wm-task-toolbar input[type="search"] {
+    background: var(--var-color-background);
+    color: var(--var-color-foreground);
+    border: 1px solid var(--var-color-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+.wm-task-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+.wm-task-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.wm-task-view button:focus-visible {
+    outline: 2px solid var(--var-color-primary);
+    outline-offset: 2px;
+}
+@media (max-width: 700px) {
+    .wm-task-header {
+        padding: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .wm-task-header h1 {
+        max-width: 45%;
+    }
+    .wm-task-toolbar {
+        padding: 12px;
+        gap: 12px;
+    }
+    .wm-task-toolbar input[type="search"] {
+        margin-left: 0;
+        flex: 1;
+        width: 140px;
+    }
+    .wm-task-board {
+        padding-inline: 12px;
+        gap: 12px;
+    }
+    .wm-task-column {
+        flex-basis: min(300px, 85vw);
+    }
+}
+@media (pointer: coarse) {
+    .wm-task-icon,
+    .wm-task-view-switch button,
+    .wm-task-filters button,
+    .wm-task-column-name,
+    .wm-task-empty {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}

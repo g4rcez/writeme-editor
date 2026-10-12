@@ -22,7 +22,7 @@ import { SettingsService } from "./settings";
 import { uiDispatch } from "./ui.store";
 import { createZustandCompatStore } from "./zustand-compat";
 
-export type NoteCreationType = "note" | "quick" | "freehand" | "excalidraw" | "meeting-note" | "pdf";
+export type NoteCreationType = "note" | "quick" | "freehand" | "excalidraw" | "meeting-note" | "pdf" | "task";
 
 const LOCAL_WORKSPACE_KEY = "__local__";
 

@@ -34,6 +34,7 @@
 @import "./app/styles/native.css";
 @import "./app/styles/writeme.css";
 @import "./app/styles/freehand.css";
+@import "./app/styles/task-board.css";
 @import "./app/styles/mobile.css";
 @import "tailwindcss";
 

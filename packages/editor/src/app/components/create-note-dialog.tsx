@@ -8,6 +8,7 @@ import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
 import { generateNotePath, getUniqueFilePath, getUniqueNoteTitle } from "@/lib/file-utils";
 import { buildFreehandNoteContent } from "@/lib/freehand-note";
+import { buildTaskNoteContent } from "@/lib/task-note";
 import { isElectron } from "@/lib/is-electron";
 import { getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { getUserVariables, substituteVariables } from "@/lib/template-utils";
@@ -35,7 +36,7 @@ export const CreateNoteDialog = () => {
     const { isOpen, type, templateId, initialTitle } = state.createNoteDialog;
 
     const supportsFolders =
-        (type === "note" || type === "excalidraw" || type === "freehand") && isElectron() && !!state.directory;
+        (type === "note" || type === "excalidraw" || type === "freehand" || type === "task") && isElectron() && !!state.directory;
     const titleOptions = useMemo(() => [
         // Autocomplete needs the current value in options to keep free text visible after blur.
         ...(title ? [{ value: title, hidden: true }] : []),
@@ -148,7 +149,9 @@ export const CreateNoteDialog = () => {
                 return;
             }
             let content =
-                type === "excalidraw"
+                type === "task"
+                    ? buildTaskNoteContent()
+                    : type === "excalidraw"
                     ? buildExcalidrawNoteContent()
                     : type === "freehand"
                       ? buildFreehandNoteContent()
@@ -219,7 +222,9 @@ export const CreateNoteDialog = () => {
             onChange={onClose}
             className="max-w-md"
             title={
-                type === "pdf"
+                type === "task"
+                    ? "Create task note"
+                    : type === "pdf"
                     ? "Import PDF"
                     : type === "quick"
                     ? "Today's quick note"

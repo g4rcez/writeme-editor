@@ -167,7 +167,7 @@ export default function DashboardPage() {
                                     Create a note, find something you wrote, or pick up where you left off.
                                 </p>
                             </div>
-                            <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto xl:shrink-0">
+                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap xl:w-1/2 xl:shrink-0">
                                 <Button type="button" theme="primary" onClick={createNewNote}>
                                     <FilePlusIcon size={17} aria-hidden="true" />
                                     <span>New note</span>
@@ -178,6 +178,9 @@ export default function DashboardPage() {
                                 <Button type="button" theme="outlined" className="min-h-11" onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "freehand" })}>
                                     <PencilSimpleIcon size={17} aria-hidden="true" />
                                     <span>Handwritten note</span>
+                                </Button>
+                                <Button type="button" theme="outlined" className="min-h-11" onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "task" })}>
+                                    <span>Task board</span>
                                 </Button>
                                 <Button type="button" theme="outlined" className="min-h-11" onClick={() => dispatch.setCreateNoteDialog({ isOpen: true, type: "pdf" })}>
                                     <FilePdfIcon size={17} aria-hidden="true" />

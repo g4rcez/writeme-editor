@@ -90,16 +90,22 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
             const stack = getOrCreateImplicitStack(pos);
             let title = "";
             let titlePos = -1;
+            let description = "";
+            let descriptionPos: number | undefined;
             node.forEach((child, offset) => {
-                if (child.type.name === "paragraph" && title === "") {
+                if (child.type.name === "paragraph" && titlePos === -1) {
                     title = child.textContent;
                     titlePos = pos + offset + 1; // +1 for the start of taskItem
+                } else if (child.type.name === "paragraph") {
+                    description += (description ? "\n" : "") + child.textContent;
+                    descriptionPos ??= pos + offset + 1;
                 }
             });
             const card: Card = {
                 id: String(pos),
                 title,
-                description: "",
+                description,
+                descriptionPos,
                 checked,
                 pos,
                 titlePos,
@@ -109,14 +115,14 @@ export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
             };
             stack.cards.push(card);
             currentCard = card;
-            awaitingDescription = true;
+            awaitingDescription = descriptionPos === undefined;
             return false;
         } else {
             awaitingDescription = false;
         }
     });
 
-    const filtered = stacks.filter((s) => s.cards.length > 0 || (s.pos !== undefined && s.pos > 0));
+    const filtered = stacks;
 
     for (let si = 0; si < filtered.length; si++) {
         const stack = filtered[si]!;
@@ -162,7 +168,7 @@ function findInsertPosForStack(doc: ProseMirrorNode, stack: Stack, insertBeforeC
     return doc.content.size;
 }
 
-function moveTaskItemBetweenStacks(
+export function moveTaskItemBetweenStacks(
     editor: NonNullable<typeof editorGlobalRef.current>,
     card: Card,
     targetStack: Stack,
@@ -236,9 +242,12 @@ export function updateTaskContent(
                 } else {
                     const descriptionNode = state.schema.nodes.paragraph?.create(
                         null,
-                        state.schema.text(updates.description),
+                        updates.description ? state.schema.text(updates.description) : undefined,
                     );
-                    const insertPos = card.endPos ?? card.pos! + (card.nodeSize ?? 0);
+                    const taskNode = card.pos === undefined ? null : state.doc.nodeAt(card.pos);
+                    const insertPos = card.pos !== undefined && taskNode
+                        ? card.pos + taskNode.nodeSize - 1
+                        : card.endPos ?? 0;
                     if (descriptionNode) tr.insert(tr.mapping.map(insertPos), descriptionNode);
                 }
             }
@@ -257,7 +266,10 @@ export function addTaskToStack(
         .command(({ tr, state }) => {
             const taskItem = state.schema.nodes.taskItem?.create(
                 { checked: false },
-                state.schema.nodes.paragraph?.create(null, state.schema.text(task.title)),
+                [
+                    state.schema.nodes.paragraph!.create(null, state.schema.text(task.title)),
+                    ...(task.description ? [state.schema.nodes.paragraph!.create(null, state.schema.text(task.description))] : []),
+                ],
             );
             const insertPos = findInsertPosForStack(state.doc, stack);
             const $insertPos = state.doc.resolve(insertPos);
@@ -267,12 +279,6 @@ export function addTaskToStack(
             } else {
                 const taskList = state.schema.nodes.taskList?.create(null, taskItem);
                 if (taskList) tr.insert(insertPos, taskList);
-            }
-
-            if (task.description) {
-                const descPos = tr.mapping.map(insertPos) + (taskItem?.nodeSize ?? 0);
-                const descriptionNode = state.schema.nodes.paragraph?.create(null, state.schema.text(task.description));
-                if (descriptionNode) tr.insert(descPos, descriptionNode);
             }
             return true;
         })

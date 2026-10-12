@@ -32,6 +32,7 @@ const paneNoteOptions = (notes: readonly Note[]): Array<{ label: string; value: 
                 note.noteType !== NoteType.json &&
                 note.noteType !== NoteType.excalidraw &&
                 note.noteType !== NoteType.freehand &&
+                note.noteType !== NoteType.task &&
                 note.noteType !== NoteType.pdf &&
                 note.noteType !== NoteType["meeting-note"],
         )

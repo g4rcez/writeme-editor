@@ -25,6 +25,7 @@ import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { FreehandNoteView } from "../components/freehand-note-view";
+import { TaskNoteView } from "../components/task-note-view";
 import { NoteFooter } from "../components/note-footer";
 import { MeetingNotePanel } from "../components/meeting-note-panel";
 import { FEATURES } from "@/lib/build-features";
@@ -413,11 +414,12 @@ export default function NotePage() {
     const isJson = note.noteType === NoteType.json;
     const isExcalidraw = note.noteType === NoteType.excalidraw;
     const isFreehand = note.noteType === NoteType.freehand;
+    const isTask = note.noteType === NoteType.task;
     const isPdf = note.noteType === NoteType.pdf;
     const isHistoryEligible = note.noteType === NoteType.note && !isLatexSource;
     const activeEditorMode: EditorMode = isLatexSource ? "markdown" : editorMode;
     const fileName = note.filePath?.split(/[\\/]/).filter(Boolean).at(-1);
-    const hasRichEditor = !isJson && !isExcalidraw && !isFreehand && !isPdf;
+    const hasRichEditor = !isJson && !isExcalidraw && !isFreehand && !isPdf && !isTask;
 
     const noteToolbar = (
         <div className="writeme-note-toolbar" role="toolbar" aria-label="Note tools">
@@ -451,6 +453,8 @@ export default function NotePage() {
     );
 
     if (isPdf) return <Suspense fallback={<p role="status">Opening PDF…</p>}><PdfNoteView key={note.id} note={note} actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />} /></Suspense>;
+
+    if (isTask) return <TaskNoteView key={note.id} note={note} actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />} />;
 
     if (isFreehand) {
         return (
