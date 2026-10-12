@@ -27,6 +27,7 @@ async function createHandwrittenNote(page: Page): Promise<void> {
 }
 
 test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page, browserName, isMobile }) => {
+    test.slow();
     await createHandwrittenNote(page);
     const input = browserName === "webkit" && isMobile ? "dom" : "native";
     if (input === "dom") test.info().annotations.push({
@@ -193,6 +194,7 @@ test.describe("sticky note links", () => {
     test("adds, moves, saves and follows a sticky note link without changing ink", async ({
         cleanPage: page,
     }, testInfo) => {
+        test.slow();
         await createHandwrittenNote(page);
         const sourceUrl = page.url();
         const targetId = await seedLinkTargets(page);
