@@ -3,14 +3,24 @@ import { Button } from "@g4rcez/components";
 import { CornersInIcon } from "@phosphor-icons/react/dist/csr/CornersIn";
 import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { useGlobalStore } from "@/store/global.store";
 
 export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; onChange?: (s: string) => void }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [global] = useGlobalStore();
-    const [state, setState] = useState<any | null>(null);
+    const [state, setState] = useState<ComponentProps<typeof Excalidraw>["initialData"] | null>(null);
+    const lastElementsRef = useRef(props.code);
+    const onChange: NonNullable<ComponentProps<typeof Excalidraw>["onChange"]> = useCallback(
+        (elements) => {
+            const serialized = JSON.stringify(elements);
+            if (serialized === lastElementsRef.current) return;
+            lastElementsRef.current = serialized;
+            props.onChange?.(serialized);
+        },
+        [props.onChange],
+    );
 
     const onRequestFullScreen = async () => {
         const div = ref.current;
@@ -25,8 +35,9 @@ export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; on
 
     useEffect(() => {
         try {
-            const data = JSON.parse(props.code) as any;
-            const elements = restoreElements(data, data);
+            const data = JSON.parse(props.code) as Parameters<typeof restoreElements>[0];
+            const elements = restoreElements(data, null);
+            lastElementsRef.current = JSON.stringify(elements);
             setState({ elements });
         } catch (e) {
             console.error(e);
@@ -41,12 +52,9 @@ export const ExcalidrawCode = (props: { code: string; autoDelete: () => void; on
             <Excalidraw
                 gridModeEnabled
                 initialData={state}
-                theme={global.theme as any}
+                theme={global.theme === "light" ? "light" : "dark"}
                 isCollaborating={false}
-                onChange={(elements: any) => {
-                    if (elements.length === 0) return;
-                    props.onChange?.(JSON.stringify(elements));
-                }}
+                onChange={onChange}
             />
             <div className="absolute top-0 right-0 z-navbar flex items-center gap-2 bg-card">
                 <Button
