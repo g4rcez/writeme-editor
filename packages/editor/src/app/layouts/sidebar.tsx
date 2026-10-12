@@ -1,6 +1,7 @@
 import { css } from "@g4rcez/components";
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { ActivityBar } from "../components/sidebar/activity-bar";
@@ -58,14 +59,7 @@ export const Sidebar = () => {
         return () => mql.removeEventListener("change", onNarrow);
     }, [uiDispatch]);
 
-    useEffect(() => {
-        if (collapsed) return;
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") uiDispatch.setSidebarOpen(false);
-        };
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-    }, [collapsed, uiDispatch]);
+    useEscapeLayer(EscapeLevel.sidebar, !collapsed, () => uiDispatch.setSidebarOpen(false));
 
     return (
         <Fragment>

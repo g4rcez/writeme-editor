@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Note, NoteType } from "@/store/note";
 import { FloatingNotePage } from "./floating-note.page";
@@ -32,7 +32,7 @@ vi.mock("@/app/editor", async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("FloatingNotePage keyboard handling", () => {
-    it("closes on Escape before the editor can consume the key", async () => {
+    it("lets the editor consume Escape before closing the window", async () => {
         const note = Note.parse({ id: "quick-note", title: "Quick Note", content: "", noteType: NoteType.quick });
         mocks.note = note;
         mocks.getQuicknoteByDate.mockResolvedValue(note);
@@ -44,8 +44,15 @@ describe("FloatingNotePage keyboard handling", () => {
         editor.addEventListener("keydown", editorKeydown);
 
         fireEvent.keyDown(editor, { key: "Escape", bubbles: true, cancelable: true });
+        expect(closeWindow).not.toHaveBeenCalled();
+        expect(editorKeydown).toHaveBeenCalledOnce();
+
+        editor.removeEventListener("keydown", editorKeydown);
+        await act(async () => {
+            fireEvent.keyDown(editor, { key: "Escape", bubbles: true, cancelable: true });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        });
         expect(closeWindow).toHaveBeenCalledOnce();
-        expect(editorKeydown).not.toHaveBeenCalled();
 
         fireEvent.keyDown(editor, { key: "Enter", bubbles: true, cancelable: true });
         expect(closeWindow).toHaveBeenCalledOnce();

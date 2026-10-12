@@ -7,12 +7,12 @@ import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "
 import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
-import { supportsAI, isMobile } from "@/lib/platform";
-import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
 import { findCompatibleNote } from "@/lib/note-lookup";
+import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
@@ -240,6 +240,12 @@ const TiptapEditorCore = memo(
                     "aria-label": readonly ? "Read-only note editor" : "Note editor",
                 },
                 handleDOMEvents: {
+                    keydown: (view, event) => {
+                        if (event.key !== "Escape" || event.isComposing || view.composing) return false;
+                        // ProseMirror prevents every Escape by default, even when no keymap handles it.
+                        if (view.someProp("handleKeyDown", (handler) => handler(view, event))) event.preventDefault();
+                        return true;
+                    },
                     contextmenu: (_, event) => {
                         if (!isElectron()) return false;
                         const linkTarget = resolveLinkContextTarget(event.target);

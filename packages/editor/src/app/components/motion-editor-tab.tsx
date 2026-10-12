@@ -2,6 +2,7 @@ import { motion, useDragControls, useMotionValue, useReducedMotion } from "motio
 import { useEffect, useRef, useState, type JSX, type PropsWithChildren } from "react";
 import { createPortal } from "react-dom";
 import type { EditorTabDrag } from "@/lib/editor-tab-drag";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import {
     cancelMotionTabDrag,
     finishMotionTabDrag,
@@ -34,17 +35,13 @@ export function MotionEditorTab({ tab, title, disabled, className, onDropTab, ch
     });
     useEffect(() => {
         if (!dragging) return;
-        const escape = (event: KeyboardEvent): void => {
-            if (event.key === "Escape") cancelMotionTabDrag();
-        };
-        window.addEventListener("keydown", escape);
         window.addEventListener("blur", cancelMotionTabDrag);
         return () => {
-            window.removeEventListener("keydown", escape);
             window.removeEventListener("blur", cancelMotionTabDrag);
             cancelMotionTabDrag();
         };
     }, [dragging]);
+    useEscapeLayer(EscapeLevel.action, dragging, cancelMotionTabDrag);
     return (
         <>
             <motion.div
