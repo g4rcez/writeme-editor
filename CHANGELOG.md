@@ -99,6 +99,8 @@
 - Remove ARM64 SQLite prebuilds from Linux x64 packages so RPM creation succeeds.
 - Move application source into `packages/editor` and update app tooling to build from the package.
 - Automate patch, minor, and major releases with `npm run bump <patch|minor|major>`.
+- Consolidate editor Playwright configuration into Windows, iOS, OSX, Linux, and Android entries with shared suite selection.
+- Reduce PR runner jobs from 26 to 13 by sharing platform installs, production bundles, desktop packages, and mobile assets; retain independent MCP runtime contracts and real native/transcription verification.
 
 ### Bug Fixes
 

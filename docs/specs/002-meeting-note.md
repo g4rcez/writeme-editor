@@ -46,13 +46,12 @@ Verification uses Node 24.18.0 from `.nvmrc`. The isolated release snapshot pass
 
 The macOS arm64 app packaged successfully and passed `codesign --verify --deep --strict`; its microphone and audio usage descriptions are present. Two native Playwright tests loaded the production Electron bundles with isolated user data and verified SQLite persistence after reload: one imports a transcript; the other records microphone audio with MediaRecorder and uploads it to a local transcription fixture. At the default window size, the tests dismiss the workspace drawer through its Escape shortcut before accessing recording controls. TypeScript and the browser production build pass. Two stale note-page tests now cover the current toolbar order and the editable reading-list title. Existing lint warnings in the note-page test mock remain.
 
-The reusable `.github/workflows/meeting-verification.yml` runs unit tests, TypeScript, production-browser scenarios, packaging and the native SQLite tests on macOS, Windows and Linux. Its separate Linux job compiles a pinned whisper.cpp revision, verifies the tiny model checksum and runs the live browser transcription test. Release publication depends on this workflow succeeding. Windows and Linux jobs have not been run from this local macOS workspace.
+The reusable `.github/workflows/platform-verification.yml` runs shared unit/type checks, production-browser scenarios, packaging and the native SQLite tests on macOS, Windows and Linux. Its Linux platform job also compiles a pinned whisper.cpp revision, verifies the tiny model checksum and runs the live browser transcription test. Release publication depends on this workflow succeeding. Windows and Linux jobs have not been run from this local macOS workspace.
 
 Local browser verification:
 
 ```sh
-npm run browser:build
-npm run test:e2e -- --config playwright.meeting-browser.config.ts
+npm run test:e2e -- --platform osx --suite production tests/e2e/meeting-note.spec.ts --project chromium
 ```
 
 After starting a local tiny-model Whisper server on port 8097, run the live scenario with its speech fixture:
@@ -60,10 +59,10 @@ After starting a local tiny-model Whisper server on port 8097, run the live scen
 ```sh
 MEETING_WHISPER_ENDPOINT=http://localhost:8097/inference \
 MEETING_AUDIO_FIXTURE=/absolute/path/to/whisper.cpp/samples/jfk.wav \
-npm run test:e2e -- --config playwright.meeting-browser.config.ts --grep 'live local Whisper'
+npm run test:e2e -- --platform osx --suite production tests/e2e/meeting-note.spec.ts --project chromium --grep 'live local Whisper'
 ```
 
-After `npm run package:app`, run the native tests with `npm exec playwright test -- --config playwright.meeting-native.config.ts` (use `xvfb-run --auto-servernum` on headless Linux).
+Run `npm run test:e2e -- --platform osx --suite native tests/native/meeting-note.spec.ts` for native tests. The runner packages once unless `WRITEME_E2E_PREBUILT=1` is set after `npm run package:app` or `npm run make`. Use `windows` or `linux` on those hosts and `xvfb-run --auto-servernum` on headless Linux.
 
 ## Release gates
 

@@ -1,21 +1,59 @@
-name: Test
+name: Shared checks
 
 on:
-    push:
-        branches: [main]
+    workflow_dispatch:
     workflow_call:
+
+permissions:
+    contents: read
 
 jobs:
     test:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .nvmrc
                   cache: npm
-
             - run: npm ci
-
+            - run: npm run typecheck
+            - run: npm run mobile:typecheck
             - run: npm test
+            - name: Check handwriting and platform test code
+              run: >-
+                  npm exec oxlint -- --deny-warnings
+                  packages/editor/src/lib/freehand-note.ts
+                  packages/editor/src/lib/freehand-ink.ts
+                  packages/editor/src/app/components/freehand-canvas.tsx
+                  packages/editor/src/app/components/freehand-note-links.tsx
+                  packages/editor/src/app/components/freehand-note-view.tsx
+                  tests/e2e/freehand-note.spec.ts
+                  tests/e2e/freehand-production.spec.ts
+                  tests/e2e/freehand-lifecycle.spec.ts
+                  tests/e2e/freehand-pens.spec.ts
+                  tests/e2e/freehand-pen-dots.spec.ts
+                  tests/device/freehand-note.spec.ts
+                  tests/native/freehand-note.spec.ts
+                  tests/helpers/handwriting.ts
+                  tests/helpers/packaged-electron.ts
+                  playwright.*.config.ts
+                  scripts/playwright-platform.ts
+                  scripts/e2e-options.mts
+                  scripts/e2e.mts
+                  scripts/e2e.test.mts
+                  scripts/pr-checks.mts
+                  scripts/pr-checks.test.mts
+            - name: Check handwriting test types
+              run: >-
+                  npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022
+                  --module ESNext --moduleResolution bundler --skipLibCheck --allowImportingTsExtensions
+                  tests/e2e/freehand-lifecycle.spec.ts
+                  tests/e2e/freehand-pens.spec.ts
+                  tests/e2e/freehand-pen-dots.spec.ts
+                  tests/device/freehand-note.spec.ts
+                  playwright.*.config.ts
+            - name: Check platform runner contracts
+              run: npm run test:e2e:runner
+            - name: Check merge gate contracts
+              run: node --experimental-strip-types --test scripts/pr-checks.test.mts

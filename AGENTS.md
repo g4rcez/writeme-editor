@@ -13,11 +13,11 @@ Agent guidelines for the Writeme Electron application.
 - `npm run make` - Build distributables using Electron Forge
 - `npm run pwa:dev` - Generate PWA assets and start browser dev
 - `npm run test` - Run unit tests (Vitest)
-- `npm run test:e2e` - Run e2e tests (Playwright)
+- `npm run test:e2e -- --platform <windows|ios|osx|linux|android> --suite <browser|production|native|landing|profiles|mobile|device>` - Run platform-selected Playwright tests; see `docs/testing/platform-playwright.md`
 
 ## Feature Verification
 
-- Test feature behavior with Playwright (`npm run test:e2e`), not interactive browser automation. Add or update relevant Playwright tests and run them for feature changes.
+- Test feature behavior with Playwright (`npm run test:e2e -- --platform <platform> --suite <suite>`), not interactive browser automation. Add or update relevant Playwright tests and run them for feature changes.
 
 ## Pull Requests
 
