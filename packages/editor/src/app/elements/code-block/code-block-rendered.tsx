@@ -1,9 +1,9 @@
 import type { BundledLanguage } from "shiki";
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { Fragment, lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
+import { FEATURES } from "@/lib/build-features";
 import { updateNodeContent } from "@/lib/editor-utils";
 import { EXECUTION_CONFIG } from "@/lib/execution-config";
-import { FEATURES } from "@/lib/build-features";
 import { isElectron } from "@/lib/is-electron";
 import { CodeBlockFrame } from "../code-block";
 import { canFormat, formatCode } from "../code-block-formatting";
@@ -220,6 +220,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
         return (
             <NodeViewWrapper
                 as="div"
+                contentEditable={false}
                 className="overflow-hidden relative p-0 my-4 font-mono text-sm leading-snug rounded-md border border-card-border"
             >
                 <Suspense fallback={null}>
