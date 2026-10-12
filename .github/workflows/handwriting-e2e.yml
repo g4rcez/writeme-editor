@@ -3,8 +3,6 @@ name: Handwriting end-to-end
 on:
     push:
         branches: [main]
-    pull_request:
-        branches: [main]
     workflow_dispatch:
     workflow_call:
 

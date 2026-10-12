@@ -1,0 +1,60 @@
+name: PR checks
+
+on:
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    unit-tests:
+        uses: ./.github/workflows/test.yml
+    build-profiles:
+        uses: ./.github/workflows/build-profiles.yml
+    build-linux:
+        uses: ./.github/workflows/build-linux.yml
+    build-macos:
+        uses: ./.github/workflows/build-macos.yml
+    build-windows:
+        uses: ./.github/workflows/build-windows.yml
+    build-android:
+        uses: ./.github/workflows/build-android.yml
+    build-ios:
+        uses: ./.github/workflows/build-ios.yml
+    handwriting:
+        uses: ./.github/workflows/handwriting-e2e.yml
+    meetings:
+        uses: ./.github/workflows/meeting-verification.yml
+    mcp:
+        uses: ./.github/workflows/mcp.yml
+    all-checks:
+        name: All PR checks passed
+        if: always()
+        needs:
+            - unit-tests
+            - build-profiles
+            - build-linux
+            - build-macos
+            - build-windows
+            - build-android
+            - build-ios
+            - handwriting
+            - meetings
+            - mcp
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+            - name: Verify merge gate contracts
+              run: node --experimental-strip-types --test scripts/pr-checks.test.mts
+            - name: Require every build and verification job to succeed
+              run: node --experimental-strip-types scripts/pr-checks.mts
+              env:
+                  PR_CHECK_RESULTS: ${{ toJSON(needs) }}

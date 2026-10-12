@@ -1,15 +1,7 @@
 name: MCP contract and saved-state verification
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - packages/mcp/**
-      - packages/editor/src/main-process/**
-      - packages/editor/src/store/**
-      - package.json
-      - package-lock.json
-      - .github/workflows/mcp.yml
+  workflow_call:
   push:
     branches: [main]
     paths:

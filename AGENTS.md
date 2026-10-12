@@ -19,6 +19,14 @@ Agent guidelines for the Writeme Electron application.
 
 - Test feature behavior with Playwright (`npm run test:e2e`), not interactive browser automation. Add or update relevant Playwright tests and run them for feature changes.
 
+## Pull Requests
+
+- Deliver repository changes through a pull request. Do not push changes directly to `main`.
+- Run the full PR checks for every pull request and every new commit on it.
+- Merge only when every build and verification job succeeds for the latest commit and the branch is up to date with `main`.
+- Treat pending, failed, cancelled, skipped, missing, and stale checks as blockers. Never bypass required checks or use an administrator override.
+- Homebrew publishing is a release step and is excluded from PR checks.
+
 ## Code Style Guidelines
 
 - **TypeScript**: Strict typing with `noImplicitAny` enabled
