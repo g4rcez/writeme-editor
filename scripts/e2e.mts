@@ -15,7 +15,10 @@ function main(): void {
             "Set PLAYWRIGHT_DEVICE_BASE_URL to an HTTPS or device-local localhost app URL; physical Android/ADB and an operator with a pen are required.",
         );
     }
-    if (suite === "native" && !listing) {
+    if (
+        !listing &&
+        (suite === "native" || (platform === "osx" && suite === "profiles" && matchesProject("native-store", projects)))
+    ) {
         const host = { windows: "win32", osx: "darwin", linux: "linux" };
         if (platform in host && host[platform as keyof typeof host] !== process.platform)
             throw new Error("Run native Electron tests on the requested desktop OS.");

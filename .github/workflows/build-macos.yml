@@ -28,6 +28,8 @@ jobs:
                   npm exec -- electron-rebuild
                   npm exec playwright -- install ffmpeg
                   npm run test:e2e -- --platform osx --suite native tests/native/application-menu.spec.ts
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - uses: actions/upload-artifact@v4
               with:

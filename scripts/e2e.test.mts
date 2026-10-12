@@ -39,6 +39,48 @@ test("forwards positional selectors and Playwright options while extracting plat
     assert.equal(matchesProject("native-store", ["macos-*"]), false);
 });
 
+test("retains variadic project selections when filtering configured projects", () => {
+    const selection = parseE2EArguments([
+        "--platform",
+        "ios",
+        "--suite",
+        "browser",
+        "--project",
+        "ios-phone",
+        "ipad",
+        "--list",
+    ]);
+    const config = platformConfig(selection.platform, {
+        WRITEME_E2E_SUITE: selection.suite,
+        WRITEME_E2E_PROJECTS: JSON.stringify(selection.projects),
+    });
+    assert.deepEqual(
+        config.projects?.map(({ name }) => name),
+        ["ios-phone", "ipad"],
+    );
+});
+
+test("combines repeated and wildcard project selections without building unrelated profiles", () => {
+    const selection = parseE2EArguments([
+        "--platform",
+        "osx",
+        "--suite",
+        "profiles",
+        "--project=macos-*",
+        "--project",
+        "native-store",
+        "--list",
+    ]);
+    const config = platformConfig(selection.platform, {
+        WRITEME_E2E_SUITE: selection.suite,
+        WRITEME_E2E_PROJECTS: JSON.stringify(selection.projects),
+    });
+    assert.deepEqual(
+        config.projects?.map(({ name }) => name),
+        ["macos-app-store", "macos-homebrew", "native-store"],
+    );
+});
+
 for (const args of [
     [],
     ["--platform", "macos", "--suite", "browser"],
@@ -123,4 +165,26 @@ test("physical-device execution fails explicitly when the external URL is missin
     );
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /Set PLAYWRIGHT_DEVICE_BASE_URL/);
+});
+
+test("native store execution rejects non-macOS hosts before using prebuilt artifacts", () => {
+    const result = spawnSync(
+        process.execPath,
+        [
+            "--import",
+            "tsx",
+            "--import",
+            "data:text/javascript,Object.defineProperty(process,'platform',{value:'linux'})",
+            runner,
+            "--platform",
+            "osx",
+            "--suite",
+            "profiles",
+            "--project",
+            "native-store",
+        ],
+        { env: { ...process.env, WRITEME_E2E_PREBUILT: "1" }, encoding: "utf8", timeout: 10_000 },
+    );
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Run native Electron tests on the requested desktop OS/);
 });

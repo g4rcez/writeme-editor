@@ -32,6 +32,11 @@ export function parseE2EArguments(args: string[]): {
             } else {
                 projects.push(value);
                 forwarded.push("--project", value);
+                while (args[index + 1] && !args[index + 1]!.startsWith("-")) {
+                    const project = args[++index]!;
+                    projects.push(project);
+                    forwarded.push(project);
+                }
             }
         } else {
             forwarded.push(arg);

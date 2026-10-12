@@ -82,6 +82,7 @@ jobs:
             - name: Verify packaged handwriting before staging release
               run: npm run test:e2e -- --platform osx --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
               env:
+                  WRITEME_E2E_PREBUILT: "1"
                   WRITEME_PACKAGED_EXECUTABLE: out/writeme-darwin-arm64/writeme.app/Contents/MacOS/writeme
 
             - name: Upload packaged handwriting evidence
@@ -168,6 +169,8 @@ jobs:
 
             - name: Verify packaged handwriting before staging release
               run: npm run test:e2e -- --platform windows --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - name: Upload packaged handwriting evidence
               if: always()
@@ -234,6 +237,8 @@ jobs:
 
             - name: Verify packaged handwriting before staging release
               run: xvfb-run --auto-servernum npm run test:e2e -- --platform linux --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              env:
+                  WRITEME_E2E_PREBUILT: "1"
 
             - name: Upload packaged handwriting evidence
               if: always()
