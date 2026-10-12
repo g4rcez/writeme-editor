@@ -60,6 +60,7 @@ jobs:
               run: |
                   npm exec -- playwright install --with-deps chromium
                   npm exec -- playwright test --config playwright.mobile.config.ts --project android-chromium
+                  npm exec -- playwright test --config playwright.excalidraw-web.config.ts --project android-chromium
 
             - name: Build Android APK
               working-directory: packages/android/native
