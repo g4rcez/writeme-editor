@@ -51,11 +51,7 @@ export default function SettingsVimPage(): React.JSX.Element {
 
     if (!settings) return <output className="p-8">Loading Vim settings...</output>;
     return (
-        <form
-            onSubmit={(event) => {
-                event.preventDefault();
-                if (!busy) void validate(true);
-            }}
+        <div
             onKeyDownCapture={(event) => {
                 if (
                     !(event.ctrlKey || event.metaKey) ||
@@ -73,7 +69,14 @@ export default function SettingsVimPage(): React.JSX.Element {
                 title="Vim"
                 description="One Vim configuration for formatted and Markdown editors."
                 actions={
-                    <Button type="submit" size="small" disabled={busy}>
+                    <Button
+                        type="button"
+                        size="small"
+                        disabled={busy}
+                        onClick={() => {
+                            if (!busy) void validate(true);
+                        }}
+                    >
                         {busy ? "Saving..." : "Save Vim"}
                     </Button>
                 }
@@ -189,6 +192,6 @@ export default function SettingsVimPage(): React.JSX.Element {
                     </p>
                 )}
             </SettingsPageShell>
-        </form>
+        </div>
     );
 }
