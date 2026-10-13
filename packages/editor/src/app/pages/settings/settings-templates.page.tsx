@@ -1,8 +1,5 @@
 import { Button, Input } from "@g4rcez/components";
-import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
-import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Note } from "@/store/note";
@@ -89,55 +86,49 @@ export default function SettingsTemplatesPage() {
             actions={
                 <>
                     <Button size="small" className="flex items-center gap-1.5" onClick={onCreateTemplate}>
-                        <PlusIcon className="size-4" />
+                        <PlusIcon className="size-4" aria-hidden="true" />
                         New Template
                     </Button>
                 </>
             }
         >
-            <div className="space-y-5 py-4">
-                <section className="rounded-xl border border-border/40 bg-card-background">
-                    <div className="flex flex-col gap-4 border-b border-border/30 p-4 md:flex-row md:items-center md:justify-between">
-                        <div className="max-w-xl">
-                            <h2 className="text-base font-semibold text-foreground">Template library</h2>
-                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                {templates.length === 0
-                                    ? "Templates will appear here after you create one or sync your workspace folder."
-                                    : `${templates.length} template${templates.length === 1 ? "" : "s"} available for new notes.`}
-                            </p>
-                        </div>
-                        <Input
-                            title="Search templates"
-                            optionalText=" "
-                            container="w-full md:w-72"
-                            placeholder="Search title, content, or variable"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                        />
-                    </div>
-
-                    {loading ? (
-                        <TemplatesLoadingState />
-                    ) : filteredItems.length === 0 ? (
-                        <TemplatesEmptyState
-                            query={query}
-                            hasTemplates={templates.length > 0}
-                            onCreateTemplate={onCreateTemplate}
-                        />
-                    ) : (
-                        <ul className="divide-y divide-border/30">
-                            {filteredItems.map((item) => (
-                                <TemplateRow
-                                    key={item.template.id}
-                                    item={item}
-                                    onOpen={(templateId) => navigate(`/templates/${templateId}`)}
-                                    onUse={onCreateNoteFromTemplate}
-                                    onDelete={setDeletingTemplate}
-                                />
-                            ))}
-                        </ul>
-                    )}
-                </section>
+            <div className="space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <Input
+                        title="Search templates"
+                        optionalText=" "
+                        container="w-full sm:max-w-md"
+                        placeholder="Search title, content, or variable"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                    />
+                    <p className="shrink-0 text-sm text-muted-foreground" role="status">
+                        {loading
+                            ? "Loading templates..."
+                            : `${filteredItems.length} of ${templates.length} template${templates.length === 1 ? "" : "s"}`}
+                    </p>
+                </div>
+                {loading ? (
+                    <TemplatesLoadingState />
+                ) : filteredItems.length === 0 ? (
+                    <TemplatesEmptyState
+                        query={query}
+                        hasTemplates={templates.length > 0}
+                        onCreateTemplate={onCreateTemplate}
+                    />
+                ) : (
+                    <ul className="divide-y divide-border" aria-label="Templates">
+                        {filteredItems.map((item) => (
+                            <TemplateRow
+                                key={item.template.id}
+                                item={item}
+                                onOpen={(templateId) => navigate(`/templates/${templateId}`)}
+                                onUse={onCreateNoteFromTemplate}
+                                onDelete={setDeletingTemplate}
+                            />
+                        ))}
+                    </ul>
+                )}
             </div>
 
             <Confirm
@@ -167,59 +158,44 @@ function TemplateRow({ item, onOpen, onUse, onDelete }: TemplateRowProps) {
     const variableSummary = variables.length === 1 ? "1 variable" : `${variables.length} variables`;
 
     return (
-        <li className="grid gap-3 p-4 transition-colors hover:bg-muted/20 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-            <button
-                type="button"
-                className="group min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                aria-label={`Open ${title}`}
-                onClick={() => onOpen(template.id)}
-            >
-                <div className="flex min-w-0 gap-3">
-                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                        <FileTextIcon className="size-4" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 space-y-2">
-                        <span className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary">
-                                {title}
-                            </span>
-                            <span className="rounded-full border border-border/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-                                {storageLabel}
-                            </span>
-                        </span>
-                        <span className="block max-h-12 overflow-hidden text-sm leading-6 text-muted-foreground">
-                            {preview}
-                        </span>
-                        <span className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                            <span>Updated {updatedAt}</span>
-                            <span aria-hidden="true">·</span>
-                            <span>{variableSummary}</span>
-                        </span>
-                        <TemplateVariableChips variables={variables} />
-                    </span>
+        <li className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            <div className="min-w-0 space-y-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                    <button
+                        type="button"
+                        className="max-w-full break-words text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={`Open ${title}`}
+                        onClick={() => onOpen(template.id)}
+                    >
+                        {title}
+                    </button>
+                </h2>
+                <p className="line-clamp-2 break-words text-sm leading-6 text-muted-foreground">{preview}</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span className="break-all">{storageLabel}</span>
+                    <span>Updated {updatedAt}</span>
+                    <span>{variableSummary}</span>
                 </div>
-            </button>
-
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <Button
-                    size="small"
-                    theme="ghost-primary"
-                    className="flex items-center gap-1.5"
-                    onClick={() => onUse(template)}
-                >
-                    <FilePlusIcon className="size-4" />
+                <TemplateVariableChips variables={variables} />
+            </div>
+            <div className="flex flex-wrap items-center gap-1 sm:justify-end">
+                <Button size="small" theme="ghost-primary" aria-label={`Use ${title}`} onClick={() => onUse(template)}>
                     Use
                 </Button>
-                <Button size="small" theme="ghost-muted" onClick={() => onOpen(template.id)}>
+                <Button
+                    size="small"
+                    theme="ghost-muted"
+                    aria-label={`Open ${title} in editor`}
+                    onClick={() => onOpen(template.id)}
+                >
                     Open
                 </Button>
                 <Button
                     size="small"
                     theme="ghost-danger"
-                    className="flex items-center gap-1.5"
+                    aria-label={`Delete ${title}`}
                     onClick={() => onDelete(template)}
                 >
-                    <TrashIcon className="size-4" />
                     Delete
                 </Button>
             </div>
@@ -228,48 +204,35 @@ function TemplateRow({ item, onOpen, onUse, onDelete }: TemplateRowProps) {
 }
 
 function TemplateVariableChips({ variables }: { variables: TemplateVariableSummary[] }) {
-    if (variables.length === 0) {
-        return (
-            <span className="inline-flex w-fit rounded-full bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground">
-                No variables
-            </span>
-        );
-    }
+    if (variables.length === 0) return null;
 
     const visibleVariables = variables.slice(0, 4);
     const hiddenCount = variables.length - visibleVariables.length;
 
     return (
-        <span className="flex flex-wrap gap-1.5">
+        <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {visibleVariables.map((variable) => (
                 <span
                     key={variable.name}
-                    className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary"
+                    className="break-all font-mono"
                     title={variable.count === 1 ? "Used once" : `Used ${variable.count} times`}
                 >
                     {`{{${variable.name}}}`}
                 </span>
             ))}
-            {hiddenCount > 0 ? (
-                <span className="rounded-full bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground">
-                    +{hiddenCount} more
-                </span>
-            ) : null}
+            {hiddenCount > 0 ? <span>+{hiddenCount} more</span> : null}
         </span>
     );
 }
 
 function TemplatesLoadingState() {
     return (
-        <div className="space-y-0 p-4" aria-label="Loading templates">
+        <div aria-hidden="true">
             {Array.from({ length: 4 }, (_, index) => (
-                <div key={index} className="flex gap-3 border-b border-border/20 py-4 last:border-b-0">
-                    <div className="size-9 animate-pulse rounded-lg bg-muted/60" />
-                    <div className="min-w-0 flex-1 space-y-2">
-                        <div className="h-4 w-1/3 animate-pulse rounded bg-muted/60" />
-                        <div className="h-3 w-4/5 animate-pulse rounded bg-muted/40" />
-                        <div className="h-3 w-1/2 animate-pulse rounded bg-muted/30" />
-                    </div>
+                <div key={index} className="space-y-2 border-b border-border py-4 last:border-b-0">
+                    <div className="h-4 w-1/3 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="h-3 w-4/5 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-muted motion-reduce:animate-none" />
                 </div>
             ))}
         </div>
@@ -286,10 +249,7 @@ function TemplatesEmptyState({
     onCreateTemplate: () => void;
 }) {
     return (
-        <div className="flex min-h-72 flex-col items-center justify-center gap-4 p-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-xl bg-muted/40 text-muted-foreground">
-                <FileTextIcon className="size-6" aria-hidden="true" />
-            </span>
+        <div className="space-y-4 py-8">
             <div className="max-w-md space-y-2">
                 <h2 className="text-base font-semibold text-foreground">
                     {hasTemplates ? "No matching templates" : "No templates yet"}
@@ -302,7 +262,7 @@ function TemplatesEmptyState({
             </div>
             {!hasTemplates ? (
                 <Button size="small" className="flex items-center gap-1.5" onClick={onCreateTemplate}>
-                    <PlusIcon className="size-4" />
+                    <PlusIcon className="size-4" aria-hidden="true" />
                     Create Template
                 </Button>
             ) : null}

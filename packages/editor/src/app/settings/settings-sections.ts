@@ -22,36 +22,17 @@ export type SettingsSection = {
     description: string;
     path: string;
     platform: "all" | SettingsPlatform;
+    group: "Writing" | "Templates" | "Assistance" | "Workspace" | null;
 };
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
-    {
-        id: "backup",
-        label: "Backup",
-        description: "Export and restore your on-device notes and attachments.",
-        path: "/settings/backup",
-        platform: "mobile",
-    },
     {
         id: "quick",
         label: "Quick settings",
         description: "Fast access to the settings you change most often.",
         path: "/settings/quick",
         platform: "all",
-    },
-    {
-        id: "ai",
-        label: "AI",
-        description: "Connect an AI provider and choose a model.",
-        path: "/settings/ai",
-        platform: "all",
-    },
-    {
-        id: "appearance",
-        label: "Appearance",
-        description: "Theme and visual preferences.",
-        path: "/settings/appearance",
-        platform: "all",
+        group: null,
     },
     {
         id: "editor",
@@ -59,6 +40,15 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         description: "Autosave and editor behavior.",
         path: "/settings/editor",
         platform: "all",
+        group: "Writing",
+    },
+    {
+        id: "appearance",
+        label: "Appearance",
+        description: "Theme and visual preferences.",
+        path: "/settings/appearance",
+        platform: "all",
+        group: "Writing",
     },
     {
         id: "shortcuts",
@@ -66,20 +56,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         description: "Global shortcuts for quick capture and floating editors.",
         path: "/settings/shortcuts",
         platform: "electron",
-    },
-    {
-        id: "trash",
-        label: "Trash",
-        description: "Choose how long deleted notes stay in Trash.",
-        path: "/settings/trash",
-        platform: "electron",
-    },
-    {
-        id: "workspace",
-        label: "Workspace",
-        description: "Choose folders for your notes and templates.",
-        path: "/settings/workspace",
-        platform: "electron",
+        group: "Writing",
     },
     {
         id: "templates",
@@ -87,6 +64,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         description: "Reusable note templates and source files.",
         path: "/settings/templates",
         platform: "all",
+        group: "Templates",
     },
     {
         id: "variables",
@@ -94,6 +72,39 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         description: "Reusable template variables and expressions.",
         path: "/settings/variables",
         platform: "all",
+        group: "Templates",
+    },
+    {
+        id: "ai",
+        label: "AI",
+        description: "Connect an AI provider and choose a model.",
+        path: "/settings/ai",
+        platform: "all",
+        group: "Assistance",
+    },
+    {
+        id: "workspace",
+        label: "Workspace",
+        description: "Choose folders for your notes and templates.",
+        path: "/settings/workspace",
+        platform: "electron",
+        group: "Workspace",
+    },
+    {
+        id: "backup",
+        label: "Backup",
+        description: "Export and restore your on-device notes and attachments.",
+        path: "/settings/backup",
+        platform: "mobile",
+        group: "Workspace",
+    },
+    {
+        id: "trash",
+        label: "Trash",
+        description: "Choose how long deleted notes stay in Trash.",
+        path: "/settings/trash",
+        platform: "electron",
+        group: "Workspace",
     },
     {
         id: "migration",
@@ -101,6 +112,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         description: "Import data from the previous web domain.",
         path: "/settings/migration",
         platform: "web",
+        group: "Workspace",
     },
 ];
 

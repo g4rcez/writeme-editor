@@ -317,7 +317,7 @@ describe("AISettings OpenAI models", () => {
         await allowStorage();
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
-        await waitFor(() => expect(anthropicButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Sign in with Claude" })).toBeEnabled());
 
         await act(async () => {
             oauthStart.resolve({ message: "Stale OpenAI sign-in instructions" });
@@ -341,7 +341,7 @@ describe("AISettings OpenAI models", () => {
         fireEvent.click(await screen.findByRole("button", { name: "Complete sign-in" }));
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
-        await waitFor(() => expect(anthropicButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Sign in with Claude" })).toBeEnabled());
 
         await act(async () => {
             oauthCompletion.resolve();
@@ -349,7 +349,7 @@ describe("AISettings OpenAI models", () => {
         });
 
         expect(anthropicButton).toHaveAttribute("aria-pressed", "true");
-        expect(anthropicButton).toHaveTextContent("Needs setup");
+        expect(screen.getByRole("button", { name: "Sign in with Claude" })).toBeEnabled();
         expect(mocks.listOpenAIModels).not.toHaveBeenCalled();
         expect(mocks.setAlert).not.toHaveBeenCalledWith(expect.objectContaining({ type: "success" }));
     });
@@ -414,7 +414,7 @@ describe("AISettings OpenAI models", () => {
         fireEvent.click(anthropicButton);
         const ollamaButton = screen.getByRole("button", { name: /Ollama/ });
         fireEvent.click(ollamaButton);
-        await waitFor(() => expect(ollamaButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Load models" })).toBeEnabled());
 
         await act(async () => {
             anthropicCredentials.resolve({
@@ -425,7 +425,8 @@ describe("AISettings OpenAI models", () => {
         });
 
         expect(ollamaButton).toHaveAttribute("aria-pressed", "true");
-        expect(ollamaButton).toHaveTextContent("Needs setup");
+        expect(screen.getByRole("combobox", { name: "Model" })).toBeDisabled();
+        expect(screen.queryByText("Connected", { exact: true })).not.toBeInTheDocument();
     });
 
     it("ignores a stale Ollama response after switching providers", async () => {
@@ -442,14 +443,14 @@ describe("AISettings OpenAI models", () => {
 
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
-        await waitFor(() => expect(anthropicButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Sign in with Claude" })).toBeEnabled());
 
         await act(async () => {
             ollamaResponse.resolve([{ id: "stale-ollama-model", name: "Stale Ollama model" }]);
             await ollamaResponse.promise;
         });
 
-        expect(anthropicButton).toHaveTextContent("Needs setup");
+        expect(screen.getByRole("button", { name: "Sign in with Claude" })).toBeEnabled();
         expect(screen.queryByText(/Connected — 1 model/)).not.toBeInTheDocument();
     });
 
@@ -470,14 +471,14 @@ describe("AISettings OpenAI models", () => {
 
         const ollamaButton = screen.getByRole("button", { name: /Ollama/ });
         fireEvent.click(ollamaButton);
-        await waitFor(() => expect(ollamaButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Load models" })).toBeEnabled());
 
         await act(async () => {
             anthropicResponse.resolve([{ id: "stale-anthropic-model", name: "Stale Anthropic model" }]);
             await anthropicResponse.promise;
         });
 
-        expect(ollamaButton).toHaveTextContent("Needs setup");
+        expect(screen.getByRole("combobox", { name: "Model" })).toBeDisabled();
         expect(mocks.saveCredentials).not.toHaveBeenCalledWith(
             "anthropic",
             expect.objectContaining({ apiKey: "stale-api-key" }),
@@ -505,22 +506,23 @@ describe("AISettings OpenAI models", () => {
         render(<AISettings />);
 
         const openAIButton = await screen.findByRole("button", { name: /OpenAI \(GPT\)/ });
-        await waitFor(() => expect(openAIButton).toHaveTextContent("Connected"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Disconnect OpenAI account" })).toBeEnabled());
         fireEvent.click(screen.getByRole("button", { name: "Disconnect OpenAI account" }));
 
         const anthropicButton = screen.getByRole("button", { name: /Anthropic \(Claude\)/ });
         fireEvent.click(anthropicButton);
-        await waitFor(() => expect(anthropicButton).toHaveTextContent("Connected"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Disconnect Claude account" })).toBeEnabled());
 
         fireEvent.click(openAIButton);
-        await waitFor(() => expect(openAIButton).toHaveTextContent("Checking"));
+        await waitFor(() => expect(openAIButton).toHaveAttribute("aria-pressed", "true"));
 
         await act(async () => {
             disconnect.resolve();
             await disconnect.promise;
         });
 
-        await waitFor(() => expect(openAIButton).toHaveTextContent("Needs setup"));
+        await waitFor(() => expect(screen.getByRole("button", { name: "Sign in with OpenAI" })).toBeEnabled());
+        expect(screen.queryByRole("button", { name: "Disconnect OpenAI account" })).not.toBeInTheDocument();
     });
 
     it("cancels an in-flight OAuth completion", async () => {
