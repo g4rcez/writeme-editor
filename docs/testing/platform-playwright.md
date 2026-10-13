@@ -39,6 +39,8 @@ npm run test:e2e -- --platform osx --suite browser \
 
 The scenarios cover creating and selecting tabs, reopening an existing note without duplicate tabs, committed/cancelled rename persistence, background/active/last-tab closure, preserved note contents, tab order after reload, restoration in reverse closing order, and restoration of a note already reopened manually. Drag scenarios cover reordering, split groups, copying, and cancellation; cancellation waits for the visible drag ghost to disappear before releasing the pointer.
 
+Rename setup waits for the note route and editable, focused editor before double-clicking the tab title, so delayed editor autofocus cannot dismiss the rename input. Restoration captures the settled note URL rather than the home route. The two three-note closure/restoration scenarios allow 120 seconds for their full multi-navigation lifecycle on CI hosts; individual assertion timeouts and retry settings are unchanged.
+
 Closing a note tab must not delete its note. New or restored tabs append after the highest remaining persisted order, rather than using the open-tab count, which can collide with existing orders after closures. The persistence scenarios exercise real browser storage through reloads and a fresh page in the same browser context; they do not establish Electron/SQLite process-restart behavior. Recently closed history is session-only, while reopened tabs and their note contents persist.
 
 ## Build and server reuse

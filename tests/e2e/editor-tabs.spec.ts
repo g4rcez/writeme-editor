@@ -55,6 +55,7 @@ test.describe("Note tab lifecycle", () => {
     });
 
     test("closing the active tab selects its predecessor, then the remaining neighbor", async ({ cleanPage: page }) => {
+        test.setTimeout(120_000);
         const firstUrl = await createNote(page, "First neighbor", "First neighbor content.");
         const middleUrl = await createNote(page, "Middle document", "Middle document content.");
         const lastUrl = await createNote(page, "Last neighbor", "Last neighbor content.");

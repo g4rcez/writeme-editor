@@ -6,16 +6,7 @@ test.describe("Recently closed tabs", () => {
     });
 
     test("Cmd/Ctrl+Shift+T restores the most recently closed note tab", async ({ cleanPage: page }) => {
-        await page
-            .getByRole("main")
-            .getByRole("button", { name: /^New note/ })
-            .first()
-            .click();
-        const dialog = page.getByRole("dialog", { name: /Create new note/i });
-        await dialog.getByTitle("Note title").fill("Restorable tab");
-        await dialog.getByRole("button", { name: /^Create/ }).click();
-
-        const noteUrl = page.url();
+        const noteUrl = await createNote(page, "Restorable tab");
         const tab = page.locator("[data-tab-id]").filter({ hasText: "Restorable tab" });
         await expect(tab).toBeVisible();
         await page.keyboard.press("ControlOrMeta+W");
@@ -31,6 +22,7 @@ test.describe("Recently closed tabs", () => {
     test("restores multiple closed tabs in reverse closing order with their saved content", async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(120_000);
         const firstUrl = await createNote(page, "First closed", "First closed document content.");
         const secondUrl = await createNote(page, "Second closed", "Second closed document content.");
         const thirdUrl = await createNote(page, "Still open", "The remaining document content.");
