@@ -255,13 +255,14 @@ describe("NotePage route loading", () => {
         for (const name of [
             "Formatted",
             "Markdown",
+            "Vim mode",
             "Add frontmatter",
             "History",
             "Add to favorites",
             "Open pane mode",
             "Export Loaded note",
         ]) {
-            expect(screen.getByRole("button", { name })).toHaveFocus();
+            expect(screen.getByRole(name === "Vim mode" ? "checkbox" : "button", { name })).toHaveFocus();
             await user.tab();
         }
         expect(screen.queryByRole("textbox", { name: "Note title" })).not.toBeInTheDocument();

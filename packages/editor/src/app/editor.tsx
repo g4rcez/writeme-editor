@@ -38,6 +38,7 @@ import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
+import { NeovimStatus } from "./extensions/neovim/status";
 import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 import { registerNoteSaveShortcut } from "./note-save-shortcut";
@@ -173,6 +174,7 @@ type TiptapEditorCoreProps = {
     content?: string;
     readonly?: boolean;
     active?: boolean;
+    vimMode: boolean;
     theme: string;
     dispatch: GlobalDispatch;
     onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
@@ -185,6 +187,7 @@ const TiptapEditorCore = memo(
         content,
         readonly,
         active,
+        vimMode,
         theme,
         dispatch,
         onSaveRef,
@@ -303,6 +306,8 @@ const TiptapEditorCore = memo(
                     return false;
                 },
                 handlePaste: (_, event) => {
+                    const vim = editor.storage.neovim.getState();
+                    if (vim?.enabled && vim.mode !== "insert" && vim.mode !== "replace") return true;
                     if (isElectron()) {
                         const items = event.clipboardData?.items;
                         if (items) {
@@ -395,6 +400,11 @@ const TiptapEditorCore = memo(
                 },
             },
         });
+        useEffect(() => {
+            if (editor && editor.storage.neovim.getState()?.enabled !== vimMode) {
+                editor.storage.neovim.setEnabled(vimMode);
+            }
+        }, [editor, vimMode]);
         const writingAssistantSelectionContext = useMemo(() => {
             if (!editor) return null;
             return {
@@ -830,6 +840,7 @@ const TiptapEditorCore = memo(
                             disabled={Boolean(readonly || uiState.parsingContent)}
                         />
                     )}
+                    <NeovimStatus editor={editor} />
                     <EditorContent key={id} editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
@@ -841,6 +852,7 @@ const TiptapEditorCore = memo(
         prev.content === next.content &&
         prev.readonly === next.readonly &&
         prev.active === next.active &&
+        prev.vimMode === next.vimMode &&
         prev.note === next.note,
 );
 
@@ -1038,6 +1050,7 @@ const InnerEditor = (props: {
             content={props.content}
             readonly={props.readonly}
             active={props.active}
+            vimMode={props.rawEditorVimMode}
         />
     );
 };

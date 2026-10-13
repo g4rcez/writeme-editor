@@ -165,7 +165,7 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
     );
 };
 
-const MarkdownVimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => {
+const VimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => {
     return (
         <Checkbox
             size="tiny"
@@ -427,9 +427,7 @@ export default function NotePage() {
                 {hasRichEditor ? (
                     <div className="writeme-note-editor-controls">
                         {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
-                        {activeEditorMode === "markdown" ? (
-                            <MarkdownVimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
-                        ) : null}
+                        <VimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
                     </div>
                 ) : null}
             </div>

@@ -1,0 +1,40 @@
+import type { Editor } from "@tiptap/core";
+import type { Node, Slice } from "@tiptap/pm/model";
+import type { EditorState, Transaction } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
+
+export type NeovimMode = "normal" | "insert" | "visual" | "visual-line" | "operator-pending" | "replace" | "command";
+export type RangeShape = "character" | "line";
+export type VimRange = { readonly from: number; readonly to: number; readonly shape: RangeShape };
+export type MotionResult = { readonly pos: number; readonly inclusive: boolean; readonly shape: RangeShape };
+export type MotionContext = { readonly state: EditorState; readonly view: EditorView; readonly count: number };
+export type Motion = (context: MotionContext) => MotionResult | null;
+export type TextObject = (context: MotionContext) => VimRange | null;
+export type OperatorContext = MotionContext & { readonly range: VimRange; readonly tr: Transaction };
+export type Operator = (context: OperatorContext) => boolean;
+export type MappingContext = MotionContext & { readonly editor: Editor; readonly mode: NeovimMode };
+export type MappingOptions = { readonly description?: string; readonly remap?: boolean; readonly nowait?: boolean };
+export type Mapping = MappingOptions & {
+    readonly mode: NeovimMode;
+    readonly keys: readonly string[];
+    readonly action: string | ((context: MappingContext) => boolean);
+};
+export type Register = { readonly slice: Slice; readonly shape: RangeShape };
+export type VisualChange = { readonly shape: RangeShape; readonly size: number };
+export type Change = { readonly keys: readonly string[]; readonly inserted?: Slice; readonly visual?: VisualChange };
+export type InsertSession = { readonly doc: Node; readonly keys: readonly string[]; readonly visual?: VisualChange };
+export type NeovimState = {
+    readonly enabled: boolean;
+    readonly mode: NeovimMode;
+    readonly pending: readonly string[];
+    readonly anchor: number | null;
+    readonly cursor: number;
+    readonly goalColumn: number | null;
+    readonly register: Register | null;
+    readonly lastChange: Change | null;
+    readonly insertSession: InsertSession | null;
+    readonly search: string;
+    readonly searchDirection: 1 | -1;
+    readonly command: string;
+    readonly message: string;
+};

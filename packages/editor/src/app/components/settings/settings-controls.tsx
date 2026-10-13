@@ -177,7 +177,7 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
                     }
                 />
             </SettingsField>
-            <SettingsField label="Markdown editor Vim mode" description="Enable Vim keybindings when editing Markdown.">
+            <SettingsField label="Vim mode" description="Enable Vim keybindings in formatted and Markdown notes.">
                 <Checkbox
                     checked={settings.rawEditorVimMode}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>

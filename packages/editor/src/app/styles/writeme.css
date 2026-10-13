@@ -683,3 +683,28 @@
         transition-duration: 0.01ms !important;
     }
 }
+.ProseMirror[data-neovim-mode]:not([data-neovim-mode="disabled"]):not([data-neovim-mode="insert"]):not(
+        [data-neovim-mode="replace"]
+    ) {
+    caret-color: transparent;
+}
+
+.neovim-cursor {
+    background: var(--var-color-foreground);
+    color: var(--var-color-background);
+}
+
+.neovim-empty-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1em;
+    vertical-align: text-bottom;
+    background: var(--var-color-foreground);
+}
+
+.neovim-status {
+    display: block;
+    font-family: var(--font-mono);
+    @apply text-xs;
+    padding-block: 0.25rem;
+}
