@@ -42,8 +42,9 @@ test("Save Vim waits for a slow compiler startup and still persists valid source
     await page.goto("/settings/vim");
     const source = page.getByRole("textbox", { name: "Global init.ts" });
     await source.fill(init);
+    await expect(source).toHaveText(init, { useInnerText: true });
     await page.getByRole("button", { name: "Save Vim", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.", { timeout: 20_000 });
+    await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.", { timeout: 45_000 });
     expect(workerRequests).toBeGreaterThan(0);
     await page.reload();
     await expect(source).toHaveText(init, { useInnerText: true });

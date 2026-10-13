@@ -32,11 +32,22 @@ describe("Vim configuration worker", () => {
                 status = "rejected";
             },
         );
-        await vi.advanceTimersByTimeAsync(4000);
+        await vi.advanceTimersByTimeAsync(20_000);
         expect(status).toBe("pending");
         WorkerStub.last?.onmessage?.({ data: { ready: true } });
         WorkerStub.last?.onmessage?.({ data: { ok: true, configuration: defaultVimConfiguration() } });
         await expect(result).resolves.toEqual(defaultVimConfiguration());
+    });
+    it("terminates a worker that does not start within 30 seconds", async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal("Worker", WorkerStub);
+        const result = compileVimConfiguration("vim.opt.timeout = 500;");
+        const rejection = expect(result).rejects.toThrow("Unable to start the init.ts worker");
+        await vi.advanceTimersByTimeAsync(29_999);
+        expect(WorkerStub.last?.terminate).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        await rejection;
+        expect(WorkerStub.last?.terminate).toHaveBeenCalledOnce();
     });
     it("terminates an endless script and rejects the pending validation", async () => {
         vi.useFakeTimers();

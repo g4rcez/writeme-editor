@@ -3,6 +3,8 @@ import { requireFeature } from "@/lib/build-features";
 import { VimConfigurationSchema, type VimConfiguration } from "../configuration";
 import { VimConfigurationError } from "../configuration-error";
 
+const WORKER_STARTUP_TIMEOUT_MS = 30_000;
+
 const ReplySchema = z.discriminatedUnion("ok", [
     z.object({ ok: z.literal(true), configuration: VimConfigurationSchema }),
     z.object({ ok: z.literal(false), error: z.string() }),
@@ -21,7 +23,7 @@ export function compileVimConfiguration(source: string): Promise<VimConfiguratio
         let timeout = setTimeout(() => {
             finish();
             reject(new VimConfigurationError("Unable to start the init.ts worker. Please try saving again."));
-        }, 15_000);
+        }, WORKER_STARTUP_TIMEOUT_MS);
         worker.onmessage = (event: MessageEvent<unknown>): void => {
             if (!started && ReadySchema.safeParse(event.data).success) {
                 started = true;
