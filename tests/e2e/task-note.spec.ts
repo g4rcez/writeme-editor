@@ -31,6 +31,13 @@ async function addTask(page: Page, title = "Ship task board"): Promise<void> {
     expect(titleBounds.y + titleBounds.height).toBeGreaterThan(handle.y);
 }
 
+test("switches from the task board to Markdown with Ctrl+M", async ({ cleanPage: page }) => {
+    await createBoard(page);
+    await page.keyboard.press("Control+M");
+    await expect(page.getByRole("button", { name: "Markdown", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toBeVisible();
+});
+
 test("creates a full-page board, edits cards, moves columns and persists Markdown", async ({
     cleanPage: page,
 }, info) => {
@@ -46,17 +53,18 @@ test("creates a full-page board, edits cards, moves columns and persists Markdow
     await expect(progress.getByRole("button", { name: "Edit Ship the board", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Complete Ship the board", exact: true }).click();
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
-    await page.getByRole("button", { name: "Markdown", exact: true }).click();
-    await expect(page.getByRole("textbox", { name: "Task Markdown" })).toHaveValue(
-        /type: task[\s\S]*## In Progress[\s\S]*- \[x\] Ship the board/,
-    );
+    await page.keyboard.press("Control+M");
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toBeVisible();
+    await expect(editor).toContainText("Ship the board");
+    await expect(editor).toContainText("In Progress");
     await page.reload();
     await expect(progress.getByRole("button", { name: "Reopen Ship the board", exact: true })).toBeVisible();
     await expect(progress).toContainText("Keep tasks in Markdown");
     await page.screenshot({ path: info.outputPath("task-board-desktop.png") });
 });
 
-test("filters, renames columns, edits Markdown and deletes tasks", async ({ cleanPage: page }) => {
+test("filters, renames columns, switches to the editor and deletes tasks", async ({ cleanPage: page }) => {
     await createBoard(page);
     await addTask(page);
     await page.getByRole("searchbox", { name: "Search tasks" }).fill("missing");
@@ -70,16 +78,18 @@ test("filters, renames columns, edits Markdown and deletes tasks", async ({ clea
     await page.getByRole("button", { name: "Save column", exact: true }).click();
     await expect(page.getByRole("region", { name: "Ready column" })).toBeVisible();
     await page.getByRole("button", { name: "Markdown", exact: true }).click();
-    const markdown = page.getByRole("textbox", { name: "Task Markdown" });
-    await markdown.fill((await markdown.inputValue()) + "\n## Review\n\n- [ ] Check tests\n");
-    await expect(page.locator(".wm-task-save")).toHaveText("Saved");
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toContainText("Ready");
     await page.getByRole("button", { name: "Board", exact: true }).click();
-    await expect(page.getByRole("region", { name: "Review column" })).toContainText("Check tests");
+    await page.getByRole("button", { name: "Add task to Ready", exact: true }).click();
+    await page.getByRole("textbox", { name: "Task title", exact: true }).fill("Check tests");
+    await page.getByRole("button", { name: "Create task", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Ready column" })).toContainText("Check tests");
     await page.getByRole("button", { name: "Edit Check tests", exact: true }).click();
     await page.getByRole("button", { name: "Delete task", exact: true }).click();
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
     await page.reload();
-    await expect(page.getByRole("region", { name: "Review column" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Ready column" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit Check tests", exact: true })).toHaveCount(0);
 });
 
@@ -90,6 +100,10 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     await handle.focus();
     await page.keyboard.press("Space");
     await expect(handle).toHaveAttribute("aria-pressed", "true");
+    const preview = page.getByTestId("task-drag-preview");
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText("Keyboard card");
+    await expect(page.locator(".wm-task-card--dragging")).toBeVisible();
     await expect(
         page.getByRole("status").filter({ hasText: /Draggable item .* was (picked up|moved over droppable area)/ }),
     ).toHaveCount(1);
@@ -107,7 +121,10 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
     await page.mouse.move(target.x + target.width / 2, target.y + 110, { steps: 20 });
+    await expect(preview).toBeVisible();
+    expect(await preview.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
     await page.mouse.up();
+    await expect(preview).toHaveCount(0);
     await expect(page.getByRole("region", { name: "In Progress column" })).toContainText("Keyboard card");
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
     await page.reload();
@@ -117,7 +134,8 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
 test("keeps local tasks after a save failure and retries", async ({ cleanPage: page }) => {
     await createBoard(page);
     await page.evaluate(async () => {
-        const { repositories } = await import("/packages/editor/src/store/global.store.ts");
+        const modulePath = "/packages/editor/src/store/global.store.ts";
+        const { repositories } = await import(modulePath);
         const original = repositories.notes.updateContentIfUnchanged;
         repositories.notes.updateContentIfUnchanged = async () => {
             throw new Error("Storage unavailable");
@@ -147,6 +165,15 @@ test("fits a mobile viewport and scrolls columns inside the board", async ({ cle
     await createBoard(page);
     await addTask(page);
     const board = page.getByRole("region", { name: "Task board", exact: true });
+    const toolbar = page.getByRole("toolbar", { name: "Task board tools", exact: true });
+    await expect(toolbar.getByRole("searchbox", { name: "Search tasks" })).toBeVisible();
+    await expect(toolbar.getByRole("checkbox", { name: "Hide empty columns" })).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: "Add column", exact: true })).toBeVisible();
+    const searchBounds = await toolbar.getByRole("searchbox").boundingBox();
+    const addBounds = await toolbar.getByRole("button", { name: "Add column", exact: true }).boundingBox();
+    expect(searchBounds).not.toBeNull();
+    expect(addBounds).not.toBeNull();
+    expect(addBounds!.y).toBeGreaterThanOrEqual(searchBounds!.y + searchBounds!.height);
     const bounds = await board.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds!.width).toBeLessThanOrEqual(390);
@@ -155,7 +182,7 @@ test("fits a mobile viewport and scrolls columns inside the board", async ({ cle
     await page.screenshot({ path: info.outputPath("task-board-mobile.png") });
 });
 
-test("creates and deletes empty columns and persists rapid Markdown edits", async ({ cleanPage: page }) => {
+test("creates and deletes empty columns and persists rapid task edits", async ({ cleanPage: page }) => {
     await createBoard(page);
     await page.getByRole("button", { name: "Add column", exact: true }).click();
     await page.getByRole("textbox", { name: "Column name" }).fill("Review");
@@ -167,22 +194,25 @@ test("creates and deletes empty columns and persists rapid Markdown edits", asyn
     await page.getByRole("checkbox", { name: "Hide empty columns", exact: true }).check();
     await expect(page.locator(".wm-task-column")).toHaveCount(0);
     await page.getByRole("button", { name: "Show all columns", exact: true }).click();
-    await page.getByRole("button", { name: "Markdown", exact: true }).click();
-    const input = page.getByRole("textbox", { name: "Task Markdown" });
-    await input.fill("---\ntype: task\ncustom: keep-me\n---\n\n## Todo\n\n- [ ] First revision\n");
-    await input.fill("---\ntype: task\ncustom: keep-me\n---\n\n## Todo\n\n- [ ] Final revision\n");
+    await page.getByRole("button", { name: "Add task to Todo", exact: true }).click();
+    await page.getByRole("textbox", { name: "Task title", exact: true }).fill("First revision");
+    await page.getByRole("button", { name: "Create task", exact: true }).click();
+    await page.getByRole("button", { name: "Edit First revision", exact: true }).click();
+    await page.getByRole("textbox", { name: "Task title", exact: true }).fill("Final revision");
+    await page.getByRole("button", { name: "Save task", exact: true }).click();
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
     await page.reload();
     await expect(page.getByRole("region", { name: "Todo column" })).toContainText("Final revision");
     await expect(page.locator(".wm-task-card")).toHaveCount(1);
     await page.getByRole("button", { name: "Markdown", exact: true }).click();
-    await expect(page.getByRole("textbox", { name: "Task Markdown" })).toHaveValue(/custom: keep-me/);
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Final revision");
 });
 
 test("retains local changes without overwriting a concurrent editor", async ({ cleanPage: page }) => {
     await createBoard(page);
     await page.evaluate(async () => {
-        const { repositories } = await import("/packages/editor/src/store/global.store.ts");
+        const modulePath = "/packages/editor/src/store/global.store.ts";
+        const { repositories } = await import(modulePath);
         const id = location.pathname.split("/").at(-1)!;
         await repositories.notes.updateContent(
             id,
@@ -196,7 +226,8 @@ test("retains local changes without overwriting a concurrent editor", async ({ c
     await expect(page.getByRole("alert")).toContainText("changed in another editor");
     await expect(page.getByRole("button", { name: "Edit Local task", exact: true })).toBeVisible();
     const saved = await page.evaluate(async () => {
-        const { repositories } = await import("/packages/editor/src/store/global.store.ts");
+        const modulePath = "/packages/editor/src/store/global.store.ts";
+        const { repositories } = await import(modulePath);
         return (await repositories.notes.getOne(location.pathname.split("/").at(-1)!))?.content;
     });
     expect(saved).toContain("Another editor's task");

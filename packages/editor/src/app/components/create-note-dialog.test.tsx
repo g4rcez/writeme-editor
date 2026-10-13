@@ -121,6 +121,15 @@ describe("CreateNoteDialog", () => {
         expect(savedNote?.fileSize).toBe(13);
     });
 
+    it("uses the folder path basename as a task note title", async () => {
+        mocks.state.createNoteDialog.type = "task";
+        render(<CreateNoteDialog />);
+        fireEvent.input(screen.getByLabelText("Note title"), { target: { value: "tasks/testing name" } });
+        fireEvent.click(screen.getByRole("button", { name: /Create/ }));
+        await waitFor(() => expect(mocks.saveNote).toHaveBeenCalledTimes(1));
+        expect(mocks.saveNote.mock.calls[0]?.[0].title).toBe("testing name");
+    });
+
     it("uses a plain title input when folder suggestions are unavailable", async () => {
         mocks.state.directory = "";
         render(<CreateNoteDialog />);

@@ -173,7 +173,7 @@ export const CreateNoteDialog = () => {
             const note =
                 type === "quick"
                     ? await getOrCreateDailyQuickNote(quickNoteDate ?? new Date(), { title, content })
-                    : Note.new(title, content, NoteType[type]);
+                    : Note.new(type === "task" ? pathSegments.at(-1) ?? title : title, content, NoteType[type]);
             if (supportsFolders && state.directory && /[/\\]/.test(title)) {
                 failureMessage = "Couldn’t open the workspace folder. Check folder access or choose another workspace in settings.";
                 const folderResult = await window.electronAPI.fs.readDir(state.directory);
