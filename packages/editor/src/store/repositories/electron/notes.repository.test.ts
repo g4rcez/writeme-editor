@@ -40,6 +40,22 @@ beforeEach(() => {
 });
 
 describe("Electron NotesRepository", () => {
+    it("imports a task Markdown file as a board", async () => {
+        getAll.mockResolvedValue([]);
+        readDirRecursive.mockResolvedValue({
+            success: true,
+            files: [{ name: "tasks.md", path: "/notes/tasks.md", relativePath: "tasks.md" }],
+        });
+        readFile.mockResolvedValue({
+            success: true,
+            content: "---\ntype: task\n---\n\n## Todo\n\n- [ ] Ship board\n",
+            fileSize: 55,
+            lastModified: "2026-01-01T00:00:00.000Z",
+        });
+        const notes = await new NotesRepository(tabs as never).getAll();
+        expect(notes[0]?.noteType).toBe("task");
+        expect(notes[0]?.content).toContain("- [ ] Ship board");
+    });
     it("indexes Markdown and LaTeX workspace files without changing their source", async () => {
         getAll.mockResolvedValue([]);
         readDirRecursive.mockResolvedValue({

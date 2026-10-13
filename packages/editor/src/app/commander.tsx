@@ -297,6 +297,14 @@ export const Commander = (props: Props) => {
                     },
                 },
                 {
+                    title: "New task board",
+                    type: "shortcut",
+                    action: (args) => {
+                        args.setOpen(false);
+                        dispatch.setCreateNoteDialog({ isOpen: true, type: "task" });
+                    },
+                },
+                {
                     title: "New handwritten note",
                     type: "shortcut",
                     action: (args) => {

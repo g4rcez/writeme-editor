@@ -4,6 +4,7 @@ import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { isPathWithinImportRoot } from "../../../lib/obsidian-import";
+import { isTaskNoteMarkdown } from "../../../lib/task-note-markdown";
 import { getStorageMode } from "../../../lib/storage-mode";
 import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "../../../types/workspace-files";
 import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "../../note";
@@ -257,7 +258,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                     createdAt: lastModified,
                     updatedAt: lastModified,
                     lastSynced: lastModified,
-                    noteType: NoteType.note,
+                    noteType: isTaskNoteMarkdown(readResult.content) ? NoteType.task : NoteType.note,
                 });
                 try {
                     await this.save(note);

@@ -12,6 +12,7 @@ const NOTE_TYPE_THEME: Record<string, TagProps["theme"]> = {
     quick: "muted",
     note: "primary",
     freehand: "secondary",
+    task: "primary",
     template: "secondary",
     "read-it-later": "info",
 };

@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { BracketsCurlyIcon, MicrophoneIcon, PencilRulerIcon } from "@phosphor-icons/react";
+import { BracketsCurlyIcon, MicrophoneIcon, PencilRulerIcon, KanbanIcon } from "@phosphor-icons/react";
 import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
@@ -105,6 +105,7 @@ const FILE_EXTENSION_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
+    task: { selectable: true, icon: KanbanIcon, iconClass: "text-primary size-4" },
     freehand: {
         selectable: true,
         icon: PencilSimpleIcon,
@@ -140,6 +141,7 @@ const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
 export const getFileConfig = (node: TreeNode, note: Note | null): FileExtensionConfig | undefined => {
     if (note?.noteType === NoteType.pdf) return FILE_EXTENSION_CONFIGS[".pdf"];
     if (note?.noteType === NoteType.freehand) return FILE_NAME_CONFIGS.freehand;
+    if (note?.noteType === NoteType.task) return FILE_NAME_CONFIGS.task;
     if (note?.noteType === NoteType["meeting-note"]) {
         return FILE_NAME_CONFIGS["meeting-note"];
     }
