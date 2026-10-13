@@ -7,6 +7,9 @@ on:
             release:
                 type: boolean
                 default: false
+            sync_version_to_tag:
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -34,12 +37,21 @@ jobs:
               id: version
               env:
                   RELEASE_BUILD: ${{ inputs.release }}
+                  SYNC_VERSION_TO_TAG: ${{ inputs.sync_version_to_tag }}
                   REF_NAME: ${{ github.ref_name }}
               run: |
                   VERSION=$(node -p "require('./package.json').version")
-                  if [ "$RELEASE_BUILD" = "true" ] && [ "${REF_NAME#v}" != "$VERSION" ]; then
-                    echo "::error::Tag ${REF_NAME} does not match package.json version ${VERSION}"
-                    exit 1
+                  if [ "$RELEASE_BUILD" = "true" ]; then
+                    RELEASE_VERSION="${REF_NAME#v}"
+                    if [ "$VERSION" != "$RELEASE_VERSION" ]; then
+                      if [ "${SYNC_VERSION_TO_TAG:-false}" != "true" ]; then
+                        echo "::error::Release tag does not match app version."
+                        exit 1
+                      fi
+                      npm version "$RELEASE_VERSION" \
+                        --no-git-tag-version --ignore-scripts --workspaces=false
+                      VERSION="$RELEASE_VERSION"
+                    fi
                   fi
                   echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
@@ -49,9 +61,13 @@ jobs:
             - name: Verify mobile editor
               run: |
                   npm exec -- playwright install webkit
-                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform ios --suite mobile
+                  WRITEME_E2E_PREBUILT=1 \
+                    npm run test:e2e -- --platform ios --suite mobile
                   npm run browser:build
-                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform ios --suite production tests/mobile/excalidraw.spec.ts --project ios-web-drawing
+                  WRITEME_E2E_PREBUILT=1 \
+                    npm run test:e2e -- --platform ios --suite production \
+                    tests/mobile/excalidraw.spec.ts \
+                    --project ios-web-drawing
 
             - name: Archive unsigned iOS device app
               run: |
@@ -71,12 +87,16 @@ jobs:
             - name: Stage artifacts
               id: stage
               run: |
-                  APP_PATH=packages/ios/build/Writeme.xcarchive/Products/Applications/App.app
+                  APP_PATH=packages/ios/build/Writeme.xcarchive
+                  APP_PATH+="/Products/Applications/App.app"
                   test -s "$APP_PATH/App"
                   mkdir -p release-artifacts "$RUNNER_TEMP/writeme-ios/Payload"
                   cp -R "$APP_PATH" "$RUNNER_TEMP/writeme-ios/Payload/"
-                  (cd "$RUNNER_TEMP/writeme-ios" && zip -qry "$GITHUB_WORKSPACE/release-artifacts/writeme-${VERSION}-ios-unsigned.ipa" Payload)
-                  test -s "release-artifacts/writeme-${VERSION}-ios-unsigned.ipa"
+                  IPA_OUTPUT="$GITHUB_WORKSPACE/release-artifacts"
+                  IPA_NAME="writeme-${VERSION}-ios-unsigned.ipa"
+                  cd "$RUNNER_TEMP/writeme-ios"
+                  zip -qry "$IPA_OUTPUT/$IPA_NAME" Payload
+                  test -s "$IPA_OUTPUT/$IPA_NAME"
 
             - uses: actions/upload-artifact@v4
               with:

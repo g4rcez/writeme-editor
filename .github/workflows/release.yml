@@ -4,6 +4,7 @@ on:
     push:
         tags:
             - "*"
+    workflow_dispatch:
 
 concurrency:
     group: release-${{ github.ref }}
@@ -27,15 +28,31 @@ jobs:
 
             - run: npm ci
 
+            - name: Match package version to release tag
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+                    npm version "$VERSION" \
+                      --no-git-tag-version --ignore-scripts --workspaces=false
+                  fi
+
             - name: Detect macOS signing mode
               env:
                   APPLE_ID: ${{ secrets.APPLE_ID }}
-                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+                  APPLE_APP_SPECIFIC_PASSWORD: >-
+                      ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
                   CSC_LINK: ${{ secrets.CSC_LINK }}
                   CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
               run: |
-                  required=(APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID CSC_LINK CSC_KEY_PASSWORD)
+                  required=(
+                    APPLE_ID
+                    APPLE_APP_SPECIFIC_PASSWORD
+                    APPLE_TEAM_ID
+                    CSC_LINK
+                    CSC_KEY_PASSWORD
+                  )
                   present=0
                   for name in "${required[@]}"; do
                     if [ -n "${!name}" ]; then
@@ -48,9 +65,10 @@ jobs:
                     echo "macOS artifacts will be signed and notarized."
                   elif [ "$present" -eq 0 ]; then
                     echo "MACOS_SIGNING_MODE=unsigned" >> "$GITHUB_ENV"
-                    echo "::notice::Apple signing secrets are not configured. Publishing unsigned macOS DMG."
+                    echo "::notice::Apple signing secrets are not configured."
+                    echo "Publishing unsigned macOS DMG."
                   else
-                    echo "::error::Provide all Apple signing secrets, or leave all of them unset for an unsigned build."
+                    echo "::error::Set every Apple signing secret, or none."
                     for name in "${required[@]}"; do
                       if [ -z "${!name}" ]; then
                         echo "::error::Missing macOS signing secret: ${name}"
@@ -71,7 +89,8 @@ jobs:
               env:
                   NODE_OPTIONS: --max-old-space-size=4096
                   APPLE_ID: ${{ secrets.APPLE_ID }}
-                  APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+                  APPLE_APP_SPECIFIC_PASSWORD: >-
+                      ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
                   APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
                   CSC_LINK: ${{ secrets.CSC_LINK }}
                   CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -79,11 +98,21 @@ jobs:
             - name: Install Playwright recording runtime
               run: npm exec playwright -- install chromium
 
+            - name: Set packaged executable path
+              run: |
+                  EXECUTABLE_PATH="out/writeme-darwin-arm64"
+                  EXECUTABLE_PATH+="/writeme.app"
+                  EXECUTABLE_PATH+="/Contents/MacOS/writeme"
+                  echo "WRITEME_PACKAGED_EXECUTABLE=$EXECUTABLE_PATH" \
+                    >> "$GITHUB_ENV"
+
             - name: Verify packaged handwriting before staging release
-              run: npm run test:e2e -- --platform osx --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              run: >-
+                  npm run test:e2e -- --platform osx --suite native
+                  tests/native/freehand-note.spec.ts
+                  --grep "packaged application"
               env:
                   WRITEME_E2E_PREBUILT: "1"
-                  WRITEME_PACKAGED_EXECUTABLE: out/writeme-darwin-arm64/writeme.app/Contents/MacOS/writeme
 
             - name: Upload packaged handwriting evidence
               if: always()
@@ -118,12 +147,14 @@ jobs:
                   VERSION="${GITHUB_REF_NAME#v}"
                   PACKAGE_VERSION=$(node -p "require('./package.json').version")
                   if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                    echo "ERROR: package version differs from release tag."
+                    exit 1
                   fi
                   test -d out/make
                   DMG_COUNT=$(find out/make -name "*.dmg" | wc -l | tr -d ' ')
                   if [ "$DMG_COUNT" -ne 1 ]; then
-                    echo "ERROR: expected exactly 1 .dmg, found ${DMG_COUNT}" && exit 1
+                    echo "ERROR: expected one .dmg; found $DMG_COUNT"
+                    exit 1
                   fi
                   mkdir -p release-artifacts
                   if [ "${MACOS_SIGNING_MODE}" = "signed" ]; then
@@ -131,12 +162,15 @@ jobs:
                   else
                     DMG_NAME="writeme-${VERSION}-arm64-unsigned.dmg"
                   fi
-                  find out/make -name "*.dmg" -exec cp {} "release-artifacts/${DMG_NAME}" \;
-                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-darwin-arm64.zip" \;
+                  find out/make -name "*.dmg" \
+                    -exec cp {} "release-artifacts/${DMG_NAME}" \;
+                  DARWIN_ZIP="writeme-${VERSION}-darwin-arm64.zip"
+                  find out/make -name "*.zip" \
+                    -exec cp {} "release-artifacts/$DARWIN_ZIP" \;
                   bun build --compile packages/cli/src/index.ts \
                     --outfile "release-artifacts/writeme-darwin-arm64"
                   test -f "release-artifacts/${DMG_NAME}"
-                  test -f "release-artifacts/writeme-${VERSION}-darwin-arm64.zip"
+                  test -f "release-artifacts/$DARWIN_ZIP"
                   test -f "release-artifacts/writeme-darwin-arm64"
 
             - uses: actions/upload-artifact@v4
@@ -159,6 +193,16 @@ jobs:
 
             - run: npm ci
 
+            - name: Match package version to release tag
+              shell: bash
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+                    npm version "$VERSION" \
+                      --no-git-tag-version --ignore-scripts --workspaces=false
+                  fi
+
             - name: Build Electron app
               run: npm run make
               env:
@@ -168,7 +212,10 @@ jobs:
               run: npm exec playwright -- install chromium
 
             - name: Verify packaged handwriting before staging release
-              run: npm run test:e2e -- --platform windows --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              run: >-
+                  npm run test:e2e -- --platform windows --suite native
+                  tests/native/freehand-note.spec.ts
+                  --grep "packaged application"
               env:
                   WRITEME_E2E_PREBUILT: "1"
 
@@ -187,18 +234,25 @@ jobs:
                   VERSION="${GITHUB_REF_NAME#v}"
                   PACKAGE_VERSION=$(node -p "require('./package.json').version")
                   if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                    echo "ERROR: package version differs from release tag."
+                    exit 1
                   fi
                   test -d out/make
                   mkdir -p release-artifacts
-                  find out/make -name "*.exe" -exec cp {} "release-artifacts/writeme-${VERSION}-setup.exe" \;
-                  find out/make -name "*.nupkg" -exec cp {} release-artifacts/ \;
-                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-win32-x64.zip" \;
+                  WINDOWS_SETUP="writeme-${VERSION}-setup.exe"
+                  WINDOWS_ZIP="writeme-${VERSION}-win32-x64.zip"
+                  find out/make -name "*.exe" \
+                    -exec cp {} "release-artifacts/$WINDOWS_SETUP" \;
+                  find out/make -name "*.nupkg" \
+                    -exec cp {} release-artifacts/ \;
+                  find out/make -name "*.zip" \
+                    -exec cp {} "release-artifacts/$WINDOWS_ZIP" \;
                   bun build --compile packages/cli/src/index.ts \
                     --outfile "release-artifacts/writeme-windows-x64.exe"
-                  test -f "release-artifacts/writeme-${VERSION}-setup.exe"
-                  test -n "$(find release-artifacts -name '*.nupkg' -print -quit)"
-                  test -f "release-artifacts/writeme-${VERSION}-win32-x64.zip"
+                  test -f "release-artifacts/$WINDOWS_SETUP"
+                  NUPKG=$(find release-artifacts -name '*.nupkg' -print -quit)
+                  test -n "$NUPKG"
+                  test -f "release-artifacts/$WINDOWS_ZIP"
                   test -f "release-artifacts/writeme-windows-x64.exe"
 
             - uses: actions/upload-artifact@v4
@@ -220,9 +274,20 @@ jobs:
             - uses: oven-sh/setup-bun@v2
 
             - name: Install Linux package makers
-              run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
+              run: >-
+                  sudo apt-get update && sudo apt-get install -y
+                  dpkg fakeroot rpm
 
             - run: npm ci
+
+            - name: Match package version to release tag
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                  if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+                    npm version "$VERSION" \
+                      --no-git-tag-version --ignore-scripts --workspaces=false
+                  fi
 
             - name: Prepare Linux package files
               run: node scripts/prepare-linux-packaging.mjs
@@ -236,7 +301,10 @@ jobs:
               run: npm exec playwright -- install --with-deps chromium
 
             - name: Verify packaged handwriting before staging release
-              run: xvfb-run --auto-servernum npm run test:e2e -- --platform linux --suite native tests/native/freehand-note.spec.ts --grep "packaged application"
+              run: >-
+                  xvfb-run --auto-servernum npm run test:e2e -- --platform linux
+                  --suite native tests/native/freehand-note.spec.ts
+                  --grep "packaged application"
               env:
                   WRITEME_E2E_PREBUILT: "1"
 
@@ -254,18 +322,25 @@ jobs:
                   VERSION="${GITHUB_REF_NAME#v}"
                   PACKAGE_VERSION=$(node -p "require('./package.json').version")
                   if [ "$VERSION" != "$PACKAGE_VERSION" ]; then
-                    echo "ERROR: tag version ${VERSION} does not match package.json version ${PACKAGE_VERSION}" && exit 1
+                    echo "ERROR: package version differs from release tag."
+                    exit 1
                   fi
                   test -d out/make
                   mkdir -p release-artifacts
-                  find out/make -name "*.deb" -exec cp {} "release-artifacts/writeme-${VERSION}-amd64.deb" \;
-                  find out/make -name "*.rpm" -exec cp {} "release-artifacts/writeme-${VERSION}-x86_64.rpm" \;
-                  find out/make -name "*.zip" -exec cp {} "release-artifacts/writeme-${VERSION}-linux-x64.zip" \;
+                  DEB_NAME="writeme-${VERSION}-amd64.deb"
+                  RPM_NAME="writeme-${VERSION}-x86_64.rpm"
+                  LINUX_ZIP="writeme-${VERSION}-linux-x64.zip"
+                  find out/make -name "*.deb" \
+                    -exec cp {} "release-artifacts/$DEB_NAME" \;
+                  find out/make -name "*.rpm" \
+                    -exec cp {} "release-artifacts/$RPM_NAME" \;
+                  find out/make -name "*.zip" \
+                    -exec cp {} "release-artifacts/$LINUX_ZIP" \;
                   bun build --compile packages/cli/src/index.ts \
                     --outfile "release-artifacts/writeme-linux-x64"
-                  test -f "release-artifacts/writeme-${VERSION}-amd64.deb"
-                  test -f "release-artifacts/writeme-${VERSION}-x86_64.rpm"
-                  test -f "release-artifacts/writeme-${VERSION}-linux-x64.zip"
+                  test -f "release-artifacts/$DEB_NAME"
+                  test -f "release-artifacts/$RPM_NAME"
+                  test -f "release-artifacts/$LINUX_ZIP"
                   test -f "release-artifacts/writeme-linux-x64"
 
             - uses: actions/upload-artifact@v4
@@ -278,22 +353,22 @@ jobs:
         uses: ./.github/workflows/build-android.yml
         with:
             release: true
+            sync_version_to_tag: true
 
     build-ios:
         uses: ./.github/workflows/build-ios.yml
         with:
             release: true
+            sync_version_to_tag: true
 
     release:
         needs:
-            [
-                platform-verification,
-                build-mac-arm64,
-                build-windows,
-                build-linux,
-                build-android,
-                build-ios,
-            ]
+            - platform-verification
+            - build-mac-arm64
+            - build-windows
+            - build-linux
+            - build-android
+            - build-ios
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -325,15 +400,24 @@ jobs:
                   name: ios
                   path: artifacts
 
-            - name: Extract release notes
+            - name: Generate release notes
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  REF_NAME: ${{ github.ref_name }}
               run: |
-                  awk '/^## \[/{if(found) exit; found=1} found' CHANGELOG.md > release-notes.md
-                  if find artifacts -name "*-arm64-unsigned.dmg" -print -quit | grep -q .; then
+                  gh api --method POST \
+                    "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+                    -f tag_name="$REF_NAME" \
+                    --jq .body > release-notes.md
+                  if find artifacts -name "*-arm64-unsigned.dmg" \
+                    -print -quit | grep -q .; then
                     cat >> release-notes.md <<'EOF'
 
                   ### macOS unsigned DMG
 
-                  This release includes an unsigned macOS DMG because Apple signing credentials were not configured. After dragging `writeme.app` to `/Applications`, run:
+                  This release includes an unsigned macOS DMG because
+                  Apple signing credentials were not configured. After
+                  dragging `writeme.app` to `/Applications`, run:
 
                   ```bash
                   xattr -dr com.apple.quarantine /Applications/writeme.app
@@ -345,8 +429,16 @@ jobs:
 
                   ### Mobile downloads
 
-                  - Android: `writeme-<version>-android-debug.apk` is an installable debug APK for testing. Allow installation from the app used to download it. Debug signing is not suitable for Google Play, and updates between releases may require uninstalling; export a library backup first.
-                  - iOS/iPadOS: `writeme-<version>-ios-unsigned.ipa` contains a Release build for physical devices. It must be signed with an Apple certificate and a provisioning profile before installation; it cannot be installed directly from this download. This is not an App Store or TestFlight release.
+                  - Android: `writeme-<version>-android-debug.apk`
+                    is an installable debug APK for testing. Allow
+                    installation from the app used to download it. Debug
+                    signing is not suitable for Google Play. Updates may
+                    require uninstalling; export a library backup.
+                  - iOS/iPadOS: `writeme-<version>-ios-unsigned.ipa`
+                    contains a Release build for physical devices. Sign it
+                    with an Apple certificate and provisioning profile.
+                    It cannot be installed directly or used with the App
+                    Store or TestFlight.
                   EOF
 
             - uses: softprops/action-gh-release@v2
@@ -399,7 +491,8 @@ jobs:
               env:
                   GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
               run: |
-                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git config user.email \
+                    "github-actions[bot]@users.noreply.github.com"
                   git config user.name "github-actions[bot]"
                   git add Casks/writeme.rb Formula/writeme.rb
                   git commit -m "chore: bump to ${REF_NAME}"

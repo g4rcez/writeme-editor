@@ -5,7 +5,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
-type Step = { id?: string; uses?: string; run?: string; with?: Record<string, unknown> };
+type Step = {
+    id?: string;
+    uses?: string;
+    run?: string;
+    with?: Record<string, unknown>;
+    env?: Record<string, string>;
+};
 type Workflow = {
     jobs: Record<string, { uses?: string; needs?: string[]; with?: Record<string, unknown>; steps?: Step[] }>;
 };
@@ -37,12 +43,16 @@ it("requires and downloads both mobile builds before publishing a release", asyn
         const job = `build-${platform}`;
         expect(jobs[job]?.uses).toBe(`./.github/workflows/${job}.yml`);
         expect(jobs[job]?.with?.release).toBe(true);
+        expect(jobs[job]?.with?.sync_version_to_tag).toBe(true);
         expect(jobs.release?.needs).toContain(job);
         expect(jobs.release?.steps).toContainEqual({
             uses: "actions/download-artifact@v4",
             with: { name: platform, path: "artifacts" },
         });
         const build = (await workflow(job)).jobs.build;
+        expect(build?.steps?.find((step) => step.id === "version")?.env?.SYNC_VERSION_TO_TAG).toBe(
+            "${{ inputs.sync_version_to_tag }}",
+        );
         expect(build?.steps?.find((step) => step.uses === "actions/upload-artifact@v4")?.with).toEqual({
             name: `\${{ inputs.release && '${platform}' || 'build-${platform}' }}`,
             path: "release-artifacts/",
@@ -69,12 +79,34 @@ describe.runIf(process.platform !== "win32")("mobile artifact staging", () => {
             const mismatch = await runStep(platform, "version", directory, { ...env, REF_NAME: "v2.3.5" });
             expect(mismatch.status).not.toBe(0);
             expect(await readFile(envFile, "utf8")).toBe("VERSION=2.3.4\nVERSION=2.3.4\n");
+            expect(JSON.parse(await readFile(path.join(directory, "package.json"), "utf8")).version).toBe("2.3.4");
             const branch = await runStep(platform, "version", directory, {
                 ...env,
                 RELEASE_BUILD: "false",
                 REF_NAME: "main",
             });
             expect(branch.status, branch.stderr).toBe(0);
+        } finally {
+            await rm(directory, { recursive: true, force: true });
+        }
+    });
+
+    it.each(["android", "ios"])("syncs %s release version to its tag when explicitly enabled", async (platform) => {
+        const directory = await mkdtemp(path.join(tmpdir(), "writeme-mobile-sync-version-"));
+        const envFile = path.join(directory, "github-env");
+        const packageJsonPath = path.join(directory, "package.json");
+        try {
+            await writeFile(packageJsonPath, JSON.stringify({ version: "2.3.4" }));
+            const result = await runStep(platform, "version", directory, {
+                GITHUB_ENV: envFile,
+                RELEASE_BUILD: "true",
+                REF_NAME: "v2.3.5",
+                SYNC_VERSION_TO_TAG: "true",
+            });
+            expect(result.status, result.stderr).toBe(0);
+            const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
+            expect(packageJson.version).toBe("2.3.5");
+            expect(await readFile(envFile, "utf8")).toBe("VERSION=2.3.5\n");
         } finally {
             await rm(directory, { recursive: true, force: true });
         }

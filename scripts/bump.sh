@@ -28,6 +28,17 @@ if [[ "$CURRENT_BRANCH" != "main" ]]; then
   exit 1
 fi
 
+git fetch origin --tags
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+LATEST_TAG=$(git tag --list 'v*' \
+  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+  | sort -V | tail -n 1 || true)
+if [[ -n "$LATEST_TAG" && "${LATEST_TAG#v}" != "$CURRENT_VERSION" ]]; then
+  echo "error: package.json version $CURRENT_VERSION is behind $LATEST_TAG."
+  echo "error: releases now run automatically when pull requests merge."
+  exit 1
+fi
+
 # Bump package.json without committing so CHANGELOG can be included in the same commit
 npm version "$BUMP_TYPE" --no-git-tag-version
 
