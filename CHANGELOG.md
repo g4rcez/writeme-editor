@@ -1,3 +1,14 @@
+## Unreleased
+
+### Improvements
+
+- Reorganize Settings around the writer's workflow: writing preferences,
+  reusable templates, optional AI assistance, then workspace maintenance.
+- Simplify the settings sidebar and pages with navigation-first grouping,
+  aligned controls, flat template and variable lists, and quieter AI setup.
+- Improve settings field labels, keyboard focus, and narrow-screen layouts
+  while preserving existing routes, platform availability, and save behavior.
+
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 
 

@@ -1,4 +1,4 @@
-import type { ChangeEvent, ReactNode } from "react";
+import type { ChangeEvent, JSX, ReactNode } from "react";
 import { Select, Checkbox, Input } from "@g4rcez/components";
 import type { AppSettings } from "@/store/settings";
 import { ShortcutRecorder } from "@/app/components/shortcut-recorder";
@@ -10,14 +10,12 @@ type SettingsPatch = Partial<AppSettings>;
 type SettingsControlsProps = {
     settings: AppSettings;
     onPatch: (patch: SettingsPatch) => void;
-    compact?: boolean;
 };
 
 type SettingsFieldProps = {
     label: string;
     description: string;
     children: ReactNode;
-    compact?: boolean;
 };
 
 const TRASH_RETENTION_OPTIONS = [
@@ -32,27 +30,24 @@ const EDITOR_MODE_OPTIONS = [
     { label: "Markdown", value: "markdown" },
 ];
 
-function SettingsField({ label, description, children, compact = false }: SettingsFieldProps) {
-    if (compact) {
-        return (
-            <div className="space-y-2">
-                <div>
-                    <span className="text-xs font-medium text-foreground">{label}</span>
-                    <p className="text-[11px] leading-snug text-muted-foreground">{description}</p>
-                </div>
-                {children}
-            </div>
-        );
-    }
-
+function SettingsField({ label, description, children }: SettingsFieldProps): JSX.Element {
     return (
-        <div className="flex flex-col gap-3 border-b border-card-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl">
+        <div className="grid min-w-0 gap-3 border-b border-border/40 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-center sm:gap-8">
+            <div className="min-w-0">
                 <span className="text-sm font-medium text-foreground">{label}</span>
-                <p className="text-sm text-muted-foreground">{description}</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p>
             </div>
-            <div className="sm:min-w-48">{children}</div>
+            <div className="min-w-0 sm:justify-self-end">{children}</div>
         </div>
+    );
+}
+
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }): JSX.Element {
+    return (
+        <section>
+            <h2 className="text-base font-semibold text-foreground">{title}</h2>
+            {children}
+        </section>
     );
 }
 
@@ -63,12 +58,15 @@ function parseRetention(value: string): AppSettings["trashRetentionDays"] {
     return 10;
 }
 
-export function AppearanceSettingsControls({ settings, onPatch, compact }: SettingsControlsProps) {
+export function AppearanceSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element {
     return (
-        <SettingsField label="Theme" description="Choose the visual theme used across the editor." compact={compact}>
+        <SettingsField label="Theme" description="Choose the visual theme used across the editor.">
             <Select
+                title="Theme"
+                aria-label="Theme"
                 optionalText=" "
-                hiddenLabel={!compact}
+                hiddenLabel
+                container="w-full sm:w-56"
                 value={settings.theme}
                 options={GLOBAL_THEMES}
                 onChange={(event: ChangeEvent<HTMLSelectElement>) =>
@@ -79,17 +77,16 @@ export function AppearanceSettingsControls({ settings, onPatch, compact }: Setti
     );
 }
 
-export function TrashSettingsControls({ settings, onPatch, compact }: SettingsControlsProps) {
+export function TrashSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element | null {
     if (!isElectron()) return null;
     return (
-        <SettingsField
-            label="Auto-purge after"
-            description="Permanently delete trashed notes after this period."
-            compact={compact}
-        >
+        <SettingsField label="Auto-purge after" description="Permanently delete trashed notes after this period.">
             <Select
+                title="Auto-purge after"
+                aria-label="Auto-purge after"
                 optionalText=" "
-                hiddenLabel={!compact}
+                hiddenLabel
+                container="w-full sm:w-56"
                 options={TRASH_RETENTION_OPTIONS}
                 value={String(settings.trashRetentionDays)}
                 onChange={(event: ChangeEvent<HTMLSelectElement>) =>
@@ -100,112 +97,129 @@ export function TrashSettingsControls({ settings, onPatch, compact }: SettingsCo
     );
 }
 
-export function ShortcutSettingsControls({ settings, onPatch, compact }: SettingsControlsProps) {
+export function ShortcutSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element | null {
     if (!isElectron()) return null;
     return (
-        <div className={compact ? "space-y-4" : "contents"}>
-            <SettingsField label="Quick Note" description="Open a new quick note from anywhere." compact={compact}>
+        <>
+            <SettingsField label="Quick Note" description="Open a new quick note from anywhere.">
                 <ShortcutRecorder
+                    label="Quick Note shortcut"
                     value={settings.quickNoteShortcut}
                     onChange={(quickNoteShortcut) => onPatch({ quickNoteShortcut })}
                 />
             </SettingsField>
-            <SettingsField
-                label="Math Note"
-                description="Open a new math note with a ready-to-use math block."
-                compact={compact}
-            >
+            <SettingsField label="Math Note" description="Open a new math note with a ready-to-use math block.">
                 <ShortcutRecorder
+                    label="Math Note shortcut"
                     value={settings.mathNoteShortcut}
                     onChange={(mathNoteShortcut) => onPatch({ mathNoteShortcut })}
                 />
             </SettingsField>
-            <SettingsField
-                label="Floating Editor"
-                description="Open a new editor window without the sidebar or tabs."
-                compact={compact}
-            >
+            <SettingsField label="Floating Editor" description="Open a new editor window without the sidebar or tabs.">
                 <ShortcutRecorder
+                    label="Floating Editor shortcut"
                     value={settings.floatingEditorShortcut}
                     onChange={(floatingEditorShortcut) => onPatch({ floatingEditorShortcut })}
-                />
-            </SettingsField>
-        </div>
-    );
-}
-
-export function EditorSettingsControls({ settings, onPatch }: SettingsControlsProps) {
-    return (
-        <>
-            <SettingsField label="Autosave" description="Automatically save changes while typing.">
-                <Checkbox
-                    checked={settings.autosave}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => onPatch({ autosave: event.target.checked })}
-                />
-            </SettingsField>
-            {settings.autosave ? (
-                <SettingsField
-                    label="Autosave delay"
-                    description="Milliseconds to wait after the last keystroke before saving."
-                >
-                    <Input
-                        mask="int"
-                        hiddenLabel
-                        container="w-28"
-                        value={settings.autosaveDelay.toString()}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            onPatch({
-                                autosaveDelay: parseInt(event.target.value, 10) || 1000,
-                            })
-                        }
-                    />
-                </SettingsField>
-            ) : null}
-            <SettingsField
-                label="Default editor mode"
-                description="Choose whether notes open in the formatted editor or Markdown."
-            >
-                <Select
-                    optionalText=" "
-                    hiddenLabel
-                    value={settings.editorMode}
-                    options={EDITOR_MODE_OPTIONS}
-                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                        onPatch({
-                            editorMode: event.target.value as AppSettings["editorMode"],
-                        })
-                    }
-                />
-            </SettingsField>
-            <SettingsField label="Markdown editor Vim mode" description="Enable Vim keybindings when editing Markdown.">
-                <Checkbox
-                    checked={settings.rawEditorVimMode}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                        onPatch({ rawEditorVimMode: event.target.checked })
-                    }
-                />
-            </SettingsField>
-            <SettingsField label="Editor font size" description="Base font size used by the note editor.">
-                <Input
-                    mask="int"
-                    hiddenLabel
-                    container="w-28"
-                    value={settings.editorFontSize.toString()}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                        onPatch({ editorFontSize: parseInt(event.target.value, 10) || 16 })
-                    }
                 />
             </SettingsField>
         </>
     );
 }
 
-export function QuickSettingsControls({ settings, onPatch, compact = false }: SettingsControlsProps) {
+export function EditorSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element {
     return (
-        <div className={compact ? "space-y-5" : "divide-y-0"}>
-            <AppearanceSettingsControls settings={settings} onPatch={onPatch} compact={compact} />
-            <TrashSettingsControls settings={settings} onPatch={onPatch} compact={compact} />
-            <ShortcutSettingsControls settings={settings} onPatch={onPatch} compact={compact} />
+        <div className="space-y-8">
+            <SettingsGroup title="Writing experience">
+                <SettingsField
+                    label="Default editor mode"
+                    description="Choose whether notes open in the formatted editor or Markdown."
+                >
+                    <Select
+                        title="Default editor mode"
+                        aria-label="Default editor mode"
+                        optionalText=" "
+                        hiddenLabel
+                        container="w-full sm:w-56"
+                        value={settings.editorMode}
+                        options={EDITOR_MODE_OPTIONS}
+                        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                            onPatch({ editorMode: event.target.value as AppSettings["editorMode"] })
+                        }
+                    />
+                </SettingsField>
+                <SettingsField label="Editor font size" description="Base font size used by the note editor.">
+                    <Input
+                        title="Editor font size"
+                        aria-label="Editor font size"
+                        mask="int"
+                        hiddenLabel
+                        container="w-28"
+                        right={<span className="text-xs text-muted-foreground">px</span>}
+                        value={settings.editorFontSize.toString()}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            onPatch({ editorFontSize: parseInt(event.target.value, 10) || 16 })
+                        }
+                    />
+                </SettingsField>
+                <SettingsField
+                    label="Markdown editor Vim mode"
+                    description="Enable Vim keybindings when editing Markdown."
+                >
+                    <Checkbox
+                        aria-label="Markdown editor Vim mode"
+                        checked={settings.rawEditorVimMode}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            onPatch({ rawEditorVimMode: event.target.checked })
+                        }
+                    />
+                </SettingsField>
+            </SettingsGroup>
+            <SettingsGroup title="Saving">
+                <SettingsField label="Autosave" description="Automatically save changes while typing.">
+                    <Checkbox
+                        aria-label="Autosave"
+                        checked={settings.autosave}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onPatch({ autosave: event.target.checked })}
+                    />
+                </SettingsField>
+                {settings.autosave ? (
+                    <SettingsField
+                        label="Autosave delay"
+                        description="Milliseconds to wait after the last keystroke before saving."
+                    >
+                        <Input
+                            title="Autosave delay"
+                            aria-label="Autosave delay"
+                            mask="int"
+                            hiddenLabel
+                            container="w-28"
+                            right={<span className="text-xs text-muted-foreground">ms</span>}
+                            value={settings.autosaveDelay.toString()}
+                            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                onPatch({ autosaveDelay: parseInt(event.target.value, 10) || 1000 })
+                            }
+                        />
+                    </SettingsField>
+                ) : null}
+            </SettingsGroup>
+        </div>
+    );
+}
+
+export function QuickSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element {
+    return (
+        <div className="space-y-8">
+            <AppearanceSettingsControls settings={settings} onPatch={onPatch} />
+            {isElectron() ? (
+                <>
+                    <SettingsGroup title="Quick capture">
+                        <ShortcutSettingsControls settings={settings} onPatch={onPatch} />
+                    </SettingsGroup>
+                    <SettingsGroup title="Deleted notes">
+                        <TrashSettingsControls settings={settings} onPatch={onPatch} />
+                    </SettingsGroup>
+                </>
+            ) : null}
         </div>
     );
 }

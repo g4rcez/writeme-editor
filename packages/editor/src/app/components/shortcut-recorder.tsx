@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
 const KEY_DISPLAY_MAP: Record<string, string> = {
     " ": "Space",
@@ -64,10 +64,11 @@ function displayAccelerator(accelerator: string): string {
 
 type Props = {
     value: string;
+    label: string;
     onChange: (value: string) => void;
 };
 
-export function ShortcutRecorder({ value, onChange }: Props) {
+export function ShortcutRecorder({ value, label, onChange }: Props): JSX.Element {
     const [recording, setRecording] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -99,11 +100,13 @@ export function ShortcutRecorder({ value, onChange }: Props) {
         <button
             ref={buttonRef}
             type="button"
+            aria-label={label}
+            aria-pressed={recording}
             onClick={() => setRecording((v) => !v)}
             onBlur={() => setRecording(false)}
             className={[
-                "min-w-[120px] rounded border px-3 py-2 text-sm tracking-widest font-mono transition-all",
-                "border-border focus:outline-none",
+                "min-w-[120px] rounded border px-3 py-2 text-sm tracking-widest font-mono transition-colors motion-reduce:transition-none",
+                "border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 recording ? "ring-2 ring-primary border-primary text-muted-foreground" : "hover:border-primary/60",
             ].join(" ")}
         >

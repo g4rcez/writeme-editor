@@ -7,9 +7,7 @@ export default function SettingsAIPage() {
             title="AI"
             description="Configure the AI provider, credentials, model, and command behavior."
         >
-            <div className="py-4">
-                <AISettings />
-            </div>
+            <AISettings />
         </SettingsPageShell>
     );
 }

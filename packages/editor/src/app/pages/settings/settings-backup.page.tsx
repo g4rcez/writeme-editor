@@ -12,17 +12,18 @@ export default function SettingsBackupPage(): JSX.Element {
 
     return (
         <SettingsPageShell title="Backup" description="Keep a copy of your on-device notes and attachments.">
-            <div className="space-y-4 text-sm text-foreground">
-                <p>
+            <div className="max-w-2xl space-y-5 text-sm leading-6 text-foreground">
+                <p className="text-muted-foreground">
                     Notes are stored on this device. Export a backup before uninstalling Writeme. Backups include PDFs,
                     drawings, comments, tags, groups, views, scripts, and note history. Device settings and AI data are
                     excluded.
                 </p>
-                <p>
+                <p className="text-muted-foreground">
                     Restore adds records without replacing existing ones. A conflicting record stops the entire import.
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Button
+                        size="small"
                         disabled={busy}
                         onClick={async () => {
                             setBusy(true);
@@ -41,7 +42,7 @@ export default function SettingsBackupPage(): JSX.Element {
                     >
                         Export backup
                     </Button>
-                    <Button theme="ghost-primary" disabled={busy} onClick={() => input.current?.click()}>
+                    <Button size="small" theme="ghost-primary" disabled={busy} onClick={() => input.current?.click()}>
                         Restore backup
                     </Button>
                     <input
@@ -68,12 +69,18 @@ export default function SettingsBackupPage(): JSX.Element {
                         }}
                     />
                 </div>
-                {busy && <output className="block">Transferring backup...</output>}
-                {error && <p role="alert">{error}</p>}
+                {busy && <output className="block text-muted-foreground">Transferring backup...</output>}
+                {error && (
+                    <p role="alert" className="text-danger">
+                        {error}
+                    </p>
+                )}
                 {restored && (
                     <div className="space-y-3">
                         <output className="block">Backup restored. Reload to open the imported notes.</output>
-                        <Button onClick={() => window.location.reload()}>Reload library</Button>
+                        <Button size="small" disabled={busy} onClick={() => window.location.reload()}>
+                            Reload library
+                        </Button>
                     </div>
                 )}
             </div>
