@@ -20,7 +20,7 @@ jobs:
             - run: npm run typecheck
             - run: npm run mobile:typecheck
             - run: npm test
-            - name: Check handwriting and platform test code
+            - name: Check handwriting, tab and platform test code
               run: >-
                   npm exec oxlint -- --deny-warnings
                   packages/editor/src/lib/freehand-note.ts
@@ -33,6 +33,10 @@ jobs:
                   tests/e2e/freehand-lifecycle.spec.ts
                   tests/e2e/freehand-pens.spec.ts
                   tests/e2e/freehand-pen-dots.spec.ts
+                  tests/e2e/editor-tabs.spec.ts
+                  tests/e2e/tab-rename.spec.ts
+                  tests/e2e/recently-closed-tab.spec.ts
+                  tests/e2e/editor-tab-drag.spec.ts
                   tests/device/freehand-note.spec.ts
                   tests/native/freehand-note.spec.ts
                   tests/helpers/handwriting.ts
@@ -44,13 +48,17 @@ jobs:
                   scripts/e2e.test.mts
                   scripts/pr-checks.mts
                   scripts/pr-checks.test.mts
-            - name: Check handwriting test types
+            - name: Check handwriting and tab test types
               run: >-
                   npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022
                   --module ESNext --moduleResolution bundler --skipLibCheck --allowImportingTsExtensions
                   tests/e2e/freehand-lifecycle.spec.ts
                   tests/e2e/freehand-pens.spec.ts
                   tests/e2e/freehand-pen-dots.spec.ts
+                  tests/e2e/editor-tabs.spec.ts
+                  tests/e2e/tab-rename.spec.ts
+                  tests/e2e/recently-closed-tab.spec.ts
+                  tests/e2e/editor-tab-drag.spec.ts
                   tests/device/freehand-note.spec.ts
                   playwright.*.config.ts
             - name: Check platform runner contracts
