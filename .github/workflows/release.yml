@@ -353,14 +353,22 @@ jobs:
         uses: ./.github/workflows/build-android.yml
         with:
             release: true
+            sync_version_to_tag: true
 
     build-ios:
         uses: ./.github/workflows/build-ios.yml
         with:
             release: true
+            sync_version_to_tag: true
 
     release:
-        needs: [platform-verification, build-mac-arm64, build-windows, build-linux, build-android, build-ios]
+        needs:
+            - platform-verification
+            - build-mac-arm64
+            - build-windows
+            - build-linux
+            - build-android
+            - build-ios
         runs-on: ubuntu-latest
         permissions:
             contents: write
