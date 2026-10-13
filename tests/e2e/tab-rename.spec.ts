@@ -32,6 +32,11 @@ test.describe("Tab inline rename", () => {
 
         await expect(renameInput).not.toBeVisible();
         await expect(page.locator("[data-tab-id]").filter({ hasText: NEW_TITLE })).toBeVisible();
+        await page.reload();
+        await expect(page.locator("[data-tab-id]")).toHaveText([NEW_TITLE]);
+        await expect(
+            page.getByRole("toolbar", { name: "Note tools" }).getByText(NEW_TITLE, { exact: true }),
+        ).toBeVisible();
     });
 
     test("Escape cancels rename without saving", async ({ cleanPage: page }) => {
@@ -56,6 +61,11 @@ test.describe("Tab inline rename", () => {
 
         await expect(renameInput).not.toBeVisible();
         await expect(page.locator("[data-tab-id]").filter({ hasText: ORIGINAL_TITLE })).toBeVisible();
+        await page.reload();
+        await expect(page.locator("[data-tab-id]")).toHaveText([ORIGINAL_TITLE]);
+        await expect(
+            page.getByRole("toolbar", { name: "Note tools" }).getByText(ORIGINAL_TITLE, { exact: true }),
+        ).toBeVisible();
     });
 
     test("clicking outside the input commits the rename", async ({ cleanPage: page }) => {
@@ -80,5 +90,10 @@ test.describe("Tab inline rename", () => {
 
         await expect(renameInput).not.toBeVisible();
         await expect(page.locator("[data-tab-id]").filter({ hasText: NEW_TITLE })).toBeVisible();
+        await page.reload();
+        await expect(page.locator("[data-tab-id]")).toHaveText([NEW_TITLE]);
+        await expect(
+            page.getByRole("toolbar", { name: "Note tools" }).getByText(NEW_TITLE, { exact: true }),
+        ).toBeVisible();
     });
 });

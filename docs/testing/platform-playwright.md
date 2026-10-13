@@ -22,9 +22,24 @@ Both selections are required. Remaining arguments go to Playwright, including fi
 | `landing` | `chromium` | `tests/landing-downloads.spec.ts`. CI runs it on Linux rather than multiplying the same landing checks across platforms. |
 | `device` | Android: `physical-android` | `tests/device/freehand-note.spec.ts`: real connected Android hardware, trusted pen/pressure measurement, and persistence across Chrome restart. Never replaced with emulation. |
 
-The desktop Chromium browser selection retains all general editor/data-safety/recovery tests for local full-suite verification. CI supplies filename/project filters for the existing handwriting/meeting baseline; it does not add every previously ad-hoc editor scenario to every platform job. Mobile production drawing and mobile-shell drawing are distinct surfaces, not redundant coverage.
+The desktop Chromium browser selection retains all general editor/data-safety/recovery tests for local full-suite verification. CI supplies filename/project filters for the handwriting/meeting baseline and the desktop tab regressions below; it does not run every editor scenario on every platform job. Mobile production drawing and mobile-shell drawing are distinct surfaces, not redundant coverage.
 
 OSX needs both engines: WebKit represents existing Safari handwriting/offline checks, while Chromium supports the media flags and fake microphone fixture used by meeting tests. `@chromium-input` scenarios remain excluded only from WebKit. Chromium production tests use actual offline mode; WebKit uses the existing app-server-outage proxy because its offline emulation rejects service-worker navigation. Neither mechanism establishes physical Safari suspension/offline behavior.
+
+## Desktop tab regression coverage
+
+Windows, OSX, and Linux CI run `editor-tabs.spec.ts`, `tab-rename.spec.ts`, `recently-closed-tab.spec.ts`, and `editor-tab-drag.spec.ts` in Chromium. The complete files run without a test-name filter. Each desktop platform retains separate results, videos, and failure traces under `artifacts/playwright/<platform>/tabs`, without overwriting handwriting evidence.
+
+```sh
+npm run test:e2e -- --platform osx --suite browser \
+  tests/e2e/editor-tabs.spec.ts tests/e2e/tab-rename.spec.ts \
+  tests/e2e/recently-closed-tab.spec.ts tests/e2e/editor-tab-drag.spec.ts \
+  --project chromium
+```
+
+The scenarios cover creating and selecting tabs, reopening an existing note without duplicate tabs, committed/cancelled rename persistence, background/active/last-tab closure, preserved note contents, tab order after reload, restoration in reverse closing order, and restoration of a note already reopened manually. Drag scenarios cover reordering, split groups, copying, and cancellation; cancellation waits for the visible drag ghost to disappear before releasing the pointer.
+
+Closing a note tab must not delete its note. New or restored tabs append after the highest remaining persisted order, rather than using the open-tab count, which can collide with existing orders after closures. The persistence scenarios exercise real browser storage through reloads and a fresh page in the same browser context; they do not establish Electron/SQLite process-restart behavior. Recently closed history is session-only, while reopened tabs and their note contents persist.
 
 ## Build and server reuse
 

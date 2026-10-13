@@ -13,7 +13,7 @@ async function createNote(page: Page, title: string): Promise<void> {
     await dialog.getByTitle("Note title").fill(title);
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(page.getByRole("dialog", { name: /Create new note/i })).not.toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Note title", exact: true })).toHaveValue(title);
+    await expect(page.getByRole("toolbar", { name: "Note tools" }).getByText(title, { exact: true })).toBeVisible();
     await expect(page.locator(".writeme-tabs-bar-list [data-tab-id]").filter({ hasText: title })).toBeVisible();
 }
 
@@ -86,11 +86,15 @@ test("previews an edge split and leaves the layout intact when dragging is cance
     await page.mouse.move(target.x + target.width - 8, target.y + target.height / 2, { steps: 3 });
     await page.mouse.move(target.x + target.width - 9, target.y + target.height / 2);
     await expect(page.getByLabel("Drop tab right", { exact: true })).toBeVisible();
+    await expect(page.locator("[data-motion-tab-ghost]")).toBeVisible();
     await page.keyboard.press("Escape");
+    await expect(page.locator("[data-motion-tab-ghost]")).toHaveCount(0);
     await page.mouse.up();
     await expect(page.locator(".writeme-editor-drop-preview")).toHaveCount(0);
     await expect(page.getByRole("tablist")).toHaveCount(0);
-    await expect(page.getByRole("textbox", { name: "Note title", exact: true })).toHaveValue("Working tab");
+    await expect(
+        page.getByRole("toolbar", { name: "Note tools" }).getByText("Working tab", { exact: true }),
+    ).toBeVisible();
 });
 
 test("copies a dragged tab with the platform modifier", async ({ cleanPage: page }) => {
@@ -155,9 +159,13 @@ test("reorders tabs and preserves the order after reload", async ({ cleanPage: p
     await dragTab(tabs.filter({ hasText: "First tab" }), tabs.filter({ hasText: "First tab" }));
     await expect(tabs.first()).toContainText("First tab");
     await dragTab(tabs.filter({ hasText: "Second tab" }), tabs.filter({ hasText: "First tab" }), { x: 4, y: 12 });
-    await expect(tabs.first()).toContainText("Second tab");
+    await expect(tabs).toHaveText(["Second tab", "First tab"]);
     await page.reload();
-    await expect(tabs.first()).toContainText("Second tab");
+    await expect(tabs).toHaveText(["Second tab", "First tab"]);
+    await expect(tabs.first()).toHaveAttribute("aria-current", "page");
+    await expect(
+        page.getByRole("toolbar", { name: "Note tools" }).getByText("Second tab", { exact: true }),
+    ).toBeVisible();
 });
 
 test("supports reduced motion, keyboard activation, and closing a tab after dragging", async ({ cleanPage: page }) => {
@@ -172,9 +180,13 @@ test("supports reduced motion, keyboard activation, and closing a tab after drag
         .poll(() => tabs.last().evaluate((element) => getComputedStyle(element.parentElement!).transform))
         .toBe("none");
     await tabs.filter({ hasText: "First tab" }).click();
-    await expect(page.getByRole("textbox", { name: "Note title", exact: true })).toHaveValue("First tab");
+    await expect(
+        page.getByRole("toolbar", { name: "Note tools" }).getByText("First tab", { exact: true }),
+    ).toBeVisible();
     await tabs.filter({ hasText: "Second tab" }).press("Enter");
-    await expect(page.getByRole("textbox", { name: "Note title", exact: true })).toHaveValue("Second tab");
+    await expect(
+        page.getByRole("toolbar", { name: "Note tools" }).getByText("Second tab", { exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Close Second tab", exact: true }).click();
     await expect(tabs).toHaveCount(1);
     await expect(tabs.first()).toContainText("First tab");
