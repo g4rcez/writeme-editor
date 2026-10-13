@@ -49,7 +49,8 @@ const nestedSettings: Record<string, string[]> = {
 const inside = (root: string, target: string): boolean => {
     const relative = path.relative(root, target);
     return (
-        relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))
+        relative === "" ||
+        (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative))
     );
 };
 const hidden = (root: string, target: string): boolean =>
@@ -172,7 +173,9 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                         "Missing required notes table. Open this profile in a compatible Writeme editor before retrying.",
                     );
                 const columns = new Set(
-                    (db.query('PRAGMA table_info("notes")').all() as { name: string }[]).map((row) => row.name),
+                    (db.query('PRAGMA table_info("notes")').all() as { name: string }[]).map(
+                        (row) => row.name,
+                    ),
                 );
                 for (const name of ["id", "content", "filePath", "noteType"])
                     if (!columns.has(name))
@@ -192,7 +195,9 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                         tabs: ["id", "noteId", "project"],
                     };
                     const available = new Set(
-                        (db.query(`PRAGMA table_info("${table}")`).all() as { name: string }[]).map((row) => row.name),
+                        (db.query(`PRAGMA table_info("${table}")`).all() as { name: string }[]).map(
+                            (row) => row.name,
+                        ),
                     );
                     if (required[table]?.some((column) => !available.has(column))) {
                         capabilities[table] = false;
@@ -201,7 +206,11 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                     }
                     return db.query(`SELECT * FROM "${table}"`).all() as Row[];
                 };
-                const parse = (value: JsonValue | undefined, fallback: JsonValue, context: string): JsonValue => {
+                const parse = (
+                    value: JsonValue | undefined,
+                    fallback: JsonValue,
+                    context: string,
+                ): JsonValue => {
                     if (value === null || value === undefined || value === "") return fallback;
                     if (typeof value !== "string") return value;
                     try {
@@ -240,17 +249,22 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                 const selected = options.workspace ?? (string(settings.directory) || null);
                 const workspace = selected ? await canonical(path.resolve(selected)) : null;
                 if (selected && (!workspace || !(await stat(workspace)).isDirectory()))
-                    throw new ReaderError("WORKSPACE_NOT_FOUND", `Cannot resolve workspace directory ${selected}.`);
+                    throw new ReaderError(
+                        "WORKSPACE_NOT_FOUND",
+                        `Cannot resolve workspace directory ${selected}.`,
+                    );
                 const roots: WorkspaceSnapshot["roots"] = [];
                 for (const [kind, candidate] of [
                     ["workspace", workspace],
                     [
                         "templates",
-                        string(settings.templatesDirectory) || path.join(workspace ?? homedir(), ".templates"),
+                        string(settings.templatesDirectory) ||
+                            path.join(workspace ?? homedir(), ".templates"),
                     ],
                     [
                         "quicknotes",
-                        string(settings.quicknotesDirectory) || (workspace ? path.join(workspace, "quicknotes") : null),
+                        string(settings.quicknotesDirectory) ||
+                            (workspace ? path.join(workspace, "quicknotes") : null),
                     ],
                 ] as const) {
                     if (!candidate) continue;
@@ -258,7 +272,9 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                     // Default child roots cannot grant access through an escaping symlink.
                     const explicit =
                         kind === "workspace" ||
-                        Boolean(settings[kind === "templates" ? "templatesDirectory" : "quicknotesDirectory"]);
+                        Boolean(
+                            settings[kind === "templates" ? "templatesDirectory" : "quicknotesDirectory"],
+                        );
                     if (
                         resolved &&
                         (await stat(resolved)).isDirectory() &&
@@ -279,11 +295,20 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                     }
                     const rawPath = string(row.filePath);
                     const absolute = rawPath ? path.resolve(workspace ?? options.dataDir, rawPath) : null;
-                    if (!absolute && workspace && string(row.project) !== selected && string(row.project) !== workspace)
+                    if (
+                        !absolute &&
+                        workspace &&
+                        string(row.project) !== selected &&
+                        string(row.project) !== workspace
+                    )
                         continue;
                     const resolved = absolute ? await canonical(absolute) : null;
                     const missingPath = absolute && !resolved ? await canonicalMissing(absolute) : null;
-                    const scope = resolved ? rootFor(resolved) : missingPath ? rootFor(missingPath) : undefined;
+                    const scope = resolved
+                        ? rootFor(resolved)
+                        : missingPath
+                          ? rootFor(missingPath)
+                          : undefined;
                     if (row.deletedAt) {
                         if (resolved) indexed.add(resolved);
                         continue;
@@ -320,12 +345,17 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                         root: scope?.kind ?? null,
                         title: string(row.title),
                         noteType: string(row.noteType) || "note",
-                        tags: Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [],
+                        tags: Array.isArray(tags)
+                            ? tags.filter((tag): tag is string => typeof tag === "string")
+                            : [],
                         favorite: row.favorite === 1 || row.favorite === true,
                         project: string(row.project),
                         createdAt: string(row.createdAt) || null,
                         updatedAt: string(row.updatedAt) || null,
-                        metadata: metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {},
+                        metadata:
+                            metadata && typeof metadata === "object" && !Array.isArray(metadata)
+                                ? metadata
+                                : {},
                         content,
                         source: absolute ? "filesystem" : "sqlite",
                         revision: content === null ? null : revision(content),
@@ -360,7 +390,8 @@ export function createWorkspaceReader(options: ReaderOptions): WorkspaceReader {
                                         ref: `${root.kind}:${path.relative(root.path, resolved).split(path.sep).join("/")}`,
                                         path: resolved,
                                         root: root.kind,
-                                        title: parsed.title ?? path.basename(resolved, path.extname(resolved)),
+                                        title:
+                                            parsed.title ?? path.basename(resolved, path.extname(resolved)),
                                         noteType:
                                             parsed.noteType ??
                                             (root.kind === "templates"
