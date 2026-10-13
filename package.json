@@ -76,7 +76,7 @@
         "validate:packages": "npm run validate --workspace @writeme.dev/math && npm run validate --workspace @writeme.dev/cli && npm run validate --workspace @writeme.dev/mcp",
         "test:packages:independent": "node --experimental-strip-types scripts/verify-independent-packages.mts",
         "release": "node --experimental-strip-types scripts/release-package.mts",
-        "test:release": "node --experimental-strip-types --test scripts/release-package.test.mts",
+        "test:release": "node --experimental-strip-types --test scripts/release-*.test.mts",
         "build:package": "npm run make",
         "package:app": "npm run build:cli && electron-forge package",
         "make": "npm run build:cli && electron-forge make",

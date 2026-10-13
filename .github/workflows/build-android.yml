@@ -31,7 +31,7 @@ jobs:
                   cache: gradle
                   cache-dependency-path: |
                       packages/android/native/**/*.gradle
-                      packages/android/native/gradle/wrapper/gradle-wrapper.properties
+                      packages/android/native/**/gradle-wrapper.properties
 
             - uses: android-actions/setup-android@v3
               with:
@@ -49,9 +49,17 @@ jobs:
                   REF_NAME: ${{ github.ref_name }}
               run: |
                   VERSION=$(node -p "require('./package.json').version")
-                  if [ "$RELEASE_BUILD" = "true" ] && [ "${REF_NAME#v}" != "$VERSION" ]; then
-                    echo "::error::Tag ${REF_NAME} does not match package.json version ${VERSION}"
-                    exit 1
+                  if [ "$RELEASE_BUILD" = "true" ]; then
+                    RELEASE_VERSION="${REF_NAME#v}"
+                    if [ "$VERSION" != "$RELEASE_VERSION" ]; then
+                      npm version "$RELEASE_VERSION" \
+                        --no-git-tag-version --ignore-scripts --workspaces=false
+                      VERSION="$RELEASE_VERSION"
+                    fi
+                    if [ "$RELEASE_VERSION" != "$VERSION" ]; then
+                      echo "::error::Release tag does not match app version."
+                      exit 1
+                    fi
                   fi
                   echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
@@ -61,20 +69,30 @@ jobs:
             - name: Verify mobile editor
               run: |
                   npm exec -- playwright install --with-deps chromium
-                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform android --suite mobile
+                  WRITEME_E2E_PREBUILT=1 \
+                    npm run test:e2e -- --platform android --suite mobile
                   npm run browser:build
-                  WRITEME_E2E_PREBUILT=1 npm run test:e2e -- --platform android --suite production tests/mobile/excalidraw.spec.ts --project android-web-drawing
+                  WRITEME_E2E_PREBUILT=1 \
+                    npm run test:e2e -- --platform android --suite production \
+                    tests/mobile/excalidraw.spec.ts \
+                    --project android-web-drawing
 
             - name: Build Android APK
               working-directory: packages/android/native
-              run: ./gradlew assembleDebug -PwritemeVersionName="$VERSION" -PwritemeVersionCode="$GITHUB_RUN_NUMBER"
+              run: >-
+                  ./gradlew assembleDebug
+                  -PwritemeVersionName="$VERSION"
+                  -PwritemeVersionCode="$GITHUB_RUN_NUMBER"
 
             - name: Stage artifacts
               id: stage
               run: |
                   mkdir -p release-artifacts
-                  cp packages/android/native/app/build/outputs/apk/debug/app-debug.apk "release-artifacts/writeme-${VERSION}-android-debug.apk"
-                  test -s "release-artifacts/writeme-${VERSION}-android-debug.apk"
+                  APK_DIR="packages/android/native/app/build/outputs/apk"
+                  APK_SOURCE="$APK_DIR/debug/app-debug.apk"
+                  APK_NAME="writeme-${VERSION}-android-debug.apk"
+                  cp "$APK_SOURCE" "release-artifacts/$APK_NAME"
+                  test -s "release-artifacts/$APK_NAME"
 
             - uses: actions/upload-artifact@v4
               with:
