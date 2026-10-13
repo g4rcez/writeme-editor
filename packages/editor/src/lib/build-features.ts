@@ -7,6 +7,7 @@ const developmentFeatures = {
     terminal: true,
     codeExecution: true,
     templateScripts: true,
+    vimScripts: true,
     git: true,
     cli: true,
     meetingNotes: true,

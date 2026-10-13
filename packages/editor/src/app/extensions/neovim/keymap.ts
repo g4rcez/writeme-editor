@@ -55,7 +55,14 @@ export function eventKey(event: KeyboardEvent): string | null {
 
 export class KeymapRegistry {
     private mappings: Mapping[] = [];
-    constructor(private readonly leader: string) {}
+    constructor(private leader: string) {}
+
+    setLeader(leader: string): void {
+        this.leader = leader;
+    }
+    parse(sequence: string): readonly string[] {
+        return parseKeys(sequence, this.leader);
+    }
 
     set(
         modes: NeovimMode | readonly NeovimMode[],

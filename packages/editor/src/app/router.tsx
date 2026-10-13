@@ -29,6 +29,7 @@ const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
 const SettingsQuickPage = lazy(() => import("./pages/settings/settings-quick.page"));
 const SettingsAppearancePage = lazy(() => import("./pages/settings/settings-appearance.page"));
 const SettingsEditorPage = lazy(() => import("./pages/settings/settings-editor.page"));
+const SettingsVimPage = lazy(() => import("./pages/settings/settings-vim.page"));
 const SettingsShortcutsPage = lazy(() => import("./pages/settings/settings-shortcuts.page"));
 const SettingsTrashPage = lazy(() => import("./pages/settings/settings-trash.page"));
 const SettingsAIPage = lazy(() => import("./pages/settings/settings-ai.page"));
@@ -138,6 +139,10 @@ export const router = createRouter([
                     {
                         path: "editor",
                         element: <SettingsEditorPage />,
+                    },
+                    {
+                        path: "vim",
+                        element: <SettingsVimPage />,
                     },
                     {
                         path: "shortcuts",

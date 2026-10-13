@@ -93,7 +93,7 @@ jobs:
               run: npm run test:e2e -- --platform ${{ matrix.platform }} --suite browser tests/e2e/freehand-note.spec.ts ${{ matrix.platform == 'osx' && '--project desktop-macos' || '' }}
             - name: Verify formatted editor Vim mode
               if: matrix.desktop
-              run: npm run test:e2e -- --platform ${{ matrix.platform }} --suite browser tests/e2e/neovim.spec.ts --project chromium
+              run: npm run test:e2e -- --platform ${{ matrix.platform }} --suite browser tests/e2e/neovim.spec.ts tests/e2e/vim-settings.spec.ts --project chromium
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: artifacts/playwright/${{ matrix.platform }}/neovim
             - name: Verify handwriting production and offline persistence

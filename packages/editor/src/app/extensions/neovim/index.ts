@@ -41,6 +41,7 @@ export type NeovimApi = Pick<
     | "attach"
     | "destroy"
     | "flushPending"
+    | "configure"
 >;
 
 declare module "@tiptap/core" {
@@ -62,6 +63,7 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
         const controller = new NeovimController(this.options.leader, this.options.timeout);
         return {
             keymap: controller.keymap,
+            configure: controller.configure.bind(controller),
             motions: controller.motions,
             operators: controller.operators,
             textObjects: controller.textObjects,

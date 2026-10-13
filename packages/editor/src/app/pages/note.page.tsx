@@ -19,7 +19,8 @@ import { isNoteTabForNoteId } from "@/lib/tab-target";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { type EditorMode, SettingsService } from "@/store/settings";
-import { useUIStore } from "@/store/ui.store";
+import { uiDispatch, useUIStore } from "@/store/ui.store";
+import { useVimSettings } from "@/app/vim/use-vim-settings";
 import { isLatexFilePath } from "@/types/workspace-files";
 import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
@@ -264,7 +265,10 @@ export default function NotePage() {
     const hasRouteNoteTab = id ? state.tabs.some((tab) => isNoteTabForNoteId(tab, id)) : false;
     const isLoading = note === null;
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
-    const [rawEditorVimMode, setRawEditorVimMode] = useState<boolean>(() => SettingsService.load().rawEditorVimMode);
+    const vimSettings = useVimSettings();
+    const [pendingVimMode, setPendingVimMode] = useState<boolean | null>(null);
+    const vimSaveVersion = useRef(0);
+    const vimMode = pendingVimMode ?? vimSettings.enabled;
     const [historyOpen, setHistoryOpen] = useState(false);
     const [favoriteSaving, setFavoriteSaving] = useState(false);
     const editorPanes = useEditorPanes(
@@ -307,14 +311,20 @@ export default function NotePage() {
             return nextMode;
         });
     }, []);
-    const changeRawEditorVimMode = useCallback((nextVimMode: boolean): void => {
-        setRawEditorVimMode((currentVimMode) => {
-            if (currentVimMode === nextVimMode) return currentVimMode;
-            void SettingsService.save({ rawEditorVimMode: nextVimMode }).catch((error) => {
-                console.error("Failed to save raw editor Vim mode:", error);
+    const changeVimMode = useCallback((nextVimMode: boolean): void => {
+        const version = ++vimSaveVersion.current;
+        setPendingVimMode(nextVimMode);
+        void SettingsService.save({ vimMode: nextVimMode })
+            .catch((error: unknown) => {
+                uiDispatch.setAlert({
+                    open: true,
+                    type: "error",
+                    message: error instanceof Error ? error.message : String(error),
+                });
+            })
+            .finally(() => {
+                if (version === vimSaveVersion.current) setPendingVimMode(null);
             });
-            return nextVimMode;
-        });
     }, []);
 
     useEffect(() => {
@@ -427,7 +437,7 @@ export default function NotePage() {
                 {hasRichEditor ? (
                     <div className="writeme-note-editor-controls">
                         {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
-                        <VimModeToggle enabled={rawEditorVimMode} onChange={changeRawEditorVimMode} />
+                        <VimModeToggle enabled={vimMode} onChange={changeVimMode} />
                     </div>
                 ) : null}
             </div>
@@ -558,7 +568,7 @@ export default function NotePage() {
                     notes={state.notes}
                     currentNote={note}
                     editorMode={activeEditorMode}
-                    rawEditorVimMode={rawEditorVimMode}
+                    vimMode={vimMode}
                     onActivate={editorPanes.activate}
                     onSelectNote={editorPanes.selectNote}
                     onAdd={editorPanes.add}
@@ -575,7 +585,7 @@ export default function NotePage() {
                         key={note.id}
                         content={note.content || ""}
                         mode={activeEditorMode}
-                        rawEditorVimMode={rawEditorVimMode}
+                        vimMode={vimMode}
                     />
                 </EditorDropTarget>
             )}

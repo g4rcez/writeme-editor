@@ -4,6 +4,45 @@ Enable **Vim mode** in the note toolbar or editor settings. The setting applies
 to both Formatted and Markdown notes. Formatted notes use the `neovim` Tiptap
 extension; Markdown notes retain the existing CodeMirror Vim integration.
 
+## Global init.ts
+
+Open **Settings / Vim** to enable Vim for all editors and customize one global
+TypeScript configuration. Save validates the configuration before persisting it;
+syntax, runtime, or option errors leave the previous saved configuration in place.
+An empty file restores the default bindings. The old `rawEditorVimMode` preference
+migrates to the shared `vimMode` setting, and source is stored as `vimConfig`.
+
+```ts
+import type { VimConfigApi } from "@writeme/vim";
+
+export default function configure(vim: VimConfigApi): void {
+    vim.opt.leader = ",";
+    vim.opt.timeout = 600;
+    vim.opt.initialMode = "normal";
+    vim.keymap.set("normal", "<leader>d", "dw");
+    vim.keymap.set("insert", "jk", "<Esc>");
+}
+```
+
+The same mappings apply to both editors. Configuration can use TypeScript
+annotations, functions, loops, and conditionals. Use normal, insert, and visual
+modes (visual also applies to Visual Line). `keymap.del` removes a registration;
+the last registration for a mode and left-hand side wins. Mapping actions are Vim
+key-sequence strings, with optional `description` and `remap` options. Runtime
+imports and asynchronous setup are unsupported. Type-only imports are stripped.
+The runner checks syntax and the resulting options/mappings; it does not perform
+general TypeScript type checking.
+
+Configuration runs in a background worker with a three-second deadline. It
+returns serializable options and mappings; editor objects are not passed to it.
+Source is limited to 50,000 characters and 500 mappings. Callback-based Tiptap
+extension APIs below remain available to application code separately.
+
+The immutable `vimScripts` build flag controls the runner. Store builds exclude
+its executable implementation and TypeScript compiler, while keeping ordinary
+Vim mode available. Desktop direct/Homebrew and web builds enable customization;
+mobile builds keep it disabled. See [build profiles](../build-profiles.md).
+
 ## Supported commands in formatted notes
 
 | Behavior                 | Keys                                                          |
@@ -39,7 +78,8 @@ editing command and its inserted slice at the current cursor.
 This extension implements a defined subset of Neovim editing behavior. Visual
 Block, named/system registers, macros, regex search, and general Ex commands are
 not supported. Raw Markdown has the capabilities provided by CodeMirror Vim;
-its mappings and registers are separate from the formatted editor API.
+its engine and registers are separate from the formatted editor API, while the
+global init.ts supplies shared key-sequence mappings to both engines.
 
 ## Extension API
 

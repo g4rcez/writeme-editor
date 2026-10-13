@@ -23,6 +23,12 @@ Mobile profiles respect actual mobile capabilities: desktop shells, CLI installa
 
 ## Policy audit
 
+Vim mode remains available across distributions. The dedicated `vimScripts`
+capability excludes user TypeScript initialization from store and mobile builds;
+desktop direct/Homebrew and web builds retain it. See the
+[Vim script policy review](editor/vim-store-policy.md) for the 2026-10-13 findings
+and enforcement tests.
+
 Reviewed against the official policies on 2026-10-11. These are conservative Writeme release decisions, not assertions that every listed capability is categorically prohibited by every store.
 
 | Capability        | Writeme implementation                                                           | Store build decision and reason                                                                                                                                                                                                                             |

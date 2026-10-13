@@ -23,7 +23,7 @@ import {
     previousCharacter,
     rangeAllowed,
 } from "./document";
-import { KeymapRegistry, parseKeys } from "./keymap";
+import { KeymapRegistry } from "./keymap";
 import { builtinMotions, builtinTextObjects, findCharacter } from "./motions";
 import { neovimKey } from "./state";
 
@@ -60,9 +60,15 @@ export class NeovimController {
 
     constructor(
         leader: string,
-        private readonly timeout: number,
+        private timeout: number,
     ) {
         this.keymap = new KeymapRegistry(leader);
+    }
+
+    configure(options: { readonly leader: string; readonly timeout: number }): void {
+        this.flushPending();
+        this.keymap.setLeader(options.leader);
+        this.timeout = options.timeout;
     }
 
     attach(editor: Editor): void {
@@ -89,6 +95,7 @@ export class NeovimController {
 
     setMode(mode: NeovimMode, keys: readonly string[] = [], position?: number): void {
         this.cancelTimer();
+        const focused = this.editor.view.hasFocus();
         const state = this.getState();
         if (!state) return;
         const doc = this.editor.state.doc;
@@ -122,6 +129,11 @@ export class NeovimController {
             message: "",
         } satisfies Partial<NeovimState>);
         this.editor.view.dispatch(inserting && ["c", "C", "o", "O"].includes(keys[0] ?? "") ? tr : closeHistory(tr));
+        if (focused) {
+            // WebKit needs native focus renewed after removing the noneditable cursor widget.
+            if (inserting) this.editor.view.dom.blur();
+            this.editor.view.focus();
+        }
         if (visual) this.move(pos);
     }
 
@@ -214,7 +226,7 @@ export class NeovimController {
             return true;
         }
         for (let repeat = 0; repeat < (prefix.length ? 1 : count); repeat++)
-            for (const key of parseKeys(mapping.action)) {
+            for (const key of this.keymap.parse(mapping.action)) {
                 const handled = this.feed(key, mapping.remap === true, depth + 1);
                 const mode = this.getState()?.mode;
                 if (!handled && (mode === "insert" || mode === "replace") && !key.startsWith("<"))
@@ -224,7 +236,7 @@ export class NeovimController {
     }
 
     feedKeys(sequence: string): void {
-        for (const key of parseKeys(sequence)) {
+        for (const key of this.keymap.parse(sequence)) {
             const handled = this.feed(key);
             const mode = this.getState()?.mode;
             if (!handled && (mode === "insert" || mode === "replace") && !key.startsWith("<"))

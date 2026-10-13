@@ -46,7 +46,7 @@ type EditorPanesProps = {
     notes: readonly Note[];
     currentNote: Note;
     editorMode: EditorMode;
-    rawEditorVimMode: boolean;
+    vimMode: boolean;
     onActivate: (paneId: string) => void;
     onSelectNote: (paneId: string, noteId: string) => void;
     onAdd: () => void;
@@ -73,7 +73,7 @@ export function EditorPanes({
     notes,
     currentNote,
     editorMode,
-    rawEditorVimMode,
+    vimMode,
     onActivate,
     onSelectNote,
     onAdd,
@@ -122,7 +122,7 @@ export function EditorPanes({
                     options={options}
                     active={pane.id === state.activePaneId}
                     editorMode={editorMode}
-                    rawEditorVimMode={rawEditorVimMode}
+                    vimMode={vimMode}
                     paneCount={state.panes.length}
                     siblingCount={count}
                     notes={notes}
@@ -205,7 +205,7 @@ type PaneContentProps = {
     options: Array<{ label: string; value: string }>;
     active: boolean;
     editorMode: EditorMode;
-    rawEditorVimMode: boolean;
+    vimMode: boolean;
     paneCount: number;
     siblingCount: number;
     notes: readonly Note[];
@@ -227,7 +227,7 @@ function PaneContent({
     options,
     active,
     editorMode,
-    rawEditorVimMode,
+    vimMode,
     paneCount,
     siblingCount,
     notes,
@@ -431,7 +431,7 @@ function PaneContent({
                             note={note}
                             content={note.content || ""}
                             mode={editorMode}
-                            rawEditorVimMode={rawEditorVimMode}
+                            vimMode={vimMode}
                             active={active}
                         />
                     </div>

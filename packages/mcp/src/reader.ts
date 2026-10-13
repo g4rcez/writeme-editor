@@ -32,6 +32,7 @@ const scalarSettings = new Set([
     "autosaveDelay",
     "editorMode",
     "rawEditorVimMode",
+    "vimMode",
     "editorFontSize",
     "sidebarWidth",
     "explorerRoot",
