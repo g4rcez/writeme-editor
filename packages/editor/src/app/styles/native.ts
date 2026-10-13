@@ -1,127 +1,116 @@
-import { isElectron } from "@/lib/is-electron";
-import type { WritemeThemeTokens } from "./theme-css";
+import { createWritemeThemeCss, type WritemeThemeTokens } from "./theme-css";
 
-const appleLabel = "hsla(240, 24%, 96%)";
-const appleBlack = isElectron() ? "hsla(0, 0%, 0%)" : "hsla(192, 2%, 10%)";
-const overlay = "hsla(192, 2%, 3%)";
-const appleSystemGray = "hsla(240, 2%, 57%)";
-const appleSecondaryLabel = "hsla(240, 4%, 78%)";
-const appleSystemGray4 = "hsla(240, 2%, 23%)";
-const appleSystemGray5 = "hsla(240, 2%, 18%)";
-const appleSystemGray6 = "hsla(240, 3%, 11%)";
-const appleBase = appleSystemGray6;
-const appleSystemAccent = "hsla(var(--native-system-accent, 210, 100%, 52%))";
-const appleSystemGreen = "hsla(135, 64%, 50%)";
-const appleSystemIndigo = "hsla(241, 73%, 63%)";
-const appleSystemOrange = "hsla(36, 100%, 52%)";
-const appleSystemPink = "hsla(348, 100%, 61%)";
-const appleSystemPurple = "hsla(280, 85%, 65%)";
-const appleSystemRed = "hsla(3, 100%, 61%)";
-const appleSystemTeal = "hsla(197, 100%, 70%)";
-const appleSystemYellow = "hsla(50, 100%, 52%)";
+const systemAccent = "var(--native-system-accent, AccentColor)";
+const systemBorder = "color-mix(in srgb, ButtonBorder 84%, Canvas)";
+const systemOverlay = "color-mix(in srgb, CanvasText 24%, transparent)";
 
 export const nativeTheme = {
     custom: {
-        "json-bg": appleSystemGray6,
-        "json-key": appleSystemAccent,
-        "json-string": appleSystemGreen,
-        "json-number": appleSystemOrange,
-        "json-boolean": appleSystemPurple,
-        "json-null": appleSystemGray,
-        "json-separator": appleSystemTeal,
-        "json-hover": appleSystemGray5,
-        "json-caret": appleSystemGray,
+        "json-bg": "Canvas",
+        "json-key": "LinkText",
+        "json-string": "CanvasText",
+        "json-number": systemAccent,
+        "json-boolean": "Mark",
+        "json-null": "GrayText",
+        "json-separator": systemBorder,
+        "json-hover": "ButtonFace",
+        "json-caret": "CanvasText",
     },
     colors: {
-        background: appleBase,
-        foreground: appleLabel,
-        border: appleSystemGray4,
-        ring: appleSystemAccent,
-        disabled: appleSystemGray,
+        background: "Canvas",
+        foreground: "CanvasText",
+        border: systemBorder,
+        ring: systemAccent,
+        disabled: "GrayText",
         muted: {
-            DEFAULT: appleSystemGray5,
-            foreground: appleSecondaryLabel,
-            subtle: appleSecondaryLabel,
-            hover: appleSystemGray4,
+            DEFAULT: "ButtonFace",
+            foreground: "GrayText",
+            subtle: "ButtonFace",
+            hover: "ButtonFace",
         },
         emphasis: {
-            foreground: appleBlack,
-            DEFAULT: appleSystemOrange,
-            subtle: "hsla(36, 100%, 16%)",
-            hover: appleSystemYellow,
+            foreground: "MarkText",
+            DEFAULT: "Mark",
+            subtle: "ButtonFace",
+            hover: "Mark",
         },
         primary: {
-            foreground: appleBlack,
-            DEFAULT: appleSystemAccent,
-            subtle: "hsla(var(--native-system-accent, 210, 100%, 52%), 0.16)",
-            hover: appleSystemTeal,
+            foreground: "AccentColorText",
+            DEFAULT: systemAccent,
+            subtle: "ButtonFace",
+            hover: systemAccent,
         },
         secondary: {
-            foreground: appleBlack,
-            DEFAULT: appleSystemIndigo,
-            subtle: "hsla(241, 73%, 16%)",
-            hover: appleSystemPurple,
-            background: appleSystemGray5,
+            foreground: "ButtonText",
+            DEFAULT: "ButtonFace",
+            subtle: "ButtonFace",
+            hover: "ButtonFace",
+            background: "ButtonFace",
         },
         info: {
-            DEFAULT: appleSystemTeal,
-            subtle: "hsla(197, 100%, 14%)",
-            hover: appleSystemAccent,
-            foreground: appleBlack,
-            notification: appleSystemTeal,
+            DEFAULT: systemAccent,
+            subtle: "ButtonFace",
+            hover: systemAccent,
+            foreground: "AccentColorText",
+            notification: systemAccent,
         },
         warn: {
-            DEFAULT: appleSystemYellow,
-            subtle: "hsla(50, 100%, 14%)",
-            hover: appleSystemOrange,
-            foreground: appleBlack,
-            notification: appleSystemYellow,
+            DEFAULT: "Mark",
+            subtle: "ButtonFace",
+            hover: "Mark",
+            foreground: "MarkText",
+            notification: "Mark",
         },
         danger: {
-            DEFAULT: appleSystemRed,
-            subtle: "hsla(3, 100%, 15%)",
-            hover: appleSystemPink,
-            foreground: appleBlack,
-            notification: appleSystemRed,
+            DEFAULT: "CanvasText",
+            subtle: "ButtonFace",
+            hover: "CanvasText",
+            foreground: "Canvas",
+            notification: "CanvasText",
         },
         success: {
-            DEFAULT: appleSystemGreen,
-            subtle: "hsla(135, 64%, 14%)",
-            hover: appleSystemTeal,
-            foreground: appleBlack,
-            notification: appleSystemGreen,
+            DEFAULT: systemAccent,
+            subtle: "ButtonFace",
+            hover: systemAccent,
+            foreground: "AccentColorText",
+            notification: systemAccent,
         },
         input: {
-            border: appleSystemGray4,
-            placeholder: appleSecondaryLabel,
-            "mask-error": appleSystemPink,
-            "switch-bg": appleSystemGray5,
-            switch: appleLabel,
-            slider: appleLabel,
+            border: systemBorder,
+            placeholder: "GrayText",
+            "mask-error": "CanvasText",
+            "switch-bg": "ButtonFace",
+            switch: "ButtonText",
+            slider: systemAccent,
         },
         card: {
-            muted: appleSystemGray5,
-            border: appleSystemGray4,
-            background: appleSystemGray6,
+            muted: "ButtonFace",
+            border: systemBorder,
+            background: "Canvas",
         },
         floating: {
-            foreground: appleLabel,
-            background: appleSystemGray6,
-            hover: appleSystemGray5,
-            border: appleSystemGray4,
-            overlay,
+            foreground: "CanvasText",
+            background: "Canvas",
+            hover: "ButtonFace",
+            border: systemBorder,
+            overlay: systemOverlay,
         },
         tooltip: {
-            foreground: appleLabel,
-            background: appleSystemGray5,
-            hover: appleSystemGray4,
-            border: appleSystemGray4,
-            overlay,
+            foreground: "CanvasText",
+            background: "ButtonFace",
+            hover: "ButtonFace",
+            border: systemBorder,
+            overlay: systemOverlay,
         },
         table: {
-            background: appleBase,
-            header: appleSystemGray6,
-            border: appleSystemGray4,
+            background: "Canvas",
+            header: "ButtonFace",
+            border: systemBorder,
         },
     },
 } satisfies WritemeThemeTokens;
+
+export const createNativeThemeCss = (): string =>
+    [createWritemeThemeCss("native", nativeTheme, "light"), "html.native {\n    color-scheme: light dark;\n}"].join(
+        "\n\n",
+    );

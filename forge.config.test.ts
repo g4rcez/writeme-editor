@@ -58,6 +58,15 @@ describe("Forge configuration", () => {
                         const dmgMaker = config.makers.find(maker => maker.name === "dmg");
                         assert.equal(squirrelMaker.configOrConfigFetcher.setupIcon, "./public/icon.ico");
                         assert.equal(dmgMaker.configOrConfigFetcher.icon, "./public/icon.icns");
+                        assert.equal(dmgMaker.configOrConfigFetcher.background, "./public/dmg-background.png");
+                        assert.equal(dmgMaker.configOrConfigFetcher.iconSize, 88);
+                        assert.deepEqual(dmgMaker.configOrConfigFetcher.additionalDMGOptions.window, {
+                            size: { width: 658, height: 498 },
+                        });
+                        assert.deepEqual(dmgMaker.configOrConfigFetcher.contents({ appPath: "/tmp/writeme.app" }), [
+                            { x: 179, y: 257, type: "file", path: "/tmp/writeme.app" },
+                            { x: 485, y: 257, type: "link", path: "/Applications" },
+                        ]);
                         assert.deepEqual(config.plugins.map(plugin => plugin.name), [
                             "auto-unpack-natives", "vite", "fuses",
                         ]);

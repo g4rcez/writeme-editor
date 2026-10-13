@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1327" height="1011" viewBox="0 0 1327 1011">
+  <defs>
+    <linearGradient id="app-tile" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#f7f7f8"/>
+      <stop offset="1" stop-color="#dedee1"/>
+    </linearGradient>
+    <linearGradient id="folder-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#71c5ff"/>
+      <stop offset="1" stop-color="#1685f4"/>
+    </linearGradient>
+    <linearGradient id="folder-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8bd0ff"/>
+      <stop offset="0.48" stop-color="#45a9ff"/>
+      <stop offset="1" stop-color="#1684ed"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-35%" y="-30%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#11121a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="folder-shadow" x="-30%" y="-30%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#11121a" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <style>text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }</style>
+  <rect width="1327" height="1011" fill="#ececf0"/>
+  <rect x="9" y="9" width="1309" height="993" rx="14" fill="#fbfbfc" stroke="#d8d8de" stroke-width="1.5"/>
+
+  <text x="663.5" y="259" text-anchor="middle" font-size="48" font-weight="600" fill="#202025">Drag writeme.app to Applications</text>
+  <text x="663.5" y="304" text-anchor="middle" font-size="22" font-weight="400" fill="#65656d">That's all it takes to install.</text>
+
+  <g filter="url(#soft-shadow)">
+    <rect x="268" y="424" width="178" height="178" rx="36.5" fill="url(#app-tile)" stroke="#ffffff" stroke-width="2"/>
+    <image href="writeme-mark.png" x="274.2" y="430.2" width="165.6" height="165.6" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+
+  <path d="M523 496 H754 V464 L841 520 L754 576 V544 H523 Z" fill="#202025"/>
+
+  <g transform="translate(880,438) scale(1.1558)" filter="url(#folder-shadow)">
+    <path d="M13 22 C13 13 19 8 28 8 H61 L74 21 H135 C144 21 150 27 150 37 V105 C150 114 144 120 134 120 H20 C10 120 5 114 5 104 V31 C5 26 8 22 13 22 Z" fill="url(#folder-back)" stroke="#147ce0" stroke-width="2"/>
+    <path d="M7 43 C7 35 13 30 22 30 H137 C146 30 151 36 151 45 V106 C151 115 145 120 136 120 H20 C11 120 5 115 5 106 V48 C5 46 6 44 7 43 Z" fill="url(#folder-front)" stroke="#d9efff" stroke-width="2"/>
+    <path d="M10 46 C11 40 16 37 23 37 H135" fill="none" stroke="#ffffff" stroke-opacity="0.82" stroke-width="3" stroke-linecap="round"/>
+    <g fill="none" stroke="#117bd2" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.72">
+      <path d="M78 53 L57 88 M78 53 L99 88 M63 78 H92 M53 94 H104"/>
+    </g>
+    <circle cx="24" cy="105" r="19" fill="#f8f8f8" stroke="#c9c9cc" stroke-width="2"/>
+    <path d="M17 112 V105 C17 100 20 97 25 97 H30 V91 L38 99 L30 107 V102 H25 C23 102 22 103 22 105 V112 Z" fill="#303035"/>
+  </g>
+
+  <text x="357" y="645" text-anchor="middle" font-size="22" font-weight="500" fill="#242429">writeme.app</text>
+  <text x="969" y="645" text-anchor="middle" font-size="22" font-weight="500" fill="#242429">Applications</text>
+</svg>

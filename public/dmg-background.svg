@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="658" height="498" viewBox="0 0 658 498">
+  <rect width="658" height="498" fill="#ececf0"/>
+  <rect x="4.5" y="4.5" width="649" height="489" rx="7" fill="#fbfbfc" stroke="#d8d8de" stroke-width="0.75"/>
+
+  <text x="329" y="129.5" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#202025">Drag writeme.app to Applications</text>
+  <text x="329" y="152" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#65656d">That's all it takes to install.</text>
+
+  <path d="M261.5 248 H377 V232 L420.5 260 L377 288 V272 H261.5 Z" fill="#202025"/>
+</svg>

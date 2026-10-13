@@ -1,5 +1,6 @@
 import { v7 as uuid } from "uuid";
 import { isElectron } from "@/lib/is-electron";
+import { rememberClosedTab } from "@/lib/recently-closed-tabs";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import {
   AI_CHAT_TAB_TYPE,
@@ -487,6 +488,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       if (closedTab && isTerminalTab(closedTab)) {
         await repositories.terminalSessions.delete(closedTab.noteId);
       }
+      if (closedTab) rememberClosedTab(closedTab);
       const tabs = state.tabs.filter((tab) => tab.id !== id);
       const terminalSessions = closedTab
         ? state.terminalSessions.filter(
