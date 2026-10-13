@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { defaultVimConfiguration } from "../configuration";
 import { compileVimConfiguration } from "./compile";
 
 class WorkerStub {
@@ -18,11 +19,31 @@ afterEach(() => {
 });
 
 describe("Vim configuration worker", () => {
+    it("allows a slow worker startup before starting the script execution deadline", async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal("Worker", WorkerStub);
+        let status = "pending";
+        const result = compileVimConfiguration("vim.opt.timeout = 500;");
+        void result.then(
+            () => {
+                status = "resolved";
+            },
+            () => {
+                status = "rejected";
+            },
+        );
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(status).toBe("pending");
+        WorkerStub.last?.onmessage?.({ data: { ready: true } });
+        WorkerStub.last?.onmessage?.({ data: { ok: true, configuration: defaultVimConfiguration() } });
+        await expect(result).resolves.toEqual(defaultVimConfiguration());
+    });
     it("terminates an endless script and rejects the pending validation", async () => {
         vi.useFakeTimers();
         vi.stubGlobal("Worker", WorkerStub);
         const result = compileVimConfiguration("while (true) {}");
         const rejection = expect(result).rejects.toThrow("too long");
+        WorkerStub.last?.onmessage?.({ data: { ready: true } });
         await vi.advanceTimersByTimeAsync(3000);
         await rejection;
         expect(WorkerStub.last?.terminate).toHaveBeenCalledOnce();

@@ -8,3 +8,5 @@ self.onmessage = (event: MessageEvent<unknown>): void => {
         self.postMessage({ ok: false, error: error instanceof Error ? error.message : String(error) });
     }
 };
+
+self.postMessage({ ready: true });

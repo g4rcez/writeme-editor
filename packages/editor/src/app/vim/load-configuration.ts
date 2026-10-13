@@ -8,6 +8,13 @@ export function loadVimConfiguration(source: string): Promise<VimConfiguration> 
     if (!source.trim() || !FEATURES.vimScripts) return Promise.resolve(defaultVimConfiguration());
     if (cachedSource === source && cachedResult) return cachedResult;
     cachedSource = source;
-    cachedResult = import("./scripts/compile").then(({ compileVimConfiguration }) => compileVimConfiguration(source));
+    const result = import("./scripts/compile").then(({ compileVimConfiguration }) => compileVimConfiguration(source));
+    cachedResult = result;
+    void result.catch(() => {
+        if (cachedResult === result) {
+            cachedSource = undefined;
+            cachedResult = undefined;
+        }
+    });
     return cachedResult;
 }

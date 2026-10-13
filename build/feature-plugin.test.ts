@@ -87,6 +87,8 @@ describe("compiled capability removal", () => {
             "app/vim/scripts/evaluate.ts",
             "app/vim/scripts/compile.ts",
             "app/vim/scripts/configuration.worker.ts",
+            "app/vim/scripts/configuration-editor.tsx",
+            "app/vim/scripts/configuration-completion.ts",
             "server/proxy.ts",
         ]) {
             expect(restrictedFeature(path.join(root, file), profile), file).toBeDefined();

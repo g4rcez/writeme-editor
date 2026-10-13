@@ -33,8 +33,16 @@ imports and asynchronous setup are unsupported. Type-only imports are stripped.
 The runner checks syntax and the resulting options/mappings; it does not perform
 general TypeScript type checking.
 
-Configuration runs in a background worker with a three-second deadline. It
-returns serializable options and mappings; editor objects are not passed to it.
+The configuration block uses CodeMirror in TypeScript mode, with syntax
+highlighting, TypeScript snippets, local variable completion, and suggestions for
+the supported Vim API. Ctrl+Space opens completion; Tab accepts a suggestion, and
+Escape closes it. Save Vim and Ctrl/Cmd+S validate and persist the global source.
+Save status and validation errors appear above the editor.
+
+Configuration runs in a background worker with a three-second execution deadline
+after the compiler is ready. Startup has a separate fifteen-second deadline.
+Failed workers can be retried with the same source. The worker returns
+serializable options and mappings; editor objects are not passed to it.
 Source is limited to 50,000 characters and 500 mappings. Callback-based Tiptap
 extension APIs below remain available to application code separately.
 
