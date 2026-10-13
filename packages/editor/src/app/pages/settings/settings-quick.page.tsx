@@ -38,12 +38,10 @@ export default function SettingsQuickPage() {
     return (
         <SettingsPageShell
             title="Quick Settings"
-            description="A compact set of controls for the preferences you change most often. Changes here save immediately."
+            description="Frequently used preferences. Changes save immediately."
             actions={saving ? <span className="self-center text-xs text-muted-foreground">Saving...</span> : null}
         >
-            <div className="py-2">
-                <QuickSettingsControls settings={settings} onPatch={onPatch} />
-            </div>
+            <QuickSettingsControls settings={settings} onPatch={onPatch} />
         </SettingsPageShell>
     );
 }

@@ -65,7 +65,7 @@ function SidebarFooterTab({ icon, label, active, onClick }: SidebarFooterTabProp
 
 export const SidebarShell = () => {
     const [state, dispatch] = useGlobalStore();
-    const [, layoutDispatch] = useLayoutStore();
+    const [layout, layoutDispatch] = useLayoutStore();
     const [uiState] = useUIStore();
     const location = useLocation();
     const navigate = useNavigate();
@@ -115,55 +115,66 @@ export const SidebarShell = () => {
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="shrink-0 py-3">
-                    <div className="mb-2 flex items-center justify-between px-1">
-                        <h2 className="text-xs font-medium text-muted-foreground">Workspace</h2>
-                        <span className="font-mono text-[10px] text-muted-foreground/60">{state.notes.length}</span>
-                    </div>
-                    <div className="grid grid-cols-[1fr_auto] gap-2">
-                        <Button size="small" theme="primary" onClick={createNewNote} title="New note (⌘N)">
-                            <NotePencilIcon size={15} aria-hidden="true" />
-                            <span>New note</span>
-                        </Button>
-                        <Button
-                            size="small"
-                            theme="muted"
-                            onClick={openSearch}
-                            aria-label="Open note"
-                            title={`Open note (${mapShortcutOS("mod+k")})`}
-                        >
-                            <FileSearchIcon size={16} aria-hidden="true" />
-                        </Button>
-                    </div>
-                </div>
+                {layout.activeActivity !== "settings" ? (
+                    <>
+                        <div className="shrink-0 py-3">
+                            <div className="mb-2 flex items-center justify-between px-1">
+                                <h2 className="text-xs font-medium text-muted-foreground">Workspace</h2>
+                                <span className="font-mono text-[10px] text-muted-foreground/60">
+                                    {state.notes.length}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-[1fr_auto] gap-2">
+                                <Button size="small" theme="primary" onClick={createNewNote} title="New note (⌘N)">
+                                    <NotePencilIcon size={15} aria-hidden="true" />
+                                    <span>New note</span>
+                                </Button>
+                                <Button
+                                    size="small"
+                                    theme="muted"
+                                    onClick={openSearch}
+                                    aria-label="Open note"
+                                    title={`Open note (${mapShortcutOS("mod+k")})`}
+                                >
+                                    <FileSearchIcon size={16} aria-hidden="true" />
+                                </Button>
+                            </div>
+                        </div>
 
-                <nav className="grid shrink-0 gap-0.5 border-b border-border/40 pb-3" aria-label="Workspace views">
-                    <SidebarNavItem
-                        active={location.pathname.startsWith("/notes")}
-                        label="All notes"
-                        icon={<NotePencilIcon size={15} />}
-                        onClick={() => {
-                            navigate("/notes");
-                            layoutDispatch.setActivity("explorer");
-                            layoutDispatch.setView({ type: "all" });
-                        }}
-                    />
-                    <SidebarNavItem
-                        label="Tasks"
-                        active={uiState.tasksDialog.isOpen}
-                        icon={<ListBulletsIcon size={15} />}
-                        onClick={() => uiDispatch.openTasksDialog()}
-                    />
-                    {supportsAI() && <SidebarNavItem
-                        label="Workspace AI"
-                        icon={<RobotIcon size={15} />}
-                        active={location.pathname.startsWith("/chat")}
-                        onClick={() => {
-                            layoutDispatch.setActivity("ai");
-                            navigate("/chat");
-                        }}
-                    />}
-                </nav>
+                        <nav
+                            className="grid shrink-0 gap-0.5 border-b border-border/40 pb-3"
+                            aria-label="Workspace views"
+                        >
+                            <SidebarNavItem
+                                active={location.pathname.startsWith("/notes")}
+                                label="All notes"
+                                icon={<NotePencilIcon size={15} />}
+                                onClick={() => {
+                                    navigate("/notes");
+                                    layoutDispatch.setActivity("explorer");
+                                    layoutDispatch.setView({ type: "all" });
+                                }}
+                            />
+                            <SidebarNavItem
+                                label="Tasks"
+                                active={uiState.tasksDialog.isOpen}
+                                icon={<ListBulletsIcon size={15} />}
+                                onClick={() => uiDispatch.openTasksDialog()}
+                            />
+                            {supportsAI() && (
+                                <SidebarNavItem
+                                    label="Workspace AI"
+                                    icon={<RobotIcon size={15} />}
+                                    active={location.pathname.startsWith("/chat")}
+                                    onClick={() => {
+                                        layoutDispatch.setActivity("ai");
+                                        navigate("/chat");
+                                    }}
+                                />
+                            )}
+                        </nav>
+                    </>
+                ) : null}
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">
                     <SidebarContent />

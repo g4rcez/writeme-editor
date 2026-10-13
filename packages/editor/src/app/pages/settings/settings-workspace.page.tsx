@@ -35,15 +35,26 @@ export default function SettingsWorkspacePage() {
         }
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings)
+        return (
+            <p role="status" className="text-sm text-muted-foreground">
+                Loading settings...
+            </p>
+        );
 
     return (
         <SettingsPageShell
             title="Workspace"
             description="Review your notes workspace and choose folders for templates and quick notes."
-            actions={saving ? <span className="self-center text-xs text-muted-foreground">Saving...</span> : null}
+            actions={
+                saving ? (
+                    <span role="status" className="self-center text-sm text-muted-foreground">
+                        Saving...
+                    </span>
+                ) : null
+            }
         >
-            <div className="divide-y divide-border/30">
+            <div className="divide-y divide-border">
                 <WorkspacePath
                     label="Notes Directory"
                     value={settings.directory || "No directory selected (Local Storage)"}
@@ -52,7 +63,13 @@ export default function SettingsWorkspacePage() {
                     label="Templates Directory"
                     value={settings.templatesDirectory || "Default (.templates in workspace)"}
                     action={
-                        <Button size="small" theme="ghost-primary" onClick={chooseTemplatesDirectory}>
+                        <Button
+                            size="small"
+                            theme="ghost-primary"
+                            disabled={saving}
+                            aria-label="Change Folder for Templates Directory"
+                            onClick={chooseTemplatesDirectory}
+                        >
                             Change Folder
                         </Button>
                     }
@@ -65,7 +82,13 @@ export default function SettingsWorkspacePage() {
                         (settings.directory ? `${settings.directory}/quicknotes` : "Default (quicknotes in workspace)")
                     }
                     action={
-                        <Button size="small" theme="ghost-primary" onClick={chooseQuicknotesDirectory}>
+                        <Button
+                            size="small"
+                            theme="ghost-primary"
+                            disabled={saving}
+                            aria-label="Change Folder for Quick Notes Directory"
+                            onClick={chooseQuicknotesDirectory}
+                        >
                             Change Folder
                         </Button>
                     }
@@ -86,15 +109,13 @@ type WorkspacePathProps = {
 
 function WorkspacePath({ label, value, description, action }: WorkspacePathProps) {
     return (
-        <div className="py-4">
-            <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-foreground">{label}</span>
-                {action}
+        <section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start" aria-label={label}>
+            <div className="min-w-0 space-y-1">
+                <h2 className="text-sm font-medium text-foreground">{label}</h2>
+                <p className="break-all text-sm leading-6 text-foreground">{value}</p>
+                {description ? <p className="text-sm leading-6 text-muted-foreground">{description}</p> : null}
             </div>
-            <code className="block rounded border border-border/50 bg-muted/20 p-2 text-xs text-muted-foreground whitespace-pre-wrap break-all">
-                {value}
-            </code>
-            {description ? <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{description}</p> : null}
-        </div>
+            {action ? <div className="justify-self-start sm:justify-self-end">{action}</div> : null}
+        </section>
     );
 }

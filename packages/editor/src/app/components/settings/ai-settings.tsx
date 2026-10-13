@@ -3,9 +3,7 @@ import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/csr/ArrowSquareOu
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { CopyIcon } from "@phosphor-icons/react/dist/csr/Copy";
 import { PlugIcon } from "@phosphor-icons/react/dist/csr/Plug";
-import { ShieldCheckIcon } from "@phosphor-icons/react/dist/csr/ShieldCheck";
 import { SpinnerIcon } from "@phosphor-icons/react/dist/csr/Spinner";
-import { TerminalIcon } from "@phosphor-icons/react/dist/csr/Terminal";
 import { XCircleIcon } from "@phosphor-icons/react/dist/csr/XCircle";
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { v7 as uuid } from "uuid";
@@ -33,7 +31,6 @@ const PROVIDER_META: Record<
         keyHint: string;
         oauthLabel: string;
         disconnectLabel: string;
-        shortLabel: string;
     }
 > = {
     anthropic: {
@@ -42,7 +39,6 @@ const PROVIDER_META: Record<
         keyHint: "Starts with sk-ant-",
         oauthLabel: "Sign in with Claude",
         disconnectLabel: "Disconnect Claude account",
-        shortLabel: "Claude",
     },
     gemini: {
         description: "Gemini models with OAuth or API key",
@@ -50,7 +46,6 @@ const PROVIDER_META: Record<
         keyHint: "Google AI Studio API key",
         oauthLabel: "Connect with Google",
         disconnectLabel: "Disconnect Google account",
-        shortLabel: "Gemini",
     },
     openai: {
         description: "GPT and o-series models with ChatGPT OAuth",
@@ -58,7 +53,6 @@ const PROVIDER_META: Record<
         keyHint: "",
         oauthLabel: "Sign in with OpenAI",
         disconnectLabel: "Disconnect OpenAI account",
-        shortLabel: "GPT",
     },
     ollama: {
         description: "Local or cloud Ollama via OpenAI-compatible endpoints",
@@ -66,7 +60,6 @@ const PROVIDER_META: Record<
         keyHint: "Optional cloud API key",
         oauthLabel: "",
         disconnectLabel: "Disconnect Ollama credentials",
-        shortLabel: "Local",
     },
     cli: {
         description: "Run any CLI command as AI backend",
@@ -74,105 +67,23 @@ const PROVIDER_META: Record<
         keyHint: "",
         oauthLabel: "",
         disconnectLabel: "",
-        shortLabel: "Shell",
     },
 };
 
-const OPENAI_ICON_PATH =
-    "M239.184 106.203a64.72 64.72 0 0 0-5.576-53.103C219.452 28.459 191 15.784 163.213 21.74A65.586 65.586 0 0 0 52.096 45.22a64.72 64.72 0 0 0-43.23 31.36c-14.31 24.602-11.061 55.634 8.033 76.74a64.67 64.67 0 0 0 5.525 53.102c14.174 24.65 42.644 37.324 70.446 31.36a64.72 64.72 0 0 0 48.754 21.744c28.481.025 53.714-18.361 62.414-45.481a64.77 64.77 0 0 0 43.229-31.36c14.137-24.558 10.875-55.423-8.083-76.483m-97.56 136.338a48.4 48.4 0 0 1-31.105-11.255l1.535-.87l51.67-29.825a8.6 8.6 0 0 0 4.247-7.367v-72.85l21.845 12.636c.218.111.37.32.409.563v60.367c-.056 26.818-21.783 48.545-48.601 48.601M37.158 197.93a48.35 48.35 0 0 1-5.781-32.589l1.534.921l51.722 29.826a8.34 8.34 0 0 0 8.441 0l63.181-36.425v25.221a.87.87 0 0 1-.358.665l-52.335 30.184c-23.257 13.398-52.97 5.431-66.404-17.803M23.549 85.38a48.5 48.5 0 0 1 25.58-21.333v61.39a8.29 8.29 0 0 0 4.195 7.316l62.874 36.272l-21.845 12.636a.82.82 0 0 1-.767 0L41.353 151.53c-23.211-13.454-31.171-43.144-17.804-66.405zm179.466 41.695l-63.08-36.63L161.73 77.86a.82.82 0 0 1 .768 0l52.233 30.184a48.6 48.6 0 0 1-7.316 87.635v-61.391a8.54 8.54 0 0 0-4.4-7.213m21.742-32.69l-1.535-.922l-51.619-30.081a8.39 8.39 0 0 0-8.492 0L99.98 99.808V74.587a.72.72 0 0 1 .307-.665l52.233-30.133a48.652 48.652 0 0 1 72.236 50.391zM88.061 139.097l-21.845-12.585a.87.87 0 0 1-.41-.614V65.685a48.652 48.652 0 0 1 79.757-37.346l-1.535.87l-51.67 29.825a8.6 8.6 0 0 0-4.246 7.367zm11.868-25.58L128.067 97.3l28.188 16.218v32.434l-28.086 16.218l-28.188-16.218z";
-
-function ProviderLogo({ id, active }: { id: string; active: boolean }) {
-    return (
-        <span
-            className={css(
-                "rounded-button-radius relative flex size-10 shrink-0 items-center justify-center overflow-hidden border border-card-border bg-muted/35 text-foreground/70 transition-colors duration-200 group-hover:text-foreground",
-                active && "bg-background/40 text-foreground",
-            )}
-            aria-hidden="true"
-        >
-            <span
-                className={css(
-                    "absolute inset-0 flex items-center justify-center transition-opacity duration-200",
-                    active ? "opacity-0" : "opacity-100 group-hover:opacity-0",
-                )}
-            >
-                <ProviderLogoGlyph id={id} colored={false} />
-            </span>
-            <span
-                className={css(
-                    "absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200",
-                    active && "opacity-100",
-                    "group-hover:opacity-100",
-                )}
-            >
-                <ProviderLogoGlyph id={id} colored />
-            </span>
-        </span>
-    );
-}
-
-function ProviderLogoGlyph({ id, colored }: { id: string; colored: boolean }) {
-    if (id === "anthropic") {
-        return (
-            <svg viewBox="0 0 256 176" className="size-6" aria-hidden="true">
-                <path
-                    fill={colored ? "#d97757" : "currentColor"}
-                    d="m147.487 0l70.081 175.78H256L185.919 0zM66.183 106.221l23.98-61.774l23.98 61.774zM70.07 0L0 175.78h39.18l14.33-36.914h73.308l14.328 36.914h39.179L110.255 0z"
-                />
-            </svg>
-        );
-    }
-
-    if (id === "openai") {
-        return (
-            <svg viewBox="0 0 260 260" className="size-6" aria-hidden="true">
-                <path fill={colored ? "#10a37f" : "currentColor"} d={OPENAI_ICON_PATH} />
-            </svg>
-        );
-    }
-
-    if (id === "gemini") {
-        return (
-            <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
-                {colored && (
-                    <defs>
-                        <linearGradient id="gemini-provider-gradient" x1="2" x2="22" y1="22" y2="2">
-                            <stop stopColor="#1a73e8" />
-                            <stop offset="0.5" stopColor="#8e75ff" />
-                            <stop offset="1" stopColor="#e8710a" />
-                        </linearGradient>
-                    </defs>
-                )}
-                <path
-                    fill={colored ? "url(#gemini-provider-gradient)" : "currentColor"}
-                    d="M12 2.25c.84 4.98 4.77 8.91 9.75 9.75c-4.98.84-8.91 4.77-9.75 9.75c-.84-4.98-4.77-8.91-9.75-9.75c4.98-.84 8.91-4.77 9.75-9.75Z"
-                />
-            </svg>
-        );
-    }
-
-    if (id === OLLAMA_ADAPTER_ID) {
-        return (
-            <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
-                <path
-                    fill="currentColor"
-                    d="M7.5 5.75c0-1.52 1.23-2.75 2.75-2.75h3.5c1.52 0 2.75 1.23 2.75 2.75v2.08l1.45 1.27A3.1 3.1 0 0 1 19 11.43V18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6.57c0-.9.39-1.76 1.05-2.33L7.5 7.83zm2.75-.75a.75.75 0 0 0-.75.75v2.98l-2.13 1.86c-.24.21-.37.51-.37.84V18c0 .55.45 1 1 1h8a1 1 0 0 0 1-1v-6.57c0-.33-.13-.63-.37-.84L14.5 8.73V5.75a.75.75 0 0 0-.75-.75zm-.75 8.25a1 1 0 1 1-2 0a1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0a1 1 0 0 1 2 0M9.25 16.5h5.5v1.5h-5.5z"
-                />
-            </svg>
-        );
-    }
-
-    return <TerminalIcon className="size-5" weight={colored ? "fill" : "regular"} />;
-}
-
 function ProviderStatusIcon({ status }: { status: CredentialStatus }) {
     if (status === "connected") {
-        return <CheckCircleIcon size={14} className="text-success" />;
+        return <CheckCircleIcon size={14} className="text-success" aria-hidden="true" />;
     }
     if (status === "loading") {
-        return <SpinnerIcon size={14} className="animate-spin text-muted-foreground" />;
+        return (
+            <SpinnerIcon
+                size={14}
+                className="animate-spin text-muted-foreground motion-reduce:animate-none"
+                aria-hidden="true"
+            />
+        );
     }
-    return <XCircleIcon size={14} className="text-muted-foreground" />;
+    return <XCircleIcon size={14} className="text-muted-foreground" aria-hidden="true" />;
 }
 
 function ExternalProviderLink({ href, label }: { href: string; label: string }) {
@@ -181,9 +92,9 @@ function ExternalProviderLink({ href, label }: { href: string; label: string }) 
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-fit items-center gap-1 text-[11px] text-primary hover:underline"
+            className="flex w-fit items-center gap-1 text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-            <ArrowSquareOutIcon size={11} />
+            <ArrowSquareOutIcon size={12} aria-hidden="true" />
             {label}
         </a>
     );
@@ -814,7 +725,7 @@ export const AISettings = (): ReactElement => {
                     )}
                 </div>
             </Modal>
-            <div className="grid max-w-6xl min-w-0 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-6">
                 <section className="min-w-0 space-y-3" aria-labelledby="ai-provider-heading">
                     <div>
                         <h2 id="ai-provider-heading" className="text-sm font-semibold text-foreground">
@@ -831,18 +742,9 @@ export const AISettings = (): ReactElement => {
                         onChange={(event) => void handleAdapterChange(event.target.value)}
                         options={visibleAdapters.map((candidate) => ({ value: candidate.id, label: candidate.name }))}
                     />
-                    <div className="hidden gap-2 lg:grid">
+                    <div className="hidden flex-wrap gap-1 lg:flex">
                         {visibleAdapters.map((a) => {
-                            const aMeta = PROVIDER_META[a.id];
                             const isSelected = adapterId === a.id;
-                            const statusText =
-                                a.id === "cli"
-                                    ? "Local command"
-                                    : credentialStatus === "connected"
-                                      ? "Connected"
-                                      : credentialStatus === "loading"
-                                        ? "Checking"
-                                        : "Needs setup";
 
                             return (
                                 <button
@@ -852,54 +754,31 @@ export const AISettings = (): ReactElement => {
                                     aria-pressed={isSelected}
                                     disabled={saving}
                                     className={css(
-                                        "group flex min-w-0 items-start gap-3 rounded-button-radius border p-3 text-left transition-colors hover:bg-secondary-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
-                                        isSelected && "border-primary bg-secondary-background",
-                                        !isSelected && "border-transparent",
+                                        "inline-flex min-w-0 items-center gap-2 rounded-button-radius px-3 py-2 text-left text-sm text-foreground hover:bg-secondary-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+                                        isSelected && "bg-secondary-background font-medium",
                                     )}
                                 >
-                                    <ProviderLogo id={a.id} active={isSelected} />
-                                    <span className="flex min-w-0 flex-1 flex-col gap-2">
-                                        <span className="flex items-start justify-between gap-3">
-                                            <span className="min-w-0">
-                                                <span className="block truncate text-sm font-semibold text-foreground">
-                                                    {a.name}
-                                                </span>
-                                                <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
-                                                    {aMeta?.shortLabel ?? a.id}
-                                                </span>
-                                            </span>
-                                            {isSelected && (
-                                                <span className="rounded-button-radius inline-flex shrink-0 items-center gap-1 border border-card-border bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground">
-                                                    <ProviderStatusIcon status={credentialStatus} />
-                                                    {statusText}
-                                                </span>
-                                            )}
-                                        </span>
-                                        {aMeta?.description && (
-                                            <span className="text-xs leading-snug text-muted-foreground">
-                                                {aMeta.description}
-                                            </span>
-                                        )}
-                                    </span>
+                                    <span className="break-words">{a.name}</span>
+                                    {isSelected && <CheckCircleIcon className="size-4 shrink-0" aria-hidden="true" />}
                                 </button>
                             );
                         })}
                     </div>
                 </section>
 
-                <div className="min-w-0 space-y-8">
-                    <section className="space-y-5" aria-labelledby="ai-connection-heading">
+                <div className="min-w-0 space-y-6">
+                    <section className="space-y-4 border-t border-border pt-6" aria-labelledby="ai-connection-heading">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex min-w-0 items-center gap-3">
-                                <ProviderLogo id={adapterId} active />
-                                <div className="min-w-0">
-                                    <h2 id="ai-connection-heading" className="text-lg font-semibold text-foreground">
-                                        {adapter?.name ?? adapterId}
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">{meta?.description}</p>
-                                </div>
+                            <div className="min-w-0">
+                                <h2 id="ai-connection-heading" className="text-sm font-semibold text-foreground">
+                                    {adapter?.name ?? adapterId}
+                                </h2>
+                                <p className="mt-1 text-sm text-muted-foreground">{meta?.description}</p>
                             </div>
-                            <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+                            <span
+                                aria-live="polite"
+                                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
+                            >
                                 {adapterId !== "cli" && <ProviderStatusIcon status={credentialStatus} />}
                                 {adapterId === "cli"
                                     ? "Local command"
@@ -911,21 +790,18 @@ export const AISettings = (): ReactElement => {
                             </span>
                         </div>
                         {adapterId !== "cli" && (
-                            <div className="flex items-start gap-3 rounded-card-radius bg-secondary-background p-4 text-sm leading-relaxed text-foreground">
-                                <ShieldCheckIcon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-                                <div className="space-y-1">
-                                    <p className="font-medium">Before you connect</p>
-                                    <p>
-                                        {desktop
-                                            ? "Allow access to your system credential store when asked. Write Me checks encrypted storage before sign-in."
-                                            : "Credentials stay in this browser profile. The desktop app uses your system credential store to encrypt them."}
-                                    </p>
-                                    <p>
-                                        {adapterId === OLLAMA_ADAPTER_ID
-                                            ? "Local Ollama does not need a key. Cloud endpoints receive the prompts and note content you send."
-                                            : "Your provider receives the prompts and note content you send. AI usage may incur provider charges."}
-                                    </p>
-                                </div>
+                            <div className="space-y-1 text-sm leading-6 text-muted-foreground">
+                                <p className="font-medium text-foreground">Before you connect</p>
+                                <p>
+                                    {desktop
+                                        ? "Allow access to your system credential store when asked. Write Me checks encrypted storage before sign-in."
+                                        : "Credentials stay in this browser profile. The desktop app uses your system credential store to encrypt them."}
+                                </p>
+                                <p>
+                                    {adapterId === OLLAMA_ADAPTER_ID
+                                        ? "Local Ollama does not need a key. Cloud endpoints receive the prompts and note content you send."
+                                        : "Your provider receives the prompts and note content you send. AI usage may incur provider charges."}
+                                </p>
                             </div>
                         )}
                         {authError && (
@@ -935,8 +811,14 @@ export const AISettings = (): ReactElement => {
                         )}
                         {adapterId === "cli" ? (
                             <div className="flex flex-col gap-2">
-                                <span className="text-sm font-medium">CLI Command Template</span>
-                                <p className="text-xs text-muted-foreground">
+                                <label
+                                    id="ai-cli-command-label"
+                                    htmlFor="ai-cli-command"
+                                    className="text-sm font-medium"
+                                >
+                                    CLI Command Template
+                                </label>
+                                <p id="ai-cli-command-hint" className="text-sm leading-6 text-muted-foreground">
                                     Use <code>{"{{prompt}}"}</code> for the user message,{" "}
                                     <code>{"{{system_prompt}}"}</code> for the system prompt,{" "}
                                     <code>{"{{context}}"}</code> for the note content.
@@ -944,18 +826,26 @@ export const AISettings = (): ReactElement => {
                                 <Input
                                     title="CLI command template"
                                     hiddenLabel
+                                    id="ai-cli-command"
+                                    aria-labelledby="ai-cli-command-label"
+                                    aria-describedby="ai-cli-command-hint"
                                     value={commandTemplate}
                                     placeholder="claude --dangerously-skip-permissions {{context}}"
-                                    onChange={(e: any) => setCommandTemplate(e.target.value)}
+                                    onChange={(event) => setCommandTemplate(event.target.value)}
                                 />
                             </div>
                         ) : adapterId === OLLAMA_ADAPTER_ID ? (
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2">
-                                    <span className="text-sm font-medium">Base URL</span>
+                                    <label id="ai-base-url-label" htmlFor="ai-base-url" className="text-sm font-medium">
+                                        Base URL
+                                    </label>
                                     <Input
                                         title="Base URL"
                                         hiddenLabel
+                                        id="ai-base-url"
+                                        aria-labelledby="ai-base-url-label"
+                                        aria-describedby="ai-base-url-hint"
                                         value={baseUrl}
                                         placeholder={DEFAULT_OLLAMA_BASE_URL}
                                         onChange={(event) => setBaseUrl(event.target.value)}
@@ -963,21 +853,32 @@ export const AISettings = (): ReactElement => {
                                             if (event.key === "Enter") requestTestConnection();
                                         }}
                                     />
-                                    <p className="text-[10px] text-muted-foreground">
+                                    <p
+                                        id="ai-base-url-hint"
+                                        className="break-words text-xs leading-5 text-muted-foreground"
+                                    >
                                         Use <code>{DEFAULT_OLLAMA_BASE_URL}</code> for local Ollama, or a cloud Ollama
                                         OpenAI-compatible base URL. Running models load from the same host via{" "}
                                         <code>/api/ps</code>.
                                     </p>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <span className="text-sm font-medium">API Key (optional)</span>
-                                    <div className="flex gap-2">
+                                    <label
+                                        id="ai-ollama-key-label"
+                                        htmlFor="ai-ollama-key"
+                                        className="text-sm font-medium"
+                                    >
+                                        API Key (optional)
+                                    </label>
+                                    <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                                         <Input
                                             title="API key (optional)"
                                             hiddenLabel
+                                            id="ai-ollama-key"
+                                            aria-labelledby="ai-ollama-key-label"
                                             type="password"
                                             value={apiKey}
-                                            container="min-w-0 flex-1"
+                                            container="w-full min-w-0 flex-1"
                                             autoComplete="off"
                                             onChange={(event) => setApiKey(event.target.value)}
                                             onKeyDown={(event) => {
@@ -987,29 +888,44 @@ export const AISettings = (): ReactElement => {
                                         />
                                         <Button
                                             size="small"
+                                            aria-label={
+                                                testStatus === "testing" || ollamaModelsLoading
+                                                    ? "Loading models..."
+                                                    : "Load models"
+                                            }
                                             disabled={!baseUrl.trim() || connectionBusy || ollamaModelsLoading}
                                             onClick={requestTestConnection}
                                         >
                                             {testStatus === "testing" || ollamaModelsLoading ? (
-                                                <SpinnerIcon size={14} className="animate-spin" />
+                                                <SpinnerIcon
+                                                    size={14}
+                                                    className="animate-spin motion-reduce:animate-none"
+                                                    aria-hidden="true"
+                                                />
                                             ) : (
                                                 <span className="flex items-center gap-1.5">
-                                                    <PlugIcon size={14} />
+                                                    <PlugIcon size={14} aria-hidden="true" />
                                                     Load models
                                                 </span>
                                             )}
                                         </Button>
                                     </div>
                                     {testStatus === "success" && (
-                                        <span className="flex items-center gap-1 text-xs text-success">
-                                            <CheckCircleIcon size={12} />
+                                        <span
+                                            role="status"
+                                            className="flex flex-wrap items-center gap-1 text-xs text-success"
+                                        >
+                                            <CheckCircleIcon size={12} aria-hidden="true" />
                                             Connected — {availableModels.length} model
                                             {availableModels.length !== 1 ? "s" : ""} available
                                         </span>
                                     )}
                                     {testStatus === "error" && (
-                                        <span className="text-destructive flex items-center gap-1 text-xs">
-                                            <XCircleIcon size={12} />
+                                        <span
+                                            role="alert"
+                                            className="flex flex-wrap items-center gap-1 text-xs text-danger"
+                                        >
+                                            <XCircleIcon size={12} aria-hidden="true" />
                                             {testError}
                                         </span>
                                     )}
@@ -1075,21 +991,32 @@ export const AISettings = (): ReactElement => {
                                                         autoComplete="one-time-code"
                                                         container="min-w-0 flex-1"
                                                         placeholder="Paste authorization code here"
-                                                        onChange={(e: any) => setOauthCode(e.target.value)}
-                                                        onKeyDown={(e: any) =>
-                                                            e.key === "Enter" && handleSubmitOAuthCode()
+                                                        onChange={(event) => setOauthCode(event.target.value)}
+                                                        onKeyDown={(event) =>
+                                                            event.key === "Enter" && handleSubmitOAuthCode()
                                                         }
                                                     />
                                                 )}
                                                 <Button
                                                     size="small"
+                                                    aria-label={
+                                                        authLoading
+                                                            ? "Completing sign-in..."
+                                                            : adapterId === "openai"
+                                                              ? "Complete sign-in"
+                                                              : "Submit"
+                                                    }
                                                     disabled={
                                                         authLoading || (adapterId !== "openai" && !oauthCode.trim())
                                                     }
                                                     onClick={handleSubmitOAuthCode}
                                                 >
                                                     {authLoading ? (
-                                                        <SpinnerIcon size={14} className="animate-spin" />
+                                                        <SpinnerIcon
+                                                            size={14}
+                                                            className="animate-spin motion-reduce:animate-none"
+                                                            aria-hidden="true"
+                                                        />
                                                     ) : adapterId === "openai" ? (
                                                         "Complete sign-in"
                                                     ) : (
@@ -1102,7 +1029,7 @@ export const AISettings = (): ReactElement => {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             <Button
                                                 size="small"
                                                 disabled={connectionBusy}
@@ -1120,14 +1047,22 @@ export const AISettings = (): ReactElement => {
                                 </div>
                                 {adapterId !== "openai" && !oauthPending && (
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-sm font-medium">Or use API Key</span>
-                                        <div className="flex gap-2">
+                                        <label
+                                            id="ai-oauth-key-label"
+                                            htmlFor="ai-oauth-api-key"
+                                            className="text-sm font-medium"
+                                        >
+                                            API key
+                                        </label>
+                                        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                                             <Input
                                                 title="API key"
                                                 hiddenLabel
+                                                id="ai-oauth-api-key"
+                                                aria-labelledby="ai-oauth-key-label"
                                                 type="password"
                                                 value={apiKey}
-                                                container="min-w-0 flex-1"
+                                                container="w-full min-w-0 flex-1"
                                                 autoComplete="off"
                                                 placeholder={meta?.keyHint ?? "API key"}
                                                 onChange={(event) => setApiKey(event.target.value)}
@@ -1151,20 +1086,24 @@ export const AISettings = (): ReactElement => {
                             </div>
                         ) : (
                             <div className="flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">API Key</span>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <label id="ai-api-key-label" htmlFor="ai-api-key" className="text-sm font-medium">
+                                        API Key
+                                    </label>
                                     {meta?.consoleUrl && (
                                         <ExternalProviderLink href={meta.consoleUrl} label="Get key" />
                                     )}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                                     <Input
                                         title="API key"
                                         hiddenLabel
+                                        id="ai-api-key"
+                                        aria-labelledby="ai-api-key-label"
                                         type="password"
                                         value={apiKey}
                                         autoComplete="off"
-                                        container="min-w-0 flex-1"
+                                        container="w-full min-w-0 flex-1"
                                         placeholder={
                                             credentialStatus === "connected"
                                                 ? "key saved (paste new to replace)"
@@ -1177,33 +1116,49 @@ export const AISettings = (): ReactElement => {
                                     />
                                     <Button
                                         size="small"
+                                        aria-label={
+                                            testStatus === "testing"
+                                                ? "Testing connection..."
+                                                : apiKey.trim()
+                                                  ? "Connect"
+                                                  : "Test"
+                                        }
                                         disabled={
                                             connectionBusy || (!apiKey.trim() && credentialStatus !== "connected")
                                         }
                                         onClick={requestTestConnection}
                                     >
                                         {testStatus === "testing" ? (
-                                            <SpinnerIcon size={14} className="animate-spin" />
+                                            <SpinnerIcon
+                                                size={14}
+                                                className="animate-spin motion-reduce:animate-none"
+                                                aria-hidden="true"
+                                            />
                                         ) : (
                                             <span className="flex items-center gap-1.5">
-                                                <PlugIcon size={14} />
+                                                <PlugIcon size={14} aria-hidden="true" />
                                                 {apiKey.trim() ? "Connect" : "Test"}
                                             </span>
                                         )}
                                     </Button>
                                 </div>
 
-                                {/* Test result feedback */}
                                 {testStatus === "success" && (
-                                    <span className="flex items-center gap-1 text-xs text-success">
-                                        <CheckCircleIcon size={12} />
+                                    <span
+                                        role="status"
+                                        className="flex flex-wrap items-center gap-1 text-xs text-success"
+                                    >
+                                        <CheckCircleIcon size={12} aria-hidden="true" />
                                         Connected — {availableModels.length} model
                                         {availableModels.length !== 1 ? "s" : ""} available
                                     </span>
                                 )}
                                 {testStatus === "error" && (
-                                    <span className="text-destructive flex items-center gap-1 text-xs">
-                                        <XCircleIcon size={12} />
+                                    <span
+                                        role="alert"
+                                        className="flex flex-wrap items-center gap-1 text-xs text-danger"
+                                    >
+                                        <XCircleIcon size={12} aria-hidden="true" />
                                         {testError}
                                     </span>
                                 )}
@@ -1296,12 +1251,12 @@ export const AISettings = (): ReactElement => {
                                     hiddenLabel
                                     value={model}
                                     placeholder={adapter?.defaultModel ?? "Model name"}
-                                    onChange={(e: any) => setModel(e.target.value)}
+                                    onChange={(event) => setModel(event.target.value)}
                                 />
                             )}
                             {adapterId === OPENAI_ADAPTER_ID && openAIModelsError ? (
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p role="alert" className="text-destructive text-xs">
+                                    <p role="alert" className="text-xs text-danger">
                                         {openAIModelsError}
                                     </p>
                                     <Button
@@ -1316,21 +1271,21 @@ export const AISettings = (): ReactElement => {
                                     </Button>
                                 </div>
                             ) : adapterId === OPENAI_ADAPTER_ID && openAIModelsLoading ? (
-                                <p role="status" className="text-[10px] text-muted-foreground">
+                                <p role="status" className="text-xs text-muted-foreground">
                                     Loading models available to your OpenAI account...
                                 </p>
                             ) : adapterId === OPENAI_ADAPTER_ID && availableModels.length > 0 ? (
-                                <p role="status" className="text-[10px] text-muted-foreground">
+                                <p role="status" className="text-xs text-muted-foreground">
                                     {availableModels.length} model
                                     {availableModels.length === 1 ? "" : "s"} available
                                 </p>
                             ) : adapterId === OLLAMA_ADAPTER_ID && ollamaModelsLoading ? (
-                                <p className="text-[10px] text-muted-foreground">
+                                <p role="status" className="break-words text-xs text-muted-foreground">
                                     Loading running models from <code>{baseUrl.trim()}</code> via <code>/api/ps</code>
                                     ...
                                 </p>
                             ) : (
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                     Default: <code>{adapter?.defaultModel}</code>
                                 </p>
                             )}
@@ -1350,6 +1305,7 @@ export const AISettings = (): ReactElement => {
                         <Textarea
                             title="System prompt"
                             hiddenLabel
+                            aria-labelledby="ai-instructions-heading"
                             rows={4}
                             optionalText=" "
                             value={systemPrompt}

@@ -1,5 +1,4 @@
 import { Button, Input, Textarea } from "@g4rcez/components";
-import { CodeIcon } from "@phosphor-icons/react/dist/csr/Code";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { useEffect, useState } from "react";
@@ -51,63 +50,63 @@ export const CustomVariables = () => {
     return (
         <>
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <p className="max-w-md text-sm text-muted-foreground">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <p className="max-w-xl text-sm leading-6 text-muted-foreground">
                         Create variables that execute JavaScript. Use <code>return</code> to set the value. Available in
                         templates as <code>{"{{VAR_NAME}}"}</code>.
                     </p>
-                    <Button size="small" onClick={handleAdd} className="flex gap-1 items-center">
-                        <PlusIcon size={14} />
+                    <Button size="small" onClick={handleAdd} className="flex shrink-0 items-center gap-1 self-start">
+                        <PlusIcon size={14} aria-hidden="true" />
                         Add Variable
                     </Button>
                 </div>
 
                 {localScripts.length === 0 ? (
-                    <div className="flex flex-col gap-2 items-center p-8 rounded-lg border border-dashed border-border/50 opacity-50">
-                        <CodeIcon size={24} />
-                        <p className="text-sm">No custom variables yet.</p>
-                    </div>
+                    <p className="py-6 text-sm text-muted-foreground">
+                        No custom variables yet. Add a variable to use it in your templates.
+                    </p>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="divide-y divide-border">
                         {localScripts.map((script) => (
-                            <div
-                                key={script.id}
-                                className="relative p-4 space-y-4 rounded-lg border bg-muted/5 border-border/50"
-                            >
-                                <div className="flex justify-between items-start gap-4">
+                            <div key={script.id} className="space-y-3 py-5 first:pt-0">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                                     <Input
                                         value={script.name}
                                         title="Variable Name"
+                                        optionalText=" "
                                         placeholder="MY_VAR"
-                                        container="flex-1"
-                                        onChange={(e: any) => handleUpdate(script.id, { name: e.target.value })}
+                                        container="min-w-0 flex-1"
+                                        aria-label={`Variable Name: ${script.name || "unnamed"}`}
+                                        onChange={(event) => handleUpdate(script.id, { name: event.target.value })}
                                     />
                                     <Button
                                         size="small"
                                         theme="ghost-danger"
                                         onClick={() => setDeletingId(script.id)}
-                                        className="mt-6"
+                                        aria-label={`Delete ${script.name || "unnamed variable"}`}
+                                        className="flex shrink-0 items-center gap-1 self-start sm:self-auto"
                                     >
-                                        <TrashIcon size={14} />
+                                        <TrashIcon size={14} aria-hidden="true" />
+                                        Delete
                                     </Button>
                                 </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground opacity-70 ml-1">JS Expression</span>
-                                    <Textarea
-                                        rows={2}
-                                        value={script.content}
-                                        placeholder="return new Date().getFullYear();"
-                                        onChange={(e: any) => handleUpdate(script.id, { content: e.target.value })}
-                                        className="font-mono text-xs"
-                                    />
-                                </div>
+                                <Textarea
+                                    title="JavaScript expression"
+                                    aria-label={`JavaScript expression: ${script.name || "unnamed"}`}
+                                    optionalText=" "
+                                    rows={3}
+                                    value={script.content}
+                                    placeholder="return new Date().getFullYear();"
+                                    onChange={(event) => handleUpdate(script.id, { content: event.target.value })}
+                                    className="font-mono text-sm"
+                                />
                             </div>
                         ))}
                     </div>
                 )}
 
                 {localScripts.length > 0 && (
-                    <div className="flex justify-end pt-4 border-t border-border/50">
+                    <div className="flex justify-end">
                         <Button size="small" onClick={handleSaveAll}>
                             Save Variables
                         </Button>

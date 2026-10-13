@@ -278,6 +278,27 @@ be tuned against the existing brand mark and contrast checks.
 - Keyboard hints are compact mono badges such as `⌘ K`; they are not the
   button's accessible name.
 
+### Settings
+
+- Put settings navigation before controls. Keep Quick settings as an immediate
+  entry point, then group destinations around the writer's workflow: Writing
+  (Editor, Appearance, Shortcuts), Templates (Templates, Variables), Assistance
+  (AI), and Workspace (Workspace, Backup, Trash, Migration).
+- Preserve platform and build-feature filtering; omit groups with no available
+  destinations. Keep secondary descriptions out of the navigation rows.
+- While Settings is active, omit the unrelated workspace action block above
+  its navigation. Restore that block when returning to Explorer or another
+  workspace activity; keep the workspace switcher and activity rail available.
+- Use one compact page title, a short description, and the existing page action.
+  Avoid repeated breadcrumbs, decorative title markers, and nested cards.
+- Align preference labels and controls in rows, stacking them at narrow widths.
+  Put the editor's writing experience before its saving preferences.
+- Use plain lists for templates and variables. Keep useful metadata, warnings,
+  confirmations, and all existing actions, but let titles and primary actions
+  carry the hierarchy.
+- Preserve keyboard navigation, visible focus, active-route semantics, theme
+  tokens, and the existing mobile drawer behavior.
+
 ### Menus, dialogs, and command palette
 
 - Use a single overlay treatment: `surface-2`, hairline border, modest shadow,
