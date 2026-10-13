@@ -1,8 +1,8 @@
 html.native {
     --native-liquid-glass-bg: color-mix(in srgb, var(--var-dropdown-surface-background) 46%, transparent);
     --native-liquid-glass-bg-strong: color-mix(in srgb, var(--var-card-background) 56%, transparent);
-    --native-liquid-glass-border: color-mix(in srgb, var(--var-color-border) 42%, transparent);
-    accent-color: hsla(var(--native-system-accent, 210, 100%, 52%));
+    --native-liquid-glass-border: color-mix(in srgb, var(--var-color-border) 38%, transparent);
+    accent-color: var(--native-system-accent, AccentColor);
 }
 
 html.native body,
@@ -48,7 +48,7 @@ html.native.platform-web [data-treeroot="true"] {
 }
 
 html.native.platform-web .tab-scrollbar {
-    border-color: color-mix(in srgb, var(--var-color-border) 42%, transparent);
+    border-color: var(--native-liquid-glass-border);
     background-color: var(--var-card-background);
 }
 
@@ -90,6 +90,9 @@ html.native.platform-electron .writeme-main-surface {
 html.native.platform-electron .writeme-print-export-button {
     appearance: none;
     color: color-mix(in srgb, var(--var-color-foreground) 82%, transparent);
+    transition:
+        background-color 160ms ease-out,
+        border-color 160ms ease-out;
     box-shadow:
         0 1px 2px hsla(0, 0%, 0%, 0.24),
         inset 0 1px 0 hsla(0, 0%, 100%, 0.14);
@@ -116,5 +119,11 @@ html.native.platform-electron .writeme-editor {
     html.native.platform-electron .writeme-main-surface,
     html.native.platform-electron .writeme-print-export-button {
         background-color: color-mix(in srgb, var(--var-card-background) 92%, transparent);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.native.platform-electron .writeme-print-export-button {
+        transition-duration: 1ms;
     }
 }

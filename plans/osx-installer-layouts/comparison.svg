@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="530" viewBox="0 0 1800 530">
+<rect width="1800" height="530" fill="#f1f1f4"/>
+<style>text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }</style>
+<text x="306" y="39" text-anchor="middle" font-size="19" font-weight="600" fill="#28282e">1 · QUIET / NATIVE</text>
+<image href="01-quiet-native.png" x="26" y="58" width="560" height="427" preserveAspectRatio="none"/>
+<rect x="26" y="58" width="560" height="427" fill="none" stroke="#d0d0d8" stroke-width="1"/>
+<text x="902" y="39" text-anchor="middle" font-size="19" font-weight="600" fill="#28282e">2 · DARK / FOCUSED</text>
+<image href="02-dark-focus.png" x="622" y="58" width="560" height="427" preserveAspectRatio="none"/>
+<rect x="622" y="58" width="560" height="427" fill="none" stroke="#d0d0d8" stroke-width="1"/>
+<text x="1498" y="39" text-anchor="middle" font-size="19" font-weight="600" fill="#28282e">3 · SPLIT / GUIDED</text>
+<image href="03-split-instructions.png" x="1218" y="58" width="560" height="427" preserveAspectRatio="none"/>
+<rect x="1218" y="58" width="560" height="427" fill="none" stroke="#d0d0d8" stroke-width="1"/>
+</svg>

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { clearRecentlyClosedTabs, takeRecentlyClosedTab } from "@/lib/recently-closed-tabs";
 import { AI_CHAT_TAB_TYPE, TERMINAL_TAB_TYPE } from "@/lib/tab-target";
 import type { Tab } from "./repositories/entities/tab";
 import type { TerminalSession } from "./repositories/entities/terminal-session";
@@ -55,6 +56,7 @@ const createTerminalSession = (id: string, title: string, project = "workspace-a
 describe("Tab Management Logic", () => {
     beforeEach(async () => {
         vi.clearAllMocks();
+        clearRecentlyClosedTabs();
         vi.mocked(repositories.terminalSessions.getOne).mockResolvedValue(null);
         await useGlobalStore.dispatchers.init("light" as any, [], [], 16, 256, null, null, []);
     });
@@ -176,6 +178,15 @@ describe("Tab Management Logic", () => {
         expect(repositories.terminalSessions.save).toHaveBeenCalledWith(
             expect.objectContaining({ id: "terminal-1", title: "Build logs" }),
         );
+    });
+
+    it("remembers a closed tab through the shared removeTab dispatcher", async () => {
+        const tab = createTab("note-tab", "note-1", 0, "workspace-a");
+        await useGlobalStore.dispatchers.init("light" as any, [], [tab], 16, 256, "workspace-a", "workspace-a", []);
+
+        await useGlobalStore.dispatchers.removeTab(tab.id);
+
+        expect(takeRecentlyClosedTab()).toStrictEqual(tab);
     });
 
     it("removes terminal metadata when closing a terminal tab", async () => {

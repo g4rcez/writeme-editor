@@ -23,7 +23,7 @@ import { router } from "./router";
 import { catppuccinMochaTheme } from "./styles/catppuccin-mocha";
 import { darkTheme } from "./styles/dark";
 import { lightTheme } from "./styles/light";
-import { nativeTheme } from "./styles/native";
+import { createNativeThemeCss } from "./styles/native";
 import { createWritemeThemeCss } from "./styles/theme-css";
 import { tokyonightNightTheme } from "./styles/tokyonight-night";
 
@@ -43,38 +43,17 @@ const tweaks: Tweaks = {
 const createStyle = (id: string, innerText: string) =>
     Object.assign(document.createElement("style"), { id, innerText });
 
-const hexToHslaTuple = (hex: string): string | null => {
-    const normalized = hex.replace(/^#/, "").slice(0, 6);
-    if (!/^[\da-f]{6}$/i.test(normalized)) return null;
-
-    const red = Number.parseInt(normalized.slice(0, 2), 16) / 255;
-    const green = Number.parseInt(normalized.slice(2, 4), 16) / 255;
-    const blue = Number.parseInt(normalized.slice(4, 6), 16) / 255;
-    const max = Math.max(red, green, blue);
-    const min = Math.min(red, green, blue);
-    const lightness = (max + min) / 2;
-
-    let hue = 0;
-    let saturation = 0;
-    const delta = max - min;
-    if (delta !== 0) {
-        saturation = delta / (1 - Math.abs(2 * lightness - 1));
-        if (max === red) hue = ((green - blue) / delta) % 6;
-        if (max === green) hue = (blue - red) / delta + 2;
-        if (max === blue) hue = (red - green) / delta + 4;
-        hue *= 60;
-        if (hue < 0) hue += 360;
-    }
-
-    return `${Math.round(hue)}, ${Math.round(saturation * 100)}%, ${Math.round(lightness * 100)}%`;
+const normalizeSystemAccentColor = (accentColor: string): string | null => {
+    const normalized = accentColor.replace(/^#/, "").slice(0, 6);
+    return /^[\da-f]{6}$/i.test(normalized) ? `#${normalized}` : null;
 };
 
 const setSystemAccentColor = (accentColor: string | null): void => {
     if (!accentColor) return;
 
-    const tuple = hexToHslaTuple(accentColor);
-    if (!tuple) return;
-    document.documentElement.style.setProperty("--native-system-accent", tuple);
+    const color = normalizeSystemAccentColor(accentColor);
+    if (!color) return;
+    document.documentElement.style.setProperty("--native-system-accent", color);
 };
 
 const applySystemAccentColor = async (): Promise<void> => {
@@ -103,7 +82,7 @@ const themeConfiguration = () => {
     head.append(
         createStyle("tokyonight-night-theme", createWritemeThemeCss("tokyonight-night", tokyonightNightTheme, "dark")),
     );
-    head.append(createStyle("native-theme", createWritemeThemeCss("native", nativeTheme, "dark")));
+    head.append(createStyle("native-theme", createNativeThemeCss()));
     if (globalState().theme !== "light") {
         document.documentElement.classList.add(globalState().theme);
     }

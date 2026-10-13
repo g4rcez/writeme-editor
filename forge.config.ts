@@ -133,6 +133,15 @@ const config: ForgeConfig = {
                 format: "ULFO",
                 name: "writeme",
                 icon: "./public/icon.icns",
+                background: "./public/dmg-background.png",
+                iconSize: 88,
+                contents: ({ appPath }) => [
+                    { x: 179, y: 257, type: "file", path: appPath },
+                    { x: 485, y: 257, type: "link", path: "/Applications" },
+                ],
+                additionalDMGOptions: {
+                    window: { size: { width: 658, height: 498 } },
+                },
             },
             ["darwin"],
         ),

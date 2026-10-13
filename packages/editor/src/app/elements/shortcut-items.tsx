@@ -4,7 +4,9 @@ import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-work
 import { createStandaloneNote } from "@/lib/file-utils";
 import { isElectron } from "@/lib/is-electron";
 import { supportsAI } from "@/lib/platform";
+import { takeRecentlyClosedTab } from "@/lib/recently-closed-tabs";
 import { shortcuts } from "@/lib/shortcuts";
+import { getRouteForTab, isAiChatTab, isTerminalTab } from "@/lib/tab-target";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -51,6 +53,21 @@ export const useWritemeShortcuts = () => {
                     type: Type.Shortcut,
                     description: "Open Tabs",
                     action: () => dispatch.commander(true, CommanderType.OpenTabs),
+                },
+                {
+                    description: "Restore Closed Tab",
+                    bind: "mod+shift+t",
+                    type: Type.Shortcut,
+                    action: async () => {
+                        const tab = takeRecentlyClosedTab();
+                        if (!tab) return;
+
+                        if (isAiChatTab(tab)) await dispatch.addAiChatTab(tab.noteId);
+                        else if (isTerminalTab(tab)) await dispatch.addTerminalTab(tab.noteId);
+                        else await dispatch.selectNoteById(tab.noteId);
+
+                        navigate(getRouteForTab(tab));
+                    },
                 },
                 {
                     description: "Reload",

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="740" viewBox="0 0 1800 740">
+  <rect width="1800" height="740" fill="#f1f1f4"/>
+  <style>text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }</style>
+  <text x="450" y="42" text-anchor="middle" font-size="20" font-weight="600" fill="#28282e">OPTION 1 · ORIGINAL</text>
+  <text x="1350" y="42" text-anchor="middle" font-size="20" font-weight="600" fill="#28282e">OPTION 1 · STRONGER INSTALL EMPHASIS</text>
+  <image href="01-quiet-native.png" x="30" y="62" width="840" height="640" preserveAspectRatio="none"/>
+  <rect x="30" y="62" width="840" height="640" fill="none" stroke="#d0d0d8" stroke-width="1"/>
+  <image href="01-quiet-native-impact.png" x="930" y="62" width="840" height="640" preserveAspectRatio="none"/>
+  <rect x="930" y="62" width="840" height="640" fill="none" stroke="#d0d0d8" stroke-width="1"/>
+</svg>

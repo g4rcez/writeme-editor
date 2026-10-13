@@ -30,7 +30,7 @@ const get = (tree: LegacyColorTree | undefined, path: string[], fallback = "tran
 
 const alpha = (color: string, value: number): string => {
     const body = color.match(/^hsla?\((.*)\)$/)?.[1];
-    return body ? `hsla(${body}, ${value})` : color;
+    return body ? `hsla(${body}, ${value})` : `color-mix(in srgb, ${color} ${value * 100}%, transparent)`;
 };
 
 const toLibraryColors = (colors: LegacyColorTree): NonNullable<ThemeTokenOverrides["colors"]> => ({
