@@ -1,8 +1,8 @@
 import { lazy } from "react";
 import { createHashRouter, createBrowserRouter, Navigate } from "react-router-dom";
+import { BUILD, FEATURES } from "../lib/build-features";
 import { isElectron } from "../lib/is-electron";
 import { isMobile } from "../lib/platform";
-import { BUILD, FEATURES } from "../lib/build-features";
 import { RouteErrorBoundary } from "./components/route-error-boundary";
 import { RootLayout } from "./root-layout";
 
@@ -162,11 +162,19 @@ export const router = createRouter([
                     },
                     {
                         path: "ai",
-                        element: <SettingsPlatformGate sectionId="ai"><SettingsAIPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="ai">
+                                <SettingsAIPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "backup",
-                        element: <SettingsPlatformGate sectionId="backup"><SettingsBackupPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="backup">
+                                <SettingsBackupPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "workspace",
@@ -182,7 +190,11 @@ export const router = createRouter([
                     },
                     {
                         path: "variables",
-                        element: <SettingsPlatformGate sectionId="variables"><SettingsVariablesPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="variables">
+                                <SettingsVariablesPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "migration",
@@ -224,9 +236,15 @@ export const router = createRouter([
                 element: <ViewDetailPage />,
                 errorElement: <RouteErrorBoundary />,
             },
-            { path: "oauth/callback", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <OAuthCallbackPage /> },
+            {
+                path: "oauth/callback",
+                element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <OAuthCallbackPage />,
+            },
             { path: "chat", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <ChatPage /> },
-            { path: "terminal/:sessionId", element: !FEATURES.terminal || isMobile() ? <Navigate to="/" replace /> : <TerminalPage /> },
+            {
+                path: "terminal/:sessionId",
+                element: !FEATURES.terminal || isMobile() ? <Navigate to="/" replace /> : <TerminalPage />,
+            },
             { path: "folder", element: isMobile() ? <Navigate to="/" replace /> : <FolderWorkspacePage /> },
             {
                 path: "examples",

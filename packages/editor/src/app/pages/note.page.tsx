@@ -5,8 +5,10 @@ import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { type PropsWithChildren, lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { notificationRef } from "@/app/notification-ref";
 import { saveNoteTitle } from "@/app/note-title";
+import { notificationRef } from "@/app/notification-ref";
+import { useVimSettings } from "@/app/vim/use-vim-settings";
+import { FEATURES } from "@/lib/build-features";
 import { Dates } from "@/lib/dates";
 import { OPEN_EDITOR_NOTE_EVENT, ACTIVE_EDITOR_NOTE_EVENT } from "@/lib/editor-tab-drag";
 import { getReadingTime } from "@/lib/file-utils";
@@ -14,32 +16,32 @@ import { isElectron } from "@/lib/is-electron";
 import { findFirstMarkdownH1 } from "@/lib/markdown-title";
 import { resolveNoteLinks } from "@/lib/note-links";
 import { isNoteRouteTabOpenSuppressed } from "@/lib/note-route-tab-open-suppression";
+import { isMobile } from "@/lib/platform";
 import { printDocument } from "@/lib/print-document";
 import { isNoteTabForNoteId } from "@/lib/tab-target";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { type EditorMode, SettingsService } from "@/store/settings";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
-import { useVimSettings } from "@/app/vim/use-vim-settings";
 import { isLatexFilePath } from "@/types/workspace-files";
 import { EditorDropTarget } from "../components/editor-drop-target";
 import { EditorPanes } from "../components/editor-panes";
 import { ExcalidrawNoteView } from "../components/excalidraw-note-view";
 import { FreehandNoteView } from "../components/freehand-note-view";
-import { TaskNoteView } from "../components/task-note-view";
-import { NoteFooter } from "../components/note-footer";
 import { MeetingNotePanel } from "../components/meeting-note-panel";
-import { FEATURES } from "@/lib/build-features";
-import { isMobile } from "@/lib/platform";
+import { NoteFooter } from "../components/note-footer";
 import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
 import { NoteToolTooltip } from "../components/note-tool-tooltip";
 import { TableOfContents } from "../components/table-of-contents";
+import { TaskNoteView } from "../components/task-note-view";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
 import { useEditorPanes } from "../hooks/use-editor-panes";
 
-const PdfNoteView = lazy(() => import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })));
+const PdfNoteView = lazy(() =>
+    import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })),
+);
 
 function getUrlLabel(value: string): string {
     try {
@@ -239,7 +241,11 @@ function FavoriteNoteButton({ note, disabled, onToggle }: { note: Note; disabled
     return (
         <NoteToolTooltip
             title={label}
-            description={note.favorite ? "Remove this note from your favorites list." : "Keep this note in your favorites list for quick access."}
+            description={
+                note.favorite
+                    ? "Remove this note from your favorites list."
+                    : "Keep this note in your favorites list for quick access."
+            }
         >
             <Button
                 type="button"
@@ -283,7 +289,15 @@ export default function NotePage() {
         const openNote = (event: Event): void => {
             if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
             const selected = state.notes.find((note) => note.id === event.detail);
-            if (!selected || selected.noteType === NoteType.json || selected.noteType === NoteType.excalidraw || selected.noteType === NoteType.freehand || selected.noteType === NoteType.pdf || selected.noteType === NoteType["meeting-note"]) return;
+            if (
+                !selected ||
+                selected.noteType === NoteType.json ||
+                selected.noteType === NoteType.excalidraw ||
+                selected.noteType === NoteType.freehand ||
+                selected.noteType === NoteType.pdf ||
+                selected.noteType === NoteType["meeting-note"]
+            )
+                return;
             event.preventDefault();
             editorPanes.selectNote(panes.activePaneId, selected.id);
         };
@@ -373,9 +387,7 @@ export default function NotePage() {
 
     const isLatexSource = note ? isLatexFilePath(note.filePath) : false;
     const markdownTitle =
-        !isLatexSource && note && !note.metadata.commentSourceId
-            ? findFirstMarkdownH1(note.content || "")
-            : null;
+        !isLatexSource && note && !note.metadata.commentSourceId ? findFirstMarkdownH1(note.content || "") : null;
     const markdownTitleText = markdownTitle?.title;
     useEffect(() => {
         if (!note?.id || !markdownTitleText || markdownTitleText === note.title) return;
@@ -451,7 +463,9 @@ export default function NotePage() {
                 <FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />
                 {hasRichEditor ? (
                     <>
-                        {note.noteType !== NoteType["meeting-note"] ? <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} /> : null}
+                        {note.noteType !== NoteType["meeting-note"] ? (
+                            <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
+                        ) : null}
                         <TableOfContents />
                         <ExportNoteButton note={note} />
                     </>
@@ -460,9 +474,25 @@ export default function NotePage() {
         </div>
     );
 
-    if (isPdf) return <Suspense fallback={<p role="status">Opening PDF…</p>}><PdfNoteView key={note.id} note={note} actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />} /></Suspense>;
+    if (isPdf)
+        return (
+            <Suspense fallback={<p role="status">Opening PDF…</p>}>
+                <PdfNoteView
+                    key={note.id}
+                    note={note}
+                    actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
+                />
+            </Suspense>
+        );
 
-    if (isTask) return <TaskNoteView key={note.id} note={note} actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />} />;
+    if (isTask)
+        return (
+            <TaskNoteView
+                key={note.id}
+                note={note}
+                actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
+            />
+        );
 
     if (isFreehand) {
         return (
@@ -539,20 +569,18 @@ export default function NotePage() {
                         <i>{getReadingTime(note.content).formatted}</i>
                     </div>
                 </header>
-            ) : (
-                !fileName || note.tags.length > 0 ? (
-                    <header className="writeme-editor-column writeme-note-header empty:border-b-transparent border-b border-border/50 print:hidden">
-                        <div className="writeme-note-metadata">
-                            {!fileName ? <span>Local note</span> : null}
-                            {note.tags.slice(0, 3).map((tag) => (
-                                <span key={tag} className="text-primary">
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    </header>
-                ) : null
-            )}
+            ) : !fileName || note.tags.length > 0 ? (
+                <header className="writeme-editor-column writeme-note-header empty:border-b-transparent border-b border-border/50 print:hidden">
+                    <div className="writeme-note-metadata">
+                        {!fileName ? <span>Local note</span> : null}
+                        {note.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="text-primary">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                </header>
+            ) : null}
             {isHistoryEligible && historyOpen ? (
                 <NoteHistoryDialog
                     open
@@ -561,7 +589,9 @@ export default function NotePage() {
                     onRestored={(restored) => dispatch.syncNoteState(restored)}
                 />
             ) : null}
-            {FEATURES.meetingNotes && !isMobile() && note.noteType === NoteType["meeting-note"] ? <MeetingNotePanel key={note.id} note={note} /> : null}
+            {FEATURES.meetingNotes && !isMobile() && note.noteType === NoteType["meeting-note"] ? (
+                <MeetingNotePanel key={note.id} note={note} />
+            ) : null}
             {editorPanes.state ? (
                 <EditorPanes
                     state={editorPanes.state}

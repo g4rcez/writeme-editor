@@ -56,7 +56,10 @@ export class SettingsService {
 
     static save(settings: Partial<AppSettings>): Promise<AppSettings> {
         const task = SettingsService.saveQueue.then(() => SettingsService.persistPatch(settings));
-        SettingsService.saveQueue = task.then(() => undefined, () => undefined);
+        SettingsService.saveQueue = task.then(
+            () => undefined,
+            () => undefined,
+        );
         return task;
     }
 
