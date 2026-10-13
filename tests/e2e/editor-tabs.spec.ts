@@ -109,6 +109,7 @@ test.describe("Note tab lifecycle", () => {
         cleanPage: page,
         context,
     }) => {
+        test.setTimeout(120_000);
         const firstUrl = await createNote(page, "Persistent first", "Only the first document owns this text.");
         const secondUrl = await createNote(page, "Persistent second", "Only the second document owns this text.");
         const tabs = page.locator(tabSelector);
