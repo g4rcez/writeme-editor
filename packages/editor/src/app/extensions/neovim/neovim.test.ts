@@ -42,6 +42,23 @@ describe("neovim", () => {
         press(editor, "RXY<Esc>w.");
         expect(editor.getText()).toBe("XYe XYo");
     });
+    it("deletes the previous word with Ctrl-W in Insert mode", () => {
+        const editor = create("<p>one two</p>");
+        press(editor, "A word");
+        editor.storage.neovim.feed("<C-w>");
+        expect(editor.getText()).toBe("one two ");
+        expect(editor.storage.neovim.getState()?.mode).toBe("insert");
+    });
+    it("deletes a word with Ctrl-W in Normal mode while allowing custom mappings to override it", () => {
+        const editor = create("<p>one two</p>");
+        editor.storage.neovim.feed("<C-w>");
+        expect(editor.getText()).toBe("two");
+
+        const customized = create("<p>one two</p>");
+        customized.storage.neovim.keymap.set("normal", "<C-w>", "x");
+        customized.storage.neovim.feed("<C-w>");
+        expect(customized.getText()).toBe("ne two");
+    });
     it("repeats a Visual deletion using the previous selection size", () => {
         const editor = create("<p>abcdefghi</p>");
         press(editor, "vlld.");

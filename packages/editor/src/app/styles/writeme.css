@@ -701,10 +701,3 @@
     vertical-align: text-bottom;
     background: var(--var-color-foreground);
 }
-
-.neovim-status {
-    display: block;
-    font-family: var(--font-mono);
-    @apply text-xs;
-    padding-block: 0.25rem;
-}

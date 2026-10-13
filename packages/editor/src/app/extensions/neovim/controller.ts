@@ -301,6 +301,33 @@ export class NeovimController {
                 }
             }
         }
+        if (key === "<C-c>") {
+            if (vim.mode === "normal") this.reset();
+            else this.setMode("normal");
+            return true;
+        }
+        if (key === "<C-w>") {
+            switch (vim.mode) {
+                case "insert":
+                case "replace":
+                    return this.deletePreviousWord();
+                case "normal":
+                    this.feed("d", false, depth);
+                    this.feed("w", false, depth);
+                    return true;
+                case "visual":
+                case "visual-line":
+                    return this.feed("d", false, depth);
+                case "operator-pending":
+                    return this.feed("w", false, depth);
+                case "command": {
+                    const command = vim.command;
+                    const previousWord = /\S+\s*$/u.exec(command.slice(1))?.[0] ?? "";
+                    this.update({ command: command.slice(0, command.length - previousWord.length) });
+                    return true;
+                }
+            }
+        }
         if (vim.mode === "command") {
             this.update({ pending: [] });
             for (const buffered of vim.pending) this.commandKey(buffered);
@@ -333,6 +360,21 @@ export class NeovimController {
             return false;
         }
         return this.normalKeys(keys, count, mappingKeys);
+    }
+
+    private deletePreviousWord(): boolean {
+        const state = this.editor.state;
+        const position = state.selection.head;
+        const line = currentLine(state.doc, position);
+        if (!line || position <= line.from) return true;
+        const prefix = line.text.slice(0, Math.min(line.text.length, position - line.from));
+        const word = /\S+$/u.exec(prefix)?.[0];
+        if (!word) return true;
+        const from = position - word.length;
+        const tr = state.tr.delete(from, position);
+        tr.setSelection(TextSelection.create(tr.doc, from));
+        this.editor.view.dispatch(closeHistory(tr));
+        return true;
     }
 
     private normalKeys(keys: readonly string[], count: number, commandKeys: readonly string[]): boolean {

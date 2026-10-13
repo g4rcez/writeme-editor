@@ -130,6 +130,12 @@ shares its prefix. Otherwise the shorter mapping waits for `timeout` millisecond
 Unmatched Insert-mode prefixes are restored as typed text on mismatch, timeout,
 blur, or Escape. Destroying the editor clears its timer.
 
+Custom mappings run before built-in keys. `Ctrl+W` deletes the previous word in
+Insert mode and behaves like `dw` in Normal mode; in Visual mode it deletes the
+selection. On macOS, Command shortcuts are routed through the same Vim mappings
+while Vim is active. Unmapped Ctrl/Command shortcuts are consumed in Normal,
+Visual, operator-pending, and command modes so app shortcuts do not override Vim.
+
 Callbacks receive `editor`, `state`, `view`, `mode`, and `count`. Return `true`
 when the action handles the key. Callbacks own their changes and undo behavior;
 automatic dot-repeat applies to built-in editing commands.

@@ -14,8 +14,8 @@ export default function SettingsMigrationPage() {
             title="Migration"
             description="Import notes, tabs, hashtags, settings, and scripts from the previous Writeme web domain."
         >
-            <div className="space-y-4 py-4">
-                <p className="text-sm text-muted-foreground">
+            <div className="max-w-2xl space-y-5 text-sm leading-6">
+                <p className="text-muted-foreground">
                     Moved from <strong>www.writeme.dev</strong>? Import your data from the old domain or from an
                     exported JSON file.
                 </p>
@@ -52,6 +52,7 @@ export default function SettingsMigrationPage() {
                         ref={fileInputRef}
                         type="file"
                         accept=".json"
+                        aria-label="Migration JSON file"
                         className="hidden"
                         onChange={async (event) => {
                             const file = event.target.files?.[0];

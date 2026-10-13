@@ -78,6 +78,21 @@ test("highlights TypeScript and completes Vim API members and local variables", 
     await expect(page.getByRole("listbox")).toHaveCount(0);
 });
 
+test("lists the built-in Vim motions in a responsive reference", async ({ cleanPage: page }) => {
+    await goHome(page);
+    await page.goto("/settings/vim");
+    const reference = page.getByRole("region", { name: "Built-in Vim motions" });
+    await reference.getByText("Default motions", { exact: true }).click();
+    await expect(reference.getByText("Move left, down, up, and right.", { exact: true })).toBeVisible();
+    await expect(
+        reference.getByText("Move to the next word start; W treats punctuation as part of a word.", { exact: true }),
+    ).toBeVisible();
+    await expect(reference.getByText("f{char}", { exact: true })).toBeVisible();
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
 test("loads the typed example and saves it with the button", async ({ cleanPage: page }) => {
     await goHome(page);
     await page.goto("/settings/vim");

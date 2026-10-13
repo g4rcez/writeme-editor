@@ -16,6 +16,9 @@ async function setup(page: Page, text = "one two three"): Promise<void> {
     await expect(editor).toHaveAttribute("contenteditable", "true");
     await editor.click();
     await page.keyboard.type(text);
+    const saveStatus = page.getByRole("status", { name: "Note save status" });
+    await expect(saveStatus).toHaveText("Unsaved changes");
+    await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
     await page.getByRole("checkbox", { name: "Vim mode", exact: true }).check();
     await editor.click();
     await expect(editor).toHaveAttribute("data-neovim-mode", "normal");
@@ -25,14 +28,25 @@ async function setup(page: Page, text = "one two three"): Promise<void> {
 test("changes words, repeats, undoes, and persists a formatted note", async ({ cleanPage: page }) => {
     await setup(page);
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const footer = page.locator(".writeme-editor-status-bar");
+    const saveStatus = footer.getByRole("status", { name: "Note save status" });
+    const vimStatus = footer.getByRole("status", { name: "Vim mode" });
+    await expect(vimStatus).toHaveText("NORMAL");
+    expect(
+        await footer.evaluate((element) => {
+            const save = element.querySelector('[aria-label="Note save status"]');
+            const vim = element.querySelector('[aria-label="Vim mode"]');
+            return Boolean(save && vim && save.nextElementSibling === vim);
+        }),
+    ).toBe(true);
     await page.keyboard.type("ciwNEW");
-    await expect(page.getByRole("status", { name: "Vim mode" })).toHaveText("INSERT");
+    await expect(vimStatus).toHaveText("INSERT");
     await page.keyboard.press("Escape");
     await page.keyboard.type("w.");
     await expect(editor).toHaveText("NEW NEW three");
     await page.keyboard.type("u");
     await expect(editor).toHaveText("NEW two three");
-    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+    await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
     await page.reload();
     await expect(editor).toHaveText("NEW two three");
     await expect(editor).toHaveAttribute("data-neovim-mode", "normal");
@@ -51,6 +65,31 @@ test("selects characters in both directions and blocks normal-mode typing", asyn
     await expect(editor).toHaveText("aef");
     await page.keyboard.type(".");
     await expect(editor).toHaveText("");
+});
+
+test("prioritizes Vim Ctrl-W in Formatted and Markdown modes over the app close shortcut", async ({
+    cleanPage: page,
+}) => {
+    await setup(page);
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const route = page.url();
+
+    await page.keyboard.press("ControlOrMeta+w");
+    await expect(editor).toHaveText("two three");
+    await expect(page).toHaveURL(route);
+
+    await page.keyboard.type("A word");
+    await expect(page.getByRole("status", { name: "Vim mode" })).toHaveText("INSERT");
+    await page.keyboard.press("ControlOrMeta+w");
+    await expect(editor).toHaveText("two three");
+    await expect(page).toHaveURL(route);
+
+    await page.getByRole("toolbar", { name: "Note tools" }).getByRole("button", { name: "Markdown" }).click();
+    const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
+    await raw.click();
+    await page.keyboard.press("ControlOrMeta+w");
+    await expect(raw).toContainText("three");
+    await expect(page).toHaveURL(route);
 });
 
 test("restores normal editing when disabled and keeps Markdown Vim available", async ({ cleanPage: page }) => {

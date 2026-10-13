@@ -38,13 +38,12 @@ import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
-import { NeovimStatus } from "./extensions/neovim/status";
-import { applyTiptapVimConfiguration } from "./vim/apply-tiptap-configuration";
-import { useVimConfiguration } from "./vim/use-vim-configuration";
-import { useVimSettings } from "./vim/use-vim-settings";
 import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 import { registerNoteSaveShortcut } from "./note-save-shortcut";
+import { applyTiptapVimConfiguration } from "./vim/apply-tiptap-configuration";
+import { useVimConfiguration } from "./vim/use-vim-configuration";
+import { useVimSettings } from "./vim/use-vim-settings";
 import { createTiptapWritingEditorAdapter } from "./writing-assistant/tiptap-adapter";
 import { WritingAssistant } from "./writing-assistant/writing-assistant";
 
@@ -196,7 +195,11 @@ const TiptapEditorCore = memo(
         onSaveRef,
     }: TiptapEditorCoreProps) {
         const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme), true), [theme]);
-        const { configuration: vimConfiguration, error: vimConfigurationError, loading: vimConfigurationLoading } = useVimConfiguration();
+        const {
+            configuration: vimConfiguration,
+            error: vimConfigurationError,
+            loading: vimConfigurationLoading,
+        } = useVimConfiguration();
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
         const generationRef = useRef(0);
@@ -373,6 +376,7 @@ const TiptapEditorCore = memo(
                     return false;
                 },
                 handleKeyDown: (view, event) => {
+                    if ((event.ctrlKey || event.metaKey) && editor.storage.neovim.getState()?.enabled) return false;
                     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
                         event.preventDefault();
                         return true;
@@ -418,7 +422,8 @@ const TiptapEditorCore = memo(
                 vimMode &&
                 vimConfiguration.options.initialMode === "insert" &&
                 editor.storage.neovim.getState()?.mode === "normal"
-            ) editor.storage.neovim.setMode("insert");
+            )
+                editor.storage.neovim.setMode("insert");
             return () => {
                 if (!editor.isDestroyed) cleanup();
             };
@@ -858,9 +863,12 @@ const TiptapEditorCore = memo(
                             disabled={Boolean(readonly || uiState.parsingContent)}
                         />
                     )}
-                    <NeovimStatus editor={editor} />
                     {vimMode && vimConfigurationLoading ? <output>Loading Vim configuration...</output> : null}
-                    {vimConfigurationError ? <output role="alert" className="text-danger">Vim configuration: {vimConfigurationError}</output> : null}
+                    {vimConfigurationError ? (
+                        <output role="alert" className="text-danger">
+                            Vim configuration: {vimConfigurationError}
+                        </output>
+                    ) : null}
                     <EditorContent key={id} editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>

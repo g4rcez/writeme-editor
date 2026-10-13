@@ -139,13 +139,13 @@ function displayShortcut(bind: string): string {
 
 function ReadonlyShortcutRow({ shortcut }: { shortcut: ReadonlyShortcut }) {
     return (
-        <li className="flex flex-col gap-3 border-b border-card-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl">
+        <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 border-b border-border py-3 last:border-b-0">
+            <div className="min-w-0">
                 <span className="text-sm font-medium text-foreground">{shortcut.title}</span>
-                <p className="text-sm text-muted-foreground">{shortcut.description}</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">{shortcut.description}</p>
             </div>
-            <div className="sm:min-w-48 sm:text-right">
-                <kbd className="inline-flex min-w-[120px] justify-center rounded border border-border px-3 py-2 font-mono text-sm tracking-widest text-foreground">
+            <div className="max-w-36 text-right">
+                <kbd className="break-words font-mono text-xs leading-5 text-foreground">
                     {displayShortcut(shortcut.bind)}
                 </kbd>
             </div>
@@ -155,9 +155,11 @@ function ReadonlyShortcutRow({ shortcut }: { shortcut: ReadonlyShortcut }) {
 
 function ReadonlyShortcutList({ shortcuts }: { shortcuts: ReadonlyShortcut[] }) {
     return (
-        <section className="mt-8">
+        <section className="mt-8" aria-labelledby="available-shortcuts-heading">
             <div className="mb-2 max-w-2xl">
-                <h2 className="text-base font-semibold text-foreground">Available shortcuts</h2>
+                <h2 id="available-shortcuts-heading" className="text-sm font-semibold text-foreground">
+                    Available shortcuts
+                </h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     These built-in shortcuts are available in the app and are shown here for reference only.
                 </p>
@@ -199,7 +201,12 @@ export default function SettingsShortcutsPage() {
         }
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings)
+        return (
+            <p role="status" className="text-sm text-muted-foreground">
+                Loading settings...
+            </p>
+        );
 
     return (
         <SettingsPageShell

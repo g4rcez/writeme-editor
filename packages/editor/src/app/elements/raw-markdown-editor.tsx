@@ -14,6 +14,7 @@ import { vim, Vim, getCM } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { supportsAI } from "@/lib/platform";
 import type { WritingEditorAdapter } from "../writing-assistant/types";
 import {
     editorActionsGlobalRef,
@@ -24,13 +25,12 @@ import {
     setEditorActionsGlobalRef,
     setEditorSearchGlobalRef,
 } from "../editor-global-ref";
-import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
-import { createMarkdownWritingAssistant } from "../writing-assistant/markdown-adapter";
-import { WritingAssistant } from "../writing-assistant/writing-assistant";
-import { supportsAI } from "@/lib/platform";
 import { markdownCompletion } from "../extensions/markdown-completion";
+import { addMarkdownFrontmatter, hasMarkdownFrontmatter } from "../frontmatter";
 import { applyCodeMirrorVimConfiguration } from "../vim/apply-codemirror-configuration";
 import { useVimConfiguration } from "../vim/use-vim-configuration";
+import { createMarkdownWritingAssistant } from "../writing-assistant/markdown-adapter";
+import { WritingAssistant } from "../writing-assistant/writing-assistant";
 import { appDarkCodeMirrorTheme, appLightCodeMirrorTheme } from "./code-block/editor-themes.ts";
 
 const MAIN_SCROLL_CONTAINER_ID = "main-scroll-container";
@@ -232,7 +232,22 @@ function scrollMainContainerToCursor(view: EditorView): void {
 }
 
 function createKeymapExtensions(vimMode: boolean): Extension[] {
-    return vimMode ? [vim(), keymap.of(vscodeKeymap)] : [keymap.of(vscodeKeymap)];
+    if (!vimMode) return [keymap.of(vscodeKeymap)];
+
+    const vimModifierKeymap = EditorView.domEventHandlers({
+        keydown: (event, view) => {
+            if (event.key.toLowerCase() !== "w" || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey)
+                return false;
+
+            event.preventDefault();
+            event.stopPropagation();
+            const cm = getCM(view);
+            if (cm) Vim.handleKey(cm, "<C-w>", "user");
+            return true;
+        },
+    });
+
+    return [vim(), vimModifierKeymap, keymap.of(vscodeKeymap)];
 }
 
 function createRawMarkdownEditorTheme(fontSize: number) {
@@ -331,7 +346,11 @@ export function RawMarkdownEditor({
     const initialFontSizeRef = useRef(fontSize);
     const initialReadonlyRef = useRef(readonly);
     const initialVimModeRef = useRef(vimMode);
-    const { configuration: vimConfiguration, error: vimConfigurationError, loading: vimConfigurationLoading } = useVimConfiguration();
+    const {
+        configuration: vimConfiguration,
+        error: vimConfigurationError,
+        loading: vimConfigurationLoading,
+    } = useVimConfiguration();
     const initialActiveRef = useRef(active);
     const isSyncingExternalValueRef = useRef(false);
     const keymapCompartmentRef = useRef(new Compartment());
@@ -615,7 +634,11 @@ export function RawMarkdownEditor({
 
     return (
         <div className="w-full">
-            {vimConfigurationError ? <output role="alert" className="text-danger">Vim configuration: {vimConfigurationError}</output> : null}
+            {vimConfigurationError ? (
+                <output role="alert" className="text-danger">
+                    Vim configuration: {vimConfigurationError}
+                </output>
+            ) : null}
             {supportsAI() && writingAssistantEnabled && writingAssistantAdapter && (
                 <WritingAssistant
                     adapter={writingAssistantAdapter}

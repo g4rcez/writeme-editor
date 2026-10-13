@@ -10,6 +10,8 @@ export function applyCodeMirrorVimConfiguration(configuration: VimConfiguration)
         parseKeys(keys, leader).join("").replaceAll(" ", "<Space>");
     for (const mapping of previous?.mappings ?? [])
         Vim.unmap(expand(mapping.lhs, previous?.options.leader ?? " "), mapping.mode);
+    Vim.map("<C-w>", "dw", "normal");
+    Vim.map("<C-w>", "d", "visual");
     for (const mapping of configuration.mappings) {
         const lhs = expand(mapping.lhs, configuration.options.leader);
         const rhs = expand(mapping.rhs, configuration.options.leader);

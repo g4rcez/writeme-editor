@@ -1,6 +1,18 @@
 import type { Editor } from "@tiptap/core";
+import { Tag, type TagProps } from "@g4rcez/components";
 import { useEditorState } from "@tiptap/react";
+import type { NeovimMode } from "./types";
 import { neovimKey } from "./state";
+
+const modeThemes = {
+    normal: "primary",
+    insert: "success",
+    visual: "info",
+    "visual-line": "info",
+    "operator-pending": "warn",
+    replace: "danger",
+    command: "secondary",
+} satisfies Record<NeovimMode, NonNullable<TagProps["theme"]>>;
 
 export function NeovimStatus({ editor }: { readonly editor: Editor | null }): React.JSX.Element | null {
     const vim = useEditorState({
@@ -13,9 +25,12 @@ export function NeovimStatus({ editor }: { readonly editor: Editor | null }): Re
         },
     });
     if (!vim) return null;
+    const theme = modeThemes[vim.mode];
     return (
-        <output className="neovim-status text-muted-foreground" aria-label="Vim mode" aria-live="polite">
-            {vim.mode.toUpperCase().replaceAll("-", " ")}
+        <output aria-label="Vim mode" aria-live="polite">
+            <Tag size="small" theme={theme} indicator={theme} className="font-mono uppercase tracking-wide">
+                {vim.mode.toUpperCase().replaceAll("-", " ")}
+            </Tag>
             {vim.command ? ` ${vim.command}` : vim.pending.length ? ` ${vim.pending.join("")}` : ""}
             {vim.message ? ` · ${vim.message}` : ""}
         </output>

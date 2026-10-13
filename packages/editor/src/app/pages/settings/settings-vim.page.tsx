@@ -8,6 +8,20 @@ import { VimConfigurationEditor } from "@/app/vim/scripts/configuration-editor";
 import { FEATURES } from "@/lib/build-features";
 import { SettingsPageShell } from "./settings-page-shell";
 
+const DEFAULT_MOTIONS = [
+    { keys: ["h", "j", "k", "l"], description: "Move left, down, up, and right." },
+    { keys: ["w", "W"], description: "Move to the next word start; W treats punctuation as part of a word." },
+    { keys: ["b", "B"], description: "Move to the previous word start; B treats punctuation as part of a word." },
+    { keys: ["e", "E"], description: "Move to a word end; E treats punctuation as part of a word." },
+    { keys: ["0", "^", "$"], description: "Move to line start, first nonblank character, or line end." },
+    { keys: ["gg", "G"], description: "Move to the first or last document line. A count selects a line number." },
+    { keys: ["gj", "gk"], description: "Move down or up one wrapped screen line." },
+    { keys: ["{", "}"], description: "Move to the previous or next text block." },
+    { keys: ["f{char}", "F{char}"], description: "Find a character forward or backward on the current line." },
+    { keys: ["t{char}", "T{char}"], description: "Move until just before or after a character on the current line." },
+    { keys: [";", ","], description: "Repeat the last character find forward or in reverse." },
+] as const;
+
 export default function SettingsVimPage(): React.JSX.Element {
     const { settings, patchSettings } = useSettingsDraft();
     const [busy, setBusy] = useState(false);
@@ -82,6 +96,42 @@ export default function SettingsVimPage(): React.JSX.Element {
                 >
                     Enable Vim mode in all editors
                 </Checkbox>
+                <section aria-label="Built-in Vim motions" className="mt-6 rounded-lg border border-border">
+                    <details>
+                        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-4 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <span>Default motions</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                                {DEFAULT_MOTIONS.length} groups
+                            </span>
+                        </summary>
+                        <div className="border-t border-border px-4 py-3">
+                            <p className="mb-3 text-sm leading-5 text-muted-foreground">
+                                Counts work with motions. In Normal mode, prefix a motion with <kbd>d</kbd>,{" "}
+                                <kbd>c</kbd>, or <kbd>y</kbd> to delete, change, or yank its range.
+                            </p>
+                            <dl className="grid gap-x-6 sm:grid-cols-2">
+                                {DEFAULT_MOTIONS.map(({ keys, description }) => (
+                                    <div
+                                        key={keys.join("-")}
+                                        className="grid grid-cols-[minmax(5rem,auto)_1fr] items-start gap-3 border-t border-border/60 py-2.5 first:border-t-0 sm:first:border-t"
+                                    >
+                                        <dt className="flex flex-wrap gap-1.5">
+                                            {keys.map((key) => (
+                                                <kbd
+                                                    key={key}
+                                                    className="rounded border border-border bg-secondary-background px-1.5 py-0.5 font-mono text-xs text-foreground"
+                                                >
+                                                    {key}
+                                                </kbd>
+                                            ))}
+                                        </dt>
+                                        <dd className="text-sm leading-5 text-muted-foreground">{description}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </div>
+                    </details>
+                </section>
                 {FEATURES.vimScripts ? (
                     <div className="mt-6 space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-3">

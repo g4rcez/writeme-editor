@@ -21,6 +21,6 @@ export function registerNoteSaveShortcut(id: string, save: () => void, active?: 
         event.preventDefault();
         if (!event.repeat) save();
     };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
 }

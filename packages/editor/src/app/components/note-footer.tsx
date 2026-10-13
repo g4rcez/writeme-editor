@@ -1,6 +1,8 @@
+import type { Editor } from "@tiptap/core";
 import { useEffect, useState } from "react";
 import { editorGlobalRef, editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { HARD_LIMIT, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { NeovimStatus } from "../extensions/neovim/status";
 import { NoteSaveStatus } from "./note-save-status";
 
 type Counts = { chars: number; words: number; lines: number };
@@ -33,6 +35,7 @@ const HARD_LIMIT_LABEL = formatCount(HARD_LIMIT);
 
 export function NoteFooter({ noteId, content }: { noteId: string; content?: string }) {
     const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
+    const [activeEditor, setActiveEditor] = useState<Editor | null>(() => editorGlobalRef.current);
     const counts = content === undefined ? editorCounts : getMarkdownCounts(content);
 
     useEffect(() => {
@@ -42,6 +45,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
         const subscribe = () => {
             const searchEditor = editorSearchGlobalRef.current;
             const editor = editorGlobalRef.current;
+            setActiveEditor(editor);
             if (!searchEditor && !editor) return false;
 
             const compute = () => {
@@ -94,6 +98,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
     return (
         <div className="writeme-editor-status-bar print:hidden">
             <NoteSaveStatus noteId={noteId} />
+            <NeovimStatus editor={activeEditor} />
             <span title={title} className={`flex items-center gap-1.5 tabular-nums ${color}`}>
                 <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-muted">
                     <span
