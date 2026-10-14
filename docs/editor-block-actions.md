@@ -16,10 +16,19 @@ last items disable moves beyond their parent.
 Paragraphs and headings can become paragraphs, headings 1–6, bulleted lists,
 numbered lists, checklists, or quotes when the surrounding structure permits
 the result. A quote containing one paragraph or heading can be unwrapped.
-Inline formatting and links are retained. Media, code, tables, list items,
-and complex quotes explain that conversion is unavailable rather than discard
-content or metadata. A selection spanning multiple blocks asks you to place
-the cursor in one block first.
+Inline formatting, links, note references, and hard breaks are retained. Explicit
+**Quote** conversion keeps `[!NOTE]`-style text literal rather than turning it
+into a callout, including after further edits. Ambiguous literal quotes are saved
+as HTML blockquotes with `data-literal-quote="true"` in Markdown so reload keeps
+their exact inline content and intent; ordinary quotes still use `>` syntax.
+Typed or imported GFM callout markers remain supported, but only a contiguous
+text prefix before any inline atom is treated as a marker.
+
+Media, code, tables, list items, and complex quotes explain that conversion is
+unavailable rather than discard content or metadata. A selection spanning
+multiple blocks asks you to place the cursor in one block first, whether opened
+by keyboard or by clicking a hovered handle. With a single-block selection,
+hover targeting remains independent of the cursor's block.
 
 All actions participate in normal undo and saving. Copies keep content and
 metadata; copied headings receive new unique IDs. Markdown mode and reload

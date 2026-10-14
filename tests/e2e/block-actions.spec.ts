@@ -14,6 +14,16 @@ async function seed(page: Page, html: string): Promise<void> {
     }, html);
 }
 
+async function readDocument(page: Page) {
+    return page.evaluate(async () => {
+        // This module must load in the browser's Vite runtime, not Playwright's Node process.
+        const path = "/packages/editor/src/app/editor-global-ref.tsx";
+        const { editorGlobalRef } = await import(path);
+        if (!editorGlobalRef.current) throw new Error("Note editor was not activated");
+        return editorGlobalRef.current.getJSON();
+    });
+}
+
 async function openFor(page: Page, block: Locator): Promise<void> {
     await block.click();
     await page.keyboard.press("Alt+Shift+m");
@@ -111,6 +121,64 @@ test("converts inline formatting to lists and quotes, and refuses multi-block se
     await expect(editor(page).locator("h3 strong")).toHaveText("Bold");
 });
 
+test("keeps literal Quote content with note references through undo, Markdown and reload", async ({ page }) => {
+    await seed(
+        page,
+        '<p><a data-type="mention" data-id="reference" data-label="Reference" data-path="/note/reference" href="/note/reference">Reference</a>[!NOTE] <strong>Keep me</strong><br><a href="https://example.com" title="https://example.com">linked</a></p><p>Last</p>',
+    );
+    const before = await readDocument(page);
+    await openFor(page, editor(page).getByText("Keep me", { exact: true }));
+    await menu(page).getByRole("menuitem", { name: "Quote", exact: true }).click();
+    await expect(editor(page).locator("blockquote")).toHaveCount(1);
+    expect((await readDocument(page)).content[0].content[0]).toEqual(before.content[0]);
+    await page.keyboard.press("ControlOrMeta+z");
+    expect(await readDocument(page)).toEqual(before);
+    await openFor(page, editor(page).getByText("Keep me", { exact: true }));
+    await menu(page).getByRole("menuitem", { name: "Quote", exact: true }).click();
+    await save(page);
+    await page.getByRole("button", { name: "Markdown", exact: true }).click();
+    await expect(page.getByRole("textbox", { name: "Markdown note editor", exact: true })).toContainText(
+        'data-literal-quote="true"',
+    );
+    await page.getByRole("button", { name: "Formatted", exact: true }).click();
+    await expect(editor(page).locator("blockquote")).toHaveCount(1);
+    expect((await readDocument(page)).content[0].content[0]).toEqual(before.content[0]);
+    await save(page);
+    await page.reload();
+    await expect(editor(page).locator("blockquote")).toHaveCount(1);
+    await editor(page).getByText("Keep me", { exact: true }).click();
+    expect((await readDocument(page)).content[0].content[0]).toEqual(before.content[0]);
+});
+
+test("refuses pointer actions on a multi-paragraph selection without changing hover targeting", async ({ page }) => {
+    await seed(page, "<p>First</p><p>Last</p>");
+    const before = await readDocument(page);
+    const first = editor(page).locator("p").first();
+    const last = editor(page).locator("p").last();
+    const firstBounds = await first.boundingBox();
+    const lastBounds = await last.boundingBox();
+    await page.mouse.move(firstBounds!.x + 1, firstBounds!.y + firstBounds!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(lastBounds!.x + 50, lastBounds!.y + lastBounds!.height / 2, { steps: 10 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toMatch(/First\s+Last/);
+    await first.hover();
+    await page.getByRole("button", { name: "Block actions", exact: true }).click();
+    await expect(menu(page)).toContainText("Place the cursor in a single block");
+    await expect(menu(page).getByRole("menuitem", { name: /Duplicate|Move|Paragraph|Heading|list|Quote/ })).toHaveCount(
+        0,
+    );
+    expect(await readDocument(page)).toEqual(before);
+    await page.keyboard.press("Escape");
+    await last.click();
+    await first.hover();
+    await page.getByRole("button", { name: "Block actions", exact: true }).click();
+    await menu(page).getByRole("menuitem", { name: "Duplicate", exact: true }).click();
+    await expect(editor(page).locator("p")).toHaveText(["First", "First", "Last"]);
+    await page.keyboard.press("ControlOrMeta+z");
+    expect(await readDocument(page)).toEqual(before);
+});
+
 test("moves nested list items inside their parent and retains children when duplicating", async ({
     page,
 }) => {
@@ -157,12 +225,7 @@ test("duplicates code, media and tables with metadata and explains unavailable c
     await expect(editor(page).locator("table")).toHaveCount(2);
     await page.keyboard.press("ControlOrMeta+z");
     await expect(editor(page).locator("table")).toHaveCount(1);
-    await editor(page)
-        .locator("p")
-        .filter({ hasText: /^After code$/ })
-        .click();
-    await page.keyboard.press("ArrowUp");
-    await page.keyboard.press("Alt+Shift+m");
+    await openFor(page, editor(page).locator(".code-content-renderer"));
     await expect(menu(page)).toContainText("cannot be converted without losing content");
     await menu(page).getByRole("menuitem", { name: "Duplicate", exact: true }).click();
     await expect(editor(page).locator(".code-content-renderer")).toHaveCount(2);

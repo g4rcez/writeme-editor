@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { afterEach, describe, expect, it } from "vitest";
 import GlobalDragHandle from "tiptap-extension-global-drag-handle";
 
+import { createExtensions } from "@/app/extensions";
 import {
     BlockActions,
     type BlockTarget,
@@ -158,6 +159,114 @@ describe("block actions", () => {
             expect(editor.getJSON()).toEqual(original);
         },
     );
+
+    it.each([false, true])("preserves an explicit Quote with an admonition marker (preceding atom: %s)", (withAtom) => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            content: {
+                type: "doc",
+                content: [
+                    {
+                        type: "paragraph",
+                        content: [
+                            ...(withAtom
+                                ? [
+                                      {
+                                          type: "mention",
+                                          attrs: { id: "reference", label: "Reference", path: "/note/reference" },
+                                      },
+                                  ]
+                                : []),
+                            { type: "text", text: "[!NOTE] " },
+                            { type: "text", text: "Keep me", marks: [{ type: "bold" }] },
+                            { type: "hardBreak" },
+                            {
+                                type: "text",
+                                text: "linked",
+                                marks: [
+                                    {
+                                        type: "link",
+                                        attrs: { href: "https://example.com", title: "https://example.com" },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+        editors.push(editor);
+        const before = editor.getJSON();
+        const paragraph = editor.state.doc.firstChild!;
+        const block = targetAt(editor.view, 1)!;
+        const quote = conversionOptions(editor.view, block).find((item) => item.label === "Quote")!;
+        expect(convert(editor.view, block, quote)).toBe(true);
+        expect(editor.state.doc.firstChild?.type.name).toBe("blockquote");
+        expect(editor.state.doc.firstChild?.firstChild?.eq(paragraph)).toBe(true);
+        expect(editor.commands.undo()).toBe(true);
+        expect(editor.getJSON()).toEqual(before);
+        expect(editor.commands.redo()).toBe(true);
+        editor.commands.insertContentAt(editor.state.doc.content.size - 1, "After quote");
+        expect(editor.state.doc.firstChild?.firstChild?.eq(paragraph)).toBe(true);
+        for (const content of [editor.getHTML(), editor.getMarkdown()]) {
+            const reloaded = new Editor({ extensions: createExtensions(() => "github-dark"), content });
+            editors.push(reloaded);
+            expect(reloaded.state.doc.firstChild?.type.name).toBe("blockquote");
+            expect(reloaded.state.doc.firstChild?.firstChild?.toJSON()).toEqual(paragraph.toJSON());
+        }
+    });
+
+    it("recognizes only a contiguous leading callout marker and preserves atoms around it", () => {
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
+        editors.push(editor);
+        const mention = editor.schema.nodes.mention!.create({
+            id: "reference",
+            label: "Reference",
+            path: "/note/reference",
+        });
+        const paragraph = editor.schema.nodes.paragraph!;
+        const blockquote = editor.schema.nodes.blockquote!;
+        for (const inlines of [
+            [mention, editor.schema.text("[!NOTE] Keep me")],
+            [editor.schema.text("[!NO"), mention, editor.schema.text("TE] Keep me")],
+        ]) {
+            const node = blockquote.create(null, paragraph.create(null, inlines));
+            editor.view.dispatch(editor.state.tr.replaceWith(0, editor.state.doc.content.size, node));
+            expect(editor.state.doc.firstChild?.eq(node)).toBe(true);
+            const reloaded = new Editor({
+                extensions: createExtensions(() => "github-dark"),
+                content: editor.getMarkdown(),
+            });
+            editors.push(reloaded);
+            expect(reloaded.state.doc.firstChild?.firstChild?.toJSON()).toEqual(node.firstChild?.toJSON());
+        }
+        const body = paragraph.create(null, [
+            editor.schema.text("[!NO", [editor.schema.marks.bold!.create()]),
+            editor.schema.text("TE] "),
+            mention,
+            editor.schema.text(" Keep me", [editor.schema.marks.italic!.create()]),
+        ]);
+        editor.view.dispatch(
+            editor.state.tr.replaceWith(0, editor.state.doc.content.size, blockquote.create(null, body)),
+        );
+        expect(editor.state.doc.firstChild?.type.name).toBe("callout");
+        expect(editor.state.doc.firstChild?.attrs.type).toBe("note");
+        expect(editor.state.doc.firstChild?.firstChild?.content.eq(body.content.cut(8))).toBe(true);
+        editor.commands.setContent("> [!TIP] Keep **me**");
+        expect(editor.state.doc.firstChild?.type.name).toBe("callout");
+        expect(editor.state.doc.firstChild?.attrs.type).toBe("tip");
+        expect(editor.state.doc.firstChild?.textContent).toBe("Keep me");
+        expect(editor.getHTML()).toContain("<strong>me</strong>");
+        const marked = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            content: "> **[!NOTE]** Keep *me*",
+        });
+        editors.push(marked);
+        expect(marked.state.doc.firstChild?.type.name).toBe("callout");
+        expect(marked.state.doc.firstChild?.attrs.type).toBe("note");
+        expect(marked.state.doc.firstChild?.textContent).toBe("Keep me");
+        expect(marked.getHTML()).toContain("<em>me</em>");
+    });
 
     it("converts headings to schema-valid lists and refuses destructive wrapper conversion", () => {
         const editor = create("<h2>section</h2><blockquote><p>first</p><p>second</p></blockquote>");

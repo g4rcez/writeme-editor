@@ -174,7 +174,7 @@ export function conversionOptions(view: EditorView, target: BlockTarget): Conver
                 if (item) add(label, create(type, Fragment.from(item)));
             }
         }
-        add("Quote", create("blockquote", Fragment.from(node)));
+        add("Quote", create("blockquote", Fragment.from(node), { literal: true }));
     } else if (node.type.name === "blockquote" && node.childCount === 1) {
         const child = node.firstChild;
         if (child?.type.name === "paragraph") add("Paragraph", child);
@@ -284,6 +284,7 @@ function createPlugin(): Plugin {
 
             const show = (candidate: BlockTarget | null, focusMenu: boolean): void => {
                 if (!view.editable) return;
+                candidate = !view.state.selection.empty && !currentTarget(view) ? null : candidate;
                 target = candidate;
                 if (candidate) positionHandle(candidate);
                 returnToEditor = view.hasFocus();
