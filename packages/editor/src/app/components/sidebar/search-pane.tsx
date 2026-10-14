@@ -147,7 +147,10 @@ export const SearchPane = () => {
     };
 
     return (
-        <section aria-label="Search notes" className="flex h-full min-h-0 flex-col overflow-y-auto bg-background/50">
+        <section
+            aria-label="Search notes"
+            className="writeme-search-pane flex h-full min-h-0 flex-col overflow-y-auto bg-background/50"
+        >
             <div className="border-b border-border/40 px-1 py-2">
                 <span className="text-xs font-medium text-foreground">Search notes</span>
             </div>
@@ -265,20 +268,19 @@ export const SearchPane = () => {
                     <div className="space-y-2" aria-label="Active search filters">
                         <div className="flex flex-wrap gap-1.5">
                             {getNoteSearchFilterLabels(filters).map(({ key, label }) => (
-                                <span
+                                <button
                                     key={key}
-                                    className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2 py-1 text-[11px] text-foreground"
+                                    type="button"
+                                    aria-label={`Remove ${label} filter`}
+                                    onClick={() => removeFilter(key)}
+                                    disabled={saving}
+                                    className="inline-flex max-w-full items-center gap-2 rounded-full border border-border px-2 py-1 text-[11px] text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     <span className="truncate">{label}</span>
-                                    <button
-                                        type="button"
-                                        aria-label={`Remove ${label} filter`}
-                                        onClick={() => removeFilter(key)}
-                                        className="rounded-full px-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
+                                    <span aria-hidden="true" className="text-muted-foreground">
                                         ×
-                                    </button>
-                                </span>
+                                    </span>
+                                </button>
                             ))}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">

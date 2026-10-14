@@ -59,7 +59,9 @@ export function getNoteSearchFolders(filePaths: readonly (string | null | undefi
         for (const part of parts.slice(0, -1)) {
             current = current
                 ? `${current.endsWith(separator) ? current.slice(0, -1) : current}${separator}${part}`
-                : part;
+                : /^[A-Za-z]:$/u.test(part)
+                  ? `${part}${separator}`
+                  : part;
             folders.add(current);
         }
     }

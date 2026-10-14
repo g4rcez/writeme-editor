@@ -157,7 +157,7 @@ export const SidebarShell = () => {
                                     layoutDispatch.setView({ type: "all" });
                                 }}
                             />
-                            <div className="md:hidden">
+                            <div className="writeme-search-mobile-nav md:hidden">
                                 <SidebarNavItem
                                     label="Search"
                                     icon={<MagnifyingGlassIcon size={15} />}

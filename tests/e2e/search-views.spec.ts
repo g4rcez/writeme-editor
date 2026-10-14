@@ -81,6 +81,28 @@ async function combineFilters(page: Page): Promise<void> {
 test.describe("Search into saved Views", () => {
     test.use({ timezoneId: "America/Sao_Paulo" });
 
+    test("saves a Windows drive-root folder with the same filesystem results", async ({ cleanPage: page }) => {
+        await goHome(page);
+        await seedNotes(page, [
+            { id: "windows", title: "Windows article", filePath: "C:\\vault\\ação's\\a.md" },
+            { id: "database", title: "Database article" },
+        ]);
+        await openSearch(page);
+        await page.getByRole("combobox", { name: "Filter by folder or location" }).selectOption("folder:C:\\");
+        const results = page.getByRole("list", { name: "Search results" });
+        await expect(results.getByRole("button")).toHaveCount(1);
+        await expect(results).toContainText("Windows article");
+        await page.getByRole("button", { name: "Save as View", exact: true }).click();
+        await page.getByTitle("View title", { exact: true }).fill("Windows drive");
+        await page.getByRole("button", { name: "Create View", exact: true }).click();
+        await expect(page.getByRole("main").getByRole("link", { name: "Windows article", exact: true })).toBeVisible();
+        await page.reload();
+        await expect(page.getByRole("main").getByRole("link", { name: "Windows article", exact: true })).toBeVisible();
+        await expect(page.getByRole("main").getByRole("link", { name: "Database article", exact: true })).toHaveCount(
+            0,
+        );
+    });
+
     test("combines, removes and resets filters without changing text search", async ({ cleanPage: page }) => {
         await seedSearch(page);
         await combineFilters(page);
@@ -339,6 +361,7 @@ test.describe("Search into saved Views", () => {
         const bounds = await create.boundingBox();
         expect(bounds).not.toBeNull();
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+        expect(bounds!.height).toBeGreaterThanOrEqual(44);
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
         const screenshot = info.outputPath("search-filters-mobile.png");
         await page.screenshot({ path: screenshot });

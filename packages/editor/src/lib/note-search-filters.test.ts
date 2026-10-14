@@ -109,6 +109,8 @@ describe("saved search filters", () => {
         expect(getNoteSearchFolders(notes.map((note) => note.filePath)).map((folder) => folder.path)).toContain(
             "C:\\vault\\ação's\\nested",
         );
+        expect(getNoteSearchFolders(notes.map((note) => note.filePath)).map((folder) => folder.path)).toContain("C:\\");
+        expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "folder:C:\\" })))).toEqual(["windows"]);
         expect(getNoteSearchFolders(["/vault/project/a.md", "/vault/project/b.md"])).toEqual([
             { path: "/vault", label: "/vault" },
             { path: "/vault/project", label: "/vault/project" },
