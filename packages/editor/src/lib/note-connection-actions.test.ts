@@ -23,6 +23,20 @@ vi.mock("./note-link-repair", async (original) => ({
 }));
 
 describe("connection actions", () => {
+    it.each(["../Outside", "%2e%2e/Outside", "Folder/../../Outside", "C:\\Outside"])(
+        "rejects an escaping creation target %s before saving",
+        async (title) => {
+            mocks.getAll.mockResolvedValue([]);
+            await expect(createConnectionTarget(title)).rejects.toThrow(/workspace/);
+            expect(mocks.save).not.toHaveBeenCalled();
+        },
+    );
+
+    it("creates vault-root references as relative names that resolve consistently", async () => {
+        mocks.getAll.mockResolvedValue([]);
+        const target = await createConnectionTarget("/Folder/New.md");
+        expect(target.title).toBe("Folder/New");
+    });
     const source = Note.parse({ id: "source", title: "Source", content: "Target twice Target" });
     const target = Note.parse({ id: "target", title: "Target" });
     const repair = { source, target, from: 0, to: 6, replacement: "[[target|Target]]" };

@@ -89,6 +89,22 @@ test("creates a missing target once and immediately resolves repeated references
     await expect(context.getByRole("link", { name: "New target", exact: true })).toBeVisible();
 });
 
+test("rejects escaping targets and creates vault-root references inside the workspace", async ({ cleanPage: page }) => {
+    await goHome(page);
+    await createNote(page, "Safe connections", "[[../Outside]] and [[/Folder/New.md]]");
+    const context = await openContext(page);
+    await context.getByText("Unresolved references", { exact: true }).click();
+    const invalid = context.locator("li").filter({ has: page.getByText("[[../Outside]]", { exact: true }) });
+    await invalid.getByRole("button", { name: "Create note", exact: true }).click();
+    await expect(context.getByRole("status")).toContainText("inside the workspace");
+    expect((await storedNotes(page)).map((note) => note.title)).toEqual(["Safe connections"]);
+    await context.getByRole("button", { name: "Refresh suggestions", exact: true }).click();
+    const valid = context.locator("li").filter({ has: page.getByText("[[/Folder/New.md]]", { exact: true }) });
+    await valid.getByRole("button", { name: "Create note", exact: true }).click();
+    await expect(valid).toHaveCount(0);
+    expect((await storedNotes(page)).some((note) => note.title === "Folder/New")).toBe(true);
+});
+
 for (const mode of ["Formatted", "Markdown"] as const) {
     test(`chooses an existing target in ${mode}, preserving labels, undo, and persistence`, async ({
         cleanPage: page,
@@ -170,6 +186,7 @@ test("previews only unlinked title and alias occurrences from other notes and pe
     await expect(section.getByRole("button", { name: "Preview link", exact: true })).toHaveCount(3);
     await section.getByRole("button", { name: "Preview link", exact: true }).nth(1).click();
     await section.getByRole("button", { name: "Link this mention", exact: true }).click();
+    await expect(section.getByRole("button", { name: "Preview link", exact: true })).toHaveCount(2);
     await page.reload();
     expect((await storedNotes(page)).find((note) => note.id === saved.id)?.content).toBe(saved.content);
 });

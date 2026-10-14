@@ -13,7 +13,9 @@ export function findCompatibleNote(notes: readonly Note[], target: CompatibleNot
 
 export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNoteTarget | string): Note[] {
     const rawValues = getRawTargetValues(target);
-    const hasQualifiedTarget = rawValues.some((value) => stripSubpath(value).includes("/"));
+    const hasQualifiedTarget = rawValues.some((value) =>
+        stripSubpath(decodeLookupValue(value)).replace(/\\/g, "/").includes("/"),
+    );
 
     if (hasQualifiedTarget) {
         const qualifiedLookupValues = createNormalizedValueSet(rawValues, {
@@ -111,7 +113,13 @@ function decodeLookupValue(value: string): string {
 }
 
 function normalizeLookupValue(value: string): string {
-    return stripSubpath(value).trim().normalize("NFC").toLowerCase();
+    return stripSubpath(value)
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\.\/+/, "")
+        .replace(/^\/+/, "")
+        .normalize("NFC")
+        .toLowerCase();
 }
 
 function stripSubpath(value: string): string {

@@ -1,6 +1,7 @@
 import { globalDispatch } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
+import { decodeMarkdownFilePath } from "./markdown-links";
 import { repairedMarkdown, requestNoteLinkRepair } from "./note-link-repair";
 import { findCompatibleNotes, getNoteAliases } from "./note-lookup";
 
@@ -11,7 +12,11 @@ export async function refreshConnectionNotes(): Promise<void> {
 }
 
 export function createConnectionTarget(title: string): Promise<Note> {
-    const key = title.trim().normalize("NFC").toLowerCase();
+    const relativeTitle = decodeMarkdownFilePath(title.trim())
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "")
+        .replace(/\.md$/i, "");
+    const key = relativeTitle.normalize("NFC").toLowerCase();
     const pending = creations.get(key);
     if (pending) return pending;
     const creation = (async (): Promise<Note> => {
@@ -20,7 +25,14 @@ export function createConnectionTarget(title: string): Promise<Note> {
         if (matches.length > 1) throw new Error("More than one matching note exists. Choose an existing note.");
         let note = matches[0];
         if (!note) {
-            note = Note.new(title.trim().replace(/\.md$/i, ""), "");
+            if (
+                !relativeTitle ||
+                /^[A-Za-z]:/.test(relativeTitle) ||
+                relativeTitle.split("/").some((segment) => !segment || segment === "." || segment === "..")
+            ) {
+                throw new Error("Use a note name or relative path inside the workspace.");
+            }
+            note = Note.new(relativeTitle, "");
             await repositories.notes.save(note);
         }
         globalDispatch.notes(await repositories.notes.getAll());
