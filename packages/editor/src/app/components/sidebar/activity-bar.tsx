@@ -9,6 +9,8 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGl
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
+import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Note } from "@/store/note";
@@ -114,6 +116,18 @@ export const ActivityBar = () => {
                     badge={favoritesCount}
                     onClick={() => onActivityClick("favorites")}
                     active={layout.activeActivity === "favorites"}
+                />
+                <ActivityIcon
+                    icon={CalendarDotsIcon}
+                    label="Today"
+                    active={location.pathname.startsWith("/today")}
+                    onClick={() => { navigate("/today"); uiDispatch.setSidebarOpen(false); }}
+                />
+                <ActivityIcon
+                    icon={CheckSquareIcon}
+                    label="Open tasks"
+                    active={location.pathname.startsWith("/tasks")}
+                    onClick={() => { navigate("/tasks"); uiDispatch.setSidebarOpen(false); }}
                 />
                 <ActivityIcon
                     label="Tags"

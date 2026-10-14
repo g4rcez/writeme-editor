@@ -70,6 +70,26 @@ describe("TaskListItem", () => {
         expect(editor.getHTML()).toContain('type="checkbox"');
     });
 
+    it("keeps ordinary bullets ordinary when they share a Markdown list with tasks", () => {
+        editor = createEditor("- ordinary first\n- [ ] Open task\n- ordinary middle\n- [x] Completed task\n- ordinary last");
+        const types: string[] = [];
+        editor.state.doc.descendants((node) => {
+            if (node.type.name === "taskItem" || node.type.name === "listItem") types.push(node.type.name);
+        });
+        expect(types).toEqual(["listItem", "taskItem", "listItem", "taskItem", "listItem"]);
+        const markdown = editor.getMarkdown();
+        expect(markdown).not.toContain("[ ] ordinary");
+        expect(markdown).toContain("- ordinary middle");
+        editor.commands.setContent(markdown);
+        expect(editor.getMarkdown()).not.toContain("[ ] ordinary");
+    });
+
+    it("does not convert an ordinary parent containing a nested task into a task", () => {
+        editor = createEditor("- Ordinary parent\n  - [ ] Nested task\n");
+        expect(editor.getMarkdown()).not.toContain("[ ] Ordinary parent");
+        expect(editor.getMarkdown()).toContain("[ ] Nested task");
+    });
+
     it("adds a subscript finished timestamp when a task is completed", () => {
         editor = createEditor("- [ ] Write tests");
         const taskPos = findTaskItemPos(editor.state.doc);

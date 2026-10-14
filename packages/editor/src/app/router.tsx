@@ -6,6 +6,7 @@ import { isMobile } from "../lib/platform";
 import { RouteErrorBoundary } from "./components/route-error-boundary";
 import { RootLayout } from "./root-layout";
 
+const WorkspaceAgendaPage = lazy(() => import("./pages/workspace-agenda.page"));
 const DashboardPage = lazy(() => import("./pages/dashboard.page"));
 const NotePage = lazy(() => import("./pages/note.page"));
 const QuicknotePage = lazy(() => import("./pages/quicknote.page"));
@@ -84,6 +85,14 @@ export const router = createRouter([
             {
                 path: "gist/:owner/:gistId",
                 element: <GistImportPage />,
+            },
+            {
+                path: "today",
+                element: <WorkspaceAgendaPage />,
+            },
+            {
+                path: "tasks",
+                element: <WorkspaceAgendaPage />,
             },
             {
                 path: "notes",

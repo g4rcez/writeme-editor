@@ -2,7 +2,6 @@ import {
     Button,
     type CalendarEvent,
     type CalendarFilter,
-    formatFullDate,
     formatTime,
     Input,
     Modal,
@@ -11,7 +10,10 @@ import {
     useLocale,
 } from "@g4rcez/components";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
+import { Dates } from "@/lib/dates";
+import { getJournalDate, parseJournalDay } from "@/lib/journal-date";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 
@@ -68,16 +70,20 @@ export default function CalendarPage() {
     const locale = useLocale();
     const [state, dispatch] = useGlobalStore();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [filters, setFilters] = useState<CalendarFilter[]>(CALENDAR_FILTERS);
     const [createEventDate, setCreateEventDate] = useState<Date | null>(null);
     const [newEventTitle, setNewEventTitle] = useState("");
     const [newEventType, setNewEventType] = useState<NoteType>(NoteType.note);
+    const [dailyError, setDailyError] = useState("");
+    const [openingDaily, setOpeningDaily] = useState(false);
 
     useEffect(() => {
         if (createEventDate !== null) {
             setNewEventTitle("");
             setNewEventType(NoteType.note);
+            setDailyError("");
         }
     }, [createEventDate]);
 
@@ -86,11 +92,11 @@ export default function CalendarPage() {
     const calendarEvents = useMemo<CalendarEvent[]>(
         () =>
             state.notes
-                .filter((n) => activeFilterIds.includes(n.noteType))
+                .filter((n) => !n.deletedAt && activeFilterIds.includes(n.noteType))
                 .map((note) => ({
                     id: note.id,
                     title: note.title,
-                    date: new Date(note.createdAt),
+                    date: getJournalDate(note) ?? new Date(note.createdAt),
                     filterId: note.noteType,
                     className: NOTE_TYPE_COLORS[note.noteType],
                 })),
@@ -108,6 +114,21 @@ export default function CalendarPage() {
 
     const onSlotClick = (date: Date) => setCreateEventDate(date);
 
+    const openDailyNote = async (): Promise<void> => {
+        if (!createEventDate) return;
+        setOpeningDaily(true);
+        setDailyError("");
+        try {
+            const note = await getOrCreateDailyQuickNote(createEventDate);
+            setCreateEventDate(null);
+            navigate(`/note/${note.id}`);
+        } catch (error) {
+            setDailyError(error instanceof Error ? error.message : "The daily note could not be opened.");
+        } finally {
+            setOpeningDaily(false);
+        }
+    };
+
     const createEvent = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newEventTitle.trim()) return;
@@ -124,7 +145,7 @@ export default function CalendarPage() {
         return (
             <>
                 <div className="text-sm font-semibold truncate">{event.title}</div>
-                <div className="text-xs text-muted-foreground">{formatFullDate(event.date, locale)}</div>
+                <div className="text-xs text-muted-foreground">{Dates.yearMonthDay(event.date)}</div>
                 <div className="text-xs text-muted-foreground">{formatTime(event.date, locale)}</div>
                 <span className="self-start px-2 py-0.5 rounded-full text-xs border">
                     {NOTE_TYPE_LABELS[noteType as NoteType]}
@@ -136,6 +157,7 @@ export default function CalendarPage() {
     return (
         <div className="flex flex-col h-full p-4 gap-3">
             <PageCalendar
+                defaultDate={parseJournalDay(searchParams.get("date")) ?? undefined}
                 filters={filters}
                 events={calendarEvents}
                 onAddEvent={onAddEvent}
@@ -151,9 +173,13 @@ export default function CalendarPage() {
                 onChange={() => setCreateEventDate(null)}
             >
                 <form onSubmit={createEvent} className="flex flex-col gap-4">
+                    <Button type="button" theme="muted" disabled={openingDaily} onClick={() => void openDailyNote()}>
+                        {openingDaily ? "Opening daily note…" : "Open daily note"}
+                    </Button>
+                    {dailyError && <p role="alert" className="text-sm text-foreground">{dailyError}</p>}
                     {createEventDate && (
                         <p className="text-xs text-muted-foreground -mt-2">
-                            {`${formatFullDate(createEventDate, locale)} at ${formatTime(createEventDate, locale)}`}
+                            {`${Dates.yearMonthDay(createEventDate)} at ${formatTime(createEventDate, locale)}`}
                         </p>
                     )}
                     <Input

@@ -60,6 +60,7 @@ describe("getOrCreateDailyQuickNote", () => {
 
         expect(note.title).toBe("Daily review");
         expect(note.content).toBe("Template content");
+        expect(note.metadata.journalDate).toBe("2026-05-12");
         expect(mocks.save).toHaveBeenCalledWith(note);
     });
 
@@ -128,6 +129,7 @@ describe("getOrCreateDailyQuickNote", () => {
         const note = await getOrCreateDailyQuickNote(new Date(2026, 4, 12), { content: "Template" });
 
         expect(note.content).toBe("Keep this content");
+        expect(note.metadata.journalDate).toBe("2026-05-12");
         expect(writeFile).not.toHaveBeenCalled();
         expect(mocks.save).toHaveBeenCalledWith(note);
     });

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsService } from "../../settings";
 import { NotesRepository } from "./notes.repository";
+import { Note, NoteType } from "../../note";
 
 const get = vi.fn();
 const getAll = vi.fn();
@@ -40,6 +41,17 @@ beforeEach(() => {
 });
 
 describe("Electron NotesRepository", () => {
+    it("finds database daily notes by journal date instead of last edit date", async () => {
+        vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
+        const note = Note.new("Retrospective", "Keep my review", NoteType.quick);
+        note.metadata.journalDate = "2025-12-31";
+        getAll.mockResolvedValue([note]);
+        const repository = new NotesRepository(tabs as never);
+        expect((await repository.getQuicknoteByDate(new Date(2025, 11, 31)))?.id).toBe(note.id);
+        expect(await repository.getQuicknoteByDate(new Date(2026, 0, 1))).toBeNull();
+        note.deletedAt = new Date();
+        expect(await repository.getQuicknoteByDate(new Date(2025, 11, 31))).toBeNull();
+    });
     it("imports a task Markdown file as a board", async () => {
         getAll.mockResolvedValue([]);
         readDirRecursive.mockResolvedValue({

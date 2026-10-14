@@ -11,8 +11,13 @@ const SPACE = "  ";
 const EMPTY_TASK_MARKER_PATTERN = /^\s*\[[ xX]\]\s*$/;
 
 const isTaskListItem = (item: Element): boolean => {
+    const ownText = Array.from(item.childNodes)
+        .filter((child) => !(child instanceof Element) || !["UL", "OL"].includes(child.tagName))
+        .map((child) => child.textContent ?? "")
+        .join("");
     return (
-        Boolean(item.querySelector('input[type="checkbox"]')) || EMPTY_TASK_MARKER_PATTERN.test(item.textContent ?? "")
+        Boolean(item.querySelector(':scope > input[type="checkbox"], :scope > p > input[type="checkbox"]')) ||
+        EMPTY_TASK_MARKER_PATTERN.test(ownText)
     );
 };
 
@@ -33,13 +38,30 @@ export default TaskList.extend({
                 },
                 parse: {
                     updateDOM(element: HTMLElement) {
-                        element.querySelectorAll("ul").forEach((ul) => {
-                            const items = Array.from(ul.querySelectorAll(":scope > li"));
-                            if (items.some(isTaskListItem)) {
-                                ul.setAttribute("data-type", "taskList");
-                                items.forEach((li) => li.classList.add("task-list-item"));
-                            }
-                        });
+                        Array.from(element.querySelectorAll("ul"))
+                            .reverse()
+                            .forEach((ul) => {
+                                const items = Array.from(ul.querySelectorAll(":scope > li"));
+                                if (!items.some(isTaskListItem)) return;
+                                const groups: HTMLUListElement[] = [];
+                                let previousIsTask: boolean | null = null;
+                                for (const item of items) {
+                                    const isTask = isTaskListItem(item);
+                                    if (isTask !== previousIsTask) {
+                                        const group = ul.cloneNode(false) as HTMLUListElement;
+                                        if (isTask) group.setAttribute("data-type", "taskList");
+                                        else {
+                                            group.removeAttribute("data-type");
+                                            group.classList.remove("contains-task-list");
+                                        }
+                                        groups.push(group);
+                                        previousIsTask = isTask;
+                                    }
+                                    item.classList.toggle("task-list-item", isTask);
+                                    groups.at(-1)!.append(item);
+                                }
+                                ul.replaceWith(...groups);
+                            });
                     },
                 },
             },
