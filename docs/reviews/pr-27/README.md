@@ -38,6 +38,10 @@ The original two browser reproductions now pass. The parser covers one, two, and
 
 ![The same input now retains its third cell](./leading-space-fixed.png)
 
+## CI drag-test correction
+
+After incorporating the current main branch, the Windows task-board pointer regression dropped its card in Done instead of In Progress. Its trace showed the dragged card extending outside the viewport and triggering horizontal scrolling. The test now scrolls the destination into view, retains the handle's offset within the card when calculating the drop position, and observes the destination's drop affordance before releasing the pointer. The corrected keyboard/pointer scenario passed five consecutive local browser runs; CI verifies it on all desktop platforms.
+
 ## Validation
 
 | Check | Result |
