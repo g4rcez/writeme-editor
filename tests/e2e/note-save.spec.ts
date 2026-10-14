@@ -61,6 +61,125 @@ for (const mode of ["formatted", "markdown"] as const) {
             "Meta saved text",
         );
     });
+
+    test(`preserves metadata written before and during a pending ${mode} draft`, async ({ cleanPage: page }) => {
+        await page.goto("/settings/editor");
+        await page.getByRole("checkbox").first().uncheck();
+        await page.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await goHome(page);
+        const url = await createNote(page, "Metadata save");
+        const id = url.split("/").pop()!;
+        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+        for (const marker of ["before typing", "while dirty"]) {
+            await page.evaluate(
+                async ({ id, marker }) => {
+                    const { globalDispatch } = await import(String("/packages/editor/src/store/global.store.ts"));
+                    await globalDispatch.updateNoteMetadata(id, { marker });
+                },
+                { id, marker },
+            );
+            if (marker === "before typing") {
+                await editor.click();
+                await page.keyboard.type("Keep my pending draft.");
+            }
+        }
+        await expect(editor).toContainText("Keep my pending draft.");
+        expect(
+            await page.evaluate(async (id) => {
+                const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
+                const note = await repositories.notes.getOne(id);
+                return { content: note.content, metadata: note.metadata };
+            }, id),
+        ).toEqual({ content: "", metadata: { marker: "while dirty" } });
+        await editor.focus();
+        await page.keyboard.press("Control+s");
+        await expect(page.getByRole("status", { name: "Note save status" })).toHaveText("Saved");
+        expect(
+            await page.evaluate(async (id) => {
+                const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
+                const note = await repositories.notes.getOne(id);
+                return { content: note.content.trim(), metadata: note.metadata };
+            }, id),
+        ).toEqual({ content: "Keep my pending draft.", metadata: { marker: "while dirty" } });
+        await page.reload();
+        await expect(editor).toContainText("Keep my pending draft.");
+    });
+
+    for (const mutation of ["content", "delete"] as const) {
+        test(`retains a ${mode} draft when another page changes ${mutation} at its CAS boundary`, async ({
+            cleanPage: page,
+            context,
+        }) => {
+            await page.goto("/settings/editor");
+            await page.getByRole("checkbox").first().uncheck();
+            await page.getByRole("button", { name: "Save Editor", exact: true }).click();
+            await goHome(page);
+            const url = await createNote(page, "Conditional save");
+            const id = url.split("/").pop()!;
+            if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+            const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+            await editor.click();
+            await page.keyboard.type("Retain this local draft.");
+            await page.evaluate(async () => {
+                const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
+                const original = repositories.notes.updateContentIfUnchanged.bind(repositories.notes);
+                const { promise, resolve } = Promise.withResolvers<void>();
+                const scope = window as typeof window & { resumeSave?: () => void; savePaused?: boolean };
+                scope.resumeSave = resolve;
+                repositories.notes.updateContentIfUnchanged = async (...args: Parameters<typeof original>) => {
+                    scope.savePaused = true;
+                    await promise;
+                    return original(...args);
+                };
+            });
+            await page.keyboard.press("Control+s");
+            await expect
+                .poll(() => page.evaluate(() => (window as typeof window & { savePaused?: boolean }).savePaused))
+                .toBe(true);
+            const other = await context.newPage();
+            await other.goto("/");
+            await other.evaluate(
+                async ({ id, mutation }) => {
+                    const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
+                    if (mutation === "delete") await repositories.notes.delete(id);
+                    else await repositories.notes.updateContent(id, "Other page's persisted writing.");
+                },
+                { id, mutation },
+            );
+            await page.evaluate(() => (window as typeof window & { resumeSave: () => void }).resumeSave());
+            for (let retry = 0; retry < 2; retry++) {
+                await expect(page.getByRole("alert")).toContainText("changed in another editor");
+                await expect(editor).toContainText("Retain this local draft.");
+                expect(
+                    await other.evaluate(
+                        async ({ id, mutation }) => {
+                            const { repositories } = await import(
+                                String("/packages/editor/src/store/repositories/index.ts")
+                            );
+                            const note =
+                                mutation === "delete"
+                                    ? (await repositories.notes.getTrashed()).find(
+                                          (note: { id: string }) => note.id === id,
+                                      )
+                                    : await repositories.notes.getOne(id);
+                            return { content: note.content, deleted: note.deletedAt != null };
+                        },
+                        { id, mutation },
+                    ),
+                ).toEqual(
+                    mutation === "delete"
+                        ? { content: "", deleted: true }
+                        : { content: "Other page's persisted writing.", deleted: false },
+                );
+                if (retry === 0) {
+                    await editor.focus();
+                    await page.keyboard.press("Control+s");
+                }
+            }
+            await other.close();
+        });
+    }
 }
 
 test("retains the pending tab dot after a failed save and allows retry", async ({ cleanPage: page }) => {

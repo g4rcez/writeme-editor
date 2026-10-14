@@ -97,7 +97,11 @@ type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
 export type EditorMode = "formatted" | "markdown";
 
 async function saveEditorDraft(expected: Note, content: string, dispatch: GlobalDispatch): Promise<Note> {
-    const saved = await repositories.notes.updateContentIfUnchanged(expected.id, expected, content);
+    const current = await repositories.notes.getOne(expected.id);
+    const saved =
+        current && current.deletedAt == null && current.title === expected.title && current.content === expected.content
+            ? await repositories.notes.updateContentIfUnchanged(expected.id, current, content)
+            : null;
     if (!saved) {
         throw new Error(
             "This note changed in another editor or was deleted. Your draft is still here and has not overwritten the saved note. Copy your draft before reloading to reconcile the changes.",
@@ -634,8 +638,12 @@ const TiptapEditorCore = memo(
 
         useEffect(() => {
             if (!editor || content === undefined || editor.isDestroyed || !editor.schema) return;
+            if (note && persistedNoteRef.current && +note.updatedAt < +persistedNoteRef.current.updatedAt) return;
             const currentMarkdown = getEditorMarkdown(editor);
-            if (dirtyRef.current && content !== currentMarkdown) return;
+            if (dirtyRef.current && content !== currentMarkdown) {
+                if (note && content === persistedNoteRef.current?.content) persistedNoteRef.current = note;
+                return;
+            }
             dirtyRef.current = false;
             persistedNoteRef.current = note;
             if (content === persistedContentRef.current) return;
@@ -976,7 +984,13 @@ const RawEditorCore = memo(
         }, [props.note]);
 
         useEffect(() => {
-            if (dirtyRef.current) return;
+            if (props.note && persistedNoteRef.current && +props.note.updatedAt < +persistedNoteRef.current.updatedAt)
+                return;
+            if (dirtyRef.current) {
+                if (props.note && props.content === persistedNoteRef.current?.content)
+                    persistedNoteRef.current = props.note;
+                return;
+            }
             persistedNoteRef.current = props.note;
             latestContentRef.current = props.content ?? "";
         }, [props.content, props.note]);

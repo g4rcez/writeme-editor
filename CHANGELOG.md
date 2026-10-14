@@ -38,7 +38,8 @@
   large documents, without dropping overflow cells or their formatting.
 - Preserve successful research excerpts when another window saves a stale formatted
   or Markdown draft. Conflicting saves retain the local draft and explain how to
-  reconcile it without replacing the saved note.
+  reconcile it without replacing the saved note. Metadata-only updates and published
+  heading renames preserve dirty drafts without causing false save conflicts.
 - Keep selected highlights, entity spellings, list markers, setext underlines,
   dollar delimiters, and indentation literal through excerpt save and reload.
 - Refuse excerpt appends into unfinished Markdown fences or HTML comments without

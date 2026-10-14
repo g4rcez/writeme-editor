@@ -72,7 +72,8 @@ export class MarkdownSerializerState extends Base {
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
-            .replace(/[=$:]/g, "\\$&");
+            .replace(/[=$]/g, "\\$&")
+            .replace(/:(?=\/\/)/g, "\\:");
         return lineStart
             ? escaped
                   .replace(/^(\s*\d+)\)(?=\s)/, "$1\\)")
