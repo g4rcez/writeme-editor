@@ -17,6 +17,8 @@ A kept result is attached to the immediately following fenced code block:
 ```
 ````
 
+Backtick and tilde fences are supported, including empty source blocks. The closing fence must use the same character as the opener and contain at least as many characters; the first valid closer ends the source. Following headings, prose, and adjacent code/result pairs remain separate document blocks. Fence indentation of up to three spaces and trailing spaces or tabs on the closer are accepted. Rich/raw roundtrips may normalize the fence spelling, while retaining source text and each block's own result.
+
 `BASE64URL_JSON` is unpadded base64url of a UTF-8 JSON object:
 
 ```json

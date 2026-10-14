@@ -3,6 +3,77 @@ import { createNote, expect, goHome, test } from "./fixtures";
 
 test.use({ serviceWorkers: "block" });
 
+for (const { name, opener, closer, source } of [
+    { name: "longer backtick closer", opener: "```", closer: "````", source: "2 + 2" },
+    { name: "longer tilde closer", opener: "~~~", closer: "~~~~", source: "2 + 2" },
+    { name: "empty fenced source", opener: "```", closer: "````", source: "" },
+]) {
+    test(`preserves sections and adjacent kept results after importing a ${name}`, async ({ cleanPage: page }) => {
+        const metadata = (stdout: string): string =>
+            `<!-- writeme-code-result:v1:${Buffer.from(
+                JSON.stringify({
+                    version: 1,
+                    executedAt: "2026-10-14T12:30:00.000Z",
+                    language: "javascript",
+                    sourceFingerprint: "a".repeat(64),
+                    stdout,
+                    stderr: "",
+                }),
+            ).toString("base64url")} -->`;
+        const markdown = [
+            metadata("First kept output"),
+            `${opener}javascript`,
+            ...(source ? [source] : []),
+            closer,
+            "",
+            "# Following section",
+            "",
+            "Following prose.",
+            "",
+            metadata("Second kept output"),
+            "~~~javascript",
+            '"second"',
+            "~~~~",
+            "",
+            "```javascript",
+            '"unsaved"',
+            "```",
+        ].join("\n");
+        await goHome(page);
+        await createNote(page, `Fence regression: ${name}`);
+        await setCodeMarkdown(page, markdown);
+        const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+        const blocks = editor.locator(".node-codeBlock");
+        const assertStructure = async (): Promise<void> => {
+            await expect(blocks).toHaveCount(3);
+            await expect(editor.getByRole("heading", { name: "Following section", exact: true })).toBeVisible();
+            await expect(editor.locator("p").filter({ hasText: /^Following prose\.$/ })).toBeVisible();
+            for (const [index, text] of [source, '"second"', '"unsaved"'].entries()) {
+                await expect(blocks.nth(index).locator("[data-node-view-content-react]")).toHaveText(text);
+            }
+            await expect(blocks.nth(0).getByRole("region", { name: "Kept code result" })).toContainText(
+                "First kept output",
+            );
+            await expect(blocks.nth(1).getByRole("region", { name: "Kept code result" })).toContainText(
+                "Second kept output",
+            );
+            await expect(blocks.nth(2).getByRole("region", { name: "Kept code result" })).toHaveCount(0);
+            await expect(editor.getByRole("region", { name: "Execution output" })).toHaveCount(0);
+        };
+        await assertStructure();
+        const toolbar = page.getByRole("toolbar", { name: "Note tools" });
+        await toolbar.getByRole("button", { name: "Markdown", exact: true }).click();
+        const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
+        expect((await raw.innerText()).match(/<!-- writeme-code-result:v1:/g)).toHaveLength(2);
+        await expect(raw).toContainText("# Following section");
+        await toolbar.getByRole("button", { name: "Formatted", exact: true }).click();
+        await assertStructure();
+        await waitForCodeSave(page);
+        await page.reload();
+        await assertStructure();
+    });
+}
+
 test("retains a large kept output through worker parsing and reload", async ({ cleanPage: page }) => {
     test.setTimeout(120_000);
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -156,7 +227,7 @@ test("retains kept output after a storage failure and saves it when storage reco
                 IDBObjectStore.prototype.put = original;
             },
         });
-        IDBObjectStore.prototype.put = function (...args: Parameters<IDBObjectStore["put"]>) {
+        IDBObjectStore.prototype.put = function(...args: Parameters<IDBObjectStore["put"]>) {
             if (this.name === "notes") throw new DOMException("Test disk full", "QuotaExceededError");
             return original.apply(this, args);
         };

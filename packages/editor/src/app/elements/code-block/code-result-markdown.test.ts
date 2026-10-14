@@ -24,6 +24,100 @@ function editor(content: string): Editor {
 }
 
 describe("kept result Markdown", () => {
+    it.each([
+        { name: "longer backtick closer", opener: "```", closer: "````", code: "2 + 2" },
+        { name: "longer tilde closer", opener: "~~~", closer: "~~~~~", code: "2 + 2" },
+        { name: "empty backtick block", opener: "```", closer: "````", code: "" },
+        { name: "empty tilde block", opener: "~~~", closer: "~~~", code: "" },
+        { name: "indented fences", opener: "  ```", closer: "   ```` \t", code: "2 + 2" },
+        {
+            name: "non-closing fence lines",
+            opener: "````",
+            closer: "`````",
+            code: "~~~\n```\n````~\n````not a closer\n    ````\n2 + 2",
+        },
+        { name: "trailing source newline", opener: "```", closer: "````", code: "2 + 2\n" },
+    ])("keeps document structure through $name and adjacent result roundtrips", ({ opener, closer, code }) => {
+        const secondResult = { ...result, stdout: "second saved result" };
+        const encoded = encodeCodeResult(result);
+        const secondEncoded = encodeCodeResult(secondResult);
+        const markdown = [
+            `<!-- writeme-code-result:v1:${encoded} -->`,
+            `${opener}javascript title="first.js"`,
+            ...(code ? [code] : []),
+            closer,
+            "",
+            "# Following section",
+            "",
+            "Following prose.",
+            "",
+            `<!-- writeme-code-result:v1:${secondEncoded} -->`,
+            "~~~javascript",
+            '"second"',
+            "~~~~",
+            "",
+            "```javascript",
+            '"unsaved"',
+            "```",
+        ].join("\n");
+        const instance = editor("");
+        try {
+            for (const { html, plainCode } of [
+                { html: instance.storage.markdown.parser!.parse(markdown), plainCode: '"unsaved"' },
+                { html: processMarkdown(markdown), plainCode: '"unsaved"\n' },
+            ]) {
+                const container = document.createElement("div");
+                container.innerHTML = html;
+                expect(Array.from(container.querySelectorAll("pre, h1, p"), (node) => node.tagName)).toEqual([
+                    "PRE",
+                    "H1",
+                    "P",
+                    "PRE",
+                    "PRE",
+                ]);
+                expect(container.querySelector("h1")?.textContent).toBe("Following section");
+                expect(container.querySelector("p")?.textContent).toBe("Following prose.");
+                expect(Array.from(container.querySelectorAll("pre code"), (node) => node.textContent)).toEqual([
+                    code,
+                    '"second"',
+                    plainCode,
+                ]);
+                expect(
+                    Array.from(container.querySelectorAll("pre"), (node) =>
+                        node.getAttribute("data-writeme-execution-result"),
+                    ),
+                ).toEqual([encoded, secondEncoded, null]);
+            }
+            instance.commands.setContent(markdown);
+            for (let iteration = 0; iteration < 3; iteration++) {
+                const nodes = Array.from(instance.state.doc.content.content);
+                expect(nodes.map((node) => node.type.name)).toEqual([
+                    "codeBlock",
+                    "heading",
+                    "paragraph",
+                    "codeBlock",
+                    "codeBlock",
+                    "paragraph",
+                ]);
+                expect(nodes.map((node) => node.textContent)).toEqual([
+                    code,
+                    "Following section",
+                    "Following prose.",
+                    '"second"',
+                    '"unsaved"',
+                    "",
+                ]);
+                expect(JSON.parse(nodes[0]!.attrs.executionResult)).toEqual(result);
+                expect(nodes[0]!.attrs.title).toBe("first.js");
+                expect(JSON.parse(nodes[3]!.attrs.executionResult)).toEqual(secondResult);
+                expect(nodes[4]!.attrs.executionResult).toBeNull();
+                instance.commands.setContent(instance.getMarkdown());
+            }
+        } finally {
+            instance.destroy();
+        }
+    });
+
     it("preserves saved code and uneven tables together in both parsers", () => {
         const encoded = encodeCodeResult(result);
         const source = `<!-- writeme-code-result:v1:${encoded} -->\n\`\`\`javascript\n2 + 2\n\`\`\`\n\n| A | B |\n| --- | --- | --- |\n| one | two | three |`;
