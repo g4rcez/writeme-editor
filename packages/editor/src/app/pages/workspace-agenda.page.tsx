@@ -106,17 +106,20 @@ export default function WorkspaceAgendaPage(): JSX.Element {
         dailyRequest.current?.abort();
         const controller = new AbortController();
         dailyRequest.current = controller;
+        const requestLocation = window.location.href;
+        const isCurrent = (): boolean =>
+            !controller.signal.aborted && window.location.href === requestLocation;
         setOpeningDaily(true);
         setActionError("");
         try {
             const note = await getOrCreateDailyQuickNote(date);
-            if (controller.signal.aborted) return;
+            if (!isCurrent()) return;
             navigate(`/note/${encodeURIComponent(note.id)}`);
         } catch (error) {
-            if (controller.signal.aborted) return;
+            if (!isCurrent()) return;
             setActionError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            if (!controller.signal.aborted) setOpeningDaily(false);
+            if (isCurrent()) setOpeningDaily(false);
         }
     };
 

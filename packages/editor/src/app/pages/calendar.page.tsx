@@ -127,18 +127,21 @@ export default function CalendarPage() {
         dailyRequest.current?.abort();
         const controller = new AbortController();
         dailyRequest.current = controller;
+        const requestLocation = window.location.href;
+        const isCurrent = (): boolean =>
+            !controller.signal.aborted && window.location.href === requestLocation;
         setOpeningDaily(true);
         setDailyError("");
         try {
             const note = await getOrCreateDailyQuickNote(createEventDate);
-            if (controller.signal.aborted) return;
+            if (!isCurrent()) return;
             setCreateEventDate(null);
             navigate(`/note/${note.id}`);
         } catch (error) {
-            if (controller.signal.aborted) return;
+            if (!isCurrent()) return;
             setDailyError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            if (!controller.signal.aborted) setOpeningDaily(false);
+            if (isCurrent()) setOpeningDaily(false);
         }
     };
 
