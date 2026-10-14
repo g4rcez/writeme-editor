@@ -53,6 +53,8 @@ async function openCalendarSlot(page: Page): Promise<void> {
     await page.evaluate(() => {
         window.location.hash = "/calendar?date=2025-12-31";
     });
+    const collapseSidebar = page.getByRole("button", { name: "Collapse Sidebar", exact: true });
+    if (await collapseSidebar.isVisible()) await collapseSidebar.click();
     await page
         .getByRole("grid")
         .getByRole("button", { name: /Wednesday, Dec 31, 2025/ })
