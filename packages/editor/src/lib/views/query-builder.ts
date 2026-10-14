@@ -22,6 +22,19 @@ export function quoteQueryString(value: string): string {
     return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
 }
 
+function decimalLiteral(value: number): string {
+    const text = String(value);
+    const [coefficient, exponent] = text.split("e");
+    if (exponent === undefined) return text;
+    const sign = value < 0 ? "-" : "";
+    const unsigned = coefficient!.replace("-", "");
+    const digits = unsigned.replace(".", "");
+    const point = (unsigned.indexOf(".") < 0 ? unsigned.length : unsigned.indexOf(".")) + Number(exponent);
+    if (point <= 0) return `${sign}0.${"0".repeat(-point)}${digits}`;
+    if (point >= digits.length) return `${sign}${digits}${"0".repeat(point - digits.length)}`;
+    return `${sign}${digits.slice(0, point)}.${digits.slice(point)}`;
+}
+
 function literalFromFilter(row: FilterRow): string {
     if (
         row.valueType === "String" ||
@@ -29,10 +42,14 @@ function literalFromFilter(row: FilterRow): string {
     )
         return quoteQueryString(row.value);
     const num = Number(row.value);
+    if (row.valueType === "Number" || row.field === "fileSize" || row.field === "notes.fileSize") {
+        if (!Number.isFinite(num)) throw new Error("Enter a finite number for this filter.");
+        return decimalLiteral(num);
+    }
     if (row.value === "true") return "true";
     if (row.value === "false") return "false";
     if (row.value === "null") return "null";
-    if (!isNaN(num) && row.value !== "") return row.value;
+    if (Number.isFinite(num) && row.value.trim() !== "") return decimalLiteral(num);
     return quoteQueryString(row.value);
 }
 

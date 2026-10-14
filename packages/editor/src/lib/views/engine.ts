@@ -68,7 +68,12 @@ function coerceDate(value: unknown): Date | null {
     return null;
 }
 
-function compareValues(fieldValue: unknown, op: ComparisonOp, literalValue: LiteralValue): boolean {
+function compareValues(
+    fieldValue: unknown,
+    op: ComparisonOp,
+    literalValue: LiteralValue,
+    isFilePath: boolean,
+): boolean {
     const rhs = literalToValue(literalValue);
 
     if (op === "CONTAINS") {
@@ -79,8 +84,15 @@ function compareValues(fieldValue: unknown, op: ComparisonOp, literalValue: Lite
     }
 
     if (op === "STARTS_WITH") {
-        if (typeof fieldValue === "string" && typeof rhs === "string")
+        if (typeof fieldValue === "string" && typeof rhs === "string") {
+            if (isFilePath) {
+                const windowsPath = /^[A-Za-z]:[\\/]|^\\\\/u.test(rhs);
+                return windowsPath
+                    ? fieldValue.replaceAll("\\", "/").toLowerCase().startsWith(rhs.replaceAll("\\", "/").toLowerCase())
+                    : fieldValue.startsWith(rhs);
+            }
             return fieldValue.toLowerCase().startsWith(rhs.toLowerCase());
+        }
         return false;
     }
 
@@ -174,8 +186,17 @@ function evaluateExpression(expr: Expression, row: Row, fromTable: string, query
             return !evaluateExpression(expr.expr, row, fromTable, queryTables);
         case "Group":
             return evaluateExpression(expr.expr, row, fromTable, queryTables);
-        case "Comparison":
-            return compareValues(resolveField(row, expr.field, fromTable, queryTables), expr.op, expr.value);
+        case "Comparison": {
+            const path = expr.field.path;
+            const isFilePath =
+                (path.length === 1 || (path.length === 2 && queryTables.has(path[0]!))) && path.at(-1) === "filePath";
+            return compareValues(
+                resolveField(row, expr.field, fromTable, queryTables),
+                expr.op,
+                expr.value,
+                isFilePath,
+            );
+        }
     }
 }
 

@@ -135,6 +135,41 @@ describe("saved search filters", () => {
         ).toEqual(["escaped-path"]);
     });
 
+    it("keeps POSIX folder case distinct in Search, saved and visually edited queries", () => {
+        const notes = [
+            Note.parse({ id: "upper", title: "Research article", filePath: "/vault/Research/a.md" }),
+            Note.parse({ id: "lower", title: "research article", filePath: "/vault/research/b.md" }),
+            Note.parse({ id: "sibling", title: "Research sibling", filePath: "/vault/Research-other/c.md" }),
+        ];
+        const selected = filters({ location: "folder:/vault/Research" });
+        const query = buildNoteSearchFilterQuery(selected);
+        expect(ids(filterNotesByStructuredFilters(notes, selected))).toEqual(["upper"]);
+        const group = astToFilterGroup(parse(query).where);
+        if (!group) throw new Error("Expected editable folder filter");
+        for (const savedQuery of [query, filterGroupToQueryString(group), query.replace("filePath", "notes.filePath")])
+            expect(executeQuery(parse(savedQuery), { notes }).map((row) => row["notes.id"])).toEqual(["upper"]);
+        expect(executeQuery(parse("WHERE title STARTS_WITH 'RESEARCH'"), { notes })).toHaveLength(3);
+        expect(executeQuery(parse("WHERE content CONTAINS 'SEE'"), { notes: [{ content: "See this" }] })).toHaveLength(
+            1,
+        );
+    });
+
+    it.each(["folder:C:\\Vault", "folder:c:/vault", "folder:C:\\", "folder:\\\\SERVER\\SHARE"])(
+        "matches Windows folder %s with platform case and separators",
+        (location) => {
+            const notes = [
+                Note.parse({ id: "drive", filePath: "c:/vault/nested/a.md" }),
+                Note.parse({ id: "unc", filePath: "\\\\server\\share\\nested\\b.md" }),
+            ];
+            const expected = location.includes("SERVER") ? ["unc"] : ["drive"];
+            const selected = filters({ location });
+            expect(ids(filterNotesByStructuredFilters(notes, selected))).toEqual(expected);
+            expect(
+                executeQuery(parse(buildNoteSearchFilterQuery(selected)), { notes }).map((row) => row["notes.id"]),
+            ).toEqual(expected);
+        },
+    );
+
     it("includes the full local day and excludes the next midnight", () => {
         const notes = [
             Note.parse({ id: "before", updatedAt: new Date(2026, 9, 13, 23, 59, 59, 999) }),

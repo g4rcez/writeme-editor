@@ -244,6 +244,7 @@ jobs:
                   npm run test:e2e -- --platform ${{ matrix.platform }}
                   --suite native tests/native/freehand-note.spec.ts
                   tests/native/meeting-note.spec.ts
+                  tests/native/search-views.spec.ts
                   tests/native/application-menu.spec.ts
             - name: Verify compiled and packaged Linux persistence
               if: matrix.platform == 'linux'
@@ -251,6 +252,7 @@ jobs:
                   xvfb-run --auto-servernum npm run test:e2e -- --platform linux
                   --suite native tests/native/freehand-note.spec.ts
                   tests/native/meeting-note.spec.ts
+                  tests/native/search-views.spec.ts
             - name: Verify MCP native saved state using the same macOS package
               if: matrix.platform == 'osx'
               run: npm run test:e2e --workspace @writeme.dev/mcp

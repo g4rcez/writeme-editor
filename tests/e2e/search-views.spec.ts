@@ -11,7 +11,10 @@ type SeedNote = {
     noteType?: string;
     filePath?: string;
     updatedAt?: string;
+    fileSize?: number;
 };
+
+// Browser-evaluated imports exercise Vite's renderer modules; runner imports cannot share browser storage.
 
 async function seedNotes(page: Page, notes: SeedNote[]): Promise<void> {
     await page.evaluate(async (items) => {
@@ -23,7 +26,7 @@ async function seedNotes(page: Page, notes: SeedNote[]): Promise<void> {
             await repositories.notes.save(
                 Note.parse({
                     ...item,
-                    content: "Seeded note content",
+                    content: item.fileSize === undefined ? "Seeded note content" : "x".repeat(item.fileSize),
                     updatedAt: new Date(item.updatedAt ?? "2026-10-14T15:00:00Z"),
                 }),
             );
@@ -78,8 +81,132 @@ async function combineFilters(page: Page): Promise<void> {
     await page.getByLabel("Updated through", { exact: true }).fill("2026-10-14");
 }
 
+async function openSeededView(page: Page, query: string, title: string): Promise<void> {
+    const id = await page.evaluate(
+        async ({ query, title }) => {
+            const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+            const viewPath = "/packages/editor/src/store/repositories/entities/view.ts";
+            const { repositories } = await import(repositoryPath);
+            const { View } = await import(viewPath);
+            const id = crypto.randomUUID();
+            const now = new Date();
+            await repositories.views.save(
+                new View(id, title, query, [{ field: "title", label: "Title" }], "table", null, "ASC", {}, now, now),
+            );
+            return id;
+        },
+        { query, title },
+    );
+    await page.goto(`/views/${id}`);
+    await expect(page.getByTitle("View title", { exact: true })).toHaveValue(title);
+}
+
+async function savedQuery(page: Page): Promise<string | undefined> {
+    return page.evaluate(async () => {
+        const path = "/packages/editor/src/store/repositories/index.ts";
+        const { repositories } = await import(path);
+        return (await repositories.views.getOne(location.pathname.split("/").at(-1)))?.query;
+    });
+}
+
 test.describe("Search into saved Views", () => {
     test.use({ timezoneId: "America/Sao_Paulo" });
+
+    for (const query of ["FROM notes GROUP BY noteType", "GROUP BY noteType"]) {
+        test(`infers grouped columns and counts after reopening ${query}`, async ({ cleanPage: page }) => {
+            await goHome(page);
+            await seedNotes(page, [
+                { id: "normal-1", title: "First normal" },
+                { id: "normal-2", title: "Second normal" },
+                { id: "reading", title: "Reading", noteType: "read-it-later" },
+            ]);
+            await openSeededView(page, query, "Grouped notes");
+            const table = page.getByRole("main").getByRole("table");
+            const assertGroups = async (): Promise<void> => {
+                await expect(table.getByRole("columnheader", { name: /^notes\.noteType/ })).toBeVisible();
+                await expect(table.getByRole("columnheader", { name: "COUNT(*)", exact: true })).toBeVisible();
+                await expect(table.getByRole("columnheader", { name: /^Title/ })).toHaveCount(0);
+                await expect(table.getByRole("row", { name: "read-it-later 1", exact: true })).toBeVisible();
+                await expect(table.getByRole("row", { name: "note 2", exact: true })).toBeVisible();
+            };
+            await assertGroups();
+            await page.reload();
+            await assertGroups();
+            await page.getByRole("button", { name: "All Views", exact: true }).click();
+            await page.getByRole("button", { name: "Grouped notes", exact: true }).click();
+            await assertGroups();
+        });
+    }
+
+    test("repairs and removes intermediate numeric filters without losing sort or limit", async ({
+        cleanPage: page,
+    }) => {
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        await goHome(page);
+        await seedNotes(page, [
+            { id: "alpha", title: "Alpha sized", fileSize: 1500 },
+            { id: "zebra", title: "Zebra sized", fileSize: 2000 },
+            { id: "tiny", title: "Tiny sized", fileSize: 5 },
+        ]);
+        await openSeededView(page, "WHERE fileSize >= 10 ORDER BY title DESC LIMIT 1", "Numeric notes");
+        await page.getByRole("button", { name: "Visual Filters", exact: true }).click();
+        const value = page.getByTitle("Value", { exact: true });
+        await value.fill("1e3");
+        await expect.poll(() => savedQuery(page)).toBe("WHERE fileSize >= 1000\nORDER BY title DESC\nLIMIT 1");
+        await value.fill("1e");
+        await expect(page.getByRole("alert")).toContainText("Enter a finite number");
+        await page.waitForTimeout(800);
+        expect(await savedQuery(page)).toBe("WHERE fileSize >= 1000\nORDER BY title DESC\nLIMIT 1");
+        await value.fill("1000");
+        await expect(page.getByRole("alert")).toHaveCount(0);
+        await expect(page.getByRole("main").getByRole("link", { name: "Zebra sized", exact: true })).toBeVisible();
+        await expect.poll(() => savedQuery(page)).toBe("WHERE fileSize >= 1000\nORDER BY title DESC\nLIMIT 1");
+        await value.fill("-");
+        await expect(page.getByRole("alert")).toBeVisible();
+        await page.getByRole("button", { name: "Remove filter", exact: true }).click();
+        await expect(page.getByRole("alert")).toHaveCount(0);
+        await expect.poll(() => savedQuery(page)).toBe("ORDER BY title DESC\nLIMIT 1");
+        await page.reload();
+        await expect(page.getByRole("main").getByRole("link")).toHaveCount(1);
+        await expect(page.getByRole("main").getByRole("link", { name: "Zebra sized", exact: true })).toBeVisible();
+        expect(errors).toEqual([]);
+    });
+
+    test("keeps POSIX-case folders distinct in Search and reopened Views", async ({ cleanPage: page }) => {
+        await goHome(page);
+        await seedNotes(page, [
+            { id: "upper-case", title: "Upper case article", filePath: "/vault/Research/a.md" },
+            { id: "lower-case", title: "Lower case article", filePath: "/vault/research/b.md" },
+            { id: "folder-sibling", title: "Sibling article", filePath: "/vault/Research-other/c.md" },
+        ]);
+        await openSearch(page);
+        await page
+            .getByRole("combobox", { name: "Filter by folder or location" })
+            .selectOption("folder:/vault/Research");
+        const results = page.getByRole("list", { name: "Search results" });
+        await expect(results.getByRole("button")).toHaveCount(1);
+        await expect(results).toContainText("Upper case article");
+        await page.getByRole("button", { name: "Save as View", exact: true }).click();
+        await page.getByTitle("View title", { exact: true }).fill("Research folder");
+        await page.getByRole("button", { name: "Create View", exact: true }).click();
+        const main = page.getByRole("main");
+        await expect(main.getByRole("link")).toHaveCount(1);
+        await expect(main.getByRole("link", { name: "Upper case article", exact: true })).toBeVisible();
+        await page.reload();
+        await expect(main.getByRole("link")).toHaveCount(1);
+        await page.getByRole("button", { name: "All Views", exact: true }).click();
+        await page.getByRole("button", { name: "Research folder", exact: true }).click();
+        await expect(main.getByRole("link", { name: "Upper case article", exact: true })).toBeVisible();
+        await expect(main.getByRole("link", { name: "Lower case article", exact: true })).toHaveCount(0);
+        await page.getByRole("button", { name: "Visual Filters", exact: true }).click();
+        await page.getByTitle("Value", { exact: true }).fill("/vault/research/");
+        await expect(main.getByRole("link", { name: "Lower case article", exact: true })).toBeVisible();
+        await expect.poll(() => savedQuery(page)).toContain("/vault/research/");
+        await page.reload();
+        await expect(main.getByRole("link")).toHaveCount(1);
+        await expect(main.getByRole("link", { name: "Lower case article", exact: true })).toBeVisible();
+    });
 
     test("saves a Windows drive-root folder with the same filesystem results", async ({ cleanPage: page }) => {
         await goHome(page);

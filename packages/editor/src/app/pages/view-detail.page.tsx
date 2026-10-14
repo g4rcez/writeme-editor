@@ -34,6 +34,8 @@ export default function ViewDetailPage() {
         id: crypto.randomUUID(),
     });
     const [isFilterComplex, setIsFilterComplex] = useState(false);
+    const [filterError, setFilterError] = useState<string | null>(null);
+    const filterModifiers = useRef<Parameters<typeof filterGroupToQueryString>[1]>({});
 
     const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -64,7 +66,10 @@ export default function ViewDetailPage() {
             });
         }
         if (
-            (parsedQuery?.select || parsedQuery?.joins.length || (parsedQuery?.from && parsedQuery.from !== "notes")) &&
+            (parsedQuery?.select ||
+                parsedQuery?.groupBy ||
+                parsedQuery?.joins.length ||
+                (parsedQuery?.from && parsedQuery.from !== "notes")) &&
             results.length > 0
         ) {
             return Object.keys(results[0]!).map((field) => ({ field, label: field }));
@@ -104,6 +109,13 @@ export default function ViewDetailPage() {
             const group = astToFilterGroup(parsed.where, filterGroup.id);
             if (group && !parsed.select && !parsed.from && parsed.joins.length === 0 && !parsed.groupBy) {
                 setFilterGroup(group);
+                filterModifiers.current = {
+                    orderBy: parsed.orderBy
+                        ? { field: parsed.orderBy.column.path.join("."), dir: parsed.orderBy.direction }
+                        : undefined,
+                    limit: parsed.limit,
+                };
+                setFilterError(null);
                 setIsFilterComplex(false);
             } else {
                 setIsFilterComplex(true);
@@ -146,15 +158,15 @@ export default function ViewDetailPage() {
 
     const handleFilterGroupChange = (group: FilterGroup) => {
         setFilterGroup(group);
-        const parsed = parse(query);
-        const newQuery = filterGroupToQueryString(group, {
-            orderBy: parsed.orderBy
-                ? { field: parsed.orderBy.column.path.join("."), dir: parsed.orderBy.direction }
-                : undefined,
-            limit: parsed.limit,
-        });
-        setQuery(newQuery);
-        scheduleSave({ query: newQuery });
+        try {
+            const newQuery = filterGroupToQueryString(group, filterModifiers.current);
+            setFilterError(null);
+            setQuery(newQuery);
+            scheduleSave({ query: newQuery });
+        } catch (error) {
+            clearTimeout(timer.current);
+            setFilterError(error instanceof Error ? error.message : "Enter a valid filter value.");
+        }
     };
 
     const metadataKeys = useMemo(() => {
@@ -266,7 +278,14 @@ export default function ViewDetailPage() {
                             Complex query — switch to the SQL Query tab to edit it directly.
                         </div>
                     ) : (
-                        <FilterBuilder group={filterGroup} onChange={handleFilterGroupChange} />
+                        <>
+                            <FilterBuilder group={filterGroup} onChange={handleFilterGroupChange} />
+                            {filterError && (
+                                <p role="alert" className="mt-2 text-sm text-danger">
+                                    {filterError}
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
