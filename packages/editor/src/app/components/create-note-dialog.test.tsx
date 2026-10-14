@@ -147,7 +147,8 @@ describe("CreateNoteDialog", () => {
         render(<CreateNoteDialog />);
 
         expect(screen.getByLabelText("Template (optional)")).toHaveAttribute("placeholder", "Choose a template");
-        expect(screen.getAllByText("Blank note")).toHaveLength(2);
+        expect(screen.getByText("No starter example")).toBeInTheDocument();
+        expect(screen.getByText("No saved template")).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Create note" })).toBeInTheDocument();
         fireEvent.change(screen.getByLabelText("Template (optional)"), { target: { value: "template-1" } });
         expect(screen.getByRole("button", { name: "Create note" })).toBeInTheDocument();

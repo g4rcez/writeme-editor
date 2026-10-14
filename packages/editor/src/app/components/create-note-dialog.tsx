@@ -316,15 +316,21 @@ export const CreateNoteDialog = () => {
                             title="Starter example (optional)"
                             placeholder="Choose an example"
                             options={[
-                                { value: "", label: "Blank note" },
+                                { value: "", label: "No starter example" },
                                 ...NOTE_STARTERS.map((starter) => ({ value: starter.id, label: starter.title })),
                             ]}
                             onChange={(event) => {
                                 const starter = NOTE_STARTERS.find((item) => item.id === event.target.value);
+                                if (!starter && contentChoice.type !== "starter") return;
                                 setContentChoice(starter ? { type: "starter", id: starter.id } : { type: "blank" });
                                 setVariableValues({});
                             }}
                         />
+                        <p className="text-xs leading-5 text-muted-foreground">
+                            {templates.length > 0
+                                ? "Choose a starter or a saved template. With neither selected, the note starts blank."
+                                : "Without a starter, the note starts blank."}
+                        </p>
                         {selectedStarter ? (
                             <div key={selectedStarter.id} className="flex flex-col gap-2 text-sm text-foreground">
                                 <p>{selectedStarter.description}</p>
@@ -354,11 +360,12 @@ export const CreateNoteDialog = () => {
                             title="Template (optional)"
                             onChange={(event) => {
                                 const template = templates.find((item) => item.id === event.target.value);
+                                if (!template && contentChoice.type !== "template") return;
                                 setContentChoice(template ? { type: "template", id: template.id } : { type: "blank" });
                                 setVariableValues({});
                             }}
                             options={[
-                                { value: "", label: "Blank note" },
+                                { value: "", label: "No saved template" },
                                 ...templates.map((t) => ({ value: t.id, label: t.title })),
                             ]}
                         />

@@ -94,14 +94,6 @@ jobs:
                   npm run test:e2e -- --platform ${{ matrix.platform }}
                   --suite browser tests/e2e/freehand-note.spec.ts
                   ${{ matrix.platform == 'osx' && '--project desktop-macos' || '' }}
-            - name: Verify note starter examples
-              if: matrix.desktop
-              run: >-
-                  npm run test:e2e -- tests/e2e/note-starter-examples.spec.ts
-                  --platform ${{ matrix.platform }} --suite browser --project chromium
-              env:
-                  PLAYWRIGHT_ARTIFACT_DIR: >-
-                      artifacts/playwright/${{ matrix.platform }}/note-starters
             - name: Verify formatted editor Vim mode
               if: matrix.desktop
               run: >-
@@ -129,17 +121,19 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/vim-production
-            - name: Verify desktop tab CRUD, persistence and restoration
+            - name: Verify desktop tabs and note starter examples
               if: matrix.desktop
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.platform }}
                   --suite browser tests/e2e/editor-tabs.spec.ts
                   tests/e2e/tab-rename.spec.ts
                   tests/e2e/recently-closed-tab.spec.ts
-                  tests/e2e/editor-tab-drag.spec.ts --project chromium
+                  tests/e2e/editor-tab-drag.spec.ts
+                  tests/e2e/note-starter-examples.spec.ts
+                  --project chromium
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
-                      artifacts/playwright/${{ matrix.platform }}/tabs
+                      artifacts/playwright/${{ matrix.platform }}/tabs-and-starters
             - name: Verify task board initialization and filter recovery
               if: matrix.desktop
               run: >-
