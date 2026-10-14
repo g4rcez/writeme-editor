@@ -81,6 +81,7 @@ describe("note link resolution", () => {
                 "",
                 "[[Café]]",
                 "![東京](image.png)",
+                "Text <a href='/note/target'>Café</a> and <code>東京</code>.",
             ].join("\n"),
         );
         const mentions = findUnlinkedNoteMentions(target, [target, source]);

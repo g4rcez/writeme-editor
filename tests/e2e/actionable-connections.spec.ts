@@ -248,6 +248,11 @@ test("keeps structured source content out of Markdown link suggestions", async (
     const source = (await storedNotes(page)).find((note) => note.title === "Data source")!;
     const content = JSON.stringify({ text: "Format target [[Missing]]" });
     await changeStoredNote(page, source.id, { noteType: "json", content });
+    await createNote(page, "HTML source");
+    const html = (await storedNotes(page)).find((note) => note.title === "HTML source")!;
+    await changeStoredNote(page, html.id, {
+        content: 'Text <a href="https://example.com">Format target</a> and <code>Format target</code>.',
+    });
     await page.goto(targetUrl);
     const context = await openContext(page);
     await context.getByText("Unlinked mentions", { exact: true }).click();

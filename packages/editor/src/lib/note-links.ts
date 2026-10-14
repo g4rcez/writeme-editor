@@ -242,12 +242,27 @@ function maskMarkdownNonText(content: string, excludeLinks = true): string {
         "toml",
         ...(excludeLinks ? ["link", "linkReference", "image", "imageReference", "definition"] : []),
     ]);
-    visit(markdownParser.parse(content), (node) => {
-        if (!excluded.has(node.type)) return;
+    const protectedHtml: Array<{ tag: string; from: number }> = [];
+    visit(markdownParser.parse(content), (node, _index, parent) => {
         const from = node.position?.start.offset;
         const to = node.position?.end.offset;
-        if (from !== undefined && to !== undefined) mask(from, to);
+        if (from === undefined || to === undefined) return;
+        if (node.type === "html" && parent && !["root", "blockquote", "listItem"].includes(parent.type)) {
+            const opening = node.value.match(/^<(a|code|pre)(?=[\s/>])/i)?.[1]?.toLowerCase();
+            const closing = node.value.match(/^<\/(a|code|pre)(?=[\s>])/i)?.[1]?.toLowerCase();
+            if (opening) protectedHtml.push({ tag: opening, from });
+            if (closing) {
+                const index = protectedHtml.findLastIndex((entry) => entry.tag === closing);
+                const start = protectedHtml[index]?.from;
+                if (start !== undefined) {
+                    mask(start, to);
+                    protectedHtml.splice(index);
+                }
+            }
+        }
+        if (excluded.has(node.type)) mask(from, to);
     });
+    if (protectedHtml[0]) mask(protectedHtml[0].from, content.length);
     const visible = chars.join("");
     for (const pattern of excludeLinks ? [/!?\[\[[^\]\n]+\]\]/g, /\b(?:https?:\/\/|app:\/\/)[^\s<>]+/g] : []) {
         for (const match of visible.matchAll(pattern)) {
