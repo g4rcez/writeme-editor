@@ -139,12 +139,14 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         group: "Inserts",
         needsModal: "math",
         command: (editor, range) =>
-            editor
-                .chain()
-                .focus()
-                .deleteRange(range)
-                .insertContent({ type: "inlineMath", attrs: { latex: "" } })
-                .run(),
+            editor.chain().focus().deleteRange(range).insertContent({ type: "inlineMath", attrs: { latex: "" } }).run(),
+    },
+    {
+        label: "Footnote",
+        description: "Insert a linked footnote reference and definition",
+        icon: PencilLineIcon,
+        group: "Inserts",
+        command: (editor, range) => editor.chain().focus().deleteRange(range).insertFootnote().run(),
     },
     {
         label: "LaTeX Block",
