@@ -236,8 +236,7 @@ function createKeymapExtensions(vimMode: boolean): Extension[] {
 
     const vimModifierKeymap = EditorView.domEventHandlers({
         keydown: (event, view) => {
-            if (event.key.toLowerCase() !== "w" || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey)
-                return false;
+            if (event.key.toLowerCase() !== "w" || !event.ctrlKey || event.altKey || event.shiftKey) return false;
 
             event.preventDefault();
             event.stopPropagation();

@@ -120,7 +120,7 @@ test("saves init.ts with the save shortcut and restores it after reopening setti
     await page.goto("/settings/vim");
     const source = page.getByRole("textbox", { name: "Global init.ts" });
     await source.fill(init);
-    await source.press("ControlOrMeta+s");
+    await source.press("Control+s");
     await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.");
     await page.reload();
     await expect(source).toHaveText(init, { useInnerText: true });

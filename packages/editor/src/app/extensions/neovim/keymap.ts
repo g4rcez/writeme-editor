@@ -31,15 +31,10 @@ export function parseKeys(sequence: string, leader = " "): readonly string[] {
     });
 }
 
-export function eventKey(event: KeyboardEvent, options: { readonly metaAsControl?: boolean } = {}): string | null {
-    if (
-        (event.metaKey && !options.metaAsControl) ||
-        event.altKey ||
-        ["Shift", "Control", "Alt", "Meta", "Dead", "Process"].includes(event.key)
-    )
+export function eventKey(event: KeyboardEvent): string | null {
+    if (event.metaKey || event.altKey || ["Shift", "Control", "Alt", "Meta", "Dead", "Process"].includes(event.key))
         return null;
-    if (event.ctrlKey || (options.metaAsControl && event.metaKey))
-        return event.shiftKey ? `<C-S-${event.key.toLowerCase()}>` : `<C-${event.key.toLowerCase()}>`;
+    if (event.ctrlKey) return event.shiftKey ? `<C-S-${event.key.toLowerCase()}>` : `<C-${event.key.toLowerCase()}>`;
     switch (event.key) {
         case "Escape":
             return "<Esc>";

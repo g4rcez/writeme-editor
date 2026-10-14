@@ -154,12 +154,12 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                         if (event.isComposing || view.composing) return false;
                         const vim = neovimKey.getState(view.state);
                         if (!vim?.enabled) return false;
-                        const key = eventKey(event, { metaAsControl: true });
+                        const key = eventKey(event);
                         if (!key) return false;
                         if ((vim.mode === "insert" || vim.mode === "replace") && event.key.startsWith("Arrow"))
                             return false;
                         const handled = controller.feed(key);
-                        const modifier = event.ctrlKey || event.metaKey;
+                        const modifier = event.ctrlKey;
                         const vimOwnsMode = !["insert", "replace"].includes(vim.mode);
                         if (modifier && (handled || vimOwnsMode)) event.stopPropagation();
                         return handled || (modifier && vimOwnsMode);

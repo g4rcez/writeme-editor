@@ -67,29 +67,44 @@ test("selects characters in both directions and blocks normal-mode typing", asyn
     await expect(editor).toHaveText("");
 });
 
-test("prioritizes Vim Ctrl-W in Formatted and Markdown modes over the app close shortcut", async ({
-    cleanPage: page,
-}) => {
+test("prioritizes Vim Ctrl-W and leaves Cmd shortcuts available to the app", async ({ cleanPage: page }) => {
     await setup(page);
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     const route = page.url();
 
-    await page.keyboard.press("ControlOrMeta+w");
+    await page.keyboard.press("Control+w");
     await expect(editor).toHaveText("two three");
     await expect(page).toHaveURL(route);
 
     await page.keyboard.type("A word");
-    await expect(page.getByRole("status", { name: "Vim mode" })).toHaveText("INSERT");
-    await page.keyboard.press("ControlOrMeta+w");
+    await expect(page.getByRole("status", { name: "Vim mode" })).toContainText("INSERT");
+    await page.keyboard.press("Control+w");
     await expect(editor).toHaveText("two three");
     await expect(page).toHaveURL(route);
 
     await page.getByRole("toolbar", { name: "Note tools" }).getByRole("button", { name: "Markdown" }).click();
     const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
     await raw.click();
-    await page.keyboard.press("ControlOrMeta+w");
+    await page.keyboard.press("Control+w");
     await expect(raw).toContainText("three");
     await expect(page).toHaveURL(route);
+
+    await page.keyboard.press("Meta+w");
+    await expect(page).toHaveURL("/");
+    await expect(page.locator("[data-tab-id]").filter({ hasText: "Neovim test" })).toHaveCount(0);
+});
+
+test("keeps Cmd+S available to the app while Vim is in Normal mode", async ({ cleanPage: page }) => {
+    await setup(page);
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const saveStatus = page.getByRole("status", { name: "Note save status" });
+    await page.keyboard.type("i!");
+    await page.keyboard.press("Escape");
+    await expect(saveStatus).toHaveText("Unsaved changes");
+    await page.keyboard.press("Meta+s");
+    await expect(saveStatus).toHaveText("Saved", { timeout: 2000 });
+    await page.reload();
+    await expect(editor).toContainText("!one two three");
 });
 
 test("restores normal editing when disabled and keeps Markdown Vim available", async ({ cleanPage: page }) => {

@@ -53,13 +53,7 @@ export default function SettingsVimPage(): React.JSX.Element {
     return (
         <div
             onKeyDownCapture={(event) => {
-                if (
-                    !(event.ctrlKey || event.metaKey) ||
-                    event.altKey ||
-                    event.shiftKey ||
-                    event.key.toLowerCase() !== "s"
-                )
-                    return;
+                if (!event.ctrlKey || event.altKey || event.shiftKey || event.key.toLowerCase() !== "s") return;
                 event.preventDefault();
                 event.stopPropagation();
                 if (!busy && !event.repeat) void validate(true);
@@ -168,7 +162,7 @@ export default function SettingsVimPage(): React.JSX.Element {
                         </div>
                         <p id="vim-init-help" className="text-sm text-muted-foreground">
                             Use TypeScript helpers and vim.keymap.set to configure both editors. An empty file restores
-                            default bindings. Save with the button or Ctrl/Cmd+S. Press Ctrl+Space for completion.
+                            default bindings. Save with the button or Ctrl+S. Press Ctrl+Space for completion.
                         </p>
                         <VimConfigurationEditor
                             value={settings.vimConfig}
