@@ -13,6 +13,8 @@
 
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
+- Wait for the cold note route to finish loading before desktop tab-drag
+  verification, rather than treating dialog closure as editor readiness.
 
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 
