@@ -13,6 +13,7 @@ export class SettingsService {
     private static cache: AppSettings = SettingsSchema.parse({});
     private static initialized = false;
     private static _repo: ISettingsRepository | null = null;
+    private static saveQueue: Promise<void> = Promise.resolve();
 
     private static get repo(): ISettingsRepository {
         if (!SettingsService._repo) {
@@ -40,6 +41,7 @@ export class SettingsService {
             if (settingsMap.editorMode === "raw") settingsMap.editorMode = "markdown";
             SettingsService.cache = SettingsSchema.parse(settingsMap);
             SettingsService.initialized = true;
+            window.dispatchEvent(new Event("writeme-settings-changed"));
         } catch (error) {
             console.error("Failed to load settings from DB:", error);
         }
@@ -52,12 +54,22 @@ export class SettingsService {
         return { ...SettingsService.cache };
     }
 
-    static async save(settings: Partial<AppSettings>): Promise<AppSettings> {
+    static save(settings: Partial<AppSettings>): Promise<AppSettings> {
+        const task = SettingsService.saveQueue.then(() => SettingsService.persistPatch(settings));
+        SettingsService.saveQueue = task.then(
+            () => undefined,
+            () => undefined,
+        );
+        return task;
+    }
+
+    private static async persistPatch(settings: Partial<AppSettings>): Promise<AppSettings> {
         const updated = SettingsSchema.parse({ ...SettingsService.cache, ...settings });
         const normalized = Object.fromEntries(Object.keys(settings).map((key) => [key, Reflect.get(updated, key)]));
         const promises = Object.entries(normalized).map(([key, value]) => SettingsService.persistSetting(key, value));
         await Promise.all(promises);
         SettingsService.cache = SettingsSchema.parse({ ...SettingsService.cache, ...normalized });
+        window.dispatchEvent(new Event("writeme-settings-changed"));
         return SettingsService.load();
     }
 

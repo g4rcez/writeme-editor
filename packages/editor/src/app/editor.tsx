@@ -41,6 +41,9 @@ import { applyPastedUrlToSelection } from "./extensions/link-paste";
 import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 import { registerNoteSaveShortcut } from "./note-save-shortcut";
+import { applyTiptapVimConfiguration } from "./vim/apply-tiptap-configuration";
+import { useVimConfiguration } from "./vim/use-vim-configuration";
+import { useVimSettings } from "./vim/use-vim-settings";
 import { createTiptapWritingEditorAdapter } from "./writing-assistant/tiptap-adapter";
 import { WritingAssistant } from "./writing-assistant/writing-assistant";
 
@@ -173,6 +176,7 @@ type TiptapEditorCoreProps = {
     content?: string;
     readonly?: boolean;
     active?: boolean;
+    vimMode: boolean;
     theme: string;
     dispatch: GlobalDispatch;
     onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
@@ -185,11 +189,17 @@ const TiptapEditorCore = memo(
         content,
         readonly,
         active,
+        vimMode,
         theme,
         dispatch,
         onSaveRef,
     }: TiptapEditorCoreProps) {
         const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme), true), [theme]);
+        const {
+            configuration: vimConfiguration,
+            error: vimConfigurationError,
+            loading: vimConfigurationLoading,
+        } = useVimConfiguration();
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
         const generationRef = useRef(0);
@@ -303,6 +313,8 @@ const TiptapEditorCore = memo(
                     return false;
                 },
                 handlePaste: (_, event) => {
+                    const vim = editor.storage.neovim.getState();
+                    if (vim?.enabled && vim.mode !== "insert" && vim.mode !== "replace") return true;
                     if (isElectron()) {
                         const items = event.clipboardData?.items;
                         if (items) {
@@ -364,6 +376,7 @@ const TiptapEditorCore = memo(
                     return false;
                 },
                 handleKeyDown: (view, event) => {
+                    if ((event.ctrlKey || event.metaKey) && editor.storage.neovim.getState()?.enabled) return false;
                     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
                         event.preventDefault();
                         return true;
@@ -395,6 +408,26 @@ const TiptapEditorCore = memo(
                 },
             },
         });
+        useEffect(() => {
+            if (editor && editor.storage.neovim.getState()?.enabled !== vimMode) {
+                editor.storage.neovim.setEnabled(vimMode);
+            }
+        }, [editor, vimMode]);
+        useEffect(() => {
+            if (!editor) return;
+            editor.view.dom.setAttribute("aria-busy", String(vimConfigurationLoading));
+            if (vimConfigurationLoading) return;
+            const cleanup = applyTiptapVimConfiguration(editor.storage.neovim, vimConfiguration);
+            if (
+                vimMode &&
+                vimConfiguration.options.initialMode === "insert" &&
+                editor.storage.neovim.getState()?.mode === "normal"
+            )
+                editor.storage.neovim.setMode("insert");
+            return () => {
+                if (!editor.isDestroyed) cleanup();
+            };
+        }, [editor, vimConfiguration, vimMode, vimConfigurationLoading]);
         const writingAssistantSelectionContext = useMemo(() => {
             if (!editor) return null;
             return {
@@ -830,6 +863,12 @@ const TiptapEditorCore = memo(
                             disabled={Boolean(readonly || uiState.parsingContent)}
                         />
                     )}
+                    {vimMode && vimConfigurationLoading ? <output>Loading Vim configuration...</output> : null}
+                    {vimConfigurationError ? (
+                        <output role="alert" className="text-danger">
+                            Vim configuration: {vimConfigurationError}
+                        </output>
+                    ) : null}
                     <EditorContent key={id} editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
@@ -841,6 +880,7 @@ const TiptapEditorCore = memo(
         prev.content === next.content &&
         prev.readonly === next.readonly &&
         prev.active === next.active &&
+        prev.vimMode === next.vimMode &&
         prev.note === next.note,
 );
 
@@ -851,7 +891,7 @@ const RawEditorCore = memo(
         content?: string;
         readonly?: boolean;
         theme: string;
-        rawEditorVimMode: boolean;
+        vimMode: boolean;
         active?: boolean;
         dispatch: GlobalDispatch;
         onSaveRef: React.MutableRefObject<((content: string) => Promise<void>) | undefined>;
@@ -971,7 +1011,7 @@ const RawEditorCore = memo(
                     readonly={props.readonly}
                     theme={props.theme}
                     fontSize={settings.editorFontSize}
-                    vimMode={props.rawEditorVimMode}
+                    vimMode={props.vimMode}
                     writingAssistantEnabled={!isLatexFilePath(props.note?.filePath)}
                     active={props.active}
                 />
@@ -981,7 +1021,7 @@ const RawEditorCore = memo(
     (prev, next) =>
         prev.id === next.id &&
         prev.theme === next.theme &&
-        prev.rawEditorVimMode === next.rawEditorVimMode &&
+        prev.vimMode === next.vimMode &&
         prev.content === next.content &&
         prev.readonly === next.readonly &&
         prev.active === next.active &&
@@ -995,7 +1035,7 @@ const InnerEditor = (props: {
     content?: string;
     readonly?: boolean;
     mode: EditorMode;
-    rawEditorVimMode: boolean;
+    vimMode: boolean;
     active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
@@ -1019,7 +1059,7 @@ const InnerEditor = (props: {
                 note={props.note}
                 dispatch={dispatch}
                 theme={state.theme}
-                rawEditorVimMode={props.rawEditorVimMode}
+                vimMode={props.vimMode}
                 active={props.active}
                 onSaveRef={onSaveRef}
                 content={props.content}
@@ -1038,6 +1078,7 @@ const InnerEditor = (props: {
             content={props.content}
             readonly={props.readonly}
             active={props.active}
+            vimMode={props.vimMode}
         />
     );
 };
@@ -1048,15 +1089,16 @@ export const Editor = (props: {
     id?: string;
     readonly?: boolean;
     mode?: EditorMode;
-    rawEditorVimMode?: boolean;
+    vimMode?: boolean;
     active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
     const id = useMemo(() => props.id || props.note?.id || uuid(), [props.note, props.id]);
     const settings = SettingsService.load();
+    const vimSettings = useVimSettings();
     const requestedMode = props.mode ?? settings.editorMode;
     const mode = isLatexFilePath(props.note?.filePath) ? "markdown" : requestedMode;
-    const rawEditorVimMode = props.rawEditorVimMode ?? settings.rawEditorVimMode;
+    const vimMode = props.vimMode ?? vimSettings.enabled;
 
     if (props.content === undefined) {
         return <div className="flex items-center justify-center">Loading...</div>;
@@ -1071,7 +1113,7 @@ export const Editor = (props: {
                 onSave={props.onSave}
                 content={props.content}
                 readonly={props.readonly}
-                rawEditorVimMode={rawEditorVimMode}
+                vimMode={vimMode}
                 active={props.active}
                 key={`${props.note?.id || props.id}:${mode}`}
             />

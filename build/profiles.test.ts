@@ -33,6 +33,8 @@ describe("immutable distribution profiles", () => {
         },
     );
     it("allows only narrower capability overrides", () => {
+        expect(resolveBuildProfile("macos-direct", "vimScripts").features.vimScripts).toBe(false);
+        expect(resolveBuildProfile("macos-app-store").features.vimScripts).toBe(false);
         expect(resolveBuildProfile("macos-direct", "terminal, localProxy").features).toMatchObject({
             terminal: false,
             ai: false,

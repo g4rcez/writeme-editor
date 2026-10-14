@@ -25,6 +25,7 @@ const restrictedPaths: Partial<Record<FeatureName, string[]>> = {
         "app/pages/examples/code-run.page.tsx",
     ],
     templateScripts: ["lib/run-template-script.ts", "app/components/settings/custom-variables.tsx"],
+    vimScripts: ["app/vim/scripts/"],
     git: ["ipc/git.ipc.ts", "main-process/git-runner.ts", "app/components/git-"],
     cli: ["main-process/cli-installer.ts", "main-process/cli-server.ts"],
     meetingNotes: [

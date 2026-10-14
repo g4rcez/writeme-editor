@@ -7,6 +7,7 @@ export type SettingsSectionId =
     | "quick"
     | "appearance"
     | "editor"
+    | "vim"
     | "shortcuts"
     | "trash"
     | "ai"
@@ -47,6 +48,14 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
         label: "Appearance",
         description: "Theme and visual preferences.",
         path: "/settings/appearance",
+        platform: "all",
+        group: "Writing",
+    },
+    {
+        id: "vim",
+        label: "Vim",
+        description: "Shared Vim mode and global TypeScript configuration.",
+        path: "/settings/vim",
         platform: "all",
         group: "Writing",
     },

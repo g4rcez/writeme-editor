@@ -136,7 +136,7 @@ test.describe("Settings", () => {
         const autosave = main.getByRole("checkbox", { name: "Autosave", exact: true });
         const delay = main.getByRole("textbox", { name: "Autosave delay", exact: true });
         const mode = main.getByRole("combobox", { name: "Default editor mode", exact: true });
-        const vim = main.getByRole("checkbox", { name: "Markdown editor Vim mode", exact: true });
+        const vim = main.getByRole("checkbox", { name: "Vim mode", exact: true });
         const fontSize = main.getByRole("textbox", { name: "Editor font size", exact: true });
         await autosave.check();
         await delay.fill("1750");

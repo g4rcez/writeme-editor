@@ -3,7 +3,7 @@ import { createNote, goHome, test, expect } from "./fixtures";
 test.describe("note context layout", () => {
     test("explains note tools on hover and keyboard focus", async ({ cleanPage: page }) => {
         await goHome(page);
-        await createNote(page, "Tooltip note", "## A section");
+        await createNote(page, "Tooltip note");
 
         const toolbar = page.getByRole("toolbar", { name: "Note tools" });
         const tools = [
@@ -30,6 +30,8 @@ test.describe("note context layout", () => {
         await page.mouse.move(0, 0);
         await toolbar.getByRole("button", { name: "Formatted", exact: true }).focus();
         await page.keyboard.press("Tab");
+        await page.keyboard.press("Tab");
+        await expect(toolbar.getByRole("checkbox", { name: "Vim mode" })).toBeFocused();
         await page.keyboard.press("Tab");
         await expect(toolbar.getByRole("button", { name: "Add frontmatter", exact: true })).toBeFocused();
         await expect(page.getByRole("tooltip")).toContainText("Add a metadata block at the start of this note.");
@@ -102,9 +104,9 @@ test.describe("note context layout", () => {
             await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
             await page.getByRole("button", { name: "Save Appearance" }).click();
             await goHome(page);
-            await createNote(page, "Toolbar layout note", "## Toolbar section");
+            await createNote(page, "Toolbar layout note");
 
-            const title = page.getByRole("textbox", { name: "Note title" });
+            const header = page.locator(".writeme-note-header");
             const toolbar = page.getByRole("toolbar", { name: "Note tools" });
             const modeGroup = page.getByRole("group", { name: "Editor mode" });
             const actionsGroup = page.getByRole("group", { name: "Note actions" });
@@ -127,7 +129,7 @@ test.describe("note context layout", () => {
                         expect(await vimMode.evaluate((element) => element.closest("button") === null)).toBe(true);
                     }
 
-                    const titleBounds = await title.boundingBox();
+                    const headerBounds = await header.boundingBox();
                     const toolbarBounds = await toolbar.boundingBox();
                     const editorBounds = await page.locator(".writeme-editor").first().boundingBox();
                     const modeBounds = await modeGroup.boundingBox();
@@ -135,7 +137,7 @@ test.describe("note context layout", () => {
                     const filename = toolbar.locator(".writeme-note-toolbar-file-name");
                     const filenameBounds = await filename.boundingBox();
                     if (
-                        !titleBounds ||
+                        !headerBounds ||
                         !toolbarBounds ||
                         !editorBounds ||
                         !modeBounds ||
@@ -146,7 +148,7 @@ test.describe("note context layout", () => {
                     }
 
                     await expect(filename).toHaveText("Toolbar layout note");
-                    expect(toolbarBounds.y + toolbarBounds.height).toBeLessThanOrEqual(titleBounds.y);
+                    expect(toolbarBounds.y + toolbarBounds.height).toBeLessThanOrEqual(headerBounds.y);
                     expect(toolbarBounds.x).toBeCloseTo(editorBounds.x, 0);
                     expect(toolbarBounds.width).toBeCloseTo(editorBounds.width, 0);
                     if (toolbarBounds.width > 672) expect(toolbarBounds.height).toBeLessThanOrEqual(40);

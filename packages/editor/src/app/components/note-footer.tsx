@@ -1,6 +1,8 @@
+import type { Editor } from "@tiptap/core";
 import { useEffect, useState } from "react";
 import { editorGlobalRef, editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { HARD_LIMIT, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { NeovimStatus } from "../extensions/neovim/status";
 import { NoteSaveStatus } from "./note-save-status";
 
 type Counts = { chars: number; words: number; lines: number };
@@ -33,6 +35,7 @@ const HARD_LIMIT_LABEL = formatCount(HARD_LIMIT);
 
 export function NoteFooter({ noteId, content }: { noteId: string; content?: string }) {
     const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
+    const [activeEditor, setActiveEditor] = useState<Editor | null>(() => editorGlobalRef.current);
     const counts = content === undefined ? editorCounts : getMarkdownCounts(content);
 
     useEffect(() => {
@@ -42,6 +45,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
         const subscribe = () => {
             const searchEditor = editorSearchGlobalRef.current;
             const editor = editorGlobalRef.current;
+            setActiveEditor(editor);
             if (!searchEditor && !editor) return false;
 
             const compute = () => {
@@ -79,7 +83,6 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
                 cleanup?.();
             };
         }
-
         return () => {
             unsubscribeGlobal();
             cleanup?.();
@@ -112,6 +115,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
             </span>
             <span className="tabular-nums">{counts.words} words</span>
             <span className="tabular-nums">{counts.lines} lines</span>
+            <NeovimStatus editor={activeEditor} />
         </div>
     );
 }

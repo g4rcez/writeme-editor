@@ -45,7 +45,7 @@ function createProps() {
         currentNote: first,
         notes: [first, second],
         editorMode: "formatted" as const,
-        rawEditorVimMode: false,
+        vimMode: false,
         canAdd: true,
         onActivate: vi.fn(),
         onSelectNote: vi.fn(),

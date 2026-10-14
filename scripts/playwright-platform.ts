@@ -97,11 +97,15 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
                 "chromium",
                 "Desktop Chrome",
                 "e2e",
-                suite === "browser" ? ["*.spec.ts"] : productionOnly,
+                suite === "browser" ? ["*.spec.ts"] : [...productionOnly, "vim-settings.spec.ts"],
             );
             if (suite === "browser") chromium.testIgnore = productionOnly;
             if (suite === "production" && platform === "osx")
-                chromium.testMatch = ["note-comments-production.spec.ts", "meeting-note.spec.ts"];
+                chromium.testMatch = [
+                    "note-comments-production.spec.ts",
+                    "meeting-note.spec.ts",
+                    "vim-settings.spec.ts",
+                ];
             add(chromium);
             if (platform === "osx")
                 add(

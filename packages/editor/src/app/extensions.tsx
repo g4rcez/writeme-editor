@@ -28,6 +28,7 @@ import { VideoExtension } from "@/app/extensions/video-extension";
 import { createAttachmentDirectory, createAttachmentRelativePath } from "@/lib/attachment-paths";
 import { getUrlNamespace, innerUrl } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
+import { encodeMarkdownFilePath, escapeMarkdownLinkLabel } from "@/lib/markdown-links";
 import { formatObsidianLink, parseObsidianLinkBody } from "@/lib/obsidian-links";
 import { globalState } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
@@ -45,11 +46,11 @@ import { YoutubeBlock } from "./elements/youtube-block";
 import { AssetCleanup } from "./extensions/asset-cleanup";
 import { DomainLink } from "./extensions/domain-link";
 import { EditorCompletion } from "./extensions/editor-completion";
-import { encodeMarkdownFilePath, escapeMarkdownLinkLabel } from "@/lib/markdown-links";
 import { EmojiPicker } from "./extensions/emoji-picker";
 import { Hashtag } from "./extensions/hashtag";
 import { LinkMark } from "./extensions/link-mark";
 import { MarkdownHighlight } from "./extensions/markdown-highlight";
+import { Neovim } from "./extensions/neovim";
 import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
 import { Subscript } from "./extensions/subscript";
@@ -327,6 +328,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
         Callout,
         Hashtag,
         ...(manualCompletion ? [EditorCompletion] : []),
+        ...(manualCompletion ? [Neovim] : []),
         AssetCleanup,
         SearchAndReplace.configure({
             searchResultClass: "search-result",

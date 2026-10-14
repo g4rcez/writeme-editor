@@ -33,7 +33,7 @@ export default defineConfig({
         },
     },
     optimizeDeps: {
-        include: ["@catppuccin/codemirror", "@codemirror/lang-sql", "workbox-window"],
+        include: ["@catppuccin/codemirror", "@codemirror/lang-sql", "sucrase", "workbox-window"],
     },
     plugins: [
         buildFeaturePlugin(buildProfile, "renderer"),

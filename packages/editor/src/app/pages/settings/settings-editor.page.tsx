@@ -1,5 +1,6 @@
 import { Button } from "@g4rcez/components";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { EditorSettingsControls } from "@/app/components/settings/settings-controls";
 import { saveSettingsPatch } from "@/app/settings/save-settings-section";
 import { useSettingsDraft } from "@/app/settings/use-settings-draft";
@@ -19,7 +20,7 @@ export default function SettingsEditorPage() {
                 autosave: settings.autosave,
                 autosaveDelay: settings.autosaveDelay,
                 editorMode: settings.editorMode,
-                rawEditorVimMode: settings.rawEditorVimMode,
+                vimMode: settings.vimMode,
                 editorFontSize: settings.editorFontSize,
             });
             globalDispatch.setEditorFontSize(settings.editorFontSize);
@@ -38,7 +39,7 @@ export default function SettingsEditorPage() {
     return (
         <SettingsPageShell
             title="Editor"
-            description="Tune autosave behavior, Markdown editing, and the editor reading size."
+            description="Tune autosave, Vim mode, and the editor reading size."
             actions={
                 <Button size="small" disabled={saving} onClick={onSave}>
                     {saving ? "Saving..." : "Save Editor"}
@@ -46,6 +47,9 @@ export default function SettingsEditorPage() {
             }
         >
             <EditorSettingsControls settings={settings} onPatch={patchSettings} />
+            <Link to="/settings/vim" className="mt-4 inline-block text-primary underline">
+                Configure Vim and global init.ts
+            </Link>
         </SettingsPageShell>
     );
 }

@@ -7,6 +7,7 @@ import { clearSuppressedNoteRouteTabOpens, suppressNoteRouteTabOpen } from "@/li
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { SettingsService } from "@/store/settings";
+import { SettingsSchema } from "@/store/settings.schema";
 import { useUIStore } from "@/store/ui.store";
 import { clearEditorPaneState } from "../hooks/use-editor-panes";
 import NotePage from "./note.page";
@@ -27,10 +28,10 @@ vi.mock("@/store/ui.store", () => ({
 
 vi.mock("@/store/settings", () => ({
     SettingsService: {
-        load: vi.fn(() => ({ editorMode: "formatted", rawEditorVimMode: false })),
+        load: vi.fn(() => ({ editorMode: "formatted", vimMode: false })),
         save: vi.fn().mockResolvedValue({
             editorMode: "markdown",
-            rawEditorVimMode: true,
+            vimMode: true,
         }),
     },
 }));
@@ -75,8 +76,8 @@ vi.mock("react-resizable-panels", () => {
 });
 
 vi.mock("../editor", () => ({
-    Editor: ({ mode, rawEditorVimMode }: { mode?: string; rawEditorVimMode?: boolean }) => (
-        <div data-editor-mode={mode} data-editor-vim-mode={String(Boolean(rawEditorVimMode))} data-testid="editor" />
+    Editor: ({ mode, vimMode }: { mode?: string; vimMode?: boolean }) => (
+        <div data-editor-mode={mode} data-editor-vim-mode={String(Boolean(vimMode))} data-testid="editor" />
     ),
 }));
 
@@ -138,6 +139,13 @@ function renderNoteRoute() {
 
 describe("NotePage route loading", () => {
     beforeEach(() => {
+        vi.mocked(SettingsService.load).mockReturnValue(SettingsSchema.parse({}));
+        vi.mocked(SettingsService.save).mockImplementation(async (patch) => {
+            const next = SettingsSchema.parse({ ...SettingsService.load(), ...patch });
+            vi.mocked(SettingsService.load).mockReturnValue(next);
+            window.dispatchEvent(new Event("writeme-settings-changed"));
+            return next;
+        });
         vi.stubGlobal(
             "ResizeObserver",
             class {
@@ -255,13 +263,14 @@ describe("NotePage route loading", () => {
         for (const name of [
             "Formatted",
             "Markdown",
+            "Vim mode",
             "Add frontmatter",
             "History",
             "Add to favorites",
             "Open pane mode",
             "Export Loaded note",
         ]) {
-            expect(screen.getByRole("button", { name })).toHaveFocus();
+            expect(screen.getByRole(name === "Vim mode" ? "checkbox" : "button", { name })).toHaveFocus();
             await user.tab();
         }
         expect(screen.queryByRole("textbox", { name: "Note title" })).not.toBeInTheDocument();
@@ -310,7 +319,7 @@ describe("NotePage route loading", () => {
         expect(screen.getByTestId("editor")).toHaveAttribute("data-editor-vim-mode", "true");
         expect(SettingsService.save).toHaveBeenCalledWith({ editorMode: "markdown" });
         expect(SettingsService.save).toHaveBeenCalledWith({
-            rawEditorVimMode: true,
+            vimMode: true,
         });
     });
 

@@ -201,6 +201,7 @@
         "remark-math": "6.0.0",
         "remark-parse": "11.0.0",
         "shiki": "4.4.3",
+        "sucrase": "3.35.1",
         "tiptap-extension-global-drag-handle": "0.1.18",
         "unified": "11.0.5",
         "unist-util-visit": "5.1.0",

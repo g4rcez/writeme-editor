@@ -162,15 +162,13 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
                     />
                 </SettingsField>
                 <SettingsField
-                    label="Markdown editor Vim mode"
-                    description="Enable Vim keybindings when editing Markdown."
+                    label="Vim mode"
+                    description="Enable Vim keybindings in both formatted and Markdown notes."
                 >
                     <Checkbox
-                        aria-label="Markdown editor Vim mode"
-                        checked={settings.rawEditorVimMode}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            onPatch({ rawEditorVimMode: event.target.checked })
-                        }
+                        aria-label="Vim mode"
+                        checked={settings.vimMode}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => onPatch({ vimMode: event.target.checked })}
                     />
                 </SettingsField>
             </SettingsGroup>

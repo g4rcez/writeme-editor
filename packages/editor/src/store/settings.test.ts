@@ -5,6 +5,22 @@ import { SettingsService } from "./settings";
 afterEach(() => vi.restoreAllMocks());
 
 describe("meeting settings persistence", () => {
+    it("serializes concurrent shared Vim preference saves", async () => {
+        vi.spyOn(SettingsRepository.prototype, "getAll").mockResolvedValue([]);
+        const values: string[] = [];
+        vi.spyOn(SettingsRepository.prototype, "save").mockImplementation(async (value) => {
+            values.push(value.value);
+            return value;
+        });
+        const [enabled, disabled] = await Promise.all([
+            SettingsService.save({ vimMode: true }),
+            SettingsService.save({ vimMode: false }),
+        ]);
+        expect(values).toEqual(["true", "false"]);
+        expect(enabled.vimMode).toBe(true);
+        expect(disabled.vimMode).toBe(false);
+        expect(SettingsService.load().vimMode).toBe(false);
+    });
     it("keeps cached settings unchanged when storage rejects a save", async () => {
         const before = SettingsService.load();
         vi.spyOn(SettingsRepository.prototype, "getAll").mockResolvedValue([]);

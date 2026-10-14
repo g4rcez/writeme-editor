@@ -1,8 +1,8 @@
 import { lazy } from "react";
 import { createHashRouter, createBrowserRouter, Navigate } from "react-router-dom";
+import { BUILD, FEATURES } from "../lib/build-features";
 import { isElectron } from "../lib/is-electron";
 import { isMobile } from "../lib/platform";
-import { BUILD, FEATURES } from "../lib/build-features";
 import { RouteErrorBoundary } from "./components/route-error-boundary";
 import { RootLayout } from "./root-layout";
 
@@ -29,6 +29,7 @@ const ReadItLaterPage = lazy(() => import("./pages/read-it-later.page"));
 const SettingsQuickPage = lazy(() => import("./pages/settings/settings-quick.page"));
 const SettingsAppearancePage = lazy(() => import("./pages/settings/settings-appearance.page"));
 const SettingsEditorPage = lazy(() => import("./pages/settings/settings-editor.page"));
+const SettingsVimPage = lazy(() => import("./pages/settings/settings-vim.page"));
 const SettingsShortcutsPage = lazy(() => import("./pages/settings/settings-shortcuts.page"));
 const SettingsTrashPage = lazy(() => import("./pages/settings/settings-trash.page"));
 const SettingsAIPage = lazy(() => import("./pages/settings/settings-ai.page"));
@@ -140,6 +141,10 @@ export const router = createRouter([
                         element: <SettingsEditorPage />,
                     },
                     {
+                        path: "vim",
+                        element: <SettingsVimPage />,
+                    },
+                    {
                         path: "shortcuts",
                         element: (
                             <SettingsPlatformGate sectionId="shortcuts">
@@ -157,11 +162,19 @@ export const router = createRouter([
                     },
                     {
                         path: "ai",
-                        element: <SettingsPlatformGate sectionId="ai"><SettingsAIPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="ai">
+                                <SettingsAIPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "backup",
-                        element: <SettingsPlatformGate sectionId="backup"><SettingsBackupPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="backup">
+                                <SettingsBackupPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "workspace",
@@ -177,7 +190,11 @@ export const router = createRouter([
                     },
                     {
                         path: "variables",
-                        element: <SettingsPlatformGate sectionId="variables"><SettingsVariablesPage /></SettingsPlatformGate>,
+                        element: (
+                            <SettingsPlatformGate sectionId="variables">
+                                <SettingsVariablesPage />
+                            </SettingsPlatformGate>
+                        ),
                     },
                     {
                         path: "migration",
@@ -219,9 +236,15 @@ export const router = createRouter([
                 element: <ViewDetailPage />,
                 errorElement: <RouteErrorBoundary />,
             },
-            { path: "oauth/callback", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <OAuthCallbackPage /> },
+            {
+                path: "oauth/callback",
+                element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <OAuthCallbackPage />,
+            },
             { path: "chat", element: !FEATURES.ai || isMobile() ? <Navigate to="/" replace /> : <ChatPage /> },
-            { path: "terminal/:sessionId", element: !FEATURES.terminal || isMobile() ? <Navigate to="/" replace /> : <TerminalPage /> },
+            {
+                path: "terminal/:sessionId",
+                element: !FEATURES.terminal || isMobile() ? <Navigate to="/" replace /> : <TerminalPage />,
+            },
             { path: "folder", element: isMobile() ? <Navigate to="/" replace /> : <FolderWorkspacePage /> },
             {
                 path: "examples",

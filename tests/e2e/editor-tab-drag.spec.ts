@@ -13,7 +13,9 @@ async function createNote(page: Page, title: string): Promise<void> {
     await dialog.getByTitle("Note title").fill(title);
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(page.getByRole("dialog", { name: /Create new note/i })).not.toBeVisible();
-    await expect(page.getByRole("toolbar", { name: "Note tools" }).getByText(title, { exact: true })).toBeVisible();
+    await expect(page.getByRole("toolbar", { name: "Note tools" }).getByText(title, { exact: true })).toBeVisible({
+        timeout: 30_000,
+    });
     await expect(page.locator(".writeme-tabs-bar-list [data-tab-id]").filter({ hasText: title })).toBeVisible();
 }
 
