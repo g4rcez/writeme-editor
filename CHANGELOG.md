@@ -11,6 +11,13 @@
 
 ### Bug Fixes
 
+- Cancel Vim visual ranges when collapsing their section so delete/change commands
+  cannot edit hidden body text.
+- Preserve note-local heading folds through chunked Markdown history restores and
+  reloads; reconcile fold keys only after the complete outline is available.
+- Index heading boundaries in one linear pass and reuse the outline and folding
+  decorations for unchanged documents.
+
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag

@@ -2,6 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { NeovimState } from "./types";
+import { SELECTION_RELOCATED_META } from "../transaction-meta";
 import { NeovimController } from "./controller";
 import { nextCharacter, normalPosition } from "./document";
 import { eventKey } from "./keymap";
@@ -131,6 +132,13 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                             ...value,
                             cursor,
                             anchor: value.anchor === null ? null : tr.mapping.map(value.anchor),
+                            ...(tr.getMeta(SELECTION_RELOCATED_META) && {
+                                cursor: tr.selection.head,
+                                anchor: null,
+                                mode: visual ? "normal" : value.mode,
+                                pending: [],
+                                command: "",
+                            }),
                             ...patch,
                         };
                         return {

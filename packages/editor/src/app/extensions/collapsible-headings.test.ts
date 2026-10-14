@@ -1,11 +1,14 @@
 import { Editor } from "@tiptap/core";
 import UniqueID from "@tiptap/extension-unique-id";
-import { TextSelection } from "@tiptap/pm/state";
+import { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { EditorState, TextSelection } from "@tiptap/pm/state";
+import { DecorationSet } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CollapsibleHeadings, REVEAL_HEADING_EVENT } from "./collapsible-headings";
 import { Neovim } from "./neovim";
 import { Markdown } from "./tiptap-markdown/Markdown";
+import { CONTENT_LOAD_META } from "./transaction-meta";
 
 const editors: Editor[] = [];
 const content = "<h1>Parent</h1><p>Intro</p><h2>Child</h2><p>Hidden words</p><h1>Next</h1><p>Visible</p>";
@@ -225,3 +228,138 @@ it("works in read-only notes and when storage fails, and omits empty sections", 
     expect(editor.view.dom.querySelector(".writeme-heading-folded-block")?.textContent).toBe("Body");
     expect(editor.getText()).toContain("Body");
 });
+
+it.each(["V", "v"] as const)("cancels hidden Vim %s ranges before delete/change", async (visualKey) => {
+    for (const operator of ["d", "c"]) {
+        for (const all of [false, true]) {
+            const editor = await create();
+            let target = 0;
+            editor.state.doc.forEach((node, pos) => {
+                if (node.textContent === "Hidden words") target = pos + 1;
+            });
+            editor.commands.setNeovimEnabled(true);
+            editor.commands.setTextSelection(target);
+            editor.storage.neovim.feedKeys(visualKey);
+            if (all) editor.commands.collapseAllSections();
+            else toggle(editor, "Parent");
+            expect(editor.storage.neovim.getState()).toMatchObject({ mode: "normal", anchor: null, cursor: 1 });
+            editor.storage.neovim.feedKeys(operator);
+            expect(editor.getText()).toContain("Hidden words");
+            expect(editor.getText()).toContain("Intro");
+            expect(editor.getText()).toContain("Visible");
+        }
+    }
+});
+
+it("retains pending fold keys through partial replacement and remount", async () => {
+    const editor = await create();
+    toggle(editor, "Child");
+    const stored = localStorage.getItem("writeme:collapsed-headings:one");
+    editor.view.dispatch(editor.state.tr.setMeta(CONTENT_LOAD_META, "start"));
+    editor.commands.setContent("<h1>Parent</h1><p>Revised intro</p>");
+    expect(localStorage.getItem("writeme:collapsed-headings:one")).toBe(stored);
+    editor.commands.insertContentAt(editor.state.doc.content.size, "<h2>Child</h2><p>Hidden words</p>");
+    expect(localStorage.getItem("writeme:collapsed-headings:one")).toBe(stored);
+    editor.commands.insertContentAt(editor.state.doc.content.size, "<h1>Next</h1><p>Visible</p>");
+    editor.view.dispatch(editor.state.tr.setMeta(CONTENT_LOAD_META, "finish"));
+    expect(editor.view.dom.querySelector('button[aria-label="Expand Child"]')).not.toBeNull();
+    expect(localStorage.getItem("writeme:collapsed-headings:one")).toBe(stored);
+    const remounted = await create("one", editor.getMarkdown());
+    expect(remounted.view.dom.querySelector(".writeme-heading-folded-block")?.textContent).toBe("Hidden words");
+});
+
+it("reconciles complete outline changes but does not persist aborted partial outlines", async () => {
+    const editor = await create();
+    toggle(editor, "Child");
+    const stored = localStorage.getItem("writeme:collapsed-headings:one");
+    editor.view.dispatch(editor.state.tr.setMeta(CONTENT_LOAD_META, "start"));
+    editor.commands.setContent("<h1>Parent</h1><p>Partial</p>");
+    editor.view.dispatch(editor.state.tr.setMeta(CONTENT_LOAD_META, "abort"));
+    expect(localStorage.getItem("writeme:collapsed-headings:one")).toBe(stored);
+    const remounted = await create();
+    expect(remounted.view.dom.querySelector('button[aria-label="Expand Child"]')).not.toBeNull();
+    remounted.view.dispatch(remounted.state.tr.setMeta(CONTENT_LOAD_META, "start"));
+    remounted.commands.setContent("<h1>Replacement</h1><p>New body</p>");
+    remounted.view.dispatch(remounted.state.tr.setMeta(CONTENT_LOAD_META, "finish"));
+    expect(localStorage.getItem("writeme:collapsed-headings:one")).toBeNull();
+    expect(remounted.view.dom.querySelector(".writeme-heading-folded-block")).toBeNull();
+});
+
+it.each([1000, 5000])(
+    "bounds outline traversal and reuses caret/metadata decorations (%i headings)",
+    async (count) => {
+        const editor = await create("large");
+        const plugin = editor.state.plugins.find((candidate) => {
+            const value: unknown = candidate.getState(editor.state);
+            return typeof value === "object" && value !== null && "collapsed" in value;
+        });
+        if (!plugin?.spec.key) throw new Error("Folding plugin missing");
+        const key = plugin.spec.key;
+        const nodes = Array.from({ length: count }, (_, i) => [
+            editor.schema.node("heading", { level: 2 }, editor.schema.text(`Section ${i}`)),
+            editor.schema.node("paragraph", null, editor.schema.text("Body")),
+        ]).flat();
+        const doc = editor.schema.node("doc", null, nodes);
+        let visits = 0;
+        let comparisons = 0;
+        const forEach = ProseMirrorNode.prototype.forEach;
+        const find = Array.prototype.find;
+        const traversal = vi
+            .spyOn(ProseMirrorNode.prototype, "forEach")
+            .mockImplementation(function (this: ProseMirrorNode, callback) {
+                return forEach.call(this, (node, offset, index) => {
+                    if (this.type.name === "doc") visits++;
+                    callback(node, offset, index);
+                });
+            });
+        const searches = vi
+            .spyOn(Array.prototype, "find")
+            .mockImplementation(function (this: unknown[], predicate, thisArg) {
+                return find.call(this, (value, index, array) => {
+                    comparisons++;
+                    return predicate.call(thisArg, value, index, array);
+                });
+            });
+        try {
+            const state = EditorState.create({ schema: editor.schema, doc, plugins: [plugin] });
+            expect(visits).toBeLessThanOrEqual(count * 4);
+            expect(comparisons).toBeLessThanOrEqual(count * 20);
+            visits = 0;
+            comparisons = 0;
+            const before = plugin.getState(state);
+            const caret = state.apply(state.tr.setSelection(TextSelection.create(state.doc, 2)));
+            expect(plugin.getState(caret)).toBe(before);
+            const metadata = caret.apply(caret.tr.setMeta("unrelated", true));
+            expect(plugin.getState(metadata)).toBe(before);
+            expect(visits).toBe(0);
+            const edited = metadata.apply(metadata.tr.insertText("Changed ", 15));
+            expect(visits).toBeLessThanOrEqual(count * 4);
+            expect(comparisons).toBeLessThanOrEqual(count * 20);
+            visits = 0;
+            comparisons = 0;
+            const collapsed = new Set(Array.from({ length: count }, (_, i) => JSON.stringify([2, `Section ${i}`, 0])));
+            const folded = edited.apply(edited.tr.setMeta(key, { collapsed }));
+            const result: unknown = plugin.getState(folded);
+            if (
+                typeof result !== "object" ||
+                result === null ||
+                !("decorations" in result) ||
+                !(result.decorations instanceof DecorationSet)
+            )
+                throw new Error("Folding decorations missing");
+            expect(result.decorations.find().filter((decoration) => decoration.to > decoration.from)).toHaveLength(
+                count,
+            );
+            expect(visits).toBeLessThanOrEqual(count * 4);
+            expect(comparisons).toBeLessThanOrEqual(count * 20);
+            const foldVisits = visits;
+            const foldedCaret = folded.apply(folded.tr.setSelection(TextSelection.create(folded.doc, 2)));
+            expect(plugin.getState(foldedCaret)).toBe(result);
+            expect(visits).toBe(foldVisits);
+        } finally {
+            traversal.mockRestore();
+            searches.mockRestore();
+        }
+    },
+    30_000,
+);

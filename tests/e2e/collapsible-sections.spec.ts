@@ -197,3 +197,119 @@ test.describe("touch disclosure", () => {
         await page.screenshot({ path: testInfo.outputPath("touch-disclosures.png") });
     });
 });
+
+for (const visual of ["V", "v"] as const) {
+    for (const collapse of ["disclosure", "all"] as const) {
+        for (const operator of ["d", "c"] as const) {
+            test(`protects hidden body after Vim ${visual}, ${collapse}, ${operator}`, async ({ cleanPage: page }) => {
+                await setup(page);
+                const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+                await page.getByRole("checkbox", { name: "Vim mode", exact: true }).check();
+                if (collapse === "all")
+                    await page.getByRole("button", { name: "Open note context", exact: true }).click();
+                await editor.focus();
+                await page.keyboard.type(`gg3j0${visual}`);
+                await expect
+                    .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+                    .toBe(visual === "V" ? "Hidden needle" : "H");
+                await expect(editor).toHaveAttribute("data-neovim-mode", visual === "V" ? "visual-line" : "visual");
+                if (collapse === "all") {
+                    await page
+                        .getByRole("complementary", { name: "Context", exact: true })
+                        .getByRole("button", { name: "Collapse all", exact: true })
+                        .click();
+                } else await page.getByRole("button", { name: "Collapse Parent", exact: true }).click();
+                await expect(editor).toHaveAttribute("data-neovim-mode", "normal");
+                await expect(editor.getByText("Hidden needle", { exact: true })).toBeHidden();
+                await editor.focus();
+                await page.keyboard.type(operator);
+                await expect(editor.getByText("Hidden needle", { exact: true })).toHaveCount(1);
+                await expect(editor.getByText("Parent body", { exact: true })).toHaveCount(1);
+                await expect(editor.getByText("Deep body", { exact: true })).toHaveCount(1);
+                await expect(editor.getByText("Visible body", { exact: true })).toHaveCount(1);
+                await expect(editor.locator('input[type="checkbox"]')).toHaveCount(1);
+            });
+        }
+    }
+}
+
+test("preserves a later-chunk fold during real worker history restore and remount", async ({ cleanPage: page }) => {
+    test.setTimeout(120_000);
+    await goHome(page);
+    const url = await createNote(page, "Chunked folding history");
+    const body = Array.from({ length: 280 }, (_, i) => `Paragraph ${i} ${"body text ".repeat(22)}\n\n`).join("");
+    const original = `# Parent\n\nOriginal intro\n\n${body}## Child\n\nHidden later chunk\n\n# Next\n\nVisible end`;
+    const restored = original.replace("Original intro", "Restored intro");
+    await page.getByRole("button", { name: "Markdown", exact: true }).click();
+    await page.getByRole("textbox", { name: "Markdown note editor", exact: true }).fill(original);
+    await page.keyboard.press("ControlOrMeta+s");
+    await expect(page.getByRole("status", { name: "Note save status" })).toHaveText("Saved", { timeout: 15_000 });
+    await page.getByRole("button", { name: "Formatted", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Collapse Child", exact: true })).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+s");
+    await expect(page.getByRole("status", { name: "Note save status" })).toHaveText("Saved", { timeout: 15_000 });
+    await page.getByRole("button", { name: "Collapse Child", exact: true }).click();
+    const stored = await page.evaluate(
+        (id) => localStorage.getItem(`writeme:collapsed-headings:${id}`),
+        url.split("/").pop()!,
+    );
+    expect(stored).toContain("Child");
+    await page.evaluate(
+        async ({ id, content }) => {
+            const load = (path: string) => import(new URL(path, location.origin).href);
+            const { db } = await load("/packages/editor/src/store/repositories/browser/dexie-db.ts");
+            const { editorGlobalRef } = await load("/packages/editor/src/app/editor-global-ref.tsx");
+            const { getMarkdownWorker } = await load("/packages/editor/src/lib/markdown-worker/index.ts");
+            await db.noteHistory.add({
+                id: "later-chunk-restore",
+                noteId: id,
+                content,
+                createdAt: new Date(Date.now() + 10_000),
+            });
+            const evidence = { chunks: 0, partialStored: [] as (string | null)[], complete: false };
+            Reflect.set(window, "foldRefreshEvidence", evidence);
+            getMarkdownWorker().addEventListener("message", (event: MessageEvent) => {
+                if (event.data.type === "chunk") evidence.chunks++;
+            });
+            let loading = false;
+            editorGlobalRef.current.on(
+                "transaction",
+                ({ transaction }: { transaction: { docChanged: boolean; getMeta: (key: string) => unknown } }) => {
+                    const phase = transaction.getMeta("writeme:content-load");
+                    if (phase === "start") loading = true;
+                    if (loading && transaction.docChanged)
+                        evidence.partialStored.push(localStorage.getItem(`writeme:collapsed-headings:${id}`));
+                    if (phase === "finish") {
+                        loading = false;
+                        evidence.complete = true;
+                    }
+                },
+            );
+        },
+        { id: url.split("/").pop()!, content: restored },
+    );
+    await page.getByRole("button", { name: "History", exact: true }).click();
+    const history = page.getByRole("dialog", { name: "Note history", exact: true });
+    const preview = history.getByRole("region", { name: "Saved version preview", exact: true });
+    await expect(preview).toContainText("Restored intro");
+    await preview.getByRole("button", { name: "Restore", exact: true }).click();
+    await history
+        .getByRole("group", { name: "Restore confirmation", exact: true })
+        .getByRole("button", { name: "Restore", exact: true })
+        .click();
+    await expect.poll(() => page.evaluate(() => Reflect.get(window, "foldRefreshEvidence").complete)).toBe(true);
+    const evidence = await page.evaluate(() => Reflect.get(window, "foldRefreshEvidence"));
+    expect(evidence.chunks).toBeGreaterThan(1);
+    expect(evidence.partialStored.length).toBeGreaterThan(1);
+    expect(evidence.partialStored.every((value: string | null) => value === stored)).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Restored intro");
+    await expect(page.getByRole("button", { name: "Expand Child", exact: true })).toBeVisible();
+    await expect(page.locator(".ProseMirror").getByText("Hidden later chunk", { exact: true })).toBeHidden();
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Expand Child", exact: true })).toBeVisible();
+    await expect(page.locator(".ProseMirror").getByText("Hidden later chunk", { exact: true })).toBeHidden();
+    expect(
+        await page.evaluate((id) => localStorage.getItem(`writeme:collapsed-headings:${id}`), url.split("/").pop()!),
+    ).toBe(stored);
+});

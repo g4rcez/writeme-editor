@@ -38,6 +38,7 @@ import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
 import { applyPastedUrlToSelection } from "./extensions/link-paste";
+import { CONTENT_LOAD_META } from "./extensions/transaction-meta";
 import { addFrontmatterToEditor } from "./frontmatter";
 import { useEditorScrollMemory } from "./hooks/use-editor-scroll-memory";
 import { registerNoteSaveShortcut } from "./note-save-shortcut";
@@ -540,6 +541,7 @@ const TiptapEditorCore = memo(
             const recover = () => {
                 if (generationRef.current !== myGen || editor.isDestroyed) return;
                 generationRef.current += 1;
+                editor.view.dispatch(editor.state.tr.setMeta(CONTENT_LOAD_META, "abort"));
                 isSettingContent.current = false;
                 uiDispatch.setParsingContent(false);
                 setParseProgress(0);
@@ -551,12 +553,17 @@ const TiptapEditorCore = memo(
                 uiDispatch.setParsingContent(false);
                 setParseProgress(0);
                 editor.setEditable(true);
-                const tr = editor.state.tr.setMeta("shikiSuspended", false).setMeta("shikiPluginForceDecoration", true);
+                const tr = editor.state.tr
+                    .setMeta(CONTENT_LOAD_META, "finish")
+                    .setMeta("shikiSuspended", false)
+                    .setMeta("shikiPluginForceDecoration", true);
                 editor.view.dispatch(tr);
             };
 
             if (!editor.isDestroyed) {
-                editor.view.dispatch(editor.state.tr.setMeta("shikiSuspended", true));
+                editor.view.dispatch(
+                    editor.state.tr.setMeta(CONTENT_LOAD_META, "start").setMeta("shikiSuspended", true),
+                );
             }
 
             const watchdogId = setTimeout(() => {
@@ -613,12 +620,12 @@ const TiptapEditorCore = memo(
             worker.onerror = () => {
                 clearTimeout(watchdogId);
                 if (generationRef.current !== myGen || editor.isDestroyed) return;
-                recover();
+                worker.removeEventListener("message", handler);
                 (editor.commands as any).setContent(text, {
                     contentType: "markdown",
                     parseOptions: { preserveWhitespace: "full" },
                 });
-                isSettingContent.current = false;
+                finalize();
             };
 
             worker.addEventListener("message", handler);
