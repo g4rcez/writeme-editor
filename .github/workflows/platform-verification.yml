@@ -121,6 +121,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/vim-production
+            - name: Verify Search into saved Views
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/search-views.spec.ts
+                  tests/e2e/note-finding.spec.ts --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/search-views
             - name: Verify desktop tab CRUD, persistence and restoration
               if: matrix.desktop
               run: >-

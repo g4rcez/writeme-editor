@@ -12,6 +12,7 @@ const BUILTIN_FIELDS: { value: string; label: string }[] = [
     { value: "content", label: "Content" },
     { value: "noteType", label: "Note Type" },
     { value: "tags", label: "Tags" },
+    { value: "filePath", label: "File path" },
     { value: "favorite", label: "Favorite" },
     { value: "createdAt", label: "Created At" },
     { value: "updatedAt", label: "Updated At" },
@@ -87,7 +88,11 @@ export function FilterBuilder({ group, onChange }: FilterBuilderProps) {
     const updateRow = (id: string, patch: Partial<FilterRow>) => {
         onChange({
             ...group,
-            filters: group.filters.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+            filters: group.filters.map((f) =>
+                f.id === id
+                    ? { ...f, ...patch, valueType: patch.field && patch.field !== f.field ? undefined : f.valueType }
+                    : f,
+            ),
         });
     };
 

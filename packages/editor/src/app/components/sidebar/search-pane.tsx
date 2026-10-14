@@ -2,14 +2,26 @@ import { Button, Input } from "@g4rcez/components";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TextTIcon } from "@phosphor-icons/react/dist/csr/TextT";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
+import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { useListSearch } from "@/app/hooks/use-list-search";
 import { formatSimplifiedPath, getRelativePath } from "@/lib/file-utils";
 import { filterNotesByQuery, getNoteSearchSnippet } from "@/lib/note-search";
+import {
+    buildNoteSearchFilterQuery,
+    EMPTY_NOTE_SEARCH_FILTERS,
+    filterNotesByStructuredFilters,
+    getActiveNoteSearchFilterCount,
+    getNoteSearchFolders,
+    type NoteSearchFilters,
+} from "@/lib/note-search-filters";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
+import { NoteType } from "@/store/note";
+import { repositories } from "@/store/repositories";
+import { View } from "@/store/repositories/entities/view";
 import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 
@@ -19,32 +31,123 @@ function getSearchResultLocation(filePath: string | null | undefined, workspaceD
     return formatSimplifiedPath(path) || path;
 }
 
+function getNoteSearchFilterLabels(filters: NoteSearchFilters): Array<{ key: string; label: string }> {
+    return [
+        ...filters.tags.map((tag) => ({ key: `tag:${tag}`, label: `Tag: ${tag}` })),
+        ...(filters.noteType ? [{ key: "type", label: `Type: ${filters.noteType}` }] : []),
+        ...(filters.location
+            ? [{ key: "location", label: `Location: ${filters.location.replace(/^folder:/u, "")}` }]
+            : []),
+        ...(filters.updatedAfter ? [{ key: "after", label: `Updated on or after: ${filters.updatedAfter}` }] : []),
+        ...(filters.updatedBefore ? [{ key: "before", label: `Updated through: ${filters.updatedBefore}` }] : []),
+    ];
+}
+
 export const SearchPane = () => {
     const [{ searchQuery }, layoutDispatch] = useLayoutStore((s) => ({
         searchQuery: s.searchQuery,
     }));
     const [globalState] = useGlobalStore();
     const [searchFocused, setSearchFocused] = useState(false);
+    const [filters, setFilters] = useState<NoteSearchFilters>(EMPTY_NOTE_SEARCH_FILTERS);
+    const [showSaveForm, setShowSaveForm] = useState(false);
+    const [saveTitle, setSaveTitle] = useState("");
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const saveButton = useRef<HTMLButtonElement>(null);
+    const searchInput = useRef<HTMLInputElement>(null);
+    const focusSaveTitle = useCallback((input: HTMLInputElement | null): void => {
+        input?.focus();
+    }, []);
     const navigate = useNavigate();
     const workspaceDirectory = SettingsService.load().directory ?? "";
-
-    const filteredNotes = useMemo(
+    const activeFilterCount = getActiveNoteSearchFilterCount(filters);
+    const folderOptions = useMemo(
+        () => getNoteSearchFolders(globalState.notes.map(({ filePath }) => filePath)),
+        [globalState.notes],
+    );
+    const availableTags = useMemo(
+        () => Array.from(new Set(globalState.notes.flatMap(({ tags }) => tags))).sort((a, b) => a.localeCompare(b)),
+        [globalState.notes],
+    );
+    const textMatches = useMemo(
         () => filterNotesByQuery(globalState.notes, searchQuery),
         [globalState.notes, searchQuery],
     );
+    const { filteredNotes, filterError } = useMemo(() => {
+        try {
+            return { filteredNotes: filterNotesByStructuredFilters(textMatches, filters), filterError: null };
+        } catch (error) {
+            return {
+                filteredNotes: [],
+                filterError: error instanceof Error ? error.message : "Check the selected filters.",
+            };
+        }
+    }, [filters, textMatches]);
+    const hasTextSearch = searchQuery.trim().length > 0;
+    const closeSaveForm = (): void => {
+        if (saving) return;
+        setShowSaveForm(false);
+        saveButton.current?.focus();
+    };
+    useEscapeLayer(EscapeLevel.panel, showSaveForm, closeSaveForm);
     const selectNote = useCallback((note: (typeof filteredNotes)[number]) => navigate(`/note/${note.id}`), [navigate]);
     const { selectedIndex, setSelectedIndex } = useListSearch({
         items: filteredNotes,
         onSelect: selectNote,
-        isOpen: searchFocused && searchQuery.trim().length > 0,
+        isOpen: searchFocused && (searchQuery.trim().length > 0 || activeFilterCount > 0),
     });
 
     const handleGlobalSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         layoutDispatch.setSearch(e.target.value);
     };
 
+    const removeFilter = (key: string) => {
+        setFilters((current) => {
+            if (key.startsWith("tag:")) {
+                return { ...current, tags: current.tags.filter((tag) => `tag:${tag}` !== key) };
+            }
+            if (key === "type") return { ...current, noteType: "" };
+            if (key === "location") return { ...current, location: "" };
+            if (key === "after") return { ...current, updatedAfter: "" };
+            return { ...current, updatedBefore: "" };
+        });
+    };
+
+    const saveAsView = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const title = saveTitle.trim();
+        if (!title || activeFilterCount === 0 || hasTextSearch || filterError || saving) return;
+        setSaving(true);
+        setSaveError(null);
+        try {
+            const now = new Date();
+            const view = new View(
+                crypto.randomUUID(),
+                title,
+                buildNoteSearchFilterQuery(filters),
+                [{ field: "title", label: "Title" }],
+                "table",
+                "updatedAt",
+                "DESC",
+                {},
+                now,
+                now,
+            );
+            await repositories.views.save(view);
+            setSaveTitle("");
+            setShowSaveForm(false);
+            navigate(`/views/${view.id}`);
+            if (window.matchMedia("(max-width: 767px)").matches) uiDispatch.setSidebarOpen(false);
+        } catch {
+            setSaveError("Could not save this View. Check storage and try again.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
-        <div className="flex h-full min-h-0 flex-col bg-background/50">
+        <section aria-label="Search notes" className="flex h-full min-h-0 flex-col overflow-y-auto bg-background/50">
             <div className="border-b border-border/40 px-1 py-2">
                 <span className="text-xs font-medium text-foreground">Search notes</span>
             </div>
@@ -52,6 +155,7 @@ export const SearchPane = () => {
                 <div className="space-y-2">
                     <div className="relative">
                         <Input
+                            ref={searchInput}
                             optionalText=" "
                             autoFocus
                             value={searchQuery}
@@ -63,7 +167,207 @@ export const SearchPane = () => {
                             right={<MagnifyingGlassIcon className="size-4 text-muted-foreground" />}
                         />
                     </div>
+                    <p className="text-[11px] leading-4 text-muted-foreground">
+                        Search titles, content, tags, and paths. Combine filters to narrow the results.
+                    </p>
                 </div>
+                <fieldset disabled={saving} className="grid min-w-0 grid-cols-1 gap-2">
+                    <legend className="mb-2 text-xs font-medium text-foreground">Filters</legend>
+                    <label className="space-y-1 text-xs text-muted-foreground">
+                        <span>Tag</span>
+                        <select
+                            aria-label="Add tag filter"
+                            value=""
+                            onChange={(event) => {
+                                const tag = event.target.value;
+                                if (tag && !filters.tags.includes(tag))
+                                    setFilters((current) => ({ ...current, tags: [...current.tags, tag] }));
+                            }}
+                            className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="">Choose a tag</option>
+                            {availableTags.map((tag) => (
+                                <option key={tag} value={tag}>
+                                    {tag}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs text-muted-foreground">
+                        <span>Note type</span>
+                        <select
+                            aria-label="Filter by note type"
+                            value={filters.noteType}
+                            onChange={(event) =>
+                                setFilters((current) => ({ ...current, noteType: event.target.value }))
+                            }
+                            className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="">All types</option>
+                            {Object.values(NoteType).map((type) => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs text-muted-foreground">
+                        <span>Folder or location</span>
+                        <select
+                            aria-label="Filter by folder or location"
+                            value={filters.location}
+                            onChange={(event) =>
+                                setFilters((current) => ({ ...current, location: event.target.value }))
+                            }
+                            className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="">All locations</option>
+                            <option value="local">Local notes (database)</option>
+                            <option value="filesystem">Files on disk</option>
+                            {folderOptions.map(({ path, label }) => (
+                                <option key={path} value={`folder:${path}`}>
+                                    {label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 text-xs text-muted-foreground">
+                        <span>Updated on or after</span>
+                        <input
+                            aria-label="Updated on or after"
+                            type="date"
+                            value={filters.updatedAfter}
+                            onChange={(event) =>
+                                setFilters((current) => ({ ...current, updatedAfter: event.target.value }))
+                            }
+                            className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                    </label>
+                    <label className="space-y-1 text-xs text-muted-foreground">
+                        <span>Updated through</span>
+                        <input
+                            aria-label="Updated through"
+                            type="date"
+                            value={filters.updatedBefore}
+                            onChange={(event) =>
+                                setFilters((current) => ({ ...current, updatedBefore: event.target.value }))
+                            }
+                            className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                    </label>
+                </fieldset>
+                {filterError && (
+                    <p role="alert" className="text-xs text-danger">
+                        {filterError}
+                    </p>
+                )}
+                {activeFilterCount > 0 && (
+                    <div className="space-y-2" aria-label="Active search filters">
+                        <div className="flex flex-wrap gap-1.5">
+                            {getNoteSearchFilterLabels(filters).map(({ key, label }) => (
+                                <span
+                                    key={key}
+                                    className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2 py-1 text-[11px] text-foreground"
+                                >
+                                    <span className="truncate">{label}</span>
+                                    <button
+                                        type="button"
+                                        aria-label={`Remove ${label} filter`}
+                                        onClick={() => removeFilter(key)}
+                                        className="rounded-full px-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                size="small"
+                                theme="ghost-muted"
+                                disabled={saving}
+                                onClick={() => {
+                                    setFilters(EMPTY_NOTE_SEARCH_FILTERS);
+                                    setShowSaveForm(false);
+                                    setSaveError(null);
+                                    searchInput.current?.focus();
+                                }}
+                            >
+                                Reset filters
+                            </Button>
+                            <Button
+                                ref={saveButton}
+                                type="button"
+                                size="small"
+                                theme="muted"
+                                disabled={saving || Boolean(filterError)}
+                                aria-expanded={showSaveForm}
+                                onClick={() => setShowSaveForm(true)}
+                            >
+                                Save as View
+                            </Button>
+                        </div>
+                        {showSaveForm && (
+                            <form onSubmit={saveAsView} className="space-y-2 rounded-md border border-border/60 p-2">
+                                <Input
+                                    ref={focusSaveTitle}
+                                    id="search-view-title"
+                                    title="View title"
+                                    value={saveTitle}
+                                    onChange={(event) => setSaveTitle(event.target.value)}
+                                    placeholder="e.g. Project reading"
+                                    required
+                                    disabled={saving}
+                                />
+                                <p className="text-[11px] leading-4 text-muted-foreground">
+                                    Saves all selected tags, note type, location, and updated dates. Results update as
+                                    your notes change.
+                                </p>
+                                {hasTextSearch && (
+                                    <div className="space-y-2">
+                                        <output className="block text-xs text-muted-foreground">
+                                            Views preserve filters only. Clear text search before saving to keep the
+                                            same results.
+                                        </output>
+                                        <Button
+                                            type="button"
+                                            size="small"
+                                            theme="muted"
+                                            onClick={() => layoutDispatch.setSearch("")}
+                                        >
+                                            Clear text search and keep filters
+                                        </Button>
+                                    </div>
+                                )}
+                                {saveError && (
+                                    <p role="alert" className="text-xs text-danger">
+                                        {saveError}
+                                    </p>
+                                )}
+                                <div className="flex flex-wrap justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        size="small"
+                                        theme="ghost-muted"
+                                        disabled={saving}
+                                        onClick={closeSaveForm}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        size="small"
+                                        theme="primary"
+                                        disabled={!saveTitle.trim() || saving || hasTextSearch || Boolean(filterError)}
+                                    >
+                                        {saving ? "Saving…" : "Create View"}
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                )}
                 <Button
                     type="button"
                     size="small"
@@ -77,10 +381,10 @@ export const SearchPane = () => {
                     <kbd className="ml-auto text-[10px] text-muted-foreground">{mapShortcutOS("mod+f")}</kbd>
                 </Button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+            <div className="px-2 pb-4">
                 <div className="mb-2 flex items-center justify-between px-2 font-medium uppercase text-[10px] tracking-[0.1em] text-muted-foreground">
-                    <span>All notes</span>
-                    <span>{filteredNotes.length}</span>
+                    <span>{activeFilterCount || hasTextSearch ? "Matching notes" : "All notes"}</span>
+                    <span aria-live="polite">{filteredNotes.length}</span>
                 </div>
                 {globalState.notes.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
@@ -103,11 +407,11 @@ export const SearchPane = () => {
                     <div className="px-4 py-8 text-center">
                         <p className="text-sm font-medium text-foreground">No notes match</p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            Search checks titles, content, tags, and paths.
+                            Adjust or reset the filters to broaden this search.
                         </p>
                     </div>
                 ) : (
-                    <ul className="space-y-0.5">
+                    <ul aria-label="Search results" className="space-y-0.5">
                         {filteredNotes.map((note, index) => {
                             const location = getSearchResultLocation(note.filePath, workspaceDirectory);
                             const selected = index === selectedIndex;
@@ -143,6 +447,6 @@ export const SearchPane = () => {
                     </ul>
                 )}
             </div>
-        </div>
+        </section>
     );
 };
