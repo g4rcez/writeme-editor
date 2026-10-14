@@ -131,6 +131,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/markdown-tables
+            - name: Verify task board initialization and filter recovery
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/task-note.spec.ts
+                  tests/e2e/task-filter-recovery.spec.ts --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/task-board
             - name: Verify handwriting production and offline persistence
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.platform }}
