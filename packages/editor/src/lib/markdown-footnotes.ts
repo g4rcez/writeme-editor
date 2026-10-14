@@ -26,7 +26,10 @@ export function configureFootnoteMarkdown(markdown: Marked): void {
                         }
                         if (!/^(?: {4}|\t)/.test(line)) break;
                         raw += blanks + line;
-                        body += "\n" + blanks + line.replace(/^(?: {4}|\t)/, "").replace(/\n$/, "");
+                        body +=
+                            "\n" +
+                            blanks.replace(/^(?: {4}|\t)/gm, "") +
+                            line.replace(/^(?: {4}|\t)/, "").replace(/\n$/, "");
                         blanks = "";
                     }
                     return {
@@ -52,6 +55,12 @@ export function configureFootnoteMarkdown(markdown: Marked): void {
                 tokenizer(source: string) {
                     const match = source.match(/^\[\^([^\s[\]\\]+)\]/);
                     if (!match) return undefined;
+                    const tokenizer = this.lexer.options.tokenizer;
+                    if (
+                        tokenizer?.link(source)?.type === "link" ||
+                        tokenizer?.reflink(source, this.lexer.tokens.links)?.type === "link"
+                    )
+                        return undefined;
                     return { type: "footnote_reference", raw: match[0], id: match[1] ?? "" };
                 },
                 renderer(token) {

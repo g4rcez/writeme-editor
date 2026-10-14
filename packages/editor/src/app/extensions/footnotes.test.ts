@@ -1,8 +1,14 @@
 import { Editor } from "@tiptap/core";
-import type { Node } from "@tiptap/pm/model";
-import { describe, expect, it } from "vitest";
+import Document from "@tiptap/extension-document";
+import Paragraph from "@tiptap/extension-paragraph";
+import Text from "@tiptap/extension-text";
+import { Node } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
+import { describe, expect, it, vi } from "vitest";
+import { applyMarkdownWorkerChunk } from "@/lib/markdown-worker/ingest";
+import { processMarkdown, splitIntoChunks } from "@/lib/markdown-worker/markdown.worker";
 import { createExtensions } from "../extensions";
-import { navigateToDefinition, returnToReference } from "./footnotes";
+import { FootnoteDefinition, FootnoteReference, Footnotes, navigateToDefinition, returnToReference } from "./footnotes";
 
 function createEditor(content: string): Editor {
     return new Editor({ extensions: createExtensions(() => "github-dark"), content });
@@ -17,6 +23,102 @@ function positions(editor: Editor, name: string): { node: Node; position: number
 }
 
 describe("Markdown footnotes", () => {
+    it.each([false, true])("preserves literal code in first and later worker chunks (later: %s)", (later) => {
+        const body =
+            "Body [^a].\n\n[^a]: Source\n\n    ```text\n    first line\n    \n    **keep literal**\n    ```\n\nAfterwards.";
+        const markdown = later ? "Context\n\n".repeat(220) + body : body + "\n\n" + "Context ".repeat(6500);
+        const direct = createEditor(markdown);
+        const editor = createEditor("");
+        try {
+            const chunks = splitIntoChunks(markdown);
+            expect(chunks.length).toBe(later ? 2 : 1);
+            chunks.forEach((chunk, index) => applyMarkdownWorkerChunk(editor, processMarkdown(chunk), index === 0));
+            expect(positions(editor, "codeBlock")[0]?.node.textContent).toBe("first line\n\n**keep literal**");
+            expect(editor.getJSON()).toEqual(direct.getJSON());
+            const document = editor.getJSON();
+            editor.commands.setContent(editor.getMarkdown());
+            expect(editor.getJSON()).toEqual(document);
+        } finally {
+            editor.destroy();
+            direct.destroy();
+        }
+    });
+
+    it("preserves pipe IDs, full table cells and clipboard Markdown across reloads", () => {
+        const editor = createEditor("| Claim |\n| --- |\n| A [^a\\|b]. |\n\n[^a|b]: **Source**\n\nAfterwards.");
+        try {
+            const document = editor.getJSON();
+            for (let i = 0; i < 3; i++) {
+                expect(positions(editor, "footnoteReference").map(({ node }) => node.attrs.id)).toEqual(["a|b"]);
+                expect(positions(editor, "tableRow").map(({ node }) => node.childCount)).toEqual([1, 1]);
+                expect(positions(editor, "tableCell")[0]?.node.textContent).toBe("A .");
+                expect(editor.getMarkdown()).toContain("| A [^a\\|b]. |");
+                let copied = "";
+                editor.view.someProp("clipboardTextSerializer", (serialize) => {
+                    copied = serialize(editor.state.doc.slice(0, editor.state.doc.content.size), editor.view);
+                    return true;
+                });
+                expect(copied).toContain("[^a\\|b]");
+                editor.commands.setContent(copied);
+                expect(editor.getJSON()).toEqual(document);
+            }
+        } finally {
+            editor.destroy();
+        }
+    });
+
+    it("keeps caret-labelled inline and resolved links distinct from footnotes", () => {
+        const editor = createEditor(
+            "[^manual](https://example.com) [^guide][target] [^real](not a valid link) \\[^literal].\n\n[target]: https://example.org\n\n[^real]: Source\n\nAfterwards.",
+        );
+        try {
+            const document = editor.getJSON();
+            for (let i = 0; i < 3; i++) {
+                expect(positions(editor, "footnoteReference").map(({ node }) => node.attrs.id)).toEqual(["real"]);
+                expect(editor.getHTML()).toContain('href="https://example.com"');
+                expect(editor.getHTML()).toContain(">^manual</a>");
+                expect(editor.getHTML()).toContain(">^guide</a>");
+                expect(editor.state.doc.textContent).toContain("(not a valid link) [^literal].");
+                editor.commands.setContent(editor.getMarkdown());
+                expect(editor.getJSON()).toEqual(document);
+            }
+        } finally {
+            editor.destroy();
+        }
+    });
+
+    it("bounds full-document discovery to one traversal per edit and none for selection or navigation", () => {
+        const content = createEditor(
+            Array.from({ length: 150 }, (_, i) => `Body [^a${i}].\n\n[^a${i}]: Source ${i}`).join("\n\n"),
+        );
+        const editor = new Editor({
+            extensions: [Document, Paragraph, Text, FootnoteReference, FootnoteDefinition, Footnotes],
+            content: content.getJSON(),
+        });
+        const original = Node.prototype.descendants;
+        let traversals = 0;
+        const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function (this: Node, callback) {
+            if (this.type.name === "doc") traversals++;
+            return original.call(this, callback);
+        });
+        try {
+            editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2)));
+            expect(traversals).toBe(0);
+            expect(navigateToDefinition(editor, "a149", 6)).toBe(true);
+            expect(returnToReference(editor)).toBe(true);
+            expect(traversals).toBe(0);
+            editor.view.dispatch(editor.state.tr.insertText("Updated ", 1));
+            expect(traversals).toBe(1);
+            editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2)));
+            expect(traversals).toBe(1);
+            expect(editor.view.dom.querySelector("output")?.textContent).toBe("");
+        } finally {
+            spy.mockRestore();
+            editor.destroy();
+            content.destroy();
+        }
+    });
+
     it("returns to a newly inserted reference after authoring its definition", () => {
         const editor = createEditor("Body");
         try {
@@ -66,12 +168,17 @@ describe("Markdown footnotes", () => {
     });
 
     it("preserves duplicate IDs, missing references and unusual valid IDs", () => {
-        const editor = createEditor("[^missing] [^__proto__] [^same]\n\n[^same]: First\n\n[^same]: Second\n\nAfterwards.");
+        const editor = createEditor(
+            "[^missing] [^__proto__] [^same]\n\n[^same]: First\n\n[^same]: Second\n\nAfterwards.",
+        );
         try {
             const document = editor.getJSON();
             editor.commands.setContent(editor.getMarkdown());
             expect(editor.getJSON()).toEqual(document);
-            expect(positions(editor, "footnoteDefinition").map(({ node }) => node.textContent)).toEqual(["First", "Second"]);
+            expect(positions(editor, "footnoteDefinition").map(({ node }) => node.textContent)).toEqual([
+                "First",
+                "Second",
+            ]);
         } finally {
             editor.destroy();
         }

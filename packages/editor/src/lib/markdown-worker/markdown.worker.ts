@@ -1,15 +1,25 @@
 /// <reference lib="webworker" />
 import { Marked } from "marked";
+import { escapeHtml } from "@/lib/html";
 import { configureMathMarkdown } from "@/lib/latex-markdown";
 import { linkify } from "@/lib/link-utils";
-import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
 import { configureFootnoteMarkdown, footnoteDefinitionStart } from "@/lib/markdown-footnotes";
+import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
 import { dedent } from "./dedent";
 
 const md = new Marked({ gfm: true, breaks: true });
 configureMathMarkdown(md);
 configureHighlightMarkdown(md);
 configureFootnoteMarkdown(md);
+md.use({
+    renderer: {
+        code({ text, lang }) {
+            const language = lang?.split(/\s+/)[0];
+            const className = language ? ` class="language-${escapeHtml(language)}"` : "";
+            return `<pre><code${className}>${escapeHtml(text)}</code></pre>\n`;
+        },
+    },
+});
 
 export function processMarkdown(text: string): string {
     const dedented = dedent(text);
@@ -46,7 +56,8 @@ export function splitIntoChunks(text: string): string[] {
             }
         }
 
-        const isHeadingBoundary = !inFence && !inFootnote && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
+        const isHeadingBoundary =
+            !inFence && !inFootnote && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
 
         if (isHeadingBoundary) {
             chunks.push(currentLines.join("\n"));
