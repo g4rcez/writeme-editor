@@ -11,6 +11,12 @@
 
 ### Bug Fixes
 
+- Protect unsaved source drafts when undoing a note-link repair, and keep clean
+  open-source undo in the editor's normal undo/redo history.
+- Preserve unrelated whitespace and live node attributes during occurrence-local
+  link repairs, with whitespace retained through save/reload and undo/redo.
+- Keep workspace-file mentions out of missing-note actions and preserve literal
+  link labels without overlapping wrapped app URLs.
 - Render uneven-width Markdown tables when opening or pasting notes, including
   large documents, without dropping overflow cells or their formatting.
 - Keep the formatted editor's native caret synchronized with Vim motions so

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Note, NoteType } from "@/store/note";
+import { formatNoteMention } from "./markdown-links";
+import { repairedMarkdown } from "./note-link-repair";
 import {
     extractNoteLinkReferences,
     findIncomingNoteLinks,
@@ -12,6 +14,43 @@ const makeNote = (id: string, title: string, content = "", filePath?: string): N
     Note.parse({ id, title, content, filePath });
 
 describe("note link resolution", () => {
+    it("gives complete marked app links precedence without hiding separate bare URLs", () => {
+        const wrapped = '[Old name](app://note/deleted "writeme-mention:deleted")';
+        const content = `${wrapped} and app://note/other`;
+        const references = extractNoteLinkReferences(content).sort((a, b) => a.from - b.from);
+        expect(references.map(({ raw, label }) => [raw, label])).toEqual([
+            [wrapped, "Old name"],
+            ["app://note/other", "other"],
+        ]);
+        expect(references[0]!.to).toBeLessThan(references[1]!.from);
+    });
+    it.each([
+        ["API_v2", "API_v2"],
+        [String.raw`bracket \[one\] and \*star\*`, "bracket [one] and *star*"],
+    ])("retains literal labels through repeated raw repairs: %s", (label, visible) => {
+        const link = `[${label}](app://note/deleted "writeme-mention:deleted")`;
+        let content = `${link} and ${link}\n\nKeep  this`;
+        for (const target of ["first", "second"]) {
+            const reference = extractNoteLinkReferences(content).find(({ target }) => target === "deleted")!;
+            expect(reference.label).toBe(visible);
+            const before = content;
+            content = repairedMarkdown(content, {
+                expectedContent: content,
+                from: reference.from,
+                to: reference.to,
+                replacement: formatNoteMention(target, reference.label),
+            })!;
+            expect(content).toBe(
+                before.slice(0, reference.from) + formatNoteMention(target, visible) + before.slice(reference.to),
+            );
+            expect(
+                extractNoteLinkReferences(content)
+                    .filter(({ target }) => target !== "deleted")
+                    .map(({ label }) => label),
+            ).toEqual(target === "first" ? [visible] : [visible, visible]);
+            expect(content).toContain("Keep  this");
+        }
+    });
     it("preserves styled Markdown labels, escaped identities, titles and subpaths", () => {
         const [styled, marked] = extractNoteLinkReferences(
             '[**Visible**](app://note/missing#section "tooltip") [Marked](/note/unused "writeme-mention:a\\\"b")',

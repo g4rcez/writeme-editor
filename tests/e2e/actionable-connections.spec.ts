@@ -346,6 +346,154 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     });
 }
 
+for (const mode of ["Formatted", "Markdown"] as const) {
+    test(`rejects Undo link without overwriting a newly opened unsaved ${mode} draft`, async ({ cleanPage: page }) => {
+        await page.setViewportSize({ width: 1800, height: 1000 });
+        await goHome(page);
+        const targetUrl = await createNote(page, "Undo target");
+        await createNote(page, "Undo source", "See Undo target.");
+        const source = (await storedNotes(page)).find((note) => note.title === "Undo source")!;
+        await page.goto("/settings/editor");
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings.getByRole("checkbox", { name: "Autosave", exact: true }).uncheck();
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Success", exact: true })
+            .getByRole("button", { name: "OK", exact: true })
+            .click();
+        await page.goto(targetUrl);
+        const context = await openContext(page);
+        await context.getByText("Unlinked mentions", { exact: true }).click();
+        await context.getByRole("button", { name: "Preview link", exact: true }).click();
+        await context.getByRole("button", { name: "Link this mention", exact: true }).click();
+        await expect(context.getByRole("button", { name: "Undo link", exact: true })).toBeVisible();
+        const saved = (await storedNotes(page)).find((note) => note.id === source.id)!;
+        expect(saved.content).toContain("writeme-mention:");
+        await page.getByRole("button", { name: "Open pane mode", exact: true }).click();
+        const second = page.getByRole("region", { name: "Editor group 2", exact: true });
+        await second.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(source.id);
+        const draft = second.getByRole("textbox", {
+            name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
+            exact: true,
+        });
+        await expect(draft).toContainText("Undo target");
+        await draft.focus();
+        await page.keyboard.press("ControlOrMeta+a");
+        await page.keyboard.insertText("My unsaved draft must survive Undo link.");
+        await context.getByRole("button", { name: "Undo link", exact: true }).click();
+        await expect(context.getByRole("status")).toContainText("unsaved changes");
+        await expect(draft).toContainText("My unsaved draft must survive Undo link.");
+        expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
+        await draft.focus();
+        await page.keyboard.press("ControlOrMeta+z");
+        if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
+        else await expect(draft).toContainText("See Undo target.");
+        await context.getByRole("button", { name: "Undo link", exact: true }).click();
+        await expect(context.getByRole("button", { name: "Undo link", exact: true })).toHaveCount(0);
+        await expect(draft).toHaveText(source.content);
+        for (let iteration = 0; iteration < 2; iteration++) {
+            await draft.focus();
+            await page.keyboard.press("ControlOrMeta+z");
+            if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
+            else await expect(draft.locator('[data-type="mention"]')).toHaveCount(1);
+            await page.keyboard.press("ControlOrMeta+Shift+z");
+            await expect(draft).toHaveText(source.content);
+        }
+        expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
+    });
+
+    test(`roundtrips precise repeated repairs in ${mode} without changing literal labels or unrelated whitespace`, async ({
+        cleanPage: page,
+    }) => {
+        test.setTimeout(180_000);
+        await goHome(page);
+        await createNote(page, "Roundtrip target");
+        const sourceUrl = await createNote(page, "Roundtrip source");
+        const source = (await storedNotes(page)).find((note) => note.title === "Roundtrip source")!;
+        const content = [
+            '[README.md](docs/README.md "writeme-mention:file:docs/README.md")',
+            "[API_v2](/note/deleted)",
+            String.raw`[bracket \[one\] and \*star\*](/note/deleted)`,
+            '[Old name](app://note/deleted "writeme-mention:deleted") and app://note/deleted',
+            "[[Missing#Heading|wiki label]] and [[Missing#Heading|wiki label]]",
+            '[**Visible**](app://note/deleted#Heading "tooltip")',
+            "[Reference][ref]\n\n[ref]: app://note/deleted",
+            "Keep  this",
+        ].join("\n\n");
+        await page.goto("/settings/editor");
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Success", exact: true })
+            .getByRole("button", { name: "OK", exact: true })
+            .click();
+        await changeStoredNote(page, source.id, { content });
+        await page.goto(sourceUrl);
+        const editor = page.getByRole("textbox", {
+            name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
+            exact: true,
+        });
+        await expect(editor).toContainText("Keep");
+        await editor.focus();
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.getByRole("status", { name: "Note save status", exact: true })).toHaveText("Saved");
+        if (mode === "Formatted")
+            await expect
+                .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content)
+                .not.toContain("[ref]:");
+        const context = await openContext(page);
+        await context.getByText("Unresolved references", { exact: true }).click();
+        const choose = context.getByRole("button", { name: "Choose existing note", exact: true });
+        await expect(choose).toHaveCount(8);
+        for (let remaining = 7; remaining >= 0; remaining--) {
+            const before = (await storedNotes(page)).find((note) => note.id === source.id)!.content;
+            await choose.first().click();
+            await context.getByLabel("Find a note").fill("Roundtrip target");
+            await context.getByRole("button", { name: /Roundtrip target/ }).click();
+            await expect(context.getByRole("status")).toContainText("Link added");
+            await editor.focus();
+            await page.keyboard.press("ControlOrMeta+s");
+            await expect(choose).toHaveCount(remaining, { timeout: 15_000 });
+            await expect
+                .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {
+                    timeout: 15_000,
+                })
+                .not.toBe(before);
+            const after = (await storedNotes(page)).find((note) => note.id === source.id)!.content;
+            expect(after).toContain("Keep  this");
+            expect(after).toContain("writeme-mention:file:docs/README.md");
+            for (let roundtrip = 0; roundtrip < 2; roundtrip++) {
+                await editor.focus();
+                await page.keyboard.press("ControlOrMeta+z");
+                await page.keyboard.press("ControlOrMeta+s");
+                await expect
+                    .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {
+                        timeout: 15_000,
+                    })
+                    .toBe(before);
+                await page.keyboard.press("ControlOrMeta+Shift+z");
+                await page.keyboard.press("ControlOrMeta+s");
+                await expect
+                    .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {
+                        timeout: 15_000,
+                    })
+                    .toBe(after);
+            }
+        }
+        const after = (await storedNotes(page)).find((note) => note.id === source.id)!.content;
+        await page.reload();
+        await expect(editor).toContainText(mode === "Markdown" ? "API" : "API_v2");
+        if (mode === "Formatted") await expect(editor).toContainText("bracket [one] and *star*");
+        expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(after);
+    });
+}
+
 test("keeps connection controls inside a narrow drawer and supports keyboard preview cancellation", async ({
     cleanPage: page,
 }, testInfo) => {

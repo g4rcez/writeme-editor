@@ -88,7 +88,11 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
                         const html = storage.parser.parse(content);
                         if (dispatch) {
                             const element = elementFromString(html);
-                            const doc = DOMParser.fromSchema(editor.schema).parse(element);
+                            const doc = DOMParser.fromSchema(editor.schema).parse(element, {
+                                preserveWhitespace: "full",
+                                ...editor.options.parseOptions,
+                                ...options?.parseOptions,
+                            });
                             const transaction = tr
                                 .setMeta("preventUpdate", true)
                                 .replaceWith(0, tr.doc.content.size, doc);

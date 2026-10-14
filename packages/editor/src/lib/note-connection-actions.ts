@@ -93,6 +93,25 @@ export async function applyConnectionRepair(repair: ConnectionRepair): Promise<N
 }
 
 export async function undoConnectionRepair(saved: Note, originalContent: string): Promise<void> {
+    const current = await repositories.notes.getOne(saved.id);
+    if (
+        !current ||
+        current.title !== saved.title ||
+        current.content !== saved.content ||
+        current.updatedAt.getTime() !== saved.updatedAt.getTime()
+    )
+        throw new Error("The source note changed after linking. Open it to review your changes.");
+    const result = requestNoteLinkRepair({
+        noteId: saved.id,
+        expectedContent: saved.content,
+        from: 0,
+        to: saved.content.length,
+        replacement: originalContent,
+    });
+    if (result === "conflict") throw new Error("This note has unsaved changes. Save it before undoing the link.");
+    if (result === "unavailable")
+        throw new Error("The source editor is read-only or unavailable. Reopen the note and try again.");
+    if (result === "applied") return;
     const restored = await repositories.notes.updateContentIfUnchanged(saved.id, saved, originalContent);
     if (!restored) throw new Error("The source note changed after linking. Open it to review your changes.");
     await globalDispatch.syncNoteFromRepository(restored);

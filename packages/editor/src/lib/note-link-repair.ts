@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import { closeHistory } from "@tiptap/pm/history";
-import { DOMParser } from "@tiptap/pm/model";
+import { DOMParser, type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { getEditorMarkdown } from "./editor-storage";
 
 export type NoteLinkRepairResult = "applied" | "conflict" | "unavailable";
@@ -67,18 +67,38 @@ export function repairedMarkdown(
     return content.slice(0, request.from) + request.replacement + content.slice(request.to);
 }
 
+function sameDocumentShape(left: ProseMirrorNode, right: ProseMirrorNode): boolean {
+    if (left.type !== right.type || left.text !== right.text || left.childCount < right.childCount) return false;
+    for (let index = 0; index < left.childCount; index++) {
+        const child = left.child(index);
+        if (index < right.childCount) {
+            if (!sameDocumentShape(child, right.child(index))) return false;
+            // The trailing-node extension may append empty paragraphs that Markdown does not serialize.
+        } else if (left.type.name !== "doc" || child.type.name !== "paragraph" || child.content.size !== 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export function repairTiptapLink(editor: Editor, request: NoteLinkRepairRequest): NoteLinkRepairResult {
     if (!editor.isEditable || editor.isDestroyed) return "unavailable";
     const updated = repairedMarkdown(getEditorMarkdown(editor), request);
     if (updated === null) return "conflict";
     const parser = editor.storage.markdown.parser;
     if (!parser) return "unavailable";
-    const container = document.createElement("div");
-    container.innerHTML = parser.parse(updated);
-    const nextDoc = DOMParser.fromSchema(editor.schema).parse(container);
+    const parse = (content: string): ProseMirrorNode => {
+        const container = document.createElement("div");
+        container.innerHTML = parser.parse(content);
+        return DOMParser.fromSchema(editor.schema).parse(container, { preserveWhitespace: "full" });
+    };
     const previous = editor.state.doc;
-    const start = previous.content.findDiffStart(nextDoc.content);
-    const end = previous.content.findDiffEnd(nextDoc.content);
+    const baseline = parse(request.expectedContent);
+    const nextDoc = parse(updated);
+    if (!sameDocumentShape(previous, baseline)) return "unavailable";
+    // Compare equivalent serializations so unrelated live node attributes are not roundtripped.
+    const start = baseline.content.findDiffStart(nextDoc.content);
+    const end = baseline.content.findDiffEnd(nextDoc.content);
     if (start === null || end === null) return "unavailable";
     const overlap = Math.max(0, start - Math.min(end.a, end.b));
     const transaction = closeHistory(editor.state.tr).replace(

@@ -14,6 +14,21 @@ import { Markdown } from "./Markdown";
 import { MarkdownParser } from "./parse/MarkdownParser";
 
 describe("Markdown extension", () => {
+    it.each([undefined, "full", false] as const)("honors setContent whitespace options: %s", (preserveWhitespace) => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            parseOptions: { preserveWhitespace: "full" },
+        });
+        try {
+            editor.commands.setContent(
+                "Keep  this",
+                preserveWhitespace === undefined ? {} : { parseOptions: { preserveWhitespace } },
+            );
+            expect(editor.state.doc.textContent).toBe(preserveWhitespace === false ? "Keep this" : "Keep  this");
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each(["Cost == value", "First\nSecond"])("preserves highlighted text containing %j on reload", (text) => {
         const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
         try {
