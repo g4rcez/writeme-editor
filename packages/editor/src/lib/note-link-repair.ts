@@ -2,12 +2,6 @@ import type { Editor } from "@tiptap/core";
 import { closeHistory } from "@tiptap/pm/history";
 import { DOMParser } from "@tiptap/pm/model";
 import { getEditorMarkdown } from "./editor-storage";
-import { escapeMarkdownLinkLabel } from "./markdown-links";
-
-export function formatNoteMention(id: string, label: string): string {
-    const title = id.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-    return `[${escapeMarkdownLinkLabel(label)}](/note/${encodeURIComponent(id)} "writeme-mention:${title}")`;
-}
 
 export type NoteLinkRepairResult = "applied" | "conflict" | "unavailable";
 

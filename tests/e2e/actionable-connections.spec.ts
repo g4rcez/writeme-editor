@@ -160,6 +160,48 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     });
 }
 
+test("repairs complete Markdown references while preserving labels, titles, anchors and file mentions", async ({
+    cleanPage: page,
+}) => {
+    await goHome(page);
+    await createNote(page, "Markdown target");
+    const sourceUrl = await createNote(page, "Markdown source");
+    const notes = await storedNotes(page);
+    const target = notes.find((note) => note.title === "Markdown target")!;
+    const source = notes.find((note) => note.title === "Markdown source")!;
+    const file = '[README](docs/README.md "writeme-mention:file:docs/README.md")';
+    const content = `${file}\n\n[**Visible**](app://note/missing#section "tooltip") and [Linked][ref]\n\n[ref]: app://note/other`;
+    await page.goto("/settings/editor");
+    const settings = page.getByRole("main", { name: "Settings" });
+    await settings.getByRole("combobox", { name: "Default editor mode", exact: true }).selectOption("markdown");
+    await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+    await page
+        .getByRole("dialog", { name: "Success", exact: true })
+        .getByRole("button", { name: "OK", exact: true })
+        .click();
+    await changeStoredNote(page, source.id, { content });
+    await page.goto(sourceUrl);
+    await expect(page.getByRole("textbox", { name: "Markdown note editor", exact: true })).toContainText(
+        "app://note/missing",
+    );
+    const context = await openContext(page);
+    await context.getByText("Unresolved references", { exact: true }).click();
+    const choose = context.getByRole("button", { name: "Choose existing note", exact: true });
+    await expect(choose).toHaveCount(2);
+    for (const remaining of [1, 0]) {
+        await choose.first().click();
+        await context.getByLabel("Find a note").fill("Markdown target");
+        await context.getByRole("button", { name: /Markdown target/ }).click();
+        await expect(choose).toHaveCount(remaining, { timeout: 15_000 });
+    }
+    const expected = `${file}\n\n[**Visible**](/note/${target.id}#section "tooltip") and [Linked](/note/${target.id})\n\n[ref]: app://note/other`;
+    await expect
+        .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, { timeout: 15_000 })
+        .toBe(expected);
+    await page.reload();
+    expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(expected);
+});
+
 test("previews only unlinked title and alias occurrences from other notes and persists one chosen link", async ({
     cleanPage: page,
 }, testInfo) => {

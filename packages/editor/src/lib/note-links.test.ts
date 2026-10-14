@@ -12,6 +12,34 @@ const makeNote = (id: string, title: string, content = "", filePath?: string): N
     Note.parse({ id, title, content, filePath });
 
 describe("note link resolution", () => {
+    it("preserves styled Markdown labels, escaped identities, titles and subpaths", () => {
+        const [styled, marked] = extractNoteLinkReferences(
+            '[**Visible**](app://note/missing#section "tooltip") [Marked](/note/unused "writeme-mention:a\\\"b")',
+        );
+        expect(styled).toMatchObject({
+            label: "Visible",
+            subpath: "#section",
+            markdown: { label: "**Visible**", title: "tooltip" },
+        });
+        expect(marked).toMatchObject({ target: 'a"b', label: "Marked" });
+    });
+    it("keeps file mentions out of note repairs and uses complete Markdown link occurrences", () => {
+        const source = makeNote(
+            "source",
+            "Source",
+            '[README](docs/README.md "writeme-mention:file:docs/README.md") [Visible](app://note/missing) [Linked][ref]\n\n[ref]: app://note/other',
+        );
+        expect(
+            findUnresolvedNoteLinks(source, [source]).map(({ reference }) => [
+                reference.target,
+                reference.raw,
+                reference.label,
+            ]),
+        ).toEqual([
+            ["missing", "[Visible](app://note/missing)", "Visible"],
+            ["other", "[Linked][ref]", "Linked"],
+        ]);
+    });
     it("does not offer Markdown repairs inside structured notes or LaTeX sources", () => {
         const target = makeNote("target", "Target");
         for (const noteType of [NoteType.json, NoteType.excalidraw, NoteType.freehand, NoteType.pdf]) {

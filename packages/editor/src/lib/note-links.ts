@@ -20,6 +20,8 @@ export type NoteLinkReference = {
     raw: string;
     target: string;
     label: string;
+    subpath?: string;
+    markdown?: { label: string; title?: string | null };
     from: number;
     to: number;
 };
@@ -49,67 +51,90 @@ export type UnlinkedNoteMention = {
 };
 
 const WIKI_LINK_PATTERN = /!?\[\[[^\]\n]+\]\]/g;
-const MENTION_LINK_PATTERN = /\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g;
 const APP_NOTE_LINK_PATTERN = /app:\/\/note\/([^\s<>"')\]]+)/g;
 
 export function extractNoteLinkReferences(content: string): NoteLinkReference[] {
     const searchable = maskMarkdownNonText(content, false);
+    const tree = markdownParser.parse(content);
+    const definitions = new Map<string, { url: string; title?: string | null }>();
+    visit(tree, "definition", (node) => {
+        definitions.set(node.identifier, node);
+    });
+    const protectedRanges: Array<{ from: number; to: number }> = [];
     const references = new Map<string, NoteLinkReference>();
     const add = (reference: NoteLinkReference): void => {
-        references.set(`${reference.kind}:${reference.target}:${reference.from}`, reference);
+        references.set([reference.kind, reference.target, reference.from].join(":"), reference);
     };
 
-    for (const match of searchable.matchAll(MENTION_LINK_PATTERN)) {
-        const raw = match[0];
-        const target = match[2];
-        if (raw && target)
-            add({
-                kind: "id",
-                raw,
-                target,
-                label: match[1] ?? target,
-                from: match.index,
-                to: match.index + raw.length,
-            });
-    }
-
-    for (const match of searchable.matchAll(APP_NOTE_LINK_PATTERN)) {
-        const raw = match[0];
-        const target = match[1];
-        if (raw && target)
-            add({ kind: "id", raw, target, label: target, from: match.index, to: match.index + raw.length });
-    }
-
-    visit(markdownParser.parse(content), "link", (node) => {
-        const target = node.url.match(/^\/note\/([^/?#]+)/)?.[1];
+    visit(tree, (node) => {
+        if (!["link", "linkReference", "image", "imageReference", "definition"].includes(node.type)) return;
         const from = node.position?.start.offset;
         const to = node.position?.end.offset;
-        if (!target || from === undefined || to === undefined || !searchable.slice(from, to).trim()) return;
-        const id = decodeMarkdownFilePath(target);
+        if (from === undefined || to === undefined) return;
+        protectedRanges.push({ from, to });
+        if (node.type !== "link" && node.type !== "linkReference") return;
+        const raw = content.slice(from, to);
+        if (parseObsidianLink(raw) || !searchable.slice(from, to).trim()) return;
+        const destination = node.type === "link" ? node : definitions.get(node.identifier);
+        if (!destination || destination.title?.startsWith("writeme-mention:file:")) return;
+        const markedTarget = destination.title?.startsWith("writeme-mention:")
+            ? destination.title.slice("writeme-mention:".length)
+            : undefined;
+        const pathTarget = destination.url.match(/^(?:\/note\/|app:\/\/note\/)([^/?#]+)/)?.[1];
+        const target = markedTarget ?? (pathTarget ? decodeMarkdownFilePath(pathTarget) : undefined);
+        if (!target) return;
+        const labelFrom = node.children[0]?.position?.start.offset;
+        const labelTo = node.children.at(-1)?.position?.end.offset;
+        const rawLabel = labelFrom !== undefined && labelTo !== undefined ? content.slice(labelFrom, labelTo) : "";
+        let label = "";
+        visit(node, (child) => {
+            if (child.type === "text" || child.type === "inlineCode") label += child.value;
+        });
         add({
             kind: "id",
-            raw: content.slice(from, to),
-            target: id,
-            label: markdownLineToPlainText(content.slice(from, to)),
+            raw,
+            target,
+            label,
             from,
             to,
+            subpath: destination.url.match(/[?#].*$/)?.[0],
+            markdown: markedTarget ? undefined : { label: rawLabel, title: destination.title },
         });
     });
 
-    for (const match of searchable.matchAll(WIKI_LINK_PATTERN)) {
-        const raw = match[0];
-        const link = raw ? parseObsidianLink(raw) : null;
-        if (!raw || !link || !link.target || isAttachmentTarget(link.target)) continue;
-        add({
-            kind: "wiki",
-            raw,
-            target: link.target,
-            label: link.display,
-            from: match.index,
-            to: match.index + raw.length,
-        });
+    const wikiMatches = [...searchable.matchAll(WIKI_LINK_PATTERN)];
+    const wikiRanges = wikiMatches.map((match) => ({ from: match.index, to: match.index + match[0].length }));
+    for (const match of searchable.matchAll(APP_NOTE_LINK_PATTERN)) {
+        const from = match.index;
+        const to = from + match[0].length;
+        if ([...protectedRanges, ...wikiRanges].some((range) => from >= range.from && to <= range.to)) continue;
+        const target = match[1]?.split(/[?#]/)[0];
+        if (target)
+            add({
+                kind: "id",
+                raw: match[0],
+                target: decodeMarkdownFilePath(target),
+                label: target,
+                from,
+                to,
+                subpath: match[0].match(/[?#].*$/)?.[0],
+            });
     }
 
+    for (const match of wikiMatches) {
+        const raw = match[0];
+        const from = match.index;
+        const to = from + raw.length;
+        if (
+            protectedRanges.some(
+                (range) => from >= range.from && to <= range.to && (from !== range.from || to !== range.to),
+            )
+        )
+            continue;
+        const link = parseObsidianLink(raw);
+        if (!link?.target || isAttachmentTarget(link.target)) continue;
+        add({ kind: "wiki", raw, target: link.target, label: link.display, from, to });
+    }
     return [...references.values()];
 }
 

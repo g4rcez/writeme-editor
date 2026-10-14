@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { Dates } from "@/lib/dates";
+import { formatNoteHref, formatNoteMention } from "@/lib/markdown-links";
 import { markdownLineToPlainText } from "@/lib/markdown-text";
 import {
     applyConnectionRepair,
@@ -13,7 +14,6 @@ import {
     undoConnectionRepair,
     type ConnectionRepair,
 } from "@/lib/note-connection-actions";
-import { formatNoteMention } from "@/lib/note-link-repair";
 import {
     findIncomingNoteLinks,
     findUnlinkedNoteMentions,
@@ -202,7 +202,9 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
         const parsed = parseObsidianLink(reference.raw);
         const replacement =
             reference.kind === "id"
-                ? formatNoteMention(target.id, reference.label)
+                ? reference.markdown
+                    ? `[${reference.markdown.label}](${formatNoteHref(target.id, reference.subpath)}${reference.markdown.title ? ` "${reference.markdown.title.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"` : ""})`
+                    : formatNoteMention(target.id, reference.label, reference.subpath)
                 : formatObsidianLink({
                       target: target.id,
                       embed: parsed?.embed,
