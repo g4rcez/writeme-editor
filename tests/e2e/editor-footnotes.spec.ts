@@ -129,7 +129,7 @@ test.describe("footnotes on a narrow touch screen", () => {
         await page.getByRole("button", { name: "Footnote missing", exact: true }).tap();
         await expect(page.getByRole("dialog")).toContainText("is missing.");
     });
-    test("opens a usable preview and navigates with touch", async ({ cleanPage: page }) => {
+    test("opens a usable preview and navigates with touch", async ({ cleanPage: page }, testInfo) => {
         await goHome(page);
         await createNote(page, "Touch footnote");
         await importMarkdown(page, "Body [^touch].\n\n[^touch]: " + "A long source with readable details. ".repeat(12));
@@ -148,7 +148,7 @@ test.describe("footnotes on a narrow touch screen", () => {
         await expect.poll(() => definition.evaluate((element) => element.contains(window.getSelection()?.anchorNode ?? null))).toBe(true);
         await definition.getByRole("button", { name: "Return to reference" }).tap();
         await expect(reference).toBeFocused();
-        await page.screenshot({ path: "artifacts/playwright/osx/browser/footnote-touch.png" });
+        await page.screenshot({ path: testInfo.outputPath("footnote-touch.png") });
     });
 });
 
