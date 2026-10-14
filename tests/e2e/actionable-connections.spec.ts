@@ -194,6 +194,7 @@ test("previews only unlinked title and alias occurrences from other notes and pe
 test("shows distinct choices for ambiguous titles", async ({ cleanPage: page }) => {
     await goHome(page);
     await createNote(page, "Shared");
+    const original = (await storedNotes(page)).find((note) => note.title === "Shared")!;
     await createNote(page, "Other");
     const other = (await storedNotes(page)).find((note) => note.title === "Other")!;
     await changeStoredNote(page, other.id, { title: "Shared" });
@@ -202,14 +203,16 @@ test("shows distinct choices for ambiguous titles", async ({ cleanPage: page }) 
     await context.getByText("Unresolved references", { exact: true }).click();
     await expect(context.getByText("More than one matching note.")).toBeVisible();
     await context.getByRole("button", { name: "Choose existing note", exact: true }).click();
-    const choice = context.locator('button[data-note-id="' + other.id + '"]');
+    const choice = context.locator('button[data-note-id="' + original.id + '"]');
     await expect(choice).toBeVisible();
     await choice.click();
     await expect
         .poll(async () => (await storedNotes(page)).find((note) => note.title === "Ambiguous source")?.content, {
             timeout: 15_000,
         })
-        .toContain(other.id);
+        .toContain(original.id);
+    await page.locator('.ProseMirror [data-type="mention"]').filter({ hasText: "Shared" }).click();
+    await expect(page).toHaveURL(new RegExp("/note/" + original.id + "$"));
 });
 
 test("keeps a newer source edit when a preview is stale and lets the user refresh and retry", async ({

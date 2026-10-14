@@ -12,6 +12,16 @@ export function findCompatibleNote(notes: readonly Note[], target: CompatibleNot
 }
 
 export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNoteTarget | string): Note[] {
+    const idTargets = typeof target === "string" ? [target] : [target.id, target.path, target.target];
+    for (const value of idTargets) {
+        if (!value) continue;
+        const decoded = decodeLookupValue(value);
+        for (const id of [decoded, stripSubpath(decoded), extractNoteIdFromPath(decoded)]) {
+            if (!id) continue;
+            const match = notes.find((note) => note.id === id);
+            if (match) return [match];
+        }
+    }
     const rawValues = getRawTargetValues(target);
     const hasQualifiedTarget = rawValues.some((value) =>
         stripSubpath(decodeLookupValue(value)).replace(/\\/g, "/").includes("/"),

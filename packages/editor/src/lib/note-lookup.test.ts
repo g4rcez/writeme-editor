@@ -12,6 +12,16 @@ function createNote(title: string, filePath: string, metadata = {}) {
 }
 
 describe("findCompatibleNote", () => {
+    it("prefers an explicit note ID over another note with the same display title", () => {
+        const wrong = Note.parse({ id: "wrong", title: "Shared" });
+        const chosen = Note.parse({ id: "chosen", title: "Shared" });
+        expect(findCompatibleNote([wrong, chosen], { id: chosen.id, label: "Shared", path: "/note/chosen" })).toBe(
+            chosen,
+        );
+        const shadow = Note.parse({ id: "shadow", title: chosen.id });
+        expect(findCompatibleNotes([shadow, chosen], chosen.id)).toEqual([chosen]);
+        expect(findCompatibleNotes([shadow, chosen], "/note/chosen")).toEqual([chosen]);
+    });
     it("normalizes vault-root and Windows separators without losing qualified-path precedence", () => {
         const root = createNote("Note", "/vault/Note.md");
         const folder = createNote("Note", "/vault/Folder/Note.md");
