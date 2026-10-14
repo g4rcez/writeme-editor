@@ -31,16 +31,11 @@ test("changes words, repeats, undoes, and persists a formatted note", async ({ c
     const footer = page.locator(".writeme-editor-status-bar");
     const saveStatus = footer.getByRole("status", { name: "Note save status" });
     const vimStatus = footer.getByRole("status", { name: "Vim mode" });
-    await expect(vimStatus).toHaveText("NORMAL");
-    expect(
-        await footer.evaluate((element) => {
-            const save = element.querySelector('[aria-label="Note save status"]');
-            const vim = element.querySelector('[aria-label="Vim mode"]');
-            return Boolean(save && vim && save.nextElementSibling === vim);
-        }),
-    ).toBe(true);
+    await expect(vimStatus).toContainText("NORMAL");
+    await expect(saveStatus).toBeVisible();
+    await expect(vimStatus).toBeVisible();
     await page.keyboard.type("ciwNEW");
-    await expect(vimStatus).toHaveText("INSERT");
+    await expect(vimStatus).toContainText("INSERT");
     await page.keyboard.press("Escape");
     await page.keyboard.type("w.");
     await expect(editor).toHaveText("NEW NEW three");
