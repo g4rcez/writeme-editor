@@ -127,6 +127,7 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     await page.mouse.move(target.x + grab.x - card.x, target.y + grab.y - card.y, { steps: 20 });
     await expect(preview).toBeVisible();
     await expect(destination.getByRole("button", { name: "Drop task here", exact: true })).toBeVisible();
+    await expect(destination).toHaveClass(/wm-task-column--over/);
     expect(await preview.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
     await page.mouse.up();
     await expect(preview).toHaveCount(0);
