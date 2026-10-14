@@ -17,6 +17,19 @@ function positions(editor: Editor, name: string): { node: Node; position: number
 }
 
 describe("Markdown footnotes", () => {
+    it("returns to a newly inserted reference after authoring its definition", () => {
+        const editor = createEditor("Body");
+        try {
+            editor.commands.setTextSelection(5);
+            editor.commands.insertFootnote();
+            editor.view.dispatch(editor.state.tr.insertText("Source details"));
+            expect(returnToReference(editor)).toBe(true);
+            expect(editor.state.selection.from).toBe(5);
+            expect(editor.getMarkdown()).toContain("[^fn-1]: Source details");
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each([
         "Body [^a].\n\n[^a]: First paragraph.\n\n    Second **bold** paragraph.\n\n    - Item\n        - Nested item\n\nAfterwards.",
         "Body [^a].\n\n[^a]: Paragraph\n\n    > Quote\n    > continued\n\n    ```ts\n    const code = 1;\n    ```\n\nAfterwards.",

@@ -22,6 +22,7 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
 
     const reference = page.getByRole("button", { name: "Footnote fn-1", exact: true });
     await expect(reference).toBeVisible();
+    await expect(editor.locator('[data-footnote-definition="fn-1"]').getByRole("button", { name: "Return to reference" })).toBeEnabled();
     await reference.hover();
     await expect(page.getByRole("dialog")).toContainText("This footnote definition is empty.");
 

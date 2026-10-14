@@ -31,7 +31,9 @@ function navigateToDefinition(editor: Editor, id: string, from: number): boolean
     });
     if (target === null) return false;
     const position = target;
-    editor.storage.footnotes.returnPositions.push(from);
+    if (editor.storage.footnotes.returnPositions.at(-1) !== from) {
+        editor.storage.footnotes.returnPositions.push(from);
+    }
     editor.view.dispatch(editor.state.tr.setSelection(TextSelection.near(editor.state.doc.resolve(position))));
     editor.view.focus();
     scrollToPosition(editor, position);
@@ -235,6 +237,10 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
             .map((position) => transaction.mapping.mapResult(position))
             .filter((result) => !result.deleted && transaction.doc.nodeAt(result.pos)?.type.name === "footnoteReference")
             .map((result) => result.pos);
+        const returnPosition: unknown = transaction.getMeta("footnoteReturnPosition");
+        if (typeof returnPosition === "number" && transaction.doc.nodeAt(returnPosition)?.type.name === "footnoteReference") {
+            this.storage.returnPositions.push(returnPosition);
+        }
     },
     addCommands() {
         return {
@@ -264,6 +270,7 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
                         const definitionPosition = tr.doc.content.size;
                         tr.insert(definitionPosition, definition);
                         tr.setSelection(TextSelection.create(tr.doc, definitionPosition + 2));
+                        tr.setMeta("footnoteReturnPosition", to);
                         tr.scrollIntoView();
                     }
                     return true;
