@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Note } from "../../packages/editor/src/store/note";
+import { Note } from "../../packages/editor/src/store/note";
 import { createNote } from "../e2e/fixtures";
 import { addNoteComment, selectCommentWords } from "../helpers/comments";
 
@@ -13,6 +13,7 @@ for (const filesystem of [false, true]) {
         const directory = await mkdtemp(path.join(tmpdir(), "writeme-comments-native-"));
         const folder = path.join(directory, "workspace", "plans");
         await mkdir(folder, { recursive: true });
+        if (filesystem) await writeFile(path.join(folder, "advisor.md"), "Review native sentence.\n");
         const bootstrap = path.join(directory, "bootstrap.cjs");
         const resources = process.platform === "darwin" ? "writeme.app/Contents/Resources" : "resources";
         const entry =
@@ -39,7 +40,10 @@ for (const filesystem of [false, true]) {
                 await application.evaluate(({ dialog }, folder) => {
                     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });
                 }, folder);
-                await page.evaluate(async () => {
+                const source = Note.new("advisor", "Review native sentence.\n");
+                source.filePath = path.join(folder, "advisor.md");
+                source.lastSynced = new Date();
+                await page.evaluate(async (source) => {
                     const selected = await window.electronAPI.fs.chooseDirectory();
                     await window.electronAPI.db.save("settings", {
                         id: "directory",
@@ -49,10 +53,18 @@ for (const filesystem of [false, true]) {
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     });
-                });
+                    await window.electronAPI.db.save("notes", source);
+                }, source);
                 await page.reload();
             }
-            await createNote(page, "advisor", "Review native sentence.");
+            if (filesystem) {
+                await page.getByRole("main").getByText("advisor", { exact: true }).click();
+                await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText(
+                    "Review native sentence.",
+                );
+            } else {
+                await createNote(page, "advisor", "Review native sentence.");
+            }
             await selectCommentWords(page, "Review native sentence.");
             await addNoteComment(page, "Native first comment");
             const panel = page.getByRole("complementary", { name: "Sentence comments" });
@@ -63,18 +75,35 @@ for (const filesystem of [false, true]) {
                 2,
             );
             await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
+            await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+            await expect(panel).toContainText("Status: resolved");
             await page.reload();
             await page
                 .getByRole("textbox", { name: "Note editor", exact: true })
                 .getByRole("link", { name: "Review native sentence." })
                 .click();
             await expect(panel).toContainText("Native reply");
+            await expect(panel).toContainText("Status: resolved");
             if (filesystem) {
                 expect(await readFile(path.join(folder, "comments_advisor.md"), "utf8")).toContain("- Native reply");
                 expect(await readFile(path.join(folder, "advisor.md"), "utf8")).toContain(
                     "[==Review native sentence.==](./comments_advisor.md#review-native-sentence)",
                 );
+                const referencePath = path.join(folder, "comments_advisor.md");
+                const content = await readFile(referencePath, "utf8");
+                expect(content).toContain("writeme-comment-status: resolved");
+                await writeFile(referencePath, content.replace("status: resolved", "status: unresolved"));
+                await page.reload();
+                await page
+                    .getByRole("textbox", { name: "Note editor", exact: true })
+                    .getByRole("link", { name: "Review native sentence." })
+                    .click();
+                await expect(panel).toContainText("Status: unresolved");
+                await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+                await expect(panel).toContainText("Status: resolved");
             }
+            await panel.getByRole("button", { name: "Reopen", exact: true }).click();
+            await expect(panel).toContainText("Status: unresolved");
             await page.evaluate(async () => {
                 const notes = await window.electronAPI.db.getAll("notes");
                 const source = notes.find((note: Note) => !note.metadata?.commentSourceId);
@@ -98,6 +127,15 @@ for (const filesystem of [false, true]) {
                 .getByRole("link", { name: "Review native sentence." })
                 .click();
             await expect(panel).toContainText("Native reply");
+            await expect(panel).toContainText("Status: unresolved");
+            await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+            await expect(panel).toContainText("Status: resolved");
+            await page.reload();
+            await page
+                .getByRole("textbox", { name: "Note editor", exact: true })
+                .getByRole("link", { name: "Review native sentence." })
+                .click();
+            await expect(panel).toContainText("Status: resolved");
             await page.screenshot({ path: testInfo.outputPath("native-comments.png") });
         } finally {
             await application.close();

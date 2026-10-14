@@ -4,7 +4,9 @@ import {
     getCommentCompanion,
     getCommentReferenceHref,
     parseCommentThreads,
+    setCommentThreadStatus,
     uniqueCommentId,
+    type CommentStatus,
 } from "@/lib/note-comments";
 import { Note } from "../../note";
 import {
@@ -148,5 +150,38 @@ export async function saveBrowserNoteComment(
         const snapshot = appendNoteSnapshot(latest ? [latest] : [], note.id, content, note.updatedAt)[0];
         if (snapshot && snapshot.id !== latest?.id) await db.noteHistory.add(snapshot);
         return { note, id, source: sourceNote, href };
+    });
+}
+export async function setBrowserCommentStatus(
+    source: Note,
+    threadId: string,
+    status: CommentStatus,
+    operationId: string,
+): Promise<Note> {
+    return db.transaction("rw", [db.notes, db.comments, db.noteHistory], async () => {
+        const currentSource = await db.notes.get(source.id);
+        if (!currentSource || currentSource.deletedAt)
+            throw new Error("The source note was deleted. Restore it before updating comments.");
+        const existing = await findCommentNote(Note.parse(currentSource));
+        if (!existing || existing.deletedAt) throw new Error("The comments note is no longer available.");
+        const content = setCommentThreadStatus(existing.content, threadId, status, operationId);
+        if (content === existing.content) return existing;
+        const author = SettingsService.load().defaultAuthor;
+        const note = Note.parse({
+            ...existing,
+            content,
+            updatedAt: new Date(),
+            updatedBy: author,
+            fileSize: content.length,
+        });
+        await db.notes.put(note);
+        await syncCommentThreads(note);
+        const latest = await db.noteHistory
+            .where("[noteId+createdAt]")
+            .between([note.id, Dexie.minKey], [note.id, Dexie.maxKey])
+            .last();
+        const snapshot = appendNoteSnapshot(latest ? [latest] : [], note.id, content, note.updatedAt)[0];
+        if (snapshot && snapshot.id !== latest?.id) await db.noteHistory.add(snapshot);
+        return note;
     });
 }

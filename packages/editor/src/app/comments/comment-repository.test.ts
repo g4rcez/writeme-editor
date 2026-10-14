@@ -25,7 +25,7 @@ vi.mock("@/store/repositories", () => ({
 vi.mock("@/store/settings", () => ({ SettingsService: { load: () => ({ directory: "/workspace" }) } }));
 vi.mock("@/lib/storage-mode", () => ({ getStorageMode: () => mocks.storageMode }));
 vi.mock("@/lib/is-electron", () => ({ isElectron: () => true }));
-import { loadCommentNote, saveNoteComment } from "./comment-repository";
+import { loadCommentNote, saveNoteComment, setNoteCommentStatus } from "./comment-repository";
 
 beforeEach(() => {
     vi.resetAllMocks();
@@ -53,6 +53,50 @@ const source = (): Note =>
     Note.parse({ ...Note.new("Advisor", "Some words."), filePath: "/workspace/plans/advisor.md" });
 
 describe("comment persistence", () => {
+    it("recovers a status file write after a metadata failure without replaying an old event", async () => {
+        const original = source();
+        let reference = Note.parse({
+            ...Note.new("comments_advisor", "## words\n\n> Words\n\n- First\n"),
+            filePath: "/workspace/plans/comments_advisor.md",
+            metadata: { commentSourceId: original.id },
+        });
+        mocks.getAll.mockImplementation(async () => [original, reference]);
+        mocks.getOne.mockImplementation(async (id: string) => (id === original.id ? original : reference));
+        mocks.update.mockImplementationOnce(async (_id: string, _expected: unknown, content: string) => {
+            reference = Note.parse({ ...reference, content });
+            throw new Error("Metadata failed after file write");
+        });
+        await expect(setNoteCommentStatus(original, "words", "resolved", "partial-resolve")).rejects.toThrow(
+            "Metadata failed",
+        );
+        mocks.update.mockImplementation(async (_id: string, _expected: unknown, content: string) => {
+            reference = Note.parse({ ...reference, content });
+            return reference;
+        });
+        await setNoteCommentStatus(original, "words", "unresolved", "newer-reopen");
+        const recovered = await setNoteCommentStatus(original, "words", "resolved", "partial-resolve");
+        expect(parseCommentThreads(recovered.content)[0]).toMatchObject({ status: "unresolved", comments: ["First"] });
+        expect(parseCommentThreads(recovered.content)[0]?.history).toHaveLength(2);
+        expect(mocks.update).toHaveBeenCalledTimes(2);
+    });
+
+    it("rejects stale status writes and deleted sources", async () => {
+        const original = source();
+        const reference = Note.parse({
+            ...Note.new("comments_advisor", "## words\n\n- First\n"),
+            metadata: { commentSourceId: original.id },
+        });
+        mocks.getAll.mockResolvedValue([reference]);
+        mocks.getOne.mockImplementation(async (id: string) => (id === original.id ? original : reference));
+        mocks.update.mockResolvedValue(null);
+        await expect(setNoteCommentStatus(original, "words", "resolved", "stale-resolve")).rejects.toThrow(
+            "comments note changed",
+        );
+        mocks.getOne.mockResolvedValue(null);
+        await expect(setNoteCommentStatus(original, "words", "resolved", "deleted-resolve")).rejects.toThrow(
+            "source note was deleted",
+        );
+    });
     it("uses the desktop notes repository when no folder is configured", async () => {
         mocks.storageMode = "indexeddb";
         const result = await saveNoteComment(Note.new("Advisor", "Some words."), "Some words.", "Comment", null, []);

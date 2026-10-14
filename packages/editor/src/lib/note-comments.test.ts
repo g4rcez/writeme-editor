@@ -6,6 +6,7 @@ import {
     getCommentCompanion,
     getCommentId,
     parseCommentThreads,
+    setCommentThreadStatus,
     uniqueCommentId,
 } from "./note-comments";
 
@@ -39,8 +40,20 @@ describe("note comments", () => {
         content = appendNoteComment(content, "second-sentence", "Second sentence.", "Another thread");
         content = appendNoteComment(content, "first-sentence", "First sentence.", "Reply");
         expect(parseCommentThreads(content)).toEqual([
-            { id: "first-sentence", quote: "First sentence.", comments: ["First comment\nMore details", "Reply"] },
-            { id: "second-sentence", quote: "Second sentence.", comments: ["Another thread"] },
+            {
+                id: "first-sentence",
+                quote: "First sentence.",
+                comments: ["First comment\nMore details", "Reply"],
+                status: "unresolved",
+                history: [],
+            },
+            {
+                id: "second-sentence",
+                quote: "Second sentence.",
+                comments: ["Another thread"],
+                status: "unresolved",
+                history: [],
+            },
         ]);
         expect(content.match(/## first-sentence/g)).toHaveLength(1);
     });
@@ -54,10 +67,85 @@ describe("note comments", () => {
         expect(updated).toContain("## not-a-thread");
     });
 
+    it("defaults older threads to unresolved and persists idempotent status history", () => {
+        const legacy = "## words\n\n> Words\n\n- First\n";
+        const resolved = setCommentThreadStatus(legacy, "words", "resolved", "resolve-1", "2026-10-14T12:00:00.000Z");
+        expect(parseCommentThreads(resolved)[0]).toEqual({
+            id: "words",
+            quote: "Words",
+            comments: ["First"],
+            status: "resolved",
+            history: [{ operationId: "resolve-1", status: "resolved", at: "2026-10-14T12:00:00.000Z" }],
+        });
+        expect(setCommentThreadStatus(resolved, "words", "resolved", "resolve-1")).toBe(resolved);
+        const reopened = setCommentThreadStatus(
+            resolved,
+            "words",
+            "unresolved",
+            "reopen-1",
+            "2026-10-14T12:01:00.000Z",
+        );
+        expect(parseCommentThreads(reopened)[0]).toMatchObject({
+            comments: ["First"],
+            status: "unresolved",
+            history: [
+                { operationId: "resolve-1", status: "resolved" },
+                { operationId: "reopen-1", status: "unresolved" },
+            ],
+        });
+        expect(() => setCommentThreadStatus(reopened, "missing", "resolved", "missing-1")).toThrow(
+            "This comment thread no longer exists.",
+        );
+    });
+
     it("combines repeated sections with the same sentence ID without losing replies", () => {
         expect(parseCommentThreads("## words\n\n> Words\n\n- First\n\n## words\n\n> Words\n\n- Second\n")).toEqual([
-            { id: "words", quote: "Words", comments: ["First", "Second"] },
+            { id: "words", quote: "Words", comments: ["First", "Second"], status: "unresolved", history: [] },
         ]);
+    });
+
+    it("updates duplicate sections without treating fenced metadata as status", () => {
+        const content =
+            "## words\n\n> Words\n\n- First\n\n```html\n<!-- writeme-comment-status: unresolved -->\n```\n\n## other\n\n- Other\n\n## words\n\n<!-- writeme-comment-status: unresolved -->\n\n- Second\n";
+        const updated = setCommentThreadStatus(content, "words", "resolved", "resolve-duplicates");
+        expect(updated).toContain("```html\n<!-- writeme-comment-status: unresolved -->\n```");
+        expect(parseCommentThreads(updated)[0]).toMatchObject({
+            status: "resolved",
+            history: [{ operationId: "resolve-duplicates" }],
+        });
+        expect(parseCommentThreads(updated)[0]?.comments).toContain("Second");
+        expect(parseCommentThreads(updated)[1]?.comments).toEqual(["Other"]);
+    });
+
+    it("keeps bounded history, preserves replies, and ignores a replay after newer status", () => {
+        let content = "## words\n\n- First\n";
+        content = setCommentThreadStatus(content, "words", "resolved", "original-resolve");
+        content = appendNoteComment(content, "words", "Words", "New reply");
+        content = setCommentThreadStatus(content, "words", "unresolved", "reopen");
+        expect(setCommentThreadStatus(content, "words", "resolved", "original-resolve")).toBe(content);
+        for (let index = 0; index < 20; index++) {
+            content = setCommentThreadStatus(
+                content,
+                "words",
+                index % 2 === 0 ? "resolved" : "unresolved",
+                `event-${index}`,
+            );
+        }
+        expect(parseCommentThreads(content)[0]).toMatchObject({
+            status: "unresolved",
+            comments: ["First", "New reply"],
+        });
+        expect(parseCommentThreads(content)[0]?.history).toHaveLength(12);
+    });
+
+    it("ignores malformed history while preserving a readable legacy thread", () => {
+        const content =
+            '## words\n\n<!-- writeme-comment-history: {broken} -->\n<!-- writeme-comment-history: {"operationId":1,"status":"resolved","at":null} -->\n\n- First\n';
+        expect(parseCommentThreads(content)[0]).toMatchObject({
+            status: "unresolved",
+            history: [],
+            comments: ["First"],
+        });
     });
 
     it.each(["First paragraph\n\nSecond paragraph", "Example:\n```md\n## Heading\n```", "- Nested bullet\nNext line"])(

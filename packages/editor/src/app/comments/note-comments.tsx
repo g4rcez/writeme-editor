@@ -6,11 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { v7 as uuid } from "uuid";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
-import { getCommentCompanion, getCommentId, parseCommentThreads } from "@/lib/note-comments";
+import { getCommentCompanion, getCommentId, parseCommentThreads, type CommentStatus } from "@/lib/note-comments";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { FormattingToolbar } from "../components/formatting-toolbar";
-import { loadCommentNote, saveNoteComment } from "./comment-repository";
+import { loadCommentNote, saveNoteComment, setNoteCommentStatus } from "./comment-repository";
 
 type Anchor = { id: string; from: number; to: number; text: string };
 type Draft = {
@@ -71,6 +71,10 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const [sourceSavePending, setSourceSavePending] = useState(false);
     const [body, setBody] = useState("");
     const [revision, setRevision] = useState(0);
+    const [unresolvedOnly, setUnresolvedOnly] = useState(false);
+    const [statusBusy, setStatusBusy] = useState(false);
+    const statusBusyRef = useRef(false);
+    const statusOperationRef = useRef<{ threadId: string; status: CommentStatus; id: string } | null>(null);
     const [editorState, setEditorState] = useState(editor.state);
     const panelRef = useRef<HTMLElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -83,9 +87,11 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const anchors = useMemo(() => getCommentAnchors({ state: editorState }, note), [editorState, note]);
     const thread = threads.find((entry) => entry.id === activeId);
     const anchor = anchors.find((entry) => entry.id === activeId);
+    const visibleThreads = unresolvedOnly ? threads.filter((entry) => entry.status === "unresolved") : threads;
+    const unresolvedCount = threads.filter((entry) => entry.status === "unresolved").length;
 
     const close = useCallback((): void => {
-        if (busyRef.current || draftRef.current?.saved) return;
+        if (busyRef.current || statusBusyRef.current || draftRef.current?.saved) return;
         setOpen(false);
         setComposing(false);
         setBody("");
@@ -99,6 +105,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         if (
             readonly ||
             busyRef.current ||
+            statusBusyRef.current ||
             draftRef.current?.saved ||
             editor.isActive("codeBlock") ||
             editor.isActive("code")
@@ -199,7 +206,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             setRevision((value) => value + 1);
         };
         const selection = (): void => {
-            if (draftRef.current || busyRef.current) return;
+            if (draftRef.current || busyRef.current || statusBusyRef.current) return;
             const position = editor.state.selection.from;
             const selected = getCommentAnchors(editor, note).find(
                 (entry) => entry.from <= position && entry.to >= position,
@@ -214,6 +221,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                 !(event instanceof CustomEvent) ||
                 typeof event.detail !== "string" ||
                 busyRef.current ||
+                statusBusyRef.current ||
                 draftRef.current
             )
                 return;
@@ -225,6 +233,13 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             setActiveId(event.detail);
             setOpen(true);
         };
+        const anchorClick = (event: MouseEvent): void => {
+            const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+            const id = getCommentId(link?.getAttribute("href"), note);
+            if (!id) return;
+            event.preventDefault();
+            click(new CustomEvent("writeme:open-comment", { detail: id }));
+        };
         const keydown = (event: KeyboardEvent): void => {
             if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === "m") {
                 event.preventDefault();
@@ -234,11 +249,13 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         editor.on("transaction", update);
         editor.on("selectionUpdate", selection);
         editor.view.dom.addEventListener("writeme:open-comment", click);
+        editor.view.dom.addEventListener("click", anchorClick, true);
         editor.view.dom.addEventListener("keydown", keydown);
         return () => {
             editor.off("transaction", update);
             editor.off("selectionUpdate", selection);
             editor.view.dom.removeEventListener("writeme:open-comment", click);
+            editor.view.dom.removeEventListener("click", anchorClick, true);
             editor.view.dom.removeEventListener("keydown", keydown);
         };
     }, [editor, note, beginComment]);
@@ -371,6 +388,30 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         }
     }
 
+    async function updateStatus(status: CommentStatus): Promise<void> {
+        if (!activeId || statusBusyRef.current || readonly) return;
+        statusBusyRef.current = true;
+        setStatusBusy(true);
+        setError("");
+        const previous = statusOperationRef.current;
+        const operation =
+            previous?.threadId === activeId && previous.status === status
+                ? previous
+                : { threadId: activeId, status, id: uuid() };
+        statusOperationRef.current = operation;
+        try {
+            const updated = await setNoteCommentStatus(note, activeId, status, operation.id);
+            setCompanion(updated);
+            dispatch.syncNoteFromRepository(updated);
+            statusOperationRef.current = null;
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "Could not update comment status.");
+        } finally {
+            statusBusyRef.current = false;
+            setStatusBusy(false);
+        }
+    }
+
     return (
         <>
             <FormattingToolbar editor={editor} onComment={readonly ? undefined : beginComment} />
@@ -392,6 +433,12 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     >
                         Comments ({new Set(anchors.map((entry) => entry.id)).size})
                     </Button>
+                    <span
+                        className="ml-2 text-xs text-muted-foreground"
+                        aria-label={`${unresolvedCount} unresolved comments`}
+                    >
+                        {unresolvedCount} unresolved
+                    </span>
                 </div>
             )}
             {open && (
@@ -400,7 +447,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     id={panelId}
                     tabIndex={-1}
                     aria-label="Sentence comments"
-                    aria-busy={busy || loading}
+                    aria-busy={busy || loading || statusBusy}
                     className="absolute right-2 z-30 max-h-[70vh] w-80 max-w-[calc(100%-1rem)] overflow-auto rounded-card-radius border border-border bg-card-background p-4 text-sm text-foreground shadow-medium print:hidden"
                 >
                     <div className="mb-3 flex items-center justify-between gap-2">
@@ -410,10 +457,24 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                             size="small"
                             className="min-h-11 min-w-11"
                             aria-label="Close comments"
-                            disabled={busy || sourceSavePending}
+                            disabled={busy || statusBusy || sourceSavePending}
                             onClick={close}
                         >
                             Close
+                        </Button>
+                    </div>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                            {visibleThreads.length} of {threads.length} threads
+                        </span>
+                        <Button
+                            type="button"
+                            theme="ghost-muted"
+                            size="small"
+                            aria-pressed={unresolvedOnly}
+                            onClick={() => setUnresolvedOnly((value) => !value)}
+                        >
+                            {unresolvedOnly ? "Show all" : "Unresolved only"} ({unresolvedCount})
                         </Button>
                     </div>
                     {loading && <output>Loading comments…</output>}
@@ -447,31 +508,40 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     )}
                     {!activeId && !composing && (
                         <ul className="flex flex-col gap-2">
-                            {anchors
-                                .filter((entry, index) => anchors.findIndex((other) => other.id === entry.id) === index)
-                                .map((entry) => (
+                            {visibleThreads.map((entry) => {
+                                const anchorEntry = anchors.find((candidate) => candidate.id === entry.id);
+                                return (
                                     <li key={entry.id}>
                                         <button
                                             type="button"
                                             className="min-h-11 w-full rounded-button-radius p-2 text-left hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                                             onClick={() => {
                                                 setActiveId(entry.id);
-                                                editor
-                                                    .chain()
-                                                    .focus()
-                                                    .setTextSelection(entry.from)
-                                                    .scrollIntoView()
-                                                    .run();
+                                                if (anchorEntry)
+                                                    editor
+                                                        .chain()
+                                                        .focus()
+                                                        .setTextSelection(anchorEntry.from)
+                                                        .scrollIntoView()
+                                                        .run();
                                             }}
                                         >
-                                            {entry.text}{" "}
+                                            {anchorEntry?.text || entry.quote || entry.id}{" "}
                                             <span className="text-muted-foreground">
-                                                ({threads.find((item) => item.id === entry.id)?.comments.length ?? 0})
+                                                ({entry.comments.length}) · {entry.status}
                                             </span>
                                         </button>
                                     </li>
-                                ))}
+                                );
+                            })}
                         </ul>
+                    )}
+                    {!loading && !activeId && !composing && visibleThreads.length === 0 && (
+                        <p className="text-muted-foreground">
+                            {unresolvedOnly
+                                ? "No unresolved discussions. Choose Show all to review resolved threads."
+                                : "No discussions yet."}
+                        </p>
                     )}
                     {activeId && (
                         <ol aria-label="Comments on this text" className="flex flex-col gap-3">
@@ -484,6 +554,41 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     )}
                     {activeId && !loading && !thread?.comments.length && (
                         <p className="mb-3 text-muted-foreground">No comments yet.</p>
+                    )}
+                    {activeId && thread && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <output className="text-muted-foreground">Status: {thread.status}</output>
+                            {!readonly && (
+                                <Button
+                                    type="button"
+                                    theme="ghost-muted"
+                                    size="small"
+                                    disabled={busy || statusBusy || composing}
+                                    onClick={() =>
+                                        void updateStatus(thread.status === "resolved" ? "unresolved" : "resolved")
+                                    }
+                                >
+                                    {statusBusy ? "Saving…" : thread.status === "resolved" ? "Reopen" : "Resolve"}
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    {activeId && unresolvedOnly && thread?.status === "resolved" && (
+                        <p className="mt-2 text-muted-foreground">
+                            This resolved thread stays open while you inspect it; unresolved-only filters the list.
+                        </p>
+                    )}
+                    {activeId && !!thread?.history.length && (
+                        <details className="mt-3 text-muted-foreground">
+                            <summary className="cursor-pointer">Review history ({thread.history.length})</summary>
+                            <ol aria-label="Review history" className="mt-2 flex flex-col gap-1">
+                                {thread.history.map((event) => (
+                                    <li key={event.operationId}>
+                                        {event.status === "resolved" ? "Resolved" : "Reopened"}
+                                    </li>
+                                ))}
+                            </ol>
+                        </details>
                     )}
                     {composing ? (
                         <form
@@ -525,6 +630,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                             <Button
                                 theme="ghost-primary"
                                 className="mt-3"
+                                disabled={statusBusy}
                                 onClick={() => {
                                     draftRef.current = {
                                         operationId: uuid(),
@@ -547,7 +653,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                             theme="ghost-muted"
                             size="small"
                             className="mt-3 min-h-11"
-                            disabled={busy}
+                            disabled={busy || statusBusy}
                             onClick={() => navigate(`/note/${savedCompanion.id}`)}
                         >
                             Open comments note

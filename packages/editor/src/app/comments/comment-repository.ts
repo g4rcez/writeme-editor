@@ -5,7 +5,9 @@ import {
     getCommentReferenceHref,
     appendNoteComment,
     parseCommentThreads,
+    setCommentThreadStatus,
     uniqueCommentId,
+    type CommentStatus,
 } from "@/lib/note-comments";
 import { getStorageMode } from "@/lib/storage-mode";
 import { Note } from "@/store/note";
@@ -67,7 +69,7 @@ export async function saveNoteComment(
         return saveBrowserNoteComment(source, quote, body, threadId, usedIds, prepareSource);
     }
     const companion = getCommentCompanion(source);
-    const key = companion.filePath ?? `${source.project}:${companion.title}`;
+    const key = source.id;
     const previous = pending.get(key) ?? Promise.resolve();
     const operation = previous
         .catch(() => undefined)
@@ -143,6 +145,44 @@ export async function saveNoteComment(
             await repositories.notes.save(note);
             if (operationId) incompleteWrites.delete(operationId);
             return { note, id, href: getCommentReferenceHref(note) };
+        });
+    pending.set(key, operation);
+    try {
+        return await operation;
+    } finally {
+        if (pending.get(key) === operation) pending.delete(key);
+    }
+}
+
+export async function setNoteCommentStatus(
+    source: Note,
+    threadId: string,
+    status: CommentStatus,
+    operationId: string,
+): Promise<Note> {
+    if (!isElectron()) {
+        const { setBrowserCommentStatus } = await import("@/store/repositories/browser/comments.repository");
+        return setBrowserCommentStatus(source, threadId, status, operationId);
+    }
+    const key = source.id;
+    const previous = pending.get(key) ?? Promise.resolve();
+    const operation = previous
+        .catch(() => undefined)
+        .then(async () => {
+            const currentSource = await repositories.notes.getOne(source.id);
+            if (!currentSource || currentSource.deletedAt)
+                throw new Error("The source note was deleted. Restore it before updating comments.");
+            const existing = await loadCommentNote(currentSource);
+            if (!existing || existing.deletedAt) throw new Error("The comments note is no longer available.");
+            const content = setCommentThreadStatus(existing.content, threadId, status, operationId);
+            if (content === existing.content) return existing;
+            const updated = await repositories.notes.updateContentIfUnchanged(
+                existing.id,
+                { title: existing.title, updatedAt: existing.updatedAt, content: existing.content },
+                content,
+            );
+            if (!updated) throw new Error("The comments note changed. Reload it before updating the thread.");
+            return updated;
         });
     pending.set(key, operation);
     try {

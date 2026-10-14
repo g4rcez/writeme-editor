@@ -3,6 +3,7 @@ import { DOMParser, Fragment } from "@tiptap/pm/model";
 import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
 import { normalizeMarkdownPaste } from "../../../lib/markdown-paste/normalize-markdown";
+import { CommentReviewMetadata } from "../comment-review-metadata";
 import { MarkdownClipboard } from "./extensions/tiptap/clipboard";
 import { MarkdownTightLists } from "./extensions/tiptap/tight-lists";
 import { MarkdownParser } from "./parse/MarkdownParser";
@@ -187,6 +188,7 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
     },
     addExtensions() {
         return [
+            CommentReviewMetadata,
             MarkdownTightLists.configure({
                 tight: this.options.tightLists,
                 tightClass: this.options.tightListClass,
