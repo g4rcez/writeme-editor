@@ -28,6 +28,9 @@ jobs:
                   packages/editor/src/app/components/freehand-canvas.tsx
                   packages/editor/src/app/components/freehand-note-links.tsx
                   packages/editor/src/app/components/freehand-note-view.tsx
+                  packages/editor/src/app/extensions/collapsible-headings.ts
+                  packages/editor/src/app/extensions/collapsible-headings.test.ts
+                  tests/e2e/collapsible-sections.spec.ts
                   tests/e2e/freehand-note.spec.ts
                   tests/e2e/freehand-production.spec.ts
                   tests/e2e/freehand-lifecycle.spec.ts
@@ -52,6 +55,7 @@ jobs:
               run: >-
                   npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022
                   --module ESNext --moduleResolution bundler --skipLibCheck --allowImportingTsExtensions
+                  tests/e2e/collapsible-sections.spec.ts
                   tests/e2e/freehand-lifecycle.spec.ts
                   tests/e2e/freehand-pens.spec.ts
                   tests/e2e/freehand-pen-dots.spec.ts

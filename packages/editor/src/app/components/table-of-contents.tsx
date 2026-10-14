@@ -3,6 +3,7 @@ import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { REVEAL_HEADING_EVENT } from "@/app/extensions/collapsible-headings";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { NoteToolTooltip } from "./note-tool-tooltip";
 
@@ -14,18 +15,19 @@ type Heading = {
 };
 
 function scrollToHeading(element: HTMLElement, reduceMotion: boolean): void {
+    window.dispatchEvent(new CustomEvent(REVEAL_HEADING_EVENT, { detail: { element } }));
     const container = document.getElementById("main-scroll-container");
     const behavior = reduceMotion ? "auto" : "smooth";
-
-    if (!container) {
-        element.scrollIntoView({ behavior, block: "start" });
-        return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = element.getBoundingClientRect();
-    const targetScrollTop = container.scrollTop + targetRect.top - containerRect.top - 48;
-    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior });
+    requestAnimationFrame(() => {
+        if (!container) {
+            element.scrollIntoView({ behavior, block: "start" });
+            return;
+        }
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = element.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + targetRect.top - containerRect.top - 48;
+        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior });
+    });
 }
 
 export const TableOfContents = () => {

@@ -3,6 +3,7 @@ import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
+import { FOLD_ALL_HEADINGS_EVENT, REVEAL_HEADING_EVENT } from "@/app/extensions/collapsible-headings";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { Dates } from "@/lib/dates";
 import { findIncomingNoteLinks, resolveNoteLinks } from "@/lib/note-links";
@@ -23,7 +24,9 @@ type ContextPaneProps = {
 function readOutline(): OutlineHeading[] {
     const container = document.getElementById("main-scroll-container") ?? document.body;
     return Array.from(
-        container.querySelectorAll<HTMLHeadingElement>(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3"),
+        container.querySelectorAll<HTMLHeadingElement>(
+            ".ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6",
+        ),
     )
         .map((element, index) => ({
             element,
@@ -35,17 +38,19 @@ function readOutline(): OutlineHeading[] {
 }
 
 function scrollToHeading(element: HTMLElement): void {
+    window.dispatchEvent(new CustomEvent(REVEAL_HEADING_EVENT, { detail: { element } }));
     const container = document.getElementById("main-scroll-container");
-    if (!container) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-    }
-
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = element.getBoundingClientRect();
-    const targetScrollTop = container.scrollTop + targetRect.top - containerRect.top - 48;
-    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior });
+    requestAnimationFrame(() => {
+        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        if (!container) {
+            element.scrollIntoView({ behavior, block: "start" });
+            return;
+        }
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = element.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + targetRect.top - containerRect.top - 48;
+        container.scrollTo({ top: Math.max(0, targetScrollTop), behavior });
+    });
 }
 
 function ContextSection({
@@ -117,20 +122,50 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
         <div className="writeme-context-pane-content">
             <ContextSection title="On this page" count={headings.length} open={headings.length > 0}>
                 {headings.length > 0 ? (
-                    <ul className="writeme-context-list">
-                        {headings.map((heading) => (
-                            <li key={`${heading.id}-${heading.text}`}>
-                                <button
-                                    type="button"
-                                    className="writeme-context-list-button"
-                                    style={{ paddingLeft: `${0.625 + Math.max(0, heading.level - 1) * 0.75}rem` }}
-                                    onClick={() => scrollToHeading(heading.element)}
-                                >
-                                    <span className="line-clamp-2">{heading.text}</span>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+                    <>
+                        <div className="flex gap-1 px-2 pb-2">
+                            <button
+                                className="min-h-11 rounded-button-radius px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                onClick={() =>
+                                    window.dispatchEvent(
+                                        new CustomEvent(FOLD_ALL_HEADINGS_EVENT, {
+                                            detail: { collapsed: false, noteId: note.id },
+                                        }),
+                                    )
+                                }
+                                type="button"
+                            >
+                                Expand all
+                            </button>
+                            <button
+                                className="min-h-11 rounded-button-radius px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                onClick={() =>
+                                    window.dispatchEvent(
+                                        new CustomEvent(FOLD_ALL_HEADINGS_EVENT, {
+                                            detail: { collapsed: true, noteId: note.id },
+                                        }),
+                                    )
+                                }
+                                type="button"
+                            >
+                                Collapse all
+                            </button>
+                        </div>
+                        <ul className="writeme-context-list">
+                            {headings.map((heading) => (
+                                <li key={`${heading.id}-${heading.text}`}>
+                                    <button
+                                        type="button"
+                                        className="writeme-context-list-button"
+                                        style={{ paddingLeft: `${0.625 + Math.max(0, heading.level - 1) * 0.75}rem` }}
+                                        onClick={() => scrollToHeading(heading.element)}
+                                    >
+                                        <span className="line-clamp-2">{heading.text}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </>
                 ) : (
                     <p className="writeme-context-empty">Headings will appear here as you structure the note.</p>
                 )}

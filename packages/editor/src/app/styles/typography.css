@@ -69,6 +69,62 @@
     @apply mt-0;
 }
 
+.writeme-heading-fold-control {
+    display: inline-flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    margin-inline-end: 0.35rem;
+    border-radius: var(--var-button-rounded);
+    color: var(--var-color-muted-foreground);
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.writeme-heading-fold-control::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
+    border-inline-end: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.writeme-heading-fold-control[aria-expanded="false"]::before {
+    transform: rotate(-45deg);
+}
+
+.writeme-heading-fold-control:hover {
+    background: var(--var-color-muted);
+    color: var(--var-color-foreground);
+}
+
+.writeme-heading-fold-control:focus-visible {
+    outline: 2px solid var(--var-color-ring);
+    outline-offset: 2px;
+}
+
+.writeme-heading-folded-block {
+    display: none !important;
+}
+
+@media (pointer: coarse) {
+    .writeme-heading-fold-control {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}
+
+@media print {
+    .writeme-heading-folded-block {
+        display: revert !important;
+    }
+    .writeme-heading-fold-control {
+        display: none;
+    }
+}
+
 .writeme-editor-content h1 {
     @apply mt-10 text-3xl font-semibold;
 }
