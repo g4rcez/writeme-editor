@@ -126,6 +126,14 @@ test.describe("Search into saved Views", () => {
         await expect(results).toContainText("Local article");
         await page.getByRole("combobox", { name: "Filter by folder or location" }).selectOption("filesystem");
         await expect(results.getByRole("button")).toHaveCount(4);
+        await page.getByRole("button", { name: "Save as View", exact: true }).click();
+        await page.getByTitle("View title", { exact: true }).fill("Draft View");
+        await page.getByRole("button", { name: "Remove Location: filesystem filter", exact: true }).focus();
+        await page.keyboard.press("Enter");
+        await expect(page.getByTitle("Search notes", { exact: true })).toBeFocused();
+        await expect(page.getByTitle("View title", { exact: true })).toHaveCount(0);
+        await page.getByRole("combobox", { name: "Filter by note type" }).selectOption("read-it-later");
+        await expect(page.getByTitle("View title", { exact: true })).toHaveCount(0);
     });
 
     test("requires clearing free text, persists all filters and title, and includes new matching notes", async ({

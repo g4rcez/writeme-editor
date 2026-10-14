@@ -112,6 +112,8 @@ export const SearchPane = () => {
             if (key === "after") return { ...current, updatedAfter: "" };
             return { ...current, updatedBefore: "" };
         });
+        if (activeFilterCount === 1) setShowSaveForm(false);
+        searchInput.current?.focus();
     };
 
     const saveAsView = async (event: React.FormEvent<HTMLFormElement>) => {
