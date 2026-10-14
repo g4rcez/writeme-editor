@@ -115,13 +115,16 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     await page.keyboard.press("Space");
     await expect(page.getByRole("region", { name: "Todo column" })).toContainText("Keyboard card");
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
+    const destination = page.getByRole("region", { name: "In Progress column" });
+    await destination.scrollIntoViewIfNeeded();
     const from = await handle.boundingBox();
-    const target = await page.getByRole("region", { name: "In Progress column" }).boundingBox();
+    const target = await destination.boundingBox();
     if (!from || !target) throw new Error("Missing drag target");
     await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
     await page.mouse.down();
     await page.mouse.move(target.x + target.width / 2, target.y + 110, { steps: 20 });
     await expect(preview).toBeVisible();
+    await expect(destination).toHaveClass(/wm-task-column--over/);
     expect(await preview.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
     await page.mouse.up();
     await expect(preview).toHaveCount(0);
