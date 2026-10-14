@@ -10,6 +10,10 @@ export type CodeExecutionResult = {
 export const MAX_CODE_RESULT_CHARS = 100_000;
 const MAX_SERIALIZED_RESULT_CHARS = 1_000_000;
 
+export function stripCodeResultMetadata(markdown: string): string {
+    return markdown.replace(/^<!-- writeme-code-result:v1:[A-Za-z0-9_-]+ -->\r?\n/gm, "");
+}
+
 export function validateCodeExecutionResult(value: unknown): value is CodeExecutionResult {
     if (value === null || typeof value !== "object") return false;
     const result = value as Record<string, unknown>;

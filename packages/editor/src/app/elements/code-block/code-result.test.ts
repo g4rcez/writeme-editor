@@ -5,6 +5,7 @@ import {
     fingerprintCode,
     MAX_CODE_RESULT_CHARS,
     parseCodeExecutionResult,
+    stripCodeResultMetadata,
     type CodeExecutionResult,
 } from "./code-result";
 
@@ -18,6 +19,14 @@ const result: CodeExecutionResult = {
 };
 
 describe("kept code execution results", () => {
+    it("omits result metadata from note previews while preserving source and prose", () => {
+        expect(
+            stripCodeResultMetadata(
+                `Intro\n\n<!-- writeme-code-result:v1:${encodeCodeResult(result)} -->\n\`\`\`javascript\n2 + 2\n\`\`\``,
+            ),
+        ).toBe("Intro\n\n```javascript\n2 + 2\n```");
+    });
+
     it("roundtrips Unicode stdout, stderr, language, timestamp, and fingerprint", () => {
         expect(decodeCodeResult(encodeCodeResult(result))).toStrictEqual(result);
         expect(parseCodeExecutionResult(JSON.stringify(result))).toStrictEqual(result);

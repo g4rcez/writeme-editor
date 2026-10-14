@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { NoteWithTags } from "@/app/hooks/use-note-list";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { stripCodeResultMetadata } from "@/app/elements/code-block/code-result";
 import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { notificationRef } from "@/app/notification-ref";
@@ -70,7 +71,9 @@ const NoteItem = ({
                         {note.title || "Untitled"}
                     </h3>
                     <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                        {note.description || note.content.substring(0, 150).replace(/[#*`]/g, "") || "No content"}
+                        {note.description ||
+                            stripCodeResultMetadata(note.content).substring(0, 150).replace(/[#*`]/g, "") ||
+                            "No content"}
                     </p>
                     {note.tags.length > 0 && (
                         <div className="mb-1.5 flex flex-wrap gap-1">

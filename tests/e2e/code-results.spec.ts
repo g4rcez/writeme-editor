@@ -40,6 +40,13 @@ test("keeps only explicit results, survives reload and raw mode, marks edits out
     await expect(result).toContainText("6");
     await expect(result).not.toContainText("Outdated");
     await waitForCodeSave(page);
+    const preview = page
+        .locator('button[aria-current="page"]')
+        .filter({ has: page.locator("h3") })
+        .locator("p")
+        .first();
+    await expect(preview).toContainText("3 + 3");
+    await expect(preview).not.toContainText("writeme-code-result");
     await page.screenshot({ path: testInfo.outputPath("kept-result.png") });
     await block.getByRole("button", { name: "Remove result", exact: true }).click();
     await expect(result).toHaveCount(0);
