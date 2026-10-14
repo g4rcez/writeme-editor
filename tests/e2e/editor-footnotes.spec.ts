@@ -171,3 +171,28 @@ test("imports shared and multiline definitions and keeps rich/raw roundtrips", a
     await expect(editor.getByRole("button", { name: "Footnote cite", exact: true })).toHaveCount(2);
     await expect(editor.locator('[data-footnote-definition="cite"] strong')).toHaveText("formatted");
 });
+
+test("preserves footnotes through the large-document worker and saved reload", async ({ cleanPage: page, context }) => {
+    test.setTimeout(120_000);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await goHome(page);
+    await createNote(page, "Large footnote import");
+    const markdown = "Context ".repeat(6500) + "\n\nBody [^large] and again [^large].\n\n[^large]: A **large-document source**.\n\n    A second definition paragraph.";
+    await page.evaluate((text) => navigator.clipboard.writeText(text), markdown);
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await editor.click();
+    await page.keyboard.press("ControlOrMeta+V");
+    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, { timeout: 60_000 });
+    const definition = editor.locator('[data-footnote-definition="large"]');
+    await expect(definition.locator("strong")).toHaveText("large-document source");
+    await expect(definition.locator("p")).toHaveCount(2);
+    await expect(definition).toContainText("A second definition paragraph.");
+    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", { timeout: 15_000 });
+    await page.reload();
+    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, { timeout: 60_000 });
+    await expect(definition.locator("p")).toHaveCount(2);
+    await page.getByRole("button", { name: "Markdown", exact: true }).click();
+    const rawEditor = page.locator(".cm-content").first();
+    await rawEditor.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");
+    await expect(rawEditor).toContainText("[^large]: A **large-document source**.");
+});

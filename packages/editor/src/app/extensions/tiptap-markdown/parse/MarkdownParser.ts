@@ -1,8 +1,9 @@
 import { Editor } from "@tiptap/core";
-import { Marked, type Tokens } from "marked";
+import { Marked } from "marked";
 import { escapeHtml } from "@/lib/html";
 import { decodeMarkdownFilePath } from "@/lib/markdown-links";
 import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
+import { configureFootnoteMarkdown } from "@/lib/markdown-footnotes";
 import {
     isImageAttachmentTarget,
     isPdfAttachmentTarget,
@@ -125,66 +126,6 @@ const appNoteUrlExtension = {
         },
     ],
 };
-function registerFootnoteMarkdown(marked: Marked): void {
-    marked.use({
-        extensions: [
-            {
-                name: "footnote_definition",
-                level: "block",
-                start(source: string) {
-                    return source.match(/^ {0,3}\[\^[^\]\s\\[]+\]:/m)?.index;
-                },
-                tokenizer(source: string) {
-                    const match = source.match(/^ {0,3}\[\^([^\]\s\\[]+)\]:[ \t]*([^\n]*)(?:\n|$)/);
-                    if (!match) return undefined;
-                    let raw = match[0];
-                    let body = match[2] ?? "";
-                    const lines = source.slice(raw.length).split(/(?<=\n)/);
-                    let blanks = "";
-                    for (const line of lines) {
-                        if (/^[ \t]*\n$/.test(line)) {
-                            blanks += line;
-                            continue;
-                        }
-                        if (!/^(?: {4}|\t)/.test(line)) break;
-                        raw += blanks + line;
-                        body += "\n" + blanks + line.replace(/^(?: {4}|\t)/, "").replace(/\n$/, "");
-                        blanks = "";
-                    }
-                    return {
-                        type: "footnote_definition",
-                        raw,
-                        id: match[1] ?? "",
-                        tokens: this.lexer.blockTokens(body),
-                    };
-                },
-                renderer(token) {
-                    const id = "id" in token && typeof token.id === "string" ? token.id : "";
-                    const body = this.parser.parse((token as Tokens.Generic).tokens ?? []);
-                    return `<section data-footnote-definition="${escapeHtml(id)}">${body || "<p></p>"}</section>\n`;
-                },
-            },
-            {
-                name: "footnote_reference",
-                level: "inline",
-                start(source: string) {
-                    return source.indexOf("[^");
-                },
-                tokenizer(source: string) {
-                    const match = source.match(/^\[\^([^\]\s\\[]+)\]/);
-                    if (!match) return undefined;
-                    return { type: "footnote_reference", raw: match[0], id: match[1] ?? "" };
-                },
-                renderer(token) {
-                    const id = "id" in token && typeof token.id === "string" ? token.id : "";
-                    return `<span data-footnote-reference="${escapeHtml(id)}">[^${escapeHtml(id)}]</span>`;
-                },
-            },
-        ],
-    });
-}
-
-
 export class MarkdownParser {
     editor: Editor | null = null;
     md: Marked | null = null;
@@ -194,7 +135,7 @@ export class MarkdownParser {
         this.md = new Marked({ gfm: true, breaks: breaks ?? true });
         configureHighlightMarkdown(this.md);
         if (editor.extensionManager.extensions.some((extension) => extension.name === "footnoteDefinition")) {
-            registerFootnoteMarkdown(this.md);
+            configureFootnoteMarkdown(this.md);
         }
         this.md.use(appNoteUrlExtension);
         this.md.use({

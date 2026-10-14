@@ -3,11 +3,13 @@ import { Marked } from "marked";
 import { configureMathMarkdown } from "@/lib/latex-markdown";
 import { linkify } from "@/lib/link-utils";
 import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
+import { configureFootnoteMarkdown, footnoteDefinitionStart } from "@/lib/markdown-footnotes";
 import { dedent } from "./dedent";
 
 const md = new Marked({ gfm: true, breaks: true });
 configureMathMarkdown(md);
 configureHighlightMarkdown(md);
+configureFootnoteMarkdown(md);
 
 export function processMarkdown(text: string): string {
     const dedented = dedent(text);
@@ -17,16 +19,22 @@ export function processMarkdown(text: string): string {
 
 const CHUNK_LINES = 200;
 
-function splitIntoChunks(text: string): string[] {
+export function splitIntoChunks(text: string): string[] {
     const lines = text.split("\n");
     if (lines.length <= CHUNK_LINES) return [text];
 
     const chunks: string[] = [];
     let currentLines: string[] = [];
     let inFence = false;
+    let inFootnote = false;
 
     for (const line of lines) {
         const trimmed = line.trimStart();
+
+        if (!inFence) {
+            if (footnoteDefinitionStart.test(line)) inFootnote = true;
+            else if (trimmed && !/^(?: {4}|\t)/.test(line)) inFootnote = false;
+        }
 
         if (!inFence) {
             if (/^(`{3,}|~{3,})/.test(trimmed)) {
@@ -38,7 +46,7 @@ function splitIntoChunks(text: string): string[] {
             }
         }
 
-        const isHeadingBoundary = !inFence && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
+        const isHeadingBoundary = !inFence && !inFootnote && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
 
         if (isHeadingBoundary) {
             chunks.push(currentLines.join("\n"));
@@ -48,7 +56,7 @@ function splitIntoChunks(text: string): string[] {
         currentLines.push(line);
 
         // Force split when no heading found within 2x the chunk size
-        if (!inFence && currentLines.length >= CHUNK_LINES * 2) {
+        if (!inFence && !inFootnote && currentLines.length >= CHUNK_LINES * 2) {
             chunks.push(currentLines.join("\n"));
             currentLines = [];
         }
