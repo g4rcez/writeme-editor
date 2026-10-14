@@ -1,15 +1,8 @@
 import { defineConfig, devices, type PlaywrightTestConfig, type Project } from "@playwright/test";
 import path from "node:path";
-import { matchesProject, suites, type Platform, type Suite } from "./e2e-options.mts";
+import { matchesProject, productionTestPattern, suites, type Platform, type Suite } from "./e2e-options.mts";
 
 const handwriting = ["freehand-note.spec.ts"];
-const production = [
-    "freehand-production.spec.ts",
-    "freehand-lifecycle.spec.ts",
-    "freehand-pens.spec.ts",
-    "freehand-pen-dots.spec.ts",
-];
-const productionOnly = [...production, "note-comments-production.spec.ts", "meeting-note.spec.ts"];
 const root = path.resolve(__dirname, "..");
 
 export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = process.env): PlaywrightTestConfig {
@@ -17,6 +10,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
     if (!suites.includes(suite as Suite)) throw new Error(`Unknown suite: ${suite}`);
     const selected: string[] = env.WRITEME_E2E_PROJECTS ? JSON.parse(env.WRITEME_E2E_PROJECTS) : [];
     const mobile = platform === "ios" || platform === "android";
+    const liveWhisper = env.WRITEME_E2E_LIVE_WHISPER === "1";
     const artifactDirectory = env.PLAYWRIGHT_ARTIFACT_DIR ?? path.join(root, "artifacts/playwright", platform, suite);
     const prebuilt = env.WRITEME_E2E_PREBUILT === "1";
     const port = Number(env.PLAYWRIGHT_PORT ?? (suite === "landing" ? 3100 : suite === "mobile" ? 5188 : 5181));
@@ -45,7 +39,12 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
                 device: deviceName,
                 emulatedDevice: device.isMobile,
             },
-            grepInvert: device.defaultBrowserType === "chromium" ? undefined : /@chromium-input/,
+            grep: suite === "production" ? productionTestPattern : undefined,
+            grepInvert: [
+                ...(device.defaultBrowserType === "chromium" ? [] : [/@chromium-input/]),
+                ...(suite === "browser" ? [/@production-only\b/] : []),
+                ...(liveWhisper ? [] : [/@live-local-whisper\b/]),
+            ],
             use: {
                 ...device,
                 browserName: device.defaultBrowserType,
@@ -81,7 +80,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
 
     if (suite === "browser" || suite === "production") {
         if (mobile) {
-            mobileProjects("e2e", suite === "browser" ? handwriting : production, true);
+            mobileProjects("e2e", suite === "browser" ? handwriting : ["**/freehand-*.spec.ts"], true);
             if (suite === "production") {
                 const drawing = deviceProject(
                     `${platform}-web-drawing`,
@@ -89,23 +88,19 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
                     "mobile",
                     ["excalidraw.spec.ts"],
                 );
+                drawing.grep = undefined;
                 drawing.use = { ...drawing.use, serviceWorkers: "block" };
                 add(drawing);
             }
         } else {
-            const chromium = deviceProject(
-                "chromium",
-                "Desktop Chrome",
-                "e2e",
-                suite === "browser" ? ["*.spec.ts"] : [...productionOnly, "vim-settings.spec.ts"],
-            );
-            if (suite === "browser") chromium.testIgnore = productionOnly;
-            if (suite === "production" && platform === "osx")
-                chromium.testMatch = [
-                    "note-comments-production.spec.ts",
-                    "meeting-note.spec.ts",
-                    "vim-settings.spec.ts",
+            const chromium = deviceProject("chromium", "Desktop Chrome", "e2e", ["**/*.spec.ts"]);
+            if (suite === "browser")
+                chromium.testIgnore = [
+                    "**/*-production.spec.ts",
+                    // This video walkthrough is operator-run, not a regression scenario.
+                    ...(env.RECORD_COMPLETION_DEMO === "1" ? [] : ["**/editor-completion-video.spec.ts"]),
                 ];
+            if (suite === "production" && platform === "osx") chromium.testIgnore = ["**/freehand-*.spec.ts"];
             add(chromium);
             if (platform === "osx")
                 add(
@@ -113,7 +108,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
                         "desktop-macos",
                         "Desktop Safari",
                         "e2e",
-                        suite === "browser" ? handwriting : production,
+                        suite === "browser" ? handwriting : ["**/freehand-*.spec.ts"],
                     ),
                 );
         }
@@ -133,8 +128,8 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
         add({
             name: `native-${platform}`,
             testDir: path.join(root, "tests/native"),
-            testMatch: "*.spec.ts",
-            testIgnore: "build-profiles.spec.ts",
+            testMatch: "**/*.spec.ts",
+            testIgnore: ["**/build-profiles.spec.ts", ...(platform === "osx" ? [] : ["**/application-menu.spec.ts"])],
         });
     } else if (suite === "profiles") {
         const profiles =

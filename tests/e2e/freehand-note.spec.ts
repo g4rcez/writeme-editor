@@ -26,14 +26,20 @@ async function createHandwrittenNote(page: Page): Promise<void> {
     await expect(page.locator(".ProseMirror")).toHaveCount(0);
 }
 
-test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page, browserName, isMobile }) => {
+test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({
+    page,
+    browserName,
+    isMobile,
+}) => {
     test.slow();
     await createHandwrittenNote(page);
     const input = browserName === "webkit" && isMobile ? "dom" : "native";
-    if (input === "dom") test.info().annotations.push({
-        type: "input",
-        description: "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
-    });
+    if (input === "dom")
+        test.info().annotations.push({
+            type: "input",
+            description:
+                "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
+        });
     await expectCanvasZoomWheel(page, input);
 });
 
@@ -150,8 +156,7 @@ async function seedLinkTargets(page: Page): Promise<string> {
         const target = Note.new("Project plan", "# Project plan\n\nLinked reference content.");
         const deleted = Note.new("Deleted target", "");
         deleted.deletedAt = new Date();
-        const foreign = Note.new("Other workspace target", "");
-        foreign.project = "another-workspace";
+        const foreign = Note.parse({ title: "Other workspace target", content: "", project: "another-workspace" });
         const targets = [target, deleted, foreign];
         for (const note of targets) await repositories.notes.save(note);
         return target.id;
@@ -261,7 +266,9 @@ test.describe("sticky note links", () => {
         await page.getByRole("link", { name: "Open note: Project plan", exact: true }).click();
         await expect(page).toHaveURL(new URL(`/note/${targetId}`, sourceUrl).href);
         await expect(page.locator(".ProseMirror").first()).toContainText("Linked reference content.");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await page.goto(sourceUrl);
         await expect(card).toBeVisible();
         await page.evaluate(async (id) => {

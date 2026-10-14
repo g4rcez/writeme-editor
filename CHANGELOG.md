@@ -2,6 +2,10 @@
 
 ### Improvements
 
+- Split CI into a five-minute-target PR gate and full nightly/release verification.
+  Discover browser, production and native regressions automatically, shard browser
+  execution, and replace feature-specific lint/typecheck lists with directory scopes.
+
 - Reorganize Settings around the writer's workflow: writing preferences,
   reusable templates, optional AI assistance, then workspace maintenance.
 - Simplify the settings sidebar and pages with navigation-first grouping,

@@ -14,21 +14,21 @@ Both selections are required. Remaining arguments go to Playwright, including fi
 
 | Suite | Platforms/projects | Existing verification |
 | --- | --- | --- |
-| `browser` | Windows/Linux: `chromium`; OSX: `chromium` and `desktop-macos`; iOS: `ios-phone`, `ipad`; Android: `android-phone`, `android-tablet` | Desktop Chromium runs all `tests/e2e/*.spec.ts` except production-only files below. OSX WebKit and mobile phone/tablet projects run `freehand-note.spec.ts`, preserving portable handwriting and Chromium-only input distinctions. |
-| `production` | Desktop `chromium`, OSX handwriting `desktop-macos`; mobile phone/tablet plus `ios-web-drawing`/`android-web-drawing` | `freehand-production.spec.ts`, `freehand-lifecycle.spec.ts`, `freehand-pens.spec.ts`, `freehand-pen-dots.spec.ts`; desktop Chromium also runs `note-comments-production.spec.ts` and `meeting-note.spec.ts`. Mobile drawing projects run `tests/mobile/excalidraw.spec.ts` against the root web bundle with service workers blocked only for drawing. |
-| `native` | `native-windows`, `native-osx`, `native-linux` | All `tests/native/*.spec.ts` except `build-profiles.spec.ts`: compiled and packaged handwriting/SQLite restarts, meeting microphone/transcript persistence, completion with real workspace files, comments in SQLite and filesystem modes, and macOS application-menu quit. The menu test explicitly skips on other OSes. |
+| `browser` | Windows/Linux: `chromium`; OSX: `chromium` and `desktop-macos`; iOS: `ios-phone`, `ipad`; Android: `android-phone`, `android-tablet` | Desktop Chromium recursively discovers `tests/e2e/**/*.spec.ts`, excluding production-only scenarios and operator recordings. OSX WebKit and mobile phone/tablet projects run `freehand-note.spec.ts`, preserving portable handwriting and Chromium-only input distinctions. |
+| `production` | Desktop `chromium`, OSX handwriting `desktop-macos`; mobile phone/tablet plus `ios-web-drawing`/`android-web-drawing` | Discovers `*-production.spec.ts` or scenarios tagged `@production`. Handwriting remains on WebKit on OSX and phone/tablet engines on mobile; meeting/media checks stay on desktop Chromium. Mobile drawing projects run `tests/mobile/excalidraw.spec.ts` against the root web bundle with service workers blocked only for drawing. |
+| `native` | `native-windows`, `native-osx`, `native-linux` | Recursively discovers portable `tests/native/**/*.spec.ts`: compiled and packaged handwriting, meeting, completion, comments and Vim persistence. `build-profiles.spec.ts` belongs to `profiles`; `application-menu.spec.ts` is selected only on OSX, not runtime-skipped elsewhere. |
 | `profiles` | OSX: `macos-app-store`, `macos-homebrew`, `native-store`; iOS: `ios-app-store`; Android: `android-google-play` | All `tests/build-profiles/*.spec.ts`, plus `tests/native/build-profiles.spec.ts` on `native-store`. Preserves renderer capability restrictions and compiled main/preload rejection of privileged APIs/direct IPC. No existing Windows/Linux restricted-profile scenarios are invented. |
 | `mobile` | `ios-phone` or `android-phone` | All `tests/mobile/*.spec.ts` against the shared mobile production shell: touch/AI exclusion, Markdown and PDF persistence, background saves, offline note creation, backup import/export and failure recovery, and embedded/full-page drawing. |
 | `landing` | `chromium` | `tests/landing-downloads.spec.ts`. CI runs it on Linux rather than multiplying the same landing checks across platforms. |
 | `device` | Android: `physical-android` | `tests/device/freehand-note.spec.ts`: real connected Android hardware, trusted pen/pressure measurement, and persistence across Chrome restart. Never replaced with emulation. |
 
-The desktop Chromium browser selection retains all general editor/data-safety/recovery tests for local full-suite verification. CI supplies filename/project filters for the handwriting/meeting baseline and the desktop tab regressions below; it does not run every editor scenario on every platform job. Mobile production drawing and mobile-shell drawing are distinct surfaces, not redundant coverage.
+CI runs complete suites, not feature-file allowlists. Adding a browser or native regression no longer requires editing a workflow. Production filenames ending in `-production.spec.ts` are discovered automatically; use `@production` for other production scenarios and `@production-only` when they must not run against the development server. A shared scenario such as Vim settings can use `@production` without `@production-only`. Mobile root drawing and mobile-shell drawing remain distinct surfaces.
 
 OSX needs both engines: WebKit represents existing Safari handwriting/offline checks, while Chromium supports the media flags and fake microphone fixture used by meeting tests. `@chromium-input` scenarios remain excluded only from WebKit. Chromium production tests use actual offline mode; WebKit uses the existing app-server-outage proxy because its offline emulation rejects service-worker navigation. Neither mechanism establishes physical Safari suspension/offline behavior.
 
 ## Desktop tab regression coverage
 
-Windows, OSX, and Linux CI run `editor-tabs.spec.ts`, `tab-rename.spec.ts`, `recently-closed-tab.spec.ts`, and `editor-tab-drag.spec.ts` in Chromium. The complete files run without a test-name filter. Each desktop platform retains separate results, videos, and failure traces under `artifacts/playwright/<platform>/tabs`, without overwriting handwriting evidence.
+The fast PR gate runs every desktop Chromium browser regression on Linux, including tabs, rename, recently closed tabs, drag and starter examples. Nightly and release verification repeat the full suite on Windows, OSX and Linux. Reports are isolated by platform and shard under `artifacts/playwright/<platform>/browser-<shard>/`; they do not overwrite production or native evidence.
 
 ```sh
 npm run test:e2e -- --platform osx --suite browser \
@@ -77,11 +77,20 @@ Landing alone starts Next.js. Its default server is `dev`; with `PREBUILT=1` it 
 
 `PLAYWRIGHT_BASE_URL` selects an external browser/mobile/landing server and suppresses managed builds/servers. `PLAYWRIGHT_PORT` overrides the managed server port. `PLAYWRIGHT_ARTIFACT_DIR` overrides the default `artifacts/playwright/<platform>/<suite>/` folder (results, HTML report, JSON report). Use distinct artifact overrides when splitting one suite into multiple invocations so reports are not overwritten. Videos are recorded on successful scenarios too, and failure traces/screenshots are retained.
 
-## CI resource layout
+## Fast PR gate and full verification
 
-The PR workflow has five platform verification jobs, one shared unit/type/lint job, six independent MCP package-contract jobs, and one merge gate: **13 runner jobs instead of 26**. Phone and tablet projects share their platform's install and servers instead of requiring separate runners. Each desktop builds distributables once and reuses that package for native verification; each mobile platform syncs its restricted assets once and reuses them for shell and capability checks. Landing verification runs only on Linux.
+The PR target is five minutes of runner execution, excluding GitHub queue time. Required PR checks are:
 
-The six MCP jobs intentionally retain their standalone-package, Node/Deno-version, and operating-system matrix. They do not reinstall or package the editor. MCP's Electron integration now shares the OSX package. Independent release builders remain because signed/release artifacts need their own packaging and checks; tag workflows use 13 runner jobs instead of 18.
+- Shared root/mobile/test-infrastructure typechecks, automatically scoped lint, editor/build/math/CLI units, runner discovery contracts and merge-gate contracts.
+- The complete Linux Chromium browser suite split into twelve file-boundary shards, with two workers per shard. Each job starts Vite once and uses `npm ci --ignore-scripts` to avoid irrelevant Electron downloads and native rebuilds.
+- One standalone MCP contract on Ubuntu with Node 24.18.0 and Deno 2.4.5.
+- `All PR checks passed`, which fails for missing, failed, cancelled or skipped required results.
+
+Fast jobs have a five-minute timeout; exceeding the budget fails rather than drops tests. The final gate has a one-minute limit and a dependency on the completed checks, so the timeout is not a promise of a five-minute end-to-end result. Twelve browser jobs require enough available GitHub runners; queueing, cold dependency/browser downloads and uneven file duration can extend wall-clock time. Measure the latest PR run before claiming the target has been met.
+
+`platform-verification.yml` is now orchestration only. Browser, desktop, mobile and web integrations live in reusable suite-level workflows; agents should add specs or production tags, not feature steps or filename lists. Full verification runs nightly at 03:00 UTC on the default branch and through `Full verification` workflow dispatch. Release publishing requires full platform verification and all six MCP OS/version contracts for the release commit.
+
+The full pipeline retains Windows/macOS/Linux browser coverage (three shards per OS), Safari handwriting, all production and native scenarios, desktop packaging, mobile shell/profile tests and archives, landing verification, and checksum-verified live Whisper. Desktop packages and synced mobile assets are built once per platform job and reused. Landing and Whisper have independent Linux jobs rather than extending the desktop packaging critical path. No platform coverage has been deleted; it is deliberately outside the per-commit PR gate.
 
 | Platform | CI host | Additional requirements |
 | --- | --- | --- |
@@ -91,12 +100,12 @@ The six MCP jobs intentionally retain their standalone-package, Node/Deno-versio
 | iOS | `macos-15` | WebKit phone/tablet emulation plus Xcode 26/Capacitor device archive compilation. The unsigned archive is not signed-install or real-device runtime proof. |
 | Android | `ubuntu-latest` | Chromium phone/tablet emulation plus Java 21/Android SDK 36/Capacitor APK compilation. ADB pen-pressure scenarios still require an attached device and operator. |
 
-Job counts describe configured resources, not a promised wall-clock speedup. Native compilation, the different restricted build profiles, and live transcription remain real work; compare completed GitHub runs to measure total duration.
+The full pipeline is not subject to the five-minute PR budget. Signed/release builders remain separate from verification because their artifacts and signing contracts differ.
 
 ## Explicit external contracts
 
-- Live Whisper remains the existing `meeting-note.spec.ts` scenario. Set both `MEETING_WHISPER_ENDPOINT` and absolute `MEETING_AUDIO_FIXTURE`, then select `--suite production --project chromium --grep 'live local Whisper'` on a desktop platform. Without those external prerequisites the existing optional scenario skips; Linux CI supplies them and runs it explicitly.
-- Recording the completion walkthrough requires `RECORD_COMPLETION_DEMO=1`; its intentional skip is unchanged.
+- Live Whisper is tagged `@live-local-whisper` and excluded from ordinary production runs, not reported as skipped. Set `MEETING_WHISPER_ENDPOINT` and absolute `MEETING_AUDIO_FIXTURE`, then select `--suite production --project chromium --grep @live-local-whisper` (the existing `live local Whisper` grep also works). Explicit execution fails if either prerequisite is missing. The dedicated full-pipeline Whisper job supplies both; `--list` needs neither.
+- Recording the completion walkthrough requires `RECORD_COMPLETION_DEMO=1`; without it the recording file is not discovered. It is an operator recording, not required regression coverage.
 - Android physical pen execution requires `PLAYWRIGHT_DEVICE_BASE_URL`, secure HTTPS/device-local localhost, ADB, a connected non-emulator device and an operator. Missing prerequisites fail, not skip. `--list` enumerates without requiring attached hardware. See [device checks](./handwriting-device-checks.md) for USB forwarding and pressure instructions. Physical iOS/iPad/Pencil, operating-system suspension, permissions, native sharing and signed-install behavior remain operator checks, not browser emulation.
 - `packages/mcp/playwright.config.ts` remains an independent-package contract. The package has its own `test:e2e` script and tests the published MCP integration with packaged Electron in SQLite and filesystem modes. Folding it into root platform configuration would make the independent package depend on root-only runner modules. Run `npm exec -- playwright test --config packages/mcp/playwright.config.ts` after desktop packaging; the CI package suite and its contract layers remain separate.
 
