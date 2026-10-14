@@ -159,10 +159,11 @@ export async function setNoteCommentStatus(
     threadId: string,
     status: CommentStatus,
     operationId: string,
+    at = new Date().toISOString(),
 ): Promise<Note> {
     if (!isElectron()) {
         const { setBrowserCommentStatus } = await import("@/store/repositories/browser/comments.repository");
-        return setBrowserCommentStatus(source, threadId, status, operationId);
+        return setBrowserCommentStatus(source, threadId, status, operationId, at);
     }
     const key = source.id;
     const previous = pending.get(key) ?? Promise.resolve();
@@ -174,7 +175,7 @@ export async function setNoteCommentStatus(
                 throw new Error("The source note was deleted. Restore it before updating comments.");
             const existing = await loadCommentNote(currentSource);
             if (!existing || existing.deletedAt) throw new Error("The comments note is no longer available.");
-            const content = setCommentThreadStatus(existing.content, threadId, status, operationId);
+            const content = setCommentThreadStatus(existing.content, threadId, status, operationId, at);
             if (content === existing.content) return existing;
             const updated = await repositories.notes.updateContentIfUnchanged(
                 existing.id,

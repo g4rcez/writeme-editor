@@ -66,7 +66,8 @@ function isCommentStatusEvent(value: unknown): value is CommentStatusEvent {
         "status" in value &&
         (value.status === "resolved" || value.status === "unresolved") &&
         "at" in value &&
-        typeof value.at === "string"
+        typeof value.at === "string" &&
+        Number.isFinite(Date.parse(value.at))
     );
 }
 
@@ -128,6 +129,7 @@ export function setCommentThreadStatus(
     const existing = parseCommentThreads(content).find((thread) => thread.id === id);
     if (!existing) throw new Error("This comment thread no longer exists.");
     if (existing.history.some((event) => event.operationId === operationId)) return content;
+    if (existing.history.some((event) => Date.parse(event.at) > Date.parse(at))) return content;
     if (existing.status === status) return content;
 
     const event: CommentStatusEvent = { operationId, status, at };
@@ -138,21 +140,27 @@ export function setCommentThreadStatus(
     ];
     let inThread = false;
     let inserted = false;
+    let atThreadStart = false;
     return lexer(content)
         .map((token) => {
             if (token.type === "heading" && token.depth <= 2) {
                 inThread = token.depth === 2 && token.text.trim() === id;
+                atThreadStart = inThread;
                 if (inThread && !inserted) {
                     inserted = true;
-                    return `${token.raw}\n${lines.join("\n")}\n\n`;
+                    return `${token.raw.trimEnd()}\n\n${lines.join("\n")}\n\n`;
                 }
             }
             if (inThread && token.type === "html") {
-                return token.raw.replace(
+                const remaining = token.raw.replace(
                     /^<!-- writeme-comment-(?:status: (?:resolved|unresolved)|history: \{[^\n]*\}) -->[\t ]*\n?/gm,
                     "",
                 );
+                if (remaining.trim()) atThreadStart = false;
+                return remaining;
             }
+            if (atThreadStart && token.type === "space") return "";
+            atThreadStart = false;
             return token.raw;
         })
         .join("");

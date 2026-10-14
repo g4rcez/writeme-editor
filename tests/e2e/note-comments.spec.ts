@@ -654,6 +654,7 @@ test("resolves and reopens threads through filtered views and Markdown reloads",
     await editor.getByText("Second discussion", { exact: true }).click();
     await editor.press("End");
     await page.keyboard.insertText(" Edited in rich mode");
+    await editor.press("ControlOrMeta+s");
     await expect
         .poll(
             async () =>

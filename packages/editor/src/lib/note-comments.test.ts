@@ -148,6 +148,24 @@ describe("note comments", () => {
         });
     });
 
+    it("does not replay an expired receipt over newer status when retried with its original time", () => {
+        let content = "## words\n\n- First\n";
+        const originalTime = "2026-10-14T12:00:00.000Z";
+        content = setCommentThreadStatus(content, "words", "resolved", "old-retry", originalTime);
+        for (let index = 0; index < 20; index++) {
+            content = setCommentThreadStatus(
+                content,
+                "words",
+                index % 2 === 0 ? "unresolved" : "resolved",
+                `new-${index}`,
+                `2026-10-14T12:01:${String(index).padStart(2, "0")}.000Z`,
+            );
+        }
+        content = setCommentThreadStatus(content, "words", "unresolved", "last-reopen", "2026-10-14T12:02:00.000Z");
+        expect(parseCommentThreads(content)[0]?.history).toHaveLength(12);
+        expect(setCommentThreadStatus(content, "words", "resolved", "old-retry", originalTime)).toBe(content);
+    });
+
     it.each(["First paragraph\n\nSecond paragraph", "Example:\n```md\n## Heading\n```", "- Nested bullet\nNext line"])(
         "preserves the comment body %j in its Markdown reference",
         (body) => {

@@ -157,6 +157,7 @@ export async function setBrowserCommentStatus(
     threadId: string,
     status: CommentStatus,
     operationId: string,
+    at = new Date().toISOString(),
 ): Promise<Note> {
     return db.transaction("rw", [db.notes, db.comments, db.noteHistory], async () => {
         const currentSource = await db.notes.get(source.id);
@@ -164,7 +165,7 @@ export async function setBrowserCommentStatus(
             throw new Error("The source note was deleted. Restore it before updating comments.");
         const existing = await findCommentNote(Note.parse(currentSource));
         if (!existing || existing.deletedAt) throw new Error("The comments note is no longer available.");
-        const content = setCommentThreadStatus(existing.content, threadId, status, operationId);
+        const content = setCommentThreadStatus(existing.content, threadId, status, operationId, at);
         if (content === existing.content) return existing;
         const author = SettingsService.load().defaultAuthor;
         const note = Note.parse({

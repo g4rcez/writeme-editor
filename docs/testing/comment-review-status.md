@@ -26,7 +26,9 @@ section optionally contains review metadata:
 Old sections without metadata default to unresolved. Malformed history entries
 are ignored. A reopen writes `unresolved` and records an event with the same
 status. The latest 12 transitions are retained in order. Operation IDs in that
-history deduplicate retries, including a replay after a newer transition. A
+history deduplicate retries, including a replay after a newer transition. The UI
+keeps an operation's original time for retries; an operation older than a retained
+transition is ignored even after its own receipt has aged out of the history. A
 request for the current status does not append an event.
 
 Duplicate slug sections combine their replies and history. Updating their status

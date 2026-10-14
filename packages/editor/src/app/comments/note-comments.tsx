@@ -74,7 +74,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const [unresolvedOnly, setUnresolvedOnly] = useState(false);
     const [statusBusy, setStatusBusy] = useState(false);
     const statusBusyRef = useRef(false);
-    const statusOperationRef = useRef<{ threadId: string; status: CommentStatus; id: string } | null>(null);
+    const statusOperationRef = useRef<{ threadId: string; status: CommentStatus; id: string; at: string } | null>(null);
     const [editorState, setEditorState] = useState(editor.state);
     const panelRef = useRef<HTMLElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -397,10 +397,10 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         const operation =
             previous?.threadId === activeId && previous.status === status
                 ? previous
-                : { threadId: activeId, status, id: uuid() };
+                : { threadId: activeId, status, id: uuid(), at: new Date().toISOString() };
         statusOperationRef.current = operation;
         try {
-            const updated = await setNoteCommentStatus(note, activeId, status, operation.id);
+            const updated = await setNoteCommentStatus(note, activeId, status, operation.id, operation.at);
             setCompanion(updated);
             dispatch.syncNoteFromRepository(updated);
             statusOperationRef.current = null;
