@@ -70,7 +70,15 @@ test("resets cancelled choices and creates a blank note", async ({ cleanPage: pa
         .click();
     await expect(starter).toHaveValue("Blank note");
     await expect(dialog.getByText("Preview content", { exact: true })).toHaveCount(0);
-    await dialog.getByTitle("Note title").fill("Blank draft");
+    const title = dialog.getByTitle("Note title");
+    await title.fill("Blank draft");
+    await title.press("Tab");
+    await expect(starter).toBeFocused();
+    await expect(page.getByRole("option", { name: "Project brief", exact: true })).toBeVisible();
+    await starter.press("Escape");
+    await expect(page.getByRole("option", { name: "Project brief", exact: true })).toBeHidden();
+    await expect(starter).toHaveValue("Blank note");
+    await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: "Create note", exact: true }).click();
     await expect(page).toHaveURL(/\/note\/[^/]+$/);
     await expect(page.locator(".ProseMirror").first()).toHaveText("");
