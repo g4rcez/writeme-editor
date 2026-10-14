@@ -11,6 +11,7 @@ import {
     isVideoAttachmentTarget,
     parseObsidianLink,
 } from "@/lib/obsidian-links";
+import { isLatexFilePath } from "@/types/workspace-files";
 import { decodeMarkdownFilePath } from "./markdown-links";
 import { markdownLineToPlainText } from "./markdown-text";
 
@@ -112,7 +113,12 @@ export function extractNoteLinkReferences(content: string): NoteLinkReference[] 
     return [...references.values()];
 }
 
+export function canRepairNoteConnections(note: Note): boolean {
+    return !["json", "excalidraw", "freehand", "pdf"].includes(note.noteType) && !isLatexFilePath(note.filePath);
+}
+
 export function findUnresolvedNoteLinks(note: Note, notes: readonly Note[]): UnresolvedNoteReference[] {
+    if (!canRepairNoteConnections(note)) return [];
     return extractNoteLinkReferences(note.content).flatMap((reference) => {
         if (notes.some((candidate) => candidate.id === reference.target)) return [];
         const candidates = reference.kind === "wiki" ? findCompatibleNotes(notes, reference.target) : [];
@@ -138,7 +144,9 @@ export function resolveNoteLinks(note: Note, notes: readonly Note[]): ResolvedNo
 }
 
 export function findUnlinkedNoteMentions(note: Note, notes: readonly Note[]): UnlinkedNoteMention[] {
-    return notes.filter((source) => source.id !== note.id).flatMap((source) => findMentionsInSource(source, [note]));
+    return notes
+        .filter((source) => source.id !== note.id && canRepairNoteConnections(source))
+        .flatMap((source) => findMentionsInSource(source, [note]));
 }
 
 export function findMentionsInSource(note: Note, notes: readonly Note[]): UnlinkedNoteMention[] {

@@ -21,6 +21,7 @@ async function createNote(page: Page, title: string, content = ""): Promise<stri
 }
 
 type StoredNote = {
+    noteType?: string;
     id: string;
     title: string;
     content: string;
@@ -239,6 +240,64 @@ test("keeps a newer source edit when a preview is stale and lets the user refres
         .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content)
         .toContain("My newer draft mentions [Race target]");
 });
+
+test("keeps structured source content out of Markdown link suggestions", async ({ cleanPage: page }) => {
+    await goHome(page);
+    const targetUrl = await createNote(page, "Format target");
+    await createNote(page, "Data source");
+    const source = (await storedNotes(page)).find((note) => note.title === "Data source")!;
+    const content = JSON.stringify({ text: "Format target [[Missing]]" });
+    await changeStoredNote(page, source.id, { noteType: "json", content });
+    await page.goto(targetUrl);
+    const context = await openContext(page);
+    await context.getByText("Unlinked mentions", { exact: true }).click();
+    await expect(context.getByRole("button", { name: "Preview link", exact: true })).toHaveCount(0);
+    expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(content);
+});
+
+for (const mode of ["Formatted", "Markdown"] as const) {
+    test(`preserves unsaved source drafts across duplicate ${mode} panes`, async ({ cleanPage: page }) => {
+        await page.setViewportSize({ width: 1800, height: 1000 });
+        await goHome(page);
+        const targetUrl = await createNote(page, "Draft target");
+        await createNote(page, "Draft source", "See Draft target.");
+        const source = (await storedNotes(page)).find((note) => note.title === "Draft source")!;
+        await page.goto("/settings/editor");
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings.getByRole("checkbox", { name: "Autosave", exact: true }).uncheck();
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        const confirmation = page.getByRole("dialog", { name: "Success", exact: true });
+        await confirmation.getByRole("button", { name: "OK", exact: true }).click();
+        await expect(confirmation).toBeHidden();
+        await page.goto(targetUrl);
+        await page.getByRole("button", { name: "Open pane mode", exact: true }).click();
+        const second = page.getByRole("region", { name: "Editor group 2", exact: true });
+        await second.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(source.id);
+        await page.getByRole("button", { name: "Add editor pane", exact: true }).first().click();
+        const third = page.getByRole("region", { name: "Editor group 3", exact: true });
+        await third.getByRole("combobox", { name: "Select note for pane 3" }).selectOption(source.id);
+        const editorName = mode === "Markdown" ? "Markdown note editor" : "Note editor";
+        const clean = second.getByRole("textbox", { name: editorName, exact: true });
+        const draft = third.getByRole("textbox", { name: editorName, exact: true });
+        await expect(clean).toContainText("See Draft target.");
+        await expect(draft).toContainText("See Draft target.");
+        await draft.focus();
+        await page.keyboard.press("ControlOrMeta+a");
+        await page.keyboard.insertText("My unsaved draft mentions Draft target.");
+        await expect(draft).toContainText("My unsaved draft");
+        const context = await openContext(page);
+        await context.getByText("Unlinked mentions", { exact: true }).click();
+        await context.getByRole("button", { name: "Preview link", exact: true }).click();
+        await context.getByRole("button", { name: "Link this mention", exact: true }).click();
+        await expect(context.getByRole("status")).toContainText("unsaved changes");
+        await expect(clean).toHaveText("See Draft target.");
+        await expect(draft).toContainText("My unsaved draft");
+        expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(source.content);
+    });
+}
 
 test("keeps connection controls inside a narrow drawer and supports keyboard preview cancellation", async ({
     cleanPage: page,

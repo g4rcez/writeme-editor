@@ -11,7 +11,7 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
 import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
-import { NOTE_LINK_REPAIR_EVENT, repairTiptapLink, type NoteLinkRepairRequest } from "@/lib/note-link-repair";
+import { registerNoteLinkRepairHandler, repairTiptapLink } from "@/lib/note-link-repair";
 import { findCompatibleNote } from "@/lib/note-lookup";
 import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
@@ -649,13 +649,12 @@ const TiptapEditorCore = memo(
 
         useEffect(() => {
             if (!editor) return;
-            const repairLink = (event: Event): void => {
-                const request = (event as CustomEvent<NoteLinkRepairRequest>).detail;
-                if (request.noteId !== noteRef.current?.id || request.result !== null) return;
-                request.result = repairTiptapLink(editor, request);
-            };
-            window.addEventListener(NOTE_LINK_REPAIR_EVENT, repairLink);
-            return () => window.removeEventListener(NOTE_LINK_REPAIR_EVENT, repairLink);
+            return registerNoteLinkRepairHandler({
+                noteId: () => noteRef.current?.id,
+                getContent: () => getEditorMarkdown(editor),
+                isEditable: () => editor.isEditable && !editor.isDestroyed,
+                apply: (request) => repairTiptapLink(editor, request),
+            });
         }, [editor]);
 
         useEffect(() => {
@@ -1018,6 +1017,7 @@ const RawEditorCore = memo(
             >
                 <RawMarkdownEditor
                     noteId={props.id}
+                    repairNoteId={props.note?.id}
                     value={draft.content}
                     onChange={handleChange}
                     readonly={props.readonly}

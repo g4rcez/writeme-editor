@@ -18,14 +18,45 @@ export type NoteLinkRepairRequest = {
     to: number;
     replacement: string;
     result: NoteLinkRepairResult | null;
+    checkOnly?: boolean;
 };
 
 export const NOTE_LINK_REPAIR_EVENT = "writeme:repair-note-link";
 
-export function requestNoteLinkRepair(request: Omit<NoteLinkRepairRequest, "result">): NoteLinkRepairResult | null {
-    const detail: NoteLinkRepairRequest = { ...request, result: null };
+export function requestNoteLinkRepair(
+    request: Omit<NoteLinkRepairRequest, "result" | "checkOnly">,
+): NoteLinkRepairResult | null {
+    const detail: NoteLinkRepairRequest = { ...request, result: null, checkOnly: true };
+    window.dispatchEvent(new CustomEvent<NoteLinkRepairRequest>(NOTE_LINK_REPAIR_EVENT, { detail }));
+    if (detail.result !== "applied") return detail.result;
+    detail.result = null;
+    detail.checkOnly = false;
     window.dispatchEvent(new CustomEvent<NoteLinkRepairRequest>(NOTE_LINK_REPAIR_EVENT, { detail }));
     return detail.result;
+}
+
+export function registerNoteLinkRepairHandler(handler: {
+    noteId: () => string | undefined;
+    getContent: () => string;
+    isEditable: () => boolean;
+    apply: (request: NoteLinkRepairRequest) => NoteLinkRepairResult;
+}): () => void {
+    const listener = (event: Event): void => {
+        const request = (event as CustomEvent<NoteLinkRepairRequest>).detail;
+        if (request.noteId !== handler.noteId()) return;
+        if (request.checkOnly) {
+            if (request.result === "conflict" || request.result === "unavailable") return;
+            request.result = !handler.isEditable()
+                ? "unavailable"
+                : repairedMarkdown(handler.getContent(), request) === null
+                  ? "conflict"
+                  : "applied";
+        } else if (request.result === null) {
+            request.result = handler.apply(request);
+        }
+    };
+    window.addEventListener(NOTE_LINK_REPAIR_EVENT, listener);
+    return () => window.removeEventListener(NOTE_LINK_REPAIR_EVENT, listener);
 }
 
 export function repairedMarkdown(

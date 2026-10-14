@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import {
     extractNoteLinkReferences,
     findIncomingNoteLinks,
@@ -12,6 +12,22 @@ const makeNote = (id: string, title: string, content = "", filePath?: string): N
     Note.parse({ id, title, content, filePath });
 
 describe("note link resolution", () => {
+    it("does not offer Markdown repairs inside structured notes or LaTeX sources", () => {
+        const target = makeNote("target", "Target");
+        for (const noteType of [NoteType.json, NoteType.excalidraw, NoteType.freehand, NoteType.pdf]) {
+            const source = Note.parse({
+                id: "source",
+                title: "Source",
+                noteType,
+                content: '{"text":"Target [[Missing]]"}',
+            });
+            expect(findUnlinkedNoteMentions(target, [target, source])).toEqual([]);
+            expect(findUnresolvedNoteLinks(source, [target, source])).toEqual([]);
+        }
+        const latex = makeNote("latex", "LaTeX", "Target [[Missing]]", "/workspace/source.tex");
+        expect(findUnlinkedNoteMentions(target, [target, latex])).toEqual([]);
+        expect(findUnresolvedNoteLinks(latex, [target, latex])).toEqual([]);
+    });
     it("surfaces deleted ID targets and normal internal Markdown links for repair", () => {
         const source = makeNote(
             "source",

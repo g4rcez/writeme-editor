@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Note } from "@/store/note";
+import { Note, NoteType } from "@/store/note";
 import { applyConnectionRepair, createConnectionTarget, undoConnectionRepair } from "./note-connection-actions";
 
 const mocks = vi.hoisted(() => ({
@@ -23,6 +23,14 @@ vi.mock("./note-link-repair", async (original) => ({
 }));
 
 describe("connection actions", () => {
+    it("rejects a source whose format changed after preview", async () => {
+        mocks.getOne.mockImplementation(async (id: string) =>
+            id === source.id ? Note.parse({ ...source, noteType: NoteType.json }) : target,
+        );
+        await expect(applyConnectionRepair(repair)).rejects.toThrow("source note changed");
+        expect(mocks.update).not.toHaveBeenCalled();
+        expect(mocks.repair).not.toHaveBeenCalled();
+    });
     it.each(["../Outside", "%2e%2e/Outside", "Folder/../../Outside", "C:\\Outside"])(
         "rejects an escaping creation target %s before saving",
         async (title) => {

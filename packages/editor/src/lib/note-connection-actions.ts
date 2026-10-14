@@ -3,6 +3,7 @@ import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { decodeMarkdownFilePath } from "./markdown-links";
 import { repairedMarkdown, requestNoteLinkRepair } from "./note-link-repair";
+import { canRepairNoteConnections } from "./note-links";
 import { findCompatibleNotes, getNoteAliases } from "./note-lookup";
 
 const creations = new Map<string, Promise<Note>>();
@@ -51,6 +52,8 @@ export type ConnectionRepair = {
 };
 
 export async function applyConnectionRepair(repair: ConnectionRepair): Promise<Note | null> {
+    if (!canRepairNoteConnections(repair.source))
+        throw new Error("This note format does not support Markdown link repairs.");
     const target = await repositories.notes.getOne(repair.target.id);
     if (
         !target ||
@@ -65,7 +68,12 @@ export async function applyConnectionRepair(repair: ConnectionRepair): Promise<N
     const updated = repairedMarkdown(repair.source.content, request);
     if (updated === null) throw new Error("This occurrence is no longer available. Refresh the suggestions.");
     const source = await repositories.notes.getOne(repair.source.id);
-    if (!source || source.title !== repair.source.title || source.content !== repair.source.content) {
+    if (
+        !source ||
+        !canRepairNoteConnections(source) ||
+        source.title !== repair.source.title ||
+        source.content !== repair.source.content
+    ) {
         globalDispatch.notes(await repositories.notes.getAll());
         throw new Error("The source note changed or was deleted. Review the refreshed suggestions before linking.");
     }
