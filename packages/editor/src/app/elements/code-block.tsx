@@ -1,4 +1,5 @@
-import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { Marked, Tokens } from "marked";
 import type { ReactNode } from "react";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
@@ -15,6 +16,7 @@ import {
     type Highlighter,
 } from "shiki";
 import { getCurrentElementName } from "@/lib/editor-utils";
+import { escapeHtml } from "@/lib/html";
 import { isElectron } from "@/lib/is-electron";
 import { detectMarkdown } from "@/lib/markdown-paste/detect-markdown";
 import { normalizeMarkdownPaste } from "@/lib/markdown-paste/normalize-markdown";
@@ -23,7 +25,37 @@ import { globalState } from "@/store/global.store";
 import { editorGlobalRef } from "../editor-global-ref";
 import { handlePasteImage } from "../extensions";
 import { CodeBlockRenderer } from "./code-block/code-block-rendered.tsx";
+import { decodeCodeResult, encodeCodeResult, parseCodeExecutionResult } from "./code-block/code-result";
 import { shikiMathGrammer } from "./code-block/shiki-math-grammar";
+
+type KeptCodeToken = {
+    raw: string;
+    language: string;
+    title: string | null;
+    code: string;
+    encodedResult: string;
+};
+
+function tokenizeKeptCode(src: string): KeptCodeToken | undefined {
+    const match = src.match(
+        /^<!-- writeme-code-result:v1:([A-Za-z0-9_-]+) -->\r?\n(`{3,}|~{3,})([^\n]*)\r?\n([\s\S]*?)\r?\n\2[ \t]*(?:\r?\n|$)/,
+    );
+    if (!match) return undefined;
+    const encodedResult = match[1] ?? "";
+    if (!decodeCodeResult(encodedResult)) return undefined;
+    const info = (match[3] ?? "").trim();
+    const titleMatch = info.match(/title=(?:"([^"]*)"|'([^']*)'|(\S+))/);
+    const title = titleMatch ? (titleMatch[1] ?? titleMatch[2] ?? titleMatch[3] ?? null) : null;
+    return {
+        raw: match[0],
+        language: titleMatch
+            ? (info.slice(0, titleMatch.index).trim().split(/\s+/)[0] ?? "")
+            : (info.split(/\s+/)[0] ?? ""),
+        title,
+        code: match[4] ?? "",
+        encodedResult,
+    };
+}
 
 type CustomShikiLanguage = "math";
 
@@ -191,7 +223,7 @@ async function initHighlighter({
     defaultTheme,
     defaultLanguage,
 }: {
-    doc: ProsemirrorNode;
+    doc: ProseMirrorNode;
     name: string;
     defaultLanguage: BundledLanguage | null | undefined;
     defaultTheme: BundledTheme;
@@ -233,7 +265,7 @@ function getDecorations({
     renderBackground = true,
     positions,
 }: {
-    doc: ProsemirrorNode;
+    doc: ProseMirrorNode;
     name: string;
     defaultLanguage: BundledLanguage | null | undefined;
     defaultTheme: BundledTheme;
@@ -506,6 +538,77 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
                 default: null,
                 parseHTML: (el: HTMLElement) => el.getAttribute("data-title"),
                 renderHTML: (attrs: Record<string, unknown>) => (attrs.title ? { "data-title": attrs.title } : {}),
+            },
+            executionResult: {
+                default: null,
+                parseHTML: (el: HTMLElement) => {
+                    const result = decodeCodeResult(el.getAttribute("data-writeme-execution-result") ?? "");
+                    return result ? JSON.stringify(result) : null;
+                },
+                renderHTML: (attrs: Record<string, unknown>) => {
+                    const result = parseCodeExecutionResult(
+                        typeof attrs.executionResult === "string" ? attrs.executionResult : null,
+                    );
+                    return result ? { "data-writeme-execution-result": encodeCodeResult(result) } : {};
+                },
+            },
+        };
+    },
+    addStorage() {
+        return {
+            markdown: {
+                serialize(
+                    state: {
+                        write: (value: string) => void;
+                        text: (value: string, escape?: boolean) => void;
+                        closeBlock: (node: ProseMirrorNode) => void;
+                    },
+                    node: ProseMirrorNode,
+                ) {
+                    const language = String(node.attrs.language ?? "");
+                    const title = node.attrs.title ? ` title="${String(node.attrs.title)}"` : "";
+                    let fenceLength = 3;
+                    for (const run of node.textContent.matchAll(/`+/g)) {
+                        fenceLength = Math.max(fenceLength, run[0].length + 1);
+                    }
+                    const fence = "`".repeat(fenceLength);
+                    const result = parseCodeExecutionResult(
+                        typeof node.attrs.executionResult === "string" ? node.attrs.executionResult : null,
+                    );
+                    if (result) state.write(`<!-- writeme-code-result:v1:${encodeCodeResult(result)} -->\n`);
+                    state.write(`${fence}${language}${title}\n`);
+                    state.text(node.textContent, false);
+                    state.write(`\n${fence}`);
+                    state.closeBlock(node);
+                },
+                parse: {
+                    setup(marked: Marked) {
+                        marked.use({
+                            extensions: [
+                                {
+                                    name: "writeme_kept_code",
+                                    level: "block",
+                                    start(src: string) {
+                                        return src.startsWith("<!-- writeme-code-result:v1:") ? 0 : undefined;
+                                    },
+                                    tokenizer(src: string) {
+                                        const token = tokenizeKeptCode(src);
+                                        return token ? { type: "writeme_kept_code", ...token } : undefined;
+                                    },
+                                    renderer(genericToken: Tokens.Generic) {
+                                        const token = tokenizeKeptCode(genericToken.raw);
+                                        if (!token) return "";
+                                        const language = token.language
+                                            ? ` class="language-${escapeHtml(token.language)}"`
+                                            : "";
+                                        const title = token.title ? ` data-title="${escapeHtml(token.title)}"` : "";
+                                        return `<pre data-writeme-execution-result="${token.encodedResult}"${title}><code${language}>${escapeHtml(token.code)}</code></pre>\n`;
+                                    },
+                                },
+                            ],
+                        });
+                    },
+                },
             },
         };
     },

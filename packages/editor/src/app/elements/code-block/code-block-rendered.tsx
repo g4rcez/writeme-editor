@@ -1,4 +1,5 @@
 import type { BundledLanguage } from "shiki";
+import { closeHistory } from "@tiptap/pm/history";
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { Fragment, lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import { FEATURES } from "@/lib/build-features";
@@ -8,6 +9,12 @@ import { isElectron } from "@/lib/is-electron";
 import { CodeBlockFrame } from "../code-block";
 import { canFormat, formatCode } from "../code-block-formatting";
 import { CodeBlockHeader } from "./code-block-header";
+import {
+    fingerprintCode,
+    MAX_CODE_RESULT_CHARS,
+    parseCodeExecutionResult,
+    type CodeExecutionResult,
+} from "./code-result";
 import { ExecutionOutput } from "./execution-output";
 
 const ExcalidrawCode = lazy(() =>
@@ -83,6 +90,9 @@ type OutputState = {
     stdout: string;
     stderr: string;
     html?: string;
+    executedAt: string;
+    language: string;
+    source: string;
 };
 
 export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
@@ -97,6 +107,11 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     const [isRunning, setIsRunning] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [output, setOutput] = useState<OutputState | null>(null);
+    const [resultError, setResultError] = useState<string | null>(null);
+    const [codeFingerprint, setCodeFingerprint] = useState<{ source: string; value: string } | null>(null);
+    const storedResult = parseCodeExecutionResult(
+        typeof props.node.attrs.executionResult === "string" ? props.node.attrs.executionResult : null,
+    );
     const copyFeedbackTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -106,10 +121,23 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     }, [codeFromNode]);
 
     useEffect(() => {
+        let active = true;
+        if (!storedResult) return;
+        void fingerprintCode(codeFromNode)
+            .then((fingerprint) => {
+                if (active) setCodeFingerprint({ source: codeFromNode, value: fingerprint });
+            })
+            .catch(() => {
+                if (active) setCodeFingerprint(null);
+            });
         return () => {
-            if (copyFeedbackTimeoutRef.current !== null) {
-                window.clearTimeout(copyFeedbackTimeoutRef.current);
-            }
+            active = false;
+        };
+    }, [codeFromNode, props.node.attrs.executionResult]);
+
+    useEffect(() => {
+        return () => {
+            if (copyFeedbackTimeoutRef.current !== null) window.clearTimeout(copyFeedbackTimeoutRef.current);
         };
     }, []);
 
@@ -192,20 +220,100 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
 
     const handleRun = async () => {
         if (!FEATURES.codeExecution || !config) return;
+        const executedAt = new Date().toISOString();
+        const executionLanguage = language;
+        const source = code;
         setIsRunning(true);
         setOutput(null);
+        setResultError(null);
         try {
             if (config.browserRuntimeExec && (!isElectron() || config.command === "browser")) {
-                const result = await config.browserRuntimeExec(code);
-                setOutput(result);
+                const result = await config.browserRuntimeExec(source);
+                setOutput({ ...result, executedAt, language: executionLanguage, source });
             } else if (isElectron() && executablePath) {
-                const result = await window.electronAPI.execution.run(config.command, config.args, code);
-                setOutput({ stdout: result.stdout, stderr: result.stderr });
+                const result = await window.electronAPI.execution.run(config.command, config.args, source);
+                setOutput({
+                    stdout: result.stdout,
+                    stderr: result.stderr,
+                    executedAt,
+                    language: executionLanguage,
+                    source,
+                });
             }
         } catch (e) {
-            setOutput({ stdout: "", stderr: `Error: ${e}` });
+            setOutput({
+                stdout: "",
+                stderr: `Error: ${e}`,
+                executedAt,
+                language: executionLanguage,
+                source,
+            });
         } finally {
             setIsRunning(false);
+        }
+    };
+
+    const handleKeepResult = async () => {
+        if (!output || output.html) return;
+        if (output.stdout.length + output.stderr.length > MAX_CODE_RESULT_CHARS) {
+            setResultError(
+                `Result is too large to keep. The combined output limit is ${MAX_CODE_RESULT_CHARS.toLocaleString()} characters.`,
+            );
+            return;
+        }
+        try {
+            const result: CodeExecutionResult = {
+                version: 1,
+                executedAt: output.executedAt,
+                language: output.language,
+                sourceFingerprint: await fingerprintCode(output.source),
+                stdout: output.stdout,
+                stderr: output.stderr,
+            };
+            const pos = props.getPos();
+            if (typeof pos !== "number") throw new Error("The code block is no longer available.");
+            const targetNode = props.editor.state.doc.nodeAt(pos);
+            if (!targetNode || targetNode.type.name !== "codeBlock") {
+                throw new Error("The code block is no longer available.");
+            }
+            props.editor.view.dispatch(
+                closeHistory(
+                    props.editor.state.tr.setNodeMarkup(pos, undefined, {
+                        ...targetNode.attrs,
+                        executionResult: JSON.stringify(result),
+                    }),
+                ),
+            );
+            setResultError(null);
+            setOutput(null);
+        } catch (error) {
+            setResultError(error instanceof Error ? error.message : "Unable to keep this execution result.");
+        }
+    };
+
+    const handleRemoveResult = () => {
+        const pos = props.getPos();
+        if (typeof pos !== "number") {
+            setResultError("The code block is no longer available.");
+            return;
+        }
+        const targetNode = props.editor.state.doc.nodeAt(pos);
+        if (!targetNode || targetNode.type.name !== "codeBlock") {
+            setResultError("The code block is no longer available.");
+            return;
+        }
+        try {
+            props.editor.view.dispatch(
+                closeHistory(
+                    props.editor.state.tr.setNodeMarkup(pos, undefined, {
+                        ...targetNode.attrs,
+                        executionResult: null,
+                    }),
+                ),
+            );
+            setResultError(null);
+        } catch (error) {
+            setResultError(error instanceof Error ? error.message : "Unable to remove this execution result.");
         }
     };
 
@@ -244,6 +352,10 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     }
 
     const lines = code.split("\n").length;
+    const storedResultIsOutdated =
+        !!storedResult &&
+        (storedResult.language !== language ||
+            (codeFingerprint?.source === codeFromNode && codeFingerprint.value !== storedResult.sourceFingerprint));
 
     return (
         <CodeBlockFrame
@@ -270,12 +382,23 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
             footer={
                 <Fragment>
                     <CodeBlockAddons language={language} code={code} />
-                    {output && (
+                    {(output || storedResult || resultError) && (
                         <ExecutionOutput
-                            html={output.html}
-                            output={output.stdout}
-                            stderr={output.stderr}
-                            onClose={() => setOutput(null)}
+                            html={output?.html}
+                            output={output?.stdout ?? storedResult?.stdout ?? ""}
+                            stderr={output?.stderr ?? storedResult?.stderr ?? ""}
+                            onClose={output ? () => setOutput(null) : undefined}
+                            onKeep={props.editor.isEditable && output && !output.html ? handleKeepResult : undefined}
+                            onRemove={props.editor.isEditable && storedResult ? handleRemoveResult : undefined}
+                            saved={!output && !!storedResult}
+                            executedAt={output?.executedAt ?? storedResult?.executedAt}
+                            keepLabel={storedResult ? "Replace result" : "Keep result"}
+                            outdated={
+                                output
+                                    ? output.language !== language || output.source !== codeFromNode
+                                    : storedResultIsOutdated
+                            }
+                            error={resultError}
                         />
                     )}
                 </Fragment>
