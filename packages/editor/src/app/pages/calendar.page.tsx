@@ -9,8 +9,8 @@ import {
     type TagProps,
     useLocale,
 } from "@g4rcez/components";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { Dates } from "@/lib/dates";
 import { getJournalDate, parseJournalDay } from "@/lib/journal-date";
@@ -71,6 +71,7 @@ export default function CalendarPage() {
     const [state, dispatch] = useGlobalStore();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const location = useLocation();
 
     const [filters, setFilters] = useState<CalendarFilter[]>(CALENDAR_FILTERS);
     const [createEventDate, setCreateEventDate] = useState<Date | null>(null);
@@ -78,6 +79,15 @@ export default function CalendarPage() {
     const [newEventType, setNewEventType] = useState<NoteType>(NoteType.note);
     const [dailyError, setDailyError] = useState("");
     const [openingDaily, setOpeningDaily] = useState(false);
+    const dailyRequest = useRef<AbortController | null>(null);
+    useEffect(() => () => dailyRequest.current?.abort(), [location.pathname, location.search]);
+
+    const changeEventDate = (date: Date | null): void => {
+        dailyRequest.current?.abort();
+        setOpeningDaily(false);
+        setDailyError("");
+        setCreateEventDate(date);
+    };
 
     useEffect(() => {
         if (createEventDate !== null) {
@@ -112,20 +122,23 @@ export default function CalendarPage() {
 
     const onAddEvent = () => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
 
-    const onSlotClick = (date: Date) => setCreateEventDate(date);
-
     const openDailyNote = async (): Promise<void> => {
         if (!createEventDate) return;
+        dailyRequest.current?.abort();
+        const controller = new AbortController();
+        dailyRequest.current = controller;
         setOpeningDaily(true);
         setDailyError("");
         try {
             const note = await getOrCreateDailyQuickNote(createEventDate);
+            if (controller.signal.aborted) return;
             setCreateEventDate(null);
             navigate(`/note/${note.id}`);
         } catch (error) {
+            if (controller.signal.aborted) return;
             setDailyError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            setOpeningDaily(false);
+            if (!controller.signal.aborted) setOpeningDaily(false);
         }
     };
 
@@ -135,7 +148,7 @@ export default function CalendarPage() {
         const note = Note.new(newEventTitle.trim(), "", newEventType);
         await repositories.notes.save(note);
         dispatch.note(note);
-        setCreateEventDate(null);
+        changeEventDate(null);
         navigate("/note/" + note.id);
     };
 
@@ -161,7 +174,7 @@ export default function CalendarPage() {
                 filters={filters}
                 events={calendarEvents}
                 onAddEvent={onAddEvent}
-                onSlotClick={onSlotClick}
+                onSlotClick={changeEventDate}
                 renderEvent={renderEvent}
                 onEventClick={onEventClick}
                 onChangeFilters={setFilters}
@@ -170,7 +183,7 @@ export default function CalendarPage() {
                 title="New note"
                 className="max-w-md"
                 open={createEventDate !== null}
-                onChange={() => setCreateEventDate(null)}
+                onChange={() => changeEventDate(null)}
             >
                 <form onSubmit={createEvent} className="flex flex-col gap-4">
                     <Button type="button" theme="muted" disabled={openingDaily} onClick={() => void openDailyNote()}>
@@ -205,7 +218,7 @@ export default function CalendarPage() {
                         ))}
                     </div>
                     <div className="flex gap-2 justify-end pt-2">
-                        <Button theme="muted" type="button" onClick={() => setCreateEventDate(null)}>
+                        <Button theme="muted" type="button" onClick={() => changeEventDate(null)}>
                             Cancel
                         </Button>
                         <Button type="submit">Create</Button>

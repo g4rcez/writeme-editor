@@ -1,6 +1,7 @@
 import { startOfDay } from "date-fns";
 import { Dates } from "@/lib/dates";
 import { isElectron } from "@/lib/is-electron";
+import { getJournalDate, parseJournalDay } from "@/lib/journal-date";
 import { getDailyQuickNotePath, getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { Note, NoteType } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -45,10 +46,22 @@ async function findExistingDailyQuickNote(
     settings: ReturnType<typeof SettingsService.load>,
     useDesktopWorkspace: boolean,
 ): Promise<Note | null> {
-    if (useDesktopWorkspace && settings.directory) {
-        return getExistingElectronNote(getDailyQuickNotePath(settings.directory, day), day);
+    let existing = await repositories.notes.getQuicknoteByDate(day);
+    if (!existing && useDesktopWorkspace && settings.directory) {
+        existing = await getExistingElectronNote(getDailyQuickNotePath(settings.directory, day), day);
     }
-    return repositories.notes.getQuicknoteByDate(day);
+    if (
+        existing &&
+        !parseJournalDay(typeof existing.metadata.journalDate === "string" ? existing.metadata.journalDate : null)
+    ) {
+        const journalDate = getJournalDate(existing);
+        if (journalDate) {
+            const metadata = { ...existing.metadata, journalDate: Dates.isoDate(journalDate) };
+            await repositories.notes.updateMetadata(existing.id, metadata);
+            existing.metadata = metadata;
+        }
+    }
+    return existing;
 }
 
 export async function getExistingDailyQuickNote(date: Date): Promise<Note | null> {

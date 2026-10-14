@@ -30,9 +30,7 @@ export function useAgendaSource(noteId: string | null): void {
                 });
                 return true;
             }
-            const target =
-                root?.querySelectorAll<HTMLElement>(".ProseMirror li[data-checked]")[index] ??
-                main.querySelectorAll<HTMLElement>(".wm-task-card")[index];
+            const target = root?.querySelectorAll<HTMLElement>(".ProseMirror li[data-checked]")[index];
             if (!target || !target.isConnected) return false;
             const editorElement = root?.querySelector<HTMLElement>(".ProseMirror") as
                 | (HTMLElement & { editor?: Editor })
@@ -53,8 +51,6 @@ export function useAgendaSource(noteId: string | null): void {
                     if (node.type.name === "taskItem" && current++ === index) position = pos + 2;
                 });
                 if (position !== null) editor.commands.focus(position, { scrollIntoView: true });
-            } else {
-                target.querySelector<HTMLButtonElement>(".wm-task-card-content")?.focus({ preventScroll: true });
             }
             target.scrollIntoView({ behavior: "instant", block: "center" });
             return true;

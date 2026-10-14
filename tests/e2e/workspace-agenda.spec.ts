@@ -203,3 +203,155 @@ test("surfaces daily-note creation failures and permits retry", async ({ cleanPa
     await page.getByRole("button", { name: "Create daily note", exact: true }).click();
     await expect(page).toHaveURL(/\/note\/[^?]+$/);
 });
+
+test("opens nested board tasks at their Markdown source and following tasks at their own card", async ({
+    cleanPage: page,
+}) => {
+    // These imports must execute in the page's Vite module graph, not Playwright's Node process.
+    await goHome(page);
+    const id = await page.evaluate(async () => {
+        const notePath = "/packages/editor/src/store/note.ts";
+        const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+        const { Note, NoteType } = await import(notePath);
+        const { repositories } = await import(repositoryPath);
+        const note = Note.new(
+            "Nested board",
+            "---\ntype: task\n---\n\n## Todo\n\n- [ ] Parent\n  - [ ] Child\n- [ ] Later\n",
+            NoteType.task,
+        );
+        await repositories.notes.save(note);
+        return note.id;
+    });
+    await page.goto("/tasks");
+    await page.getByRole("link", { name: "Open Child in Nested board, Todo", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/note/${id}\\?task=1&line=8`));
+    await expect(page.getByRole("textbox", { name: "Markdown note editor", exact: true })).toBeFocused();
+    await expect
+        .poll(() =>
+            page.evaluate(async () => {
+                const modulePath = "/node_modules/@codemirror/view/dist/index.js";
+                const { EditorView } = await import(modulePath);
+                const view = EditorView.findFromDOM(document.querySelector(".cm-editor")!);
+                return view?.state.doc.lineAt(view.state.selection.main.head).text;
+            }),
+        )
+        .toBe("  - [ ] Child");
+    await page.goto("/tasks");
+    await page.getByRole("link", { name: "Open Later in Nested board, Todo", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Edit Later", exact: true })).toBeFocused();
+    await expect(page.getByRole("button", { name: "Edit Parent", exact: true })).not.toBeFocused();
+});
+
+test("adopts legacy title-only journal dates before H1 synchronization and reuses them after reload", async ({
+    cleanPage: page,
+}) => {
+    await goHome(page);
+    const id = await page.evaluate(async () => {
+        const notePath = "/packages/editor/src/store/note.ts";
+        const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+        const { Note, NoteType } = await import(notePath);
+        const { repositories } = await import(repositoryPath);
+        const note = Note.parse({
+            ...Note.new("2025-12-31-quicknote.md", "# Retrospective\n\nPreserved legacy content\n", NoteType.quick),
+            createdAt: new Date(2026, 0, 7),
+        });
+        await repositories.notes.save(note);
+        return note.id;
+    });
+    // Opening directly must also preserve identity, without going through the daily service.
+    await page.goto(`/note/${id}`);
+    await expect
+        .poll(() =>
+            page.evaluate(async (id) => {
+                const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+                const { repositories } = await import(repositoryPath);
+                const note = await repositories.notes.getOne(id);
+                return {
+                    title: note.title,
+                    journalDate: note.metadata.journalDate,
+                    content: note.content,
+                    createdAt: note.createdAt.getTime(),
+                };
+            }, id),
+        )
+        .toEqual({
+            title: "Retrospective",
+            journalDate: "2025-12-31",
+            content: "# Retrospective\n\nPreserved legacy content\n",
+            createdAt: new Date(2026, 0, 7).getTime(),
+        });
+    await page.goto("/today?date=2025-12-31");
+    await page.reload();
+    await page.getByRole("button", { name: "Open daily note", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/note/${id}$`));
+    await page.goto("/calendar?date=2025-12-31");
+    await expect(page.getByRole("grid").getByRole("button", { name: /Retrospective/ })).toBeVisible();
+    expect(
+        await page.evaluate(async () => {
+            const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+            const { repositories } = await import(repositoryPath);
+            return (await repositories.notes.getAll()).filter((note: { noteType: string }) => note.noteType === "quick")
+                .length;
+        }),
+    ).toBe(1);
+});
+
+async function deferDailyLookup(page: Page): Promise<void> {
+    await page.evaluate(async () => {
+        const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+        const { repositories } = await import(repositoryPath);
+        const original = repositories.notes.getQuicknoteByDate.bind(repositories.notes);
+        const gate = Promise.withResolvers<void>();
+        const settled = Promise.withResolvers<void>();
+        Reflect.set(window, "releaseDailyLookup", gate.resolve);
+        Reflect.set(window, "dailyLookupSettled", settled.promise);
+        repositories.notes.getQuicknoteByDate = async (date: Date) => {
+            Reflect.set(window, "dailyLookupStarted", true);
+            await gate.promise;
+            repositories.notes.getQuicknoteByDate = original;
+            const note = await original(date);
+            settled.resolve();
+            return note;
+        };
+    });
+}
+
+for (const intent of ["change date", "leave Today", "cancel calendar", "leave calendar"] as const) {
+    test(`does not redirect an obsolete daily request after ${intent}`, async ({ cleanPage: page }) => {
+        await goHome(page);
+        await seedNotes(page);
+        const calendar = intent.includes("calendar");
+        await page.goto(`/${calendar ? "calendar" : "today"}?date=2025-12-31`);
+        if (calendar) {
+            await page
+                .getByRole("grid")
+                .getByRole("button", { name: /Wednesday, Dec 31, 2025/ })
+                .click();
+            await page.getByRole("button", { name: "12:00", exact: true }).click();
+        }
+        await deferDailyLookup(page);
+        await page.getByRole("button", { name: "Open daily note", exact: true }).click();
+        await expect.poll(() => page.evaluate(() => Reflect.get(window, "dailyLookupStarted"))).toBe(true);
+        if (intent === "change date") await page.getByRole("button", { name: "Next day", exact: true }).click();
+        else if (intent === "cancel calendar") await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        else if (intent === "leave calendar") await page.evaluate(() => {
+            window.history.pushState(null, "", "/tasks");
+            window.dispatchEvent(new PopStateEvent("popstate"));
+        });
+        else await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();
+        const destination = page.url();
+        await page.evaluate(async () => {
+            Reflect.get(window, "releaseDailyLookup")();
+            await Reflect.get(window, "dailyLookupSettled");
+            const settling = Promise.withResolvers<void>();
+            setTimeout(settling.resolve, 200);
+            await settling.promise;
+        });
+        await expect(page).toHaveURL(destination);
+        await expect(page.getByRole("dialog", { name: "New note", exact: true })).toBeHidden();
+        if (intent === "change date") {
+            await expect(page.getByLabel("Journal date")).toHaveValue("2026-01-01");
+            await expect(page.getByRole("button", { name: "Create daily note", exact: true })).toBeEnabled();
+        }
+    });
+}

@@ -62,6 +62,8 @@ export default function WorkspaceAgendaPage(): JSX.Element {
     const [actionError, setActionError] = useState("");
     const [openingDaily, setOpeningDaily] = useState(false);
     const requestVersion = useRef(0);
+    const dailyRequest = useRef<AbortController | null>(null);
+    useEffect(() => () => dailyRequest.current?.abort(), [location.pathname, location.search]);
     const date = useMemo(() => parseJournalDay(searchParams.get("date")) ?? new Date(), [searchParams]);
     const loadedNotes = state.notes.filter((note) => !note.deletedAt && note.noteType !== NoteType.template);
     const tasks = useMemo(() => parseOpenWorkspaceTasks(state.notes), [state.notes]);
@@ -101,19 +103,25 @@ export default function WorkspaceAgendaPage(): JSX.Element {
     }, [loadNotes, location.pathname]);
 
     const openDailyNote = async (): Promise<void> => {
+        dailyRequest.current?.abort();
+        const controller = new AbortController();
+        dailyRequest.current = controller;
         setOpeningDaily(true);
         setActionError("");
         try {
             const note = await getOrCreateDailyQuickNote(date);
+            if (controller.signal.aborted) return;
             navigate(`/note/${encodeURIComponent(note.id)}`);
         } catch (error) {
+            if (controller.signal.aborted) return;
             setActionError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            setOpeningDaily(false);
+            if (!controller.signal.aborted) setOpeningDaily(false);
         }
     };
 
     const changeDate = (amount: number): void => {
+        dailyRequest.current?.abort();
         const next = new Date(date);
         next.setDate(next.getDate() + amount);
         setSearchParams({ date: formatJournalDate(next) });
@@ -123,6 +131,7 @@ export default function WorkspaceAgendaPage(): JSX.Element {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
         const selected = parseJournalDay(value);
         if (!selected) return;
+        dailyRequest.current?.abort();
         setSearchParams({ date: formatJournalDate(selected) });
     };
 
