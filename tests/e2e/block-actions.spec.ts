@@ -226,6 +226,8 @@ test("retains the existing dragstart behavior on the same handle", async ({ page
     });
     expect(draggedText).toBe("First");
     await expect(menu(page)).toBeHidden();
+    await handle.click();
+    await expect(menu(page)).toBeVisible();
 });
 
 test.describe("narrow touch screen", () => {

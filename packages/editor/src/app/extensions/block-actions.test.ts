@@ -259,6 +259,28 @@ describe("block actions", () => {
         expect(menu.querySelectorAll("button")[2]?.disabled).toBe(true);
     });
 
+    it("opens block actions on the first click after a drag ends", () => {
+        const editor = create("<p>first</p><p>last</p>");
+        const handle = editor.view.dom.parentElement!.querySelector<HTMLElement>(".drag-handle")!;
+        handle.dispatchEvent(new Event("dragstart"));
+        handle.dispatchEvent(new Event("dragend"));
+        handle.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+        handle.click();
+        const menu = document.querySelector<HTMLElement>('[role="menu"][aria-label="Block actions"]')!;
+        expect(menu.hidden).toBe(false);
+    });
+
+    it("refreshes a block target after the document changes", () => {
+        const editor = create("<p>first</p><p>last</p>");
+        const handle = editor.view.dom.parentElement!.querySelector<HTMLElement>(".drag-handle")!;
+        handle.click();
+        editor.commands.setContent("<p>replacement</p>");
+        handle.click();
+        const menu = document.querySelector<HTMLElement>('[role="menu"][aria-label="Block actions"]')!;
+        menu.querySelector<HTMLButtonElement>("button")!.click();
+        expect(editor.getText().match(/replacement/g)).toHaveLength(2);
+    });
+
     it("keeps a keyboard-selected code block when its native cursor update is pending", () => {
         const editor = create("<pre><code>const value = 42;</code></pre><p>last</p>");
         editor.commands.setTextSelection(1);

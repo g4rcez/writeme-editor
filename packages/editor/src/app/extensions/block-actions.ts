@@ -460,6 +460,7 @@ function createPlugin(): Plugin {
                 close(false);
             };
             const onHandlePointerDown = (): void => {
+                dragged = false;
                 pointerActivation = true;
             };
             const onViewportChange = (event: Event): void => {
@@ -485,7 +486,11 @@ function createPlugin(): Plugin {
             return {
                 update: (_view, previousState) => {
                     handle.hidden = !view.editable;
-                    if (!view.state.doc.eq(previousState.doc) || !view.editable) close(false);
+                    if (!view.state.doc.eq(previousState.doc)) {
+                        target = null;
+                        close(false);
+                    }
+                    if (!view.editable) close(false);
                 },
                 destroy: () => {
                     openForKeyboard = null;
