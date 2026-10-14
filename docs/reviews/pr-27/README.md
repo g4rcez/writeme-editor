@@ -2,7 +2,7 @@
 
 Reviewed feature commit: `939105f320ffe59323de8263df657786a9e45820`.
 
-Verdict: **Changes recommended before approval**.
+Verdict: **Leading-space finding resolved; local regressions pass**. See PR checks for the current commit's merge eligibility.
 
 ## Walkthrough
 
@@ -12,7 +12,7 @@ The recording shows the original uneven Markdown, its formatted rendering, pasti
 
 ![Uneven table preserved after saving and reloading](./saved-and-reloaded.png)
 
-## Finding: P2 - leading indentation breaks table repair
+## Original finding: P2 - leading indentation breaks table repair
 
 [`markdown-table.ts:42-46`](https://github.com/g4rcez/writeme-editor/blob/939105f320ffe59323de8263df657786a9e45820/packages/editor/src/lib/markdown-table.ts#L42-L46) slices the original matched source using the lengths of capture groups that exclude leading spaces. A leading space on the header or delimiter therefore offsets the suffix incorrectly and produces an invalid normalized delimiter. The custom tokenizer falls back to Marked, which either renders the table as prose or discards overflow cells.
 
@@ -28,24 +28,36 @@ Expected: three columns, with `MUST KEEP THIS CELL` retained. Observed: two colu
 
 ![Leading-space reproduction loses the third cell](./leading-space-cell-loss.png)
 
-Derive the suffix from the actual second newline in the original match, or reconstruct it from the captured body, and cover leading indentation on both header and delimiter in parser/browser regressions. No application code was changed during this review.
+## Resolution
+
+The [table tokenizer](../../../packages/editor/src/lib/markdown-table.ts) now locates the second newline in the original match to retain the correct body suffix. Indentation no longer corrupts the normalized delimiter, and uneven empty tables also work without a final newline.
+
+The original two browser reproductions now pass. The parser covers one, two, and three leading spaces on the header, delimiter, or both. The browser matrix covers unindented, header-indented, delimiter-indented, and both-indented tables, each opened and pasted in normal and large notes, then saved and reloaded. CI runs this matrix on Windows, macOS, and Linux and checks the new code's lint and TypeScript diagnostics.
+
+[Watch the fixed leading-space reproduction](./leading-space-fixed.mp4).
+
+![The same input now retains its third cell](./leading-space-fixed.png)
 
 ## Validation
 
 | Check | Result |
 | --- | --- |
-| Existing browser scenarios: normal/large opening and pasting, save/reload | 4 passed |
-| Recorded walkthrough | 1 passed |
-| Additional browser regressions: indented mismatched delimiter and indented overflow body | 2 failed, confirming the finding |
-| Table parser, Markdown integration, worker unit tests | 38 passed |
+| Browser matrix: normal/large opening and pasting, indentation variants, save/reload | 16 passed |
+| Original indented mismatched delimiter and overflow-body browser reproductions | 2 passed after the fix |
+| Table parser, Markdown integration, worker unit tests | 59 passed |
+| Full root unit suite | 190 files passed; 1,516 tests passed; one existing test skipped |
 | Root TypeScript check | Passed |
+| Changed code lint and browser test TypeScript check | Passed |
 
 Commands:
 
 ```sh
-npm run test:e2e -- --platform osx --suite browser --project=chromium --grep 'uneven markdown table'
+npm run test:e2e -- --platform osx --suite browser --project=chromium --grep 'markdown table cells'
 npm test -- --run packages/editor/src/lib/markdown-table.test.ts packages/editor/src/lib/markdown-worker/markdown.worker.test.ts packages/editor/src/app/extensions/tiptap-markdown/Markdown.test.ts
 npm run typecheck
+NODE_OPTIONS=--no-experimental-webstorage npm test
 ```
+
+The local shell runs Node 26; disabling its experimental Node web-storage globals lets jsdom supply browser storage during the full unit run. CI uses the repository's pinned Node 24.18.0 and runs `npm test` normally.
 
 Browser evidence comes from desktop Chromium on macOS using the repository's Vite/Playwright browser runner. It does not establish native Electron or physical-device behavior. Existing development-server warnings, including duplicate React keys and a transient module fetch error, appeared during the passing run; they were not repaired or attributed to this PR.

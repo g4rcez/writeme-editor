@@ -39,9 +39,10 @@ export function configureTableMarkdown(markdown: Marked): void {
                 );
                 if (columns === headerColumns && columns === delimiterColumns) return false;
 
+                const delimiterEnd = match[0].indexOf("\n", match[0].indexOf("\n") + 1);
                 const normalized =
                     `${padRow(header, columns, "")}\n${padRow(delimiter, columns, "---")}` +
-                    match[0].slice(header.length + 1 + delimiter.length);
+                    (delimiterEnd === -1 ? "" : match[0].slice(delimiterEnd));
                 const token = Tokenizer.prototype.table.call(this, normalized);
                 if (!token) return false;
                 // Advance the lexer over the original source, not the padded rows.

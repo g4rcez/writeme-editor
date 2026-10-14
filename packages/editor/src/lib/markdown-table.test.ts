@@ -17,6 +17,48 @@ function cells(element: HTMLElement): string[][] {
 }
 
 describe("Markdown tables", () => {
+    const indentedTables = [1, 2, 3].flatMap((spaces) =>
+        (
+            [
+                [spaces, 0],
+                [0, spaces],
+                [spaces, spaces],
+            ] as const
+        ).flatMap(([headerSpaces, delimiterSpaces]) =>
+            ["| :--- | ---: |", "| :--- | ---: | :---: |"].map((delimiter) => ({
+                headerSpaces,
+                delimiterSpaces,
+                delimiter,
+            })),
+        ),
+    );
+
+    it.each(indentedTables)(
+        "preserves indented cells with $headerSpaces header spaces, $delimiterSpaces delimiter spaces and $delimiter",
+        ({ headerSpaces, delimiterSpaces, delimiter }) => {
+            const element = render(
+                `Before\n\n${" ".repeat(headerSpaces)}| A | B |\n${" ".repeat(delimiterSpaces)}${delimiter}\n| one | two | **MUST KEEP THIS CELL** |\n\n## After`,
+            );
+            expect(cells(element)).toEqual([
+                ["A", "B", ""],
+                ["one", "two", "MUST KEEP THIS CELL"],
+            ]);
+            expect(element.querySelector("td strong")?.textContent).toBe("MUST KEEP THIS CELL");
+            expect(element.querySelectorAll("th")[0]?.getAttribute("align")).toBe("left");
+            expect(element.querySelectorAll("th")[1]?.getAttribute("align")).toBe("right");
+            expect(element.firstElementChild?.textContent).toBe("Before");
+            expect(element.lastElementChild?.outerHTML).toBe("<h2>After</h2>");
+        },
+    );
+
+    it.each([1, 2, 3])(
+        "renders an indented uneven table without body rows or a final newline (%i spaces)",
+        (spaces) => {
+            const indent = " ".repeat(spaces);
+            expect(cells(render(`${indent}| A | B |\n${indent}| --- | --- | --- |`))).toEqual([["A", "B", ""]]);
+        },
+    );
+
     it.each([
         ["| --- | --- | --- | --- |", "| First | Second | Third | Fourth |"],
         ["| --- | --- |", "| First | Second | Third | Fourth |"],
