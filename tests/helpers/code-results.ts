@@ -6,6 +6,8 @@ export async function setCodeMarkdown(page: Page, markdown: string): Promise<voi
     const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
     await raw.fill(markdown);
     await expect(raw).toHaveText(markdown, { useInnerText: true });
+    await raw.press("Control+s");
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
     await toolbar.getByRole("button", { name: "Formatted", exact: true }).click();
     await expect(page.locator(".node-codeBlock").first()).toBeVisible();
 }
