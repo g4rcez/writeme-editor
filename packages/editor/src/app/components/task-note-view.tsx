@@ -67,6 +67,7 @@ const taskViewReducers = () => ({
     setNotice: (notice: string | null): Partial<TaskViewState> => ({ notice }),
     setDraft: (draft: TaskDraft | null): Partial<TaskViewState> => ({ draft }),
     setColumnDraft: (columnDraft: TaskViewState["columnDraft"]): Partial<TaskViewState> => ({ columnDraft }),
+    clearFilters: (): Partial<TaskViewState> => ({ search: "", filter: "all", hideEmpty: false }),
 });
 
 function taskTitle(card: Card): string {
@@ -193,7 +194,9 @@ function Column({
             >
                 <div ref={setNodeRef} className="wm-task-column-cards flex min-h-[120px] flex-col gap-2.5">
                     {children}
-                    {cards.length === 0 ? (
+                    {cards.length === 0 && stack.cards.length > 0 && !isOver ? (
+                        <p className="wm-task-empty rounded-lg p-3 text-xs text-muted-foreground">No matching tasks</p>
+                    ) : cards.length === 0 ? (
                         <button type="button" className="wm-task-empty rounded-lg border border-dashed border-border p-3 text-left text-xs text-muted-foreground [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11" onClick={onAdd}>
                             {isOver ? "Drop task here" : "Add a task"}
                         </button>
@@ -218,7 +221,7 @@ function Column({
     };
 
 export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNode }): JSX.Element {
-    const [state, dispatch] = useReducer({...initialState, content: note.content}, taskViewReducers);
+    const [state, dispatch] = useReducer({ ...initialState, markdown: note.content }, taskViewReducers);
     const { view, filter, markdown, search, draggedCard, hideEmpty, status, notice, draft, columnDraft } = state;
     const pending = useRef(Promise.resolve());
     const persisted = useRef(note);
@@ -226,6 +229,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
     const revision = useRef(0);
     const mounted = useRef(true);
     const blockedByConflict = useRef(false);
+    const searchInput = useRef<HTMLInputElement>(null);
     const blocker = useBlocker(status !== "Saved");
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -453,6 +457,14 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
             ({ cards, stack }) =>
                 (!hideEmpty || cards.length > 0) && (filter !== "backlog" || stack.title.toLowerCase() === "backlog"),
         );
+    const totalTasks = stacks.reduce((count, stack) => count + stack.cards.length, 0);
+    const visibleTasks = shown.reduce((count, column) => count + column.cards.length, 0);
+    const hasFilters = search !== "" || filter !== "all" || hideEmpty;
+
+    function clearFilters(): void {
+        dispatch.clearFilters();
+        searchInput.current?.focus();
+    }
 
     return (
         <div className="wm-task-view flex h-full min-h-0 flex-col my-0 bg-background text-foreground [&_button:focus-visible]:outline [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-primary [&_button:focus-visible]:outline-offset-2">
@@ -497,6 +509,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                         className="flex flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3 max-[700px]:px-3"
                     >
                         <Input
+                            ref={searchInput}
                             size="small"
                             type="search"
                             value={search}
@@ -506,6 +519,28 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                             onChange={(event) => dispatch.setSearch(event.target.value)}
                             left={<MagnifyingGlassIcon size={16} aria-hidden="true" className="text-muted-foreground" />}
                         />
+                        <fieldset aria-label="Task scope" className="flex flex-wrap gap-1">
+                            {([
+                                ["all", "All tasks"],
+                                ["active", "Active"],
+                                ["backlog", "Backlog"],
+                            ] as const).map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    aria-pressed={filter === value}
+                                    onClick={() => dispatch.setFilter(value)}
+                                    className="min-h-11 rounded-lg px-3 text-sm text-muted-foreground hover:bg-muted aria-pressed:bg-muted aria-pressed:text-foreground"
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </fieldset>
+                        {hasFilters ? (
+                            <button type="button" className="min-h-11 rounded-lg px-3 text-sm text-primary hover:bg-muted" onClick={clearFilters}>
+                                Clear filters
+                            </button>
+                        ) : null}
                         <div className="flex items-center gap-4 max-sm:w-full max-sm:justify-between">
                             <Checkbox
                                 checked={hideEmpty}
@@ -524,6 +559,11 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                             </Button>
                         </div>
                     </div>
+                    {totalTasks > 0 && visibleTasks === 0 ? (
+                        <output className="px-6 pb-2 text-sm text-muted-foreground max-[700px]:px-3">
+                            No tasks match these filters.
+                        </output>
+                    ) : null}
                     <DndContext
                         onDragStart={({ active }) => {
                             dispatch.setDraggedCard(stacks.flatMap((stack) => stack.cards).find((card) => card.id === active.id) ?? null);
@@ -581,9 +621,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                                     <Button
                                         theme="ghost-muted"
                                         onClick={() => {
-                                            dispatch.setSearch("");
-                                            dispatch.setFilter("all");
-                                            dispatch.setHideEmpty(false);
+                                            clearFilters();
                                             if (!stacks.length) dispatch.setColumnDraft({ title: "" });
                                         }}
                                     >
