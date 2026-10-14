@@ -7,11 +7,10 @@ test.describe("Tab inline rename", () => {
     test.beforeEach(async ({ cleanPage }) => {
         await goHome(cleanPage);
         await createNote(cleanPage, ORIGINAL_TITLE);
-        await expect(cleanPage.getByRole("textbox", { name: "Note editor", exact: true })).toHaveAttribute(
-            "contenteditable",
-            "true",
-        );
-        await expect(cleanPage.getByRole("textbox", { name: "Note editor", exact: true })).toBeFocused();
+        const editor = cleanPage.getByRole("textbox", { name: "Note editor", exact: true });
+        await expect(editor).toHaveAttribute("contenteditable", "true");
+        await editor.click();
+        await expect(editor).toBeFocused();
     });
 
     test("double-click tab opens rename input, Enter commits", async ({ cleanPage: page }) => {
