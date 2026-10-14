@@ -178,10 +178,13 @@ it("uses modified bracket commands without stealing Vim or composition keys", as
     expect(editor.view.dom.querySelector(".writeme-heading-folded-block")).toBeNull();
 });
 
-it("retains undo for document edits chained with view commands", async () => {
+it.each(["edit-first", "fold-first"])("retains undo for chained view commands (%s)", async (order) => {
     const editor = await create();
     const before = editor.getMarkdown();
-    editor.chain().insertContent("Changed ").collapseAllSections().run();
+    const chain = editor.chain();
+    if (order === "edit-first") chain.insertContent("Changed ").collapseAllSections();
+    else chain.collapseAllSections().insertContent("Changed ");
+    chain.run();
     expect(editor.getMarkdown()).toContain("Changed");
     expect(editor.commands.undo()).toBe(true);
     expect(editor.getMarkdown()).toBe(before);

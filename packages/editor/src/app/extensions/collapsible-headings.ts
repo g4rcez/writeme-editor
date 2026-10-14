@@ -81,7 +81,6 @@ function setCollapsed(tr: Transaction, collapsed: ReadonlySet<string>): Transact
     );
     if (hidden) tr.setSelection(TextSelection.near(tr.doc.resolve(hidden.pos + 1)));
     tr.setMeta(pluginKey, { collapsed } satisfies FoldAction);
-    if (!tr.docChanged) tr.setMeta("addToHistory", false);
     return tr;
 }
 
