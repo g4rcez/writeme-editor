@@ -83,7 +83,6 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
                 cleanup?.();
             };
         }
-
         return () => {
             unsubscribeGlobal();
             cleanup?.();
@@ -98,7 +97,6 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
     return (
         <div className="writeme-editor-status-bar print:hidden">
             <NoteSaveStatus noteId={noteId} />
-            <NeovimStatus editor={activeEditor} />
             <span title={title} className={`flex items-center gap-1.5 tabular-nums ${color}`}>
                 <span className="relative h-1.5 w-14 overflow-hidden rounded-full bg-muted">
                     <span
@@ -117,6 +115,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
             </span>
             <span className="tabular-nums">{counts.words} words</span>
             <span className="tabular-nums">{counts.lines} lines</span>
+            <NeovimStatus editor={activeEditor} />
         </div>
     );
 }

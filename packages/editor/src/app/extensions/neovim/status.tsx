@@ -28,11 +28,13 @@ export function NeovimStatus({ editor }: { readonly editor: Editor | null }): Re
     const theme = modeThemes[vim.mode];
     return (
         <output aria-label="Vim mode" aria-live="polite">
-            <Tag size="small" theme={theme} indicator={theme} className="font-mono uppercase tracking-wide">
+            --
+            <Tag size="tiny" theme="neutral" indicator={theme} className="font-mono uppercase tracking-wide">
                 {vim.mode.toUpperCase().replaceAll("-", " ")}
             </Tag>
             {vim.command ? ` ${vim.command}` : vim.pending.length ? ` ${vim.pending.join("")}` : ""}
             {vim.message ? ` · ${vim.message}` : ""}
+            --
         </output>
     );
 }
