@@ -194,7 +194,10 @@ const TiptapEditorCore = memo(
         dispatch,
         onSaveRef,
     }: TiptapEditorCoreProps) {
-        const extensions = useMemo(() => createExtensions(() => getThemeForMode(theme), true), [theme]);
+        const extensions = useMemo(
+            () => createExtensions(() => getThemeForMode(theme), true, note?.id ?? id),
+            [id, note?.id, theme],
+        );
         const {
             configuration: vimConfiguration,
             error: vimConfigurationError,

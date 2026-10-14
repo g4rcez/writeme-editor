@@ -44,6 +44,7 @@ import { MentionNodeView } from "./elements/mention";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { AssetCleanup } from "./extensions/asset-cleanup";
+import { CollapsibleHeadings } from "./extensions/collapsible-headings";
 import { DomainLink } from "./extensions/domain-link";
 import { EditorCompletion } from "./extensions/editor-completion";
 import { EmojiPicker } from "./extensions/emoji-picker";
@@ -229,7 +230,11 @@ const handleMediaFile = async (
         .run();
 };
 
-export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): AnyExtension[] => {
+export const createExtensions = (
+    getCurrentTheme: () => BundledTheme,
+    manualCompletion = false,
+    noteId = "",
+): AnyExtension[] => {
     return [
         Frontmatter,
         ColorCode,
@@ -255,6 +260,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
                 ];
             },
         }),
+        CollapsibleHeadings.configure({ noteId }),
         Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
         UniqueID.configure({ types: ["heading"] }),
         TableKit.configure({

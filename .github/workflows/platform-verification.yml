@@ -103,6 +103,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/neovim
+            - name: Verify collapsible sections and note-local folding persistence
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/collapsible-sections.spec.ts
+                  --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/collapsible-sections
             - name: Verify Vim configuration in a production browser build
               if: matrix.desktop
               run: >-
