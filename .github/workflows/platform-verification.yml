@@ -111,6 +111,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/code-results
+            - name: Verify note type guide and creation handoff
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- tests/e2e/note-type-guide.spec.ts
+                  --platform ${{ matrix.platform }} --suite browser
+                  --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/note-type-guide
             - name: Verify Vim configuration in a production browser build
               if: matrix.desktop
               run: >-
