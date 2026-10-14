@@ -23,7 +23,10 @@ export function quoteQueryString(value: string): string {
 }
 
 function literalFromFilter(row: FilterRow): string {
-    if (row.valueType === "String" || row.field === "tags" || row.field === "notes.tags")
+    if (
+        row.valueType === "String" ||
+        (row.valueType === undefined && (row.field === "tags" || row.field === "notes.tags"))
+    )
         return quoteQueryString(row.value);
     const num = Number(row.value);
     if (row.value === "true") return "true";

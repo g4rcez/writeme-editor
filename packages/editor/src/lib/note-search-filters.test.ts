@@ -75,6 +75,15 @@ describe("saved search filters", () => {
         },
     );
 
+    it.each(["123", "null", "true"])("preserves an existing unquoted tag literal %s when editing a View", (literal) => {
+        const query = parse(`WHERE tags CONTAINS ${literal}`);
+        const group = astToFilterGroup(query.where);
+        if (!group) throw new Error("Expected editable filters");
+        const notes = [Note.parse({ id: "string-tag", tags: [literal] })];
+        expect(executeQuery(query, { notes })).toEqual([]);
+        expect(executeQuery(parse(filterGroupToQueryString(group)), { notes })).toEqual([]);
+    });
+
     it.each([
         [2026, 2, 8],
         [2026, 10, 1],
