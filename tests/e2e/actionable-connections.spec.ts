@@ -158,7 +158,8 @@ test("previews only unlinked title and alias occurrences from other notes and pe
     await section.locator("summary").click();
     await expect(section.getByRole("button", { name: "Preview link", exact: true })).toHaveCount(3);
     await section.getByRole("button", { name: "Preview link", exact: true }).nth(1).click();
-    await expect(section.getByRole("region", { name: "Link preview" })).toContainText("[Coffee plan]");
+    await expect(section.getByRole("region", { name: "Link preview" }).locator("mark")).toHaveText("Coffee plan");
+    await expect(section.getByRole("region", { name: "Link preview" })).not.toContainText(target.id);
     await page.screenshot({ path: testInfo.outputPath("connections-desktop.png") });
     await section.getByRole("button", { name: "Link this mention", exact: true }).click();
     await expect(section.getByRole("button", { name: "Preview link", exact: true })).toHaveCount(2);
@@ -184,7 +185,7 @@ test("shows distinct choices for ambiguous titles", async ({ cleanPage: page }) 
     await context.getByText("Unresolved references", { exact: true }).click();
     await expect(context.getByText("More than one matching note.")).toBeVisible();
     await context.getByRole("button", { name: "Choose existing note", exact: true }).click();
-    const choice = context.getByRole("button", { name: new RegExp("Shared.*" + other.id) });
+    const choice = context.locator('button[data-note-id="' + other.id + '"]');
     await expect(choice).toBeVisible();
     await choice.click();
     await expect

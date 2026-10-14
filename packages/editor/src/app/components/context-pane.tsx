@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { Dates } from "@/lib/dates";
+import { markdownLineToPlainText } from "@/lib/markdown-text";
 import {
     applyConnectionRepair,
     createConnectionTarget,
@@ -281,6 +282,7 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                                                     <li key={candidate.id}>
                                                         <button
                                                             type="button"
+                                                            data-note-id={candidate.id}
                                                             className="writeme-context-list-button text-left"
                                                             onClick={() =>
                                                                 void runAction(() =>
@@ -292,7 +294,11 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                                                                 {candidate.title || "Untitled"}
                                                             </span>
                                                             <span className="block break-all text-xs text-muted-foreground">
-                                                                {candidate.filePath || candidate.id}
+                                                                {candidate.filePath ||
+                                                                    markdownLineToPlainText(
+                                                                        candidate.content.slice(0, 100),
+                                                                    ) ||
+                                                                    "Empty note"}
                                                             </span>
                                                         </button>
                                                     </li>
@@ -361,12 +367,16 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                         <p className="text-sm text-foreground">
                             {preview.source.title} → {preview.target.title}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">Only this occurrence will change:</p>
-                        <code className="mt-1 block whitespace-pre-wrap break-all text-xs text-foreground">
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Only the highlighted occurrence will become a link:
+                        </p>
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-foreground">
                             {preview.source.content.slice(Math.max(0, preview.from - 50), preview.from)}
-                            {preview.replacement}
+                            <mark className="bg-primary/10 text-primary underline">
+                                {preview.source.content.slice(preview.from, preview.to)}
+                            </mark>
                             {preview.source.content.slice(preview.to, preview.to + 50)}
-                        </code>
+                        </p>
                         <button
                             type="button"
                             className="writeme-context-list-button"
