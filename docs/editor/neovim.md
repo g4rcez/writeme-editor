@@ -78,6 +78,10 @@ Wrapped rows are screen lines. Paragraph motions move between textblocks.
 Line operations preserve schema validity and cannot span isolated table cells.
 An empty document retains an editable paragraph.
 
+Formatted Vim motions synchronize the browser caret immediately, including
+when a motion returns to the current position. A pending native mouse selection
+must not override the motion before the next editing command.
+
 The unnamed yank register stores a ProseMirror `Slice` plus its line/character
 shape, preserving formatting on paste. Undo uses the existing ProseMirror
 history, including its grouping of typed input. Dot-repeat replays the previous

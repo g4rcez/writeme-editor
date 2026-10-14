@@ -9,6 +9,11 @@
 - Improve settings field labels, keyboard focus, and narrow-screen layouts
   while preserving existing routes, platform availability, and save behavior.
 
+### Bug Fixes
+
+- Keep the formatted editor's native caret synchronized with Vim motions so
+  a delayed mouse selection cannot redirect the next editing command.
+
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 
 ### Bug Fixes

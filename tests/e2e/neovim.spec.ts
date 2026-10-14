@@ -27,6 +27,37 @@ async function setup(page: Page, text = "one two three"): Promise<void> {
     await page.keyboard.type("gg0");
 }
 
+test("keeps Vim motions authoritative while a native selection change is pending", async ({ cleanPage: page }) => {
+    await setup(page);
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const prefix = await editor.evaluate((element) => {
+        const selection = window.getSelection();
+        if (!selection) throw new Error("The editor has no native selection");
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        for (const [key, code, keyCode] of [
+            ["g", "KeyG", 71],
+            ["g", "KeyG", 71],
+            ["0", "Digit0", 48],
+        ] as const) {
+            element.dispatchEvent(
+                new KeyboardEvent("keydown", { key, code, keyCode, bubbles: true, cancelable: true }),
+            );
+        }
+        if (!selection.focusNode) throw new Error("The Vim motion lost the native selection");
+        const beforeCursor = document.createRange();
+        beforeCursor.selectNodeContents(element);
+        beforeCursor.setEnd(selection.focusNode, selection.focusOffset);
+        return beforeCursor.toString();
+    });
+    expect(prefix).toBe("");
+    await page.keyboard.type("dw");
+    await expect(editor).toHaveText("two three");
+});
+
 test("changes words, repeats, undoes, and persists a formatted note", async ({ cleanPage: page }) => {
     await setup(page);
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });

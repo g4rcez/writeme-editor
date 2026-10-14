@@ -176,6 +176,7 @@ export class NeovimController {
             goalColumn: vertical ? (vim.goalColumn ?? vim.cursor - (line?.from ?? vim.cursor)) : null,
         });
         this.editor.view.dispatch(tr.scrollIntoView());
+        if (this.editor.view.hasFocus()) this.editor.view.focus();
     }
 
     private cancelTimer(): void {
