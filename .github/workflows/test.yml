@@ -44,6 +44,8 @@ jobs:
             - run: npm ci
             - run: npm run typecheck
             - run: npm run mobile:typecheck
+            - name: Check research excerpt test types
+              run: npm exec tsc -- --noEmit --project tests/tsconfig.research.json
             - name: Check independent math and CLI units
               run: |
                   npm test --workspace @writeme.dev/math

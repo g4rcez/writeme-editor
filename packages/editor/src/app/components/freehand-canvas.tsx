@@ -211,6 +211,8 @@ export function FreehandCanvas({
     onRetry,
     actions,
     linkableNotes,
+    selectionAction,
+    initialPageIndex = 0,
     pageBackground,
     fixedPages = false,
     title,
@@ -221,13 +223,22 @@ export function FreehandCanvas({
     onRetry: () => void;
     actions?: ReactNode;
     linkableNotes: readonly NoteLinkTarget[];
+    selectionAction?: ReactNode;
+    initialPageIndex?: number;
     pageBackground?: (pageIndex: number, zoom: number) => ReactNode;
     fixedPages?: boolean;
     title?: string;
 }): JSX.Element {
     const [notebook, setNotebook] = useState(initialData);
     const notebookRef = useRef(notebook);
-    const [pageIndex, setPageIndex] = useState(0);
+    const [pageIndex, setPageIndex] = useState(() =>
+        Math.max(0, Math.min(initialData.pages.length - 1, initialPageIndex)),
+    );
+    const [pageAnchor, setPageAnchor] = useState(initialPageIndex);
+    if (pageAnchor !== initialPageIndex) {
+        setPageAnchor(initialPageIndex);
+        setPageIndex(Math.max(0, Math.min(initialData.pages.length - 1, initialPageIndex)));
+    }
     const [tool, setTool] = useState<Tool>(fixedPages ? "hand" : "pen");
     const [penStyle, setPenStyle] = useState<PenStyle>("fountain");
     const [ink, setInk] = useState(INKS[0]!.color);
@@ -623,6 +634,7 @@ export function FreehandCanvas({
                             <HandIcon size={20} aria-hidden="true" />
                         </button>
                     ) : null}
+                    {selectionAction}
                     <fieldset className="wm-ink-group" aria-label="Drawing tools">
                         {tools
                             .filter(({ tool: value }) => value !== "hand")

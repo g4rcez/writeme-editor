@@ -1,6 +1,52 @@
 import { Mark, mergeAttributes, type MarkViewProps } from "@tiptap/core";
 import { MarkViewContent, ReactMarkViewRenderer } from "@tiptap/react";
+import { useRef, type JSX, type MouseEvent, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { LinkPreview, UrlLinkPreview } from "@/app/elements/link-preview";
+import { repositories } from "@/store/repositories";
+import { uiDispatch } from "@/store/ui.store";
+
+function ResearchSourceLink({
+    href,
+    attributes,
+    children,
+}: {
+    href: string;
+    attributes: Record<string, unknown>;
+    children: ReactNode;
+}): JSX.Element {
+    const navigate = useNavigate();
+    const inFlight = useRef(false);
+    async function open(event: MouseEvent<HTMLAnchorElement>): Promise<void> {
+        event.preventDefault();
+        event.stopPropagation();
+        if (inFlight.current) return;
+        inFlight.current = true;
+        try {
+            const id = decodeURIComponent(href.split("?")[0]!.slice("/note/".length));
+            const source = await repositories.notes.getOne(id);
+            if (!source || source.deletedAt)
+                throw new Error(
+                    "The source note is unavailable. Restore it or open its workspace, then try Open source again.",
+                );
+            navigate(href);
+        } catch (reason) {
+            uiDispatch.setAlert({
+                open: true,
+                type: "error",
+                title: "Source unavailable",
+                message: reason instanceof Error ? reason.message : "Could not open the source. Try Open source again.",
+            });
+        } finally {
+            inFlight.current = false;
+        }
+    }
+    return (
+        <a {...attributes} href={href} target="_self" onClick={(event) => void open(event)}>
+            {children}
+        </a>
+    );
+}
 
 type LinkMarkOptions = {
     HTMLAttributes: Record<string, string>;
@@ -22,6 +68,14 @@ function LinkMarkView({ mark, HTMLAttributes }: MarkViewProps) {
         title,
         "data-link-url": href,
     });
+
+    if (/^\/note\/[^/?]+\?/.test(href) && new URLSearchParams(href.split("?")[1]).get("research") === "1") {
+        return (
+            <ResearchSourceLink href={href} attributes={linkAttributes}>
+                <MarkViewContent />
+            </ResearchSourceLink>
+        );
+    }
 
     if (/^\.\/comments_[^#]+\.md#[^#]+$/.test(href)) {
         return (

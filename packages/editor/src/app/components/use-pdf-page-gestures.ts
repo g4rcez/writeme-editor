@@ -46,7 +46,7 @@ export function usePdfPageGestures({
         const target = event.target;
         if (!(target instanceof Element)) return;
         if (target.closest(".wm-sticky-link, .wm-pdf-loading, button, a, input")) return;
-        if (event.pointerType === "mouse" && target.closest(".wm-pdf-text-layer span")) return;
+        if (target.closest(".wm-pdf-text-layer span")) return;
         const point = { x: event.clientX, y: event.clientY };
         pointers.current.set(event.pointerId, point);
         event.currentTarget.setPointerCapture(event.pointerId);

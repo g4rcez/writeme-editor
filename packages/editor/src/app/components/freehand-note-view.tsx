@@ -2,9 +2,9 @@ import { Button, Modal } from "@g4rcez/components";
 import { useEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { useBlocker } from "react-router-dom";
 import type { Note } from "@/store/note";
+import { exportFile } from "@/lib/export-file";
 import { parseFreehandNote, replaceFreehandNoteContent, type FreehandNotebook } from "@/lib/freehand-note";
 import { isPathWithinImportRoot } from "@/lib/obsidian-import";
-import { exportFile } from "@/lib/export-file";
 import { getWorkspaceKey, globalDispatch, globalState, repositories, useGlobalStore } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
 import { FreehandCanvas } from "./freehand-canvas";
@@ -14,11 +14,15 @@ class NotebookConflict extends Error {}
 export function FreehandNoteView({
     note,
     actions,
+    selectionAction,
+    initialPageIndex,
     pageBackground,
     fixedPages = false,
 }: {
     note: Note;
     actions?: ReactNode;
+    selectionAction?: ReactNode;
+    initialPageIndex?: number;
     pageBackground?: (pageIndex: number, zoom: number) => ReactNode;
     fixedPages?: boolean;
 }): JSX.Element {
@@ -103,8 +107,12 @@ export function FreehandNoteView({
     function downloadLocalCopy(): void {
         if (!latest.current) return;
         const content = replaceFreehandNoteContent(persisted.current.content, latest.current);
-        void exportFile(`${note.title || "Notebook"}-local-copy.md`, new Blob([content], { type: "text/markdown;charset=utf-8" }))
-            .catch((error: unknown) => setNotice(error instanceof Error ? error.message : "Could not export the local copy."));
+        void exportFile(
+            `${note.title || "Notebook"}-local-copy.md`,
+            new Blob([content], { type: "text/markdown;charset=utf-8" }),
+        ).catch((error: unknown) =>
+            setNotice(error instanceof Error ? error.message : "Could not export the local copy."),
+        );
     }
 
     if (!parsed.data)
@@ -116,6 +124,8 @@ export function FreehandNoteView({
     return (
         <div className="wm-notebook-view">
             <FreehandCanvas
+                selectionAction={selectionAction}
+                initialPageIndex={initialPageIndex}
                 pageBackground={pageBackground}
                 fixedPages={fixedPages}
                 title={note.title}

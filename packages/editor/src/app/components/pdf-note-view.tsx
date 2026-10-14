@@ -1,13 +1,23 @@
 import { Button } from "@g4rcez/components";
 import { TextLayer, type PDFDocumentLoadingTask, type PDFDocumentProxy, type RenderTask } from "pdfjs-dist";
 import { useEffect, useRef, useState, type JSX, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { loadPdfDocument } from "@/lib/pdf-document";
 import { readPdfAsset } from "@/lib/pdf-import";
 import { parsePdfNote } from "@/lib/pdf-note";
 import { FreehandNoteView } from "./freehand-note-view";
+import { SendResearchExcerpt } from "./send-research-excerpt";
 
-function PdfPage({ document, pageNumber }: { document: PDFDocumentProxy; pageNumber: number }): JSX.Element {
+function PdfPage({
+    document,
+    pageNumber,
+    noteId,
+}: {
+    document: PDFDocumentProxy;
+    pageNumber: number;
+    noteId: string;
+}): JSX.Element {
     const container = useRef<HTMLDivElement>(null);
     const canvasHost = useRef<HTMLDivElement>(null);
     const textHost = useRef<HTMLDivElement>(null);
@@ -83,6 +93,8 @@ function PdfPage({ document, pageNumber }: { document: PDFDocumentProxy; pageNum
             ref={container}
             className="wm-pdf-page"
             aria-label={`PDF page ${pageNumber}`}
+            data-research-source={noteId}
+            data-pdf-page={pageNumber}
             data-pdf-ready={renderedWidth === width && width > 0 && !error}
         >
             <div ref={canvasHost} className="wm-pdf-image" aria-hidden="true" />
@@ -97,8 +109,10 @@ function PdfPage({ document, pageNumber }: { document: PDFDocumentProxy; pageNum
 }
 
 export function PdfNoteView({ note, actions }: { note: Note; actions?: ReactNode }): JSX.Element {
+    const location = useLocation();
     const [sourceNote] = useState(note);
     const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
+    const [fingerprint, setFingerprint] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [attempt, setAttempt] = useState(0);
     useEffect(() => {
@@ -108,12 +122,19 @@ export function PdfNoteView({ note, actions }: { note: Note; actions?: ReactNode
             try {
                 const notebook = parsePdfNote(sourceNote.content);
                 const data = await readPdfAsset(sourceNote, notebook);
+                const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(data).buffer);
+                const identity = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(
+                    "",
+                );
                 if (cancelled) return;
                 loading = loadPdfDocument(data);
                 const pdf = await loading.promise;
                 if (pdf.numPages !== notebook.pages.length)
                     throw new Error("The PDF no longer matches its saved annotation pages");
-                if (!cancelled) setDocument(pdf);
+                if (!cancelled) {
+                    setFingerprint(identity);
+                    setDocument(pdf);
+                }
             } catch (reason) {
                 if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not open PDF");
             }
@@ -140,12 +161,40 @@ export function PdfNoteView({ note, actions }: { note: Note; actions?: ReactNode
             </div>
         );
     if (!document) return <output className="block p-6 text-foreground">Opening PDF…</output>;
+    const params = new URLSearchParams(location.search);
+    const requestedPage = Number(params.get("page") ?? 1);
+    if (
+        (params.has("pdf") && params.get("pdf") !== fingerprint) ||
+        !Number.isInteger(requestedPage) ||
+        requestedPage < 1 ||
+        requestedPage > document.numPages
+    ) {
+        return (
+            <div role="alert" className="flex flex-col gap-4 p-6 text-foreground">
+                <p>
+                    The source PDF has been replaced or this page is no longer available. The quotation is still saved
+                    in your writing note.
+                </p>
+                <Button
+                    onClick={() => {
+                        window.history.back();
+                    }}
+                >
+                    Return to writing
+                </Button>
+            </div>
+        );
+    }
     return (
         <FreehandNoteView
             note={note}
             actions={actions}
+            selectionAction={<SendResearchExcerpt source={{ kind: "pdf", note, page: requestedPage, fingerprint }} />}
+            initialPageIndex={requestedPage - 1}
             fixedPages
-            pageBackground={(pageIndex) => <PdfPage key={pageIndex} document={document} pageNumber={pageIndex + 1} />}
+            pageBackground={(pageIndex) => (
+                <PdfPage key={pageIndex} document={document} pageNumber={pageIndex + 1} noteId={note.id} />
+            )}
         />
     );
 }

@@ -282,6 +282,7 @@
     forced-color-adjust: none;
     transform-origin: 0 0;
     user-select: text;
+    -webkit-user-select: text;
 }
 .wm-pdf-text-layer > :not(.markedContent),
 .wm-pdf-text-layer .markedContent span:not(.markedContent) {

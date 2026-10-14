@@ -686,7 +686,7 @@ const TiptapEditorCore = memo(
                         } else if (savingNote) {
                             await dispatch.updateNoteContent(savingNote.id, markdown);
                         }
-                        if (getCurrentMarkdown() === markdown) dirty = false;
+                        if (editor.isDestroyed || getCurrentMarkdown() === markdown) dirty = false;
                         uiDispatch.setEditorSaveStatus(dirty ? "unsaved" : "saved", noteRef.current?.id ?? id);
                     } catch (error) {
                         uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
@@ -763,6 +763,7 @@ const TiptapEditorCore = memo(
         return (
             <div
                 id={`editor-container-${id}`}
+                data-research-source={note?.noteType === "read-it-later" ? note.id : undefined}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
                 aria-busy={uiState.parsingContent ? "true" : "false"}
@@ -1001,6 +1002,7 @@ const RawEditorCore = memo(
         return (
             <div
                 id={`editor-container-${props.id}`}
+                data-research-source={props.note?.noteType === "read-it-later" ? props.note.id : undefined}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
             >
