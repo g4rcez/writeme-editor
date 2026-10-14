@@ -8,10 +8,12 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.evaluate(async () => {
             const path = "/packages/editor/src/store/repositories/index.ts";
             const { repositories } = await import(path);
-            const updateContent = repositories.notes.updateContent.bind(repositories.notes);
-            repositories.notes.updateContent = async (id: string, content: string) => {
-                await new Promise((resolve) => setTimeout(resolve, 700));
-                return updateContent(id, content);
+            const updateContent = repositories.notes.updateContentIfUnchanged.bind(repositories.notes);
+            repositories.notes.updateContentIfUnchanged = async (...args: Parameters<typeof updateContent>) => {
+                const { promise, resolve } = Promise.withResolvers<void>();
+                setTimeout(resolve, 700);
+                await promise;
+                return updateContent(...args);
             };
         });
         const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();

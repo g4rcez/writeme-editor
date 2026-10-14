@@ -1,3 +1,4 @@
+// Browser module imports must run inside page.evaluate, not in Playwright's Node process.
 import type { Page } from "@playwright/test";
 import { researchPdf, savedContent, selectPdfPhrase } from "../helpers/research";
 import { expect, goHome, test } from "./fixtures";
@@ -314,4 +315,153 @@ test("reports missing and replaced PDF assets, allows retry, and reports a remov
             { exact: true },
         ),
     ).toBeVisible();
+});
+
+for (const mode of ["formatted", "markdown"] as const) {
+    test(`retains a stale ${mode} draft and rejects saving over another tab's successful excerpt`, async ({
+        page,
+        context,
+    }) => {
+        const ids = await seedArticle(page);
+        await page.goto("/settings/editor");
+        await page.getByRole("checkbox").first().uncheck();
+        await page.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page.goto(`/note/${ids.destination}`);
+        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+        await expect(editor).toContainText("My original writing.");
+        await editor.click();
+        await page.keyboard.press("Control+End");
+        await page.keyboard.type(" Local pending draft.");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Unsaved changes");
+        const sender = await context.newPage();
+        await sender.goto(`/note/${ids.article}`);
+        if (mode === "markdown") await sender.getByRole("button", { name: "Formatted", exact: true }).click();
+        await expect(sender.locator(".ProseMirror")).toContainText("A saved article phrase.");
+        await selectArticle(sender);
+        await sender.getByRole("button", { name: "Send selection to note", exact: true }).click();
+        const dialog = sender.getByRole("dialog", { name: "Send selection to note", exact: true });
+        await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
+        await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
+        await expect(dialog).toBeHidden();
+        const appended = await savedContent(sender, ids.destination);
+        expect(appended).toContain("A saved article phrase.");
+        expect(appended).toContain("Open source");
+        await page.bringToFront();
+        await editor.click();
+        for (let retry = 0; retry < 2; retry++) {
+            await page.keyboard.press("Control+s");
+            await expect(page.getByRole("alert")).toContainText("changed in another editor");
+            await expect(editor).toContainText("Local pending draft.");
+            expect(await savedContent(page, ids.destination)).toBe(appended);
+        }
+        await sender.getByRole("link", { name: "Open source", exact: true }).click();
+        await expect(sender).toHaveURL(new RegExp(`/note/${ids.article}\\?`));
+        expect(await savedContent(sender, ids.article)).toBe("A saved article phrase.\n\nAnother useful excerpt.");
+        await sender.close();
+    });
+}
+
+test("saves and reloads literal selections in the complete editor Markdown dialect", async ({ page }) => {
+    const ids = await seedArticle(page);
+    const text = "==marker== &amp; &#38; &#x26;\n- item\n1. numbered\nheading\n===\n$x$ and $$x$$";
+    await page.evaluate(
+        async ({ article, text }) => {
+            const { repositories } = (await import(
+                String("/packages/editor/src/store/repositories/index.ts")
+            )) as typeof import("../../packages/editor/src/store/repositories");
+            const { createResearchExcerpt } = (await import(
+                String("/packages/editor/src/lib/research-excerpt.ts")
+            )) as typeof import("../../packages/editor/src/lib/research-excerpt");
+            const note = (await repositories.notes.getOne(article))!;
+            await repositories.notes.updateContent(
+                article,
+                createResearchExcerpt(text, { kind: "article", note }, "source-text"),
+            );
+        },
+        { article: ids.article, text },
+    );
+    await page.reload();
+    const source = page.locator(".ProseMirror blockquote p").first();
+    await expect(source).toHaveText(text, { useInnerText: true });
+    await source.evaluate((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const selection = window.getSelection()!;
+        selection.removeAllRanges();
+        selection.addRange(range);
+        document.dispatchEvent(new Event("selectionchange"));
+    });
+    await page.getByRole("button", { name: "Send selection to note", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Send selection to note", exact: true });
+    await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
+    await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
+    const quote = page.locator(".ProseMirror blockquote p").first();
+    await expect(quote).toHaveText(text, { useInnerText: true });
+    await page.locator(".ProseMirror").click();
+    await page.keyboard.press("Control+s");
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
+    await page.reload();
+    await expect(quote).toHaveText(text, { useInnerText: true });
+    await expect(
+        page.locator(".ProseMirror blockquote mark, .ProseMirror blockquote ul, .ProseMirror blockquote ol"),
+    ).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Open source", exact: true })).toBeVisible();
+});
+
+for (const block of ["```text\nunfinished", "~~~text\nunfinished", "<!-- unfinished"]) {
+    test(`does not mutate a raw destination ending in ${JSON.stringify(block)}`, async ({ page }) => {
+        const ids = await seedArticle(page);
+        const content = `My draft\n\n${block}`;
+        await page.evaluate(
+            async ({ id, content }) => {
+                const { repositories } = (await import(
+                    String("/packages/editor/src/store/repositories/index.ts")
+                )) as typeof import("../../packages/editor/src/store/repositories");
+                await repositories.notes.updateContent(id, content);
+            },
+            { id: ids.destination, content },
+        );
+        await selectArticle(page);
+        await page.getByRole("button", { name: "Send selection to note", exact: true }).click();
+        const dialog = page.getByRole("dialog", { name: "Send selection to note", exact: true });
+        await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
+        await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
+        await expect(dialog.getByRole("alert")).toContainText("unfinished Markdown block");
+        expect(await savedContent(page, ids.destination)).toBe(content);
+        await expect(page).toHaveURL(new RegExp(`/note/${ids.article}$`));
+    });
+}
+
+test("does not reopen a destination deleted at its conditional write boundary", async ({ page }) => {
+    const ids = await seedArticle(page);
+    await selectArticle(page);
+    await page.getByRole("button", { name: "Send selection to note", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Send selection to note", exact: true });
+    await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
+    await page.evaluate(async () => {
+        const { repositories } = (await import(
+            String("/packages/editor/src/store/repositories/index.ts")
+        )) as typeof import("../../packages/editor/src/store/repositories");
+        const original = repositories.notes.updateContentIfUnchanged.bind(repositories.notes);
+        repositories.notes.updateContentIfUnchanged = async (id, expected, content) => {
+            await repositories.notes.delete(id);
+            return original(id, expected, content);
+        };
+    });
+    await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
+    await expect(dialog.getByRole("alert")).toContainText("changed");
+    await expect(page).toHaveURL(new RegExp(`/note/${ids.article}$`));
+    expect(
+        await page.evaluate(async (id) => {
+            const { repositories } = (await import(
+                String("/packages/editor/src/store/repositories/index.ts")
+            )) as typeof import("../../packages/editor/src/store/repositories");
+            return {
+                content: (await repositories.notes.getTrashed()).find((note) => note.id === id)?.content,
+                tabs: (await repositories.tabs.getAll()).filter((tab) => tab.noteId === id).length,
+            };
+        }, ids.destination),
+    ).toEqual({ content: "My original writing.", tabs: 0 });
+    await expect(page.getByRole("tab", { name: "My writing", exact: true })).toHaveCount(0);
 });

@@ -65,6 +65,21 @@ export class MarkdownSerializerState extends Base {
         };
     }
 
+    escapeLiteralText(text: string): string {
+        const lineStart = this.atBlockStart || /(?:^|\n)(?:> ?)*[ \t]*$/.test(this.out);
+        const escaped = super
+            .esc(text, lineStart)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/[=$:]/g, "\\$&");
+        return lineStart
+            ? escaped
+                  .replace(/^(\s*\d+)\)(?=\s)/, "$1\\)")
+                  .replace(/^[ \t]+/, (indent) => indent.replace(/ /g, "&#32;").replace(/\t/g, "&#9;"))
+            : escaped;
+    }
+
     override esc(text: string, startOfLine = false): string {
         const escaped = super.esc(text, startOfLine);
         return this.inlines.some((inline) => inline.delimiter === "==" && inline.end === undefined)

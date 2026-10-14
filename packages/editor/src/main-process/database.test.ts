@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("electron", () => ({ app: { getPath: () => tmpdir() } }));
 
+import { saveResearchExcerpt, createResearchExcerpt } from "@/lib/research-excerpt";
+import { Note, NoteType } from "@/store/note";
 import { DatabaseManager } from "./database";
 
 let directory: string;
@@ -37,7 +39,9 @@ describe("DatabaseManager persistence boundary", () => {
         manager.updateNoteContent("meeting", "Newer draft", 11, "2026-01-01T00:00:00.000Z", "user");
         manager.updateNoteMetadata("meeting", { meetingTranscript: JSON.stringify({ segments: [] }) });
         expect(manager.get("notes", "meeting")).toMatchObject({
-            title: "Standup", content: "Newer draft", noteType: "meeting-note",
+            title: "Standup",
+            content: "Newer draft",
+            noteType: "meeting-note",
             metadata: { meetingTranscript: JSON.stringify({ segments: [] }) },
         });
         expect(() => manager.updateNoteMetadata("missing", {})).toThrow("Note not found");
@@ -161,6 +165,54 @@ describe("DatabaseManager persistence boundary", () => {
                 "test",
             ),
         ).toMatchObject({ title: "Research", content: "# Approved" });
+    });
+
+    it("rejects an excerpt when deletion wins immediately before the SQLite conditional write", async () => {
+        const destination = Note.new("Writing", "Keep my writing");
+        manager.save("notes", destination);
+        const source = Note.new("Research", "Source", NoteType["read-it-later"]);
+        const { promise: paused, resolve: reachedWrite } = Promise.withResolvers<void>();
+        const { promise: gate, resolve: resume } = Promise.withResolvers<void>();
+        const repository = {
+            getOne: async (id: string) => {
+                const row = manager.get<Partial<Note>>("notes", id);
+                return row ? Note.parse(row) : null;
+            },
+            updateContentIfUnchanged: async (
+                id: string,
+                expected: { title: string; updatedAt: Date; content: string },
+                content: string,
+            ) => {
+                reachedWrite();
+                await gate;
+                const saved = manager.updateNoteContentIfUnchanged(
+                    id,
+                    { ...expected, updatedAt: expected.updatedAt.toISOString() },
+                    content,
+                    content.length,
+                    new Date().toISOString(),
+                    "test",
+                );
+                return saved ? Note.parse(saved) : null;
+            },
+        };
+        const pending = saveResearchExcerpt(
+            repository,
+            destination.id,
+            createResearchExcerpt("Selected words", { kind: "article", note: source }, "deleted-race"),
+            "deleted-race",
+            source.id,
+        );
+        const rejected = expect(pending).rejects.toThrow("changed");
+        await paused;
+        manager.softDeleteNote(destination.id, "2026-10-14T00:00:00.000Z");
+        resume();
+        await rejected;
+        expect(manager.get("notes", destination.id)).toMatchObject({
+            content: "Keep my writing",
+            deletedAt: "2026-10-14T00:00:00.000Z",
+        });
+        expect(manager.getNoteHistory(destination.id)).toEqual([]);
     });
 
     it("denies generic writes and deletes for immutable note history", () => {

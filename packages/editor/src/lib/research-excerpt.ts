@@ -1,3 +1,4 @@
+import { lexer } from "marked";
 import { NoteType, type Note, type INoteRepository } from "@/store/note";
 
 export type ResearchExcerptSource =
@@ -5,7 +6,10 @@ export type ResearchExcerptSource =
     | { kind: "article"; note: Note };
 
 function escapeMarkdown(text: string): string {
-    return text.replace(/([\\`*_{}[\]<>()!#|~])/g, "\\$1");
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/([\\`*_{}[\]<>()!#|~=$.+:-])/g, "\\$1")
+        .replace(/^[ \t]+/gm, (indent) => indent.replace(/ /g, "&#32;").replace(/\t/g, "&#9;"));
 }
 
 export function isResearchDestination(note: Note, sourceId: string): boolean {
@@ -14,7 +18,7 @@ export function isResearchDestination(note: Note, sourceId: string): boolean {
 
 export function createResearchExcerpt(text: string, source: ResearchExcerptSource, operationId: string): string {
     if (!text.trim()) throw new Error("Select text in the source before sending it to a note.");
-    const quote = escapeMarkdown(text.trim())
+    const quote = escapeMarkdown(text.replace(/\r\n?/g, "\n"))
         .split(/\r?\n/)
         .map((line) => `> ${line}`)
         .join("\n");
@@ -36,7 +40,13 @@ export function createResearchExcerpt(text: string, source: ResearchExcerptSourc
 export function appendResearchExcerpt(content: string, excerpt: string, operationId: string): string {
     if (content.includes(`excerpt=${encodeURIComponent(operationId)}`)) return content;
     const separator = !content || content.endsWith("\n\n") ? "" : content.endsWith("\n") ? "\n" : "\n\n";
-    return `${content}${separator}${excerpt}\n`;
+    const appended = `${content}${separator}${excerpt}\n`;
+    if (!lexer(appended).some((token) => token.type === "blockquote" && token.raw.includes(excerpt))) {
+        throw new Error(
+            "The destination has an unfinished Markdown block. Close its code fence or HTML block before retrying.",
+        );
+    }
+    return appended;
 }
 
 export async function saveResearchExcerpt(

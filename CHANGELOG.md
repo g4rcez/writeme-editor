@@ -36,6 +36,15 @@
   route, or closing the Calendar dialog; completed storage writes remain saved.
 - Render uneven-width Markdown tables when opening or pasting notes, including
   large documents, without dropping overflow cells or their formatting.
+- Preserve successful research excerpts when another window saves a stale formatted
+  or Markdown draft. Conflicting saves retain the local draft and explain how to
+  reconcile it without replacing the saved note.
+- Keep selected highlights, entity spellings, list markers, setext underlines,
+  dollar delimiters, and indentation literal through excerpt save and reload.
+- Refuse excerpt appends into unfinished Markdown fences or HTML comments without
+  changing the destination; close the unfinished block before retrying.
+- Reject native conditional writes atomically when the destination was trashed,
+  preserving its content and avoiding a false successful send.
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag
