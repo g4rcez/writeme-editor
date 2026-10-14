@@ -18,7 +18,8 @@
 - Keep workspace-file mentions out of missing-note actions and preserve literal
   link labels without overlapping wrapped app URLs.
 - Render uneven-width Markdown tables when opening or pasting notes, including
-  large documents, without dropping overflow cells or their formatting.
+  large documents, without dropping overflow cells or their formatting, or creating
+  extra rows from HTML formatting whitespace.
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag
