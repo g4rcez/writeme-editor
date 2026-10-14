@@ -37,6 +37,10 @@ jobs:
                   tests/e2e/tab-rename.spec.ts
                   tests/e2e/recently-closed-tab.spec.ts
                   tests/e2e/editor-tab-drag.spec.ts
+                  tests/e2e/markdown-tables.spec.ts
+                  tests/e2e/task-note.spec.ts
+                  packages/editor/src/lib/markdown-table.ts
+                  packages/editor/src/lib/markdown-table.test.ts
                   tests/device/freehand-note.spec.ts
                   tests/native/freehand-note.spec.ts
                   tests/helpers/handwriting.ts
@@ -59,6 +63,8 @@ jobs:
                   tests/e2e/tab-rename.spec.ts
                   tests/e2e/recently-closed-tab.spec.ts
                   tests/e2e/editor-tab-drag.spec.ts
+                  tests/e2e/markdown-tables.spec.ts
+                  tests/e2e/task-note.spec.ts
                   tests/device/freehand-note.spec.ts
                   playwright.*.config.ts
             - name: Check platform runner contracts
