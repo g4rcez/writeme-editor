@@ -1,11 +1,84 @@
 import { describe, expect, it } from "vitest";
 import { Note } from "@/store/note";
-import { extractNoteLinkReferences, findIncomingNoteLinks, resolveNoteLinks } from "./note-links";
+import {
+    extractNoteLinkReferences,
+    findIncomingNoteLinks,
+    findUnlinkedNoteMentions,
+    findUnresolvedNoteLinks,
+    resolveNoteLinks,
+} from "./note-links";
 
 const makeNote = (id: string, title: string, content = "", filePath?: string): Note =>
     Note.parse({ id, title, content, filePath });
 
 describe("note link resolution", () => {
+    it("surfaces deleted ID targets and normal internal Markdown links for repair", () => {
+        const source = makeNote(
+            "source",
+            "Source",
+            '[Old name](/note/deleted "writeme-mention:deleted") and [Other](/note/other)',
+        );
+        const references = findUnresolvedNoteLinks(source, [source]);
+        expect(references.map(({ reference }) => [reference.target, reference.label])).toEqual([
+            ["deleted", "Old name"],
+            ["other", "Other"],
+        ]);
+        const target = makeNote("other", "Renamed");
+        expect(resolveNoteLinks(source, [source, target]).map(({ note }) => note.id)).toEqual(["other"]);
+    });
+    it("offers all duplicate matches and shares alias resolution without treating self-links as missing", () => {
+        const current = makeNote("current", "Current", "[[Current]] [[Missing]] [[Alias]] [[Shared]] `[[Code]]`");
+        const aliased = Note.parse({ id: "alias", title: "Canonical", metadata: { aliases: ["Alias"] } });
+        const first = makeNote("first", "Shared");
+        const second = makeNote("second", "Shared");
+        const notes = [current, aliased, first, second];
+        expect(
+            findUnresolvedNoteLinks(current, notes).map(({ reference, candidates }) => [
+                reference.target,
+                candidates.map(({ id }) => id),
+            ]),
+        ).toEqual([
+            ["Missing", []],
+            ["Shared", ["first", "second"]],
+        ]);
+        expect(resolveNoteLinks(current, notes).map(({ note }) => note.id)).toEqual(["alias"]);
+    });
+
+    it("finds incoming Unicode title and alias occurrences with original offsets and excludes Markdown code and links", () => {
+        const target = Note.parse({ id: "target", title: "Café", metadata: { aliases: ["東京"] } });
+        const source = makeNote(
+            "source",
+            "Source",
+            [
+                "Cafe\u0301, Café and 東京. Not Caféine or 大東京.",
+                "`Café` and ``東京 ` code``",
+                "~~~md",
+                "Café",
+                "```",
+                "東京",
+                "~~~",
+                "    Café",
+                "[Café](https://example.com)",
+                "[東京][ref]",
+                "",
+                "[ref]: https://example.com",
+                "",
+                "[[Café]]",
+                "![東京](image.png)",
+            ].join("\n"),
+        );
+        const mentions = findUnlinkedNoteMentions(target, [target, source]);
+        expect(mentions.map(({ text }) => text)).toEqual(["Cafe\u0301", "Café", "東京"]);
+        for (const mention of mentions) expect(source.content.slice(mention.from, mention.to)).toBe(mention.text);
+        expect(mentions[0]?.source.id).toBe("source");
+        expect(mentions[0]?.excerpt).toContain("Cafe\u0301");
+    });
+
+    it("retains each identical missing reference as an explicit occurrence", () => {
+        const source = makeNote("source", "Source", "[[Missing]] then [[Missing]]");
+        expect(findUnresolvedNoteLinks(source, [source]).map(({ reference }) => reference.from)).toEqual([0, 17]);
+    });
+
     it("extracts wiki, mention, and app links using normalized targets", () => {
         const references = extractNoteLinkReferences(
             '[[Project|Roadmap]] ![[Guide#Setup]] [mention](app "writeme-mention:note-1") app://note/note-2',

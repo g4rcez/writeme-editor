@@ -1,3 +1,4 @@
+import { isolateHistory } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import {
     Compartment,
@@ -14,6 +15,7 @@ import { vim, Vim, getCM } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NOTE_LINK_REPAIR_EVENT, repairedMarkdown, type NoteLinkRepairRequest } from "@/lib/note-link-repair";
 import { supportsAI } from "@/lib/platform";
 import type { WritingEditorAdapter } from "../writing-assistant/types";
 import {
@@ -494,6 +496,24 @@ export function RawMarkdownEditor({
         });
 
         viewRef.current = view;
+        const repairLink = (event: Event): void => {
+            const request = (event as CustomEvent<NoteLinkRepairRequest>).detail;
+            if (request.noteId !== noteId || request.result !== null) return;
+            if (view.state.readOnly) {
+                request.result = "unavailable";
+                return;
+            }
+            if (repairedMarkdown(view.state.doc.toString(), request) === null) {
+                request.result = "conflict";
+                return;
+            }
+            view.dispatch({
+                changes: { from: request.from, to: request.to, insert: request.replacement },
+                annotations: isolateHistory.of("full"),
+            });
+            request.result = "applied";
+        };
+        window.addEventListener(NOTE_LINK_REPAIR_EVENT, repairLink);
         if (initialWritingAssistantEnabledRef.current) {
             const adapter = writingAssistantIntegration.createAdapter(view);
             writingAssistantAdapterRef.current = adapter;
@@ -535,6 +555,7 @@ export function RawMarkdownEditor({
 
         return () => {
             activation.unregister();
+            window.removeEventListener(NOTE_LINK_REPAIR_EVENT, repairLink);
             view.dom.removeEventListener("focus", activation.activate, true);
             if (cursorScrollFrame !== null) {
                 cancelAnimationFrame(cursorScrollFrame);

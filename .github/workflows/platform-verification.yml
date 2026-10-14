@@ -132,6 +132,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/task-board
+            - name: Verify actionable note connections and backlinks
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/actionable-connections.spec.ts
+                  tests/e2e/note-links.spec.ts --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/connections
             - name: Verify handwriting production and offline persistence
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.platform }}

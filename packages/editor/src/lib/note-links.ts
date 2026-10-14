@@ -1,16 +1,26 @@
+import remarkFrontmatter from "remark-frontmatter";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
 import type { Note } from "@/store/note";
+import { findCompatibleNotes, getNoteAliases } from "@/lib/note-lookup";
 import {
     isImageAttachmentTarget,
     isPdfAttachmentTarget,
     isVideoAttachmentTarget,
     parseObsidianLink,
 } from "@/lib/obsidian-links";
+import { decodeMarkdownFilePath } from "./markdown-links";
 import { markdownLineToPlainText } from "./markdown-text";
 
 export type NoteLinkReference = {
     kind: "id" | "wiki";
     raw: string;
     target: string;
+    label: string;
+    from: number;
+    to: number;
 };
 
 export type ResolvedNoteLink = {
@@ -23,10 +33,18 @@ export type IncomingNoteLink = {
     excerpt: string;
 };
 
-type NoteIndex = {
-    byId: Map<string, Note>;
-    byTitle: Map<string, Note[]>;
-    byPath: Map<string, Note[]>;
+export type UnresolvedNoteReference = {
+    reference: NoteLinkReference;
+    candidates: Note[];
+};
+
+export type UnlinkedNoteMention = {
+    source: Note;
+    text: string;
+    from: number;
+    to: number;
+    excerpt: string;
+    candidates: Note[];
 };
 
 const WIKI_LINK_PATTERN = /!?\[\[[^\]\n]+\]\]/g;
@@ -34,39 +52,79 @@ const MENTION_LINK_PATTERN = /\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g;
 const APP_NOTE_LINK_PATTERN = /app:\/\/note\/([^\s<>"')\]]+)/g;
 
 export function extractNoteLinkReferences(content: string): NoteLinkReference[] {
+    const searchable = maskMarkdownNonText(content, false);
     const references = new Map<string, NoteLinkReference>();
     const add = (reference: NoteLinkReference): void => {
-        references.set(`${reference.kind}:${reference.target}:${reference.raw}`, reference);
+        references.set(`${reference.kind}:${reference.target}:${reference.from}`, reference);
     };
 
-    for (const match of content.matchAll(MENTION_LINK_PATTERN)) {
+    for (const match of searchable.matchAll(MENTION_LINK_PATTERN)) {
         const raw = match[0];
         const target = match[2];
-        if (raw && target) add({ kind: "id", raw, target });
+        if (raw && target)
+            add({
+                kind: "id",
+                raw,
+                target,
+                label: match[1] ?? target,
+                from: match.index,
+                to: match.index + raw.length,
+            });
     }
 
-    for (const match of content.matchAll(APP_NOTE_LINK_PATTERN)) {
+    for (const match of searchable.matchAll(APP_NOTE_LINK_PATTERN)) {
         const raw = match[0];
         const target = match[1];
-        if (raw && target) add({ kind: "id", raw, target });
+        if (raw && target)
+            add({ kind: "id", raw, target, label: target, from: match.index, to: match.index + raw.length });
     }
 
-    for (const match of content.matchAll(WIKI_LINK_PATTERN)) {
+    visit(markdownParser.parse(content), "link", (node) => {
+        const target = node.url.match(/^\/note\/([^/?#]+)/)?.[1];
+        const from = node.position?.start.offset;
+        const to = node.position?.end.offset;
+        if (!target || from === undefined || to === undefined || !searchable.slice(from, to).trim()) return;
+        const id = decodeMarkdownFilePath(target);
+        add({
+            kind: "id",
+            raw: content.slice(from, to),
+            target: id,
+            label: markdownLineToPlainText(content.slice(from, to)),
+            from,
+            to,
+        });
+    });
+
+    for (const match of searchable.matchAll(WIKI_LINK_PATTERN)) {
         const raw = match[0];
         const link = raw ? parseObsidianLink(raw) : null;
         if (!raw || !link || !link.target || isAttachmentTarget(link.target)) continue;
-        add({ kind: "wiki", raw, target: link.target });
+        add({
+            kind: "wiki",
+            raw,
+            target: link.target,
+            label: link.display,
+            from: match.index,
+            to: match.index + raw.length,
+        });
     }
 
     return [...references.values()];
 }
 
+export function findUnresolvedNoteLinks(note: Note, notes: readonly Note[]): UnresolvedNoteReference[] {
+    return extractNoteLinkReferences(note.content).flatMap((reference) => {
+        if (notes.some((candidate) => candidate.id === reference.target)) return [];
+        const candidates = reference.kind === "wiki" ? findCompatibleNotes(notes, reference.target) : [];
+        return candidates.length === 1 ? [] : [{ reference, candidates }];
+    });
+}
+
 export function resolveNoteLinks(note: Note, notes: readonly Note[]): ResolvedNoteLink[] {
-    const index = createNoteIndex(notes);
     const resolved = new Map<string, ResolvedNoteLink>();
 
     for (const reference of extractNoteLinkReferences(note.content)) {
-        const target = resolveReference(reference, index);
+        const target = resolveReference(reference, notes);
         if (!target || target.id === note.id) continue;
         const entry = resolved.get(target.id);
         if (entry) {
@@ -79,14 +137,69 @@ export function resolveNoteLinks(note: Note, notes: readonly Note[]): ResolvedNo
     return [...resolved.values()];
 }
 
+export function findUnlinkedNoteMentions(note: Note, notes: readonly Note[]): UnlinkedNoteMention[] {
+    return notes.filter((source) => source.id !== note.id).flatMap((source) => findMentionsInSource(source, [note]));
+}
+
+export function findMentionsInSource(note: Note, notes: readonly Note[]): UnlinkedNoteMention[] {
+    const text = maskMarkdownNonText(note.content);
+    const segments = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)];
+    const offsets: Array<{ from: number; to: number }> = [];
+    const normalizedText = segments
+        .map(({ segment, index }) => {
+            const normalized = segment.normalize("NFC");
+            for (let unit = 0; unit < normalized.length; unit += 1)
+                offsets.push({ from: index, to: index + segment.length });
+            return normalized;
+        })
+        .join("");
+    const candidateNotes = notes.filter((candidate) => candidate.id !== note.id);
+    const names = new Map<string, { display: string; candidates: Map<string, Note> }>();
+
+    for (const candidate of candidateNotes) {
+        for (const name of [candidate.title, ...getNoteAliases(candidate)]) {
+            const normalized = name.trim().normalize("NFC").toLocaleLowerCase();
+            if (!normalized) continue;
+            const entry = names.get(normalized) ?? { display: name.trim(), candidates: new Map<string, Note>() };
+            entry.candidates.set(candidate.id, candidate);
+            names.set(normalized, entry);
+        }
+    }
+
+    const matches: UnlinkedNoteMention[] = [];
+    const occupied: Array<{ from: number; to: number }> = [];
+    const orderedNames = [...names.values()].sort((a, b) => b.display.length - a.display.length);
+    for (const entry of orderedNames) {
+        const expression = new RegExp(
+            `(?<![\\p{L}\\p{M}\\p{N}_])${escapeRegExp(entry.display.normalize("NFC"))}(?![\\p{L}\\p{M}\\p{N}_])`,
+            "giu",
+        );
+        for (const match of normalizedText.matchAll(expression)) {
+            const from = offsets[match.index]?.from;
+            const to = offsets[match.index + match[0].length - 1]?.to;
+            if (from === undefined || to === undefined) continue;
+            if (occupied.some((range) => from < range.to && to > range.from)) continue;
+            occupied.push({ from, to });
+            matches.push({
+                source: note,
+                text: note.content.slice(from, to),
+                from,
+                to,
+                excerpt: getTextExcerpt(note.content, from, to),
+                candidates: [...entry.candidates.values()],
+            });
+        }
+    }
+    return matches.sort((a, b) => a.from - b.from);
+}
+
 export function findIncomingNoteLinks(note: Note, notes: readonly Note[]): IncomingNoteLink[] {
-    const index = createNoteIndex(notes);
     const incoming: IncomingNoteLink[] = [];
 
     for (const source of notes) {
         if (source.id === note.id) continue;
         const reference = extractNoteLinkReferences(source.content).find(
-            (candidate) => resolveReference(candidate, index)?.id === note.id,
+            (candidate) => resolveReference(candidate, notes)?.id === note.id,
         );
         if (!reference) continue;
         incoming.push({ note: source, excerpt: getReferenceExcerpt(source.content, reference) });
@@ -95,49 +208,55 @@ export function findIncomingNoteLinks(note: Note, notes: readonly Note[]): Incom
     return incoming;
 }
 
-function createNoteIndex(notes: readonly Note[]): NoteIndex {
-    const byId = new Map<string, Note>();
-    const byTitle = new Map<string, Note[]>();
-    const byPath = new Map<string, Note[]>();
+function resolveReference(reference: NoteLinkReference, notes: readonly Note[]): Note | undefined {
+    if (reference.kind === "id") return notes.find((candidate) => candidate.id === reference.target);
+    const byId = notes.find((candidate) => candidate.id === reference.target);
+    const candidates = findCompatibleNotes(notes, reference.target);
+    return byId ?? (candidates.length === 1 ? candidates[0] : undefined);
+}
 
-    for (const note of notes) {
-        byId.set(note.id, note);
-        const titleMatches = byTitle.get(note.title) ?? [];
-        titleMatches.push(note);
-        byTitle.set(note.title, titleMatches);
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-        if (note.filePath) {
-            const normalizedPath = normalizeNotePath(note.filePath);
-            const pathMatches = byPath.get(normalizedPath) ?? [];
-            pathMatches.push(note);
-            byPath.set(normalizedPath, pathMatches);
+const markdownParser = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml", "toml"]);
+
+function maskMarkdownNonText(content: string, excludeLinks = true): string {
+    const chars = content.split("");
+    const mask = (from: number, to: number): void => {
+        for (let index = from; index < to; index += 1) if (chars[index] !== "\n") chars[index] = " ";
+    };
+    const excluded = new Set([
+        "code",
+        "inlineCode",
+        "html",
+        "yaml",
+        "toml",
+        ...(excludeLinks ? ["link", "linkReference", "image", "imageReference", "definition"] : []),
+    ]);
+    visit(markdownParser.parse(content), (node) => {
+        if (!excluded.has(node.type)) return;
+        const from = node.position?.start.offset;
+        const to = node.position?.end.offset;
+        if (from !== undefined && to !== undefined) mask(from, to);
+    });
+    const visible = chars.join("");
+    for (const pattern of excludeLinks ? [/!?\[\[[^\]\n]+\]\]/g, /\b(?:https?:\/\/|app:\/\/)[^\s<>]+/g] : []) {
+        for (const match of visible.matchAll(pattern)) {
+            if (match.index !== undefined) mask(match.index, match.index + match[0].length);
         }
     }
-
-    return { byId, byTitle, byPath };
+    return chars.join("");
 }
 
-function resolveReference(reference: NoteLinkReference, index: NoteIndex): Note | undefined {
-    if (reference.kind === "id") return index.byId.get(reference.target);
-
-    const byId = index.byId.get(reference.target);
-    if (byId) return byId;
-
-    const pathTarget = normalizeNotePath(reference.target);
-    if (reference.target.includes("/") || /\.md$/i.test(reference.target)) {
-        const pathMatches = [...index.byPath.entries()]
-            .filter(([path]) => path === pathTarget || path.endsWith(`/${pathTarget}`))
-            .flatMap(([, matches]) => matches);
-        if (pathMatches.length === 1) return pathMatches[0];
-        if (pathMatches.length > 1) return undefined;
-    }
-
-    const titleMatches = index.byTitle.get(reference.target) ?? [];
-    return titleMatches.length === 1 ? titleMatches[0] : undefined;
-}
-
-function normalizeNotePath(path: string): string {
-    return path.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+/g, "/").replace(/\.md$/i, "").replace(/^\//, "");
+function getTextExcerpt(content: string, from: number, to: number): string {
+    const lineStart = content.lastIndexOf("\n", from) + 1;
+    const lineEndAt = content.indexOf("\n", to);
+    const lineEnd = lineEndAt < 0 ? content.length : lineEndAt;
+    return (
+        markdownLineToPlainText(content.slice(Math.max(lineStart, from - 60), Math.min(lineEnd, to + 90))) ||
+        content.slice(from, to)
+    );
 }
 
 function isAttachmentTarget(target: string): boolean {

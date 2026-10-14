@@ -5,7 +5,21 @@ import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { Dates } from "@/lib/dates";
-import { findIncomingNoteLinks, resolveNoteLinks } from "@/lib/note-links";
+import {
+    applyConnectionRepair,
+    createConnectionTarget,
+    refreshConnectionNotes,
+    undoConnectionRepair,
+    type ConnectionRepair,
+} from "@/lib/note-connection-actions";
+import { formatNoteMention } from "@/lib/note-link-repair";
+import {
+    findIncomingNoteLinks,
+    findUnlinkedNoteMentions,
+    findUnresolvedNoteLinks,
+    resolveNoteLinks,
+} from "@/lib/note-links";
+import { parseObsidianLink, formatObsidianLink } from "@/lib/obsidian-links";
 
 type OutlineHeading = {
     id: string;
@@ -77,7 +91,55 @@ function ContextSection({
 export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
     const [headings, setHeadings] = useState<OutlineHeading[]>([]);
     const [isNarrow, setIsNarrow] = useState(() => window.matchMedia?.("(max-width: 959px)").matches ?? false);
+    const [repairError, setRepairError] = useState<string | null>(null);
+    const [preview, setPreview] = useState<ConnectionRepair | null>(null);
+    const [busy, setBusy] = useState(false);
+    const actionPending = useRef(false);
+    const previewElement = useRef<HTMLElement>(null);
+    const previewTrigger = useRef<HTMLButtonElement | null>(null);
+    const feedbackElement = useRef<HTMLOutputElement>(null);
+    const connectionControls = useRef<HTMLFieldSetElement>(null);
+    const searchElement = useRef<HTMLInputElement>(null);
+    const choosingTrigger = useRef<HTMLButtonElement | null>(null);
+    const [choosingReference, setChoosingReference] = useState<number | null>(null);
+    const [targetQuery, setTargetQuery] = useState("");
+    const [undo, setUndo] = useState<{ saved: Note; originalContent: string } | null>(null);
     const openedInNarrowViewport = useRef(isNarrow);
+
+    useEffect(() => {
+        if (preview) previewElement.current?.focus();
+    }, [preview]);
+    useEffect(() => {
+        if (!busy && repairError) feedbackElement.current?.focus();
+    }, [busy, repairError]);
+    useEffect(() => {
+        if (choosingReference !== null) searchElement.current?.focus();
+    }, [choosingReference]);
+    useEffect(() => {
+        const escape = (event: KeyboardEvent): void => {
+            if (
+                event.key !== "Escape" ||
+                (!preview && choosingReference === null) ||
+                !connectionControls.current?.contains(document.activeElement)
+            )
+                return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (preview) {
+                setPreview(null);
+                previewTrigger.current?.focus();
+            } else {
+                setChoosingReference(null);
+                choosingTrigger.current?.focus();
+            }
+        };
+        window.addEventListener("keydown", escape, true);
+        return () => window.removeEventListener("keydown", escape, true);
+    }, [preview, choosingReference]);
+    const cancelPreview = (): void => {
+        setPreview(null);
+        previewTrigger.current?.focus();
+    };
 
     useEffect(() => {
         const media = window.matchMedia?.("(max-width: 959px)");
@@ -110,6 +172,261 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
 
     const linkedNotes = useMemo(() => resolveNoteLinks(note, notes), [note, notes]);
     const incomingNotes = useMemo(() => findIncomingNoteLinks(note, notes), [note, notes]);
+    const unresolvedLinks = useMemo(() => findUnresolvedNoteLinks(note, notes), [note, notes]);
+    const unlinkedMentions = useMemo(() => findUnlinkedNoteMentions(note, notes), [note, notes]);
+    const runAction = async (action: () => Promise<void>): Promise<void> => {
+        if (actionPending.current) return;
+        actionPending.current = true;
+        setBusy(true);
+        setRepairError(null);
+        try {
+            await action();
+        } catch (error: unknown) {
+            setRepairError(error instanceof Error ? error.message : "Could not update the connection. Try again.");
+        } finally {
+            actionPending.current = false;
+            setBusy(false);
+        }
+    };
+    const applyRepair = async (repair: ConnectionRepair): Promise<void> => {
+        const saved = await applyConnectionRepair(repair);
+        setUndo(saved ? { saved, originalContent: repair.source.content } : null);
+        setPreview(null);
+        setRepairError(saved ? "Link added." : "Link added in the editor. Save or undo it as you would any edit.");
+    };
+    const repairReference = async (
+        reference: (typeof unresolvedLinks)[number]["reference"],
+        target: Note,
+    ): Promise<void> => {
+        const parsed = parseObsidianLink(reference.raw);
+        const replacement =
+            reference.kind === "id"
+                ? formatNoteMention(target.id, reference.label)
+                : formatObsidianLink({
+                      target: target.id,
+                      embed: parsed?.embed,
+                      subpath: parsed?.subpath,
+                      alias: parsed?.alias ?? parsed?.display ?? reference.target,
+                  });
+        await applyRepair({ source: note, target, from: reference.from, to: reference.to, replacement });
+    };
+    const repairSections = (
+        <fieldset ref={connectionControls} disabled={busy} className="min-w-0 border-0 p-0 [&_button]:min-h-11">
+            <ContextSection title="Unresolved references" count={unresolvedLinks.length}>
+                {unresolvedLinks.length === 0 ? (
+                    <p className="writeme-context-empty">Missing note references will appear here.</p>
+                ) : (
+                    <ul className="writeme-context-list">
+                        {unresolvedLinks.map(({ reference, candidates }) => (
+                            <li key={reference.from} className="px-2 py-2">
+                                <p className="break-words text-sm font-medium text-foreground">{reference.raw}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {candidates.length > 1 ? "More than one matching note." : "No matching note yet."}
+                                </p>
+                                {candidates.length === 0 ? (
+                                    <button
+                                        type="button"
+                                        className="writeme-context-list-button"
+                                        onClick={() =>
+                                            void runAction(async () => {
+                                                const target = await createConnectionTarget(
+                                                    reference.kind === "wiki" ? reference.target : reference.label,
+                                                );
+                                                if (reference.kind === "id") await repairReference(reference, target);
+                                                else setRepairError("Note ready. References have been refreshed.");
+                                            })
+                                        }
+                                    >
+                                        Create note
+                                    </button>
+                                ) : null}
+                                <button
+                                    type="button"
+                                    className="writeme-context-list-button"
+                                    aria-expanded={choosingReference === reference.from}
+                                    onClick={(event) => {
+                                        choosingTrigger.current = event.currentTarget;
+                                        setChoosingReference(
+                                            choosingReference === reference.from ? null : reference.from,
+                                        );
+                                        setTargetQuery("");
+                                    }}
+                                >
+                                    Choose existing note
+                                </button>
+                                {choosingReference === reference.from ? (
+                                    <div className="mt-2">
+                                        <label className="block text-xs text-muted-foreground">
+                                            Find a note
+                                            <input
+                                                ref={searchElement}
+                                                value={targetQuery}
+                                                onChange={(event) => setTargetQuery(event.target.value)}
+                                                className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                            />
+                                        </label>
+                                        <ul>
+                                            {(candidates.length > 0 && !targetQuery
+                                                ? candidates
+                                                : notes.filter(
+                                                      (candidate) =>
+                                                          candidate.id !== note.id &&
+                                                          candidate.title
+                                                              .toLocaleLowerCase()
+                                                              .includes(targetQuery.toLocaleLowerCase()),
+                                                  )
+                                            )
+                                                .slice(0, 30)
+                                                .map((candidate) => (
+                                                    <li key={candidate.id}>
+                                                        <button
+                                                            type="button"
+                                                            className="writeme-context-list-button text-left"
+                                                            onClick={() =>
+                                                                void runAction(() =>
+                                                                    repairReference(reference, candidate),
+                                                                )
+                                                            }
+                                                        >
+                                                            <span className="block">
+                                                                {candidate.title || "Untitled"}
+                                                            </span>
+                                                            <span className="block break-all text-xs text-muted-foreground">
+                                                                {candidate.filePath || candidate.id}
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                        {notes.filter(
+                                            (candidate) =>
+                                                candidate.id !== note.id &&
+                                                candidate.title
+                                                    .toLocaleLowerCase()
+                                                    .includes(targetQuery.toLocaleLowerCase()),
+                                        ).length === 0 ? (
+                                            <p className="writeme-context-empty">No notes match. Try another name.</p>
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </ContextSection>
+            <ContextSection title="Unlinked mentions" count={unlinkedMentions.length}>
+                {unlinkedMentions.length === 0 ? (
+                    <p className="writeme-context-empty">No unlinked title or alias mentions in other notes.</p>
+                ) : (
+                    <ul className="writeme-context-list">
+                        {unlinkedMentions.map((mention) => (
+                            <li key={mention.source.id + ":" + mention.from} className="px-2 py-2">
+                                <Link
+                                    className="block text-sm font-medium text-foreground hover:underline"
+                                    to={"/note/" + mention.source.id}
+                                >
+                                    {mention.source.title || "Untitled"}
+                                </Link>
+                                <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+                                    {mention.excerpt}
+                                </p>
+                                <button
+                                    type="button"
+                                    className="writeme-context-list-button"
+                                    onClick={(event) => {
+                                        previewTrigger.current = event.currentTarget;
+                                        setPreview({
+                                            source: mention.source,
+                                            target: note,
+                                            from: mention.from,
+                                            to: mention.to,
+                                            replacement: formatNoteMention(note.id, mention.text),
+                                        });
+                                        setRepairError(null);
+                                    }}
+                                >
+                                    Preview link
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {preview ? (
+                    <section
+                        ref={previewElement}
+                        tabIndex={-1}
+                        aria-label="Link preview"
+                        className="m-2 rounded-md border border-border p-2 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <p className="text-sm text-foreground">
+                            {preview.source.title} → {preview.target.title}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">Only this occurrence will change:</p>
+                        <code className="mt-1 block whitespace-pre-wrap break-all text-xs text-foreground">
+                            {preview.source.content.slice(Math.max(0, preview.from - 50), preview.from)}
+                            {preview.replacement}
+                            {preview.source.content.slice(preview.to, preview.to + 50)}
+                        </code>
+                        <button
+                            type="button"
+                            className="writeme-context-list-button"
+                            onClick={() => void runAction(() => applyRepair(preview))}
+                        >
+                            Link this mention
+                        </button>
+                        <button type="button" className="writeme-context-list-button" onClick={cancelPreview}>
+                            Cancel preview
+                        </button>
+                    </section>
+                ) : null}
+            </ContextSection>
+            {busy ? (
+                <output aria-live="polite" className="writeme-context-empty block">
+                    Updating connection…
+                </output>
+            ) : null}
+            {repairError ? (
+                <div>
+                    <output
+                        ref={feedbackElement}
+                        tabIndex={-1}
+                        aria-live="polite"
+                        className="writeme-context-empty block"
+                    >
+                        {repairError}
+                    </output>
+                    <button
+                        type="button"
+                        className="writeme-context-list-button"
+                        onClick={() =>
+                            void runAction(async () => {
+                                await refreshConnectionNotes();
+                                setPreview(null);
+                                setRepairError("Suggestions refreshed. Preview an occurrence to try again.");
+                            })
+                        }
+                    >
+                        Refresh suggestions
+                    </button>
+                </div>
+            ) : null}
+            {undo ? (
+                <button
+                    type="button"
+                    className="writeme-context-list-button"
+                    onClick={() =>
+                        void runAction(async () => {
+                            await undoConnectionRepair(undo.saved, undo.originalContent);
+                            setUndo(null);
+                            setRepairError("Link undone.");
+                        })
+                    }
+                >
+                    Undo link
+                </button>
+            ) : null}
+        </fieldset>
+    );
     const tags = note.tags.filter((tag, index, allTags) => allTags.indexOf(tag) === index);
     const noteType = note.noteType === "note" ? "Markdown" : note.noteType;
 
@@ -135,6 +452,7 @@ export function ContextPane({ note, notes, onClose }: ContextPaneProps) {
                     <p className="writeme-context-empty">Headings will appear here as you structure the note.</p>
                 )}
             </ContextSection>
+            {repairSections}
 
             <ContextSection title="Linked notes" count={linkedNotes.length}>
                 {linkedNotes.length > 0 ? (
