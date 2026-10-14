@@ -184,6 +184,10 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
 
   const createTab = (noteId: string, type = NOTE_TAB_TYPE): Tab => {
     const state = get.state();
+    let order = 0;
+    for (const tab of state.tabs) {
+      order = Math.max(order, tab.order + 1);
+    }
     const now = new Date();
     return {
       noteId,
@@ -192,7 +196,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       createdAt: now,
       updatedAt: now,
       id: uuid(),
-      order: state.tabs.length,
+      order,
       scrollY: 0,
     };
   };
