@@ -18,6 +18,7 @@ import { supportsAI } from "@/lib/platform";
 import { tildaDir } from "@/lib/file-utils";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
+import { NoteTypeGuide } from "@/app/components/note-type-guide";
 
 type DashboardIcon = ComponentType<{
     size?: number;
@@ -193,6 +194,7 @@ export default function DashboardPage() {
                                         {mapShortcutOS("mod+k")}
                                     </kbd>
                                 </Button>
+                                <NoteTypeGuide />
                             </div>
                         </div>
                         <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-border/45 pt-4">
