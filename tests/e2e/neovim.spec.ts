@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
+const endOfDocument = process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End";
+
 async function setup(page: Page, text = "one two three"): Promise<void> {
     await goHome(page);
     await page
@@ -109,7 +111,7 @@ test("restores normal editing when disabled and keeps Markdown Vim available", a
     await toggle.uncheck();
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     await editor.click();
-    await page.keyboard.press("ControlOrMeta+End");
+    await page.keyboard.press(endOfDocument);
     await page.keyboard.type("!");
     await expect(editor).toHaveText("one two three!");
     await toggle.check();
