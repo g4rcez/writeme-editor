@@ -124,8 +124,8 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
     expect(stored.comments.every((thread) => thread.referenceNoteId === reference?.id)).toBe(true);
     await panel.getByRole("button", { name: "Close comments" }).click();
     await page.getByRole("button", { name: "Comments (3)", exact: true }).click();
-    await expect(panel.getByRole("button", { name: "Another thought. (1)", exact: true })).toBeVisible();
-    await panel.getByRole("button", { name: "Another thought. (1)", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Another thought. (1) · unresolved", exact: true })).toBeVisible();
+    await panel.getByRole("button", { name: "Another thought. (1) · unresolved", exact: true }).click();
     await expect(panel).toContainText("Separate thread");
     await expect(panel).not.toContainText("First comment");
     await panel.getByRole("button", { name: "Close comments" }).click();
@@ -142,7 +142,7 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
         .click();
     await first.first().click();
     await panel.getByRole("button", { name: "Open comments note" }).click();
-    await expect(page.getByRole("heading", { name: "plans/comments_advisor", exact: true })).toBeVisible();
+    await expect(editor.getByRole("heading", { name: "plans/comments_advisor", exact: true })).toBeVisible();
     await page
         .getByRole("toolbar", { name: "Note tools" })
         .getByRole("button", { name: "Markdown", exact: true })
@@ -193,7 +193,6 @@ test("scopes sentence IDs to their source note in IndexedDB", async ({ cleanPage
     const first = await createNote(page, "First source", "Shared words.");
     await selectWords(page, "Shared words.");
     await addComment(page, "First source comment");
-    await goHome(page);
     const second = await createNote(page, "Second source", "Shared words.");
     await selectWords(page, "Shared words.");
     await addComment(page, "Second source comment");
@@ -223,7 +222,11 @@ test("keeps the comments table synchronized when editing the reference note", as
     await addComment(page, "Original comment");
     const panel = page.getByRole("complementary", { name: "Sentence comments" });
     await panel.getByRole("button", { name: "Open comments note" }).click();
-    await expect(page.getByRole("heading", { name: "comments_Editable comments", exact: true })).toBeVisible();
+    await expect(
+        page
+            .getByRole("textbox", { name: "Note editor", exact: true })
+            .getByRole("heading", { name: "comments_Editable comments", exact: true }),
+    ).toBeVisible();
     await page
         .getByRole("toolbar", { name: "Note tools" })
         .getByRole("button", { name: "Markdown", exact: true })
@@ -601,3 +604,338 @@ for (const theme of ["dark", "light"]) {
         await page.screenshot({ path: testInfo.outputPath(`note-comments-${theme}-mobile.png`) });
     });
 }
+
+test("resolves and reopens threads through filtered views and Markdown reloads", async ({ cleanPage: page }) => {
+    await goHome(page);
+    const sourceUrl = await createNote(page, "Comment review status", "Repeated sentence. Another sentence.");
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await selectWords(page, "Repeated sentence.");
+    await addComment(page, "First discussion");
+    await page.getByRole("button", { name: "Close comments" }).click();
+    await selectWords(page, "Another sentence.");
+    await addComment(page, "Second discussion");
+
+    const panel = page.getByRole("complementary", { name: "Sentence comments" });
+    await editor.getByRole("link", { name: "Repeated sentence.", exact: true }).click();
+    await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(panel).toContainText("Status: resolved");
+    expect((await readCommentStorage(page)).comments.find((thread) => thread.id === "repeated-sentence")?.status).toBe(
+        "resolved",
+    );
+
+    await panel.getByRole("button", { name: "Close comments" }).click();
+    await page.getByRole("button", { name: "Comments (2)", exact: true }).click();
+    await panel.getByRole("button", { name: "Unresolved only (1)", exact: true }).click();
+    await expect(panel.getByRole("button", { name: /Another sentence.*unresolved/ })).toBeVisible();
+    await expect(panel.getByRole("button", { name: /Repeated sentence.*resolved/ })).toHaveCount(0);
+    await editor.getByRole("link", { name: "Repeated sentence.", exact: true }).click();
+    await expect(panel).toContainText("This resolved thread stays open while you inspect it");
+    await panel.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+    await expect(panel.getByRole("list", { name: "Comments on this text" })).toContainText("First discussion");
+    await page.reload();
+    await expect(page).toHaveURL(sourceUrl);
+    await editor.getByRole("link", { name: "Repeated sentence.", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+    await expect(panel.getByRole("list", { name: "Comments on this text" })).toContainText("First discussion");
+    await panel.getByRole("button", { name: "Open comments note" }).click();
+    await page
+        .getByRole("toolbar", { name: "Note tools" })
+        .getByRole("button", { name: "Markdown", exact: true })
+        .click();
+    const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
+    await expect(raw).toContainText("writeme-comment-status: unresolved");
+    await expect(raw).toContainText('"operationId"');
+    await page
+        .getByRole("toolbar", { name: "Note tools" })
+        .getByRole("button", { name: "Formatted", exact: true })
+        .click();
+    await expect(editor).toContainText("First discussion");
+    await editor.getByText("Second discussion", { exact: true }).click();
+    await editor.press("End");
+    await page.keyboard.insertText(" Edited in rich mode");
+    await editor.press("ControlOrMeta+s");
+    await expect
+        .poll(
+            async () =>
+                (await readCommentStorage(page)).comments.find((thread) => thread.id === "repeated-sentence")?.history
+                    .length,
+        )
+        .toBe(2);
+    await expect
+        .poll(
+            async () =>
+                (await readCommentStorage(page)).comments.find((thread) => thread.id === "another-sentence")?.comments,
+        )
+        .toEqual(["Second discussion Edited in rich mode"]);
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
+    await page.goto(sourceUrl);
+    await expect(editor.getByRole("link", { name: "Repeated sentence.", exact: true })).toBeVisible();
+    await editor.getByRole("link", { name: "Repeated sentence.", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+    await panel.getByText("Review history (2)", { exact: true }).click();
+    await expect(panel.getByRole("list", { name: "Review history" }).getByRole("listitem")).toHaveText([
+        "Resolved",
+        "Reopened",
+    ]);
+});
+
+test("keeps newer status and concurrent replies when a status operation is replayed", async ({
+    cleanPage: page,
+    context,
+}) => {
+    await goHome(page);
+    const url = await createNote(page, "Concurrent review", "Review these words.");
+    await selectWords(page, "Review these words.");
+    await addComment(page, "Original reply");
+    const other = await context.newPage();
+    try {
+        await other.goto(url);
+        await other.evaluate(async (id) => {
+            const repositoryModule = "/packages/editor/src/store/repositories/index.ts";
+            const commentModule = "/packages/editor/src/app/comments/comment-repository.ts";
+            const { repositories } = await import(repositoryModule);
+            const { setNoteCommentStatus, saveNoteComment } = await import(commentModule);
+            const source = await repositories.notes.getOne(id);
+            await Promise.all([
+                setNoteCommentStatus(source, "review-these-words", "resolved", "resolve-concurrent"),
+                saveNoteComment(source, "Review these words.", "Concurrent reply", "review-these-words", []),
+            ]);
+            await setNoteCommentStatus(source, "review-these-words", "unresolved", "reopen-concurrent");
+            await setNoteCommentStatus(source, "review-these-words", "resolved", "resolve-concurrent");
+        }, url.split("/").pop());
+        const panel = page.getByRole("complementary", { name: "Sentence comments" });
+        await expect(panel).toContainText("Concurrent reply");
+        await expect(panel).toContainText("Status: unresolved");
+        const stored = (await readCommentStorage(page)).comments[0];
+        expect(stored?.comments).toEqual(["Original reply", "Concurrent reply"]);
+        expect(stored?.status).toBe("unresolved");
+        expect(stored?.history).toHaveLength(2);
+    } finally {
+        await other.close();
+    }
+});
+
+test("retries failed resolution, keeps duplicate anchors separate, and explains an empty filter on a phone", async ({
+    cleanPage: page,
+}, testInfo) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await goHome(page);
+    await createNote(page, "Phone review", "Same words. Same words.");
+    await selectWords(page, "Same words.");
+    await addComment(page, "First occurrence");
+    const panel = page.getByRole("complementary", { name: "Sentence comments" });
+    await panel.getByRole("button", { name: "Close comments" }).click();
+    await selectWords(page, "Same words.", 1);
+    await addComment(page, "Second occurrence");
+    await page.evaluate(() => {
+        const original = IDBObjectStore.prototype.put;
+        let failed = false;
+        IDBObjectStore.prototype.put = function (...args): IDBRequest<IDBValidKey> {
+            if (!failed && this.name === "comments") {
+                failed = true;
+                throw new DOMException("Status write failed", "QuotaExceededError");
+            }
+            return original.apply(this, args);
+        };
+    });
+    await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(panel.getByRole("alert")).toContainText("Status write failed");
+    expect((await readCommentStorage(page)).comments.every((thread) => thread.status === "unresolved")).toBe(true);
+    const resolve = panel.getByRole("button", { name: "Resolve", exact: true });
+    await resolve.focus();
+    await resolve.press("Enter");
+    await expect(panel).toContainText("Status: resolved");
+    expect(
+        (await readCommentStorage(page)).comments.find((thread) => thread.id === "same-words-2")?.history,
+    ).toHaveLength(1);
+    await panel.getByRole("button", { name: "Close comments" }).click();
+    await page
+        .getByRole("textbox", { name: "Note editor", exact: true })
+        .getByRole("link", { name: "Same words.", exact: true })
+        .first()
+        .click();
+    await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(panel).toContainText("Status: resolved");
+    await panel.getByRole("button", { name: "Close comments" }).click();
+    await page.getByRole("button", { name: "Comments (2)", exact: true }).click();
+    await panel.getByRole("button", { name: "Unresolved only (0)", exact: true }).click();
+    await expect(panel).toContainText("No unresolved discussions.");
+    const bounds = await panel.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(375);
+    await page.screenshot({ path: testInfo.outputPath("resolved-phone-filter.png") });
+    await panel.getByRole("button", { name: "Show all (0)", exact: true }).click();
+    await expect(panel.getByRole("button", { name: /Same words.*resolved/ })).toHaveCount(2);
+    await panel
+        .getByRole("button", { name: /Same words.*resolved/ })
+        .first()
+        .click();
+    await panel.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+});
+
+test("keeps inline metadata inert across actual formatted and raw companion edits", async ({ cleanPage: page }) => {
+    await goHome(page);
+    const history =
+        '<!-- writeme-comment-history: {"operationId":"reply-only","status":"resolved","at":"2026-10-14T00:00:00Z"} -->';
+    await createNote(page, "Metadata reply");
+    const tools = page.getByRole("toolbar", { name: "Note tools" });
+    await tools.getByRole("button", { name: "Markdown", exact: true }).click();
+    const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
+    await raw.focus();
+    await raw.press("ControlOrMeta+a");
+    await page.keyboard.insertText(
+        `## words\n\n> Words\n\nA reply <!-- writeme-comment-status: resolved -->\n\n- Another reply ${history}\n`,
+    );
+    await tools.getByRole("button", { name: "Formatted", exact: true }).click();
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toContainText("A reply");
+    await editor.focus();
+    await editor.getByText("A reply", { exact: false }).evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(true);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+        document.dispatchEvent(new Event("selectionchange"));
+    });
+    await page.keyboard.insertText("Edited ");
+    await tools.getByRole("button", { name: "Markdown", exact: true }).click();
+    await expect(raw).toContainText("Edited A reply <!-- writeme-comment-status: resolved -->");
+    await expect(raw).toContainText(`- Another reply ${history}`);
+    const first = await raw.innerText();
+    await tools.getByRole("button", { name: "Formatted", exact: true }).click();
+    await tools.getByRole("button", { name: "Markdown", exact: true }).click();
+    expect(await raw.innerText()).toBe(first);
+    const threads = await page.evaluate(async (content) => {
+        const path = "/packages/editor/src/lib/note-comments.ts";
+        const { parseCommentThreads } = await import(path);
+        return parseCommentThreads(content);
+    }, first);
+    expect(threads[0]).toMatchObject({
+        status: "unresolved",
+        history: [],
+        comments: [`Edited A reply <!-- writeme-comment-status: resolved -->`, `Another reply ${history}`],
+    });
+});
+
+test("accepts fresh UI actions after clock correction and rejects retained and expired retries", async ({
+    cleanPage: page,
+}) => {
+    await goHome(page);
+    const url = await createNote(page, "Clock review", "Review words.");
+    await selectWords(page, "Review words.");
+    await addComment(page, "Keep this reply");
+    const panel = page.getByRole("complementary", { name: "Sentence comments" });
+    await page.clock.setFixedTime(new Date("2026-10-15T00:00:00.000Z"));
+    await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(panel).toContainText("Status: resolved");
+    const first = (await readCommentStorage(page)).comments[0]!.history[0]!;
+    await page.clock.setFixedTime(new Date("2026-10-14T00:00:00.000Z"));
+    await panel.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+    expect((await readCommentStorage(page)).comments[0]!.history[1]!.at).toBe("2026-10-15T00:00:00.001Z");
+    await page.evaluate(
+        async ({ id, first }) => {
+            const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+            const commentPath = "/packages/editor/src/app/comments/comment-repository.ts";
+            const libPath = "/packages/editor/src/lib/note-comments.ts";
+            const { repositories } = await import(repositoryPath);
+            const { setNoteCommentStatus, loadCommentNote } = await import(commentPath);
+            const { createCommentStatusOperation, parseCommentThreads } = await import(libPath);
+            const source = await repositories.notes.getOne(id);
+            const before = await loadCommentNote(source);
+            const replay = await setNoteCommentStatus(source, "review-words", "resolved", first.operationId, first.at);
+            if (replay.content !== before.content) throw new Error("Retained retry reverted newer status");
+            for (let index = 0; index < 20; index++) {
+                const current = await loadCommentNote(source);
+                const thread = parseCommentThreads(current.content)[0];
+                const operation = createCommentStatusOperation(thread, `clock-${index}`);
+                await setNoteCommentStatus(
+                    source,
+                    thread.id,
+                    index % 2 === 0 ? "resolved" : "unresolved",
+                    operation.id,
+                    operation.at,
+                );
+            }
+            const current = await loadCommentNote(source);
+            const expired = await setNoteCommentStatus(source, "review-words", "resolved", first.operationId, first.at);
+            if (expired.content !== current.content) throw new Error("Expired retry reverted newer status");
+        },
+        { id: url.split("/").pop(), first },
+    );
+    const stored = (await readCommentStorage(page)).comments[0]!;
+    expect(stored.status).toBe("unresolved");
+    expect(stored.comments).toEqual(["Keep this reply"]);
+    expect(stored.history).toHaveLength(12);
+    expect(stored.history.some((event) => event.operationId === first.operationId)).toBe(false);
+});
+
+test("adopts imported companions atomically with status, rows, and snapshots", async ({ cleanPage: page }) => {
+    await goHome(page);
+    const result = await page.evaluate(async () => {
+        const notePath = "/packages/editor/src/store/note.ts";
+        const databasePath = "/packages/editor/src/store/repositories/browser/dexie-db.ts";
+        const commentPath = "/packages/editor/src/store/repositories/browser/comments.repository.ts";
+        const repositoryPath = "/packages/editor/src/store/repositories/index.ts";
+        const { Note } = await import(notePath);
+        const { db } = await import(databasePath);
+        const { setBrowserCommentStatus } = await import(commentPath);
+        const { repositories } = await import(repositoryPath);
+        const source = Note.new("Imported source", "Words");
+        const companion = Note.new("comments_Imported source", "## words\n\n> Words\n\n- Imported reply\n");
+        companion.metadata = { imported: "retained" };
+        await db.notes.bulkPut([source, companion]);
+        const snapshot = async () => ({
+            note: await db.notes.get(companion.id),
+            rows: await db.comments.toArray(),
+            history: await db.noteHistory.toArray(),
+        });
+        const before = await snapshot();
+        const original = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (...args): IDBRequest<IDBValidKey> {
+            if (this.name === "comments") throw new DOMException("Imported status failure", "QuotaExceededError");
+            return original.apply(this, args);
+        };
+        let error = "";
+        try {
+            await setBrowserCommentStatus(source, "words", "resolved", "imported-resolve", "2026-10-14T00:00:00Z");
+        } catch (reason) {
+            error = reason instanceof Error ? reason.message : String(reason);
+        } finally {
+            IDBObjectStore.prototype.put = original;
+        }
+        const failed = await snapshot();
+        const adopted = await setBrowserCommentStatus(
+            source,
+            "words",
+            "resolved",
+            "imported-resolve",
+            "2026-10-14T00:00:00Z",
+        );
+        const resolved = await snapshot();
+        await setBrowserCommentStatus(source, "words", "resolved", "imported-resolve", "2026-10-14T00:00:00Z");
+        const retry = await snapshot();
+        await repositories.notes.updateContent(
+            companion.id,
+            adopted.content.replace("Imported reply", "Direct saved reply"),
+        );
+        const edited = await snapshot();
+        return { sourceId: source.id, before, error, failed, resolved, retry, edited };
+    });
+    expect(result.error).toContain("Imported status failure");
+    expect(result.failed).toEqual(result.before);
+    expect(result.resolved.note.metadata).toEqual({ imported: "retained", commentSourceId: result.sourceId });
+    expect(result.resolved.rows).toHaveLength(1);
+    expect(result.resolved.rows[0]).toMatchObject({
+        noteId: result.sourceId,
+        status: "resolved",
+        comments: ["Imported reply"],
+        history: [{ operationId: "imported-resolve" }],
+    });
+    expect(result.resolved.history).toHaveLength(1);
+    expect(result.retry).toEqual(result.resolved);
+    expect(result.edited.rows[0]).toMatchObject({ status: "resolved", comments: ["Direct saved reply"] });
+});

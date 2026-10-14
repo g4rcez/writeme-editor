@@ -26,12 +26,15 @@ test("persists sentence comments and offline replies in the production PWA", asy
     await panel.getByRole("textbox", { name: "Comment", exact: true }).fill("Offline reply");
     await panel.getByRole("button", { name: "Save comment", exact: true }).click();
     await expect(panel.getByRole("list", { name: "Comments on this text" }).getByRole("listitem")).toHaveCount(2);
+    await panel.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(panel).toContainText("Status: resolved");
     await page.reload();
     await page
         .getByRole("textbox", { name: "Note editor", exact: true })
         .getByRole("link", { name: "Review this production sentence." })
         .click();
     await expect(panel).toContainText("Offline reply");
+    await expect(panel).toContainText("Status: resolved");
     expect((await readCommentStorage(page)).comments[0]?.comments).toEqual(["Production comment", "Offline reply"]);
     await panel.getByRole("button", { name: "Open comments note" }).click();
     await page
@@ -58,6 +61,10 @@ test("persists sentence comments and offline replies in the production PWA", asy
         .getByRole("link", { name: "Review this production sentence." })
         .click();
     await expect(panel).toContainText("Edited offline comment");
+    await expect(panel).toContainText("Status: resolved");
+    await panel.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(panel).toContainText("Status: unresolved");
+    expect((await readCommentStorage(page)).comments[0]?.history).toHaveLength(2);
     await expect(panel.getByRole("list", { name: "Comments on this text" }).getByRole("listitem")).toHaveCount(2);
     await page.screenshot({ path: testInfo.outputPath("offline-comments.png") });
     expect(errors).toEqual([]);

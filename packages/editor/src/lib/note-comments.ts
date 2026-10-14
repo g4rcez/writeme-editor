@@ -1,7 +1,15 @@
 import { lexer, type Tokens } from "marked";
 import type { Note } from "@/store/note";
 
-export type CommentThread = { id: string; quote: string; comments: string[] };
+export type CommentStatus = "unresolved" | "resolved";
+export type CommentStatusEvent = { operationId: string; status: CommentStatus; at: string };
+export type CommentThread = {
+    id: string;
+    quote: string;
+    comments: string[];
+    status: CommentStatus;
+    history: CommentStatusEvent[];
+};
 export type CommentCompanion = { title: string; filePath: string | null; href: string };
 
 export function commentSlug(text: string): string {
@@ -49,6 +57,20 @@ export function getCommentReferenceHref(reference: Note): string {
     return `./${encodeURIComponent(/\.md$/i.test(filename) ? filename : `${filename}.md`)}`;
 }
 
+function isCommentStatusEvent(value: unknown): value is CommentStatusEvent {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        "operationId" in value &&
+        typeof value.operationId === "string" &&
+        "status" in value &&
+        (value.status === "resolved" || value.status === "unresolved") &&
+        "at" in value &&
+        typeof value.at === "string" &&
+        Number.isFinite(Date.parse(value.at))
+    );
+}
+
 export function parseCommentThreads(content: string): CommentThread[] {
     const threads: CommentThread[] = [];
     let thread: CommentThread | undefined;
@@ -59,7 +81,7 @@ export function parseCommentThreads(content: string): CommentThread[] {
             sectionQuoteSeen = false;
             thread = threads.find((entry) => entry.id === id);
             if (!thread) {
-                thread = { id, quote: "", comments: [] };
+                thread = { id, quote: "", comments: [], status: "unresolved", history: [] };
                 threads.push(thread);
             }
         } else if (token.type === "heading" && token.depth < 2) {
@@ -67,6 +89,27 @@ export function parseCommentThreads(content: string): CommentThread[] {
         } else if (thread && token.type === "blockquote" && !sectionQuoteSeen) {
             sectionQuoteSeen = true;
             if (!thread.quote) thread.quote = token.text.trim();
+        } else if (thread && token.type === "html") {
+            for (const match of token.raw.matchAll(/^<!-- writeme-comment-status: (resolved|unresolved) -->$/gm)) {
+                const status = match[1];
+                if (status === "resolved" || status === "unresolved") thread.status = status;
+            }
+            for (const match of token.raw.matchAll(/^<!-- writeme-comment-history: (\{[^\n]*\}) -->$/gm)) {
+                try {
+                    const event: unknown = JSON.parse(match[1]!);
+                    if (
+                        isCommentStatusEvent(event) &&
+                        !thread.history.some((saved) => saved.operationId === event.operationId)
+                    )
+                        thread.history.push(event);
+                } catch {
+                    // Ignore malformed metadata and keep the thread readable.
+                }
+            }
+            const remaining = token.raw
+                .replace(/^<!-- writeme-comment-(?:status: (?:resolved|unresolved)|history: \{[^\n]*\}) -->\n?/gm, "")
+                .trim();
+            if (remaining) thread.comments.push(remaining);
         } else if (thread && token.type === "list") {
             thread.comments.push(...token.items.map((item: Tokens.ListItem) => normalizeCommentText(item.text)));
         } else if (thread && token.type !== "space") {
@@ -74,6 +117,63 @@ export function parseCommentThreads(content: string): CommentThread[] {
         }
     }
     return threads;
+}
+
+// Capture once for a fresh action; retries must keep the original logical time.
+export function createCommentStatusOperation(
+    thread: Pick<CommentThread, "history">,
+    operationId: string,
+    at = new Date().toISOString(),
+): { id: string; at: string } {
+    const latest = Math.max(...thread.history.map((event) => Date.parse(event.at)), -Infinity);
+    return { id: operationId, at: new Date(Math.max(Date.parse(at), latest + 1)).toISOString() };
+}
+
+export function setCommentThreadStatus(
+    content: string,
+    id: string,
+    status: CommentStatus,
+    operationId: string,
+    at = new Date().toISOString(),
+): string {
+    const existing = parseCommentThreads(content).find((thread) => thread.id === id);
+    if (!existing) throw new Error("This comment thread no longer exists.");
+    if (existing.history.some((event) => event.operationId === operationId)) return content;
+    if (existing.history.some((event) => Date.parse(event.at) > Date.parse(at))) return content;
+    if (existing.status === status) return content;
+
+    const event: CommentStatusEvent = { operationId, status, at };
+    const history = [...existing.history, event].slice(-12);
+    const lines = [
+        `<!-- writeme-comment-status: ${status} -->`,
+        ...history.map((entry) => `<!-- writeme-comment-history: ${JSON.stringify(entry)} -->`),
+    ];
+    let inThread = false;
+    let inserted = false;
+    let atThreadStart = false;
+    return lexer(content)
+        .map((token) => {
+            if (token.type === "heading" && token.depth <= 2) {
+                inThread = token.depth === 2 && token.text.trim() === id;
+                atThreadStart = inThread;
+                if (inThread && !inserted) {
+                    inserted = true;
+                    return `${token.raw.trimEnd()}\n\n${lines.join("\n")}\n\n`;
+                }
+            }
+            if (inThread && token.type === "html") {
+                const remaining = token.raw.replace(
+                    /^<!-- writeme-comment-(?:status: (?:resolved|unresolved)|history: \{[^\n]*\}) -->[\t ]*\n?/gm,
+                    "",
+                );
+                if (remaining.trim()) atThreadStart = false;
+                return remaining;
+            }
+            if (atThreadStart && token.type === "space") return "";
+            atThreadStart = false;
+            return token.raw;
+        })
+        .join("");
 }
 
 function normalizeCommentText(text: string): string {

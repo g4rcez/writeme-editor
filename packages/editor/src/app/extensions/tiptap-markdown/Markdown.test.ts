@@ -9,11 +9,52 @@ import { describe, expect, it } from "vitest";
 import { getCommentAnchors } from "@/app/comments/note-comments";
 import { createExtensions } from "@/app/extensions";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
+import { parseCommentThreads, setCommentThreadStatus } from "@/lib/note-comments";
 import { Note } from "@/store/note";
 import { Markdown } from "./Markdown";
 import { MarkdownParser } from "./parse/MarkdownParser";
 
 describe("Markdown extension", () => {
+    it("preserves comment review metadata while editing rich Markdown", () => {
+        const content = setCommentThreadStatus(
+            "## words\n\n> Words\n\n- Discussion\n",
+            "words",
+            "resolved",
+            "resolve-1",
+        );
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content });
+        try {
+            editor.commands.insertContentAt(editor.state.doc.content.size, "Another paragraph");
+            const markdown = editor.getMarkdown();
+            expect(parseCommentThreads(markdown)[0]).toMatchObject({
+                status: "resolved",
+                comments: ["Discussion", "Another paragraph"],
+                history: [{ operationId: "resolve-1", status: "resolved" }],
+            });
+            editor.commands.setContent(markdown);
+            expect(editor.getMarkdown()).toBe(markdown);
+        } finally {
+            editor.destroy();
+        }
+    });
+    it.each([
+        "A reply <!-- writeme-comment-status: resolved -->",
+        '- A reply <!-- writeme-comment-history: {"operationId":"not-an-action","status":"resolved","at":"2026-10-14T00:00:00Z"} -->',
+        "> <!-- writeme-comment-status: resolved -->",
+        "<!-- writeme-comment-status: resolved --> not standalone",
+    ])("does not promote reply metadata into authority: %s", (reply) => {
+        const content = `## words\n\n> Words\n\n${reply}\n`;
+        const before = parseCommentThreads(content);
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content });
+        try {
+            const markdown = editor.getMarkdown();
+            expect(parseCommentThreads(markdown)).toEqual(before);
+            editor.commands.setContent(markdown);
+            expect(parseCommentThreads(editor.getMarkdown())).toEqual(before);
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each(["Cost == value", "First\nSecond"])("preserves highlighted text containing %j on reload", (text) => {
         const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
         try {
@@ -22,19 +63,17 @@ describe("Markdown extension", () => {
                 content: [
                     {
                         type: "paragraph",
-                        content: text
-                            .split("\n")
-                            .flatMap((part, index) => [
-                                ...(index ? [{ type: "hardBreak" }] : []),
-                                {
-                                    type: "text",
-                                    text: part,
-                                    marks: [
-                                        { type: "link", attrs: { href: "./comments_advisor.md#words" } },
-                                        { type: "highlight" },
-                                    ],
-                                },
-                            ]),
+                        content: text.split("\n").flatMap((part, index) => [
+                            ...(index ? [{ type: "hardBreak" }] : []),
+                            {
+                                type: "text",
+                                text: part,
+                                marks: [
+                                    { type: "link", attrs: { href: "./comments_advisor.md#words" } },
+                                    { type: "highlight" },
+                                ],
+                            },
+                        ]),
                     },
                 ],
             });
