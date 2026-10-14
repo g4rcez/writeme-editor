@@ -236,7 +236,8 @@ export const CollapsibleHeadings = Extension.create<{ noteId: string }>({
                             view.composing ||
                             !(event.metaKey || event.ctrlKey) ||
                             !event.altKey ||
-                            event.shiftKey
+                            event.shiftKey ||
+                            event.getModifierState("AltGraph")
                         )
                             return false;
                         const collapse = event.code === "BracketLeft";

@@ -102,6 +102,22 @@ test("supports keyboard disclosure, Vim, heading edits, and undo", async ({ clea
     await setup(page);
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     const control = page.getByRole("button", { name: "Collapse Parent", exact: true });
+    await editor.locator("h1").first().click();
+    await editor.evaluate((element) => {
+        const event = new KeyboardEvent("keydown", {
+            key: "[",
+            code: "BracketLeft",
+            ctrlKey: true,
+            altKey: true,
+            modifierAltGraph: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        if (!event.getModifierState("AltGraph")) throw new Error("AltGraph event was not configured");
+        element.dispatchEvent(event);
+    });
+    await expect(control).toHaveAttribute("aria-expanded", "true");
+    await expect(editor.locator("h2")).toBeVisible();
     await control.focus();
     await page.keyboard.press("Enter");
     const expandedControl = page.getByRole("button", { name: "Expand Parent", exact: true });

@@ -187,6 +187,22 @@ it("retains undo for document edits chained with view commands", async () => {
     expect(editor.getMarkdown()).toBe(before);
 });
 
+it("leaves AltGr bracket input available for international keyboards", async () => {
+    const editor = await create();
+    const event = new KeyboardEvent("keydown", {
+        key: "[",
+        code: "BracketLeft",
+        ctrlKey: true,
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+    });
+    vi.spyOn(event, "getModifierState").mockImplementation((modifier) => modifier === "AltGraph");
+    editor.view.dom.dispatchEvent(event);
+    expect(editor.view.dom.querySelector(".writeme-heading-folded-block")).toBeNull();
+    expect(event.defaultPrevented).toBe(false);
+});
+
 it("works in read-only notes and when storage fails, and omits empty sections", async () => {
     vi.stubGlobal("localStorage", {
         getItem: () => {
