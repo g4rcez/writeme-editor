@@ -1,4 +1,4 @@
-import type { Node as ProsemirrorNode } from "@tiptap/pm/model";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { ReactNode } from "react";
 import { findChildren } from "@tiptap/core";
 import CodeBlock, { type CodeBlockOptions } from "@tiptap/extension-code-block";
@@ -14,6 +14,7 @@ import {
     type BundledTheme,
     type Highlighter,
 } from "shiki";
+import { configureCodeResultMarkdown } from "@/lib/code-result-markdown";
 import { getCurrentElementName } from "@/lib/editor-utils";
 import { isElectron } from "@/lib/is-electron";
 import { detectMarkdown } from "@/lib/markdown-paste/detect-markdown";
@@ -23,6 +24,7 @@ import { globalState } from "@/store/global.store";
 import { editorGlobalRef } from "../editor-global-ref";
 import { handlePasteImage } from "../extensions";
 import { CodeBlockRenderer } from "./code-block/code-block-rendered.tsx";
+import { decodeCodeResult, encodeCodeResult, parseCodeExecutionResult } from "./code-block/code-result";
 import { shikiMathGrammer } from "./code-block/shiki-math-grammar";
 
 type CustomShikiLanguage = "math";
@@ -191,7 +193,7 @@ async function initHighlighter({
     defaultTheme,
     defaultLanguage,
 }: {
-    doc: ProsemirrorNode;
+    doc: ProseMirrorNode;
     name: string;
     defaultLanguage: BundledLanguage | null | undefined;
     defaultTheme: BundledTheme;
@@ -233,7 +235,7 @@ function getDecorations({
     renderBackground = true,
     positions,
 }: {
-    doc: ProsemirrorNode;
+    doc: ProseMirrorNode;
     name: string;
     defaultLanguage: BundledLanguage | null | undefined;
     defaultTheme: BundledTheme;
@@ -506,6 +508,52 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
                 default: null,
                 parseHTML: (el: HTMLElement) => el.getAttribute("data-title"),
                 renderHTML: (attrs: Record<string, unknown>) => (attrs.title ? { "data-title": attrs.title } : {}),
+            },
+            executionResult: {
+                default: null,
+                parseHTML: (el: HTMLElement) => {
+                    const result = decodeCodeResult(el.getAttribute("data-writeme-execution-result") ?? "");
+                    return result ? JSON.stringify(result) : null;
+                },
+                renderHTML: (attrs: Record<string, unknown>) => {
+                    const result = parseCodeExecutionResult(
+                        typeof attrs.executionResult === "string" ? attrs.executionResult : null,
+                    );
+                    return result ? { "data-writeme-execution-result": encodeCodeResult(result) } : {};
+                },
+            },
+        };
+    },
+    addStorage() {
+        return {
+            markdown: {
+                serialize(
+                    state: {
+                        write: (value: string) => void;
+                        text: (value: string, escape?: boolean) => void;
+                        closeBlock: (node: ProseMirrorNode) => void;
+                    },
+                    node: ProseMirrorNode,
+                ) {
+                    const language = String(node.attrs.language ?? "");
+                    const title = node.attrs.title ? ` title="${String(node.attrs.title)}"` : "";
+                    let fenceLength = 3;
+                    for (const run of node.textContent.matchAll(/`+/g)) {
+                        fenceLength = Math.max(fenceLength, run[0].length + 1);
+                    }
+                    const fence = "`".repeat(fenceLength);
+                    const result = parseCodeExecutionResult(
+                        typeof node.attrs.executionResult === "string" ? node.attrs.executionResult : null,
+                    );
+                    if (result) state.write(`<!-- writeme-code-result:v1:${encodeCodeResult(result)} -->\n`);
+                    state.write(`${fence}${language}${title}\n`);
+                    state.text(node.textContent, false);
+                    state.write(`\n${fence}`);
+                    state.closeBlock(node);
+                },
+                parse: {
+                    setup: configureCodeResultMarkdown,
+                },
             },
         };
     },

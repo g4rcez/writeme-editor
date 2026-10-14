@@ -1,7 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { processMarkdown } from "./markdown.worker";
+import { encodeCodeResult } from "@/app/elements/code-block/code-result";
+import { processMarkdown, splitIntoChunks } from "./markdown.worker";
 
 describe("processMarkdown", () => {
+    it("keeps result comments attached to fences at a worker chunk boundary", () => {
+        const marker = "<!-- writeme-code-result:v1:encoded -->";
+        const source = `${Array.from({ length: 399 }, () => "paragraph").join("\n")}\n${marker}\n\`\`\`\`javascript\n\`\`\`\n${Array.from({ length: 410 }, () => "inside").join("\n")}\n\`\`\`\`\nend`;
+        const chunks = splitIntoChunks(source);
+        expect(chunks).toHaveLength(2);
+        expect(chunks[0]).toContain(`${marker}\n\`\`\`\`javascript`);
+        expect(chunks[0]).toContain("inside\n````");
+        expect(chunks[1]).toBe("end");
+    });
+
+    it("preserves kept result metadata when parsing large notes in a worker", () => {
+        const encoded = encodeCodeResult({
+            version: 1,
+            executedAt: "2026-10-14T12:30:00.000Z",
+            language: "javascript",
+            sourceFingerprint: "a".repeat(64),
+            stdout: "x".repeat(40_000),
+            stderr: "",
+        });
+        const html = processMarkdown(
+            `<!-- writeme-code-result:v1:${encoded} -->\n\`\`\`javascript title="large.js"\n2 + 2\n\`\`\``,
+        );
+        expect(html).toContain(`data-writeme-execution-result="${encoded}"`);
+        expect(html).toContain('data-title="large.js"');
+    });
+
     it("preserves highlighted comment links in large-document parsing", () => {
         const html = processMarkdown("[==Selected sentence==](./comments_advisor.md#selected-sentence) and `==code==`");
         expect(html).toContain('<a href="./comments_advisor.md#selected-sentence"><mark>Selected sentence</mark></a>');

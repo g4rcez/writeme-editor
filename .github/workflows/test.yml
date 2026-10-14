@@ -45,6 +45,10 @@ jobs:
                   tests/native/freehand-note.spec.ts
                   tests/helpers/handwriting.ts
                   tests/helpers/packaged-electron.ts
+                  tests/e2e/code-results.spec.ts
+                  tests/helpers/code-results.ts
+                  tests/build-profiles/code-results.spec.ts
+                  tests/native/code-results.spec.ts
                   playwright.*.config.ts
                   scripts/playwright-platform.ts
                   scripts/e2e-options.mts
@@ -66,6 +70,9 @@ jobs:
                   tests/e2e/markdown-tables.spec.ts
                   tests/e2e/task-note.spec.ts
                   tests/device/freehand-note.spec.ts
+                  tests/e2e/code-results.spec.ts
+                  tests/helpers/code-results.ts
+                  tests/build-profiles/code-results.spec.ts
                   playwright.*.config.ts
             - name: Check platform runner contracts
               run: npm run test:e2e:runner

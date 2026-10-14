@@ -1,7 +1,7 @@
 import { Button } from "@g4rcez/components";
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/csr/ArrowRight";
-import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FilePdfIcon } from "@phosphor-icons/react/dist/csr/FilePdf";
+import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
@@ -12,10 +12,11 @@ import { type ComponentType, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { useLayoutStore } from "@/app/contexts/layout-context";
+import { stripCodeResultMetadata } from "@/app/elements/code-block/code-result";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { Dates } from "@/lib/dates";
-import { supportsAI } from "@/lib/platform";
 import { tildaDir } from "@/lib/file-utils";
+import { supportsAI } from "@/lib/platform";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
 import { NoteTypeGuide } from "@/app/components/note-type-guide";
@@ -59,7 +60,10 @@ function ActionCard({ title, description, icon: Icon, onClick, shortcut }: Actio
 }
 
 function getNotePreview(content: string): string {
-    return content.slice(0, 160).replace(/[#*`]/g, "").replace(/\s+/g, " ").trim() || "No content yet";
+    return (
+        stripCodeResultMetadata(content).slice(0, 160).replace(/[#*`]/g, "").replace(/\s+/g, " ").trim() ||
+        "No content yet"
+    );
 }
 
 function RecentNoteRow({ note }: { note: Note }) {

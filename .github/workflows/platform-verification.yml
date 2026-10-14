@@ -103,6 +103,14 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/neovim
+            - name: Verify persistent code results
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/code-results.spec.ts --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/code-results
             - name: Verify note type guide and creation handoff
               if: matrix.desktop
               run: >-
@@ -236,6 +244,11 @@ jobs:
                   --suite native tests/native/freehand-note.spec.ts
                   tests/native/meeting-note.spec.ts
                   tests/native/application-menu.spec.ts
+            - name: Verify native code execution results
+              if: matrix.platform == 'osx'
+              run: >-
+                  npm run test:e2e -- --platform osx --suite native
+                  tests/native/code-results.spec.ts
             - name: Verify compiled and packaged Linux persistence
               if: matrix.platform == 'linux'
               run: >-
