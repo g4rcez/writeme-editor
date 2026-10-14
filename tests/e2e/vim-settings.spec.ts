@@ -63,8 +63,9 @@ test("highlights TypeScript and completes Vim API members and local variables", 
     const source = page.getByRole("textbox", { name: "Global init.ts" });
     await source.fill("vim.opt.lea");
     await source.press("Control+Space");
-    await expect(page.getByRole("option", { name: /leader/ })).toBeVisible();
-    await source.press("Tab");
+    const leader = page.getByRole("option", { name: /leader/ });
+    await expect(leader).toBeVisible();
+    await leader.click();
     await expect(source).toHaveText("vim.opt.leader");
     await source.fill("vim.keymap.");
     await source.press("Control+Space");
