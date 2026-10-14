@@ -111,6 +111,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/neovim
+            - name: Verify note type guide and creation handoff
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- tests/e2e/note-type-guide.spec.ts
+                  --platform ${{ matrix.platform }} --suite browser
+                  --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/note-type-guide
             - name: Verify Vim configuration in a production browser build
               if: matrix.desktop
               run: >-
@@ -131,6 +140,15 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/tabs
+            - name: Verify task board initialization and filter recovery
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- --platform ${{ matrix.platform }}
+                  --suite browser tests/e2e/task-note.spec.ts
+                  tests/e2e/task-filter-recovery.spec.ts --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/task-board
             - name: Verify handwriting production and offline persistence
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.platform }}
