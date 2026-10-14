@@ -2,6 +2,7 @@ import { Editor } from "@tiptap/core";
 import { Slice } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import { describe, expect, it } from "vitest";
+import { processMarkdown } from "@/lib/markdown-worker/markdown.worker";
 import { Markdown } from "../../extensions/tiptap-markdown/Markdown";
 import { ShikiBlock } from "../code-block";
 import { encodeCodeResult, type CodeExecutionResult } from "./code-result";
@@ -23,6 +24,30 @@ function editor(content: string): Editor {
 }
 
 describe("kept result Markdown", () => {
+    it("preserves saved code and uneven tables together in both parsers", () => {
+        const encoded = encodeCodeResult(result);
+        const source = `<!-- writeme-code-result:v1:${encoded} -->\n\`\`\`javascript\n2 + 2\n\`\`\`\n\n| A | B |\n| --- | --- | --- |\n| one | two | three |`;
+        const instance = editor("");
+        try {
+            for (const html of [instance.storage.markdown.parser!.parse(source), processMarkdown(source)]) {
+                const container = document.createElement("div");
+                container.innerHTML = html;
+                expect(container.querySelector("pre")?.getAttribute("data-writeme-execution-result")).toBe(encoded);
+                expect(container.querySelector("pre code")?.textContent).toBe("2 + 2");
+                expect(
+                    Array.from(container.querySelectorAll("tr"), (row) =>
+                        Array.from(row.querySelectorAll("th, td"), (cell) => cell.textContent),
+                    ),
+                ).toEqual([
+                    ["A", "B", ""],
+                    ["one", "two", "three"],
+                ]);
+            }
+        } finally {
+            instance.destroy();
+        }
+    });
+
     it("copies the complete code/result pair as portable Markdown", () => {
         const markdown = `<!-- writeme-code-result:v1:${encodeCodeResult(result)} -->\n\`\`\`javascript\n2 + 2\n\`\`\``;
         const instance = editor(markdown);
