@@ -37,6 +37,24 @@ describe("Markdown extension", () => {
             editor.destroy();
         }
     });
+    it.each([
+        "A reply <!-- writeme-comment-status: resolved -->",
+        '- A reply <!-- writeme-comment-history: {"operationId":"not-an-action","status":"resolved","at":"2026-10-14T00:00:00Z"} -->',
+        "> <!-- writeme-comment-status: resolved -->",
+        "<!-- writeme-comment-status: resolved --> not standalone",
+    ])("does not promote reply metadata into authority: %s", (reply) => {
+        const content = `## words\n\n> Words\n\n${reply}\n`;
+        const before = parseCommentThreads(content);
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content });
+        try {
+            const markdown = editor.getMarkdown();
+            expect(parseCommentThreads(markdown)).toEqual(before);
+            editor.commands.setContent(markdown);
+            expect(parseCommentThreads(editor.getMarkdown())).toEqual(before);
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each(["Cost == value", "First\nSecond"])("preserves highlighted text containing %j on reload", (text) => {
         const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
         try {

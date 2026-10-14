@@ -6,7 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { v7 as uuid } from "uuid";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { isElectron } from "@/lib/is-electron";
-import { getCommentCompanion, getCommentId, parseCommentThreads, type CommentStatus } from "@/lib/note-comments";
+import {
+    createCommentStatusOperation,
+    getCommentCompanion,
+    getCommentId,
+    parseCommentThreads,
+    type CommentStatus,
+} from "@/lib/note-comments";
 import { useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { FormattingToolbar } from "../components/formatting-toolbar";
@@ -397,7 +403,14 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         const operation =
             previous?.threadId === activeId && previous.status === status
                 ? previous
-                : { threadId: activeId, status, id: uuid(), at: new Date().toISOString() };
+                : {
+                      threadId: activeId,
+                      status,
+                      ...createCommentStatusOperation(
+                          threads.find((thread) => thread.id === activeId) ?? { history: [] },
+                          uuid(),
+                      ),
+                  };
         statusOperationRef.current = operation;
         try {
             const updated = await setNoteCommentStatus(note, activeId, status, operation.id, operation.at);

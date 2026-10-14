@@ -119,6 +119,16 @@ export function parseCommentThreads(content: string): CommentThread[] {
     return threads;
 }
 
+// Capture once for a fresh action; retries must keep the original logical time.
+export function createCommentStatusOperation(
+    thread: Pick<CommentThread, "history">,
+    operationId: string,
+    at = new Date().toISOString(),
+): { id: string; at: string } {
+    const latest = Math.max(...thread.history.map((event) => Date.parse(event.at)), -Infinity);
+    return { id: operationId, at: new Date(Math.max(Date.parse(at), latest + 1)).toISOString() };
+}
+
 export function setCommentThreadStatus(
     content: string,
     id: string,

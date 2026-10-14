@@ -166,11 +166,12 @@ export async function setBrowserCommentStatus(
         const existing = await findCommentNote(Note.parse(currentSource));
         if (!existing || existing.deletedAt) throw new Error("The comments note is no longer available.");
         const content = setCommentThreadStatus(existing.content, threadId, status, operationId, at);
-        if (content === existing.content) return existing;
+        if (content === existing.content && existing.metadata.commentSourceId === currentSource.id) return existing;
         const author = SettingsService.load().defaultAuthor;
         const note = Note.parse({
             ...existing,
             content,
+            metadata: { ...existing.metadata, commentSourceId: currentSource.id },
             updatedAt: new Date(),
             updatedBy: author,
             fileSize: content.length,

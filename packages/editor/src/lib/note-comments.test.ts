@@ -3,6 +3,7 @@ import { Note } from "@/store/note";
 import {
     appendNoteComment,
     commentSlug,
+    createCommentStatusOperation,
     getCommentCompanion,
     getCommentId,
     parseCommentThreads,
@@ -166,6 +167,37 @@ describe("note comments", () => {
         expect(setCommentThreadStatus(content, "words", "resolved", "old-retry", originalTime)).toBe(content);
     });
 
+    it("orders fresh actions after a clock correction without rejuvenating expired retries", () => {
+        let content = "## words\n\n- First\n";
+        const fresh = (id: string, at: string) =>
+            createCommentStatusOperation(parseCommentThreads(content)[0]!, id, at);
+        const resolve = fresh("fast-clock-resolve", "2026-10-15T00:00:00.000Z");
+        content = setCommentThreadStatus(content, "words", "resolved", resolve.id, resolve.at);
+        const reopen = fresh("corrected-clock-reopen", "2026-10-14T00:00:00.000Z");
+        content = setCommentThreadStatus(content, "words", "unresolved", reopen.id, reopen.at);
+        expect(parseCommentThreads(content)[0]).toMatchObject({
+            status: "unresolved",
+            comments: ["First"],
+            history: [
+                { operationId: resolve.id, at: "2026-10-15T00:00:00.000Z" },
+                { operationId: reopen.id, at: "2026-10-15T00:00:00.001Z" },
+            ],
+        });
+        expect(setCommentThreadStatus(content, "words", "resolved", resolve.id, resolve.at)).toBe(content);
+        for (let index = 0; index < 20; index++) {
+            const operation = fresh(`corrected-${index}`, "2026-10-14T00:00:00.000Z");
+            content = setCommentThreadStatus(
+                content,
+                "words",
+                index % 2 === 0 ? "resolved" : "unresolved",
+                operation.id,
+                operation.at,
+            );
+        }
+        expect(parseCommentThreads(content)[0]?.history).toHaveLength(12);
+        expect(parseCommentThreads(content)[0]?.history.some((event) => event.operationId === resolve.id)).toBe(false);
+        expect(setCommentThreadStatus(content, "words", "resolved", resolve.id, resolve.at)).toBe(content);
+    });
     it.each(["First paragraph\n\nSecond paragraph", "Example:\n```md\n## Heading\n```", "- Nested bullet\nNext line"])(
         "preserves the comment body %j in its Markdown reference",
         (body) => {

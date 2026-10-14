@@ -75,6 +75,7 @@ for (const filesystem of [false, true]) {
                 2,
             );
             await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
+            await page.clock.setFixedTime(new Date("2026-10-15T00:00:00.000Z"));
             await panel.getByRole("button", { name: "Resolve", exact: true }).click();
             await expect(panel).toContainText("Status: resolved");
             await page.reload();
@@ -102,8 +103,17 @@ for (const filesystem of [false, true]) {
                 await panel.getByRole("button", { name: "Resolve", exact: true }).click();
                 await expect(panel).toContainText("Status: resolved");
             }
+            await page.clock.setFixedTime(new Date("2026-10-14T00:00:00.000Z"));
             await panel.getByRole("button", { name: "Reopen", exact: true }).click();
             await expect(panel).toContainText("Status: unresolved");
+            const statusHistory = await page.evaluate(async () => {
+                const notes = await window.electronAPI.db.getAll("notes");
+                const companion = notes.find((note: Note) => typeof note.metadata?.commentSourceId === "string");
+                if (!companion) throw new Error("Companion missing after clock correction");
+                return companion.content;
+            });
+            expect(statusHistory).toContain("writeme-comment-status: unresolved");
+            expect(statusHistory).toContain(`"at":"2026-10-15T00:00:00.00${filesystem ? 2 : 1}Z"`);
             await page.evaluate(async () => {
                 const notes = await window.electronAPI.db.getAll("notes");
                 const source = notes.find((note: Note) => !note.metadata?.commentSourceId);
