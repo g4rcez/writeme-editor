@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { Marked } from "marked";
+import { configureCodeResultMarkdown } from "@/lib/code-result-markdown";
 import { configureMathMarkdown } from "@/lib/latex-markdown";
 import { linkify } from "@/lib/link-utils";
 import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
@@ -8,6 +9,7 @@ import { dedent } from "./dedent";
 const md = new Marked({ gfm: true, breaks: true });
 configureMathMarkdown(md);
 configureHighlightMarkdown(md);
+configureCodeResultMarkdown(md);
 
 export function processMarkdown(text: string): string {
     const dedented = dedent(text);
@@ -17,28 +19,24 @@ export function processMarkdown(text: string): string {
 
 const CHUNK_LINES = 200;
 
-function splitIntoChunks(text: string): string[] {
+export function splitIntoChunks(text: string): string[] {
     const lines = text.split("\n");
     if (lines.length <= CHUNK_LINES) return [text];
 
     const chunks: string[] = [];
     let currentLines: string[] = [];
-    let inFence = false;
+    let fence: string | null = null;
 
     for (const line of lines) {
         const trimmed = line.trimStart();
 
-        if (!inFence) {
-            if (/^(`{3,}|~{3,})/.test(trimmed)) {
-                inFence = true;
-            }
-        } else {
-            if (/^(`{3,}|~{3,})\s*$/.test(trimmed)) {
-                inFence = false;
-            }
+        if (!fence) {
+            fence = trimmed.match(/^(`{3,}|~{3,})/)?.[1] ?? null;
+        } else if (new RegExp(`^${fence[0]}{${fence.length},}\\s*$`).test(trimmed)) {
+            fence = null;
         }
 
-        const isHeadingBoundary = !inFence && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
+        const isHeadingBoundary = !fence && /^#{1,6}\s/.test(trimmed) && currentLines.length >= CHUNK_LINES;
 
         if (isHeadingBoundary) {
             chunks.push(currentLines.join("\n"));
@@ -48,7 +46,7 @@ function splitIntoChunks(text: string): string[] {
         currentLines.push(line);
 
         // Force split when no heading found within 2x the chunk size
-        if (!inFence && currentLines.length >= CHUNK_LINES * 2) {
+        if (!fence && !trimmed.startsWith("<!-- writeme-code-result:v1:") && currentLines.length >= CHUNK_LINES * 2) {
             chunks.push(currentLines.join("\n"));
             currentLines = [];
         }

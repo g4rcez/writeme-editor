@@ -3,6 +3,44 @@ import { createNote, expect, goHome, test } from "./fixtures";
 
 test.use({ serviceWorkers: "block" });
 
+test("retains a large kept output through worker parsing and reload", async ({ cleanPage: page }) => {
+    test.setTimeout(120_000);
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    let markdownWorkers = 0;
+    page.on("worker", (worker) => {
+        if (worker.url().includes("markdown.worker")) markdownWorkers++;
+    });
+    await goHome(page);
+    await createNote(page, "Large result");
+    await setCodeMarkdown(page, '```javascript\n"L".repeat(40000)\n```');
+    const block = page.locator(".node-codeBlock").first();
+    await block.getByRole("button", { name: "Run", exact: true }).click();
+    await block.getByRole("button", { name: "Keep result", exact: true }).click();
+    const kept = block.getByRole("region", { name: "Kept code result" });
+    await expect(kept).toContainText("L".repeat(100));
+    await waitForCodeSave(page);
+    const toolbar = page.getByRole("toolbar", { name: "Note tools" });
+    await toolbar.getByRole("button", { name: "Markdown", exact: true }).click();
+    const raw = page.getByRole("textbox", { name: "Markdown note editor", exact: true });
+    await expect(raw).toContainText("writeme-code-result:v1:");
+    await raw.press("ControlOrMeta+a");
+    await raw.press("ControlOrMeta+c");
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied.length).toBeGreaterThan(50_000);
+    await page.evaluate((markdown) => navigator.clipboard.writeText(`${markdown}\n\nWorker import complete`), copied);
+    await toolbar.getByRole("button", { name: "Formatted", exact: true }).click();
+    await page.getByRole("textbox", { name: "Note editor", exact: true }).press("ControlOrMeta+v");
+    await expect.poll(() => markdownWorkers).toBeGreaterThan(0);
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText(
+        "Worker import complete",
+    );
+    await expect(kept).toContainText("L".repeat(100));
+    await waitForCodeSave(page);
+    await page.reload();
+    await expect(kept).toContainText("L".repeat(100));
+    await expect(kept).not.toContainText("Outdated");
+});
+
 test("keeps only explicit results, survives reload and raw mode, marks edits outdated, replaces and removes with undo", async ({
     cleanPage: page,
 }, testInfo) => {
