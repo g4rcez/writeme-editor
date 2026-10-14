@@ -94,6 +94,14 @@ jobs:
                   npm run test:e2e -- --platform ${{ matrix.platform }}
                   --suite browser tests/e2e/freehand-note.spec.ts
                   ${{ matrix.platform == 'osx' && '--project desktop-macos' || '' }}
+            - name: Verify note starter examples
+              if: matrix.desktop
+              run: >-
+                  npm run test:e2e -- tests/e2e/note-starter-examples.spec.ts
+                  --platform ${{ matrix.platform }} --suite browser --project chromium
+              env:
+                  PLAYWRIGHT_ARTIFACT_DIR: >-
+                      artifacts/playwright/${{ matrix.platform }}/note-starters
             - name: Verify formatted editor Vim mode
               if: matrix.desktop
               run: >-
