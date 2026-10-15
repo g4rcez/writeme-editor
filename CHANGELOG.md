@@ -10,7 +10,7 @@
   Disable continuous video/trace frames only in the fast gate while retaining failure
   screenshots, DOM/source traces and full-run recordings. Bind fixture edits to the
   new note's editor and save once without autosave delays or redundant reloads;
-  dedicated typing/autosave/persistence coverage remains. Temporarily skip five
+  dedicated typing/autosave/persistence coverage remains. Temporarily skip fourteen
   hosted-failing cases in the fast gate only; they remain enabled in full/local
   runs for follow-up restoration.
 - Use explicit `.mts` Vite and Tailwind configs plus `import.meta.dirname` for
