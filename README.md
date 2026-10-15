@@ -143,6 +143,14 @@ To build the web version and generate PWA assets:
 npm run pwa:build
 ```
 
+#### Vercel deployments
+
+Automatic Git deployments are enabled only for `main`, after pull requests are merged.
+The [web editor configuration](vercel.json) and [landing configuration](packages/landing/vercel.json)
+disable every branch with `**` and explicitly enable `main`, so feature branches and pull requests
+do not create preview deployments. Keep `main` as the Production Branch in both Vercel projects.
+GitHub Actions PR checks still run; manual Vercel deployments are not changed by this policy.
+
 ## Testing
 
 Select a platform and suite through the shared Playwright runner:
