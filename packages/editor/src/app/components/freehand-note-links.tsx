@@ -150,7 +150,7 @@ export function StickyNoteLink({
             aria-label={`Linked note: ${title}`}
             className={clsx("wm-sticky-link", placing && "wm-sticky-link--placing")}
             style={{
-                left: `clamp(0.75rem, ${(position.x / PAPER_WIDTH) * 100}%, max(0.75rem, calc(100% - 13rem - 0.75rem)))`,
+                left: `clamp(0.75rem, min(${(position.x / PAPER_WIDTH) * 100}%, calc(100cqi - 13rem - 0.75rem)), max(0.75rem, calc(100% - 13rem - 0.75rem)))`,
                 top: `clamp(0.75rem, ${(position.y / PAPER_HEIGHT) * 100}%, max(0.75rem, calc(100% - 8rem)))`,
             }}
         >

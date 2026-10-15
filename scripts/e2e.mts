@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { matchesProject, parseE2EArguments } from "./e2e-options.mts";
+import { matchesProject, parseE2EArguments, productionTestPattern } from "./e2e-options.mts";
 import { platformConfig } from "./playwright-platform.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -10,6 +10,26 @@ const require = createRequire(import.meta.url);
 function main(): void {
     const { platform, suite, forwarded, projects } = parseE2EArguments(process.argv.slice(2));
     const listing = forwarded.includes("--list");
+    let liveWhisper = false;
+    for (let index = 0; index < forwarded.length; index++) {
+        const arg = forwarded[index]!;
+        if (arg !== "--grep" && arg !== "-g" && !arg.startsWith("--grep=") && !arg.startsWith("-g=")) continue;
+        const valueIndex = arg.includes("=") ? index : index + 1;
+        const pattern = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : forwarded[valueIndex];
+        if (!pattern) continue; // Playwright reports a missing option value.
+        if (suite === "production") {
+            liveWhisper ||= pattern.includes("@live-local-whisper") || pattern.includes("live local Whisper");
+            const selection =
+                platform === "ios" || platform === "android"
+                    ? `${productionTestPattern.source}|excalidraw\\.spec\\.ts`
+                    : productionTestPattern.source;
+            const combined = `(?=.*(?:${selection}))(?=.*(?:${pattern}))`;
+            forwarded[valueIndex] =
+                valueIndex === index ? `${arg.slice(0, arg.indexOf("=") + 1)}${combined}` : combined;
+        }
+    }
+    if (liveWhisper && !listing && (!process.env.MEETING_WHISPER_ENDPOINT || !process.env.MEETING_AUDIO_FIXTURE))
+        throw new Error("Live Whisper requires MEETING_WHISPER_ENDPOINT and MEETING_AUDIO_FIXTURE.");
     if (suite === "device" && !listing && !process.env.PLAYWRIGHT_DEVICE_BASE_URL) {
         throw new Error(
             "Set PLAYWRIGHT_DEVICE_BASE_URL to an HTTPS or device-local localhost app URL; physical Android/ADB and an operator with a pen are required.",
@@ -27,6 +47,7 @@ function main(): void {
         ...process.env,
         WRITEME_E2E_SUITE: suite,
         WRITEME_E2E_PROJECTS: JSON.stringify(projects),
+        WRITEME_E2E_LIVE_WHISPER: liveWhisper ? "1" : "0",
     };
     platformConfig(platform, env);
     const run = (command: string, args: string[], childEnv = env): boolean => {

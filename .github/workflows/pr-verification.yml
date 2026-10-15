@@ -1,0 +1,17 @@
+name: Fast PR verification
+
+on:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    checks:
+        uses: ./.github/workflows/test.yml
+        with:
+            fast: true
+    browser:
+        uses: ./.github/workflows/browser-verification.yml
+        with:
+            fast: true

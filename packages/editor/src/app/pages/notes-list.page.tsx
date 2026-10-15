@@ -178,6 +178,7 @@ export default function NotesListPage() {
                 <div className="mt-5">
                     <Checkbox
                         title="Select all notes"
+                        aria-label="Select all notes"
                         checked={filteredNotes.every((note) => selectedIds.has(note.id))}
                         onChange={filteredNotes.every((note) => selectedIds.has(note.id)) ? deselectAll : selectAll}
                     />
@@ -187,6 +188,7 @@ export default function NotesListPage() {
                                 <div className="flex items-center justify-between gap-3">
                                     <Checkbox
                                         title={`Select ${note.title}`}
+                                        aria-label={`Select ${note.title}`}
                                         checked={selectedIds.has(note.id)}
                                         onChange={() => toggleSelection(note.id)}
                                     />

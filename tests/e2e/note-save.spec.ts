@@ -25,18 +25,22 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.keyboard.press("Control+s");
         await expect(status).toHaveText("Saved", { timeout: 4000 });
         await expect(editor).toContainText("First draft and later edits");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first()).toContainText(
             "First draft and later edits",
         );
     });
 
     test(`saves ${mode} immediately with Ctrl/Cmd+S and clears the tab dot`, async ({ cleanPage: page }) => {
-        await goHome(page);
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         await page.getByRole("checkbox").first().uncheck();
         await page.getByRole("button", { name: "Save Editor", exact: true }).click();
-        await goHome(page);
+        const confirmation = page.getByRole("dialog", { name: "Success", exact: true });
+        await expect(confirmation).toBeVisible();
+        await confirmation.getByRole("button", { name: "OK", exact: true }).click();
+        await expect(confirmation).toBeHidden();
+        await page.getByRole("button", { name: "Go to home", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await createNote(page, "Save shortcut");
         if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
         const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
@@ -50,7 +54,7 @@ for (const mode of ["formatted", "markdown"] as const) {
             await expect(status).toHaveText("Saved", { timeout: 2000 });
             await expect(page.locator('[data-save-status="unsaved"]')).toHaveCount(0);
         }
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first()).toContainText(
             "Meta saved text",
         );
@@ -65,7 +69,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.type("Retry this draft");
     await page.evaluate(() => {
         const put = IDBObjectStore.prototype.put;
-        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function(value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
             if (this.name === "notes") {
                 IDBObjectStore.prototype.put = put;
                 throw new DOMException("Unable to save note", "QuotaExceededError");
@@ -80,7 +84,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await editor.click();
     await page.keyboard.press("Control+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator(".ProseMirror").first()).toContainText("Retry this draft");
 });
 
@@ -92,15 +96,24 @@ test("saves an existing note in the floating editor", async ({ cleanPage: page }
         window.dispatchEvent(new PopStateEvent("popstate"));
     });
     await expect(page).toHaveURL(/\/floating-editor$/);
-    const editor = page.locator(".ProseMirror").first();
+    // Lazy navigation updates the URL before replacing the outgoing note editor.
+    await expect(page.locator(".writeme-editor-page")).toHaveCount(0);
+    const noteId = new URL(noteUrl).pathname.slice("/note/".length);
+    const editor = page
+        .locator(`#editor-container-${noteId}`)
+        .getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveAttribute("contenteditable", "true");
+    await expect(editor).toHaveAttribute("aria-busy", "false");
     await editor.click();
     await page.keyboard.type("Saved from floating editor");
+    await expect(editor).toHaveText("Saved from floating editor");
     const status = page.getByRole("status", { name: "Note save status" });
     await expect(status).toHaveText("Unsaved changes");
-    await page.keyboard.press("Meta+s");
+    await editor.press("Meta+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
     await page.goto(noteUrl);
-    await expect(page.locator(".ProseMirror").first()).toContainText("Saved from floating editor");
+    await expect(editor).toContainText("Saved from floating editor");
 });
 
 for (const route of ["quicknote", "mathnote"]) {
@@ -114,7 +127,7 @@ for (const route of ["quicknote", "mathnote"]) {
         await expect(status).toHaveText("Unsaved changes");
         await page.keyboard.press("Control+s");
         await expect(status).toHaveText("Saved", { timeout: 2000 });
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(".ProseMirror").first()).toContainText("floating saved text");
     });
 }
