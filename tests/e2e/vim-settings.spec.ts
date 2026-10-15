@@ -153,7 +153,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.");
         await page.getByRole("link", { name: /^Global Vim configuration(?:\s|$)/ }).click();
         await expect(page).toHaveURL(url);
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         const formatted = page.getByRole("textbox", { name: "Note editor", exact: true });
         await expect(formatted).toHaveAttribute("data-neovim-mode", "normal");
         await expect(formatted).toHaveAttribute("aria-busy", "false");
@@ -172,7 +172,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
             timeout: 15_000,
         });
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(raw).toBeVisible();
         await expect(toolbar.getByRole("checkbox", { name: "Vim mode" })).toBeChecked();
         await toolbar.getByRole("button", { name: "Formatted", exact: true }).click();
