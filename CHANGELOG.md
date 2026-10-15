@@ -30,6 +30,8 @@
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag
   verification, rather than treating dialog closure as editor readiness.
+- Wait for rendered app content rather than external-resource load completion in
+  browser route setup.
 - Wait for each note route's own editor to become ready before tab, floating,
   and daily-note persistence assertions; close the saved daily-note tab before
   returning Home to verify it reopens without losing edits, and position

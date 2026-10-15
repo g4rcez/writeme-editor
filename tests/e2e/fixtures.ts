@@ -7,7 +7,7 @@ export const test = base.extend<{ cleanPage: Page }>({
 });
 
 export const goHome = async (page: Page) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible({ timeout: 30_000 });
 };
 

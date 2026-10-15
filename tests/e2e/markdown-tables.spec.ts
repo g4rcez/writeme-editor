@@ -88,7 +88,8 @@ for (const [tableCase, tableMarkdown] of tableCases) {
                     },
                     { title, content: markdown },
                 );
-                await page.goto("/notes");
+                await page.getByRole("link", { name: "All notes", exact: true }).click();
+                await expect(page).toHaveURL(/\/notes$/);
                 await expect(page.getByRole("heading", { name: "All notes", exact: true })).toBeVisible();
                 await page.getByRole("link", { name: title, exact: true }).click();
                 await expect(page).toHaveURL(new RegExp(`/note/${id}$`));
@@ -122,7 +123,7 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             await expect(saveStatus).toHaveText("Unsaved changes");
             await editor.press("ControlOrMeta+s");
             await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
-            await page.reload();
+            await page.reload({ waitUntil: "domcontentloaded" });
             await expect(page).toHaveURL(noteUrl);
             await expectPreservedTable(editor, afterTable + savedEdit);
             await page.screenshot({ path: testInfo.outputPath(`uneven-table-${size}-${action}-reopened.png`) });

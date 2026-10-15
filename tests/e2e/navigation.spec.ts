@@ -12,14 +12,17 @@ test.describe("Navigation", () => {
     });
 
     test("direct URLs render core pages", async ({ cleanPage: page }) => {
-        await page.goto("/settings");
+        await page.goto("/settings", { waitUntil: "domcontentloaded" });
+        await expect(page).toHaveURL(/\/settings$/);
         await expect(page.getByRole("heading", { name: "Quick Settings" })).toBeVisible();
 
-        await page.goto("/tags");
+        await page.goto("/tags", { waitUntil: "domcontentloaded" });
         await expect(page).toHaveURL(/\/tags$/);
+        await expect(page.getByRole("heading", { name: "Tags Graph", exact: true })).toBeVisible();
 
-        await page.goto("/read-it-later");
+        await page.goto("/read-it-later", { waitUntil: "domcontentloaded" });
         await expect(page).toHaveURL(/\/read-it-later$/);
+        await expect(page.getByRole("heading", { name: "Read It Later", exact: true })).toBeVisible();
     });
 
     test("create-note dialog closes on Escape", async ({ cleanPage: page }) => {
