@@ -1,5 +1,14 @@
 import { Button, Input, Modal } from "@g4rcez/components";
-import { useEffect, useId, useRef, useState, type JSX } from "react";
+import {
+    useEffect,
+    useId,
+    useRef,
+    useState,
+    type ChangeEvent,
+    type CSSProperties,
+    type JSX,
+    type MouseEvent,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { isPathWithinImportRoot } from "@/lib/obsidian-import";
 import {
@@ -130,83 +139,151 @@ export function SendResearchExcerpt({ source }: Props): JSX.Element {
         setOpen(true);
     }
 
+    function selectPageText(): void {
+        const root = document.querySelector(
+            `[data-research-source="${CSS.escape(source.note.id)}"] .wm-pdf-text-layer`,
+        );
+        if (!root?.textContent?.trim()) {
+            setError("This page has no selectable text. Scanned PDFs need text added before excerpts can be captured.");
+            return;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(root);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        startCapture();
+    }
+
+    function captureActionSelection(): void {
+        const selection = window.getSelection();
+        const selectedSource = captureResearchSelection(source, selection);
+        actionCapture.current =
+            selectedSource && selection ? { text: selection.toString(), source: selectedSource } : capture.current;
+    }
+
+    function preventSelectionLoss(event: MouseEvent<HTMLButtonElement>): void {
+        event.preventDefault();
+    }
+
+    function handleModalChange(nextOpen: boolean): void {
+        if (!nextOpen) close();
+    }
+
+    function handleSend(): void {
+        void send();
+    }
+
+    function chooseNewNote(): void {
+        setCreateNew(true);
+    }
+
+    function chooseExistingNote(): void {
+        setCreateNew(false);
+    }
+
+    function updateTitle(event: ChangeEvent<HTMLInputElement>): void {
+        setTitle(event.target.value);
+        newNote.current = null;
+    }
+
+    function updateDestination(event: ChangeEvent<HTMLSelectElement>): void {
+        setDestinationId(event.target.value);
+    }
+
+    const destinationOptions = destinations.map((note) => (
+        <option key={note.id} value={note.id}>
+            {note.title || "Untitled"}
+        </option>
+    ));
+    const pageTextAction =
+        source.kind === "pdf" ? (
+            <Button type="button" theme="ghost-muted" className="min-h-11" onClick={selectPageText}>
+                Select page text
+            </Button>
+        ) : null;
+    const selectionError =
+        !open && error ? (
+            <p role="alert" className="text-sm text-danger">
+                {error}
+            </p>
+        ) : null;
+    const destinationField = createNew ? (
+        <label htmlFor={destinationControlId} className="flex flex-col gap-1 text-sm text-foreground">
+            Destination note title
+            <Input
+                id={destinationControlId}
+                disabled={saving}
+                aria-label="Destination note title"
+                value={title}
+                onChange={updateTitle}
+                placeholder="Note title"
+            />
+        </label>
+    ) : (
+        <label htmlFor={destinationControlId} className="flex flex-col gap-1 text-sm text-foreground">
+            Destination note
+            <select
+                id={destinationControlId}
+                aria-label="Destination note"
+                disabled={saving}
+                className="min-h-11 rounded-md border border-border bg-background px-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={destinationId}
+                onChange={updateDestination}
+            >
+                <option value="">Choose a note…</option>
+                {destinationOptions}
+            </select>
+        </label>
+    );
+    const emptyDestinationsMessage =
+        !createNew && destinations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No writing notes yet. Create a note for this excerpt.</p>
+        ) : null;
+    const dialogError = error ? (
+        <p role="alert" className="text-sm text-danger">
+            {error}
+        </p>
+    ) : null;
+    const createNewTheme = createNew ? "primary" : "muted";
+    const chooseExisting = !createNew;
+    const existingNoteTheme = chooseExisting ? "primary" : "muted";
+    const dialogFooter = (
+        <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" theme="muted" className="min-h-11" onClick={close} disabled={saving}>
+                Cancel
+            </Button>
+            <Button type="button" className="min-h-11" onClick={handleSend} disabled={saving} loading={saving}>
+                Send excerpt
+            </Button>
+        </div>
+    );
+    const dialogStyle: CSSProperties = { maxHeight: "calc(100dvh - 2rem)" };
+
     return (
         <>
-            {source.kind === "pdf" ? (
-                <Button
-                    type="button"
-                    theme="muted"
-                    className="min-h-11"
-                    onClick={() => {
-                        const root = document.querySelector(
-                            `[data-research-source="${CSS.escape(source.note.id)}"] .wm-pdf-text-layer`,
-                        );
-                        if (!root?.textContent?.trim()) {
-                            setError(
-                                "This page has no selectable text. Scanned PDFs need text added before excerpts can be captured.",
-                            );
-                            return;
-                        }
-                        const range = document.createRange();
-                        range.selectNodeContents(root);
-                        const selection = window.getSelection();
-                        selection?.removeAllRanges();
-                        selection?.addRange(range);
-                        startCapture();
-                    }}
-                >
-                    Select page text
-                </Button>
-            ) : null}
+            {pageTextAction}
             <Button
                 ref={button}
                 type="button"
-                theme="muted"
+                theme="ghost-muted"
                 className="min-h-11"
                 aria-label="Send selection to note"
-                onPointerDown={() => {
-                    const selection = window.getSelection();
-                    const selectedSource = captureResearchSelection(source, selection);
-                    actionCapture.current =
-                        selectedSource && selection
-                            ? { text: selection.toString(), source: selectedSource }
-                            : capture.current;
-                }}
-                onMouseDown={(event) => event.preventDefault()}
+                onPointerDown={captureActionSelection}
+                onMouseDown={preventSelectionLoss}
                 onClick={startCapture}
             >
                 Send selection to note
             </Button>
-            {!open && error ? (
-                <p role="alert" className="text-sm text-danger">
-                    {error}
-                </p>
-            ) : null}
+            {selectionError}
             <Modal
                 open={open}
                 title="Send selection to note"
-                onChange={(value) => {
-                    if (!value) close();
-                }}
-                className="max-w-md"
-                style={{ maxHeight: "calc(100dvh - 2rem)" }}
+                onChange={handleModalChange}
+                className="max-w-2xl"
+                style={dialogStyle}
                 bodyClassName="min-h-0"
-                footer={
-                    <div className="flex flex-wrap justify-end gap-2">
-                        <Button type="button" theme="muted" className="min-h-11" onClick={close} disabled={saving}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            className="min-h-11"
-                            onClick={() => void send()}
-                            disabled={saving}
-                            loading={saving}
-                        >
-                            Send excerpt
-                        </Button>
-                    </div>
-                }
+                footer={dialogFooter}
             >
                 <div className="flex flex-col gap-4 p-4">
                     <p className="text-sm text-muted-foreground">
@@ -219,68 +296,26 @@ export function SendResearchExcerpt({ source }: Props): JSX.Element {
                     <div className="flex flex-wrap gap-2">
                         <Button
                             type="button"
-                            theme={createNew ? "primary" : "muted"}
+                            theme={createNewTheme}
                             aria-pressed={createNew}
                             disabled={saving}
-                            onClick={() => setCreateNew(true)}
+                            onClick={chooseNewNote}
                         >
                             Create a note
                         </Button>
                         <Button
                             type="button"
-                            theme={!createNew ? "primary" : "muted"}
-                            aria-pressed={!createNew}
+                            theme={existingNoteTheme}
+                            aria-pressed={chooseExisting}
                             disabled={saving}
-                            onClick={() => setCreateNew(false)}
+                            onClick={chooseExistingNote}
                         >
                             Choose existing note
                         </Button>
                     </div>
-                    {createNew ? (
-                        <label htmlFor={destinationControlId} className="flex flex-col gap-1 text-sm text-foreground">
-                            Destination note title
-                            <Input
-                                id={destinationControlId}
-                                disabled={saving}
-                                aria-label="Destination note title"
-                                value={title}
-                                onChange={(event) => {
-                                    setTitle(event.target.value);
-                                    newNote.current = null;
-                                }}
-                                placeholder="Note title"
-                            />
-                        </label>
-                    ) : (
-                        <label htmlFor={destinationControlId} className="flex flex-col gap-1 text-sm text-foreground">
-                            Destination note
-                            <select
-                                id={destinationControlId}
-                                aria-label="Destination note"
-                                disabled={saving}
-                                className="min-h-11 rounded-md border border-border bg-background px-3 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                value={destinationId}
-                                onChange={(event) => setDestinationId(event.target.value)}
-                            >
-                                <option value="">Choose a note…</option>
-                                {destinations.map((note) => (
-                                    <option key={note.id} value={note.id}>
-                                        {note.title || "Untitled"}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    )}
-                    {!createNew && !destinations.length ? (
-                        <p className="text-sm text-muted-foreground">
-                            No writing notes yet. Create a note for this excerpt.
-                        </p>
-                    ) : null}
-                    {error ? (
-                        <p role="alert" className="text-sm text-danger">
-                            {error}
-                        </p>
-                    ) : null}
+                    {destinationField}
+                    {emptyDestinationsMessage}
+                    {dialogError}
                 </div>
             </Modal>
         </>

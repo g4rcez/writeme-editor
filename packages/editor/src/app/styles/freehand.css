@@ -21,9 +21,21 @@
 
 .wm-writing-toolbar,
 .wm-notebook-footer {
-    @apply m-0 flex w-fit min-w-0 max-w-full flex-wrap items-center justify-center gap-1 rounded-xl border border-card-border bg-card-background p-1 text-xs;
+    @apply m-0 flex w-fit min-w-0 max-w-full flex-wrap items-center justify-center gap-0.5 rounded-lg border border-card-border bg-card-background p-0 text-xs;
+    box-sizing: border-box;
+    height: 44px;
     box-shadow: 0 2px 8px color-mix(in srgb, var(--var-color-foreground) 8%, transparent);
     pointer-events: auto;
+}
+.wm-notebook [data-component="button"] {
+    @apply min-h-11 min-w-11;
+}
+@media (max-width: 900px) {
+    .wm-writing-toolbar,
+    .wm-notebook-footer {
+        height: auto;
+        min-height: 44px;
+    }
 }
 
 .wm-writing-toolbar {
@@ -40,7 +52,7 @@
     pointer-events: none;
 }
 .wm-show-tools {
-    @apply absolute left-3 top-3 z-10 rounded-xl border border-card-border bg-card-background;
+    @apply absolute left-3 top-3 z-10;
 }
 .wm-ink-group {
     @apply m-0 flex min-w-0 items-center gap-0 border-0 p-0;
@@ -49,19 +61,6 @@
     @apply border-l border-card-border pl-1;
 }
 
-.wm-ink-control {
-    @apply relative flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-2 font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-35;
-    touch-action: manipulation;
-}
-
-.wm-ink-control[aria-pressed="true"],
-.wm-ink-control[aria-expanded="true"] {
-    @apply bg-muted;
-}
-.wm-ink-control[aria-pressed="true"]::after {
-    content: "";
-    @apply absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-foreground;
-}
 .wm-options-panel {
     @apply absolute m-0 right-0 z-20 flex flex-col gap-1 overflow-y-auto overscroll-contain rounded-xl border border-card-border bg-card-background p-2 text-sm text-foreground;
     left: auto;
@@ -79,9 +78,6 @@
 .wm-pen-types {
     @apply m-0 grid grid-cols-2 gap-2 border-0 p-0;
 }
-.wm-pen-type {
-    @apply min-h-14 justify-start gap-2 text-xs;
-}
 .wm-pen-preview {
     @apply h-11 w-full;
 }
@@ -96,9 +92,6 @@
 }
 .wm-options-panel .wm-touch-toggle {
     @apply px-2;
-}
-.wm-option-action {
-    @apply justify-start gap-2 text-xs;
 }
 .wm-options-actions {
     @apply flex items-center justify-between gap-2;
@@ -185,13 +178,6 @@
 .wm-link-results {
     @apply m-0 list-none p-0;
 }
-.wm-link-result {
-    @apply flex min-h-11 w-full flex-col justify-center rounded-lg px-2 py-2 text-left text-xs text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary;
-    overflow-wrap: anywhere;
-}
-.wm-link-result small {
-    @apply text-muted-foreground;
-}
 .wm-link-empty {
     @apply m-0 block px-2 py-3 text-xs text-muted-foreground;
 }
@@ -261,7 +247,7 @@
     inset: 0;
 }
 .wm-pdf-page-number {
-    @apply min-h-11 w-16 rounded-lg border border-border bg-card-background px-2 text-foreground;
+    @apply min-h-8 w-10 rounded-md border border-border bg-card-background px-1 text-center text-xs text-foreground;
 }
 .wm-pdf-image,
 .wm-pdf-image canvas {
@@ -323,7 +309,7 @@
     animation: spin 1s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-    .wm-ink-control {
+    .wm-notebook [data-component="button"] {
         transition: none;
     }
     .wm-saving {

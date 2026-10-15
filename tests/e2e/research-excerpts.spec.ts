@@ -57,6 +57,12 @@ test("captures real PDF text, creates writing, appends another excerpt and retur
     page,
 }, testInfo) => {
     const sourceId = await importResearchPdf(page);
+    const writingToolbarBounds = await page.getByRole("toolbar", { name: "Writing tools" }).boundingBox();
+    const notebookFooterBounds = await page.locator(".wm-notebook-footer").boundingBox();
+    expect(writingToolbarBounds).not.toBeNull();
+    expect(notebookFooterBounds).not.toBeNull();
+    expect(writingToolbarBounds!.height).toBeLessThanOrEqual(44);
+    expect(notebookFooterBounds!.height).toBeLessThanOrEqual(44);
     await page.getByRole("button", { name: "Pen", exact: true }).click();
     const canvas = await page.getByLabel("Handwriting canvas", { exact: true }).boundingBox();
     if (!canvas) throw new Error("PDF annotation canvas missing");
@@ -76,6 +82,9 @@ test("captures real PDF text, creates writing, appends another excerpt and retur
     expect(await page.evaluate(() => window.getSelection()?.toString())).toContain("Landscape research phrase");
     await page.getByRole("button", { name: "Send selection to note", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Send selection to note", exact: true });
+    const dialogBounds = await dialog.boundingBox();
+    expect(dialogBounds).not.toBeNull();
+    expect(dialogBounds!.width).toBeGreaterThan(600);
     await dialog.getByRole("button", { name: "Create a note", exact: true }).click();
     await dialog.getByLabel("Destination note title", { exact: true }).fill("Research writing");
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();

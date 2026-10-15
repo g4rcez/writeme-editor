@@ -114,6 +114,17 @@ export function FreehandNoteView({
             setNotice(error instanceof Error ? error.message : "Could not export the local copy."),
         );
     }
+    function retrySave(): void {
+        if (latest.current) save(latest.current);
+    }
+
+    function resetBlockedNavigation(): void {
+        if (blocker.state === "blocked") blocker.reset();
+    }
+
+    function leaveWithoutSaving(): void {
+        if (blocker.state === "blocked") blocker.proceed();
+    }
 
     if (!parsed.data)
         return (
@@ -124,34 +135,30 @@ export function FreehandNoteView({
     return (
         <div className="wm-notebook-view">
             <FreehandCanvas
+                onChange={save}
+                actions={actions}
+                title={note.title}
+                saveStatus={status}
+                fixedPages={fixedPages}
+                initialData={parsed.data}
+                linkableNotes={linkableNotes}
+                pageBackground={pageBackground}
                 selectionAction={selectionAction}
                 initialPageIndex={initialPageIndex}
-                pageBackground={pageBackground}
-                fixedPages={fixedPages}
-                title={note.title}
-                actions={actions}
-                linkableNotes={linkableNotes}
-                initialData={parsed.data}
-                onChange={save}
-                saveStatus={status}
-                onRetry={() => {
-                    if (latest.current) save(latest.current);
-                }}
+                onRetry={retrySave}
             />
             {notice && (
                 <aside className="wm-notebook-notice" role="alert">
                     <p>{notice}</p>
-                    <button type="button" className="wm-ink-control" onClick={downloadLocalCopy}>
+                    <Button theme="ghost-muted" size="tiny" onClick={downloadLocalCopy}>
                         Download local copy
-                    </button>
+                    </Button>
                 </aside>
             )}
             <Modal
                 open={blocker.state === "blocked"}
                 title="Unsaved notebook"
-                onChange={() => {
-                    if (blocker.state === "blocked") blocker.reset();
-                }}
+                onChange={resetBlockedNavigation}
                 className="max-w-md"
             >
                 <p>
@@ -160,12 +167,7 @@ export function FreehandNoteView({
                         : "Your latest changes have not been saved. Stay here to retry or download a copy."}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        className="min-h-11"
-                        onClick={() => {
-                            if (blocker.state === "blocked") blocker.reset();
-                        }}
-                    >
+                    <Button className="min-h-11" onClick={resetBlockedNavigation}>
                         Stay in notebook
                     </Button>
                     <Button theme="muted" className="min-h-11" onClick={downloadLocalCopy}>
@@ -175,9 +177,7 @@ export function FreehandNoteView({
                         theme="muted"
                         className="min-h-11"
                         disabled={status === "Saving…"}
-                        onClick={() => {
-                            if (blocker.state === "blocked") blocker.proceed();
-                        }}
+                        onClick={leaveWithoutSaving}
                     >
                         Leave without saving
                     </Button>

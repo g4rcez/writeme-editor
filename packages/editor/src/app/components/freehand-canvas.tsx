@@ -1,3 +1,4 @@
+import { Button } from "@g4rcez/components";
 import { ArrowClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowClockwise";
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react/dist/csr/ArrowCounterClockwise";
 import { CheckIcon } from "@phosphor-icons/react/dist/csr/Check";
@@ -23,8 +24,12 @@ import {
     useId,
     useRef,
     useState,
+    type ChangeEvent,
     type CSSProperties,
+    type FocusEvent,
     type JSX,
+    type KeyboardEvent,
+    type MouseEvent,
     type PointerEvent,
     type ReactNode,
 } from "react";
@@ -72,7 +77,6 @@ const tools = [
     { tool: "eraser", label: "Eraser", icon: EraserIcon },
     { tool: "hand", label: "Move page", icon: HandIcon },
 ] satisfies Array<{ tool: Tool; label: string; icon: typeof PencilSimpleIcon }>;
-const controlClass = "wm-ink-control";
 const penTypes = [
     {
         style: "fountain",
@@ -132,6 +136,24 @@ function PaperColor({
         setInvalid(false);
         if (color.toLowerCase() !== value.toLowerCase()) onChange(color.toLowerCase());
     }
+    function updateFromColorPicker(event: ChangeEvent<HTMLInputElement>): void {
+        accept(event.target.value);
+    }
+
+    function updateColorDraft(event: ChangeEvent<HTMLInputElement>): void {
+        setDraft(event.target.value);
+        setInvalid(false);
+    }
+
+    function commitColorDraft(): void {
+        const color = draft.trim();
+        if (/^#[\da-f]{6}$/i.test(color)) accept(color);
+        else setInvalid(true);
+    }
+
+    function handleColorKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+        if (event.key === "Enter") event.currentTarget.blur();
+    }
     return (
         <div className="wm-paper-color">
             <span>{label}</span>
@@ -140,7 +162,7 @@ function PaperColor({
                     type="color"
                     aria-label={`Choose ${label.toLowerCase()}`}
                     value={value}
-                    onChange={(event) => accept(event.target.value)}
+                    onChange={updateFromColorPicker}
                 />
                 <input
                     type="text"
@@ -151,18 +173,9 @@ function PaperColor({
                     spellCheck={false}
                     autoComplete="off"
                     maxLength={7}
-                    onChange={(event) => {
-                        setDraft(event.target.value);
-                        setInvalid(false);
-                    }}
-                    onBlur={() => {
-                        const color = draft.trim();
-                        if (/^#[\da-f]{6}$/i.test(color)) accept(color);
-                        else setInvalid(true);
-                    }}
-                    onKeyDown={(event) => {
-                        if (event.key === "Enter") event.currentTarget.blur();
-                    }}
+                    onChange={updateColorDraft}
+                    onBlur={commitColorDraft}
+                    onKeyDown={handleColorKeyDown}
                 />
             </div>
             {invalid && (
@@ -316,7 +329,7 @@ export function FreehandCanvas({
             if (optionsPanel.current?.contains(event.target) || trigger.current?.contains(event.target)) return;
             setActivePanel(null);
         };
-        const dismissWithEscape = (event: KeyboardEvent): void => {
+        const dismissWithEscape = (event: globalThis.KeyboardEvent): void => {
             if (event.key !== "Escape") return;
             event.preventDefault();
             event.stopPropagation();
@@ -335,7 +348,7 @@ export function FreehandCanvas({
 
     useEffect(() => {
         if (!placingLinkId) return;
-        const cancelPlacement = (event: KeyboardEvent): void => {
+        const cancelPlacement = (event: globalThis.KeyboardEvent): void => {
             if (event.key === "Escape") {
                 event.preventDefault();
                 setPlacingLinkId(null);
@@ -562,229 +575,452 @@ export function FreehandCanvas({
         show(next);
         onChange(next);
     }
+    function focusNotebookFromPointer(event: PointerEvent<HTMLElement>): void {
+        if (event.target instanceof Node && viewport.current?.contains(event.target))
+            event.currentTarget.focus({ preventScroll: true });
+    }
 
+    function handleNotebookKeyDown(event: KeyboardEvent<HTMLElement>): void {
+        if (event.altKey) return;
+        if (!(event.metaKey || event.ctrlKey)) {
+            if (!fixedPages || event.target !== event.currentTarget) return;
+            const direction =
+                event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
+                    ? 1
+                    : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
+                      ? -1
+                      : 0;
+            if (!direction) return;
+            event.preventDefault();
+            cancelDrawing();
+            setPageIndex(Math.max(0, Math.min(notebook.pages.length - 1, pageIndex + direction)));
+            setPlacingLinkId(null);
+            viewport.current?.scrollTo(0, 0);
+            return;
+        }
+        const direction = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : 0;
+        const reset = event.key === "0";
+        if (!direction && !reset) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (reset) resetZoom();
+        else changeZoom(zoomRef.current + direction * ZOOM_STEP);
+    }
+
+    function showTools(): void {
+        setToolsHidden(false);
+    }
+
+    function readPdf(): void {
+        cancelDrawing();
+        setTool("hand");
+        setPlacingLinkId(null);
+    }
+
+    function selectDrawingTool(event: MouseEvent<HTMLButtonElement>): void {
+        const value = tools.find(({ tool: candidate }) => candidate === event.currentTarget.dataset.tool)?.tool;
+        if (!value || value === "hand") return;
+        cancelDrawing();
+        setActivePanel(value === "pen" && tool === "pen" ? (activePanel === "pen" ? null : "pen") : null);
+        setTool(value);
+        setPlacingLinkId(null);
+    }
+
+    function undoDrawing(): void {
+        history("undo");
+    }
+
+    function redoDrawing(): void {
+        history("redo");
+    }
+
+    function toggleInkOptions(): void {
+        setActivePanel(activePanel === "ink" ? null : "ink");
+    }
+
+    function toggleNotebookOptions(): void {
+        setActivePanel(activePanel === "notebook" ? null : "notebook");
+    }
+
+    function previousPage(): void {
+        cancelDrawing();
+        setPageIndex(pageIndex - 1);
+        setPlacingLinkId(null);
+        viewport.current?.scrollTo(0, 0);
+    }
+
+    function nextPage(): void {
+        cancelDrawing();
+        setPageIndex(pageIndex + 1);
+        setPlacingLinkId(null);
+        viewport.current?.scrollTo(0, 0);
+    }
+
+    function addPage(): void {
+        cancelDrawing();
+        setPlacingLinkId(null);
+        commit({ ...notebook, pages: [...notebook.pages, { strokes: [] }] });
+        setPageIndex(notebook.pages.length);
+        viewport.current?.scrollTo(0, 0);
+    }
+
+    function handlePageNumberKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+        if (event.key === "Enter") event.currentTarget.blur();
+    }
+
+    function handlePageNumberBlur(event: FocusEvent<HTMLInputElement>): void {
+        const next = event.currentTarget.valueAsNumber;
+        if (!Number.isInteger(next) || next < 1 || next > notebook.pages.length) {
+            event.currentTarget.value = String(pageIndex + 1);
+            return;
+        }
+        cancelDrawing();
+        setPageIndex(next - 1);
+        setPlacingLinkId(null);
+        viewport.current?.scrollTo(0, 0);
+    }
+
+    function pointerCancelled(event: PointerEvent<SVGSVGElement>): void {
+        pointerEnd(event, true);
+    }
+
+    function cancelLinkPlacement(): void {
+        setPlacingLinkId(null);
+    }
+
+    function selectPenType(event: MouseEvent<HTMLButtonElement>): void {
+        const selected = penTypes.find(({ style }) => style === event.currentTarget.dataset.penStyle);
+        if (!selected) return;
+        cancelDrawing();
+        setPenStyle(selected.style);
+        setTool("pen");
+        setPlacingLinkId(null);
+    }
+
+    function selectInk(event: MouseEvent<HTMLButtonElement>): void {
+        const selected = INKS.find(({ color }) => color === event.currentTarget.dataset.inkColor);
+        if (!selected) return;
+        setInk(selected.color);
+        setTool("pen");
+        setPlacingLinkId(null);
+        closeOptions();
+    }
+
+    function resetPaperAppearance(): void {
+        updateAppearance(DEFAULT_PAPER_APPEARANCE);
+    }
+
+    function zoomOut(): void {
+        changeZoom(zoom - ZOOM_STEP);
+    }
+
+    function zoomIn(): void {
+        changeZoom(zoom + ZOOM_STEP);
+    }
+
+    function openLinkPicker(): void {
+        setActivePanel("link");
+    }
+
+    function movePage(): void {
+        cancelDrawing();
+        setTool("hand");
+        setPlacingLinkId(null);
+        closeOptions();
+    }
+
+    function hideWritingTools(): void {
+        setActivePanel(null);
+        setToolsHidden(true);
+    }
+
+    function updateStrokeWidth(event: ChangeEvent<HTMLSelectElement>): void {
+        setSize(Number(event.target.value));
+    }
+
+    function changePaperStyle(event: ChangeEvent<HTMLSelectElement>): void {
+        const paper = event.target.value as PaperStyle;
+        commit({ ...notebook, paper });
+    }
+
+    function updatePaperBackground(background: string): void {
+        updateAppearance({ background });
+    }
+
+    function updatePatternColor(color: string): void {
+        updateAppearance({ color });
+    }
+
+    function updatePatternSpacing(event: ChangeEvent<HTMLSelectElement>): void {
+        updateAppearance({ spacing: Number(event.target.value) });
+    }
+
+    function updatePatternWeight(event: ChangeEvent<HTMLSelectElement>): void {
+        updateAppearance({ weight: Number(event.target.value) });
+    }
+
+    function updateTouchDrawing(event: ChangeEvent<HTMLInputElement>): void {
+        setDrawWithTouch(event.target.checked);
+    }
+
+    const drawingToolButtons = tools
+        .filter(({ tool: value }) => value !== "hand")
+        .map(({ tool: value, label, icon }) => {
+            const Icon = value === "pen" ? selectedPen.icon : icon;
+            const isPen = value === "pen";
+            return (
+                <Button
+                    theme={tool === value ? "muted" : "ghost-muted"}
+                    size="default"
+                    ref={isPen ? penOptionsButton : undefined}
+                    key={value}
+                    type="button"
+                    title={isPen ? `${selectedPen.label} · Select again for pen types` : label}
+                    aria-label={label}
+                    aria-describedby={isPen ? penDescriptionId : undefined}
+                    aria-pressed={tool === value}
+                    aria-haspopup={isPen ? "dialog" : undefined}
+                    aria-expanded={isPen ? activePanel === "pen" : undefined}
+                    aria-controls={isPen && activePanel === "pen" ? panelId : undefined}
+                    data-tool={value}
+                    onClick={selectDrawingTool}
+                >
+                    <Icon size={20} aria-hidden="true" />
+                    {isPen ? (
+                        <span className="sr-only" id={penDescriptionId}>
+                            {selectedPen.label}. Select Pen again to change pen types.
+                        </span>
+                    ) : null}
+                </Button>
+            );
+        });
+    const penTypeButtons = penTypes.map(({ style, name, label, description, icon: Icon }) => (
+        <Button
+            theme={penStyle === style ? "muted" : "ghost-muted"}
+            size="tiny"
+            key={style}
+            type="button"
+            aria-label={label}
+            aria-pressed={penStyle === style}
+            title={description}
+            data-pen-style={style}
+            onClick={selectPenType}
+        >
+            <Icon size={22} aria-hidden="true" />
+            <span>{name}</span>
+        </Button>
+    ));
+    const inkButtons = INKS.map(({ color, label }) => (
+        <Button
+            theme={ink === color ? "muted" : "ghost-muted"}
+            size="tiny"
+            key={color}
+            type="button"
+            aria-label={`${label} ink`}
+            aria-pressed={ink === color}
+            title={`${label} ink`}
+            data-ink-color={color}
+            onClick={selectInk}
+        >
+            <span className="wm-ink-swatch" style={{ backgroundColor: color }} />
+        </Button>
+    ));
+
+    const optionsPanelLabel =
+        activePanel === "pen"
+            ? "Pen tools"
+            : activePanel === "ink"
+              ? "Ink options"
+              : activePanel === "link"
+                ? "Link a note"
+                : "Notebook options";
+    const optionsPanelTitle =
+        activePanel === "pen"
+            ? "Pen type"
+            : activePanel === "ink"
+              ? "Ink"
+              : activePanel === "link"
+                ? "Link a note"
+                : "Notebook";
+    const notebookLabel = fixedPages ? "PDF notebook" : "Handwritten notebook";
+    const notebookStyle = {
+        "--wm-paper-background": appearance.background,
+        "--wm-paper-line": appearance.color,
+        "--wm-paper-weight": appearance.weight,
+    } as CSSProperties;
+    const paperViewportClassName = clsx(
+        "wm-paper-viewport",
+        fixedPages && "wm-paper-viewport--book",
+        readingPdf && "wm-paper-viewport--reading",
+    );
+    const paperClassName = clsx(
+        "wm-paper",
+        tool === "hand" && "wm-paper--move",
+        fixedPages && "wm-paper--pdf",
+        fixedPages && tool === "hand" && !placingLinkId && "wm-paper--reading",
+    );
+    const paperSpaceStyle: CSSProperties = {
+        width: fixedPages
+            ? `calc(min(100cqw - 2rem, var(--wm-book-height) * ${PAPER_WIDTH / pageHeight}) * ${zoom})`
+            : `max(${zoom * 100}%, calc(100cqh * ${PAPER_WIDTH / pageHeight} * ${zoom}))`,
+        transform: pdfGestures.offset ? `translateX(${pdfGestures.offset}px)` : undefined,
+    };
+    const pageBackgroundElement = pageBackground?.(pageIndex, zoom);
+    const strokeElements = page.strokes.map((stroke, index) => <StrokePath key={index} stroke={stroke} />);
+    const noteLinkElements = (page.links ?? []).map((link) => {
+        function handleMove(position: Pick<FreehandNoteLink, "x" | "y">): void {
+            moveLink(link.id, position);
+        }
+
+        function handlePlace(): void {
+            cancelDrawing();
+            setPlacingLinkId(link.id);
+            setActivePanel(null);
+        }
+
+        function handleRemove(): void {
+            updateLinks((page.links ?? []).filter((item) => item.id !== link.id));
+            (toolsHidden ? showToolsButton : notebookOptionsButton).current?.focus();
+        }
+
+        return (
+            <StickyNoteLink
+                key={link.id}
+                link={link}
+                target={linkableNotes.find((note) => note.id === link.noteId)}
+                paper={paper}
+                placing={placingLinkId === link.id}
+                onMove={handleMove}
+                onPlace={handlePlace}
+                onRemove={handleRemove}
+            />
+        );
+    });
+    const linkPlacementNotice = placingLinkId ? (
+        <output className="wm-link-placement">
+            <span>Tap the paper to move this link.</span>
+            <Button theme="ghost-muted" size="tiny" type="button" onClick={cancelLinkPlacement}>
+                Cancel
+            </Button>
+        </output>
+    ) : null;
     return (
         <section
             className="wm-notebook"
             tabIndex={-1}
-            onPointerDownCapture={(event) => {
-                if (event.target instanceof Node && viewport.current?.contains(event.target))
-                    event.currentTarget.focus({ preventScroll: true });
-            }}
-            onKeyDownCapture={(event) => {
-                if (event.altKey) return;
-                if (!(event.metaKey || event.ctrlKey)) {
-                    if (!fixedPages || event.target !== event.currentTarget) return;
-                    const direction =
-                        event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
-                            ? 1
-                            : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
-                              ? -1
-                              : 0;
-                    if (!direction) return;
-                    event.preventDefault();
-                    cancelDrawing();
-                    setPageIndex(Math.max(0, Math.min(notebook.pages.length - 1, pageIndex + direction)));
-                    setPlacingLinkId(null);
-                    viewport.current?.scrollTo(0, 0);
-                    return;
-                }
-                const direction = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : 0;
-                const reset = event.key === "0";
-                if (!direction && !reset) return;
-                event.preventDefault();
-                event.stopPropagation();
-                if (reset) resetZoom();
-                else changeZoom(zoomRef.current + direction * ZOOM_STEP);
-            }}
-            aria-label={fixedPages ? "PDF notebook" : "Handwritten notebook"}
-            style={
-                {
-                    "--wm-paper-background": appearance.background,
-                    "--wm-paper-line": appearance.color,
-                    "--wm-paper-weight": appearance.weight,
-                } as CSSProperties
-            }
+            onPointerDownCapture={focusNotebookFromPointer}
+            onKeyDownCapture={handleNotebookKeyDown}
+            aria-label={notebookLabel}
+            style={notebookStyle}
         >
             {toolsHidden ? (
-                <button
-                    ref={showToolsButton}
-                    type="button"
-                    className="wm-show-tools wm-ink-control"
-                    aria-label="Show writing tools"
-                    title="Show writing tools"
-                    onClick={() => setToolsHidden(false)}
-                >
-                    <EyeIcon size={22} aria-hidden="true" />
-                </button>
+                <div className="wm-show-tools">
+                    <Button
+                        theme="ghost-muted"
+                        size="default"
+                        ref={showToolsButton}
+                        type="button"
+                        aria-label="Show writing tools"
+                        title="Show writing tools"
+                        onClick={showTools}
+                    >
+                        <EyeIcon size={22} aria-hidden="true" />
+                    </Button>
+                </div>
             ) : (
                 <div className="wm-writing-toolbar" role="toolbar" aria-label="Writing tools">
                     {fixedPages ? (
-                        <button
+                        <Button
+                            theme={tool === "hand" ? "muted" : "ghost-muted"}
+                            size="default"
                             type="button"
-                            className={controlClass}
                             aria-label="Read PDF"
                             aria-pressed={tool === "hand"}
-                            onClick={() => {
-                                cancelDrawing();
-                                setTool("hand");
-                                setPlacingLinkId(null);
-                            }}
+                            onClick={readPdf}
                         >
                             <HandIcon size={20} aria-hidden="true" />
-                        </button>
+                        </Button>
                     ) : null}
                     {selectionAction}
                     <fieldset className="wm-ink-group" aria-label="Drawing tools">
-                        {tools
-                            .filter(({ tool: value }) => value !== "hand")
-                            .map(({ tool: value, label, icon }) => {
-                                const Icon = value === "pen" ? selectedPen.icon : icon;
-                                return (
-                                    <button
-                                        ref={value === "pen" ? penOptionsButton : undefined}
-                                        key={value}
-                                        type="button"
-                                        title={
-                                            value === "pen"
-                                                ? `${selectedPen.label} · Select again for pen types`
-                                                : label
-                                        }
-                                        aria-label={label}
-                                        aria-describedby={value === "pen" ? penDescriptionId : undefined}
-                                        aria-pressed={tool === value}
-                                        aria-haspopup={value === "pen" ? "dialog" : undefined}
-                                        aria-expanded={value === "pen" ? activePanel === "pen" : undefined}
-                                        aria-controls={value === "pen" && activePanel === "pen" ? panelId : undefined}
-                                        className={controlClass}
-                                        onClick={() => {
-                                            cancelDrawing();
-                                            setActivePanel(
-                                                value === "pen" && tool === "pen"
-                                                    ? activePanel === "pen"
-                                                        ? null
-                                                        : "pen"
-                                                    : null,
-                                            );
-                                            setTool(value);
-                                            setPlacingLinkId(null);
-                                        }}
-                                    >
-                                        <Icon size={20} aria-hidden="true" />
-                                        {value === "pen" && (
-                                            <span className="sr-only" id={penDescriptionId}>
-                                                {selectedPen.label}. Select Pen again to change pen types.
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
+                        {drawingToolButtons}
                     </fieldset>
                     <fieldset className="wm-ink-group" aria-label="Drawing history">
-                        <button
+                        <Button
+                            theme="ghost-muted"
+                            size="default"
                             type="button"
                             aria-label="Undo drawing"
                             title="Undo"
-                            className={controlClass}
                             disabled={!undo.current.length}
-                            onClick={() => history("undo")}
+                            onClick={undoDrawing}
                         >
                             <ArrowCounterClockwiseIcon size={20} aria-hidden="true" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                            theme="ghost-muted"
+                            size="default"
                             type="button"
                             aria-label="Redo drawing"
                             title="Redo"
-                            className={controlClass}
                             disabled={!redo.current.length}
-                            onClick={() => history("redo")}
+                            onClick={redoDrawing}
                         >
                             <ArrowClockwiseIcon size={20} aria-hidden="true" />
-                        </button>
+                        </Button>
                     </fieldset>
-                    <button
+                    <Button
+                        theme={activePanel === "ink" ? "muted" : "ghost-muted"}
+                        size="default"
                         ref={inkOptionsButton}
                         type="button"
-                        className={controlClass}
                         aria-label="Ink options"
                         title="Ink color and width"
                         aria-expanded={activePanel === "ink"}
                         aria-controls={activePanel === "ink" ? panelId : undefined}
                         aria-haspopup="dialog"
-                        onClick={() => setActivePanel(activePanel === "ink" ? null : "ink")}
+                        onClick={toggleInkOptions}
                     >
                         <span className="wm-ink-swatch" style={{ backgroundColor: ink }} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        theme={activePanel === "notebook" || activePanel === "link" ? "muted" : "ghost-muted"}
+                        size="default"
                         ref={notebookOptionsButton}
                         type="button"
-                        className={controlClass}
                         aria-label="Notebook options"
                         title="Notebook options"
                         aria-expanded={activePanel === "notebook" || activePanel === "link"}
                         aria-controls={activePanel === "notebook" || activePanel === "link" ? panelId : undefined}
                         aria-haspopup="dialog"
-                        onClick={() => setActivePanel(activePanel === "notebook" ? null : "notebook")}
+                        onClick={toggleNotebookOptions}
                     >
                         <SlidersHorizontalIcon size={20} aria-hidden="true" />
-                    </button>
+                    </Button>
                     {activePanel && (
                         <dialog
                             open
                             id={panelId}
                             ref={optionsPanel}
                             className="wm-options-panel"
-                            aria-label={
-                                activePanel === "pen"
-                                    ? "Pen tools"
-                                    : activePanel === "ink"
-                                      ? "Ink options"
-                                      : activePanel === "link"
-                                        ? "Link a note"
-                                        : "Notebook options"
-                            }
+                            aria-label={optionsPanelLabel}
                         >
                             <div className="wm-options-heading">
-                                <span>
-                                    {activePanel === "pen"
-                                        ? "Pen type"
-                                        : activePanel === "ink"
-                                          ? "Ink"
-                                          : activePanel === "link"
-                                            ? "Link a note"
-                                            : "Notebook"}
-                                </span>
-                                <button
+                                <span>{optionsPanelTitle}</span>
+                                <Button
+                                    theme="ghost-muted"
+                                    size="tiny"
                                     type="button"
-                                    className={controlClass}
                                     aria-label="Close options"
                                     onClick={closeOptions}
                                 >
                                     <XIcon size={18} aria-hidden="true" />
-                                </button>
+                                </Button>
                             </div>
                             {activePanel === "pen" ? (
                                 <>
                                     <fieldset className="wm-pen-types" aria-label="Pen types">
-                                        {penTypes.map(({ style, name, label, description, icon: Icon }) => (
-                                            <button
-                                                key={style}
-                                                type="button"
-                                                className="wm-pen-type wm-ink-control"
-                                                aria-label={label}
-                                                aria-pressed={penStyle === style}
-                                                title={description}
-                                                onClick={() => {
-                                                    cancelDrawing();
-                                                    setPenStyle(style);
-                                                    setTool("pen");
-                                                    setPlacingLinkId(null);
-                                                }}
-                                            >
-                                                <Icon size={22} aria-hidden="true" />
-                                                <span>{name}</span>
-                                            </button>
-                                        ))}
+                                        {penTypeButtons}
                                     </fieldset>
                                     <svg className="wm-pen-preview" viewBox="0 0 160 44" aria-hidden="true">
                                         <StrokePath
@@ -802,11 +1038,7 @@ export function FreehandCanvas({
                                     <p className="wm-pen-description">{selectedPen.description}</p>
                                     <label className="wm-ink-label">
                                         Width
-                                        <select
-                                            aria-label="Stroke width"
-                                            value={size}
-                                            onChange={(event) => setSize(Number(event.target.value))}
-                                        >
+                                        <select aria-label="Stroke width" value={size} onChange={updateStrokeWidth}>
                                             <option value={2}>Fine</option>
                                             <option value={4}>Medium</option>
                                             <option value={8}>Bold</option>
@@ -818,32 +1050,11 @@ export function FreehandCanvas({
                             ) : activePanel === "ink" ? (
                                 <>
                                     <fieldset className="wm-ink-group" aria-label="Ink colors">
-                                        {INKS.map(({ color, label }) => (
-                                            <button
-                                                key={color}
-                                                type="button"
-                                                className={controlClass}
-                                                aria-label={`${label} ink`}
-                                                aria-pressed={ink === color}
-                                                title={`${label} ink`}
-                                                onClick={() => {
-                                                    setInk(color);
-                                                    setTool("pen");
-                                                    setPlacingLinkId(null);
-                                                    closeOptions();
-                                                }}
-                                            >
-                                                <span className="wm-ink-swatch" style={{ backgroundColor: color }} />
-                                            </button>
-                                        ))}
+                                        {inkButtons}
                                     </fieldset>
                                     <label className="wm-ink-label">
                                         Width
-                                        <select
-                                            aria-label="Stroke width"
-                                            value={size}
-                                            onChange={(event) => setSize(Number(event.target.value))}
-                                        >
+                                        <select aria-label="Stroke width" value={size} onChange={updateStrokeWidth}>
                                             <option value={2}>Fine</option>
                                             <option value={4}>Medium</option>
                                             <option value={8}>Bold</option>
@@ -860,10 +1071,7 @@ export function FreehandCanvas({
                                                     <select
                                                         aria-label="Paper style"
                                                         value={notebook.paper}
-                                                        onChange={(event) => {
-                                                            const paper = event.target.value as PaperStyle;
-                                                            commit({ ...notebook, paper });
-                                                        }}
+                                                        onChange={changePaperStyle}
                                                     >
                                                         <option value="blank">Blank</option>
                                                         <option value="lined">Lined</option>
@@ -874,7 +1082,7 @@ export function FreehandCanvas({
                                                 <PaperColor
                                                     label="Paper color"
                                                     value={appearance.background}
-                                                    onChange={(background) => updateAppearance({ background })}
+                                                    onChange={updatePaperBackground}
                                                 />
                                                 <fieldset
                                                     className="wm-paper-toolbar"
@@ -884,18 +1092,14 @@ export function FreehandCanvas({
                                                     <PaperColor
                                                         label="Pattern color"
                                                         value={appearance.color}
-                                                        onChange={(color) => updateAppearance({ color })}
+                                                        onChange={updatePatternColor}
                                                     />
                                                     <label className="wm-ink-label">
                                                         Spacing
                                                         <select
                                                             aria-label="Pattern spacing"
                                                             value={appearance.spacing}
-                                                            onChange={(event) =>
-                                                                updateAppearance({
-                                                                    spacing: Number(event.target.value),
-                                                                })
-                                                            }
+                                                            onChange={updatePatternSpacing}
                                                         >
                                                             <option value={16}>Compact</option>
                                                             <option value={24}>Close</option>
@@ -909,9 +1113,7 @@ export function FreehandCanvas({
                                                         <select
                                                             aria-label="Pattern weight"
                                                             value={appearance.weight}
-                                                            onChange={(event) =>
-                                                                updateAppearance({ weight: Number(event.target.value) })
-                                                            }
+                                                            onChange={updatePatternWeight}
                                                         >
                                                             <option value={0.5}>Fine</option>
                                                             <option value={1}>Regular</option>
@@ -920,20 +1122,21 @@ export function FreehandCanvas({
                                                         </select>
                                                     </label>
                                                 </fieldset>
-                                                <button
+                                                <Button
+                                                    theme="ghost-muted"
+                                                    size="tiny"
                                                     type="button"
-                                                    className="wm-option-action wm-ink-control"
-                                                    onClick={() => updateAppearance(DEFAULT_PAPER_APPEARANCE)}
+                                                    onClick={resetPaperAppearance}
                                                 >
                                                     Reset paper appearance
-                                                </button>
+                                                </Button>
                                             </>
                                         ) : null}
                                         <label className="wm-touch-toggle">
                                             <input
                                                 type="checkbox"
                                                 checked={drawWithTouch}
-                                                onChange={(event) => setDrawWithTouch(event.target.checked)}
+                                                onChange={updateTouchDrawing}
                                             />
                                             Draw with touch
                                         </label>
@@ -943,63 +1146,55 @@ export function FreehandCanvas({
                                             aria-label="Page zoom"
                                             title="Scroll up to zoom in, down to zoom out"
                                         >
-                                            <button
+                                            <Button
+                                                theme="ghost-muted"
+                                                size="tiny"
                                                 type="button"
-                                                className={controlClass}
                                                 aria-label="Zoom out"
                                                 disabled={zoom <= 0.5}
-                                                onClick={() => changeZoom(zoom - ZOOM_STEP)}
+                                                onClick={zoomOut}
                                             >
                                                 −
-                                            </button>
+                                            </Button>
                                             <span>{Math.round(zoom * 100)}%</span>
-                                            <button
+                                            <Button
+                                                theme="ghost-muted"
+                                                size="tiny"
                                                 type="button"
-                                                className={controlClass}
                                                 aria-label="Zoom in"
                                                 disabled={zoom >= 3}
-                                                onClick={() => changeZoom(zoom + ZOOM_STEP)}
+                                                onClick={zoomIn}
                                             >
                                                 +
-                                            </button>
+                                            </Button>
                                         </fieldset>
                                     </fieldset>
-                                    <button
-                                        type="button"
-                                        className="wm-option-action wm-ink-control"
-                                        onClick={() => setActivePanel("link")}
-                                    >
+                                    <Button theme="ghost-muted" size="tiny" type="button" onClick={openLinkPicker}>
                                         <LinkSimpleIcon size={20} aria-hidden="true" />
                                         Add note link
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        theme={tool === "hand" ? "muted" : "ghost-muted"}
+                                        size="tiny"
                                         type="button"
-                                        className="wm-option-action wm-ink-control"
                                         aria-label="Move page"
                                         aria-pressed={tool === "hand"}
-                                        onClick={() => {
-                                            cancelDrawing();
-                                            setTool("hand");
-                                            setPlacingLinkId(null);
-                                            closeOptions();
-                                        }}
+                                        onClick={movePage}
                                     >
                                         <HandIcon size={20} aria-hidden="true" />
                                         Move page
-                                    </button>
+                                    </Button>
                                     <div className="wm-options-actions">
-                                        <button
+                                        <Button
+                                            theme="ghost-muted"
+                                            size="tiny"
                                             type="button"
-                                            className="wm-option-action wm-ink-control"
                                             aria-label="Hide writing tools"
-                                            onClick={() => {
-                                                setActivePanel(null);
-                                                setToolsHidden(true);
-                                            }}
+                                            onClick={hideWritingTools}
                                         >
                                             <EyeSlashIcon size={20} aria-hidden="true" />
                                             Hide tools
-                                        </button>
+                                        </Button>
                                         {actions}
                                     </div>
                                 </>
@@ -1011,20 +1206,16 @@ export function FreehandCanvas({
             <div className="wm-notebook-bottom">
                 <footer className="wm-notebook-footer">
                     <fieldset className="wm-ink-group" aria-label="Notebook pages">
-                        <button
+                        <Button
+                            theme="ghost-muted"
+                            size="tiny"
                             type="button"
-                            className={controlClass}
                             aria-label="Previous page"
                             disabled={pageIndex === 0}
-                            onClick={() => {
-                                cancelDrawing();
-                                setPageIndex(pageIndex - 1);
-                                setPlacingLinkId(null);
-                                viewport.current?.scrollTo(0, 0);
-                            }}
+                            onClick={previousPage}
                         >
                             ‹
-                        </button>
+                        </Button>
                         <span aria-live="polite">
                             <span className="sr-only">Page </span>
                             {pageIndex + 1} / {notebook.pages.length}
@@ -1038,64 +1229,44 @@ export function FreehandCanvas({
                                 min={1}
                                 max={notebook.pages.length}
                                 defaultValue={pageIndex + 1}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Enter") event.currentTarget.blur();
-                                }}
-                                onBlur={(event) => {
-                                    const next = event.currentTarget.valueAsNumber;
-                                    if (!Number.isInteger(next) || next < 1 || next > notebook.pages.length) {
-                                        event.currentTarget.value = String(pageIndex + 1);
-                                        return;
-                                    }
-                                    cancelDrawing();
-                                    setPageIndex(next - 1);
-                                    setPlacingLinkId(null);
-                                    viewport.current?.scrollTo(0, 0);
-                                }}
+                                onKeyDown={handlePageNumberKeyDown}
+                                onBlur={handlePageNumberBlur}
                             />
                         ) : null}
-                        <button
+                        <Button
+                            theme="ghost-muted"
+                            size="tiny"
                             type="button"
-                            className={controlClass}
                             aria-label="Next page"
                             disabled={pageIndex === notebook.pages.length - 1}
-                            onClick={() => {
-                                cancelDrawing();
-                                setPageIndex(pageIndex + 1);
-                                setPlacingLinkId(null);
-                                viewport.current?.scrollTo(0, 0);
-                            }}
+                            onClick={nextPage}
                         >
                             ›
-                        </button>
+                        </Button>
                         {!fixedPages ? (
-                            <button
+                            <Button
+                                theme="ghost-muted"
+                                size="tiny"
                                 type="button"
-                                className={controlClass}
                                 aria-label="Add page"
                                 title="Add page"
-                                onClick={() => {
-                                    cancelDrawing();
-                                    setPlacingLinkId(null);
-                                    commit({ ...notebook, pages: [...notebook.pages, { strokes: [] }] });
-                                    setPageIndex(notebook.pages.length);
-                                    viewport.current?.scrollTo(0, 0);
-                                }}
+                                onClick={addPage}
                             >
                                 +
-                            </button>
+                            </Button>
                         ) : null}
                     </fieldset>
-                    <button
+                    <Button
+                        theme="ghost-muted"
+                        size="tiny"
                         ref={zoomReset}
                         type="button"
-                        className={controlClass}
                         aria-label="Reset zoom"
                         title="Scroll to zoom; click to reset"
                         onClick={resetZoom}
                     >
                         {Math.round(zoom * 100)}%
-                    </button>
+                    </Button>
                     {fixedPages ? (
                         <span className="max-w-32 truncate" title={title}>
                             {title}
@@ -1112,28 +1283,17 @@ export function FreehandCanvas({
                         <output className={saveStatus === "Could not save" ? undefined : "sr-only"} aria-live="polite">
                             {saveStatus}
                         </output>
-                        {saveStatus === "Could not save" && (
-                            <button type="button" className={controlClass} onClick={onRetry}>
+                        {saveStatus === "Could not save" ? (
+                            <Button theme="ghost-muted" size="tiny" type="button" onClick={onRetry}>
                                 Retry
-                            </button>
-                        )}
+                            </Button>
+                        ) : null}
                     </div>
                 </footer>
             </div>
-            {placingLinkId && (
-                <output className="wm-link-placement">
-                    <span>Tap the paper to move this link.</span>
-                    <button type="button" className={controlClass} onClick={() => setPlacingLinkId(null)}>
-                        Cancel
-                    </button>
-                </output>
-            )}
+            {linkPlacementNotice}
             <div
-                className={clsx(
-                    "wm-paper-viewport",
-                    fixedPages && "wm-paper-viewport--book",
-                    readingPdf && "wm-paper-viewport--reading",
-                )}
+                className={paperViewportClassName}
                 ref={viewport}
                 onPointerDown={pdfGestures.onPointerDown}
                 onPointerMove={pdfGestures.onPointerMove}
@@ -1141,31 +1301,18 @@ export function FreehandCanvas({
                 onPointerCancel={pdfGestures.onPointerCancel}
                 onLostPointerCapture={pdfGestures.onPointerCancel}
             >
-                <div
-                    className="wm-paper-space"
-                    style={{
-                        width: fixedPages
-                            ? `calc(min(100cqw - 2rem, var(--wm-book-height) * ${PAPER_WIDTH / pageHeight}) * ${zoom})`
-                            : `max(${zoom * 100}%, calc(100cqh * ${PAPER_WIDTH / pageHeight} * ${zoom}))`,
-                        transform: pdfGestures.offset ? `translateX(${pdfGestures.offset}px)` : undefined,
-                    }}
-                >
-                    {pageBackground?.(pageIndex, zoom)}
+                <div className="wm-paper-space" style={paperSpaceStyle}>
+                    {pageBackgroundElement}
                     <svg
                         ref={paper}
                         viewBox={`0 0 ${PAPER_WIDTH} ${pageHeight}`}
-                        className={clsx(
-                            "wm-paper",
-                            tool === "hand" && "wm-paper--move",
-                            fixedPages && "wm-paper--pdf",
-                            fixedPages && tool === "hand" && !placingLinkId && "wm-paper--reading",
-                        )}
+                        className={paperClassName}
                         aria-label="Handwriting canvas"
                         onPointerDown={pointerDown}
                         onPointerMove={pointerMove}
-                        onPointerUp={(event) => pointerEnd(event)}
-                        onPointerCancel={(event) => pointerEnd(event, true)}
-                        onLostPointerCapture={(event) => pointerEnd(event, true)}
+                        onPointerUp={pointerEnd}
+                        onPointerCancel={pointerCancelled}
+                        onLostPointerCapture={pointerCancelled}
                     >
                         <title>Handwriting canvas</title>
                         <defs>
@@ -1200,32 +1347,10 @@ export function FreehandCanvas({
                         {notebook.paper !== "blank" && (
                             <rect width={PAPER_WIDTH} height={pageHeight} fill={`url(#${patternId})`} />
                         )}
-                        <g>
-                            {page.strokes.map((stroke, index) => (
-                                <StrokePath key={index} stroke={stroke} />
-                            ))}
-                        </g>
+                        <g>{strokeElements}</g>
                         {preview && <StrokePath stroke={preview} />}
                     </svg>
-                    {(page.links ?? []).map((link) => (
-                        <StickyNoteLink
-                            key={link.id}
-                            link={link}
-                            target={linkableNotes.find((note) => note.id === link.noteId)}
-                            paper={paper}
-                            placing={placingLinkId === link.id}
-                            onMove={(position) => moveLink(link.id, position)}
-                            onPlace={() => {
-                                cancelDrawing();
-                                setPlacingLinkId(link.id);
-                                setActivePanel(null);
-                            }}
-                            onRemove={() => {
-                                updateLinks((page.links ?? []).filter((item) => item.id !== link.id));
-                                (toolsHidden ? showToolsButton : notebookOptionsButton).current?.focus();
-                            }}
-                        />
-                    ))}
+                    {noteLinkElements}
                 </div>
             </div>
         </section>

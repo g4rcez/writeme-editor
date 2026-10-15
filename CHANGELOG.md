@@ -18,6 +18,8 @@
   changing package-wide module semantics.
 - Label note-card selection controls for assistive technology and keep toolbar help
   from covering the open table-of-contents panel.
+- Expand the research excerpt dialog and compact the notebook PDF and writing toolbars.
+- Use `@g4rcez/components` buttons for handwriting controls instead of custom button styling.
 
 - Reorganize Settings around the writer's workflow: writing preferences,
   reusable templates, optional AI assistance, then workspace maintenance.
@@ -28,6 +30,7 @@
 
 ### Bug Fixes
 
+- Render PDF attachments as paginated documents in the media viewer instead of broken image previews.
 - Open nested agenda tasks at their Markdown source, and focus following
   top-level board tasks by source identity instead of a mismatched card index.
 - Reuse renamed daily notes in filesystem workspaces from Today and Calendar,

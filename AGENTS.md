@@ -36,6 +36,7 @@ Agent guidelines for the Writeme Electron application.
 - **Naming**: camelCase for variables/functions, PascalCase for components/types
 - **Types**: Explicit return types for functions, use `type` over `interface`
 - **React**: Functional components with hooks, TSX extension required
+- **JSX**: Keep JSX declarative. Extract event handlers and nontrivial conditions or calculations into named helpers or variables; avoid inline callbacks and logic in JSX.
 - **Store**: Use `use-typed-reducer` pattern with typed dispatchers
 - **Database**: Dexie.js repositories in `src/store/repositories/dexie/`
 - **Styling**: Tailwind CSS with `clsx` utility, theme via CSS classes. **Never use raw Tailwind palette colors** (`bg-violet-600`, `text-white`, `bg-zinc-700`, etc.) — always use design system tokens from `@g4rcez/components` (e.g. `bg-button-primary-bg`, `text-button-primary-text`, `bg-secondary-background`, `text-foreground`). Raw colors break non-default themes. See `LESSONS.md` for the full token reference and contrast traps.
