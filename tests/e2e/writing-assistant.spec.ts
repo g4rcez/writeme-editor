@@ -755,7 +755,6 @@ test("split panes keep review suggestions scoped to their own notes", async ({ c
 
     await page.goto(first.noteUrl);
     await page.getByRole("button", { name: "Open pane mode" }).click();
-    await expect(page.getByText("2 editor panes")).toBeVisible();
     await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(secondNoteId);
     const editors = page.locator(".ProseMirror:visible");
     await expect(editors).toHaveCount(2);

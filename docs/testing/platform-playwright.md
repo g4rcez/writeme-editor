@@ -82,7 +82,7 @@ Landing alone starts Next.js. Its default server is `dev`; with `PREBUILT=1` it 
 The PR target is five minutes of runner execution, excluding GitHub queue time. Required PR checks are:
 
 - Shared root/mobile/test-infrastructure typechecks, automatically scoped lint, editor/build/math/CLI units, runner discovery contracts and merge-gate contracts.
-- The complete Linux Chromium browser suite split into twelve file-boundary shards, with two workers per shard. Each job starts Vite once and uses `npm ci --ignore-scripts` to avoid irrelevant Electron downloads and native rebuilds.
+- The complete Linux Chromium browser suite split into twelve test-level shards, with two workers per shard. Browser scenarios have isolated Playwright contexts and can split within files; native and production suites keep their existing serial execution. Each job starts Vite once and uses `npm ci --ignore-scripts` to avoid irrelevant Electron downloads and native rebuilds.
 - One standalone MCP contract on Ubuntu with Node 24.18.0 and Deno 2.4.5.
 - `All PR checks passed`, which fails for missing, failed, cancelled or skipped required results.
 

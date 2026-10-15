@@ -241,20 +241,13 @@ test("completion video is operator-only discovery rather than a skipped regressi
     assert.ok(demo.length > 0);
 });
 
-test("twelve browser shards preserve the full manifest and keep files together with two workers", () => {
+test("twelve parallel browser shards cover every discovered scenario exactly once", () => {
     const complete = list("linux", "browser");
     const shards = Array.from({ length: 12 }, (_, index) =>
         list("linux", "browser", [`--shard=${index + 1}/12`, "--workers=2"]),
     );
     const keys = (tests: ListedTest[]): string[] => tests.map((test) => `${test.project}:${test.id}`).sort();
     assert.deepEqual(keys(shards.flat()), keys(complete));
-    const assigned = new Set<string>();
-    for (const shard of shards) {
-        for (const file of files(shard)) {
-            assert.ok(!assigned.has(file), `${file} split across shards`);
-            assigned.add(file);
-        }
-    }
 });
 
 test("live Whisper is explicitly selectable by tag or existing grep without requiring resources for enumeration", () => {
