@@ -439,18 +439,18 @@ code {
 }
 
 .drag-handle.hide {
-    @apply opacity-0;
+    @apply pointer-events-none opacity-0;
 }
 
 .drag-handle.visible {
-    @apply opacity-100;
+    @apply pointer-events-auto opacity-100;
 }
 
 .drag-handle:focus-visible,
 .drag-handle.block-actions-hover,
 .drag-handle.block-actions-open,
 .drag-handle.block-actions-touch {
-    @apply opacity-100;
+    @apply pointer-events-auto opacity-100;
 }
 
 .drag-handle:focus-visible {

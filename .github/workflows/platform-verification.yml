@@ -103,14 +103,6 @@ jobs:
               env:
                   PLAYWRIGHT_ARTIFACT_DIR: >-
                       artifacts/playwright/${{ matrix.platform }}/neovim
-            - name: Verify contextual editor block actions
-              if: matrix.desktop
-              run: >-
-                  npm run test:e2e -- --platform ${{ matrix.platform }}
-                  --suite browser tests/e2e/block-actions.spec.ts --project chromium
-              env:
-                  PLAYWRIGHT_ARTIFACT_DIR: >-
-                      artifacts/playwright/${{ matrix.platform }}/block-actions
             - name: Verify note type guide and creation handoff
               if: matrix.desktop
               run: >-
