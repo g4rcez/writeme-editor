@@ -87,6 +87,10 @@ test("distinguishes genuinely empty columns from filtered columns", async ({ cle
 });
 
 test("captures filter recovery in both themes at desktop and phone widths", async ({ cleanPage: page }, info) => {
+    test.skip(
+        process.env.WRITEME_E2E_FAST === "1",
+        "Skipped in the fast PR gate after hosted run 38749307895; retained in full and local runs.",
+    );
     await createFilteredBoard(page);
     const noteUrl = page.url();
     const noteTab = page.locator(`[data-tab-id][href="${new URL(noteUrl).pathname}"]`);

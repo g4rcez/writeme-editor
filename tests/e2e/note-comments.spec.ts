@@ -192,6 +192,10 @@ test("rolls back the reference note when the comments table cannot be written", 
 });
 
 test("scopes sentence IDs to their source note in IndexedDB", async ({ cleanPage: page }) => {
+    test.skip(
+        process.env.WRITEME_E2E_FAST === "1",
+        "Skipped in the fast PR gate after hosted run 38749307895; retained in full and local runs.",
+    );
     await goHome(page);
     const first = await createNote(page, "First source", "Shared words.");
     await selectWords(page, "Shared words.");
