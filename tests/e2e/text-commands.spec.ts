@@ -25,8 +25,12 @@ for (const [type, selector, prefix, expected] of [
 ] as const) {
     test(`runs the space-triggered date command in a ${type}`, async ({ cleanPage: page }) => {
         await goHome(page);
-        await createNote(page, "Paragraph text commands", selector === "h1" ? "# Paragraph text commands" : "Existing paragraph.");
+        await createNote(page, "Paragraph text commands", prefix);
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+        if (selector === "h1") {
+            await editor.click();
+            await editor.press("ControlOrMeta+Alt+1");
+        }
         const block = editor.locator(selector).filter({ hasText: prefix }).last();
         await block.click();
         await block.press(endOfLine);

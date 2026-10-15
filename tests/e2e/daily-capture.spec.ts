@@ -13,7 +13,7 @@ test.describe("daily quick capture", () => {
         await templateDialog.getByRole("button", { name: "Create" }).click();
         await expect(page).toHaveURL(/\/templates\/[^/]+$/);
 
-        await page.goto("/");
+        await page.getByRole("button", { name: "Go to home", exact: true }).click();
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await page
             .getByRole("main", { name: "Home" })
@@ -46,7 +46,7 @@ test.describe("daily quick capture", () => {
         await expect(page.locator(".ProseMirror").first()).toContainText("Template body");
         await expect(page.locator(".ProseMirror").first()).toContainText("User addition");
 
-        await page.goto("/");
+        await page.getByRole("button", { name: "Go to home", exact: true }).click();
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await page
             .getByRole("main", { name: "Home" })

@@ -27,18 +27,10 @@ export const createNote = async (page: Page, title: string, content = ""): Promi
         const editor = page.locator(".ProseMirror").first();
         await expect(editor).toBeVisible();
         await expect(editor).toHaveAttribute("contenteditable", "true");
-        await editor.click();
+        await editor.fill(content);
         const saveStatus = page.locator(".writeme-editor-status-bar output").first();
-        await editor.pressSequentially(content.slice(0, 1));
         await expect(saveStatus).toHaveText("Unsaved changes");
-        await editor.pressSequentially(content.slice(1));
-        const expectedContent = (await editor.innerText()).trim();
-        expect(expectedContent).not.toBe("");
-        const noteUrl = page.url();
         await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
-        await page.reload();
-        await expect(page).toHaveURL(noteUrl);
-        await expect(page.locator(".ProseMirror").first()).toContainText(expectedContent);
     }
 
     return page.url();

@@ -9,6 +9,8 @@ async function createFilteredBoard(page: Page): Promise<void> {
     const dialog = page.getByRole("dialog", { name: "Create task note" });
     await dialog.getByTitle("Note title").fill("Release checklist");
     await dialog.getByRole("button", { name: /^Create/ }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/note\/[^/]+$/);
     await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Add task to Backlog", exact: true }).click();
     await page.getByRole("textbox", { name: "Task title", exact: true }).fill("Review release notes");
