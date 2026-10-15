@@ -1,5 +1,5 @@
 import Dexie from "dexie";
-import { endOfDay, startOfDay } from "date-fns";
+import { findDailyQuickNote } from "@/lib/journal-date";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { type INoteRepository, Note, type NoteDeletionOutcome } from "../../note";
@@ -185,21 +185,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
   }
 
   async getQuicknoteByDate(date: Date): Promise<Note | null> {
-    const datetime = new Date(date);
-    const start = startOfDay(datetime);
-    const end = endOfDay(datetime);
     const result = await db.notes
       .where("noteType")
       .equals("quick")
-      .and((note) => {
-        if ((note as any).deletedAt != null) return false;
-        const noteDate = new Date(note.updatedAt);
-        return noteDate >= start && noteDate <= end;
-      })
       .toArray();
-    if (result.length === 0) return null;
-    const metadata = result[0] as any;
-    return Note.parse({ ...metadata, content: metadata.content || "" });
+    return findDailyQuickNote(result.map((note) => Note.parse(note)), date);
   }
 
   async getTemplates(): Promise<Note[]> {

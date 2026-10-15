@@ -1,0 +1,33 @@
+name: Full verification
+
+on:
+    schedule:
+        - cron: "0 3 * * *"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: full-verification-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    platforms:
+        uses: ./.github/workflows/platform-verification.yml
+    mcp:
+        uses: ./.github/workflows/mcp.yml
+    all-checks:
+        name: All full checks passed
+        if: always()
+        needs: [platforms, mcp]
+        runs-on: ubuntu-latest
+        timeout-minutes: 1
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+            - run: node --experimental-strip-types scripts/pr-checks.mts
+              env:
+                  PR_CHECK_RESULTS: ${{ toJSON(needs) }}

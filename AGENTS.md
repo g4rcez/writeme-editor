@@ -21,11 +21,13 @@ Agent guidelines for the Writeme Electron application.
 
 ## Pull Requests
 
+- Include at least one screenshot and a short video in every PR, showing the changed feature in use.
 - Deliver repository changes through a pull request. Do not push changes directly to `main`.
-- Run the full PR checks for every pull request and every new commit on it.
-- Merge only when every build and verification job succeeds for the latest commit and the branch is up to date with `main`.
+- Run the complete fast PR gate for every pull request and every new commit: shared checks, all Linux Chromium browser regressions in shards, and the current Linux MCP contract. See `docs/testing/platform-playwright.md` for the five-minute execution target.
+- Merge only when every required PR check succeeds for the latest commit and the branch is up to date with `main`. Full native/mobile/cross-platform builds and integrations run nightly and must pass for the release commit before publishing.
 - Treat pending, failed, cancelled, skipped, missing, and stale checks as blockers. Never bypass required checks or use an administrator override.
 - Homebrew publishing is a release step and is excluded from PR checks.
+- Add tests to the existing suites; do not append feature-specific workflow steps or filename allowlists. Use production naming/tags for tests that require the built preview.
 
 ## Code Style Guidelines
 
@@ -34,6 +36,7 @@ Agent guidelines for the Writeme Electron application.
 - **Naming**: camelCase for variables/functions, PascalCase for components/types
 - **Types**: Explicit return types for functions, use `type` over `interface`
 - **React**: Functional components with hooks, TSX extension required
+- **JSX**: Keep JSX declarative. Extract event handlers and nontrivial conditions or calculations into named helpers or variables; avoid inline callbacks and logic in JSX.
 - **Store**: Use `use-typed-reducer` pattern with typed dispatchers
 - **Database**: Dexie.js repositories in `src/store/repositories/dexie/`
 - **Styling**: Tailwind CSS with `clsx` utility, theme via CSS classes. **Never use raw Tailwind palette colors** (`bg-violet-600`, `text-white`, `bg-zinc-700`, etc.) — always use design system tokens from `@g4rcez/components` (e.g. `bg-button-primary-bg`, `text-button-primary-text`, `bg-secondary-background`, `text-foreground`). Raw colors break non-default themes. See `LESSONS.md` for the full token reference and contrast traps.

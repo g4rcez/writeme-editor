@@ -1,6 +1,7 @@
 import { startOfDay } from "date-fns";
 import { Dates } from "@/lib/dates";
 import { isElectron } from "@/lib/is-electron";
+import { getJournalDate, parseJournalDay } from "@/lib/journal-date";
 import { getDailyQuickNotePath, getDailyQuickNoteTitle } from "@/lib/quicknote-utils";
 import { Note, NoteType } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -33,6 +34,7 @@ async function getExistingElectronNote(filePath: string, day: Date): Promise<Not
     }
 
     const note = Note.new(getDailyQuickNoteTitle(day), readResult.content, NoteType.quick);
+    note.metadata.journalDate = Dates.isoDate(day);
     note.setFilePath(filePath, readResult.lastModified ? new Date(readResult.lastModified) : new Date());
     note.fileSize = typeof readResult.fileSize === "number" ? readResult.fileSize : readResult.content.length;
     await repositories.notes.save(note);
@@ -44,10 +46,22 @@ async function findExistingDailyQuickNote(
     settings: ReturnType<typeof SettingsService.load>,
     useDesktopWorkspace: boolean,
 ): Promise<Note | null> {
-    if (useDesktopWorkspace && settings.directory) {
-        return getExistingElectronNote(getDailyQuickNotePath(settings.directory, day), day);
+    let existing = await repositories.notes.getQuicknoteByDate(day);
+    if (!existing && useDesktopWorkspace && settings.directory) {
+        existing = await getExistingElectronNote(getDailyQuickNotePath(settings.directory, day), day);
     }
-    return repositories.notes.getQuicknoteByDate(day);
+    if (
+        existing &&
+        !parseJournalDay(typeof existing.metadata.journalDate === "string" ? existing.metadata.journalDate : null)
+    ) {
+        const journalDate = getJournalDate(existing);
+        if (journalDate) {
+            const metadata = { ...existing.metadata, journalDate: Dates.isoDate(journalDate) };
+            await repositories.notes.updateMetadata(existing.id, metadata);
+            existing.metadata = metadata;
+        }
+    }
+    return existing;
 }
 
 export async function getExistingDailyQuickNote(date: Date): Promise<Note | null> {
@@ -75,6 +89,7 @@ async function createDailyQuickNote(
         if (!fileResult.success) throw new Error("Failed to create the daily quick note.");
 
         const note = Note.new(title, content, NoteType.quick);
+        note.metadata.journalDate = Dates.isoDate(day);
         note.setFilePath(filePath, fileResult.lastModified ? new Date(fileResult.lastModified) : new Date());
         note.fileSize = typeof fileResult.fileSize === "number" ? fileResult.fileSize : content.length;
         await repositories.notes.save(note);
@@ -85,6 +100,7 @@ async function createDailyQuickNote(
     if (dayNote) return dayNote;
 
     const note = Note.new(title, content, NoteType.quick);
+    note.metadata.journalDate = Dates.isoDate(day);
     await repositories.notes.save(note);
     return note;
 }

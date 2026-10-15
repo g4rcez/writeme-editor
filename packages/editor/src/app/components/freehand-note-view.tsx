@@ -2,9 +2,9 @@ import { Button, Modal } from "@g4rcez/components";
 import { useEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { useBlocker } from "react-router-dom";
 import type { Note } from "@/store/note";
+import { exportFile } from "@/lib/export-file";
 import { parseFreehandNote, replaceFreehandNoteContent, type FreehandNotebook } from "@/lib/freehand-note";
 import { isPathWithinImportRoot } from "@/lib/obsidian-import";
-import { exportFile } from "@/lib/export-file";
 import { getWorkspaceKey, globalDispatch, globalState, repositories, useGlobalStore } from "@/store/global.store";
 import { uiDispatch } from "@/store/ui.store";
 import { FreehandCanvas } from "./freehand-canvas";
@@ -14,11 +14,15 @@ class NotebookConflict extends Error {}
 export function FreehandNoteView({
     note,
     actions,
+    selectionAction,
+    initialPageIndex,
     pageBackground,
     fixedPages = false,
 }: {
     note: Note;
     actions?: ReactNode;
+    selectionAction?: ReactNode;
+    initialPageIndex?: number;
     pageBackground?: (pageIndex: number, zoom: number) => ReactNode;
     fixedPages?: boolean;
 }): JSX.Element {
@@ -103,8 +107,23 @@ export function FreehandNoteView({
     function downloadLocalCopy(): void {
         if (!latest.current) return;
         const content = replaceFreehandNoteContent(persisted.current.content, latest.current);
-        void exportFile(`${note.title || "Notebook"}-local-copy.md`, new Blob([content], { type: "text/markdown;charset=utf-8" }))
-            .catch((error: unknown) => setNotice(error instanceof Error ? error.message : "Could not export the local copy."));
+        void exportFile(
+            `${note.title || "Notebook"}-local-copy.md`,
+            new Blob([content], { type: "text/markdown;charset=utf-8" }),
+        ).catch((error: unknown) =>
+            setNotice(error instanceof Error ? error.message : "Could not export the local copy."),
+        );
+    }
+    function retrySave(): void {
+        if (latest.current) save(latest.current);
+    }
+
+    function resetBlockedNavigation(): void {
+        if (blocker.state === "blocked") blocker.reset();
+    }
+
+    function leaveWithoutSaving(): void {
+        if (blocker.state === "blocked") blocker.proceed();
     }
 
     if (!parsed.data)
@@ -116,32 +135,30 @@ export function FreehandNoteView({
     return (
         <div className="wm-notebook-view">
             <FreehandCanvas
-                pageBackground={pageBackground}
-                fixedPages={fixedPages}
-                title={note.title}
-                actions={actions}
-                linkableNotes={linkableNotes}
-                initialData={parsed.data}
                 onChange={save}
+                actions={actions}
+                title={note.title}
                 saveStatus={status}
-                onRetry={() => {
-                    if (latest.current) save(latest.current);
-                }}
+                fixedPages={fixedPages}
+                initialData={parsed.data}
+                linkableNotes={linkableNotes}
+                pageBackground={pageBackground}
+                selectionAction={selectionAction}
+                initialPageIndex={initialPageIndex}
+                onRetry={retrySave}
             />
             {notice && (
                 <aside className="wm-notebook-notice" role="alert">
                     <p>{notice}</p>
-                    <button type="button" className="wm-ink-control" onClick={downloadLocalCopy}>
+                    <Button theme="ghost-muted" size="tiny" onClick={downloadLocalCopy}>
                         Download local copy
-                    </button>
+                    </Button>
                 </aside>
             )}
             <Modal
                 open={blocker.state === "blocked"}
                 title="Unsaved notebook"
-                onChange={() => {
-                    if (blocker.state === "blocked") blocker.reset();
-                }}
+                onChange={resetBlockedNavigation}
                 className="max-w-md"
             >
                 <p>
@@ -150,12 +167,7 @@ export function FreehandNoteView({
                         : "Your latest changes have not been saved. Stay here to retry or download a copy."}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        className="min-h-11"
-                        onClick={() => {
-                            if (blocker.state === "blocked") blocker.reset();
-                        }}
-                    >
+                    <Button className="min-h-11" onClick={resetBlockedNavigation}>
                         Stay in notebook
                     </Button>
                     <Button theme="muted" className="min-h-11" onClick={downloadLocalCopy}>
@@ -165,9 +177,7 @@ export function FreehandNoteView({
                         theme="muted"
                         className="min-h-11"
                         disabled={status === "Saving…"}
-                        onClick={() => {
-                            if (blocker.state === "blocked") blocker.proceed();
-                        }}
+                        onClick={leaveWithoutSaving}
                     >
                         Leave without saving
                     </Button>

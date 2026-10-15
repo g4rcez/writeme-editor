@@ -1,6 +1,5 @@
 import { uuid } from "@g4rcez/components";
 import { CircleNotchIcon } from "@phosphor-icons/react";
-import { migrateMathStrings } from "@tiptap/extension-mathematics";
 import { EditorContent, EditorContext, useEditor, type Editor as TipTapEditor } from "@tiptap/react";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "@/ipc/copy-event";
@@ -97,6 +96,21 @@ const ric: (cb: () => void) => void =
 
 type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
 export type EditorMode = "formatted" | "markdown";
+
+async function saveEditorDraft(expected: Note, content: string, dispatch: GlobalDispatch): Promise<Note> {
+    const current = await repositories.notes.getOne(expected.id);
+    const saved =
+        current && current.deletedAt == null && current.title === expected.title && current.content === expected.content
+            ? await repositories.notes.updateContentIfUnchanged(expected.id, current, content)
+            : null;
+    if (!saved) {
+        throw new Error(
+            "This note changed in another editor or was deleted. Your draft is still here and has not overwritten the saved note. Copy your draft before reloading to reconcile the changes.",
+        );
+    }
+    dispatch.syncNoteFromRepository(saved);
+    return saved;
+}
 
 type LinkContextTarget = {
     text: string;
@@ -203,6 +217,9 @@ const TiptapEditorCore = memo(
         } = useVimConfiguration();
         const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
+        const persistedNoteRef = useRef(note);
+        const dirtyRef = useRef(false);
+        const [saveError, setSaveError] = useState<string | null>(null);
         const generationRef = useRef(0);
         const triggerWorkerParseRef = useRef<(text: string) => Promise<void>>(async () => {});
         const [uiState] = useUIStore();
@@ -234,11 +251,6 @@ const TiptapEditorCore = memo(
             onCreate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, note);
                 lastEditorContentRef.current = getEditorMarkdown(currentEditor);
-                try {
-                    return void migrateMathStrings(currentEditor);
-                } catch (error) {
-                    console.warn("Failed to migrate math strings:", error);
-                }
             },
             editorProps: {
                 scrollThreshold: { top: 0, right: 0, bottom: 80, left: 0 },
@@ -627,7 +639,14 @@ const TiptapEditorCore = memo(
 
         useEffect(() => {
             if (!editor || content === undefined || editor.isDestroyed || !editor.schema) return;
+            if (note && persistedNoteRef.current && +note.updatedAt < +persistedNoteRef.current.updatedAt) return;
             const currentMarkdown = getEditorMarkdown(editor);
+            if (dirtyRef.current && content !== currentMarkdown) {
+                if (note && content === persistedNoteRef.current?.content) persistedNoteRef.current = note;
+                return;
+            }
+            dirtyRef.current = false;
+            persistedNoteRef.current = note;
             if (content === persistedContentRef.current) return;
             if (content === currentMarkdown || content === lastEditorContentRef.current) {
                 lastEditorContentRef.current = currentMarkdown;
@@ -645,7 +664,7 @@ const TiptapEditorCore = memo(
             });
             lastEditorContentRef.current = content;
             isSettingContent.current = false;
-        }, [editor, content]);
+        }, [editor, content, note]);
 
         useEffect(() => {
             if (!editor) return;
@@ -671,7 +690,7 @@ const TiptapEditorCore = memo(
         useEffect(() => {
             if (editor === null || readonly) return;
             let saveTimeout: NodeJS.Timeout | undefined;
-            let dirty = false;
+            const dirty = dirtyRef;
             let saveQueue = Promise.resolve();
 
             const getCurrentMarkdown = (): string | null => {
@@ -686,20 +705,26 @@ const TiptapEditorCore = memo(
             };
 
             const saveDocument = (markdown: string): Promise<void> => {
-                const savingNote = noteRef.current;
+                const savingNote = persistedNoteRef.current;
                 const onSave = onSaveRef.current;
                 saveQueue = saveQueue.then(async () => {
                     uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
                     try {
-                        persistedContentRef.current = markdown;
+                        setSaveError(null);
                         if (onSave) {
                             await onSave(markdown);
                         } else if (savingNote) {
-                            await dispatch.updateNoteContent(savingNote.id, markdown);
+                            persistedNoteRef.current = await saveEditorDraft(
+                                persistedNoteRef.current ?? savingNote,
+                                markdown,
+                                dispatch,
+                            );
                         }
-                        if (getCurrentMarkdown() === markdown) dirty = false;
-                        uiDispatch.setEditorSaveStatus(dirty ? "unsaved" : "saved", noteRef.current?.id ?? id);
+                        persistedContentRef.current = markdown;
+                        if (editor.isDestroyed || getCurrentMarkdown() === markdown) dirty.current = false;
+                        uiDispatch.setEditorSaveStatus(dirty.current ? "unsaved" : "saved", noteRef.current?.id ?? id);
                     } catch (error) {
+                        setSaveError(error instanceof Error ? error.message : "Could not save this draft.");
                         uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
                         console.error("Failed to save document:", error);
                     }
@@ -710,10 +735,10 @@ const TiptapEditorCore = memo(
             const updateHandler = () => {
                 if (isSettingContent.current) {
                     if (saveTimeout) clearTimeout(saveTimeout);
-                    dirty = false;
+                    dirty.current = false;
                     return;
                 }
-                dirty = true;
+                dirty.current = true;
                 uiDispatch.setEditorSaveStatus("unsaved", noteRef.current?.id ?? id);
                 if (!settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -737,7 +762,7 @@ const TiptapEditorCore = memo(
                 active,
             );
             const flushPendingSave = (): void => {
-                if (!isMobile() || !dirty || !settings.autosave) return;
+                if (!isMobile() || !dirty.current || !settings.autosave) return;
                 if (saveTimeout) clearTimeout(saveTimeout);
                 const markdown = getCurrentMarkdown();
                 if (markdown !== null) void saveDocument(markdown);
@@ -754,7 +779,7 @@ const TiptapEditorCore = memo(
                 editor.off("update", updateHandler);
                 if (saveTimeout) clearTimeout(saveTimeout);
                 const markdown = getCurrentMarkdown();
-                if (dirty && markdown !== null) void saveDocument(markdown);
+                if (dirty.current && markdown !== null) void saveDocument(markdown);
             };
         }, [dispatch, editor, readonly, settings, id, active]);
 
@@ -774,6 +799,7 @@ const TiptapEditorCore = memo(
         return (
             <div
                 id={`editor-container-${id}`}
+                data-research-source={note?.noteType === "read-it-later" ? note.id : undefined}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
                 aria-busy={uiState.parsingContent ? "true" : "false"}
@@ -880,6 +906,11 @@ const TiptapEditorCore = memo(
                             Vim configuration: {vimConfigurationError}
                         </output>
                     ) : null}
+                    {saveError ? (
+                        <p role="alert" className="text-danger">
+                            {saveError}
+                        </p>
+                    ) : null}
                     <EditorContent key={id} editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
@@ -909,6 +940,8 @@ const RawEditorCore = memo(
     }) {
         const { dispatch, onSaveRef, id } = props;
         const noteRef = useRef(props.note);
+        const persistedNoteRef = useRef(props.note);
+        const [saveError, setSaveError] = useState<string | null>(null);
         const latestContentRef = useRef(props.content ?? "");
         const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
         const dirtyRef = useRef(false);
@@ -925,15 +958,20 @@ const RawEditorCore = memo(
 
         const saveContent = useCallback(
             (content: string): Promise<void> => {
-                const savingNote = noteRef.current;
+                const savingNote = persistedNoteRef.current;
                 const onSave = onSaveRef.current;
                 saveQueueRef.current = saveQueueRef.current.then(async () => {
                     uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
                     try {
+                        setSaveError(null);
                         if (onSave) {
                             await onSave(content);
                         } else if (savingNote) {
-                            await dispatch.updateNoteContent(savingNote.id, content);
+                            persistedNoteRef.current = await saveEditorDraft(
+                                persistedNoteRef.current ?? savingNote,
+                                content,
+                                dispatch,
+                            );
                         }
                         if (latestContentRef.current === content) dirtyRef.current = false;
                         setDraft((current) => (current.content === content ? { ...current, dirty: false } : current));
@@ -942,6 +980,7 @@ const RawEditorCore = memo(
                             noteRef.current?.id ?? id,
                         );
                     } catch (error) {
+                        setSaveError(error instanceof Error ? error.message : "Could not save this draft.");
                         uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
                         console.error("Failed to save Markdown document:", error);
                     }
@@ -956,9 +995,16 @@ const RawEditorCore = memo(
         }, [props.note]);
 
         useEffect(() => {
-            if (dirtyRef.current) return;
+            if (props.note && persistedNoteRef.current && +props.note.updatedAt < +persistedNoteRef.current.updatedAt)
+                return;
+            if (dirtyRef.current) {
+                if (props.note && props.content === persistedNoteRef.current?.content)
+                    persistedNoteRef.current = props.note;
+                return;
+            }
+            persistedNoteRef.current = props.note;
             latestContentRef.current = props.content ?? "";
-        }, [props.content]);
+        }, [props.content, props.note]);
 
         useEffect(() => {
             if (props.readonly) return;
@@ -1012,9 +1058,15 @@ const RawEditorCore = memo(
         return (
             <div
                 id={`editor-container-${props.id}`}
+                data-research-source={props.note?.noteType === "read-it-later" ? props.note.id : undefined}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
             >
+                {saveError ? (
+                    <p role="alert" className="text-danger">
+                        {saveError}
+                    </p>
+                ) : null}
                 <RawMarkdownEditor
                     noteId={props.id}
                     repairNoteId={props.note?.id}

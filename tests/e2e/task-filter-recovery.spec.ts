@@ -9,6 +9,8 @@ async function createFilteredBoard(page: Page): Promise<void> {
     const dialog = page.getByRole("dialog", { name: "Create task note" });
     await dialog.getByTitle("Note title").fill("Release checklist");
     await dialog.getByRole("button", { name: /^Create/ }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/note\/[^/]+$/);
     await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Add task to Backlog", exact: true }).click();
     await page.getByRole("textbox", { name: "Task title", exact: true }).fill("Review release notes");
@@ -87,11 +89,14 @@ test("distinguishes genuinely empty columns from filtered columns", async ({ cle
 test("captures filter recovery in both themes at desktop and phone widths", async ({ cleanPage: page }, info) => {
     await createFilteredBoard(page);
     const noteUrl = page.url();
+    const noteTab = page.locator(`[data-tab-id][href="${new URL(noteUrl).pathname}"]`);
     for (const theme of ["light", "dark"]) {
-        await page.goto("/settings/appearance");
+        await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
         await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
         await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
-        await page.goto(noteUrl);
+        await expect(noteTab).toBeVisible();
+        await noteTab.click();
+        await expect(page).toHaveURL(noteUrl);
         await page.getByRole("searchbox", { name: "Search tasks" }).fill("missing task");
         await expect(page.getByText("No tasks match these filters.", { exact: true })).toBeVisible();
         for (const viewport of [

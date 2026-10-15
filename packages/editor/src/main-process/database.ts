@@ -800,7 +800,7 @@ export class DatabaseManager {
     .prepare(
      `UPDATE notes
       SET content = ?, fileSize = ?, updatedAt = ?, updatedBy = ?
-      WHERE id = ? AND title = ? AND updatedAt = ? AND COALESCE(content, '') = ?`,
+      WHERE id = ? AND deletedAt IS NULL AND title = ? AND updatedAt = ? AND COALESCE(content, '') = ?`,
     )
     .run(content, fileSize, updatedAt, updatedBy, id, expected.title, expected.updatedAt, expected.content);
    if (updated.changes === 0) return null;

@@ -1,20 +1,17 @@
 import type { Page } from "@playwright/test";
-import { expect, goHome, test } from "./fixtures";
+import { createNote, expect, goHome, test } from "./fixtures";
 
 async function newNote(page: Page, title: string): Promise<void> {
-    await goHome(page);
-    await page
-        .getByRole("main")
-        .getByRole("button", { name: /^New note/ })
-        .first()
-        .click();
-    const dialog = page.getByRole("dialog", { name: /Create new note/i });
-    await expect(async () => {
-        await dialog.getByTitle("Note title").fill(title);
-        await dialog.getByRole("button", { name: /^Create/ }).click();
-        await expect(dialog).toBeHidden({ timeout: 1000 });
-    }).toPass({ timeout: 6000 });
+    const homeButton = page.getByRole("button", { name: "Go to home", exact: true });
+    if (await homeButton.isVisible()) {
+        await homeButton.click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+    } else {
+        await goHome(page);
+    }
+    await createNote(page, title);
     await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toHaveAttribute("contenteditable", "true");
     await expect(page.getByRole("toolbar", { name: "Note tools" })).toContainText(title);
     await page.getByRole("textbox", { name: "Note editor", exact: true }).click();
     await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toBeFocused();

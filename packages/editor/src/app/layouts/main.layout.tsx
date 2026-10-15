@@ -49,6 +49,8 @@ const getRouteLabel = (pathname: string): string => {
     if (pathname.startsWith("/chat")) return "Workspace AI";
     if (pathname.startsWith("/settings")) return "Settings";
     if (pathname.startsWith("/calendar")) return "Calendar";
+    if (pathname.startsWith("/today")) return "Today";
+    if (pathname.startsWith("/tasks")) return "Open tasks";
     if (pathname.startsWith("/views")) return "Views";
     if (pathname.startsWith("/groups")) return "Groups";
     return "Workspace";

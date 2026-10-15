@@ -2,6 +2,10 @@ name: MCP independent package contracts
 
 on:
   workflow_call:
+    inputs:
+      fast:
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -16,21 +20,16 @@ permissions:
 
 jobs:
   contract:
+    timeout-minutes: ${{ inputs.fast && 5 || 15 }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2022]
-        versions:
-          - node: "22.13.0"
-            deno: "2.2.0"
-          - node: "24.18.0"
-            deno: "2.4.5"
+        os: ${{ fromJSON(inputs.fast && '["ubuntu-latest"]' || '["ubuntu-latest","macos-latest","windows-2022"]') }}
+        versions: ${{ fromJSON(inputs.fast && '[{"node":"24.18.0","deno":"2.4.5"}]' || '[{"node":"22.13.0","deno":"2.2.0"},{"node":"24.18.0","deno":"2.4.5"}]') }}
         exclude:
           - os: windows-2022
             versions: { node: "22.13.0", deno: "2.2.0" }
-        include:
-          - os: windows-2022
-            versions: { node: "22.13.0", deno: "2.4.5" }
+        include: ${{ fromJSON(inputs.fast && '[]' || '[{"os":"windows-2022","versions":{"node":"22.13.0","deno":"2.4.5"}}]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

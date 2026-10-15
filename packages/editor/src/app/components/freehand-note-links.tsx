@@ -1,9 +1,21 @@
+import { Button } from "@g4rcez/components";
 import { ArrowsOutCardinalIcon } from "@phosphor-icons/react/dist/csr/ArrowsOutCardinal";
 import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/csr/ArrowUpRight";
 import { LinkSimpleIcon } from "@phosphor-icons/react/dist/csr/LinkSimple";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import clsx from "clsx";
-import { useId, useRef, useState, type JSX, type PointerEvent, type RefObject } from "react";
+import {
+    useId,
+    useRef,
+    useState,
+    type ChangeEvent,
+    type CSSProperties,
+    type JSX,
+    type KeyboardEvent,
+    type MouseEvent,
+    type PointerEvent,
+    type RefObject,
+} from "react";
 import { Link } from "react-router-dom";
 import type { Note } from "@/store/note";
 import { PAPER_HEIGHT, PAPER_WIDTH, type FreehandNoteLink } from "@/lib/freehand-note";
@@ -11,6 +23,12 @@ import { fzfScore } from "@/lib/note-search";
 
 export type NoteLinkTarget = Pick<Note, "id" | "title" | "filePath">;
 type Position = Pick<FreehandNoteLink, "x" | "y">;
+const LINK_MOVE_STEPS: Record<string, Position> = {
+    ArrowLeft: { x: -20, y: 0 },
+    ArrowRight: { x: 20, y: 0 },
+    ArrowUp: { x: 0, y: -20 },
+    ArrowDown: { x: 0, y: 20 },
+};
 
 export function clampLinkPosition(
     position: Position,
@@ -37,27 +55,49 @@ export function NoteLinkPicker({
         .map((note) => ({ note, score: fzfScore(query, `${note.title} ${note.filePath ?? ""}`) }))
         .filter((item): item is { note: NoteLinkTarget; score: number } => item.score !== null)
         .sort((left, right) => right.score - left.score);
+
+    function updateQuery(event: ChangeEvent<HTMLInputElement>): void {
+        setQuery(event.target.value);
+    }
+
+    const noteResults = results.map(({ note }) => {
+        function chooseNote(): void {
+            onChoose(note);
+        }
+
+        const pathLabel = note.filePath ? <small className="text-muted-foreground">{note.filePath}</small> : null;
+        return (
+            <li key={note.id}>
+                <Button
+                    type="button"
+                    theme="ghost-muted"
+                    size="small"
+                    className="w-full flex-col items-start justify-center"
+                    onClick={chooseNote}
+                >
+                    <span>{note.title || "Untitled"}</span>
+                    {pathLabel}
+                </Button>
+            </li>
+        );
+    });
+    const emptyMessage =
+        results.length === 0 ? (
+            <output className="wm-link-empty">
+                {notes.length ? "No notes match your search." : "Create another note to link it here."}
+            </output>
+        ) : null;
+
     return (
         <>
             <label className="wm-link-search">
                 Search notes
-                <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
+                <input type="search" value={query} onChange={updateQuery} />
             </label>
             <ul className="wm-link-results" aria-label="Notes to link">
-                {results.map(({ note }) => (
-                    <li key={note.id}>
-                        <button type="button" className="wm-link-result" onClick={() => onChoose(note)}>
-                            <span>{note.title || "Untitled"}</span>
-                            {note.filePath && <small>{note.filePath}</small>}
-                        </button>
-                    </li>
-                ))}
+                {noteResults}
             </ul>
-            {!results.length && (
-                <output className="wm-link-empty">
-                    {notes.length ? "No notes match your search." : "Create another note to link it here."}
-                </output>
-            )}
+            {emptyMessage}
         </>
     );
 }
@@ -145,83 +185,88 @@ export function StickyNoteLink({
         setPreview(null);
     }
 
-    return (
-        <fieldset
-            aria-label={`Linked note: ${title}`}
-            className={clsx("wm-sticky-link", placing && "wm-sticky-link--placing")}
-            style={{
-                left: `clamp(0.75rem, ${(position.x / PAPER_WIDTH) * 100}%, max(0.75rem, calc(100% - 13rem - 0.75rem)))`,
-                top: `clamp(0.75rem, ${(position.y / PAPER_HEIGHT) * 100}%, max(0.75rem, calc(100% - 8rem)))`,
-            }}
+    function cancelDrag(event: PointerEvent<HTMLButtonElement>): void {
+        endDrag(event, true);
+    }
+
+    function activateLink(event: MouseEvent<HTMLButtonElement>): void {
+        if (event.detail === 0 || !ignoreClick.current) onPlace();
+        ignoreClick.current = false;
+    }
+
+    function moveLinkWithKeyboard(event: KeyboardEvent<HTMLButtonElement>): void {
+        const step = LINK_MOVE_STEPS[event.key];
+        if (!step) return;
+        ignoreClick.current = false;
+        event.preventDefault();
+        event.stopPropagation();
+        onMove(
+            clampLinkPosition(
+                { x: link.x + step.x, y: link.y + step.y },
+                paper.current?.getBoundingClientRect().width,
+                paper.current?.viewBox.baseVal.height,
+            ),
+        );
+    }
+
+    const stickyLinkClassName = clsx("wm-sticky-link", placing && "wm-sticky-link--placing");
+    const stickyLinkStyle: CSSProperties = {
+        left: `clamp(0.75rem, min(${(position.x / PAPER_WIDTH) * 100}%, calc(100cqi - 13rem - 0.75rem)), max(0.75rem, calc(100% - 13rem - 0.75rem)))`,
+        top: `clamp(0.75rem, ${(position.y / PAPER_HEIGHT) * 100}%, max(0.75rem, calc(100% - 8rem)))`,
+    };
+    const noteLink = target ? (
+        <Link
+            className="wm-sticky-open"
+            aria-label={`Open note: ${title}`}
+            to={`/note/${encodeURIComponent(target.id)}`}
         >
+            <span>{title}</span>
+            <ArrowUpRightIcon size={18} aria-hidden="true" />
+        </Link>
+    ) : (
+        <div className="wm-sticky-unavailable">
+            <span>{title}</span>
+            <small>Note unavailable</small>
+        </div>
+    );
+
+    return (
+        <fieldset aria-label={`Linked note: ${title}`} className={stickyLinkClassName} style={stickyLinkStyle}>
             <div className="wm-sticky-actions">
-                <button
+                <Button
                     type="button"
-                    className="wm-ink-control wm-sticky-handle"
+                    theme={placing ? "muted" : "ghost-muted"}
+                    size="big"
+                    className="wm-sticky-handle"
                     aria-label={`Move linked note: ${title}`}
                     aria-describedby={descriptionId}
                     aria-pressed={placing}
                     title="Drag, use arrow keys, or tap then choose a position"
                     onPointerDown={startDrag}
                     onPointerMove={moveDrag}
-                    onPointerUp={(event) => endDrag(event)}
-                    onPointerCancel={(event) => endDrag(event, true)}
-                    onLostPointerCapture={(event) => endDrag(event, true)}
-                    onClick={(event) => {
-                        if (event.detail === 0 || !ignoreClick.current) onPlace();
-                        ignoreClick.current = false;
-                    }}
-                    onKeyDown={(event) => {
-                        const steps: Record<string, Position> = {
-                            ArrowLeft: { x: -20, y: 0 },
-                            ArrowRight: { x: 20, y: 0 },
-                            ArrowUp: { x: 0, y: -20 },
-                            ArrowDown: { x: 0, y: 20 },
-                        };
-                        const step = steps[event.key];
-                        if (!step) return;
-                        ignoreClick.current = false;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        onMove(
-                            clampLinkPosition(
-                                { x: link.x + step.x, y: link.y + step.y },
-                                paper.current?.getBoundingClientRect().width,
-                                paper.current?.viewBox.baseVal.height,
-                            ),
-                        );
-                    }}
+                    onPointerUp={endDrag}
+                    onPointerCancel={cancelDrag}
+                    onLostPointerCapture={cancelDrag}
+                    onClick={activateLink}
+                    onKeyDown={moveLinkWithKeyboard}
                 >
                     <ArrowsOutCardinalIcon size={18} aria-hidden="true" />
-                </button>
+                </Button>
                 <LinkSimpleIcon size={16} aria-hidden="true" />
-                <button
+                <Button
                     type="button"
-                    className="wm-ink-control"
+                    theme="ghost-muted"
+                    size="big"
                     aria-label={`Remove linked note: ${title}`}
                     onClick={onRemove}
                 >
                     <XIcon size={18} aria-hidden="true" />
-                </button>
+                </Button>
             </div>
             <span id={descriptionId} className="sr-only">
                 Drag to move, use arrow keys, or activate then tap the paper to place.
             </span>
-            {target ? (
-                <Link
-                    className="wm-sticky-open"
-                    aria-label={`Open note: ${title}`}
-                    to={`/note/${encodeURIComponent(target.id)}`}
-                >
-                    <span>{title}</span>
-                    <ArrowUpRightIcon size={18} aria-hidden="true" />
-                </Link>
-            ) : (
-                <div className="wm-sticky-unavailable">
-                    <span>{title}</span>
-                    <small>Note unavailable</small>
-                </div>
-            )}
+            {noteLink}
         </fieldset>
     );
 }

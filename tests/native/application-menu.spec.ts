@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 test("the macOS Cmd+Q menu action quits instead of hiding its window", async ({ playwright }) => {
-    test.skip(process.platform !== "darwin", "Verifies the native macOS quit shortcut");
     const directory = await mkdtemp(path.join(tmpdir(), "writeme-quit-native-"));
     const bootstrap = path.join(directory, "bootstrap.cjs");
     const buildRoot = path.resolve(process.env.WRITEME_MENU_BUILD_ROOT ?? ".vite");
@@ -27,7 +26,7 @@ require(${JSON.stringify(path.join(buildRoot, "build/main.js"))});`,
     try {
         const page = await application.firstWindow();
         const quitItem = await application.evaluate(({ Menu }) => {
-            const item = Menu.getApplicationMenu()?.items[0].submenu?.items.find(
+            const item = Menu.getApplicationMenu()?.items[0]?.submenu?.items.find(
                 (entry) => entry.label === "Quit Writeme",
             );
             return { role: item?.role, accelerator: item?.accelerator };

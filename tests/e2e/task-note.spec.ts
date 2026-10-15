@@ -249,11 +249,24 @@ test("keeps the board readable in light and dark themes", async ({ cleanPage: pa
     await addTask(page, "Plan next release");
     await addTask(page, "Review task Markdown");
     const url = page.url();
+    const noteTab = page.locator(`[data-tab-id][href="${new URL(url).pathname}"]`);
+    const workspaceNavigation = page.getByRole("navigation", { name: "Workspace navigation", exact: true });
+    const settingsNavigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
+    const appearanceLink = settingsNavigation.getByRole("link", { name: "Appearance", exact: true });
     for (const theme of ["light", "dark"]) {
-        await page.goto("/settings/appearance");
+        await workspaceNavigation.getByRole("button", { name: "Settings", exact: true }).click();
+        await expect(appearanceLink).toBeVisible();
+        await appearanceLink.click();
+        await expect(page).toHaveURL(/\/settings\/appearance$/);
+        await expect(
+            page.getByRole("main", { name: "Settings" }).getByRole("heading", { name: "Appearance", exact: true }),
+        ).toBeVisible();
         await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
         await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
-        await page.goto(url);
+        await expect(noteTab).toBeVisible();
+        await noteTab.click();
+        await expect(page).toHaveURL(url);
+        await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Edit Plan next release", exact: true })).toBeVisible();
         await expect(page.locator(".wm-task-header")).toBeVisible();
         const colors = await page

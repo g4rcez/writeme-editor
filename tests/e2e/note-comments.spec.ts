@@ -91,7 +91,17 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
     const first = editor.getByRole("link", { name: "Review this sentence.", exact: true });
     await expect(first).toHaveAttribute("href", "./comments_advisor.md#review-this-sentence");
     await expect(first.locator("mark")).toHaveText("Review this sentence.");
+    await page
+        .getByRole("complementary", { name: "Sentence comments" })
+        .getByRole("button", { name: "Close comments" })
+        .click();
+    await selectWords(page, "Review this sentence.", 1);
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.type(" More writing after commenting.");
+    await page.keyboard.press("Control+s");
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
     await page.reload();
+    await expect(editor).toContainText("More writing after commenting.");
     await first.click();
     await expect(page).toHaveURL(sourceUrl);
     const panel = page.getByRole("complementary", { name: "Sentence comments" });
@@ -142,7 +152,10 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
         .click();
     await first.first().click();
     await panel.getByRole("button", { name: "Open comments note" }).click();
-    await expect(page.getByRole("heading", { name: "plans/comments_advisor", exact: true })).toBeVisible();
+    await expect(
+        page.getByRole("textbox", { name: "Note editor", exact: true })
+            .getByRole("heading", { name: "plans/comments_advisor", exact: true }),
+    ).toBeVisible();
     await page
         .getByRole("toolbar", { name: "Note tools" })
         .getByRole("button", { name: "Markdown", exact: true })
@@ -168,7 +181,7 @@ test("rolls back the reference note when the comments table cannot be written", 
     await page.evaluate(() => {
         const original = IDBObjectStore.prototype.put;
         let failed = false;
-        IDBObjectStore.prototype.put = function (...args): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function(...args): IDBRequest<IDBValidKey> {
             if (!failed && this.name === "comments") {
                 failed = true;
                 throw new DOMException("Comments table is full", "QuotaExceededError");
@@ -223,7 +236,10 @@ test("keeps the comments table synchronized when editing the reference note", as
     await addComment(page, "Original comment");
     const panel = page.getByRole("complementary", { name: "Sentence comments" });
     await panel.getByRole("button", { name: "Open comments note" }).click();
-    await expect(page.getByRole("heading", { name: "comments_Editable comments", exact: true })).toBeVisible();
+    await expect(
+        page.getByRole("textbox", { name: "Note editor", exact: true })
+            .getByRole("heading", { name: "comments_Editable comments", exact: true }),
+    ).toBeVisible();
     await page
         .getByRole("toolbar", { name: "Note tools" })
         .getByRole("button", { name: "Markdown", exact: true })
@@ -353,7 +369,7 @@ test("keeps the draft after a failed write and retries without duplicate comment
     await page.evaluate(() => {
         const original = IDBObjectStore.prototype.put;
         let failed = false;
-        IDBObjectStore.prototype.put = function (...args): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function(...args): IDBRequest<IDBValidKey> {
             const value = args[0];
             if (!failed && this.name === "notes" && value?.metadata?.commentSourceId) {
                 failed = true;
@@ -386,7 +402,7 @@ test("rolls back source and comment together after a failed source write", async
     await page.evaluate(() => {
         const original = IDBObjectStore.prototype.put;
         let failed = false;
-        IDBObjectStore.prototype.put = function (...args): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function(...args): IDBRequest<IDBValidKey> {
             const value = args[0];
             if (!failed && this.name === "notes" && value?.title === "Source retry" && value?.content?.includes("==")) {
                 failed = true;

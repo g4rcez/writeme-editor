@@ -19,6 +19,7 @@ vi.mock("@/store/repositories", () => ({
             getQuicknoteByDate: mocks.getQuicknoteByDate,
             getOne: vi.fn(),
             save: vi.fn(),
+            updateMetadata: vi.fn(),
         },
     },
 }));

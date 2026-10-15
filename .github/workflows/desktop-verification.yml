@@ -1,0 +1,100 @@
+name: Desktop build and runtime verification
+
+on:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    desktop:
+        name: Desktop ${{ matrix.platform }}
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: windows
+                      os: windows-2022
+                      browsers: chromium
+                    - platform: osx
+                      os: macos-latest
+                      browsers: chromium webkit
+                    - platform: linux
+                      os: ubuntu-latest
+                      browsers: chromium
+        env:
+            CI: "true"
+            NODE_OPTIONS: --max-old-space-size=4096
+            WRITEME_E2E_PREBUILT: "1"
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+            - run: npm ci
+            - name: Run platform unit coverage
+              run: npm test
+            - run: npm exec playwright -- install --with-deps ${{ matrix.browsers }}
+            - run: npm run browser:build
+            - name: Verify Safari handwriting
+              if: matrix.platform == 'osx'
+              run: npm run test:e2e -- --platform osx --suite browser --project desktop-macos
+            - name: Verify all production browser scenarios
+              run: npm run test:e2e -- --platform ${{ matrix.platform }} --suite production
+            - name: Build macOS restriction profiles
+              if: matrix.platform == 'osx'
+              run: |
+                  npm run build:profile -- macos-homebrew
+                  WRITEME_BUILD_PROFILE=macos-app-store node --import tsx scripts/build-native-profile.ts
+            - name: Verify store renderer restrictions
+              if: matrix.platform == 'osx'
+              run: npm run test:e2e -- --platform osx --suite profiles --project macos-app-store
+              env:
+                  WRITEME_E2E_PROFILE_DIR: artifacts/build-profiles/macos-app-store/renderer/main_window
+                  PLAYWRIGHT_ARTIFACT_DIR: artifacts/playwright/osx/store-renderer
+            - name: Verify Homebrew and native store restrictions
+              if: matrix.platform == 'osx'
+              run: npm run test:e2e -- --platform osx --suite profiles --project macos-homebrew --project native-store
+            - name: Install Linux package makers
+              if: matrix.platform == 'linux'
+              run: sudo apt-get update && sudo apt-get install -y dpkg fakeroot rpm
+            - name: Prepare Linux package files
+              if: matrix.platform == 'linux'
+              run: node scripts/prepare-linux-packaging.mjs
+            - name: Build MCP integration package
+              if: matrix.platform == 'osx'
+              run: npm run build --workspace @writeme.dev/mcp
+            - name: Build distributables and package once
+              run: npm run make
+            - name: Verify all native scenarios
+              if: matrix.platform != 'linux'
+              run: npm run test:e2e -- --platform ${{ matrix.platform }} --suite native
+            - name: Verify all native Linux scenarios
+              if: matrix.platform == 'linux'
+              run: xvfb-run --auto-servernum npm run test:e2e -- --platform linux --suite native
+            - name: Verify MCP saved state with the same macOS package
+              if: matrix.platform == 'osx'
+              run: npm run test:e2e --workspace @writeme.dev/mcp
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: platform-build-${{ matrix.platform }}
+                  path: out/make/**
+                  if-no-files-found: error
+            - name: Upload runtime evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: desktop-verification-${{ matrix.platform }}
+                  path: |
+                      artifacts/playwright/${{ matrix.platform }}/
+                      artifacts/build-profiles/**/writeme-build-*.json
+                      .omo/evidence/mcp-integration/native/
+                  include-hidden-files: true
+                  if-no-files-found: warn
+                  retention-days: 14

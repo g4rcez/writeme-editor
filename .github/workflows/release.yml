@@ -14,6 +14,9 @@ jobs:
     platform-verification:
         uses: ./.github/workflows/platform-verification.yml
 
+    mcp-verification:
+        uses: ./.github/workflows/mcp.yml
+
     build-mac-arm64:
         runs-on: macos-latest
         steps:
@@ -364,6 +367,7 @@ jobs:
     release:
         needs:
             - platform-verification
+            - mcp-verification
             - build-mac-arm64
             - build-windows
             - build-linux

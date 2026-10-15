@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsService } from "../../settings";
 import { NotesRepository } from "./notes.repository";
+import { Note, NoteType } from "../../note";
 
 const get = vi.fn();
 const getAll = vi.fn();
@@ -40,6 +41,57 @@ beforeEach(() => {
 });
 
 describe("Electron NotesRepository", () => {
+    it("finds database daily notes by journal date instead of last edit date", async () => {
+        vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
+        const note = Note.new("Retrospective", "Keep my review", NoteType.quick);
+        note.metadata.journalDate = "2025-12-31";
+        getAll.mockResolvedValue([note]);
+        get.mockResolvedValue(note);
+        const repository = new NotesRepository(tabs as never);
+        expect((await repository.getQuicknoteByDate(new Date(2025, 11, 31)))?.id).toBe(note.id);
+        expect(await repository.getQuicknoteByDate(new Date(2026, 0, 1))).toBeNull();
+        note.deletedAt = new Date();
+        expect(await repository.getQuicknoteByDate(new Date(2025, 11, 31))).toBeNull();
+    });
+    it("finds a readable renamed daily note only within the selected workspace", async () => {
+        const elsewhere = Note.new("Other workspace", "Do not open", NoteType.quick);
+        elsewhere.filePath = "/other/review.md";
+        elsewhere.metadata.journalDate = "2025-12-31";
+        const local = Note.new("Renamed review", "", NoteType.quick);
+        local.filePath = "/notes/archive/review.md";
+        local.metadata.journalDate = "2025-12-31";
+        getAll.mockResolvedValue([elsewhere, local]);
+        get.mockImplementation(async (_collection: string, id: string) => (id === local.id ? local : elsewhere));
+        readDirRecursive.mockResolvedValue({
+            success: true,
+            files: [{ name: "review.md", path: local.filePath, relativePath: "archive/review.md" }],
+        });
+        readFile.mockResolvedValue({
+            success: true,
+            content: "Preserved review",
+            lastModified: "2026-01-01T00:00:00Z",
+        });
+        const daily = await new NotesRepository(tabs as never).getQuicknoteByDate(new Date(2025, 11, 31));
+        expect(daily?.id).toBe(local.id);
+        expect(daily?.content).toBe("Preserved review");
+    });
+
+    it("rejects an unreadable renamed daily note instead of returning empty content", async () => {
+        const note = Note.new("Review", "", NoteType.quick);
+        note.filePath = "/notes/review.md";
+        note.metadata.journalDate = "2025-12-31";
+        getAll.mockResolvedValue([note]);
+        get.mockResolvedValue(note);
+        readDirRecursive.mockResolvedValue({
+            success: true,
+            files: [{ name: "review.md", path: note.filePath, relativePath: "review.md" }],
+        });
+        readFile.mockResolvedValue({ success: false, error: "Permission denied" });
+        await expect(new NotesRepository(tabs as never).getQuicknoteByDate(new Date(2025, 11, 31))).rejects.toThrow(
+            "The existing daily quick note could not be read. It was not changed.",
+        );
+        expect(save).not.toHaveBeenCalled();
+    });
     it("imports a task Markdown file as a board", async () => {
         getAll.mockResolvedValue([]);
         readDirRecursive.mockResolvedValue({

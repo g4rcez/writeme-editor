@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScripts } from "@/app/hooks/use-scripts";
 import { useTemplates } from "@/app/hooks/use-templates";
+import { NOTE_STARTERS } from "@/app/templates/note-starters";
 import { getOrCreateDailyQuickNote } from "@/lib/daily-quick-note";
 import { buildExcalidrawNoteContent } from "@/lib/excalidraw-note";
 import { generateNotePath, getUniqueFilePath, getUniqueNoteTitle } from "@/lib/file-utils";
@@ -16,10 +17,12 @@ import { isFloatingEditorWindow } from "@/lib/window-mode";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 
+type ContentChoice = { type: "blank" } | { type: "starter" | "template"; id: string };
+
 export const CreateNoteDialog = () => {
     const [state, dispatch] = useGlobalStore();
     const [title, setTitle] = useState("");
-    const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+    const [contentChoice, setContentChoice] = useState<ContentChoice>({ type: "blank" });
     const [variableValues, setVariableValues] = useState<Record<string, string>>({});
     const [quickNoteDate, setQuickNoteDate] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -34,6 +37,9 @@ export const CreateNoteDialog = () => {
     const navigate = useNavigate();
 
     const { isOpen, type, templateId, initialTitle } = state.createNoteDialog;
+    const selectedTemplateId = contentChoice.type === "template" ? contentChoice.id : "";
+    const selectedStarter =
+        contentChoice.type === "starter" ? NOTE_STARTERS.find((starter) => starter.id === contentChoice.id) : undefined;
 
     const supportsFolders =
         (type === "note" || type === "excalidraw" || type === "freehand" || type === "task") && isElectron() && !!state.directory;
@@ -102,7 +108,7 @@ export const CreateNoteDialog = () => {
                 setQuickNoteDate(null);
                 setTitle(getUniqueNoteTitle(initialTitle?.trim() ?? "", state.notes));
             }
-            setSelectedTemplateId(templateId || "");
+            setContentChoice(templateId ? { type: "template", id: templateId } : { type: "blank" });
             setVariableValues({});
         }
     }, [isOpen, type, templateId, initialTitle, state.notes, state.directory]);
@@ -156,6 +162,7 @@ export const CreateNoteDialog = () => {
                     : type === "freehand"
                       ? buildFreehandNoteContent()
                       : "";
+            if (type === "note" && selectedStarter) content = selectedStarter.content;
             if ((type === "note" || type === "quick") && selectedTemplateId) {
                 const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
                 if (latestTemplate) {
@@ -302,6 +309,48 @@ export const CreateNoteDialog = () => {
                         ) : null}
                     </div>
                 ) : null}
+                {type === "note" ? (
+                    <div className="flex flex-col gap-2">
+                        <Autocomplete
+                            value={contentChoice.type === "starter" ? contentChoice.id : ""}
+                            title="Starter example (optional)"
+                            placeholder="Choose an example"
+                            options={[
+                                { value: "", label: "No starter example" },
+                                ...NOTE_STARTERS.map((starter) => ({ value: starter.id, label: starter.title })),
+                            ]}
+                            onChange={(event) => {
+                                const starter = NOTE_STARTERS.find((item) => item.id === event.target.value);
+                                if (!starter && contentChoice.type !== "starter") return;
+                                setContentChoice(starter ? { type: "starter", id: starter.id } : { type: "blank" });
+                                setVariableValues({});
+                            }}
+                        />
+                        <p className="text-xs leading-5 text-muted-foreground">
+                            {templates.length > 0
+                                ? "Choose a starter or a saved template. With neither selected, the note starts blank."
+                                : "Without a starter, the note starts blank."}
+                        </p>
+                        {selectedStarter ? (
+                            <div key={selectedStarter.id} className="flex flex-col gap-2 text-sm text-foreground">
+                                <p>{selectedStarter.description}</p>
+                                <details>
+                                    <summary className="cursor-pointer rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                                        Preview content
+                                    </summary>
+                                    <section
+                                        aria-label="Starter content preview"
+                                        className="mt-2 max-h-40 overflow-auto rounded bg-secondary-background p-3"
+                                    >
+                                        <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-5">
+                                            {selectedStarter.content}
+                                        </pre>
+                                    </section>
+                                </details>
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
                 {(type === "note" || type === "quick") && templates.length > 0 && (
                     <div className="flex flex-col gap-4">
                         <Autocomplete
@@ -309,9 +358,14 @@ export const CreateNoteDialog = () => {
                             value={selectedTemplateId}
                             placeholder="Choose a template"
                             title="Template (optional)"
-                            onChange={(e) => setSelectedTemplateId(e.target.value)}
+                            onChange={(event) => {
+                                const template = templates.find((item) => item.id === event.target.value);
+                                if (!template && contentChoice.type !== "template") return;
+                                setContentChoice(template ? { type: "template", id: template.id } : { type: "blank" });
+                                setVariableValues({});
+                            }}
                             options={[
-                                { value: "", label: "Blank note" },
+                                { value: "", label: "No saved template" },
                                 ...templates.map((t) => ({ value: t.id, label: t.title })),
                             ]}
                         />

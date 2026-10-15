@@ -71,7 +71,12 @@ for (const filesystem of [false, true]) {
             const dialog = page.getByRole("dialog", { name: /Create new note/i });
             const title = dialog.getByTitle("Note title");
             await title.fill("MCP acceptance");
-            await title.press("Tab");
+            if (filesystem) await title.press("Escape");
+            const starter = dialog.getByRole("combobox", { name: "Starter example (optional)" });
+            await starter.focus();
+            await starter.press("Escape");
+            await expect(page.getByRole("option", { name: "Project brief", exact: true })).toBeHidden();
+            await expect(dialog).toBeVisible();
             await page.screenshot({ path: testInfo.outputPath("create-note.png") });
             await writeFile(testInfo.outputPath("create-note.txt"), await page.locator("body").innerText());
             await page.locator("form button[type=submit]").click();

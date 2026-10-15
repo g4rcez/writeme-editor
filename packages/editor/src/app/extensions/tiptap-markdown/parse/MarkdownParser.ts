@@ -184,6 +184,11 @@ export class MarkdownParser {
                 }
             });
         });
+        for (const container of [node, ...node.querySelectorAll("blockquote,ul,ol,li")]) {
+            for (const child of [...container.childNodes]) {
+                if (child.nodeType === Node.TEXT_NODE && !child.textContent?.trim()) child.remove();
+            }
+        }
         node.querySelectorAll("*").forEach((el) => {
             if (el.nextSibling?.nodeType === Node.TEXT_NODE && !el.closest("pre")) {
                 el.nextSibling.textContent = (el.nextSibling.textContent ?? "").replace(/^\n/, "");
