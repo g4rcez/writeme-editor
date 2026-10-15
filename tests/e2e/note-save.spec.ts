@@ -65,7 +65,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.type("Retry this draft");
     await page.evaluate(() => {
         const put = IDBObjectStore.prototype.put;
-        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function(value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
             if (this.name === "notes") {
                 IDBObjectStore.prototype.put = put;
                 throw new DOMException("Unable to save note", "QuotaExceededError");
@@ -92,15 +92,24 @@ test("saves an existing note in the floating editor", async ({ cleanPage: page }
         window.dispatchEvent(new PopStateEvent("popstate"));
     });
     await expect(page).toHaveURL(/\/floating-editor$/);
-    const editor = page.locator(".ProseMirror").first();
+    // Lazy navigation updates the URL before replacing the outgoing note editor.
+    await expect(page.locator(".writeme-editor-page")).toHaveCount(0);
+    const noteId = new URL(noteUrl).pathname.slice("/note/".length);
+    const editor = page
+        .locator(`#editor-container-${noteId}`)
+        .getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveAttribute("contenteditable", "true");
+    await expect(editor).toHaveAttribute("aria-busy", "false");
     await editor.click();
     await page.keyboard.type("Saved from floating editor");
+    await expect(editor).toHaveText("Saved from floating editor");
     const status = page.getByRole("status", { name: "Note save status" });
     await expect(status).toHaveText("Unsaved changes");
-    await page.keyboard.press("Meta+s");
+    await editor.press("Meta+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
     await page.goto(noteUrl);
-    await expect(page.locator(".ProseMirror").first()).toContainText("Saved from floating editor");
+    await expect(editor).toContainText("Saved from floating editor");
 });
 
 for (const route of ["quicknote", "mathnote"]) {

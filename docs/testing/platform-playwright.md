@@ -28,8 +28,6 @@ OSX needs both engines: WebKit represents existing Safari handwriting/offline ch
 
 ## Desktop tab regression coverage
 
-The fast PR gate runs every desktop Chromium browser regression on Linux, including tabs, rename, recently closed tabs, drag and starter examples. Nightly and release verification repeat the full suite on Windows, OSX and Linux. Reports are isolated by platform and shard under `artifacts/playwright/<platform>/browser-<shard>/`; they do not overwrite production or native evidence.
-
 ```sh
 npm run test:e2e -- --platform osx --suite browser \
   tests/e2e/editor-tabs.spec.ts tests/e2e/tab-rename.spec.ts \
@@ -89,7 +87,8 @@ The PR target is five minutes end-to-end, including runner setup, all required c
 
 Fast jobs have a five-minute timeout; exceeding the budget fails rather than drops tests. The final gate has a one-minute limit and a dependency on the completed checks, so per-job timeouts do not establish the end-to-end result. Twelve browser shards, two unit shards, shared checks and the MCP contract need sixteen available runner slots to start together. Measure the complete hosted run through the final gate before claiming the target has been met; report external GitHub queue time separately.
 
-Browser creation setup submits once and waits for the newly created note UUID's editable editor, not a still-visible previous document. Content setup fills literal text in one browser edit, observes the unsaved state, saves through Ctrl/Cmd+S and waits for the saved state; fixture setup does not wait for the configured autosave delay or repeat reload verification. Dedicated typing, autosave and persistence scenarios remain unchanged. Keyboard and input-rule scenarios still exercise real keystrokes; heading setup uses the heading command, and reference setup pastes real Markdown through the editor's paste handler. Daily capture returns home through the application action rather than reloading `/`, which intentionally restores persisted tabs.
+Browser creation setup submits once and waits for the newly created note UUID's editable editor, not a still-visible previous document. Content setup fills literal text in one browser edit, observes the unsaved state, saves through Ctrl/Cmd+S and waits for the saved state; fixture setup does not wait for the configured autosave delay or repeat reload verification. Dedicated typing, autosave and persistence scenarios remain unchanged. Keyboard and input-rule scenarios still exercise real keystrokes; heading setup uses the heading command, and reference setup pastes real Markdown through the editor's paste handler. Fast browser runs warm Vite's renderer and note-editor modules and leave the service worker disabled so dev-served source modules are not cached as if they were production assets.
+Multi-note completion scenarios return through the app's Home action between notes; direct navigation to `/` intentionally restores the persisted active tab.
 
 Folder scenarios initialize real browser/IndexedDB persistence before exposing the mocked filesystem; starting as Electron would select native SQLite/IPC instead. Autocomplete options live in a portaled listbox, and typed custom names are committed by leaving the input before submission. Code paste targets the current Tiptap content and preserves the editor selection. List-spacing checks measure rendered grouping and text containment rather than pinning typography constants. Sticky-link movement/persistence and responsive control geometry run as separate scenarios so a multi-navigation case does not monopolize a worker.
 

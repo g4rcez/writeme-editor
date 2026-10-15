@@ -2,7 +2,13 @@ import type { Page } from "@playwright/test";
 import { createNote, expect, goHome, test } from "./fixtures";
 
 async function newNote(page: Page, title: string): Promise<void> {
-    await goHome(page);
+    const homeButton = page.getByRole("button", { name: "Go to home", exact: true });
+    if (await homeButton.isVisible()) {
+        await homeButton.click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+    } else {
+        await goHome(page);
+    }
     await createNote(page, title);
     await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toHaveAttribute("contenteditable", "true");
