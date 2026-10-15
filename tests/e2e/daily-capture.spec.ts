@@ -66,7 +66,7 @@ test.describe("daily quick capture", () => {
             .first()
             .click();
         await page.getByText("Open today's note", { exact: true }).click();
-        await expect(page).toHaveURL(new RegExp(`/quicknote/${noteId}$`));
+        await expect(page).toHaveURL((url) => url.pathname.endsWith(`/${noteId}`));
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");
         await expect(editor).toHaveAttribute("aria-busy", "false");

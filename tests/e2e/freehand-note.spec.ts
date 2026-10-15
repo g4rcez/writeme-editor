@@ -345,18 +345,19 @@ test.describe("sticky note links", () => {
         await addProjectLink(page);
         const sourceUrl = page.url();
         for (const theme of ["dark", "light"]) {
-            await page.goto("/settings/appearance");
+            await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
             await closeWorkspaceMenu(page);
             await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
             await page.getByRole("button", { name: "Save Appearance" }).click();
-            await page.goto(sourceUrl);
+            await page.locator(`[data-tab-id][href="${new URL(sourceUrl).pathname}"]`).click();
+            await expect(page).toHaveURL(sourceUrl);
             for (const [width, height] of [
                 [375, 812],
                 [812, 375],
             ]) {
                 await page.setViewportSize({ width: width!, height: height! });
                 const card = page.getByRole("group", { name: "Linked note: Project plan", exact: true });
-                await card.evaluate((element) => element.scrollIntoView({ block: "center", inline: "center" }));
+                await expect(card).toBeVisible({ timeout: 30_000 });
                 for (const control of await card.locator("button, a").all()) {
                     const bounds = (await control.boundingBox())!;
                     expect(bounds.width).toBeGreaterThanOrEqual(44);

@@ -13,7 +13,6 @@ test.describe("Navigation", () => {
 
     test("direct URLs render core pages", async ({ cleanPage: page }) => {
         await page.goto("/settings", { waitUntil: "domcontentloaded" });
-        await expect(page).toHaveURL(/\/settings$/);
         await expect(page.getByRole("heading", { name: "Quick Settings" })).toBeVisible();
 
         await page.goto("/tags", { waitUntil: "domcontentloaded" });

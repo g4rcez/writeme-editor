@@ -249,11 +249,14 @@ test("keeps the board readable in light and dark themes", async ({ cleanPage: pa
     await addTask(page, "Plan next release");
     await addTask(page, "Review task Markdown");
     const url = page.url();
+    const noteTab = page.locator(`[data-tab-id][href="${new URL(url).pathname}"]`);
     for (const theme of ["light", "dark"]) {
-        await page.goto("/settings/appearance");
+        await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
         await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
         await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
-        await page.goto(url);
+        await expect(noteTab).toBeVisible();
+        await noteTab.click();
+        await expect(page).toHaveURL(url);
         await expect(page.getByRole("button", { name: "Edit Plan next release", exact: true })).toBeVisible();
         await expect(page.locator(".wm-task-header")).toBeVisible();
         const colors = await page
