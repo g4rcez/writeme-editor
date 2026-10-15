@@ -28,6 +28,12 @@
 
 ### Bug Fixes
 
+- Open nested agenda tasks at their Markdown source, and focus following
+  top-level board tasks by source identity instead of a mismatched card index.
+- Reuse renamed daily notes in filesystem workspaces from Today and Calendar,
+  and preserve legacy filename-derived journal dates through title changes.
+- Ignore obsolete daily-note navigation after changing the day, leaving the
+  route, or closing the Calendar dialog; completed storage writes remain saved.
 - Render uneven-width Markdown tables when opening or pasting notes, including
   large documents, without dropping overflow cells or their formatting.
 - Keep the formatted editor's native caret synchronized with Vim motions so

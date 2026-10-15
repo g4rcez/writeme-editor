@@ -12,6 +12,7 @@ vi.mock("./repositories", () => ({
         },
         notes: {
             update: vi.fn(),
+            save: vi.fn(),
             getRecentNotes: vi.fn(),
             updateMetadata: vi.fn(),
         },
@@ -46,6 +47,22 @@ describe("Global Store", () => {
         vi.clearAllMocks();
         useGlobalStore.dispatchers.notes([]);
         useGlobalStore.dispatchers.setNote(null);
+    });
+
+    it("keeps a legacy journal day durable when the Markdown heading synchronizes its title", async () => {
+        const note = Note.parse({
+            ...Note.new("2025-12-31-quicknote.md", "# Retrospective\n\nKeep this content\n", NoteType.quick),
+            createdAt: new Date(2026, 0, 7),
+        });
+        useGlobalStore.dispatchers.notes([note]);
+        useGlobalStore.dispatchers.setNote(note);
+        await useGlobalStore.dispatchers.updateNoteTitle(note.id, "Retrospective");
+        const updated = useGlobalStore.getState().note;
+        expect(updated?.title).toBe("Retrospective");
+        expect(updated?.metadata.journalDate).toBe("2025-12-31");
+        expect(updated?.createdAt).toEqual(note.createdAt);
+        expect(updated?.content).toBe(note.content);
+        expect(repositories.notes.save).toHaveBeenCalledWith(updated);
     });
 
     it("preserves edits and the selected note when transcription metadata finishes saving", async () => {
