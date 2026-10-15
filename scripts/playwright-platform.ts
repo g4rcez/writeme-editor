@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = process.env): PlaywrightTestConfig {
   const suite = env.WRITEME_E2E_SUITE ?? "browser";
   if (!suites.includes(suite as Suite)) throw new Error(`Unknown suite: ${suite}`);
+  const fastBrowser = suite === "browser" && env.WRITEME_E2E_FAST === "1";
   const selected: string[] = env.WRITEME_E2E_PROJECTS ? JSON.parse(env.WRITEME_E2E_PROJECTS) : [];
   const mobile = platform === "ios" || platform === "android";
   const liveWhisper = env.WRITEME_E2E_LIVE_WHISPER === "1";
@@ -50,7 +51,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
         browserName: device.defaultBrowserType,
         userAgent: device.isMobile ? device.userAgent : undefined,
         baseURL: url,
-        video: { mode: "on", size: device.viewport },
+        video: fastBrowser ? "off" : { mode: "on", size: device.viewport },
       },
     };
   };
@@ -224,6 +225,11 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
       runnerArchitecture: process.arch,
       suite,
     },
-    use: { baseURL, trace: "retain-on-failure", screenshot: "only-on-failure", video: "on" },
+    use: {
+      baseURL,
+      trace: fastBrowser ? { mode: "retain-on-failure", screenshots: false } : "retain-on-failure",
+      screenshot: "only-on-failure",
+      video: fastBrowser ? "off" : "on",
+    },
   });
 }
