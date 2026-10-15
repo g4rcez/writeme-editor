@@ -393,11 +393,6 @@ test.describe("sticky note links", () => {
     });
 
     test("handles an empty picker and retains sticky links when saving fails", async ({ cleanPage: page }) => {
-        test.skip(
-            process.env.WRITEME_E2E_FAST === "1",
-            "Skipped in the fast PR gate after hosted run 38751479790; retained in full and local runs.",
-        );
-
         await createHandwrittenNote(page);
         await openLinkPicker(page);
         await expect(page.getByRole("dialog", { name: "Link a note" }).getByRole("status")).toHaveText(
@@ -433,11 +428,6 @@ test.describe("sticky note links", () => {
     test("drags sticky links with pen and touch and discards canceled moves @chromium-input", async ({
         cleanPage: page,
     }) => {
-        test.skip(
-            process.env.WRITEME_E2E_FAST === "1",
-            "Skipped in the fast PR gate after hosted run 38751479790; retained in full and local runs.",
-        );
-
         await createHandwrittenNote(page);
         const sourceUrl = page.url();
         await seedLinkTargets(page);
@@ -618,11 +608,6 @@ test.describe("production safeguards", () => {
 test("customizes paper colors and background details across pages and reloads", async ({
     cleanPage: page,
 }, testInfo) => {
-    test.skip(
-        process.env.WRITEME_E2E_FAST === "1",
-        "Skipped in the fast PR gate after hosted run 38751479790; retained in full and local runs.",
-    );
-
     await createHandwrittenNote(page);
     await draw(page);
     await expect.poll(async () => (await readNotebook(page)).pages[0]?.strokes.length).toBe(1);
@@ -1103,11 +1088,6 @@ for (const span of [400, 1e12])
     test(`opens legacy ink, erases a sparse stroke of length ${span} and preserves surrounding metadata`, async ({
         cleanPage: page,
     }) => {
-        test.skip(
-            process.env.WRITEME_E2E_FAST === "1",
-            "Skipped in the fast PR gate after hosted run 38751479790; retained in full and local runs.",
-        );
-
         await createHandwrittenNote(page);
         await page.evaluate(async (end) => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");

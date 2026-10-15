@@ -137,10 +137,6 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
     });
 
     test("saves one init.ts and applies its keybinds to both editors after reload", async ({ cleanPage: page }) => {
-        test.skip(
-            process.env.WRITEME_E2E_FAST === "1",
-            "Skipped in the fast PR gate after hosted run 38749307895; retained in full and local runs.",
-        );
         const url = await note(page);
         await page
             .getByRole("navigation", { name: "Workspace navigation" })

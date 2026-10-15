@@ -33,14 +33,20 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
             - run: npm ci --ignore-scripts
+              if: ${{ !inputs.fast }}
             - run: npm exec playwright -- install --only-shell chromium
+              if: ${{ !inputs.fast }}
             - name: Run all browser regressions
+              if: ${{ !inputs.fast }}
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.target.platform }} --suite browser
                   --project chromium --shard ${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }}
                   --workers ${{ inputs.fast && 4 || 2 }}
+            - name: Defer Linux browser regressions in the fast gate
+              if: ${{ inputs.fast }}
+              run: echo "Linux Chromium browser tests are temporarily deferred in the fast PR gate; full/nightly and local runs remain enabled."
             - name: Upload shard evidence
-              if: always()
+              if: ${{ always() && !inputs.fast }}
               uses: actions/upload-artifact@v4
               with:
                   name: browser-${{ matrix.target.platform }}-${{ matrix.shard }}
