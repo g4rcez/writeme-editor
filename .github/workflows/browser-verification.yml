@@ -12,14 +12,14 @@ permissions:
 
 jobs:
     browser:
-        name: Browser ${{ matrix.target.platform }} (${{ matrix.shard }}/${{ inputs.fast && 12 || 3 }})
+        name: Browser ${{ matrix.target.platform }} (${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }})
         runs-on: ${{ matrix.target.os }}
         timeout-minutes: ${{ inputs.fast && 5 || 40 }}
         strategy:
             fail-fast: false
-            max-parallel: ${{ inputs.fast && 12 || 6 }}
+            max-parallel: ${{ inputs.fast && 16 || 6 }}
             matrix:
-                shard: ${{ fromJSON(inputs.fast && '[1,2,3,4,5,6,7,8,9,10,11,12]' || '[1,2,3]') }}
+                shard: ${{ fromJSON(inputs.fast && '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]' || '[1,2,3]') }}
                 target: ${{ fromJSON(inputs.fast && '[{"platform":"linux","os":"ubuntu-latest"}]' || '[{"platform":"windows","os":"windows-2022"},{"platform":"osx","os":"macos-latest"},{"platform":"linux","os":"ubuntu-latest"}]') }}
         env:
             CI: "true"
@@ -37,7 +37,7 @@ jobs:
             - name: Run all browser regressions
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.target.platform }} --suite browser
-                  --project chromium --shard ${{ matrix.shard }}/${{ inputs.fast && 12 || 3 }}
+                  --project chromium --shard ${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }}
                   --workers ${{ inputs.fast && 4 || 2 }}
             - name: Upload shard evidence
               if: always()

@@ -5,13 +5,16 @@
 - Split CI into a five-minute-target PR gate and full nightly/release verification.
   Discover browser, production and native regressions automatically, shard browser
   execution, and replace feature-specific lint/typecheck lists with directory scopes.
-  Run editor/build units independently from static checks, fit twelve four-worker
-  browser shards within sixteen runner slots, and install only the used headless shell.
+  Run editor/build units independently from static checks, fit sixteen four-worker
+  browser shards within twenty runner slots, and install only the used headless shell.
   Disable continuous video/trace frames only in the fast gate while retaining failure
   screenshots, DOM/source traces and full-run recordings. Bind fixture edits to the
   new note's editor and save once without autosave delays or redundant reloads;
   dedicated typing/autosave/persistence coverage remains. Repair previously omitted
   browser scenarios without adding retries or dropping behavioral coverage.
+- Use explicit `.mts` Vite and Tailwind configs plus `import.meta.dirname` for
+  root-relative paths, removing module-mode and native-loader warnings without
+  changing package-wide module semantics.
 - Label note-card selection controls for assistive technology and keep toolbar help
   from covering the open table-of-contents panel.
 
