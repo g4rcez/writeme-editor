@@ -22,7 +22,7 @@ import { Button, Checkbox, Input, Modal, Select, Textarea } from "@g4rcez/compon
 import { CheckCircleIcon, CircleIcon, DotsSixVerticalIcon, KanbanIcon, MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import { useEditor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, type JSX, type ReactNode } from "react";
-import { useBlocker } from "react-router-dom";
+import { useBlocker, useSearchParams } from "react-router-dom";
 import { useReducer } from "use-typed-reducer";
 import type { Note } from "@/store/note";
 import { Editor } from "@/app/editor";
@@ -30,6 +30,7 @@ import { setTaskItemChecked } from "@/app/elements/task-list-item";
 import { getEditorMarkdown } from "@/lib/editor-storage";
 import { exportFile } from "@/lib/export-file";
 import { taskNoteExtensions } from "@/lib/task-note";
+import { parseOpenWorkspaceTasks } from "@/lib/workspace-tasks";
 import { globalDispatch, globalState, repositories } from "@/store/global.store";
 import {
     addTaskToStack,
@@ -222,6 +223,8 @@ function Column({
 
 export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNode }): JSX.Element {
     const [state, dispatch] = useReducer({ ...initialState, markdown: note.content }, taskViewReducers);
+    const [searchParams] = useSearchParams();
+    const sourceLine = Number(searchParams.get("line"));
     const { view, filter, markdown, search, draggedCard, hideEmpty, status, notice, draft, columnDraft } = state;
     const pending = useRef(Promise.resolve());
     const persisted = useRef(note);
@@ -291,6 +294,30 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
     });
 
     const stacks = editor ? parseEditorTasks(editor.state.doc) : [];
+    useEffect(() => {
+        if (!editor || !sourceLine) return;
+        const source = parseOpenWorkspaceTasks([note]).find((task) => task.line === sourceLine);
+        if (!source) return;
+        let index = 0;
+        let position: number | null = null;
+        editor.state.doc.descendants((node, pos) => {
+            if (node.type.name === "taskItem" && index++ === source.taskIndex) position = pos;
+        });
+        if (position === null) return;
+        const card = parseEditorTasks(editor.state.doc)
+            .flatMap((stack) => stack.cards)
+            .find((item) => item.pos === position);
+        if (!card) {
+            dispatch.setView("markdown");
+            return;
+        }
+        const frame = requestAnimationFrame(() => {
+            const target = document.querySelector<HTMLElement>(`.wm-task-card[data-task-id="${card.id}"]`);
+            target?.querySelector<HTMLButtonElement>(".wm-task-card-content")?.focus({ preventScroll: true });
+            target?.scrollIntoView({ behavior: "instant", block: "center" });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [dispatch, editor, note, sourceLine]);
     useEffect(() => {
         if (!editor || getEditorMarkdown(editor) === markdown) return;
         editor.commands.setContent(markdown, { emitUpdate: false });
@@ -495,7 +522,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                 <Editor
                     note={note}
                     content={markdown}
-                    mode="formatted"
+                    mode={sourceLine ? "markdown" : "formatted"}
                     onSave={async (content) => {
                         dispatch.setMarkdown(content);
                         await save(content);

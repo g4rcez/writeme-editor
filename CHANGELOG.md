@@ -2,6 +2,23 @@
 
 ### Improvements
 
+- Split CI into a five-minute-target PR gate and full nightly/release verification.
+  Discover browser, production and native regressions automatically, shard browser
+  execution, and replace feature-specific lint/typecheck lists with directory scopes.
+  Run editor/build units independently from static checks, fit sixteen four-worker
+  browser shards within twenty runner slots, and install only the used headless shell.
+  Disable continuous video/trace frames only in the fast gate while retaining failure
+  screenshots, DOM/source traces and full-run recordings. Bind fixture edits to the
+  new note's editor and save once without autosave delays or redundant reloads;
+  dedicated typing/autosave/persistence coverage remains. Temporarily defer Linux
+  Chromium browser execution in the PR fast gate while troubleshooting hosted
+  timeouts; local and full/nightly browser runs remain unchanged.
+- Use explicit `.mts` Vite and Tailwind configs plus `import.meta.dirname` for
+  root-relative paths, removing module-mode and native-loader warnings without
+  changing package-wide module semantics.
+- Label note-card selection controls for assistive technology and keep toolbar help
+  from covering the open table-of-contents panel.
+
 - Reorganize Settings around the writer's workflow: writing preferences,
   reusable templates, optional AI assistance, then workspace maintenance.
 - Simplify the settings sidebar and pages with navigation-first grouping,
@@ -11,10 +28,28 @@
 
 ### Bug Fixes
 
+- Open nested agenda tasks at their Markdown source, and focus following
+  top-level board tasks by source identity instead of a mismatched card index.
+- Reuse renamed daily notes in filesystem workspaces from Today and Calendar,
+  and preserve legacy filename-derived journal dates through title changes.
+- Ignore obsolete daily-note navigation after changing the day, leaving the
+  route, or closing the Calendar dialog; completed storage writes remain saved.
+- Render uneven-width Markdown tables when opening or pasting notes, including
+  large documents, without dropping overflow cells or their formatting.
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag
   verification, rather than treating dialog closure as editor readiness.
+- Wait for rendered app content rather than external-resource load completion in
+  browser route setup.
+- Wait for each note route's own editor to become ready before tab, floating,
+  and daily-note persistence assertions; close the saved daily-note tab before
+  returning Home to verify it reopens without losing edits, and position
+  text-command carets explicitly at the selected block's end.
+- Return through the app's Home action between completion notes instead of
+  navigating to `/` and reopening the persisted active tab.
+- Keep sticky-note controls reachable on narrow screens while preserving
+  default-zoom paper coverage, zoom, and pan.
 
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 

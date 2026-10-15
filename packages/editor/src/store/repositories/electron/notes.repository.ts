@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay } from "date-fns";
+import { findDailyQuickNote } from "@/lib/journal-date";
 import type { NoteSnapshot } from "../../note-history";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
@@ -365,22 +365,13 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     }
 
     async getQuicknoteByDate(date: Date): Promise<Note | null> {
-        const datetime = new Date(date);
-        const start = startOfDay(datetime).toISOString();
-        const end = endOfDay(datetime).toISOString();
-
-        const metadata = await window.electronAPI.db.notes.getQuicknoteByDate(start, end);
+        const metadata = findDailyQuickNote(await this.getAll(), date);
         if (!metadata) return null;
-
-        const settings = SettingsService.load();
-        const mode = getStorageMode(settings.directory);
-        if (mode === "filesystem" && metadata.filePath) {
-            const readResult = await window.electronAPI.fs.readFile(metadata.filePath);
-            if (readResult.success) {
-                return Note.parse({ ...metadata, content: readResult.content });
-            }
+        const note = await this.getOne(metadata.id);
+        if (!note) {
+            throw new Error("The existing daily quick note could not be read. It was not changed.");
         }
-        return Note.parse({ ...metadata, content: metadata.content || "" });
+        return note;
     }
 
     async getTemplates(): Promise<Note[]> {

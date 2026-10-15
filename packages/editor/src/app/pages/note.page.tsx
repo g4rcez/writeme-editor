@@ -38,6 +38,7 @@ import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
 import { useEditorPanes } from "../hooks/use-editor-panes";
+import { useAgendaSource } from "../hooks/use-agenda-source";
 
 const PdfNoteView = lazy(() =>
     import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })),
@@ -268,6 +269,7 @@ export default function NotePage() {
     const params = useParams<{ noteId: string }>();
     const id = params.noteId;
     const note = state.note;
+    useAgendaSource(note?.id === id ? id ?? null : null);
     const hasRouteNoteTab = id ? state.tabs.some((tab) => isNoteTabForNoteId(tab, id)) : false;
     const isLoading = note === null;
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);

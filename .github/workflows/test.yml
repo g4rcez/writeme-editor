@@ -3,13 +3,23 @@ name: Shared checks
 on:
     workflow_dispatch:
     workflow_call:
+        inputs:
+            fast:
+                type: boolean
+                default: false
 
 permissions:
     contents: read
 
 jobs:
-    test:
+    units:
+        name: Editor and build units (${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }})
         runs-on: ubuntu-latest
+        timeout-minutes: ${{ inputs.fast && 5 || 15 }}
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: ${{ fromJSON(inputs.fast && '[1,2]' || '[1]') }}
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -17,50 +27,40 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
             - run: npm ci
+            - run: npm test -- --shard=${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }}
+
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: ${{ inputs.fast && 5 || 15 }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
+            - run: npm ci
             - run: npm run typecheck
             - run: npm run mobile:typecheck
-            - run: npm test
-            - name: Check handwriting, tab and platform test code
+            - name: Check independent math and CLI units
+              run: |
+                  npm test --workspace @writeme.dev/math
+                  npm run build --workspace @writeme.dev/math
+                  npm test --workspace @writeme.dev/cli
+            - name: Lint tests and platform infrastructure
               run: >-
                   npm exec oxlint -- --deny-warnings
-                  packages/editor/src/lib/freehand-note.ts
-                  packages/editor/src/lib/freehand-ink.ts
-                  packages/editor/src/app/components/freehand-canvas.tsx
-                  packages/editor/src/app/components/freehand-note-links.tsx
-                  packages/editor/src/app/components/freehand-note-view.tsx
-                  tests/e2e/freehand-note.spec.ts
-                  tests/e2e/freehand-production.spec.ts
-                  tests/e2e/freehand-lifecycle.spec.ts
-                  tests/e2e/freehand-pens.spec.ts
-                  tests/e2e/freehand-pen-dots.spec.ts
-                  tests/e2e/editor-tabs.spec.ts
-                  tests/e2e/tab-rename.spec.ts
-                  tests/e2e/recently-closed-tab.spec.ts
-                  tests/e2e/editor-tab-drag.spec.ts
-                  tests/device/freehand-note.spec.ts
-                  tests/native/freehand-note.spec.ts
-                  tests/helpers/handwriting.ts
-                  tests/helpers/packaged-electron.ts
+                  tests
+                  build
                   playwright.*.config.ts
-                  scripts/playwright-platform.ts
-                  scripts/e2e-options.mts
-                  scripts/e2e.mts
-                  scripts/e2e.test.mts
-                  scripts/pr-checks.mts
-                  scripts/pr-checks.test.mts
-            - name: Check handwriting and tab test types
-              run: >-
-                  npm exec tsc -- --ignoreConfig --noEmit --strict --target ES2022
-                  --module ESNext --moduleResolution bundler --skipLibCheck --allowImportingTsExtensions
-                  tests/e2e/freehand-lifecycle.spec.ts
-                  tests/e2e/freehand-pens.spec.ts
-                  tests/e2e/freehand-pen-dots.spec.ts
-                  tests/e2e/editor-tabs.spec.ts
-                  tests/e2e/tab-rename.spec.ts
-                  tests/e2e/recently-closed-tab.spec.ts
-                  tests/e2e/editor-tab-drag.spec.ts
-                  tests/device/freehand-note.spec.ts
-                  playwright.*.config.ts
+                  scripts/playwright-*.ts
+                  scripts/e2e*.mts
+                  scripts/pr-checks*.mts
+                  scripts/build-*.ts
+            - name: Check strict test and platform infrastructure types
+              run: npm exec tsc -- --project tests/tsconfig.json
             - name: Check platform runner contracts
               run: npm run test:e2e:runner
             - name: Check merge gate contracts

@@ -8,7 +8,7 @@
             "ignoreDependencies": ["@fontsource-variable/jetbrains-mono", "conventional-changelog-cli"],
             "ignoreBinaries": ["act"],
             "vite": {
-                "config": ["vite.config.ts", "vite.{main,preload,renderer}.config.mts"]
+                "config": ["vite.config.mts", "vite.{main,preload,renderer}.config.mts"]
             }
         },
         "packages/cli": {},

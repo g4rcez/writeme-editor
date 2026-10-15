@@ -118,17 +118,20 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     const destination = page.getByRole("region", { name: "In Progress column" });
     await destination.scrollIntoViewIfNeeded();
     const from = await handle.boundingBox();
-    const target = await destination.boundingBox();
-    if (!from || !target) throw new Error("Missing drag target");
-    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    const card = await page.locator(".wm-task-card").filter({ has: handle }).boundingBox();
+    const target = await destination.locator(".wm-task-column-cards").boundingBox();
+    if (!from || !card || !target) throw new Error("Missing drag target");
+    const grab = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+    await page.mouse.move(grab.x, grab.y);
     await page.mouse.down();
-    await page.mouse.move(target.x + target.width / 2, target.y + 110, { steps: 20 });
+    await page.mouse.move(target.x + grab.x - card.x, target.y + grab.y - card.y, { steps: 20 });
     await expect(preview).toBeVisible();
+    await expect(destination.getByRole("button", { name: "Drop task here", exact: true })).toBeVisible();
     await expect(destination).toHaveClass(/wm-task-column--over/);
     expect(await preview.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
     await page.mouse.up();
     await expect(preview).toHaveCount(0);
-    await expect(page.getByRole("region", { name: "In Progress column" })).toContainText("Keyboard card");
+    await expect(destination).toContainText("Keyboard card");
     await expect(page.locator(".wm-task-save")).toHaveText("Saved");
     await page.reload();
     await expect(page.getByRole("region", { name: "In Progress column" })).toContainText("Keyboard card");
@@ -246,11 +249,24 @@ test("keeps the board readable in light and dark themes", async ({ cleanPage: pa
     await addTask(page, "Plan next release");
     await addTask(page, "Review task Markdown");
     const url = page.url();
+    const noteTab = page.locator(`[data-tab-id][href="${new URL(url).pathname}"]`);
+    const workspaceNavigation = page.getByRole("navigation", { name: "Workspace navigation", exact: true });
+    const settingsNavigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
+    const appearanceLink = settingsNavigation.getByRole("link", { name: "Appearance", exact: true });
     for (const theme of ["light", "dark"]) {
-        await page.goto("/settings/appearance");
+        await workspaceNavigation.getByRole("button", { name: "Settings", exact: true }).click();
+        await expect(appearanceLink).toBeVisible();
+        await appearanceLink.click();
+        await expect(page).toHaveURL(/\/settings\/appearance$/);
+        await expect(
+            page.getByRole("main", { name: "Settings" }).getByRole("heading", { name: "Appearance", exact: true }),
+        ).toBeVisible();
         await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
         await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
-        await page.goto(url);
+        await expect(noteTab).toBeVisible();
+        await noteTab.click();
+        await expect(page).toHaveURL(url);
+        await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Edit Plan next release", exact: true })).toBeVisible();
         await expect(page.locator(".wm-task-header")).toBeVisible();
         const colors = await page

@@ -76,8 +76,8 @@ for (const filesystem of [false, true]) {
                 );
             }
             await page.evaluate(async () => {
-                const notes = await window.electronAPI.db.getAll("notes");
-                const source = notes.find((note: Note) => !note.metadata?.commentSourceId);
+                const notes = await window.electronAPI.db.getAll<Note>("notes");
+                const source = notes.find((note) => !note.metadata?.commentSourceId);
                 if (!source) throw new Error("Source note missing");
                 const filePath = source.filePath?.replace(/advisor\.md$/, "renamed-advisor.md") ?? null;
                 if (source.filePath && filePath) {

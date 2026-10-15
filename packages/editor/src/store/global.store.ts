@@ -1,5 +1,7 @@
 import { v7 as uuid } from "uuid";
+import { Dates } from "@/lib/dates";
 import { isElectron } from "@/lib/is-electron";
+import { getJournalDate } from "@/lib/journal-date";
 import { rememberClosedTab } from "@/lib/recently-closed-tabs";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import {
@@ -602,10 +604,12 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         const state = get.state();
         const existing = state.notes.find((n) => n.id === id) ?? (state.note?.id === id ? state.note : null);
         if (!existing) return state;
+        const journalDate = getJournalDate(existing);
 
         const updated = Object.assign(Object.create(Object.getPrototypeOf(existing)), existing, {
           title: title.trim() || "Untitled",
           updatedAt: new Date(),
+          metadata: journalDate ? { ...existing.metadata, journalDate: Dates.isoDate(journalDate) } : existing.metadata,
         }) as Note;
         await repositories.notes.save(updated);
         const notes = state.notes.map((n) => (n.id === id ? updated : n));

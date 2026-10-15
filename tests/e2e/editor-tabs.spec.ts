@@ -62,6 +62,10 @@ test.describe("Note tab lifecycle", () => {
         const tabs = page.locator(tabSelector);
         await tabs.filter({ hasText: "Middle document" }).click();
         await expect(page).toHaveURL(middleUrl);
+        await expect(tabs.filter({ hasText: "Middle document" })).toHaveAttribute("aria-current", "page");
+        await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toHaveText(
+            "Middle document content.",
+        );
 
         await page.getByRole("button", { name: "Close Middle document", exact: true }).click();
         await expect(tabs).toHaveText(["First neighbor", "Last neighbor"]);
