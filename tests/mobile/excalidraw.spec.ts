@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { Note, NoteType } from "../../packages/editor/src/store/note";
 
 type DrawingElement = { type: string; width: number; height: number; isDeleted: boolean };
-type DrawingScene = { elements: DrawingElement[]; appState?: Record<string, unknown> };
+type DrawingScene = { elements: DrawingElement[]; appState?: Record<string, unknown>; title?: string };
 
 async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene> {
     return page.evaluate(async (embedded) => {
@@ -11,7 +11,7 @@ async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene>
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
-        const notes = await new Promise<Array<{ content: string }>>((resolve, reject) => {
+        const notes = await new Promise<Array<{ content: string; title: string }>>((resolve, reject) => {
             const request = db.transaction("notes").objectStore("notes").getAll();
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
@@ -20,7 +20,9 @@ async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene>
         const json = notes[0]?.content.match(/```(?:json|excalidraw)\n([\s\S]*?)\n```/)?.[1];
         if (!json) return { elements: [] };
         const data = JSON.parse(json);
-        return embedded ? { elements: data } : { elements: data.elements, appState: data.appState };
+        return embedded
+            ? { elements: data, title: notes[0]?.title }
+            : { elements: data.elements, appState: data.appState };
     }, embedded);
 }
 
@@ -62,6 +64,9 @@ for (const embedded of [false, true]) {
             );
             await page.goto(`/note/${note.id}`);
             await page.reload();
+        }
+        if (embedded) {
+            await expect.poll(async () => (await readDrawing(page, true)).title).toBe("Embedded drawing");
         }
         const canvas = page.locator(".excalidraw__canvas.interactive");
         await expect(canvas).toBeVisible();

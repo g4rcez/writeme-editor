@@ -18,6 +18,8 @@
   changing package-wide module semantics.
 - Label note-card selection controls for assistive technology and keep toolbar help
   from covering the open table-of-contents panel.
+- Expand the research excerpt dialog and compact the notebook PDF and writing toolbars.
+- Use `@g4rcez/components` buttons for handwriting controls instead of custom button styling.
 
 - Reorganize Settings around the writer's workflow: writing preferences,
   reusable templates, optional AI assistance, then workspace maintenance.
@@ -28,6 +30,7 @@
 
 ### Bug Fixes
 
+- Render PDF attachments as paginated documents in the media viewer instead of broken image previews.
 - Open nested agenda tasks at their Markdown source, and focus following
   top-level board tasks by source identity instead of a mismatched card index.
 - Reuse renamed daily notes in filesystem workspaces from Today and Calendar,
@@ -36,6 +39,16 @@
   route, or closing the Calendar dialog; completed storage writes remain saved.
 - Render uneven-width Markdown tables when opening or pasting notes, including
   large documents, without dropping overflow cells or their formatting.
+- Preserve successful research excerpts when another window saves a stale formatted
+  or Markdown draft. Conflicting saves retain the local draft and explain how to
+  reconcile it without replacing the saved note. Metadata-only updates and published
+  heading renames preserve dirty drafts without causing false save conflicts.
+- Keep selected highlights, entity spellings, list markers, setext underlines,
+  dollar delimiters, and indentation literal through excerpt save and reload.
+- Refuse excerpt appends into unfinished Markdown fences or HTML comments without
+  changing the destination; close the unfinished block before retrying.
+- Reject native conditional writes atomically when the destination was trashed,
+  preserving its content and avoiding a false successful send.
 - Keep the formatted editor's native caret synchronized with Vim motions so
   a delayed mouse selection cannot redirect the next editing command.
 - Wait for the cold note route to finish loading before desktop tab-drag

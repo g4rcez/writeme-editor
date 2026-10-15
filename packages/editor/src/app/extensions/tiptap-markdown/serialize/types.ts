@@ -19,5 +19,6 @@ declare module "prosemirror-markdown" {
         marks: Record<string, MarkSerializerInfo>;
         inlines: Array<{ start: number; end?: number; delimiter: string }>;
         inTable: boolean;
+        atBlockStart: boolean;
     }
 }

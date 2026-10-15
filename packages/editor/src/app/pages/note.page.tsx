@@ -33,6 +33,7 @@ import { MeetingNotePanel } from "../components/meeting-note-panel";
 import { NoteFooter } from "../components/note-footer";
 import { NoteHistoryButton, NoteHistoryDialog } from "../components/note-history-dialog";
 import { NoteToolTooltip } from "../components/note-tool-tooltip";
+import { SendResearchExcerpt } from "../components/send-research-excerpt";
 import { TableOfContents } from "../components/table-of-contents";
 import { TaskNoteView } from "../components/task-note-view";
 import { Editor } from "../editor";
@@ -606,6 +607,7 @@ export default function NotePage() {
                         <span aria-hidden="true">·</span>
                         <i>{getReadingTime(note.content).formatted}</i>
                     </div>
+                    <SendResearchExcerpt key={note.id} source={{ kind: "article", note }} />
                 </header>
             ) : !fileName || note.tags.length > 0 ? (
                 <header className="writeme-editor-column writeme-note-header empty:border-b-transparent border-b border-border/50 print:hidden">

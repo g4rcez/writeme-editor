@@ -91,7 +91,17 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
     const first = editor.getByRole("link", { name: "Review this sentence.", exact: true });
     await expect(first).toHaveAttribute("href", "./comments_advisor.md#review-this-sentence");
     await expect(first.locator("mark")).toHaveText("Review this sentence.");
+    await page
+        .getByRole("complementary", { name: "Sentence comments" })
+        .getByRole("button", { name: "Close comments" })
+        .click();
+    await selectWords(page, "Review this sentence.", 1);
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.type(" More writing after commenting.");
+    await page.keyboard.press("Control+s");
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
     await page.reload();
+    await expect(editor).toContainText("More writing after commenting.");
     await first.click();
     await expect(page).toHaveURL(sourceUrl);
     const panel = page.getByRole("complementary", { name: "Sentence comments" });
