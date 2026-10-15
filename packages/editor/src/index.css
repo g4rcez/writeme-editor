@@ -439,11 +439,71 @@ code {
 }
 
 .drag-handle.hide {
-    @apply opacity-0;
+    @apply pointer-events-none opacity-0;
 }
 
 .drag-handle.visible {
-    @apply opacity-100;
+    @apply pointer-events-auto opacity-100;
+}
+
+.drag-handle:focus-visible,
+.drag-handle.block-actions-hover,
+.drag-handle.block-actions-open,
+.drag-handle.block-actions-touch {
+    @apply pointer-events-auto opacity-100;
+}
+
+.drag-handle:focus-visible {
+    outline: 2px solid var(--var-color-primary);
+    outline-offset: 2px;
+    mask-image: none;
+    -webkit-mask-image: none;
+    border-radius: 4px;
+}
+
+.writeme-block-actions-menu {
+    @apply fixed z-[100] w-60 overflow-y-auto rounded-lg border border-border bg-background p-1 text-sm text-foreground shadow-lg;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+}
+
+.writeme-block-actions-menu[hidden] {
+    display: none;
+}
+
+.writeme-block-actions-menu button {
+    @apply flex min-h-9 w-full items-center rounded-md px-3 py-2 text-left hover:bg-muted/50 focus-visible:bg-muted/50 disabled:cursor-not-allowed disabled:text-muted-foreground;
+}
+
+.writeme-block-actions-menu button:focus-visible {
+    outline: 2px solid var(--var-color-primary);
+    outline-offset: -2px;
+}
+
+.writeme-block-actions-divider {
+    @apply my-1 border-t border-border;
+}
+
+.writeme-block-actions-heading,
+.writeme-block-actions-help {
+    @apply px-3 py-2 text-xs text-muted-foreground;
+}
+
+@media (pointer: coarse), (max-width: 639px) {
+    .drag-handle {
+        width: 44px;
+        height: 44px;
+    }
+
+    .writeme-block-actions-menu button {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .drag-handle {
+        transition: none;
+    }
 }
 
 .ProseMirror .selectedCell:after {
