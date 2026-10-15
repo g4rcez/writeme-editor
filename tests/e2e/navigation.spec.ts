@@ -1,11 +1,9 @@
 import { expect, goHome, test } from "./fixtures";
 
 test.describe("Navigation", () => {
-    test.beforeEach(async ({ cleanPage }) => {
-        await goHome(cleanPage);
-    });
 
     test("All notes link goes to notes list", async ({ cleanPage: page }) => {
+        await goHome(page);
         await page.getByRole("link", { name: "All notes" }).click();
         await expect(page).toHaveURL(/\/notes$/);
         await expect(page.getByRole("heading", { name: "All notes" })).toBeVisible();
@@ -25,6 +23,7 @@ test.describe("Navigation", () => {
     });
 
     test("create-note dialog closes on Escape", async ({ cleanPage: page }) => {
+        await goHome(page);
         await page
             .getByRole("main")
             .getByRole("button", { name: /^New note/ })
@@ -38,13 +37,14 @@ test.describe("Navigation", () => {
     });
 
     test("global ⌘N opens the create note dialog from any page", async ({ cleanPage: page }) => {
-        await page.goto("/settings");
+        await page.goto("/settings", { waitUntil: "domcontentloaded" });
         await expect(page.getByRole("heading", { name: "Quick Settings" })).toBeVisible();
 
         await page.keyboard.press("ControlOrMeta+n");
         await expect(page.getByRole("dialog", { name: /Create new note/i })).toBeVisible();
     });
     test("constrains sidebar resizing to the available desktop width", async ({ cleanPage: page }) => {
+        await goHome(page);
         await page.emulateMedia({ reducedMotion: "reduce" });
         await page.setViewportSize({ width: 1000, height: 800 });
 
@@ -79,6 +79,7 @@ test.describe("Navigation", () => {
     });
 
     test("opens the sidebar as an in-bounds mobile drawer", async ({ cleanPage: page }) => {
+        await goHome(page);
         await page.setViewportSize({ width: 375, height: 812 });
 
         const openSidebar = page.getByRole("button", { name: "Open workspace menu" });

@@ -25,18 +25,22 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.keyboard.press("Control+s");
         await expect(status).toHaveText("Saved", { timeout: 4000 });
         await expect(editor).toContainText("First draft and later edits");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first()).toContainText(
             "First draft and later edits",
         );
     });
 
     test(`saves ${mode} immediately with Ctrl/Cmd+S and clears the tab dot`, async ({ cleanPage: page }) => {
-        await goHome(page);
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         await page.getByRole("checkbox").first().uncheck();
         await page.getByRole("button", { name: "Save Editor", exact: true }).click();
-        await goHome(page);
+        const confirmation = page.getByRole("dialog", { name: "Success", exact: true });
+        await expect(confirmation).toBeVisible();
+        await confirmation.getByRole("button", { name: "OK", exact: true }).click();
+        await expect(confirmation).toBeHidden();
+        await page.getByRole("button", { name: "Go to home", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await createNote(page, "Save shortcut");
         if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
         const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
@@ -50,7 +54,7 @@ for (const mode of ["formatted", "markdown"] as const) {
             await expect(status).toHaveText("Saved", { timeout: 2000 });
             await expect(page.locator('[data-save-status="unsaved"]')).toHaveCount(0);
         }
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first()).toContainText(
             "Meta saved text",
         );
@@ -80,7 +84,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await editor.click();
     await page.keyboard.press("Control+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator(".ProseMirror").first()).toContainText("Retry this draft");
 });
 
@@ -123,7 +127,7 @@ for (const route of ["quicknote", "mathnote"]) {
         await expect(status).toHaveText("Unsaved changes");
         await page.keyboard.press("Control+s");
         await expect(status).toHaveText("Saved", { timeout: 2000 });
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.locator(".ProseMirror").first()).toContainText("floating saved text");
     });
 }

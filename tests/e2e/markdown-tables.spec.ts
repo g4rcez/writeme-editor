@@ -92,7 +92,7 @@ for (const [tableCase, tableMarkdown] of tableCases) {
                     },
                     { title, content: markdown },
                 );
-                await page.goto("/notes", { waitUntil: "domcontentloaded" });
+                await page.getByRole("link", { name: "All notes", exact: true }).click();
                 await expect(page).toHaveURL(/\/notes$/);
                 await expect(page.getByRole("heading", { name: "All notes", exact: true })).toBeVisible();
                 await page.getByRole("link", { name: title, exact: true }).click();
