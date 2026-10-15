@@ -30,12 +30,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./packages/editor/src"),
-      "@writeme.dev/math": path.resolve(__dirname, "./packages/math/src"),
+      "@": path.resolve(import.meta.dirname, "./packages/editor/src"),
+      "@writeme.dev/math": path.resolve(import.meta.dirname, "./packages/math/src"),
       ...(!buildProfile.features.autoUpdate
         ? {
           "virtual:pwa-register/react": path.resolve(
-            __dirname,
+            import.meta.dirname,
             "./packages/editor/src/lib/pwa-register-stub.ts",
           ),
         }
