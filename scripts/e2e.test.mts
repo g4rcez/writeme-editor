@@ -241,10 +241,10 @@ test("completion video is operator-only discovery rather than a skipped regressi
     assert.ok(demo.length > 0);
 });
 
-test("twelve parallel browser shards cover every discovered scenario exactly once", () => {
+test("sixteen parallel browser shards cover every discovered scenario exactly once", () => {
     const complete = list("linux", "browser");
-    const shards = Array.from({ length: 12 }, (_, index) =>
-        list("linux", "browser", [`--shard=${index + 1}/12`, "--workers=2"]),
+    const shards = Array.from({ length: 16 }, (_, index) =>
+        list("linux", "browser", [`--shard=${index + 1}/16`, "--workers=2"]),
     );
     const keys = (tests: ListedTest[]): string[] => tests.map((test) => `${test.project}:${test.id}`).sort();
     assert.deepEqual(keys(shards.flat()), keys(complete));

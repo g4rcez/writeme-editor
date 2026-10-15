@@ -5,6 +5,10 @@
 - Split CI into a five-minute-target PR gate and full nightly/release verification.
   Discover browser, production and native regressions automatically, shard browser
   execution, and replace feature-specific lint/typecheck lists with directory scopes.
+  Run editor/build units independently from static checks and repair previously
+  omitted browser scenarios without adding retries or dropping behavioral coverage.
+- Label note-card selection controls for assistive technology and keep toolbar help
+  from covering the open table-of-contents panel.
 
 - Reorganize Settings around the writer's workflow: writing preferences,
   reusable templates, optional AI assistance, then workspace maintenance.

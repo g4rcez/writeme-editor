@@ -12,6 +12,23 @@ permissions:
     contents: read
 
 jobs:
+    units:
+        name: Editor and build units (${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }})
+        runs-on: ubuntu-latest
+        timeout-minutes: ${{ inputs.fast && 5 || 15 }}
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: ${{ fromJSON(inputs.fast && '[1,2]' || '[1]') }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - run: npm ci
+            - run: npm test -- --shard=${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }}
+
     test:
         runs-on: ubuntu-latest
         timeout-minutes: ${{ inputs.fast && 5 || 15 }}
@@ -27,7 +44,6 @@ jobs:
             - run: npm ci
             - run: npm run typecheck
             - run: npm run mobile:typecheck
-            - run: npm test
             - name: Check independent math and CLI units
               run: |
                   npm test --workspace @writeme.dev/math

@@ -135,7 +135,11 @@ export const TableOfContents = () => {
 
     return (
         <div ref={popoverRef} className="writeme-note-table-of-contents relative shrink-0 print:hidden">
-            <NoteToolTooltip title="Table of contents" description="Browse this note’s headings and jump to a section.">
+            <NoteToolTooltip
+                title="Table of contents"
+                description="Browse this note’s headings and jump to a section."
+                enabled={!isOpen}
+            >
                 <Button
                     size="icon"
                     aria-expanded={isOpen}

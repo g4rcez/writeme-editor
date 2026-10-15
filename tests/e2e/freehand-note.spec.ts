@@ -303,7 +303,7 @@ test.describe("sticky note links", () => {
 
     test("moves sticky links with keyboard and touch and keeps missing targets removable", async ({
         cleanPage: page,
-    }, testInfo) => {
+    }) => {
         await createHandwrittenNote(page);
         const targetId = await seedLinkTargets(page);
         await addProjectLink(page);
@@ -325,6 +325,24 @@ test.describe("sticky note links", () => {
         await expect(handle).toHaveAttribute("aria-pressed", "false");
         await expect.poll(async () => (await readNotebook(page)).pages[0]!.links![0]!.x).toBeLessThan(before.x);
         await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
+        await page.evaluate(async (id) => {
+            const { repositories } = await import("/packages/editor/src/store/global.store.ts");
+            await repositories.notes.delete(id);
+        }, targetId);
+        await page.reload();
+        await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
+        await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
+        await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
+        await expect(page.locator(".wm-sticky-link")).toHaveCount(0);
+        await expect.poll(async () => (await readNotebook(page)).pages[0]?.links?.length).toBe(0);
+    });
+
+    test("keeps sticky link controls usable across themes and mobile orientations", async ({
+        cleanPage: page,
+    }, testInfo) => {
+        await createHandwrittenNote(page);
+        await seedLinkTargets(page);
+        await addProjectLink(page);
         const sourceUrl = page.url();
         for (const theme of ["dark", "light"]) {
             await page.goto("/settings/appearance");
@@ -363,16 +381,6 @@ test.describe("sticky note links", () => {
                 await page.screenshot({ path: testInfo.outputPath(`sticky-${theme}-${width}.png`) });
             }
         }
-        await page.evaluate(async (id) => {
-            const { repositories } = await import("/packages/editor/src/store/global.store.ts");
-            await repositories.notes.delete(id);
-        }, targetId);
-        await page.reload();
-        await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
-        await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
-        await expect(page.locator(".wm-sticky-link")).toHaveCount(0);
-        await expect.poll(async () => (await readNotebook(page)).pages[0]?.links?.length).toBe(0);
     });
 
     test("handles an empty picker and retains sticky links when saving fails", async ({ cleanPage: page }) => {
