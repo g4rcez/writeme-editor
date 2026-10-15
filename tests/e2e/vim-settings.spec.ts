@@ -138,13 +138,22 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
 
     test("saves one init.ts and applies its keybinds to both editors after reload", async ({ cleanPage: page }) => {
         const url = await note(page);
-        await page.goto("/settings/vim");
+        await page
+            .getByRole("navigation", { name: "Workspace navigation" })
+            .getByRole("button", { name: "Settings", exact: true })
+            .click();
+        await page
+            .getByRole("navigation", { name: "Settings sections" })
+            .getByRole("link", { name: "Vim", exact: true })
+            .click();
         await expect(page.getByRole("heading", { name: "Vim", exact: true })).toBeVisible();
         await page.getByRole("checkbox", { name: "Enable Vim mode in all editors" }).check();
         await page.getByRole("textbox", { name: "Global init.ts" }).fill(init);
         await page.getByRole("button", { name: "Save Vim", exact: true }).click();
         await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.");
-        await page.goto(url);
+        await page.getByRole("link", { name: "Global Vim configuration", exact: true }).click();
+        await expect(page).toHaveURL(url);
+        await page.reload();
         const formatted = page.getByRole("textbox", { name: "Note editor", exact: true });
         await expect(formatted).toHaveAttribute("data-neovim-mode", "normal");
         await expect(formatted).toHaveAttribute("aria-busy", "false");

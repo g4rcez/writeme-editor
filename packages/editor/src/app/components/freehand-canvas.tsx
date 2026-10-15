@@ -1134,7 +1134,7 @@ export function FreehandCanvas({
                     style={{
                         width: fixedPages
                             ? `calc(min(100cqw - 2rem, var(--wm-book-height) * ${PAPER_WIDTH / pageHeight}) * ${zoom})`
-                            : `max(${zoom * 100}%, calc(100cqh * ${PAPER_WIDTH / pageHeight} * ${zoom}))`,
+                            : `${zoom * 100}%`,
                         transform: pdfGestures.offset ? `translateX(${pdfGestures.offset}px)` : undefined,
                     }}
                 >

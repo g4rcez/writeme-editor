@@ -33,7 +33,7 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
             - run: npm ci --ignore-scripts
-            - run: npm exec playwright -- install --with-deps --only-shell chromium
+            - run: npm exec playwright -- install --only-shell chromium
             - name: Run all browser regressions
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.target.platform }} --suite browser

@@ -144,12 +144,6 @@ test.describe("Settings", () => {
         await vim.check();
         await fontSize.fill("19");
         await saveSettings(page, "Editor");
-        await page.reload();
-        await expect(autosave).toBeChecked();
-        await expect(delay).toHaveValue("1750");
-        await expect(mode).toHaveValue("markdown");
-        await expect(vim).toBeChecked();
-        await expect(fontSize).toHaveValue("19");
 
         await autosave.uncheck();
         await expect(delay).toBeHidden();

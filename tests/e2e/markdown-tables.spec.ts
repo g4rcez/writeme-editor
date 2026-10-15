@@ -67,7 +67,9 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             cleanPage: page,
         }, testInfo) => {
             await page.setViewportSize({ width: 1440, height: 1000 });
-            await goHome(page);
+            if (action === "pasting") {
+                await goHome(page);
+            }
             const title = `Table ${tableCase} ${size} ${action}`;
             // One long paragraph crosses the 50,000-character worker threshold without exercising line chunking.
             const markdown =
@@ -75,6 +77,8 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             let noteUrl: string;
             if (action === "opening") {
                 // Desktop browser builds have no Markdown file import; seed storage, then open through All notes.
+                // Establish same-origin access for browser-only imports without waiting for home-screen initialization.
+                await page.goto("/", { waitUntil: "commit" });
                 const id = await page.evaluate(
                     async ({ title, content }) => {
                         // Browser-only modules must load inside the page, not in Playwright's Node process.

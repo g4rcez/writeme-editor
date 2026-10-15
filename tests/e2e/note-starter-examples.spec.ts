@@ -17,11 +17,10 @@ async function settleForCapture(page: Page): Promise<void> {
 }
 
 async function openNoteDialog(page: Page): Promise<void> {
-    await goHome(page);
+    if (page.url() === "about:blank") await goHome(page);
     await page
-        .getByRole("main")
-        .getByRole("button", { name: /^New note/ })
-        .first()
+        .locator(".writeme-app-header-actions")
+        .getByRole("button", { name: "New note", exact: true })
         .click();
 }
 
@@ -87,7 +86,6 @@ test("resets cancelled choices and creates a blank note", async ({ cleanPage: pa
 });
 
 test("keeps saved templates available and mutually exclusive with starters", async ({ cleanPage: page }) => {
-    await goHome(page);
     await page.goto("/settings/templates");
     await page.getByRole("button", { name: "New Template" }).click();
     const templateDialog = page.getByRole("dialog", { name: "Create new template" });

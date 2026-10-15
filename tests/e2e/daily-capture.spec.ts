@@ -1,11 +1,10 @@
-import { goHome, test, expect } from "./fixtures";
+import { test, expect } from "./fixtures";
 
 test.describe("daily quick capture", () => {
     test("applies a template once and reopens the same daily note without replacing edits", async ({
         cleanPage: page,
     }) => {
-        await goHome(page);
-        await page.goto("/settings/templates");
+        await page.goto("/settings/templates", { waitUntil: "domcontentloaded" });
         await page.getByRole("button", { name: "New Template" }).click();
 
         const templateDialog = page.getByRole("dialog", { name: "Create new template" });
@@ -37,7 +36,7 @@ test.describe("daily quick capture", () => {
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");
         await expect(editor).toHaveAttribute("aria-busy", "false");
-        await expect(editor).toContainText("Daily capture template");
+        await expect(editor.getByRole("heading", { name: "Daily capture template", exact: true })).toHaveCount(1);
         await expect(editor).toContainText("Template body");
         await editor.locator("p").last().click();
         await page.keyboard.press("End");
@@ -48,7 +47,8 @@ test.describe("daily quick capture", () => {
         await expect(saveStatus).toHaveText("Unsaved changes");
         await editor.press("ControlOrMeta+s");
         await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await expect(page).toHaveURL(quickNoteUrl);
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");
         await expect(editor).toHaveAttribute("aria-busy", "false");
@@ -60,6 +60,7 @@ test.describe("daily quick capture", () => {
         await expect(activeTab).toHaveCount(0);
         await expect(page).toHaveURL("/");
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+
         await page
             .getByRole("main", { name: "Home" })
             .getByRole("button", { name: "Find a note", exact: true })
@@ -70,7 +71,15 @@ test.describe("daily quick capture", () => {
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");
         await expect(editor).toHaveAttribute("aria-busy", "false");
+        await expect(editor.getByRole("heading", { name: "Daily capture template", exact: true })).toHaveCount(1);
         await expect(editor).toContainText("Template body");
         await expect(editor).toContainText("User addition");
+
+        const reopenedTab = page.locator('[data-tab-id][aria-current="page"]');
+        await reopenedTab.getByRole("button").click();
+        await expect(reopenedTab).toHaveCount(0);
+        await expect(page).toHaveURL("/");
+        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+
     });
 });

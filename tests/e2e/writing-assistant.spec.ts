@@ -252,12 +252,11 @@ async function waitForAutosave(page: Page): Promise<void> {
 }
 
 async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
-    await goHome(page);
+    if (page.url() === "about:blank") await goHome(page);
     if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
     await page
-        .getByRole("main")
-        .getByRole("button", { name: /^New note/ })
-        .first()
+        .locator(".writeme-app-header-actions")
+        .getByRole("button", { name: "New note", exact: true })
         .click();
     const dialog = page.getByRole("dialog", { name: /Create new note/i });
     const titleInput = dialog.getByTitle("Note title");
@@ -267,10 +266,10 @@ async function createNote(page: Page, title: string, mode: EditorMode, content: 
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/note\/[^/]+$/);
 
-    await page
+    const modeButton = page
         .getByRole("toolbar", { name: "Note tools" })
-        .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true })
-        .click();
+        .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true });
+    if ((await modeButton.getAttribute("aria-pressed")) !== "true") await modeButton.click();
     const editor = page.locator(editorSelector(mode)).first();
     await expect(editor).toBeVisible();
     await editor.fill(content);
