@@ -21,6 +21,7 @@ Agent guidelines for the Writeme Electron application.
 
 ## Pull Requests
 
+- Include at least one screenshot and a short video in every PR, showing the changed feature in use.
 - Deliver repository changes through a pull request. Do not push changes directly to `main`.
 - Run the complete fast PR gate for every pull request and every new commit: shared checks, all Linux Chromium browser regressions in shards, and the current Linux MCP contract. See `docs/testing/platform-playwright.md` for the five-minute execution target.
 - Merge only when every required PR check succeeds for the latest commit and the branch is up to date with `main`. Full native/mobile/cross-platform builds and integrations run nightly and must pass for the release commit before publishing.

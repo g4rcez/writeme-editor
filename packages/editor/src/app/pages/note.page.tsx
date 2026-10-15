@@ -3,6 +3,7 @@ import { BracketsCurlyIcon } from "@phosphor-icons/react/dist/csr/BracketsCurly"
 import { ColumnsIcon } from "@phosphor-icons/react/dist/csr/Columns";
 import { PrinterIcon } from "@phosphor-icons/react/dist/csr/Printer";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
+import clsx from "clsx";
 import { type PropsWithChildren, lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { saveNoteTitle } from "@/app/note-title";
@@ -37,8 +38,8 @@ import { TaskNoteView } from "../components/task-note-view";
 import { Editor } from "../editor";
 import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
-import { useEditorPanes } from "../hooks/use-editor-panes";
 import { useAgendaSource } from "../hooks/use-agenda-source";
+import { useEditorPanes } from "../hooks/use-editor-panes";
 
 const PdfNoteView = lazy(() =>
     import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })),
@@ -75,7 +76,9 @@ function NoteReferences({ note, notes }: { note: Note; notes: Note[] }) {
 }
 
 const Wrapper = (props: PropsWithChildren<{ paneMode?: boolean }>) => (
-    <div className={`writeme-editor-page${props.paneMode ? " writeme-editor-page--panes" : ""}`}>{props.children}</div>
+    <div className={`writeme-editor-page @container${props.paneMode ? " writeme-editor-page--panes" : ""}`}>
+        {props.children}
+    </div>
 );
 
 const PrintableNoteHeader = ({ note }: { note: Note }) => {
@@ -148,7 +151,7 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
     ];
 
     return (
-        <fieldset className="writeme-editor-mode-toggle">
+        <fieldset className="m-0 flex min-w-0 items-center gap-1 border-0 p-0">
             <legend className="sr-only">Editor mode</legend>
             {modes.map((item) => {
                 const active = item.value === mode;
@@ -160,6 +163,7 @@ const EditorModeToggle = ({ mode, onChange }: { mode: EditorMode; onChange: (mod
                         aria-pressed={active}
                         onClick={() => onChange(item.value)}
                         theme={active ? "ghost-primary" : "ghost-muted"}
+                        className="h-8 min-h-8 max-sm:h-11 max-sm:min-h-11 pointer-coarse:h-11 pointer-coarse:min-h-11"
                     >
                         {item.label}
                     </Button>
@@ -175,7 +179,7 @@ const VimModeToggle = ({ enabled, onChange }: { enabled: boolean; onChange: (ena
             size="tiny"
             checked={enabled}
             id="markdown-vim-mode"
-            container="writeme-markdown-vim-mode-toggle"
+            container="inline-flex min-h-8 shrink-0 items-center whitespace-nowrap text-xs text-muted-foreground max-sm:min-h-11 pointer-coarse:min-h-11"
             onChange={(event) => onChange(event.target.checked)}
         >
             Vim mode
@@ -190,7 +194,7 @@ function AddFrontmatterButton() {
                 type="button"
                 size="icon"
                 theme="ghost-muted"
-                className="writeme-note-tool-button"
+                className="size-8 min-h-8 shrink-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11 text-base"
                 aria-label="Add frontmatter"
                 icon={<BracketsCurlyIcon aria-hidden="true" />}
                 onClick={addFrontmatterToCurrentEditor}
@@ -209,7 +213,7 @@ function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: (
                 type="button"
                 size="icon"
                 theme={open ? "primary" : "ghost-muted"}
-                className="writeme-note-tool-button"
+                className="size-8 min-h-8 shrink-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11 text-base"
                 aria-label={open ? "Exit pane mode" : "Open pane mode"}
                 aria-pressed={open}
                 icon={<ColumnsIcon aria-hidden="true" />}
@@ -227,7 +231,7 @@ function ExportNoteButton({ note }: { note: Note }) {
                 type="button"
                 size="icon"
                 theme="ghost-muted"
-                className="writeme-note-tool-button"
+                className="size-8 min-h-8 shrink-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11 text-base"
                 aria-label={`Export ${note.title}`}
                 icon={<PrinterIcon aria-hidden="true" />}
                 onClick={() => printDocument({ title: note.title })}
@@ -236,7 +240,17 @@ function ExportNoteButton({ note }: { note: Note }) {
     );
 }
 
-function FavoriteNoteButton({ note, disabled, onToggle }: { note: Note; disabled: boolean; onToggle: () => void }) {
+function FavoriteNoteButton({
+    note,
+    disabled,
+    onToggle,
+    className = "",
+}: {
+    note: Note;
+    disabled: boolean;
+    onToggle: () => void;
+    className?: string;
+}) {
     const label = note.favorite ? "Remove from favorites" : "Add to favorites";
 
     return (
@@ -252,7 +266,11 @@ function FavoriteNoteButton({ note, disabled, onToggle }: { note: Note; disabled
                 type="button"
                 size="icon"
                 theme="ghost-muted"
-                className={`writeme-note-tool-button ${note.favorite ? "text-warn" : ""}`}
+                className={clsx(
+                    "size-8 min-h-8 shrink-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11 text-base",
+                    note.favorite && "text-warn",
+                    className,
+                )}
                 aria-label={label}
                 aria-pressed={note.favorite}
                 disabled={disabled}
@@ -269,7 +287,7 @@ export default function NotePage() {
     const params = useParams<{ noteId: string }>();
     const id = params.noteId;
     const note = state.note;
-    useAgendaSource(note?.id === id ? id ?? null : null);
+    useAgendaSource(note?.id === id ? (id ?? null) : null);
     const hasRouteNoteTab = id ? state.tabs.some((tab) => isNoteTabForNoteId(tab, id)) : false;
     const isLoading = note === null;
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
@@ -446,19 +464,30 @@ export default function NotePage() {
     const hasRichEditor = !isJson && !isExcalidraw && !isFreehand && !isPdf && !isTask;
 
     const noteToolbar = (
-        <div className="writeme-note-toolbar" role="toolbar" aria-label="Note tools">
-            <div className="writeme-note-toolbar-leading">
+        <div
+            className={clsx(
+                "mx-auto flex min-h-9 w-full min-w-0 max-w-3xl items-center justify-between gap-2 border-b border-border/50 bg-background print:hidden",
+                "@max-2xl:relative @max-2xl:flex-col @max-2xl:justify-center @max-2xl:gap-y-1 @max-2xl:py-2",
+                paneMode ? "shrink-0 px-4" : "px-3",
+            )}
+            role="toolbar"
+            aria-label="Note tools"
+        >
+            <div className="order-1 flex min-w-0 shrink-0 items-center justify-start @max-2xl:order-2 @max-2xl:w-full @max-2xl:justify-center">
                 {hasRichEditor ? (
-                    <div className="writeme-note-editor-controls">
+                    <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-3 @max-2xl:w-full @max-2xl:justify-center">
                         {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
                         <VimModeToggle enabled={vimMode} onChange={changeVimMode} />
                     </div>
                 ) : null}
             </div>
-            <span className="writeme-note-toolbar-file-name" title={note.filePath ?? undefined}>
+            <span
+                className="order-2 min-w-0 max-w-xs flex-1 truncate text-center text-sm font-medium text-foreground/80 @max-2xl:order-1 @max-2xl:w-full @max-2xl:flex-none"
+                title={note.filePath ?? undefined}
+            >
                 {fileName || note.title || "Untitled"}
             </span>
-            <fieldset className="writeme-note-actions-group writeme-note-toolbar-actions">
+            <fieldset className="order-3 m-0 flex shrink-0 flex-nowrap items-center justify-end gap-1 border-0 p-0 @max-2xl:w-full @max-2xl:justify-center">
                 <legend className="sr-only">Note actions</legend>
                 {hasRichEditor && !isLatexSource ? <AddFrontmatterButton /> : null}
                 {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}
@@ -501,14 +530,21 @@ export default function NotePage() {
             <FreehandNoteView
                 key={note.id}
                 note={note}
-                actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
+                actions={
+                    <FavoriteNoteButton
+                        note={note}
+                        disabled={favoriteSaving}
+                        onToggle={toggleFavorite}
+                        className="min-h-11 min-w-11"
+                    />
+                }
             />
         );
     }
 
     if (isJson || isExcalidraw) {
         return (
-            <div className="writeme-note-special-page -my-8 flex h-[calc(100%+4rem)] min-h-0 w-full flex-col bg-background">
+            <div className="@container -my-8 flex h-[calc(100%+4rem)] min-h-0 w-full flex-col bg-background">
                 {noteToolbar}
                 <header className="writeme-editor-column writeme-note-header border-b border-border/50 print:hidden">
                     <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
