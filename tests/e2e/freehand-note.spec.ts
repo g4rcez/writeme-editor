@@ -161,7 +161,7 @@ async function seedLinkTargets(page: Page): Promise<string> {
         for (const note of targets) await repositories.notes.save(note);
         return target.id;
     });
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
     return targetId;
 }
@@ -345,7 +345,15 @@ test.describe("sticky note links", () => {
         await addProjectLink(page);
         const sourceUrl = page.url();
         for (const theme of ["dark", "light"]) {
-            await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
+            await page.setViewportSize({ width: 1280, height: 720 });
+            await page
+                .getByRole("navigation", { name: "Workspace navigation", exact: true })
+                .getByRole("button", { name: "Settings", exact: true })
+                .click();
+            const settingsNavigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
+            await expect(settingsNavigation).toBeVisible();
+            await settingsNavigation.getByRole("link", { name: "Appearance", exact: true }).click();
+            await expect(page.getByRole("heading", { name: "Appearance", exact: true })).toBeVisible();
             await closeWorkspaceMenu(page);
             await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
             await page.getByRole("button", { name: "Save Appearance" }).click();
@@ -517,7 +525,7 @@ test.describe("production safeguards", () => {
     }) => {
         await createHandwrittenNote(page);
         const second = await context.newPage();
-        await second.goto(page.url());
+        await second.goto(page.url(), { waitUntil: "domcontentloaded" });
         await expect(second.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
         await draw(page);
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
@@ -537,7 +545,7 @@ test.describe("production safeguards", () => {
         expect(recovered.pages[0]!.strokes).toHaveLength(1);
         expect(recovered.pages[0]!.strokes).not.toEqual(savedInk);
         await second.close();
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
         expect((await readNotebook(page)).pages[0]!.strokes).toEqual(savedInk);
     });

@@ -151,7 +151,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         await page.getByRole("textbox", { name: "Global init.ts" }).fill(init);
         await page.getByRole("button", { name: "Save Vim", exact: true }).click();
         await expect(page.getByRole("status")).toContainText("Vim settings saved for all editors.");
-        await page.getByRole("link", { name: "Global Vim configuration", exact: true }).click();
+        await page.getByRole("link", { name: /^Global Vim configuration(?:\s|$)/ }).click();
         await expect(page).toHaveURL(url);
         await page.reload();
         const formatted = page.getByRole("textbox", { name: "Note editor", exact: true });

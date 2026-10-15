@@ -38,8 +38,8 @@
   text-command carets explicitly at the selected block's end.
 - Return through the app's Home action between completion notes instead of
   navigating to `/` and reopening the persisted active tab.
-- Keep default-zoom freehand paper within the viewport at narrow widths so
-  sticky-note controls remain reachable while zoom and pan continue to work.
+- Keep sticky-note controls reachable on narrow screens while preserving
+  default-zoom paper coverage, zoom, and pan.
 
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 

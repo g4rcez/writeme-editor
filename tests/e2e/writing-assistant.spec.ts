@@ -224,7 +224,7 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
 }
 
 async function saveGeminiConfiguration(page: Page, withCredentials = true): Promise<void> {
-    await page.goto("/settings/ai");
+    await page.goto("/settings/ai", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "AI" })).toBeVisible();
     await page.getByRole("button", { name: /Google Gemini/ }).click();
 
@@ -239,7 +239,10 @@ async function saveGeminiConfiguration(page: Page, withCredentials = true): Prom
     }
 
     await page.getByRole("button", { name: "Save Configuration" }).click();
-    await expect(page.getByText("AI configuration saved.")).toBeVisible();
+    const confirmation = page.getByRole("dialog", { name: "Success", exact: true });
+    await expect(confirmation).toContainText("AI configuration saved.");
+    await confirmation.getByRole("button", { name: "OK", exact: true }).click();
+    await expect(confirmation).toBeHidden();
 }
 
 function editorSelector(mode: EditorMode): string {
