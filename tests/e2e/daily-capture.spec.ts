@@ -55,7 +55,10 @@ test.describe("daily quick capture", () => {
         await expect(editor).toContainText("Template body");
         await expect(editor).toContainText("User addition");
 
-        await page.getByRole("button", { name: "Go to home", exact: true }).click();
+        const activeTab = page.locator('[data-tab-id][aria-current="page"]');
+        await activeTab.getByRole("button").click();
+        await expect(activeTab).toHaveCount(0);
+        await expect(page).toHaveURL("/");
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await page
             .getByRole("main", { name: "Home" })
@@ -63,6 +66,7 @@ test.describe("daily quick capture", () => {
             .first()
             .click();
         await page.getByText("Open today's note", { exact: true }).click();
+        await expect(page).toHaveURL(new RegExp(`/quicknote/${noteId}$`));
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");
         await expect(editor).toHaveAttribute("aria-busy", "false");

@@ -31,8 +31,9 @@
 - Wait for the cold note route to finish loading before desktop tab-drag
   verification, rather than treating dialog closure as editor readiness.
 - Wait for each note route's own editor to become ready before tab, floating,
-  and daily-note persistence assertions, and position text-command carets
-  explicitly at the selected block's end.
+  and daily-note persistence assertions; close the saved daily-note tab before
+  returning Home to verify it reopens without losing edits, and position
+  text-command carets explicitly at the selected block's end.
 - Return through the app's Home action between completion notes instead of
   navigating to `/` and reopening the persisted active tab.
 
