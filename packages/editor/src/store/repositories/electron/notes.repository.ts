@@ -627,6 +627,58 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             });
         }
 
+        if (existing.filePath && (await window.electronAPI.app.isCliEditorFile(existing.filePath))) {
+            const writeResult = await window.electronAPI.fs.compareAndWriteFile(
+                existing.filePath,
+                expected.content,
+                content,
+            );
+            if (!writeResult.success) {
+                if (writeResult.stale) return null;
+                throw new Error(`Failed to conditionally update external editor file: ${writeResult.error}`);
+            }
+
+            const updatedAtIso = updatedAt.toISOString();
+            const updated = await window.electronAPI.db.notes.updateContentIfUnchanged(
+                id,
+                {
+                    title: expected.title,
+                    updatedAt: expected.updatedAt.toISOString(),
+                    content: expected.content,
+                },
+                content,
+                updatedAtIso,
+                updatedBy,
+            );
+            if (!updated) {
+                const latest = await this.getOne(id);
+                if (latest && latest.content !== content) {
+                    const reconcileResult = await window.electronAPI.fs.compareAndWriteFile(
+                        existing.filePath,
+                        content,
+                        latest.content,
+                    );
+                    if (!reconcileResult.success && !reconcileResult.stale) {
+                        throw new Error(
+                            `Failed to reconcile external editor file after a concurrent update: ${reconcileResult.error}`,
+                        );
+                    }
+                }
+                return null;
+            }
+
+            const lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : updatedAt;
+            return Note.parse({
+                ...updated,
+                filePath: existing.filePath,
+                content,
+                fileSize: writeResult.fileSize ?? content.length,
+                lastSynced,
+                updatedAt,
+                updatedBy,
+            });
+        }
+
         const updated = await window.electronAPI.db.notes.updateContentIfUnchanged(
             id,
             {

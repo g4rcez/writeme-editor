@@ -79,6 +79,9 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
 
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
         await expect(editor).toContainText("Original prompt text.", { timeout: 30_000 });
+        expect(await page.evaluate((filePath) => window.electronAPI.app.isCliEditorFile(filePath), promptFile)).toBe(
+            true,
+        );
         await editor.fill("Updated prompt from Writeme.");
         await editor.press("ControlOrMeta+s");
         await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {

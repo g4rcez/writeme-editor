@@ -392,7 +392,9 @@ export const notesIpcHandler = async () => {
             ) {
                 return { success: false, error: "Note content exceeds the supported size limit." };
             }
-            const access = validatePaths(filePath, path.dirname(filePath));
+            const access = isCliEditorFilePath(filePath)
+                ? validatePaths(filePath)
+                : validatePaths(filePath, path.dirname(filePath));
             if (!access.success) return access;
             try {
                 const pathSafety = await validateWritablePath(filePath);

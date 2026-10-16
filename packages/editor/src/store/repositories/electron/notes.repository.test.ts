@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Note, NoteType } from "../../note";
 import { SettingsService } from "../../settings";
 import { NotesRepository } from "./notes.repository";
-import { Note, NoteType } from "../../note";
 
 const get = vi.fn();
 const getAll = vi.fn();
@@ -15,6 +15,9 @@ const updateContent = vi.fn();
 const deleteFile = vi.fn();
 const readDirRecursive = vi.fn();
 const readFile = vi.fn();
+const updateContentIfUnchanged = vi.fn();
+const compareAndWriteFile = vi.fn();
+const isCliEditorFile = vi.fn();
 const tabs = { deleteByNoteId: vi.fn() };
 
 beforeEach(() => {
@@ -33,9 +36,18 @@ beforeEach(() => {
                 get,
                 getAll,
                 save,
-                notes: { hardDelete, getTrashed, getRecentNotes, getHistory, saveSnapshot, updateContent },
+                notes: {
+                    hardDelete,
+                    getTrashed,
+                    getRecentNotes,
+                    getHistory,
+                    saveSnapshot,
+                    updateContent,
+                    updateContentIfUnchanged,
+                },
             },
-            fs: { deleteFile, readDirRecursive, readFile },
+            fs: { deleteFile, readDirRecursive, readFile, compareAndWriteFile },
+            app: { isCliEditorFile },
         },
     });
 });
@@ -190,7 +202,6 @@ describe("Electron NotesRepository", () => {
         );
     });
 
-
     it("keeps workspace notes and excludes sibling or traversal paths when a scan fails", async () => {
         const timestamp = new Date("2026-01-01T00:00:00.000Z");
         const metadata = (id: string, filePath: string) => ({
@@ -248,6 +259,82 @@ describe("Electron NotesRepository", () => {
             expect.any(String),
             undefined,
         );
+    });
+    it("saves database-backed CLI editor changes to the authorized source file", async () => {
+        const timestamp = new Date("2026-10-01T12:00:00.000Z");
+        const note = Note.parse({
+            id: "cli-prompt",
+            title: "Claude prompt",
+            content: "Original prompt",
+            filePath: "/tmp/claude-prompt.md",
+            updatedAt: timestamp,
+        });
+        vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
+        get.mockResolvedValue(note);
+        isCliEditorFile.mockResolvedValue(true);
+        compareAndWriteFile.mockResolvedValue({
+            success: true,
+            fileSize: 28,
+            lastModified: "2026-10-01T12:01:00.000Z",
+        });
+        updateContentIfUnchanged.mockResolvedValue({
+            ...note,
+            content: "Updated prompt from Writeme.",
+        });
+
+        const result = await new NotesRepository(tabs as never).updateContentIfUnchanged(
+            note.id,
+            { title: note.title, updatedAt: timestamp, content: note.content },
+            "Updated prompt from Writeme.",
+        );
+
+        expect(compareAndWriteFile).toHaveBeenCalledWith(
+            note.filePath,
+            "Original prompt",
+            "Updated prompt from Writeme.",
+        );
+        expect(updateContentIfUnchanged).toHaveBeenCalledWith(
+            note.id,
+            { title: note.title, updatedAt: timestamp.toISOString(), content: note.content },
+            "Updated prompt from Writeme.",
+            expect.any(String),
+            undefined,
+        );
+        expect(result).toMatchObject({
+            content: "Updated prompt from Writeme.",
+            filePath: note.filePath,
+            fileSize: 28,
+            lastSynced: new Date("2026-10-01T12:01:00.000Z"),
+        });
+    });
+
+    it("does not update CLI note metadata when its source file changed concurrently", async () => {
+        const timestamp = new Date("2026-10-01T12:00:00.000Z");
+        const note = Note.parse({
+            id: "cli-prompt",
+            title: "Claude prompt",
+            content: "Original prompt",
+            filePath: "/tmp/claude-prompt.md",
+            updatedAt: timestamp,
+        });
+        vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
+        get.mockResolvedValue(note);
+        isCliEditorFile.mockResolvedValue(true);
+        compareAndWriteFile.mockResolvedValue({
+            success: false,
+            stale: true,
+            error: "Note content changed since review.",
+        });
+
+        await expect(
+            new NotesRepository(tabs as never).updateContentIfUnchanged(
+                note.id,
+                { title: note.title, updatedAt: timestamp, content: note.content },
+                "Updated prompt from Writeme.",
+            ),
+        ).resolves.toBeNull();
+
+        expect(updateContentIfUnchanged).not.toHaveBeenCalled();
     });
 
     it("retains metadata when deleting the note file fails", async () => {
