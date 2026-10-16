@@ -71,20 +71,24 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
     const menu = page.getByRole("listbox", { name: "Slash command suggestions" });
     await expect(menu.getByText("Footnote", { exact: true })).toBeVisible();
     await menu.getByText("Footnote", { exact: true }).click();
+    await page.getByLabel("Footnote name").fill("bibliography");
+    await page.getByRole("button", { name: "Insert", exact: true }).click();
 
-    const reference = page.getByRole("button", { name: "Footnote fn-1", exact: true });
+    const reference = page.getByRole("button", { name: "Footnote bibliography", exact: true });
     await expect(reference).toBeVisible();
     await expect(
-        editor.locator('[data-footnote-definition="fn-1"]').getByRole("button", { name: "Return to reference" }),
+        editor
+            .locator('[data-footnote-definition="bibliography"]')
+            .getByRole("button", { name: "Return to reference" }),
     ).toBeEnabled();
     await reference.hover();
     await expect(page.getByRole("dialog")).toContainText("This footnote definition is empty.");
 
     await reference.click();
     await page.getByRole("button", { name: "Go to definition", exact: true }).click();
-    const definition = editor.locator('[data-footnote-definition="fn-1"]');
+    const definition = editor.locator('[data-footnote-definition="bibliography"]');
     await expect(definition).toBeVisible();
-    await expect(definition.getByText("Footnote fn-1", { exact: true })).toBeVisible();
+    await expect(definition.getByText("Footnote bibliography", { exact: true })).toBeVisible();
     await definition.locator("p").click();
     await page.keyboard.type("Source details in this footnote.");
     await definition.getByRole("button", { name: "Return to reference" }).click();
@@ -97,15 +101,18 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
 
     await page.getByRole("button", { name: "Markdown", exact: true }).click();
     const rawEditor = page.locator(".cm-content").first();
-    await expect(rawEditor).toContainText("[^fn-1]");
-    await expect(rawEditor).toContainText("[^fn-1]:");
+    await expect(rawEditor).toContainText("[^bibliography]");
+    await expect(rawEditor).toContainText("[^bibliography]:");
+    await expect(rawEditor).not.toContainText("[^fn-1]");
     await page.getByRole("button", { name: "Formatted", exact: true }).click();
     await page.reload();
 
     const reloadedEditor = page.getByRole("textbox", { name: "Note editor", exact: true });
-    await expect(reloadedEditor.getByRole("button", { name: "Footnote fn-1", exact: true })).toBeVisible();
-    await expect(reloadedEditor.locator('[data-footnote-definition="fn-1"]')).toBeVisible();
-    await expect(reloadedEditor.locator('[data-footnote-definition="fn-1"] p')).toHaveText(
+    await expect(
+        reloadedEditor.getByRole("button", { name: "Footnote bibliography", exact: true }),
+    ).toBeVisible();
+    await expect(reloadedEditor.locator('[data-footnote-definition="bibliography"]')).toBeVisible();
+    await expect(reloadedEditor.locator('[data-footnote-definition="bibliography"] p')).toHaveText(
         "Source details in this footnote.",
     );
 });

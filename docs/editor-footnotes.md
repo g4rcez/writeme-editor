@@ -1,11 +1,11 @@
 # Markdown footnotes
 
-Use `/Footnote` in the formatted editor to insert a reference and an editable
-definition. Writeme selects the new definition so you can write its content.
-Hover, focus, or tap a reference to preview it. Choose **Go to definition** to
-edit it, then **Return to reference** to continue writing. With a keyboard,
-focus a reference and press ArrowDown to reach **Go to definition**. Escape
-closes its preview.
+Use `/Footnote` in the formatted editor to name a reference and its editable
+definition, or leave the name blank to use the next available `fn-N` ID.
+Writeme selects the new definition so you can write its content. Hover, focus,
+or tap a reference to preview it. Choose **Go to definition** to edit it, then
+**Return to reference** to continue writing. With a keyboard, focus a reference
+and press ArrowDown to reach **Go to definition**. Escape closes its preview.
 
 Footnotes use ordinary Markdown:
 
@@ -22,11 +22,11 @@ A claim [^source] and another claim [^source].
 ```
 
 Continuation blocks use four spaces or one tab; Writeme writes four spaces.
-Definition content supports the editor's existing Markdown formatting. IDs
-may contain non-whitespace characters except brackets and backslashes. Change
-an ID and its references together in the Markdown view. New footnotes choose
-the first available `fn-N` ID, reserving IDs in both references and definitions.
-Existing IDs are preserved through editing, Markdown view, clipboard, and saves.
+Definition content supports the editor's existing Markdown formatting. IDs may
+contain non-whitespace characters except brackets and backslashes. Custom IDs
+must be unique; invalid or already-used names are rejected. Change an existing
+ID and its references together in the Markdown view. Automatic IDs reserve
+names in both references and definitions.
 
 In table cells, escape pipes in reference IDs (`[^a\|b]`); the corresponding
 definition keeps its logical ID (`[^a|b]: Source`). Writeme writes these table

@@ -97,7 +97,7 @@ describe("Markdown footnotes", () => {
         });
         const original = Node.prototype.descendants;
         let traversals = 0;
-        const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function (this: Node, callback) {
+        const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function(this: Node, callback) {
             if (this.type.name === "doc") traversals++;
             return original.call(this, callback);
         });
@@ -128,6 +128,23 @@ describe("Markdown footnotes", () => {
             expect(returnToReference(editor)).toBe(true);
             expect(editor.state.selection.from).toBe(5);
             expect(editor.getMarkdown()).toContain("[^fn-1]: Source details");
+        } finally {
+            editor.destroy();
+        }
+    });
+    it("inserts custom IDs and rejects invalid or already-used names", () => {
+        const editor = createEditor("Body [^source]\n\n[^source]: Existing source");
+        try {
+            editor.commands.setTextSelection(1);
+            expect(editor.commands.insertFootnote({ id: "source" })).toBe(false);
+            expect(editor.commands.insertFootnote({ id: "not a valid id" })).toBe(false);
+            expect(editor.commands.insertFootnote({ id: "new-source" })).toBe(true);
+            expect(positions(editor, "footnoteReference").map(({ node }) => node.attrs.id)).toEqual([
+                "new-source",
+                "source",
+            ]);
+            expect(editor.getMarkdown()).toContain("[^new-source]");
+            expect(editor.getMarkdown()).toContain("[^new-source]:");
         } finally {
             editor.destroy();
         }

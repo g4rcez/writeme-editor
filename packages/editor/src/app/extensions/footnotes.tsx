@@ -154,7 +154,7 @@ declare module "@tiptap/core" {
     }
     interface Commands<ReturnType> {
         footnotes: {
-            insertFootnote: () => ReturnType;
+            insertFootnote: (options?: { id?: string }) => ReturnType;
         };
     }
 }
@@ -319,31 +319,36 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
     addCommands() {
         return {
             insertFootnote:
-                () =>
-                ({ state, tr, dispatch }) => {
-                    if (state.selection.$from.parent.type.spec.code) return false;
-                    const used = tr.docChanged ? buildFootnoteIndex(tr.doc) : footnoteIndexKey.getState(state);
-                    let index = 1;
-                    while (used?.has(`fn-${index}`)) index++;
-                    const id = `fn-${index}`;
-                    const { to } = state.selection;
-                    if (dispatch) {
-                        const referenceType = state.schema.nodes.footnoteReference;
-                        const paragraphType = state.schema.nodes.paragraph;
-                        const definitionType = state.schema.nodes.footnoteDefinition;
-                        if (!referenceType || !paragraphType || !definitionType) return false;
-                        const reference = referenceType.create({ id });
-                        const paragraph = paragraphType.create();
-                        const definition = definitionType.create({ id }, paragraph);
-                        tr.insert(to, reference);
-                        const definitionPosition = tr.doc.content.size;
-                        tr.insert(definitionPosition, definition);
-                        tr.setSelection(TextSelection.create(tr.doc, definitionPosition + 2));
-                        tr.setMeta("footnoteReturnPosition", to);
-                        tr.scrollIntoView();
-                    }
-                    return true;
-                },
+                (options) =>
+                    ({ state, tr, dispatch }) => {
+                        if (state.selection.$from.parent.type.spec.code) return false;
+                        const used = tr.docChanged ? buildFootnoteIndex(tr.doc) : footnoteIndexKey.getState(state);
+                        let id = options?.id?.trim();
+                        if (id) {
+                            if (!/^[^\s[\]\\]+$/u.test(id) || used?.has(id)) return false;
+                        } else {
+                            let index = 1;
+                            while (used?.has(`fn-${index}`)) index++;
+                            id = `fn-${index}`;
+                        }
+                        const { to } = state.selection;
+                        if (dispatch) {
+                            const referenceType = state.schema.nodes.footnoteReference;
+                            const paragraphType = state.schema.nodes.paragraph;
+                            const definitionType = state.schema.nodes.footnoteDefinition;
+                            if (!referenceType || !paragraphType || !definitionType) return false;
+                            const reference = referenceType.create({ id });
+                            const paragraph = paragraphType.create();
+                            const definition = definitionType.create({ id }, paragraph);
+                            tr.insert(to, reference);
+                            const definitionPosition = tr.doc.content.size;
+                            tr.insert(definitionPosition, definition);
+                            tr.setSelection(TextSelection.create(tr.doc, definitionPosition + 2));
+                            tr.setMeta("footnoteReturnPosition", to);
+                            tr.scrollIntoView();
+                        }
+                        return true;
+                    },
         };
     },
 });
