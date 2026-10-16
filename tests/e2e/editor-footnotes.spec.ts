@@ -1,12 +1,64 @@
-import { createNote, expect, goHome, test } from "./fixtures";
 import type { Page } from "@playwright/test";
+import { createNote, expect, goHome, test } from "./fixtures";
 
 async function importMarkdown(page: Page, markdown: string): Promise<void> {
     await page.getByRole("button", { name: "Markdown", exact: true }).click();
     await page.locator(".cm-content").first().fill(markdown);
     await page.getByRole("button", { name: "Formatted", exact: true }).click();
-    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", { timeout: 15_000 });
+    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
+        timeout: 15_000,
+    });
 }
+
+async function editorDocument(page: Page): Promise<unknown> {
+    return page.evaluate(async () => {
+        // This import must run in the browser realm to inspect the live editor, not in Playwright's Node process.
+        const modulePath = "/packages/editor/src/app/editor-global-ref.tsx";
+        const { editorGlobalRef } = await import(modulePath);
+        return editorGlobalRef.current.getJSON();
+    });
+}
+
+test("keeps pipe IDs in tables and ordinary caret-labelled links through raw, clipboard and saved reload", async ({
+    cleanPage: page,
+    context,
+}) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await goHome(page);
+    await createNote(page, "Portable footnote IDs and links");
+    const markdown =
+        "| Claim |\n| --- |\n| A [^a\\|b]. |\n\n[^manual](https://example.com) [^guide][target] [^real](not a valid link) \\[^literal].\n\n[target]: https://example.org\n\n[^a|b]: **Source**\n\n[^real]: Parenthetical source";
+    await importMarkdown(page, markdown);
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const original = await editorDocument(page);
+    for (let i = 0; i < 2; i++) {
+        await expect(editor.locator("tr")).toHaveCount(2);
+        await expect(editor.locator("tr").last().locator("td")).toHaveCount(1);
+        await expect(editor.locator("td")).toHaveText("A a|b.");
+        await expect(editor.locator('td [data-footnote-reference="a|b"]')).toHaveCount(1);
+        await expect(editor.locator('a[href="https://example.com"]')).toHaveText("^manual");
+        await expect(editor.locator('a[href="https://example.org"]')).toHaveText("^guide");
+        await expect(editor.locator('[data-footnote-reference="real"]')).toHaveCount(1);
+        await expect(editor.locator('[data-footnote-reference="literal"]')).toHaveCount(0);
+        await expect(editor).toContainText("(not a valid link) [^literal].");
+        await editor.locator("p").first().click();
+        await editor.press("ControlOrMeta+A");
+        await page.keyboard.press("ControlOrMeta+C");
+        const copied = await page.evaluate(() => navigator.clipboard.readText());
+        expect(copied).toContain("| A [^a\\|b]. |");
+        expect(copied).toContain("[^a|b]: **Source**");
+        await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        await expect(page.locator(".cm-content").first()).toContainText("| A [^a\\|b]. |");
+        await page.getByRole("button", { name: "Formatted", exact: true }).click();
+        expect(await editorDocument(page)).toEqual(original);
+        await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
+        await page.reload();
+        await expect(editor.locator('[data-footnote-reference="a|b"]')).toHaveCount(1);
+        expect(await editorDocument(page)).toEqual(original);
+    }
+});
 
 test("authors, previews, navigates, saves and round-trips Markdown footnotes", async ({ cleanPage: page }) => {
     await goHome(page);
@@ -22,7 +74,9 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
 
     const reference = page.getByRole("button", { name: "Footnote fn-1", exact: true });
     await expect(reference).toBeVisible();
-    await expect(editor.locator('[data-footnote-definition="fn-1"]').getByRole("button", { name: "Return to reference" })).toBeEnabled();
+    await expect(
+        editor.locator('[data-footnote-definition="fn-1"]').getByRole("button", { name: "Return to reference" }),
+    ).toBeEnabled();
     await reference.hover();
     await expect(page.getByRole("dialog")).toContainText("This footnote definition is empty.");
 
@@ -51,13 +105,18 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
     const reloadedEditor = page.getByRole("textbox", { name: "Note editor", exact: true });
     await expect(reloadedEditor.getByRole("button", { name: "Footnote fn-1", exact: true })).toBeVisible();
     await expect(reloadedEditor.locator('[data-footnote-definition="fn-1"]')).toBeVisible();
-    await expect(reloadedEditor.locator('[data-footnote-definition="fn-1"] p')).toHaveText("Source details in this footnote.");
+    await expect(reloadedEditor.locator('[data-footnote-definition="fn-1"] p')).toHaveText(
+        "Source details in this footnote.",
+    );
 });
 
 test("keyboard previews expose missing definitions, duplicates, and return navigation", async ({ cleanPage: page }) => {
     await goHome(page);
     await createNote(page, "Footnote edge cases");
-    await importMarkdown(page, "Missing [^missing]. First [^cite] and second [^cite].\n\n[^cite]: Original source\n\n[^cite]: Duplicate source\n\n[^orphan]: Unreferenced source");
+    await importMarkdown(
+        page,
+        "Missing [^missing]. First [^cite] and second [^cite].\n\n[^cite]: Original source\n\n[^cite]: Duplicate source\n\n[^orphan]: Unreferenced source",
+    );
     const missing = page.getByRole("button", { name: "Footnote missing", exact: true });
     await missing.focus();
     await expect(page.getByRole("dialog")).toContainText("Footnote definition “missing” is missing.");
@@ -80,13 +139,20 @@ test("keyboard previews expose missing definitions, duplicates, and return navig
     const definitions = page.locator('[data-footnote-definition="cite"]');
     await expect(definitions).toHaveCount(2);
     await expect(definitions.first()).toContainText("Duplicate ID; references open the first definition.");
-    await expect.poll(() => definitions.first().evaluate((element) => element.contains(window.getSelection()?.anchorNode ?? null))).toBe(true);
+    await expect
+        .poll(() =>
+            definitions.first().evaluate((element) => element.contains(window.getSelection()?.anchorNode ?? null)),
+        )
+        .toBe(true);
     await definitions.first().getByRole("button", { name: "Return to reference" }).click();
     await expect(references.nth(1)).toBeFocused();
     await expect(page.locator('[data-footnote-definition="orphan"]')).toContainText("No references to this footnote.");
 });
 
-test("pastes portable footnotes and preserves shared definitions through deletion and undo", async ({ cleanPage: page, context }) => {
+test("pastes portable footnotes and preserves shared definitions through deletion and undo", async ({
+    cleanPage: page,
+    context,
+}) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await goHome(page);
     await createNote(page, "Clipboard footnotes");
@@ -98,7 +164,9 @@ test("pastes portable footnotes and preserves shared definitions through deletio
     const references = editor.getByRole("button", { name: "Footnote a", exact: true });
     await expect(references).toHaveCount(2);
     await expect(editor.locator('[data-footnote-definition="a"] strong')).toHaveText("Shared source");
-    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", { timeout: 15_000 });
+    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
+        timeout: 15_000,
+    });
     await editor.locator("p").first().click();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");
     await page.keyboard.press("ArrowRight");
@@ -146,7 +214,9 @@ test.describe("footnotes on a narrow touch screen", () => {
         await action.scrollIntoViewIfNeeded();
         await action.tap();
         const definition = page.locator('[data-footnote-definition="touch"]');
-        await expect.poll(() => definition.evaluate((element) => element.contains(window.getSelection()?.anchorNode ?? null))).toBe(true);
+        await expect
+            .poll(() => definition.evaluate((element) => element.contains(window.getSelection()?.anchorNode ?? null)))
+            .toBe(true);
         await definition.getByRole("button", { name: "Return to reference" }).tap();
         await expect(reference).toBeFocused();
         await page.screenshot({ path: testInfo.outputPath("footnote-touch.png") });
@@ -156,7 +226,10 @@ test.describe("footnotes on a narrow touch screen", () => {
 test("imports shared and multiline definitions and keeps rich/raw roundtrips", async ({ cleanPage: page }) => {
     await goHome(page);
     await createNote(page, "Imported footnotes");
-    await importMarkdown(page, "First [^cite] and second [^cite].\n\n[^cite]: A **formatted** source\n    with a second line.");
+    await importMarkdown(
+        page,
+        "First [^cite] and second [^cite].\n\n[^cite]: A **formatted** source\n    with a second line.",
+    );
 
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     await expect(editor.getByRole("button", { name: "Footnote cite", exact: true })).toHaveCount(2);
@@ -178,20 +251,36 @@ test("preserves footnotes through the large-document worker and saved reload", a
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await goHome(page);
     await createNote(page, "Large footnote import");
-    const markdown = "Context ".repeat(6500) + "\n\nBody [^large] and again [^large].\n\n[^large]: A **large-document source**.\n\n    A second definition paragraph.";
+    const code = "first line\n\n**keep literal**";
+    const markdown =
+        "First [^first].\n\n[^first]:\n\n    ```text\n    first line\n    \n    **keep literal**\n    ```\n\n" +
+        ("Context ".repeat(35) + "\n\n").repeat(220) +
+        "Body [^large] and again [^large].\n\n[^large]: A **large-document source**.\n\n    A second definition paragraph.\n\n    ```text\n    first line\n    \n    **keep literal**\n    ```";
     await page.evaluate((text) => navigator.clipboard.writeText(text), markdown);
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     await editor.click();
     await page.keyboard.press("ControlOrMeta+V");
-    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, { timeout: 60_000 });
+    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, {
+        timeout: 60_000,
+    });
     const definition = editor.locator('[data-footnote-definition="large"]');
     await expect(definition.locator("strong")).toHaveText("large-document source");
     await expect(definition.locator("p")).toHaveCount(2);
     await expect(definition).toContainText("A second definition paragraph.");
-    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", { timeout: 15_000 });
+    await expect(editor.locator('[data-footnote-definition="first"] code')).toHaveText(code);
+    await expect(definition.locator("code")).toHaveText(code);
+    const original = await editorDocument(page);
+    await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
+        timeout: 15_000,
+    });
     await page.reload();
-    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, { timeout: 60_000 });
+    await expect(editor.getByRole("button", { name: "Footnote large", exact: true })).toHaveCount(2, {
+        timeout: 60_000,
+    });
     await expect(definition.locator("p")).toHaveCount(2);
+    await expect(editor.locator('[data-footnote-definition="first"] code')).toHaveText(code);
+    await expect(definition.locator("code")).toHaveText(code);
+    expect(await editorDocument(page)).toEqual(original);
     await page.getByRole("button", { name: "Markdown", exact: true }).click();
     const rawEditor = page.locator(".cm-content").first();
     await rawEditor.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");

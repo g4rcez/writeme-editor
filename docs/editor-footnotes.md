@@ -28,6 +28,10 @@ an ID and its references together in the Markdown view. New footnotes choose
 the first available `fn-N` ID, reserving IDs in both references and definitions.
 Existing IDs are preserved through editing, Markdown view, clipboard, and saves.
 
+In table cells, escape pipes in reference IDs (`[^a\|b]`); the corresponding
+definition keeps its logical ID (`[^a|b]: Source`). Writeme writes these table
+escapes automatically, including when copying Markdown.
+
 Multiple references can share one definition. Removing a reference leaves its
 definition and other references intact. Missing definitions get a preview
 message; definitions without references are marked as unreferenced. Duplicate
@@ -35,4 +39,14 @@ imported definitions are preserved and marked; previews and navigation use the
 first definition. Resolve duplicates in the Markdown view.
 
 Footnote references in inline or fenced code and escaped `\[^literal]` remain
-literal text. No companion file or app-specific Markdown syntax is required.
+literal text. Ordinary caret-labelled links, such as `[^manual](https://example.com)`
+and `[^manual][target]` with a resolved link target, remain links. A footnote may
+still be followed by unrelated parenthetical text.
+
+Large-document worker chunks are ingested as rendered HTML, not parsed as
+Markdown a second time. Fenced code and blank continuation lines survive
+worker import, Markdown view, and saved reload. Definition discovery, reference
+counts, and preview text share one document index rebuilt on content changes;
+selection and return navigation do not rebuild it.
+
+No companion file or app-specific Markdown syntax is required.
