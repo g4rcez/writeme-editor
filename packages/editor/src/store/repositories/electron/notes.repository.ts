@@ -4,8 +4,8 @@ import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
 import { isPathWithinImportRoot } from "../../../lib/obsidian-import";
-import { isTaskNoteMarkdown } from "../../../lib/task-note-markdown";
 import { getStorageMode } from "../../../lib/storage-mode";
+import { isTaskNoteMarkdown } from "../../../lib/task-note-markdown";
 import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "../../../types/workspace-files";
 import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "../../note";
 import { SettingsService } from "../../settings";
@@ -305,7 +305,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
         let filtered = all.filter((n) => n.deletedAt === null || n.deletedAt === undefined);
         if (workspaceDirectory) {
-            filtered = filtered.filter((note) => !note.filePath || isPathWithinImportRoot(workspaceDirectory, note.filePath));
+            filtered = filtered.filter(
+                (note) => !note.filePath || isPathWithinImportRoot(workspaceDirectory, note.filePath),
+            );
             if (workspaceScan.complete) {
                 filtered = filtered.filter(
                     (n) =>
@@ -551,13 +553,19 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 lastSynced,
                 updatedAt,
                 updatedBy,
-            } as any;
-            delete metadata.content;
-            await this.adapter.save(this.collection, metadata);
+            };
+            const { content: _content, ...persistedMetadata } = metadata;
+            await this.adapter.save(this.collection, persistedMetadata);
             if (existing.content !== content) {
                 await this.saveSnapshot(id, content, updatedAt);
             }
         } else {
+            if (existing.filePath && (await window.electronAPI.app.isCliEditorFile(existing.filePath))) {
+                const writeResult = await window.electronAPI.fs.writeFile(existing.filePath, content);
+                if (!writeResult.success) {
+                    throw new Error(`Failed to update external editor file: ${writeResult.error}`);
+                }
+            }
             await window.electronAPI.db.notes.updateContent(
                 id,
                 content,
@@ -588,7 +596,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         const updatedAt = new Date();
         const updatedBy = settings.defaultAuthor;
         if (mode === "filesystem" && existing.filePath) {
-            const writeResult = await window.electronAPI.fs.compareAndWriteFile(existing.filePath, expected.content, content);
+            const writeResult = await window.electronAPI.fs.compareAndWriteFile(
+                existing.filePath,
+                expected.content,
+                content,
+            );
             if (!writeResult.success) {
                 if (writeResult.stale) return null;
                 throw new Error(`Failed to conditionally update file: ${writeResult.error ?? "Unknown error"}`);

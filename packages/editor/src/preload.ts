@@ -25,6 +25,7 @@ const electronAPI = {
         },
         chdir: (dir: string) => ipcRenderer.invoke("app:chdir", dir),
         notifyFileClosed: (requestId: string) => ipcRenderer.invoke("app:file-closed", requestId),
+        isCliEditorFile: (filePath: string) => ipcRenderer.invoke("app:is-cli-editor-file", filePath),
         rendererReady: (workspacePath: string | null) => ipcRenderer.invoke("app:renderer-ready", workspacePath),
         updateShortcut: (shortcut: string) => ipcRenderer.invoke("app:update-shortcut", shortcut),
         updateMathShortcut: (shortcut: string) => ipcRenderer.invoke("app:update-math-shortcut", shortcut),
@@ -321,6 +322,7 @@ declare global {
                 onSystemAccentColorChange(callback: (color: string) => void): () => void;
                 chdir(dir: string): Promise<{ success: boolean; error?: string }>;
                 notifyFileClosed(requestId: string): Promise<boolean>;
+                isCliEditorFile(filePath: string): Promise<boolean>;
                 rendererReady(workspacePath: string | null): Promise<boolean>;
                 updateShortcut(shortcut: string): Promise<{ success: boolean; error?: string }>;
                 updateMathShortcut(shortcut: string): Promise<{ success: boolean; error?: string }>;

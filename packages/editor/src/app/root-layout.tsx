@@ -23,9 +23,8 @@ import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { editorSearchGlobalRef, editorGlobalRef } from "@/app/editor-global-ref";
-import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 import { useMobileNavigation } from "@/app/hooks/use-mobile-navigation";
-import { isMobile, supportsAI } from "@/lib/platform";
+import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 import { MainLayout } from "@/app/layouts/main.layout";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { notificationRef } from "@/app/notification-ref";
@@ -34,6 +33,7 @@ import { registerHotkeys } from "@/lib/hotkeys";
 import { isElectron } from "@/lib/is-electron";
 import { getTabNavigationHotkey, type TabNavigationShortcut } from "@/lib/keyboard-shortcuts";
 import { clearSuppressedNoteRouteTabOpens, suppressNoteRouteTabOpen } from "@/lib/note-route-tab-open-suppression";
+import { isMobile, supportsAI } from "@/lib/platform";
 import { printDocument } from "@/lib/print-document";
 import { getPreviousTabAfterClose } from "@/lib/tab-closing";
 import { getCycledTabTarget, getTabTargetAtIndex, type TabCycleDirection } from "@/lib/tab-cycling";
@@ -229,7 +229,9 @@ export const RootLayout = () => {
             if (isAiChatTab(tab) || isTerminalTab(tab)) continue;
             const requestId = waitMap.get(tab.noteId);
             if (requestId) {
-                window.electronAPI.app.notifyFileClosed(requestId);
+                void window.electronAPI.app.notifyFileClosed(requestId).catch((error: unknown) => {
+                    console.error("Failed to notify CLI that its file was closed:", error);
+                });
                 waitMap.delete(tab.noteId);
             }
         }

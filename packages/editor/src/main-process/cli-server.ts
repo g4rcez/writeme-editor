@@ -2,6 +2,7 @@ import { app, type BrowserWindow, type WebContents } from "electron";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { allowCliEditorFile, revokeCliEditorFile } from "./cli-file-access";
 
 type CliMessage =
     | {
@@ -95,11 +96,7 @@ export function markCliRendererReady(webContents: WebContents, workspacePath: st
     }
 }
 
-function sendToRendererWhenReady(
-    targetWindow: BrowserWindow,
-    channel: string,
-    payload: Record<string, unknown>,
-): void {
+function sendToRendererWhenReady(targetWindow: BrowserWindow, channel: string, payload: Record<string, unknown>): void {
     const webContentsId = targetWindow.webContents.id;
     const send = () => targetWindow.webContents.send(channel, payload);
     if (!readyWebContentsIds.has(webContentsId) || targetWindow.webContents.isLoading()) {
@@ -171,6 +168,13 @@ function handleCliMessage(socket: net.Socket, msg: CliMessage): void {
 
         if (wait && filePath) {
             waitConnections.set(requestId, { socket });
+            allowCliEditorFile(requestId, filePath);
+            socket.once("close", () => {
+                if (waitConnections.get(requestId)?.socket === socket) {
+                    waitConnections.delete(requestId);
+                    revokeCliEditorFile(requestId);
+                }
+            });
         } else {
             socket.write(JSON.stringify({ status: "opened" }) + "\n");
             socket.end();
@@ -185,6 +189,7 @@ export function notifyFileClosed(requestId: string): void {
     if (entry) {
         entry.socket.write(JSON.stringify({ status: "closed" }) + "\n");
         entry.socket.end();
+        revokeCliEditorFile(requestId);
         waitConnections.delete(requestId);
     }
 }
@@ -192,6 +197,11 @@ export function notifyFileClosed(requestId: string): void {
 export function stopCliServer(): void {
     const activeServer = server;
     server = null;
+    for (const [requestId, entry] of waitConnections) {
+        revokeCliEditorFile(requestId);
+        entry.socket.destroy();
+    }
+    waitConnections.clear();
     activeServer?.close();
     if (!activeServer) return;
     if (process.platform !== "win32") {

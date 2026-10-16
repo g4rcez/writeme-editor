@@ -6,8 +6,37 @@ import { openFolder } from "./commands/open-folder.ts";
 import { handleQuery } from "./commands/query.ts";
 import { resolveOpenTarget } from "./lib/open-target.ts";
 
+const usage = `Usage:
+  writeme [--wait|-w] [path]
+  writeme open <folder>
+  writeme math
+  writeme expr <expression>
+  writeme query <notes|tags|settings|projects> [options]
+
+Open the current directory as a vault:
+  writeme .
+
+Use Writeme as an external editor for CLI prompts (Claude Code, Codex, Pi):
+  export EDITOR="writeme --wait"
+  export VISUAL="$EDITOR"
+
+Start the CLI from that shell, then use its Ctrl+G external-editor shortcut.
+The editor command waits until the file is closed before returning.
+Install the CLI from Writeme's desktop command palette, or with:
+  npm install --global @writeme.dev/cli
+`;
+
+function showHelp(): void {
+    console.log(usage);
+}
+
 async function main(): Promise<void> {
     const argv = process.argv.slice(2);
+
+    if (argv.includes("--help") || argv.includes("-h")) {
+        showHelp();
+        return;
+    }
 
     if (argv[0] === "open") {
         if (!argv[1]) {

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, nativeTheme, systemPreferences } from "electron";
 import { FEATURES } from "../lib/build-features";
+import { isCliEditorFilePath } from "../main-process/cli-file-access";
 import { installBundledCli } from "../main-process/cli-installer";
 import { markCliRendererReady } from "../main-process/cli-server";
 import { createFloatingEditorWindow, createQuickNoteWindow } from "../main-process/quicknote-window";
@@ -55,6 +56,10 @@ export const appIpcHandler = (
         if (FEATURES.cli) markCliRendererReady(event.sender, workspacePath);
         return true;
     });
+    ipcMain.handle(
+        "app:is-cli-editor-file",
+        (_, filePath: unknown) => FEATURES.cli && typeof filePath === "string" && isCliEditorFilePath(filePath),
+    );
     if (FEATURES.cli)
         ipcMain.handle("app:install-cli", async () => {
             try {

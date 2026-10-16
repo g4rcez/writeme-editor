@@ -39,7 +39,7 @@ export class Note implements EntityBase {
         public metadata: Record<string, unknown> = {},
         public favorite: boolean = false,
         public deletedAt: Date | null = null,
-    ) { }
+    ) {}
 
     public static new(
         title: string,

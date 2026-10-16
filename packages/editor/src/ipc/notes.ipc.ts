@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs";
 import { BrowserWindow, Menu, MenuItem, app, clipboard, dialog, ipcMain, shell } from "electron";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { isCliEditorFilePath } from "../main-process/cli-file-access";
 import { dbManager } from "../main-process/database";
 import { searchWorkspaceFiles } from "../main-process/file-search";
 import { FileWatcher } from "../main-process/file-watcher";
@@ -130,7 +131,8 @@ async function validateWritablePath(
         }
 
         const realPath = await resolveExistingPath(filePath);
-        if (!(await isRealPathUnderRoot(realPath, allowedFilesystemRoots))) {
+        const isCliEditorFile = isCliEditorFilePath(filePath);
+        if (!(await isRealPathUnderRoot(realPath, allowedFilesystemRoots)) && !isCliEditorFile) {
             return { success: false, error: "Path is outside the allowed workspace", filePath: realPath };
         }
         if (await isRealPathUnderRoot(realPath, explicitlyGrantedFilesystemRoots)) {
@@ -155,7 +157,7 @@ function getRevealLabel(): string {
 function validatePaths(...inputPaths: string[]) {
     for (const inputPath of inputPaths) {
         const candidate = normalizePath(inputPath);
-        if (!isPathUnderRoot(candidate)) {
+        if (!isPathUnderRoot(candidate) && !isCliEditorFilePath(candidate)) {
             return {
                 success: false as const,
                 error: "Path is outside the allowed workspace",
@@ -356,7 +358,9 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle("fs:writeFile", async (_, filePath: string, content: string) =>
         withFileWriteLock(filePath, async () => {
-            const access = validatePaths(filePath, path.dirname(filePath));
+            const access = isCliEditorFilePath(filePath)
+                ? validatePaths(filePath)
+                : validatePaths(filePath, path.dirname(filePath));
             if (!access.success) return access;
             try {
                 const pathSafety = await validateWritablePath(filePath);

@@ -57,6 +57,20 @@ Download the **v1.1.0** desktop release for your platform:
 
 The v1.1.0 macOS download targets Apple Silicon only and is unsigned. See the [release notes](https://github.com/g4rcez/writeme-editor/releases/tag/v1.1.0) for first-launch steps.
 
+### Writeme CLI
+
+The desktop app includes a platform-matched `writeme` CLI. In the desktop app, open the command palette and run **Install CLI**. Then use `writeme .` to open the current directory as a vault, or `writeme /path/to/note.md` to open a file. The `--wait` (or `-w`) flag makes file opening suitable for external-editor integrations.
+
+Alternatively, install the portable npm package with Node.js 22.13 or later:
+
+```sh
+npm install --global @writeme.dev/cli
+```
+
+To publish a new CLI version, run `npm run release -- cli patch` from the repository root (or use `minor`, `major`, or an explicit version). The release command validates the package before publishing it to the public npm registry.
+
+For Ctrl+G prompt editing in Claude Code, Codex, Pi, or another CLI that uses the standard editor variables, configure `EDITOR="writeme --wait"` and `VISUAL="$EDITOR"` in the shell before launching that CLI. See the [CLI guide](packages/cli/README.md) for platform-specific examples.
+
 ---
 
 ## How to develop
