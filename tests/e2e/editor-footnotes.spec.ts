@@ -154,7 +154,7 @@ test("keyboard previews expose missing definitions, duplicates, and return navig
     await expect(page.locator('[data-footnote-definition="orphan"]')).toContainText("No references to this footnote.");
 });
 
-test("deletes a footnote and its linked references with one undo", async ({ cleanPage: page }) => {
+test("deletes a footnote and its linked references with one undo", async ({ cleanPage: page }, testInfo) => {
     await goHome(page);
     await createNote(page, "Delete footnote");
     await importMarkdown(page, "One [^source] and two [^source].\n\n[^source]: Shared source");
@@ -167,6 +167,7 @@ test("deletes a footnote and its linked references with one undo", async ({ clea
     await definition.getByRole("button", { name: "Delete footnote source" }).click();
     await expect(references).toHaveCount(0);
     await expect(definition).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("footnote-deletion.png") });
 
     await page.keyboard.press("ControlOrMeta+Z");
     await expect(references).toHaveCount(2);
