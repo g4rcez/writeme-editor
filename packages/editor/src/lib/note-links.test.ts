@@ -4,6 +4,7 @@ import { formatNoteMention } from "./markdown-links";
 import { repairedMarkdown } from "./note-link-repair";
 import {
     extractNoteLinkReferences,
+    extractWorkspaceFileReferences,
     findIncomingNoteLinks,
     findUnlinkedNoteMentions,
     findUnresolvedNoteLinks,
@@ -78,6 +79,26 @@ describe("note link resolution", () => {
             ["missing", "[Visible](app://note/missing)", "Visible"],
             ["other", "[Linked][ref]", "Linked"],
         ]);
+    });
+
+    it("lists explicit workspace file mentions without treating them as note repairs", () => {
+        const content = [
+            '[README.md](projects/splinter/README.md "writeme-mention:file:projects/splinter/README.md")',
+            '[maestro.md](ai/maestro.md "writeme-mention:file:ai/maestro.md")',
+            '[missing.md](missing.md "writeme-mention:file:missing.md")',
+            "[ordinary](ordinary.md)",
+            '`[code](ignored.md "writeme-mention:file:ignored.md")`',
+        ].join("\n\n");
+        const source = makeNote("source", "Source", content);
+
+        expect(
+            extractWorkspaceFileReferences(content).map(({ label, path }) => [label, path]),
+        ).toStrictEqual([
+            ["README.md", "projects/splinter/README.md"],
+            ["maestro.md", "ai/maestro.md"],
+            ["missing.md", "missing.md"],
+        ]);
+        expect(findUnresolvedNoteLinks(source, [source])).toStrictEqual([]);
     });
     it("does not offer Markdown repairs inside structured notes or LaTeX sources", () => {
         const target = makeNote("target", "Target");

@@ -183,11 +183,13 @@ export const MainLayout = () => {
                         </Panel>
                     </Group>
                 </main>
-                {contextOpen && isNoteRoute && state.note ? (
+                {isNoteRoute && state.note ? (
                     <ContextPane
                         key={state.note.id}
                         note={state.note}
                         notes={state.notes}
+                        workspaceDirectory={state.directory}
+                        open={contextOpen}
                         onClose={() => setContextOpen(false)}
                     />
                 ) : null}

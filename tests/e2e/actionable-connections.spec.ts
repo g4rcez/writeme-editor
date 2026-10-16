@@ -73,7 +73,15 @@ async function changeStoredNote(page: Page, id: string, patch: Partial<StoredNot
 
 async function openContext(page: Page) {
     await page.getByRole("button", { name: "Open note context", exact: true }).click();
-    return page.locator(".writeme-context-pane, .writeme-context-modal").first();
+    return page.locator(".writeme-context-modal");
+}
+async function closeContext(page: Page): Promise<void> {
+    const drawer = page.getByRole("dialog", { name: "Context" });
+    for (let attempt = 0; attempt < 2; attempt++) {
+        if ((await drawer.count()) === 0) return;
+        await page.keyboard.press("Escape");
+    }
+    await expect(drawer).toHaveCount(0);
 }
 
 test("creates a missing target once and immediately resolves repeated references", async ({ cleanPage: page }) => {
@@ -134,6 +142,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
                 timeout: 15_000,
             })
             .not.toBe(before.content);
+        await closeContext(page);
         await editor.focus();
         await page.keyboard.press("ControlOrMeta+z");
         await expect
@@ -254,6 +263,7 @@ test("shows distinct choices for ambiguous titles", async ({ cleanPage: page }) 
             timeout: 15_000,
         })
         .toContain(original.id);
+    await closeContext(page);
     await page.locator('.ProseMirror [data-type="mention"]').filter({ hasText: "Shared" }).click();
     await expect(page).toHaveURL(new RegExp("/note/" + original.id + "$"));
 });
@@ -340,6 +350,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await context.getByRole("button", { name: "Preview link", exact: true }).click();
         await context.getByRole("button", { name: "Link this mention", exact: true }).click();
         await expect(context.getByRole("status")).toContainText("unsaved changes");
+        await closeContext(page);
         await expect(clean).toHaveText("See Draft target.");
         await expect(draft).toContainText("My unsaved draft");
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(source.content);
@@ -365,13 +376,17 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .getByRole("button", { name: "OK", exact: true })
             .click();
         await page.goto(targetUrl);
-        const context = await openContext(page);
+        let context = await openContext(page);
+        const drawer = page.getByRole("dialog", { name: "Context" });
+        await expect(drawer).toHaveAttribute("aria-modal", "true");
         await context.getByText("Unlinked mentions", { exact: true }).click();
         await context.getByRole("button", { name: "Preview link", exact: true }).click();
         await context.getByRole("button", { name: "Link this mention", exact: true }).click();
         await expect(context.getByRole("button", { name: "Undo link", exact: true })).toBeVisible();
         const saved = (await storedNotes(page)).find((note) => note.id === source.id)!;
         expect(saved.content).toContain("writeme-mention:");
+        await page.keyboard.press("Escape");
+        await expect(drawer).toHaveCount(0);
         await page.getByRole("button", { name: "Open pane mode", exact: true }).click();
         const second = page.getByRole("region", { name: "Editor group 2", exact: true });
         await second.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(source.id);
@@ -383,16 +398,23 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await draft.focus();
         await page.keyboard.press("ControlOrMeta+a");
         await page.keyboard.insertText("My unsaved draft must survive Undo link.");
+        context = await openContext(page);
+        await expect(context.getByRole("button", { name: "Undo link", exact: true })).toBeVisible();
         await context.getByRole("button", { name: "Undo link", exact: true }).click();
         await expect(context.getByRole("status")).toContainText("unsaved changes");
+        await page.keyboard.press("Escape");
+        await expect(drawer).toHaveCount(0);
         await expect(draft).toContainText("My unsaved draft must survive Undo link.");
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
         await draft.focus();
         await page.keyboard.press("ControlOrMeta+z");
         if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
         else await expect(draft).toContainText("See Undo target.");
+        context = await openContext(page);
         await context.getByRole("button", { name: "Undo link", exact: true }).click();
         await expect(context.getByRole("button", { name: "Undo link", exact: true })).toHaveCount(0);
+        await page.keyboard.press("Escape");
+        await expect(drawer).toHaveCount(0);
         await expect(draft).toHaveText(source.content);
         for (let iteration = 0; iteration < 2; iteration++) {
             await draft.focus();
@@ -457,8 +479,11 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             await context.getByLabel("Find a note").fill("Roundtrip target");
             await context.getByRole("button", { name: /Roundtrip target/ }).click();
             await expect(context.getByRole("status")).toContainText("Link added");
+            await closeContext(page);
             await editor.focus();
             await page.keyboard.press("ControlOrMeta+s");
+            await openContext(page);
+            await context.getByText("Unresolved references", { exact: true }).click();
             await expect(choose).toHaveCount(remaining, { timeout: 15_000 });
             await expect
                 .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {
@@ -468,6 +493,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             const after = (await storedNotes(page)).find((note) => note.id === source.id)!.content;
             expect(after).toContain("Keep  this");
             expect(after).toContain("writeme-mention:file:docs/README.md");
+            await closeContext(page);
             for (let roundtrip = 0; roundtrip < 2; roundtrip++) {
                 await editor.focus();
                 await page.keyboard.press("ControlOrMeta+z");
@@ -484,6 +510,10 @@ for (const mode of ["Formatted", "Markdown"] as const) {
                         timeout: 15_000,
                     })
                     .toBe(after);
+            }
+            if (remaining > 0) {
+                await openContext(page);
+                await context.getByText("Unresolved references", { exact: true }).click();
             }
         }
         const after = (await storedNotes(page)).find((note) => note.id === source.id)!.content;

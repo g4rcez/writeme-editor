@@ -138,6 +138,43 @@ export function extractNoteLinkReferences(content: string): NoteLinkReference[] 
     return [...references.values()];
 }
 
+export type WorkspaceFileReference = {
+    raw: string;
+    path: string;
+    label: string;
+    from: number;
+    to: number;
+};
+
+export function extractWorkspaceFileReferences(content: string): WorkspaceFileReference[] {
+    const tree = markdownParser.parse(content);
+    const definitions = new Map<string, { url: string; title?: string | null }>();
+    visit(tree, "definition", (node) => {
+        definitions.set(node.identifier, node);
+    });
+    const references: WorkspaceFileReference[] = [];
+    visit(tree, (node) => {
+        if (node.type !== "link" && node.type !== "linkReference") return;
+        const from = node.position?.start.offset;
+        const to = node.position?.end.offset;
+        if (from === undefined || to === undefined) return;
+        const destination = node.type === "link" ? node : definitions.get(node.identifier);
+        if (!destination?.title?.startsWith("writeme-mention:file:")) return;
+        let label = "";
+        visit(node, (child) => {
+            if (child.type === "text" || child.type === "inlineCode") label += child.value;
+        });
+        references.push({
+            raw: content.slice(from, to),
+            path: decodeMarkdownFilePath(destination.url),
+            label,
+            from,
+            to,
+        });
+    });
+    return references;
+}
+
 export function canRepairNoteConnections(note: Note): boolean {
     return !["json", "excalidraw", "freehand", "pdf"].includes(note.noteType) && !isLatexFilePath(note.filePath);
 }

@@ -36,6 +36,8 @@
   link repairs, with whitespace retained through save/reload and undo/redo.
 - Keep workspace-file mentions out of missing-note actions and preserve literal
   link labels without overlapping wrapped app URLs.
+- Link existing workspace-file mentions to notes, count missing targets as
+  unresolved, and show Markdown hashtags in the Context drawer.
 - Render PDF attachments as paginated documents in the media viewer instead of broken image previews.
 - Open nested agenda tasks at their Markdown source, and focus following
   top-level board tasks by source identity instead of a mismatched card index.
