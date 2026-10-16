@@ -12,7 +12,8 @@ Footnotes use ordinary Markdown:
 ```markdown
 A claim [^source] and another claim [^source].
 
-[^source]: A **formatted** source with [a link](https://example.com).
+[^source]:
+    A **formatted** source with [a link](https://example.com).
     A continuation line.
 
     Another paragraph.
@@ -32,11 +33,12 @@ In table cells, escape pipes in reference IDs (`[^a\|b]`); the corresponding
 definition keeps its logical ID (`[^a|b]: Source`). Writeme writes these table
 escapes automatically, including when copying Markdown.
 
-Multiple references can share one definition. Removing a reference leaves its
-definition and other references intact. Missing definitions get a preview
-message; definitions without references are marked as unreferenced. Duplicate
-imported definitions are preserved and marked; previews and navigation use the
-first definition. Resolve duplicates in the Markdown view.
+Multiple references can share one definition. Removing a reference leaves the
+definition and other references intact. **Delete footnote** on a definition
+removes every reference and duplicate definition with that ID as one undoable
+action. Missing definitions get a preview message; definitions without references
+are marked as unreferenced. Duplicate imported definitions are preserved and
+marked; previews and navigation use the first definition.
 
 Footnote references in inline or fenced code and escaped `\[^literal]` remain
 literal text. Ordinary caret-labelled links, such as `[^manual](https://example.com)`

@@ -108,9 +108,7 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
     await page.reload();
 
     const reloadedEditor = page.getByRole("textbox", { name: "Note editor", exact: true });
-    await expect(
-        reloadedEditor.getByRole("button", { name: "Footnote bibliography", exact: true }),
-    ).toBeVisible();
+    await expect(reloadedEditor.getByRole("button", { name: "Footnote bibliography", exact: true })).toBeVisible();
     await expect(reloadedEditor.locator('[data-footnote-definition="bibliography"]')).toBeVisible();
     await expect(reloadedEditor.locator('[data-footnote-definition="bibliography"] p')).toHaveText(
         "Source details in this footnote.",
@@ -154,6 +152,26 @@ test("keyboard previews expose missing definitions, duplicates, and return navig
     await definitions.first().getByRole("button", { name: "Return to reference" }).click();
     await expect(references.nth(1)).toBeFocused();
     await expect(page.locator('[data-footnote-definition="orphan"]')).toContainText("No references to this footnote.");
+});
+
+test("deletes a footnote and its linked references with one undo", async ({ cleanPage: page }, testInfo) => {
+    await goHome(page);
+    await createNote(page, "Delete footnote");
+    await importMarkdown(page, "One [^source] and two [^source].\n\n[^source]: Shared source");
+    await page.reload();
+
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    const references = editor.getByRole("button", { name: "Footnote source", exact: true });
+    const definition = editor.locator('[data-footnote-definition="source"]');
+    await expect(references).toHaveCount(2);
+    await definition.getByRole("button", { name: "Delete footnote source" }).click();
+    await expect(references).toHaveCount(0);
+    await expect(definition).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("footnote-deletion.png") });
+
+    await page.keyboard.press("ControlOrMeta+Z");
+    await expect(references).toHaveCount(2);
+    await expect(definition).toHaveCount(1);
 });
 
 test("pastes portable footnotes and preserves shared definitions through deletion and undo", async ({
