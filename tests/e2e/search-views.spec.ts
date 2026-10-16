@@ -513,7 +513,7 @@ test.describe("Search into saved Views", () => {
         await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeVisible();
     });
     test("records two Search-to-View examples", async ({ cleanPage: page }) => {
-        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.setViewportSize({ width: 1440, height: 1_100 });
         await goHome(page);
         await seedNotes(page, [
             {
@@ -571,5 +571,14 @@ test.describe("Search into saved Views", () => {
         await expect(results).toContainText("Research field notes");
         await expect(results).not.toContainText("Archived research");
         await page.waitForTimeout(1_500);
+        await page.getByRole("button", { name: "Save as View", exact: true }).click();
+        await page.getByTitle("View title", { exact: true }).fill("Research notes");
+        await page.getByRole("button", { name: "Create View", exact: true }).click();
+        await expect(main.getByRole("link", { name: "Research field notes", exact: true })).toBeVisible();
+        await expect(main.getByRole("link", { name: "Archived research", exact: true })).toHaveCount(0);
+        await page.waitForTimeout(1_500);
+        await page.getByRole("button", { name: "All Views", exact: true }).click();
+        await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Research notes", exact: true })).toBeVisible();
     });
 });
