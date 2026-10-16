@@ -331,21 +331,17 @@ const FootnoteInsertModal = ({ editor, onClose }: { editor: Editor; onClose: () 
     return (
         <Modal open onChange={onClose} title="Insert Footnote" className="max-w-sm">
             <form onSubmit={confirm} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                    <label htmlFor="footnote-name" className="text-xs font-medium text-foreground/60">
-                        Footnote name
-                    </label>
-                    <Input
-                        id="footnote-name"
-                        value={name}
-                        onChange={(event) => {
-                            setName(event.target.value);
-                            setError(null);
-                        }}
-                        placeholder="e.g. source"
-                    />
-                    <p className="text-xs text-foreground/50">Leave blank to assign the next available fn-N name.</p>
-                </div>
+                <Input
+                    title="Name"
+                    id="footnote-name"
+                    value={name}
+                    placeholder="e.g. source"
+                    feedback="Leave blank to autoname."
+                    onChange={(event) => {
+                        setName(event.target.value);
+                        setError(null);
+                    }}
+                />
                 {error && (
                     <p role="alert" className="text-sm text-foreground">
                         {error}
