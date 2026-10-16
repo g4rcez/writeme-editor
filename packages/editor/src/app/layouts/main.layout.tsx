@@ -6,13 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
 import { useLocation, useOutlet } from "react-router-dom";
 import { ContextPane } from "@/app/components/context-pane";
+import { MobileFileActions } from "@/app/components/mobile-file-actions";
 import { TabsBar } from "@/app/components/tabs-bar";
 import { TerminalWorkspace } from "@/app/components/terminal/terminal-workspace";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
-import { getCurrentRouteTabTarget } from "@/lib/tab-target";
-import { isMobile } from "@/lib/platform";
 import { FEATURES } from "@/lib/build-features";
-import { MobileFileActions } from "@/app/components/mobile-file-actions";
+import { isMobile } from "@/lib/platform";
+import { getCurrentRouteTabTarget } from "@/lib/tab-target";
 import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { useJsonDrop } from "../hooks/use-json-drop";
@@ -168,21 +168,30 @@ export const MainLayout = () => {
                                         <RouteTransitionOutlet />
                                     </div>
                                 </div>
-                                {FEATURES.terminal && !isMobile() && <TerminalWorkspace
-                                    tabs={state.tabs}
-                                    terminalSessions={state.terminalSessions}
-                                    restoredTerminalSessionIds={state.restoredTerminalSessionIds}
-                                    activeSessionId={activeTerminalSessionId}
-                                    directory={state.directory}
-                                    dispatch={dispatch}
-                                    className={activeTerminalSessionId ? "block" : "hidden"}
-                                />}
+                                {FEATURES.terminal && !isMobile() && (
+                                    <TerminalWorkspace
+                                        tabs={state.tabs}
+                                        terminalSessions={state.terminalSessions}
+                                        restoredTerminalSessionIds={state.restoredTerminalSessionIds}
+                                        activeSessionId={activeTerminalSessionId}
+                                        directory={state.directory}
+                                        dispatch={dispatch}
+                                        className={activeTerminalSessionId ? "block" : "hidden"}
+                                    />
+                                )}
                             </div>
                         </Panel>
                     </Group>
                 </main>
-                {contextOpen && isNoteRoute && state.note ? (
-                    <ContextPane note={state.note} notes={state.notes} onClose={() => setContextOpen(false)} />
+                {isNoteRoute && state.note ? (
+                    <ContextPane
+                        key={state.note.id}
+                        note={state.note}
+                        notes={state.notes}
+                        workspaceDirectory={state.directory}
+                        open={contextOpen}
+                        onClose={() => setContextOpen(false)}
+                    />
                 ) : null}
             </div>
         </div>

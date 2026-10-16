@@ -174,6 +174,16 @@ export class MarkdownParser {
 
     normalizeDOM(node: HTMLElement, { inline, content }: { inline: boolean; content: string }) {
         this.normalizeBlocks(node);
+        // HTML formatting between table rows/cells is not document content.
+        // Full whitespace parsing would otherwise fit it into synthetic rows/cells.
+        node.querySelectorAll("table, thead, tbody, tfoot, tr").forEach((container) => {
+            if (container.closest("pre, code")) return;
+            Array.from(container.childNodes).forEach((child) => {
+                if (child.nodeType === Node.TEXT_NODE && /^[\t\n\f\r ]*$/.test(child.textContent ?? "")) {
+                    container.removeChild(child);
+                }
+            });
+        });
         for (const container of [node, ...node.querySelectorAll("blockquote,ul,ol,li")]) {
             for (const child of [...container.childNodes]) {
                 if (child.nodeType === Node.TEXT_NODE && !child.textContent?.trim()) child.remove();

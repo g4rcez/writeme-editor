@@ -10,6 +10,7 @@ import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
 import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
+import { registerNoteLinkRepairHandler, repairTiptapLink } from "@/lib/note-link-repair";
 import { findCompatibleNote } from "@/lib/note-lookup";
 import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
@@ -666,6 +667,16 @@ const TiptapEditorCore = memo(
         }, [editor, content, note]);
 
         useEffect(() => {
+            if (!editor) return;
+            return registerNoteLinkRepairHandler({
+                noteId: () => noteRef.current?.id,
+                getContent: () => getEditorMarkdown(editor),
+                isEditable: () => editor.isEditable && !editor.isDestroyed,
+                apply: (request) => repairTiptapLink(editor, request),
+            });
+        }, [editor]);
+
+        useEffect(() => {
             if (editor) setEditorNote(editor, note);
             noteRef.current = note;
         }, [editor, note]);
@@ -1058,6 +1069,7 @@ const RawEditorCore = memo(
                 ) : null}
                 <RawMarkdownEditor
                     noteId={props.id}
+                    repairNoteId={props.note?.id}
                     value={draft.content}
                     onChange={handleChange}
                     readonly={props.readonly}

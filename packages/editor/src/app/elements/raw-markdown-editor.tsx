@@ -1,3 +1,4 @@
+import { isolateHistory } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import {
     Compartment,
@@ -14,6 +15,7 @@ import { vim, Vim, getCM } from "@replit/codemirror-vim";
 import { vscodeKeymap } from "@replit/codemirror-vscode-keymap";
 import { minimalSetup } from "codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { registerNoteLinkRepairHandler, repairedMarkdown } from "@/lib/note-link-repair";
 import { supportsAI } from "@/lib/platform";
 import type { WritingEditorAdapter } from "../writing-assistant/types";
 import {
@@ -193,6 +195,7 @@ export function createMarkdownSearchController(
 
 type RawMarkdownEditorProps = {
     noteId?: string;
+    repairNoteId?: string;
     value: string;
     onChange: (value: string) => void;
     readonly?: boolean;
@@ -328,6 +331,7 @@ function createRawMarkdownEditorTheme(fontSize: number) {
 
 export function RawMarkdownEditor({
     noteId,
+    repairNoteId,
     value,
     onChange,
     readonly = false,
@@ -339,6 +343,10 @@ export function RawMarkdownEditor({
 }: RawMarkdownEditorProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
+    const repairNoteIdRef = useRef(repairNoteId ?? noteId);
+    useEffect(() => {
+        repairNoteIdRef.current = repairNoteId ?? noteId;
+    }, [repairNoteId, noteId]);
     const onChangeRef = useRef(onChange);
     const valueRef = useRef(value);
     const initialThemeRef = useRef(theme);
@@ -494,6 +502,20 @@ export function RawMarkdownEditor({
         });
 
         viewRef.current = view;
+        const unregisterRepair = registerNoteLinkRepairHandler({
+            noteId: () => repairNoteIdRef.current,
+            getContent: () => view.state.doc.toString(),
+            isEditable: () => !view.state.readOnly,
+            apply: (request) => {
+                if (view.state.readOnly) return "unavailable";
+                if (repairedMarkdown(view.state.doc.toString(), request) === null) return "conflict";
+                view.dispatch({
+                    changes: { from: request.from, to: request.to, insert: request.replacement },
+                    annotations: isolateHistory.of("full"),
+                });
+                return "applied";
+            },
+        });
         if (initialWritingAssistantEnabledRef.current) {
             const adapter = writingAssistantIntegration.createAdapter(view);
             writingAssistantAdapterRef.current = adapter;
@@ -535,6 +557,7 @@ export function RawMarkdownEditor({
 
         return () => {
             activation.unregister();
+            unregisterRepair();
             view.dom.removeEventListener("focus", activation.activate, true);
             if (cursorScrollFrame !== null) {
                 cancelAnimationFrame(cursorScrollFrame);

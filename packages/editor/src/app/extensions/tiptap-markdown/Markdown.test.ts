@@ -9,11 +9,98 @@ import { describe, expect, it } from "vitest";
 import { getCommentAnchors } from "@/app/comments/note-comments";
 import { createExtensions } from "@/app/extensions";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
+import { processMarkdown } from "@/lib/markdown-worker/markdown.worker";
 import { Note } from "@/store/note";
 import { Markdown } from "./Markdown";
 import { MarkdownParser } from "./parse/MarkdownParser";
 
 describe("Markdown extension", () => {
+    it.each([undefined, "full", false] as const)("honors setContent whitespace options: %s", (preserveWhitespace) => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            parseOptions: { preserveWhitespace: "full" },
+        });
+        try {
+            editor.commands.setContent(
+                "Keep  this",
+                preserveWhitespace === undefined ? {} : { parseOptions: { preserveWhitespace } },
+            );
+            expect(editor.state.doc.textContent).toBe(preserveWhitespace === false ? "Keep this" : "Keep  this");
+        } finally {
+            editor.destroy();
+        }
+    });
+    it.each(["markdown", "worker HTML"] as const)(
+        "preserves table structure and meaningful whitespace when setting %s",
+        (input) => {
+            const editor = new Editor({
+                extensions: createExtensions(() => "github-dark"),
+                parseOptions: { preserveWhitespace: "full" },
+            });
+            const markdown = [
+                "Keep  this",
+                "",
+                "| Work | Owner | Status |",
+                "| :--- | :---: | ---: | --- |",
+                "| Draft | Ada | Ready |",
+                "| Review | Lin |",
+                "| Ship | Jo | Approved | **Keep  rollback** and *notify  support* with `release  id`. |",
+                "",
+                "```text",
+                "  Keep  code",
+                "```",
+            ].join("\n");
+            try {
+                expect(editor.commands.setContent(input === "markdown" ? markdown : processMarkdown(markdown))).toBe(
+                    true,
+                );
+                for (let reload = 0; reload < 2; reload++) {
+                    const rendered = document.createElement("div");
+                    rendered.innerHTML = editor.getHTML();
+                    const rows = Array.from(rendered.querySelectorAll("tr"));
+                    expect(rows).toHaveLength(4);
+                    expect(
+                        rows.map((row) => Array.from(row.querySelectorAll("th, td"), (cell) => cell.textContent)),
+                    ).toEqual([
+                        ["Work", "Owner", "Status", ""],
+                        ["Draft", "Ada", "Ready", ""],
+                        ["Review", "Lin", "", ""],
+                        ["Ship", "Jo", "Approved", "Keep  rollback and notify  support with release  id."],
+                    ]);
+                    const finalCell = rows[3]?.querySelectorAll("td")[3];
+                    expect(finalCell?.querySelector("strong")?.textContent).toBe("Keep  rollback");
+                    expect(finalCell?.querySelector("em")?.textContent).toBe("notify  support");
+                    expect(finalCell?.querySelector("code")?.textContent).toBe("release  id");
+                    expect(rendered.querySelector("p")?.textContent).toBe("Keep  this");
+                    expect(rendered.querySelector("pre")?.textContent).toBe("  Keep  code");
+                    expect(editor.commands.setContent(editor.getMarkdown())).toBe(true);
+                }
+            } finally {
+                editor.destroy();
+            }
+        },
+    );
+    it("retains valid empty and whitespace-only cells when removing structural table whitespace", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark"),
+            parseOptions: { preserveWhitespace: "full" },
+        });
+        try {
+            editor.commands.setContent(
+                "<table>\n<tbody>\n<tr>\n<td><p>  </p></td>\n<td></td>\n<td><pre>  Keep  code</pre></td>\n</tr>\n</tbody>\n</table>",
+            );
+            const rendered = document.createElement("div");
+            rendered.innerHTML = editor.getHTML();
+            expect(rendered.querySelectorAll("tr")).toHaveLength(1);
+            expect(Array.from(rendered.querySelectorAll("td"), (cell) => cell.textContent)).toEqual([
+                "  ",
+                "",
+                "  Keep  code",
+            ]);
+        } finally {
+            editor.destroy();
+        }
+    });
     it.each(["Cost == value", "First\nSecond"])("preserves highlighted text containing %j on reload", (text) => {
         const editor = new Editor({ extensions: createExtensions(() => "github-dark"), content: "" });
         try {

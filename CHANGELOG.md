@@ -30,6 +30,14 @@
 
 ### Bug Fixes
 
+- Protect unsaved source drafts when undoing a note-link repair, and keep clean
+  open-source undo in the editor's normal undo/redo history.
+- Preserve unrelated whitespace and live node attributes during occurrence-local
+  link repairs, with whitespace retained through save/reload and undo/redo.
+- Keep workspace-file mentions out of missing-note actions and preserve literal
+  link labels without overlapping wrapped app URLs.
+- Link existing workspace-file mentions to notes, count missing targets as
+  unresolved, and show Markdown hashtags in the Context drawer.
 - Render PDF attachments as paginated documents in the media viewer instead of broken image previews.
 - Open nested agenda tasks at their Markdown source, and focus following
   top-level board tasks by source identity instead of a mismatched card index.
@@ -38,7 +46,8 @@
 - Ignore obsolete daily-note navigation after changing the day, leaving the
   route, or closing the Calendar dialog; completed storage writes remain saved.
 - Render uneven-width Markdown tables when opening or pasting notes, including
-  large documents, without dropping overflow cells or their formatting.
+  large documents, without dropping overflow cells or their formatting, or creating
+  extra rows from HTML formatting whitespace.
 - Preserve successful research excerpts when another window saves a stale formatted
   or Markdown draft. Conflicting saves retain the local draft and explain how to
   reconcile it without replacing the saved note. Metadata-only updates and published
