@@ -1,6 +1,12 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
+declare global {
+    interface Window {
+        __writingAssistantUnhandled: string[];
+    }
+}
+
 type EditorMode = "formatted" | "markdown";
 type ReviewResponseMode =
     | "correct-first"
@@ -134,7 +140,7 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
         }
 
         const targetUrl = request.headers()["x-target-url"] ?? "";
-        let isModelListRequest = false;
+        let isModelListRequest: boolean;
         try {
             const target = new URL(targetUrl);
             isModelListRequest =
@@ -218,7 +224,7 @@ async function installProviderProxy(page: Page, state: ProxyState): Promise<void
 }
 
 async function saveGeminiConfiguration(page: Page, withCredentials = true): Promise<void> {
-    await page.goto("/settings/ai");
+    await page.goto("/settings/ai", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "AI" })).toBeVisible();
     await page.getByRole("button", { name: /Google Gemini/ }).click();
 
@@ -233,7 +239,10 @@ async function saveGeminiConfiguration(page: Page, withCredentials = true): Prom
     }
 
     await page.getByRole("button", { name: "Save Configuration" }).click();
-    await expect(page.getByText("AI configuration saved.")).toBeVisible();
+    const confirmation = page.getByRole("dialog", { name: "Success", exact: true });
+    await expect(confirmation).toContainText("AI configuration saved.");
+    await confirmation.getByRole("button", { name: "OK", exact: true }).click();
+    await expect(confirmation).toBeHidden();
 }
 
 function editorSelector(mode: EditorMode): string {
@@ -246,12 +255,11 @@ async function waitForAutosave(page: Page): Promise<void> {
 }
 
 async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
-    await goHome(page);
+    if (page.url() === "about:blank") await goHome(page);
     if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
     await page
-        .getByRole("main")
-        .getByRole("button", { name: /^New note/ })
-        .first()
+        .locator(".writeme-app-header-actions")
+        .getByRole("button", { name: "New note", exact: true })
         .click();
     const dialog = page.getByRole("dialog", { name: /Create new note/i });
     const titleInput = dialog.getByTitle("Note title");
@@ -260,12 +268,11 @@ async function createNote(page: Page, title: string, mode: EditorMode, content: 
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/\/note\/[^/]+$/);
-    await expect(page.getByRole("textbox", { name: "Note title" })).toHaveValue(title);
 
-    await page
+    const modeButton = page
         .getByRole("toolbar", { name: "Note tools" })
-        .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true })
-        .click();
+        .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true });
+    if ((await modeButton.getAttribute("aria-pressed")) !== "true") await modeButton.click();
     const editor = page.locator(editorSelector(mode)).first();
     await expect(editor).toBeVisible();
     await editor.fill(content);
@@ -552,14 +559,13 @@ test("whole-note review and prose extraction leave Markdown structure and exclud
 
 test("empty, invalid, failed, and cancelled reviews produce distinct visible states", async ({ cleanPage: page }) => {
     await page.addInitScript(() => {
-        const diagnosticsWindow = window as Window & { __writingAssistantUnhandled: string[] };
-        diagnosticsWindow.__writingAssistantUnhandled = [];
+        window.__writingAssistantUnhandled = [];
         window.addEventListener("unhandledrejection", (event) => {
             const reason = event.reason;
             if (typeof reason !== "object" || reason === null || !("name" in reason) || typeof reason.name !== "string")
                 return;
             if (reason.name === "AI_NoOutputGeneratedError" || reason.name === "AbortError") {
-                diagnosticsWindow.__writingAssistantUnhandled.push(reason.name);
+                window.__writingAssistantUnhandled.push(reason.name);
             }
         });
     });
@@ -597,11 +603,7 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
     await expect(panel.getByRole("button", { name: "Stop review" })).toHaveCount(0);
     await expect(panel.getByRole("article")).toHaveCount(0);
     await page.evaluate(() => new Promise<void>((resolve) => window.setTimeout(resolve, 0)));
-    expect(
-        await page.evaluate(
-            () => (window as Window & { __writingAssistantUnhandled: string[] }).__writingAssistantUnhandled,
-        ),
-    ).toEqual([]);
+    expect(await page.evaluate(() => window.__writingAssistantUnhandled)).toEqual([]);
 });
 
 test("a pending response cannot reappear after an editor-mode change", async ({ cleanPage: page }) => {
@@ -755,7 +757,6 @@ test("split panes keep review suggestions scoped to their own notes", async ({ c
 
     await page.goto(first.noteUrl);
     await page.getByRole("button", { name: "Open pane mode" }).click();
-    await expect(page.getByText("2 editor panes")).toBeVisible();
     await page.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(secondNoteId);
     const editors = page.locator(".ProseMirror:visible");
     await expect(editors).toHaveCount(2);

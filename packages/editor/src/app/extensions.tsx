@@ -44,6 +44,7 @@ import { MentionNodeView } from "./elements/mention";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { AssetCleanup } from "./extensions/asset-cleanup";
+import { BlockActions } from "./extensions/block-actions";
 import { DomainLink } from "./extensions/domain-link";
 import { EditorCompletion } from "./extensions/editor-completion";
 import { EmojiPicker } from "./extensions/emoji-picker";
@@ -53,6 +54,7 @@ import { MarkdownHighlight } from "./extensions/markdown-highlight";
 import { Neovim } from "./extensions/neovim";
 import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
+import { FootnoteDefinition, FootnoteReference, Footnotes } from "./extensions/footnotes";
 import { Subscript } from "./extensions/subscript";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
@@ -231,6 +233,9 @@ const handleMediaFile = async (
 
 export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): AnyExtension[] => {
     return [
+        FootnoteReference,
+        FootnoteDefinition,
+        Footnotes,
         Frontmatter,
         ColorCode,
         StarterKit.configure({
@@ -339,6 +344,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
         EmojiPicker,
         ReplacerCommands,
         GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
+        BlockActions,
         Mention.extend({
             addAttributes() {
                 return {

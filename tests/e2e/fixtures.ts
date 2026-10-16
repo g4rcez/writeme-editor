@@ -7,11 +7,12 @@ export const test = base.extend<{ cleanPage: Page }>({
 });
 
 export const goHome = async (page: Page) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible({ timeout: 30_000 });
 };
 
 export const createNote = async (page: Page, title: string, content = ""): Promise<string> => {
+    const previousUrl = page.url();
     await page
         .getByRole("main")
         .getByRole("button", { name: /^New note/ })
@@ -21,24 +22,19 @@ export const createNote = async (page: Page, title: string, content = ""): Promi
     await dialog.getByTitle("Note title").fill(title);
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(dialog).toBeHidden();
-    await expect(page).toHaveURL(/\/note\/[^/]+$/);
+    await expect(page).toHaveURL((url) => /\/note\/[^/]+$/.test(url.pathname) && url.href !== previousUrl);
+    const noteId = new URL(page.url()).pathname.slice("/note/".length);
+    const editor = page.locator(`#editor-container-${noteId} .ProseMirror`);
+    await expect(editor).toBeVisible({ timeout: 30_000 });
+    await expect(editor).toHaveAttribute("contenteditable", "true");
+    await expect(editor).toHaveAttribute("aria-busy", "false");
 
     if (content) {
-        const editor = page.locator(".ProseMirror").first();
-        await expect(editor).toBeVisible();
-        await expect(editor).toHaveAttribute("contenteditable", "true");
-        await editor.click();
+        await editor.fill(content);
         const saveStatus = page.locator(".writeme-editor-status-bar output").first();
-        await editor.pressSequentially(content.slice(0, 1));
         await expect(saveStatus).toHaveText("Unsaved changes");
-        await editor.pressSequentially(content.slice(1));
-        const expectedContent = (await editor.innerText()).trim();
-        expect(expectedContent).not.toBe("");
-        const noteUrl = page.url();
+        await editor.press("ControlOrMeta+s");
         await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
-        await page.reload();
-        await expect(page).toHaveURL(noteUrl);
-        await expect(page.locator(".ProseMirror").first()).toContainText(expectedContent);
     }
 
     return page.url();

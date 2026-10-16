@@ -7,16 +7,32 @@ export type CompatibleNoteTarget = {
     target?: string | null;
 };
 
-export function findCompatibleNote(notes: Note[], target: CompatibleNoteTarget | string): Note | undefined {
+export function findCompatibleNote(notes: readonly Note[], target: CompatibleNoteTarget | string): Note | undefined {
+    return findCompatibleNotes(notes, target)[0];
+}
+
+export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNoteTarget | string): Note[] {
+    const idTargets = typeof target === "string" ? [target] : [target.id, target.path, target.target];
+    for (const value of idTargets) {
+        if (!value) continue;
+        const decoded = decodeLookupValue(value);
+        for (const id of [decoded, stripSubpath(decoded), extractNoteIdFromPath(decoded)]) {
+            if (!id) continue;
+            const match = notes.find((note) => note.id === id);
+            if (match) return [match];
+        }
+    }
     const rawValues = getRawTargetValues(target);
-    const hasQualifiedTarget = rawValues.some((value) => stripSubpath(value).includes("/"));
+    const hasQualifiedTarget = rawValues.some((value) =>
+        stripSubpath(decodeLookupValue(value)).replace(/\\/g, "/").includes("/"),
+    );
 
     if (hasQualifiedTarget) {
         const qualifiedLookupValues = createNormalizedValueSet(rawValues, {
             includeBasename: false,
         });
-        const qualifiedMatch = findByLookupValues(notes, qualifiedLookupValues);
-        if (qualifiedMatch) return qualifiedMatch;
+        const qualifiedMatches = findByLookupValues(notes, qualifiedLookupValues);
+        if (qualifiedMatches.length > 0) return qualifiedMatches;
     }
 
     const lookupValues = createNormalizedValueSet(rawValues, {
@@ -25,10 +41,10 @@ export function findCompatibleNote(notes: Note[], target: CompatibleNoteTarget |
     return findByLookupValues(notes, lookupValues);
 }
 
-function findByLookupValues(notes: Note[], lookupValues: Set<string>): Note | undefined {
-    if (lookupValues.size === 0) return undefined;
+function findByLookupValues(notes: readonly Note[], lookupValues: Set<string>): Note[] {
+    if (lookupValues.size === 0) return [];
 
-    return notes.find((note) => {
+    return notes.filter((note) => {
         const candidates = createNoteCandidateValues(note);
         return candidates.some((candidate) => lookupValues.has(normalizeLookupValue(candidate)));
     });
@@ -49,7 +65,7 @@ function createNoteCandidateValues(note: Note): string[] {
         ...createPathSuffixes(note.filePath ?? ""),
         basename(note.filePath ?? ""),
         removeMarkdownExtension(basename(note.filePath ?? "")),
-        ...extractAliases(note.metadata),
+        ...getNoteAliases(note),
     ];
 }
 
@@ -79,7 +95,7 @@ function createNormalizedValueSet(values: string[], { includeBasename }: { inclu
     return normalizedValues;
 }
 
-function extractAliases(metadata: Record<string, unknown> | null | undefined): string[] {
+export function getNoteAliases({ metadata }: Pick<Note, "metadata">): string[] {
     if (!metadata) return [];
     const aliases = metadata.aliases ?? metadata.alias;
     if (Array.isArray(aliases)) return aliases.map(String);
@@ -107,7 +123,13 @@ function decodeLookupValue(value: string): string {
 }
 
 function normalizeLookupValue(value: string): string {
-    return stripSubpath(value).trim().toLowerCase();
+    return stripSubpath(value)
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\.\/+/, "")
+        .replace(/^\/+/, "")
+        .normalize("NFC")
+        .toLowerCase();
 }
 
 function stripSubpath(value: string): string {

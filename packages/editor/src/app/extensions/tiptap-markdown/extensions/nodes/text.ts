@@ -1,7 +1,6 @@
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
-import type { MarkdownSerializerState } from "prosemirror-markdown";
 import { Node } from "@tiptap/core";
-import { escapeHTML } from "../../util/dom";
+import type { MarkdownSerializerState } from "../../serialize/state";
 
 const Text = Node.create({
     name: "text",
@@ -15,7 +14,7 @@ export default Text.extend({
         return {
             markdown: {
                 serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
-                    state.text(escapeHTML(node.text ?? ""));
+                    state.text(state.escapeLiteralText(node.text ?? ""), false);
                 },
                 parse: {
                     // handled by markdown-it

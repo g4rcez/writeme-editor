@@ -139,6 +139,16 @@ function renderNoteRoute() {
 
 describe("NotePage route loading", () => {
     beforeEach(() => {
+        vi.stubGlobal("matchMedia", (query: string) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        }));
         vi.mocked(SettingsService.load).mockReturnValue(SettingsSchema.parse({}));
         vi.mocked(SettingsService.save).mockImplementation(async (patch) => {
             const next = SettingsSchema.parse({ ...SettingsService.load(), ...patch });
@@ -283,7 +293,10 @@ describe("NotePage route loading", () => {
     it("uses the same toolbar for reading-list notes without showing history", () => {
         const dispatch = createDispatch();
         const note = createNote("note-1", NoteType["read-it-later"]);
-        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useGlobalStore).mockReturnValue([
+            { note, notes: [note], tabs: [createNoteTab()] },
+            dispatch,
+        ] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
 
         renderNoteRoute();
@@ -296,6 +309,7 @@ describe("NotePage route loading", () => {
         );
         expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
         expect(screen.getByText("Reading list")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Send selection to note" })).toBeInTheDocument();
     });
 
     it("switches to Markdown mode and persists the editor mode preference", async () => {
@@ -381,7 +395,10 @@ describe("NotePage route loading", () => {
             content: "\n# Markdown title\n\nBody",
             noteType: NoteType["read-it-later"],
         });
-        vi.mocked(useGlobalStore).mockReturnValue([{ note, tabs: [createNoteTab()] }, dispatch] as never);
+        vi.mocked(useGlobalStore).mockReturnValue([
+            { note, notes: [note], tabs: [createNoteTab()] },
+            dispatch,
+        ] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
 
         renderNoteRoute();

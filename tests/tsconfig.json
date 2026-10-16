@@ -1,10 +1,24 @@
 {
     "extends": "../tsconfig.json",
-    "include": ["./**/*.ts"],
+    "include": [
+        "./**/*",
+        "../build/**/*",
+        "../playwright.*.config.ts",
+        "../scripts/playwright-*.ts",
+        "../scripts/e2e*.mts",
+        "../scripts/pr-checks*.mts",
+        "../scripts/build-*.ts",
+        "../packages/editor/src/preload.ts",
+        "../packages/editor/src/types/**/*.d.ts"
+    ],
     "compilerOptions": {
-        "noEmit": true,
-        "types": ["node"],
-        "allowImportingTsExtensions": false,
-        "verbatimModuleSyntax": false
+        "rootDir": "..",
+        "types": ["node", "vite/client"],
+        "paths": {
+            "@/*": ["../packages/editor/src/*"],
+            "@writeme.dev/math": ["../packages/math/src/index.ts"],
+            "@writeme.dev/math/*": ["../packages/math/src/*"],
+            "/packages/*": ["../packages/*"]
+        }
     }
 }

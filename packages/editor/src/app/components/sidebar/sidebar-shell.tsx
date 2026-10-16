@@ -1,6 +1,8 @@
 import { Button } from "@g4rcez/components";
 import { FileSearchIcon, NotePencilIcon, RobotIcon } from "@phosphor-icons/react";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
+import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
+import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
@@ -175,6 +177,18 @@ export const SidebarShell = () => {
                                     }}
                                 />
                             </div>
+                            <SidebarNavItem
+                                label="Today"
+                                active={location.pathname.startsWith("/today")}
+                                icon={<CalendarDotsIcon size={15} />}
+                                onClick={() => { navigate("/today"); uiDispatch.setSidebarOpen(false); }}
+                            />
+                            <SidebarNavItem
+                                label="Open tasks"
+                                active={location.pathname.startsWith("/tasks")}
+                                icon={<CheckSquareIcon size={15} />}
+                                onClick={() => { navigate("/tasks"); uiDispatch.setSidebarOpen(false); }}
+                            />
                             <SidebarNavItem
                                 label="Tasks"
                                 active={uiState.tasksDialog.isOpen}

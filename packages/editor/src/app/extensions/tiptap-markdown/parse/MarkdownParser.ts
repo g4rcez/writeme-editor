@@ -2,6 +2,7 @@ import { Editor } from "@tiptap/core";
 import { Marked } from "marked";
 import { escapeHtml } from "@/lib/html";
 import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
+import { configureFootnoteMarkdown } from "@/lib/markdown-footnotes";
 import { decodeMarkdownFilePath } from "@/lib/markdown-links";
 import { configureTableMarkdown } from "@/lib/markdown-table";
 import {
@@ -126,7 +127,6 @@ const appNoteUrlExtension = {
         },
     ],
 };
-
 export class MarkdownParser {
     editor: Editor | null = null;
     md: Marked | null = null;
@@ -135,6 +135,9 @@ export class MarkdownParser {
         this.editor = editor;
         this.md = new Marked({ gfm: true, breaks: breaks ?? true });
         configureHighlightMarkdown(this.md);
+        if (editor.extensionManager.extensions.some((extension) => extension.name === "footnoteDefinition")) {
+            configureFootnoteMarkdown(this.md);
+        }
         configureTableMarkdown(this.md);
         this.md.use(appNoteUrlExtension);
         this.md.use({
@@ -174,6 +177,21 @@ export class MarkdownParser {
 
     normalizeDOM(node: HTMLElement, { inline, content }: { inline: boolean; content: string }) {
         this.normalizeBlocks(node);
+        // HTML formatting between table rows/cells is not document content.
+        // Full whitespace parsing would otherwise fit it into synthetic rows/cells.
+        node.querySelectorAll("table, thead, tbody, tfoot, tr").forEach((container) => {
+            if (container.closest("pre, code")) return;
+            Array.from(container.childNodes).forEach((child) => {
+                if (child.nodeType === Node.TEXT_NODE && /^[\t\n\f\r ]*$/.test(child.textContent ?? "")) {
+                    container.removeChild(child);
+                }
+            });
+        });
+        for (const container of [node, ...node.querySelectorAll("blockquote,ul,ol,li")]) {
+            for (const child of [...container.childNodes]) {
+                if (child.nodeType === Node.TEXT_NODE && !child.textContent?.trim()) child.remove();
+            }
+        }
         node.querySelectorAll("*").forEach((el) => {
             if (el.nextSibling?.nodeType === Node.TEXT_NODE && !el.closest("pre")) {
                 el.nextSibling.textContent = (el.nextSibling.textContent ?? "").replace(/^\n/, "");

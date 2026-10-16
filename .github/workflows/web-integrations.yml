@@ -1,0 +1,108 @@
+name: Full web integrations
+
+on:
+    workflow_call:
+
+permissions:
+    contents: read
+
+jobs:
+    landing:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        env:
+            CI: "true"
+            WRITEME_E2E_PREBUILT: "1"
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+                  cache-dependency-path: |
+                      package-lock.json
+                      packages/landing/package-lock.json
+            - run: npm ci --ignore-scripts
+            - run: npm ci --prefix packages/landing
+            - name: Verify landing types, lint and production build
+              run: |
+                  npm --prefix packages/landing run typecheck
+                  npm --prefix packages/landing run lint
+                  npm --prefix packages/landing run build
+            - run: npm exec playwright -- install --with-deps chromium
+            - run: npm run test:e2e -- --platform linux --suite landing
+            - name: Upload landing evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: landing-verification
+                  path: artifacts/playwright/linux/landing/
+                  if-no-files-found: warn
+                  retention-days: 14
+    whisper:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        env:
+            CI: "true"
+            NODE_OPTIONS: --max-old-space-size=4096
+            WRITEME_E2E_PREBUILT: "1"
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: npm
+            - run: npm ci --ignore-scripts
+            - run: npm exec playwright -- install --with-deps chromium
+            - run: npm run browser:build
+            - run: sudo apt-get update && sudo apt-get install -y ffmpeg cmake
+            - name: Check out pinned Whisper server
+              uses: actions/checkout@v4
+              with:
+                  repository: ggml-org/whisper.cpp
+                  ref: d1be6fde11ac6e0407606b4e42fe72d34add8037
+                  path: .whisper-test
+                  persist-credentials: false
+            - name: Cache the checksum-verified Whisper model
+              uses: actions/cache@v4
+              with:
+                  path: .whisper-test/models/ggml-tiny.bin
+                  key: whisper-tiny-be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21
+            - name: Compile pinned CPU Whisper server
+              run: |
+                  cmake -S .whisper-test -B .whisper-test/build -DWHISPER_BUILD_SERVER=ON -DGGML_NATIVE=OFF
+                  cmake --build .whisper-test/build --target whisper-server --parallel 2
+                  bash .whisper-test/models/download-ggml-model.sh tiny
+                  printf '%s  %s\n' be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21 \
+                    .whisper-test/models/ggml-tiny.bin | sha256sum --check
+            - name: Transcribe browser audio using live local Whisper
+              run: |
+                  .whisper-test/build/bin/whisper-server \
+                    --model .whisper-test/models/ggml-tiny.bin \
+                    --threads 4 --port 8097 --convert --language auto \
+                    > "$RUNNER_TEMP/whisper-server.log" 2>&1 &
+                  WHISPER_PID=$!
+                  trap 'kill "$WHISPER_PID"' EXIT
+                  for attempt in {1..30}; do
+                      if curl --fail --silent http://localhost:8097/health >/dev/null; then
+                          break
+                      fi
+                      sleep 1
+                  done
+                  curl --fail --silent http://localhost:8097/health >/dev/null
+                  export MEETING_AUDIO_FIXTURE="$PWD/.whisper-test/samples/jfk.wav"
+                  npm run test:e2e -- --platform linux --suite production \
+                    --project chromium --grep @live-local-whisper
+              env:
+                  MEETING_WHISPER_ENDPOINT: http://localhost:8097/inference
+                  PLAYWRIGHT_ARTIFACT_DIR: artifacts/playwright/linux/live-whisper
+            - name: Upload Whisper evidence
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: live-whisper-verification
+                  path: |
+                      artifacts/playwright/linux/live-whisper/
+                      ${{ runner.temp }}/whisper-server.log
+                  if-no-files-found: warn
+                  retention-days: 14

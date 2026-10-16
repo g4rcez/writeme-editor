@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     getQuicknoteByDate: vi.fn(),
     getOne: vi.fn(),
     save: vi.fn(),
+    updateMetadata: vi.fn(),
 }));
 
 vi.mock("@/lib/is-electron", () => ({ isElectron: mocks.isElectron }));
@@ -19,6 +20,7 @@ vi.mock("@/store/repositories", () => ({
             getQuicknoteByDate: mocks.getQuicknoteByDate,
             getOne: mocks.getOne,
             save: mocks.save,
+            updateMetadata: mocks.updateMetadata,
         },
     },
 }));
@@ -60,11 +62,13 @@ describe("getOrCreateDailyQuickNote", () => {
 
         expect(note.title).toBe("Daily review");
         expect(note.content).toBe("Template content");
+        expect(note.metadata.journalDate).toBe("2026-05-12");
         expect(mocks.save).toHaveBeenCalledWith(note);
     });
 
     it("leaves an existing daily note unchanged when a template is selected", async () => {
         const existing = Note.new("Today's note", "Existing user content", NoteType.quick);
+        existing.metadata.journalDate = "2026-05-12";
         mocks.getQuicknoteByDate.mockResolvedValue(existing);
 
         const note = await getOrCreateDailyQuickNote(new Date(2026, 4, 12), {
@@ -76,6 +80,38 @@ describe("getOrCreateDailyQuickNote", () => {
         expect(note.title).toBe("Today's note");
         expect(note.content).toBe("Existing user content");
         expect(mocks.save).not.toHaveBeenCalled();
+    });
+
+    it("durably adopts a backdated legacy title without changing its content or creation date", async () => {
+        const existing = Note.parse({
+            ...Note.new("2025-12-31-quicknote.md", "# Retrospective\n\nKeep my review\n", NoteType.quick),
+            createdAt: new Date(2026, 0, 7),
+        });
+        mocks.getQuicknoteByDate.mockResolvedValue(existing);
+        const note = await getOrCreateDailyQuickNote(new Date(2025, 11, 31));
+        expect(note.metadata.journalDate).toBe("2025-12-31");
+        expect(note.content).toBe("# Retrospective\n\nKeep my review\n");
+        expect(note.createdAt).toEqual(new Date(2026, 0, 7));
+        expect(mocks.updateMetadata).toHaveBeenCalledWith(note.id, { journalDate: "2025-12-31" });
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
+
+    it("reuses a renamed workspace daily note before inspecting or writing the canonical path", async () => {
+        mocks.isElectron.mockReturnValue(true);
+        const existing = Note.new("Retrospective", "Preserved review", NoteType.quick);
+        existing.filePath = "/workspace/archive/retrospective.md";
+        existing.metadata.journalDate = "2025-12-31";
+        mocks.getQuicknoteByDate.mockResolvedValue(existing);
+        const getByFilePath = vi.fn();
+        const writeFile = vi.fn();
+        Object.defineProperty(window, "electronAPI", {
+            configurable: true,
+            value: { db: { notes: { getByFilePath } }, fs: { writeFile } },
+        });
+        expect(await getOrCreateDailyQuickNote(new Date(2025, 11, 31))).toBe(existing);
+        expect(getByFilePath).not.toHaveBeenCalled();
+        expect(writeFile).not.toHaveBeenCalled();
+        expect(existing.content).toBe("Preserved review");
     });
 
     it("uses separate notes for separate local days", async () => {
@@ -128,6 +164,7 @@ describe("getOrCreateDailyQuickNote", () => {
         const note = await getOrCreateDailyQuickNote(new Date(2026, 4, 12), { content: "Template" });
 
         expect(note.content).toBe("Keep this content");
+        expect(note.metadata.journalDate).toBe("2026-05-12");
         expect(writeFile).not.toHaveBeenCalled();
         expect(mocks.save).toHaveBeenCalledWith(note);
     });

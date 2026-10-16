@@ -3,6 +3,8 @@ export const suites = ["browser", "production", "native", "landing", "profiles",
 export type Platform = (typeof platforms)[number];
 export type Suite = (typeof suites)[number];
 
+export const productionTestPattern = /-production\.spec\.ts|@production\b/;
+
 export function parseE2EArguments(args: string[]): {
     platform: Platform;
     suite: Suite;

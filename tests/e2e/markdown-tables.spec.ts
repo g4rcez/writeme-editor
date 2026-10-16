@@ -1,5 +1,5 @@
 import type { Locator } from "@playwright/test";
-import { createNote, expect, goHome, test } from "./fixtures";
+import { expect, test } from "./fixtures";
 
 const beforeTable = "Release review before the table.";
 const afterTable = "After the table, confirm the release notes.";
@@ -67,35 +67,31 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             cleanPage: page,
         }, testInfo) => {
             await page.setViewportSize({ width: 1440, height: 1000 });
-            await goHome(page);
             const title = `Table ${tableCase} ${size} ${action}`;
             // One long paragraph crosses the 50,000-character worker threshold without exercising line chunking.
             const markdown =
                 size === "large" ? `${"Release background. ".repeat(2600)}\n\n${tableMarkdown}` : tableMarkdown;
-            let noteUrl: string;
-            if (action === "opening") {
-                // Desktop browser builds have no Markdown file import; seed storage, then open through All notes.
-                const id = await page.evaluate(
-                    async ({ title, content }) => {
-                        // Browser-only modules must load inside the page, not in Playwright's Node process.
-                        const repositoryModule = "/packages/editor/src/store/repositories/index.ts";
-                        const noteModule = "/packages/editor/src/store/note.ts";
-                        const { repositories } = await import(repositoryModule);
-                        const { Note } = await import(noteModule);
-                        const note = Note.new(title, content);
-                        await repositories.notes.save(note);
-                        return note.id;
-                    },
-                    { title, content: markdown },
-                );
-                await page.goto("/notes");
-                await expect(page.getByRole("heading", { name: "All notes", exact: true })).toBeVisible();
-                await page.getByRole("link", { name: title, exact: true }).click();
-                await expect(page).toHaveURL(new RegExp(`/note/${id}$`));
-                noteUrl = page.url();
-            } else {
-                noteUrl = await createNote(page, title);
-            }
+            // Seed storage in-page, then open through All notes because desktop browser builds have no Markdown file import.
+            await page.goto("/", { waitUntil: "commit" });
+            const id = await page.evaluate(
+                async ({ title, content }) => {
+                    // Browser-only modules must load inside the page, not in Playwright's Node process.
+                    const repositoryModule = "/packages/editor/src/store/repositories/index.ts";
+                    const noteModule = "/packages/editor/src/store/note.ts";
+                    const { repositories } = await import(repositoryModule);
+                    const { Note } = await import(noteModule);
+                    const note = Note.new(title, content);
+                    await repositories.notes.save(note);
+                    return note.id;
+                },
+                { title, content: action === "opening" ? markdown : "" },
+            );
+            await page.getByRole("link", { name: "All notes", exact: true }).click();
+            await expect(page).toHaveURL(/\/notes$/);
+            await expect(page.getByRole("heading", { name: "All notes", exact: true })).toBeVisible();
+            await page.getByRole("link", { name: title, exact: true }).click();
+            await expect(page).toHaveURL(new RegExp(`/note/${id}$`));
+            const noteUrl = page.url();
 
             const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
             await expect(editor).toBeVisible();
@@ -122,7 +118,7 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             await expect(saveStatus).toHaveText("Unsaved changes");
             await editor.press("ControlOrMeta+s");
             await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
-            await page.reload();
+            await page.reload({ waitUntil: "domcontentloaded" });
             await expect(page).toHaveURL(noteUrl);
             await expectPreservedTable(editor, afterTable + savedEdit);
             await page.screenshot({ path: testInfo.outputPath(`uneven-table-${size}-${action}-reopened.png`) });

@@ -40,7 +40,7 @@ type SlashCommandItem = {
     description: string;
     icon: React.ElementType;
     group: string;
-    needsModal?: "table" | "math" | "block-math";
+    needsModal?: "table" | "math" | "block-math" | "footnote";
     command: (editor: Editor, range: SlashCommandRange) => void;
 };
 
@@ -139,12 +139,15 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         group: "Inserts",
         needsModal: "math",
         command: (editor, range) =>
-            editor
-                .chain()
-                .focus()
-                .deleteRange(range)
-                .insertContent({ type: "inlineMath", attrs: { latex: "" } })
-                .run(),
+            editor.chain().focus().deleteRange(range).insertContent({ type: "inlineMath", attrs: { latex: "" } }).run(),
+    },
+    {
+        label: "Footnote",
+        description: "Insert a linked footnote reference and definition with a custom name",
+        icon: PencilLineIcon,
+        group: "Inserts",
+        needsModal: "footnote",
+        command: (editor, range) => editor.chain().focus().deleteRange(range).insertFootnote().run(),
     },
     {
         label: "LaTeX Block",
@@ -313,7 +316,49 @@ const MathInsertModal = ({
     );
 };
 
-const openSlashModal = (type: "table" | "math" | "block-math", editor: Editor) => {
+const FootnoteInsertModal = ({ editor, onClose }: { editor: Editor; onClose: () => void }) => {
+    const [name, setName] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const confirm = (event: React.FormEvent) => {
+        event.preventDefault();
+        const id = name.trim() || undefined;
+        if (!editor.chain().focus().insertFootnote({ id }).run()) {
+            setError("Use a unique name without spaces, brackets, or backslashes.");
+            return;
+        }
+        onClose();
+    };
+    return (
+        <Modal open onChange={onClose} title="Insert Footnote" className="max-w-sm">
+            <form onSubmit={confirm} className="flex flex-col gap-4">
+                <Input
+                    title="Name"
+                    id="footnote-name"
+                    value={name}
+                    placeholder="e.g. source"
+                    feedback="Leave blank to autoname."
+                    onChange={(event) => {
+                        setName(event.target.value);
+                        setError(null);
+                    }}
+                />
+                {error && (
+                    <p role="alert" className="text-sm text-foreground">
+                        {error}
+                    </p>
+                )}
+                <div className="flex gap-2 justify-end">
+                    <Button type="button" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button type="submit">Insert</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
+const openSlashModal = (type: "table" | "math" | "block-math" | "footnote", editor: Editor) => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -324,6 +369,8 @@ const openSlashModal = (type: "table" | "math" | "block-math", editor: Editor) =
     root.render(
         type === "table" ? (
             <TableInsertModal editor={editor} onClose={close} />
+        ) : type === "footnote" ? (
+            <FootnoteInsertModal editor={editor} onClose={close} />
         ) : (
             <MathInsertModal editor={editor} mode={type === "block-math" ? "block" : "inline"} onClose={close} />
         ),

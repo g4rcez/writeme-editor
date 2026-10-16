@@ -8,8 +8,6 @@ test.use({
     actionTimeout: 10_000,
 });
 
-test.skip(process.env.RECORD_COMPLETION_DEMO !== "1", "Run with RECORD_COMPLETION_DEMO=1 to record the walkthrough");
-
 async function caption(page: Page, title: string, action: string, detail = ""): Promise<void> {
     await page.evaluate(
         ({ title, action, detail }) => {

@@ -1,5 +1,7 @@
 /** @jsxImportSource @tiptap/core */
-import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
+import { getHTMLFromFragment, mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
+import { Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { defaultMarkdownSerializer, type MarkdownSerializerState } from "prosemirror-markdown";
 
 export interface BlockquoteOptions {
     HTMLAttributes: Record<string, any>;
@@ -31,7 +33,14 @@ export const Blockquote = Node.create<BlockquoteOptions>({
         return [{ tag: "blockquote" }];
     },
     addAttributes() {
-        return { "data-theme": "ok" };
+        return {
+            "data-theme": "ok",
+            literal: {
+                default: false,
+                parseHTML: (element) => element.getAttribute("data-literal-quote") === "true",
+                renderHTML: (attributes) => (attributes.literal ? { "data-literal-quote": "true" } : {}),
+            },
+        };
     },
     renderHTML(props) {
         const theme = props?.HTMLAttributes["data-theme"];
@@ -41,6 +50,29 @@ export const Blockquote = Node.create<BlockquoteOptions>({
                 <slot />
             </blockquote>
         );
+    },
+    addStorage() {
+        return {
+            markdown: {
+                serialize(
+                    state: MarkdownSerializerState,
+                    node: ProseMirrorNode,
+                    parent: ProseMirrorNode,
+                    index: number,
+                ) {
+                    // Markdown admonition syntax cannot express an intentionally literal marker.
+                    if (
+                        node.attrs.literal &&
+                        /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i.test(node.firstChild?.textContent ?? "")
+                    ) {
+                        state.write(getHTMLFromFragment(Fragment.from(node), node.type.schema));
+                        state.closeBlock(node);
+                    } else {
+                        defaultMarkdownSerializer.nodes.blockquote!(state, node, parent, index);
+                    }
+                },
+            },
+        };
     },
     addCommands() {
         return {

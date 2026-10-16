@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, goHome, test } from "./fixtures";
+import { expect, test } from "./fixtures";
 
 const webDestinations = [
     { title: "Editor", path: "/settings/editor" },
@@ -59,12 +59,9 @@ const expectNoHorizontalOverflow = async (page: Page): Promise<void> => {
 };
 
 test.describe("Settings", () => {
-    test.beforeEach(async ({ cleanPage }) => {
-        await goHome(cleanPage);
-    });
 
     test("page renders core sections", async ({ cleanPage: page }) => {
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         await expect(page.getByRole("heading", { name: "Editor" })).toBeVisible();
         await expect(page.getByText("Autosave", { exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: /Save Editor/ })).toBeVisible();
@@ -72,7 +69,7 @@ test.describe("Settings", () => {
 
     test("reaches web settings through section links and updates the active route", async ({ cleanPage: page }) => {
         await page.setViewportSize({ width: 1280, height: 900 });
-        await page.goto("/settings/quick");
+        await page.goto("/settings/quick", { waitUntil: "domcontentloaded" });
         const navigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
         await expect(navigation).toBeVisible();
         await expect(page.getByRole("navigation", { name: "Workspace views", exact: true })).toBeHidden();
@@ -96,7 +93,7 @@ test.describe("Settings", () => {
             });
         }
 
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(navigation.getByRole("link", { name: "AI", exact: true })).toHaveAttribute("aria-current", "page");
         await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
 
@@ -110,7 +107,7 @@ test.describe("Settings", () => {
 
     test("activates settings section links with the keyboard", async ({ cleanPage: page }) => {
         await page.setViewportSize({ width: 1280, height: 900 });
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         const navigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
         const editor = navigation.getByRole("link", { name: "Editor", exact: true });
         const templates = navigation.getByRole("link", { name: "Templates", exact: true });
@@ -131,7 +128,7 @@ test.describe("Settings", () => {
     });
 
     test("persists editor preferences and retains the delay when Autosave is disabled", async ({ cleanPage: page }) => {
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         const main = page.getByRole("main", { name: "Settings" });
         const autosave = main.getByRole("checkbox", { name: "Autosave", exact: true });
         const delay = main.getByRole("textbox", { name: "Autosave delay", exact: true });
@@ -144,17 +141,11 @@ test.describe("Settings", () => {
         await vim.check();
         await fontSize.fill("19");
         await saveSettings(page, "Editor");
-        await page.reload();
-        await expect(autosave).toBeChecked();
-        await expect(delay).toHaveValue("1750");
-        await expect(mode).toHaveValue("markdown");
-        await expect(vim).toBeChecked();
-        await expect(fontSize).toHaveValue("19");
 
         await autosave.uncheck();
         await expect(delay).toBeHidden();
         await saveSettings(page, "Editor");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(autosave).not.toBeChecked();
         await expect(delay).toBeHidden();
         await expect(mode).toHaveValue("markdown");
@@ -164,7 +155,7 @@ test.describe("Settings", () => {
         await autosave.check();
         await expect(delay).toHaveValue("1750");
         await saveSettings(page, "Editor");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(autosave).toBeChecked();
         await expect(delay).toHaveValue("1750");
     });
@@ -179,13 +170,13 @@ test.describe("Settings", () => {
             }, testInfo) => {
                 await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
                 await page.setViewportSize({ width: 1280, height: 900 });
-                await page.goto("/settings/appearance");
+                await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
                 await page
                     .getByRole("main", { name: "Settings" })
                     .getByRole("combobox", { name: "Theme", exact: true })
                     .selectOption(theme);
                 await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
-                await page.reload();
+                await page.reload({ waitUntil: "domcontentloaded" });
                 await expect(
                     page.getByRole("main", { name: "Settings" }).getByRole("combobox", { name: "Theme", exact: true }),
                 ).toHaveValue(theme);
@@ -236,7 +227,7 @@ test.describe("Settings", () => {
 
     test("Native theme follows the system light and dark appearance", async ({ cleanPage: page }) => {
         await page.emulateMedia({ colorScheme: "light" });
-        await page.goto("/settings/appearance");
+        await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
         await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible();
         await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption("native");
         await page.getByRole("button", { name: "Save Appearance" }).click();

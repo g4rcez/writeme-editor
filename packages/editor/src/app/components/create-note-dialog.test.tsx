@@ -147,11 +147,35 @@ describe("CreateNoteDialog", () => {
         render(<CreateNoteDialog />);
 
         expect(screen.getByLabelText("Template (optional)")).toHaveAttribute("placeholder", "Choose a template");
-        expect(screen.getByText("Blank note")).toBeInTheDocument();
+        expect(screen.getByText("No starter example")).toBeInTheDocument();
+        expect(screen.getByText("No saved template")).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Create note" })).toBeInTheDocument();
         fireEvent.change(screen.getByLabelText("Template (optional)"), { target: { value: "template-1" } });
         expect(screen.getByRole("button", { name: "Create note" })).toBeInTheDocument();
     });
+
+    it("previews a starter without changing the title and resets on reopening", () => {
+        const { rerender } = render(<CreateNoteDialog />);
+        fireEvent.input(screen.getByLabelText("Note title"), { target: { value: "My project" } });
+        fireEvent.change(screen.getByLabelText("Starter example (optional)"), { target: { value: "project-brief" } });
+        expect(screen.getByText("Define the goal, scope, and next steps for a project.")).toBeInTheDocument();
+        expect(screen.getByLabelText("Starter content preview")).toHaveTextContent("## Goal");
+        expect(screen.getByLabelText("Note title")).toHaveValue("My project");
+        mocks.state.createNoteDialog.isOpen = false;
+        rerender(<CreateNoteDialog />);
+        mocks.state.createNoteDialog.isOpen = true;
+        rerender(<CreateNoteDialog />);
+        expect(screen.getByLabelText("Starter example (optional)")).toHaveValue("");
+        expect(screen.queryByText("Preview content")).not.toBeInTheDocument();
+    });
+
+    it.each(["quick", "task", "excalidraw", "freehand", "meeting-note", "pdf"])(
+        "keeps starters out of %s creation", (type) => {
+            mocks.state.createNoteDialog.type = type;
+            render(<CreateNoteDialog />);
+            expect(screen.queryByLabelText("Starter example (optional)")).not.toBeInTheDocument();
+        },
+    );
 
     it.each([
         ["read", "Couldn’t open the workspace folder."],
