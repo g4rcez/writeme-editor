@@ -5,6 +5,9 @@
 - Let authors choose a unique Markdown footnote ID when inserting a footnote;
   leave the name blank to keep automatic `fn-N` IDs.
 
+- Add a Delete footnote action that removes linked references and duplicate
+  definitions together; one undo restores the footnote.
+
 - Split CI into a five-minute-target PR gate and full nightly/release verification.
   Discover browser, production and native regressions automatically, shard browser
   execution, and replace feature-specific lint/typecheck lists with directory scopes.
