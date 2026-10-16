@@ -448,6 +448,8 @@ test.describe("Search into saved Views", () => {
         await page.goto("/views");
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Recently edited", exact: true })).toHaveCount(1);
+        await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(1);
         await page.reload();
         await expect(page.getByRole("button", { name: "Recently edited", exact: true })).toHaveCount(1);
         await page.getByRole("button", { name: "Recently edited", exact: true }).click();
@@ -474,6 +476,7 @@ test.describe("Search into saved Views", () => {
         await page.getByRole("button", { name: "All Views", exact: true }).click();
         page.once("dialog", (dialog) => dialog.accept());
         await page.getByRole("button", { name: "Delete Reading queue", exact: true }).click();
+        await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
         await page.reload();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
