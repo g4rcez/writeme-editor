@@ -63,6 +63,7 @@ test("adds, reloads, edits and reopens both starter Views through Electron SQLit
         await expect
             .poll(async () => (await storedViews(page)).find((view) => view.title === "My reading queue")?.title)
             .toBe("My reading queue");
+        await page.getByRole("button", { name: "Collapse sidebar", exact: true }).click();
         await page.getByRole("button", { name: "All Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "My reading queue", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toHaveCount(0);

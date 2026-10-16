@@ -109,6 +109,8 @@ async function savedQuery(page: Page): Promise<string | undefined> {
     });
 }
 
+test.use({ video: { mode: "on", size: { width: 1440, height: 900 } } });
+
 test.describe("Search into saved Views", () => {
     test.use({ timezoneId: "America/Sao_Paulo" });
 
@@ -506,5 +508,65 @@ test.describe("Search into saved Views", () => {
         await expect(page).toHaveURL(/\/views\/[^/]+$/);
         await expect(page.getByTitle("View title", { exact: true })).toHaveValue("Phone reading");
         await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeVisible();
+    });
+    test("records two Search-to-View examples", async ({ cleanPage: page }) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await goHome(page);
+        await seedNotes(page, [
+            {
+                id: "demo-reading",
+                title: "Coastal field study",
+                tags: ["reading", "research"],
+                noteType: "read-it-later",
+                updatedAt: "2026-10-15T15:00:00Z",
+            },
+            {
+                id: "demo-local",
+                title: "Reading notes",
+                tags: ["reading"],
+                updatedAt: "2026-10-15T15:00:00Z",
+            },
+            {
+                id: "demo-folder",
+                title: "Research field notes",
+                tags: ["research"],
+                filePath: "/vault/Research/field-notes.md",
+                updatedAt: "2026-10-15T15:00:00Z",
+            },
+            {
+                id: "demo-sibling",
+                title: "Archived research",
+                tags: ["research"],
+                filePath: "/vault/Archive/field-notes.md",
+                updatedAt: "2026-10-15T15:00:00Z",
+            },
+        ]);
+
+        await openSearch(page);
+        await page.getByRole("combobox", { name: "Add tag filter" }).selectOption("reading");
+        await page.getByRole("combobox", { name: "Filter by note type" }).selectOption("read-it-later");
+        const results = page.getByRole("list", { name: "Search results" });
+        await expect(results.getByRole("button")).toHaveCount(1);
+        await expect(results).toContainText("Coastal field study");
+        await page.waitForTimeout(1_200);
+        await page.getByRole("button", { name: "Save as View", exact: true }).click();
+        await page.getByTitle("View title", { exact: true }).fill("Reading queue");
+        await page.getByRole("button", { name: "Create View", exact: true }).click();
+        const main = page.getByRole("main");
+        await expect(main.getByRole("link", { name: "Coastal field study", exact: true })).toBeVisible();
+        await expect(main.getByRole("link", { name: "Reading notes", exact: true })).toHaveCount(0);
+        await page.waitForTimeout(1_200);
+        await page.getByRole("button", { name: "All Views", exact: true }).click();
+        await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toBeVisible();
+
+        await openSearch(page);
+        await page.getByRole("button", { name: "Reset filters", exact: true }).click();
+        await page.getByRole("combobox", { name: "Filter by folder or location" }).selectOption("folder:/vault/Research");
+        await page.getByLabel("Updated on or after", { exact: true }).fill("2026-10-15");
+        await page.getByLabel("Updated through", { exact: true }).fill("2026-10-15");
+        await expect(results.getByRole("button")).toHaveCount(1);
+        await expect(results).toContainText("Research field notes");
+        await expect(results).not.toContainText("Archived research");
+        await page.waitForTimeout(1_500);
     });
 });
