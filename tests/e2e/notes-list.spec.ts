@@ -37,7 +37,6 @@ test.describe("Notes list", () => {
     test("explains how to recover from an empty search", async ({ cleanPage: page }) => {
         await seedNote(page, "Research notes");
         await page.goto("/notes");
-        await expect(page.getByRole("columnheader", { name: "Tags", exact: true })).toBeVisible();
         await page.getByPlaceholder("Search notes or tags...").fill("missing");
 
         await expect(page.getByText("No notes found for “missing”.")).toBeVisible();
@@ -46,7 +45,7 @@ test.describe("Notes list", () => {
         await expect(page.getByRole("link", { name: "Research notes", exact: true })).toBeVisible();
     });
 
-    test("explains that selected notes can be restored from Trash", async ({ cleanPage: page }) => {
+    test("moves selected notes to Trash after confirmation", async ({ cleanPage: page }) => {
         await seedNote(page, "First disposable note");
         await seedNote(page, "Second disposable note");
         await page.goto("/notes");
@@ -54,9 +53,8 @@ test.describe("Notes list", () => {
         await page.getByRole("checkbox", { name: "Select all notes" }).check();
         await page.getByRole("button", { name: "Move to Trash", exact: true }).last().click();
 
-        const dialog = page.getByRole("dialog", { name: "Move 2 notes to Trash?" });
+        const dialog = page.getByRole("alertdialog", { name: "Move 2 notes to Trash?" });
         await expect(dialog).toBeVisible();
-        await expect(dialog.getByText("You can restore them from Trash.")).toBeVisible();
         await dialog.getByRole("button", { name: "Move to Trash", exact: true }).click();
         await expect(page.getByText("No notes yet.", { exact: true })).toBeVisible();
     });

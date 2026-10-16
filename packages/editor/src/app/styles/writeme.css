@@ -168,7 +168,6 @@
 
 .writeme-editor-page {
     @apply relative flex min-h-full w-full flex-col print:block print:h-auto print:overflow-visible;
-    container-type: inline-size;
     gap: 0;
     padding: 0 clamp(1rem, 5vw, 2.5rem) 0;
 }
@@ -185,95 +184,10 @@
     padding-top: clamp(1.25rem, 3vw, 2rem);
 }
 
-.writeme-note-special-page {
-    container-type: inline-size;
-}
-
-.writeme-note-toolbar {
-    @apply mx-auto grid min-h-9 w-full min-w-0 items-center border-b border-border/50 bg-background print:hidden;
-    --var-button-small-height: 2rem;
-    --var-button-icon-font-size: 1rem;
-    max-width: min(100%, 760px);
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-areas: "leading filename actions";
-    padding-inline: clamp(0rem, 1vw, 0.75rem);
-}
-
-.writeme-note-toolbar-leading {
-    @apply flex min-w-0 items-center justify-start;
-    grid-area: leading;
-}
-
-.writeme-note-toolbar-file-name {
-    @apply max-w-[min(38vw,32rem)] truncate text-sm font-medium text-foreground/80;
-    grid-area: filename;
-}
-
-.writeme-note-toolbar-actions {
-    @apply justify-end;
-    grid-area: actions;
-}
-
 .writeme-note-title-editor {
     font-size: 1.75rem;
     line-height: 1.2;
     letter-spacing: 0.05ch;
-}
-
-.writeme-note-editor-controls {
-    @apply flex min-w-0 max-w-full flex-wrap items-center gap-3;
-}
-
-.writeme-editor-mode-toggle {
-    @apply m-0 flex min-w-0 items-center gap-1 border-0 p-0;
-}
-
-.writeme-note-actions-group {
-    @apply m-0 flex min-w-0 max-w-full flex-wrap items-center gap-1 border-0 p-0;
-}
-
-.writeme-note-tool-button {
-    @apply size-8 shrink-0;
-}
-
-.writeme-markdown-vim-mode-toggle {
-    @apply inline-flex min-h-8 shrink-0 items-center whitespace-nowrap text-xs text-muted-foreground;
-}
-
-@container (max-width: 42rem) {
-    .writeme-note-toolbar {
-        position: relative;
-        top: auto;
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas:
-            "filename"
-            "leading"
-            "actions";
-        justify-items: center;
-        row-gap: 0.25rem;
-        padding: 0.5rem 0.75rem;
-    }
-
-    .writeme-note-toolbar-file-name {
-        @apply max-w-full;
-    }
-
-    .writeme-note-toolbar-leading,
-    .writeme-note-toolbar-actions {
-        @apply w-full justify-center;
-    }
-
-    .writeme-note-editor-controls {
-        @apply w-full justify-center;
-    }
-
-    .writeme-note-table-of-contents {
-        @apply static;
-    }
-
-    .writeme-note-table-of-contents-popover {
-        @apply max-w-[calc(100vw-2rem)];
-    }
 }
 
 .writeme-note-metadata {
@@ -293,10 +207,6 @@
 .writeme-editor-page--panes > .writeme-note-header {
     @apply px-4 py-3;
     padding-top: 0;
-}
-
-.writeme-editor-page--panes > .writeme-note-toolbar {
-    @apply shrink-0 px-4;
 }
 
 .writeme-editor-page--panes > .writeme-editor-status-bar {
@@ -359,21 +269,6 @@
     .writeme-formatting-toolbar button {
         flex: 0 0 auto;
         white-space: nowrap;
-    }
-}
-
-@media (max-width: 40rem), (pointer: coarse) {
-    .writeme-note-toolbar {
-        --var-button-small-height: 2.75rem;
-        --var-button-min-height: 2.75rem;
-    }
-
-    .writeme-note-tool-button {
-        @apply size-11;
-    }
-
-    .writeme-markdown-vim-mode-toggle {
-        @apply min-h-11;
     }
 }
 
@@ -497,17 +392,6 @@
 
 .writeme-tabs-bar-new {
     @apply flex size-9 shrink-0 items-center justify-center border-l text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
-    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
-}
-
-.writeme-context-pane {
-    @apply relative z-20 flex h-full min-h-0 w-72 shrink-0 flex-col border-l print:hidden;
-    background-color: var(--wm-surface-1);
-    border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
-}
-
-.writeme-context-pane-header {
-    @apply flex h-10 min-h-10 items-center justify-between gap-2 border-b px-3;
     border-color: color-mix(in srgb, var(--var-color-border) 55%, transparent);
 }
 

@@ -44,6 +44,7 @@ import { MentionNodeView } from "./elements/mention";
 import { TaskListItem } from "./elements/task-list-item";
 import { YoutubeBlock } from "./elements/youtube-block";
 import { AssetCleanup } from "./extensions/asset-cleanup";
+import { BlockActions } from "./extensions/block-actions";
 import { DomainLink } from "./extensions/domain-link";
 import { EditorCompletion } from "./extensions/editor-completion";
 import { EmojiPicker } from "./extensions/emoji-picker";
@@ -343,6 +344,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
         EmojiPicker,
         ReplacerCommands,
         GlobalDragHandle.configure({ dragHandleWidth: 24, scrollTreshold: 100 }),
+        BlockActions,
         Mention.extend({
             addAttributes() {
                 return {

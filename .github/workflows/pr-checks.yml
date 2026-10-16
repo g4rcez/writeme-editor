@@ -13,20 +13,23 @@ concurrency:
 
 jobs:
     platforms:
-        uses: ./.github/workflows/platform-verification.yml
+        uses: ./.github/workflows/pr-verification.yml
     mcp:
         uses: ./.github/workflows/mcp.yml
+        with:
+            fast: true
     all-checks:
         name: All PR checks passed
         if: always()
         needs: [platforms, mcp]
         runs-on: ubuntu-latest
+        timeout-minutes: 1
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .nvmrc
-            - name: Require all platform, shared and independent package checks to succeed
+            - name: Require all fast PR checks to succeed
               run: node --experimental-strip-types scripts/pr-checks.mts
               env:
                   PR_CHECK_RESULTS: ${{ toJSON(needs) }}

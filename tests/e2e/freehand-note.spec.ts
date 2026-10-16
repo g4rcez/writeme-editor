@@ -26,14 +26,20 @@ async function createHandwrittenNote(page: Page): Promise<void> {
     await expect(page.locator(".ProseMirror")).toHaveCount(0);
 }
 
-test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({ page, browserName, isMobile }) => {
+test("scrolls both handwritten zoom percentages up and down without scrolling the page", async ({
+    page,
+    browserName,
+    isMobile,
+}) => {
     test.slow();
     await createHandwrittenNote(page);
     const input = browserName === "webkit" && isMobile ? "dom" : "native";
-    if (input === "dom") test.info().annotations.push({
-        type: "input",
-        description: "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
-    });
+    if (input === "dom")
+        test.info().annotations.push({
+            type: "input",
+            description:
+                "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
+        });
     await expectCanvasZoomWheel(page, input);
 });
 
@@ -150,13 +156,12 @@ async function seedLinkTargets(page: Page): Promise<string> {
         const target = Note.new("Project plan", "# Project plan\n\nLinked reference content.");
         const deleted = Note.new("Deleted target", "");
         deleted.deletedAt = new Date();
-        const foreign = Note.new("Other workspace target", "");
-        foreign.project = "another-workspace";
+        const foreign = Note.parse({ title: "Other workspace target", content: "", project: "another-workspace" });
         const targets = [target, deleted, foreign];
         for (const note of targets) await repositories.notes.save(note);
         return target.id;
     });
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
     return targetId;
 }
@@ -261,7 +266,9 @@ test.describe("sticky note links", () => {
         await page.getByRole("link", { name: "Open note: Project plan", exact: true }).click();
         await expect(page).toHaveURL(new URL(`/note/${targetId}`, sourceUrl).href);
         await expect(page.locator(".ProseMirror").first()).toContainText("Linked reference content.");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await page.goto(sourceUrl);
         await expect(card).toBeVisible();
         await page.evaluate(async (id) => {
@@ -296,7 +303,7 @@ test.describe("sticky note links", () => {
 
     test("moves sticky links with keyboard and touch and keeps missing targets removable", async ({
         cleanPage: page,
-    }, testInfo) => {
+    }) => {
         await createHandwrittenNote(page);
         const targetId = await seedLinkTargets(page);
         await addProjectLink(page);
@@ -318,20 +325,47 @@ test.describe("sticky note links", () => {
         await expect(handle).toHaveAttribute("aria-pressed", "false");
         await expect.poll(async () => (await readNotebook(page)).pages[0]!.links![0]!.x).toBeLessThan(before.x);
         await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
+        await page.evaluate(async (id) => {
+            const { repositories } = await import("/packages/editor/src/store/global.store.ts");
+            await repositories.notes.delete(id);
+        }, targetId);
+        await page.reload();
+        await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
+        await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
+        await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
+        await expect(page.locator(".wm-sticky-link")).toHaveCount(0);
+        await expect.poll(async () => (await readNotebook(page)).pages[0]?.links?.length).toBe(0);
+    });
+
+    test("keeps sticky link controls usable across themes and mobile orientations", async ({
+        cleanPage: page,
+    }, testInfo) => {
+        await createHandwrittenNote(page);
+        await seedLinkTargets(page);
+        await addProjectLink(page);
         const sourceUrl = page.url();
         for (const theme of ["dark", "light"]) {
-            await page.goto("/settings/appearance");
+            await page.setViewportSize({ width: 1280, height: 720 });
+            await page
+                .getByRole("navigation", { name: "Workspace navigation", exact: true })
+                .getByRole("button", { name: "Settings", exact: true })
+                .click();
+            const settingsNavigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
+            await expect(settingsNavigation).toBeVisible();
+            await settingsNavigation.getByRole("link", { name: "Appearance", exact: true }).click();
+            await expect(page.getByRole("heading", { name: "Appearance", exact: true })).toBeVisible();
             await closeWorkspaceMenu(page);
             await page.getByRole("main", { name: "Settings" }).getByRole("combobox").selectOption(theme);
             await page.getByRole("button", { name: "Save Appearance" }).click();
-            await page.goto(sourceUrl);
+            await page.locator(`[data-tab-id][href="${new URL(sourceUrl).pathname}"]`).click();
+            await expect(page).toHaveURL(sourceUrl);
             for (const [width, height] of [
                 [375, 812],
                 [812, 375],
             ]) {
                 await page.setViewportSize({ width: width!, height: height! });
                 const card = page.getByRole("group", { name: "Linked note: Project plan", exact: true });
-                await card.evaluate((element) => element.scrollIntoView({ block: "center", inline: "center" }));
+                await expect(card).toBeVisible({ timeout: 30_000 });
                 for (const control of await card.locator("button, a").all()) {
                     const bounds = (await control.boundingBox())!;
                     expect(bounds.width).toBeGreaterThanOrEqual(44);
@@ -356,16 +390,6 @@ test.describe("sticky note links", () => {
                 await page.screenshot({ path: testInfo.outputPath(`sticky-${theme}-${width}.png`) });
             }
         }
-        await page.evaluate(async (id) => {
-            const { repositories } = await import("/packages/editor/src/store/global.store.ts");
-            await repositories.notes.delete(id);
-        }, targetId);
-        await page.reload();
-        await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
-        await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
-        await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
-        await expect(page.locator(".wm-sticky-link")).toHaveCount(0);
-        await expect.poll(async () => (await readNotebook(page)).pages[0]?.links?.length).toBe(0);
     });
 
     test("handles an empty picker and retains sticky links when saving fails", async ({ cleanPage: page }) => {
@@ -501,7 +525,7 @@ test.describe("production safeguards", () => {
     }) => {
         await createHandwrittenNote(page);
         const second = await context.newPage();
-        await second.goto(page.url());
+        await second.goto(page.url(), { waitUntil: "domcontentloaded" });
         await expect(second.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
         await draw(page);
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
@@ -521,7 +545,7 @@ test.describe("production safeguards", () => {
         expect(recovered.pages[0]!.strokes).toHaveLength(1);
         expect(recovered.pages[0]!.strokes).not.toEqual(savedInk);
         await second.close();
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
         expect((await readNotebook(page)).pages[0]!.strokes).toEqual(savedInk);
     });

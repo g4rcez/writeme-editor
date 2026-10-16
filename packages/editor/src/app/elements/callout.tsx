@@ -1,3 +1,4 @@
+import type { Editor } from "@tiptap/core";
 import { Alert, type AlertProps } from "@g4rcez/components";
 import { FireIcon } from "@phosphor-icons/react/dist/csr/Fire";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
@@ -5,7 +6,7 @@ import { LightbulbIcon } from "@phosphor-icons/react/dist/csr/Lightbulb";
 import { WarningIcon } from "@phosphor-icons/react/dist/csr/Warning";
 import { WarningCircleIcon } from "@phosphor-icons/react/dist/csr/WarningCircle";
 import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
-import { Fragment, Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { DOMParser as ProseMirrorDOMParser, DOMSerializer, Fragment, Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 
@@ -149,19 +150,29 @@ export const Callout = Node.create<CalloutOptions>({
                     }
                 },
                 parse: {
-                    updateDOM(element: HTMLElement) {
+                    updateDOM(this: { editor: Editor }, element: HTMLElement) {
                         parseDocusaurusAdmonitions(element);
+                        const parser = ProseMirrorDOMParser.fromSchema(this.editor.schema);
+                        const serializer = DOMSerializer.fromSchema(this.editor.schema);
                         element.querySelectorAll("blockquote").forEach((blockquote) => {
+                            if (blockquote.getAttribute("data-literal-quote") === "true") return;
                             const firstP = blockquote.querySelector("p");
                             if (!firstP) return;
-                            const textContent = firstP.textContent ?? "";
-                            if (!/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i.test(textContent)) return;
+                            const paragraph = parser.parse(firstP).firstChild;
+                            if (!paragraph) return;
+                            let textContent = "";
+                            for (const inline of paragraph.content.content) {
+                                if (!inline.isText) break;
+                                textContent += inline.text ?? "";
+                            }
                             const typeMatch = textContent.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
                             if (!typeMatch) return;
                             const type = typeMatch[1]!.toLowerCase();
-                            firstP.innerHTML = firstP.innerHTML
-                                .replace(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](<br\s*\/?>\s*)?\n?/i, "")
-                                .trim();
+                            const prefixLen =
+                                typeMatch[0].length +
+                                (textContent.slice(typeMatch[0].length).match(/^\s+/)?.[0].length ?? 0);
+                            firstP.replaceChildren(serializer.serializeFragment(paragraph.content.cut(prefixLen)));
+                            firstP.innerHTML = firstP.innerHTML.replace(/^(<br\s*\/?>\s*)?\n?/i, "").trim();
                             if (!firstP.innerHTML.trim()) {
                                 firstP.remove();
                             }
@@ -201,38 +212,29 @@ export const Callout = Node.create<CalloutOptions>({
                     const matches: Match[] = [];
 
                     newState.doc.descendants((node, pos) => {
-                        if (node.type.name !== "blockquote") return;
+                        if (node.type.name !== "blockquote" || node.attrs.literal) return;
                         const firstChild = node.firstChild;
                         if (!firstChild || firstChild.type.name !== "paragraph") return;
-                        const m = firstChild.textContent.match(GFM_RE);
+                        let prefixText = "";
+                        for (const inline of firstChild.content.content) {
+                            if (!inline.isText) break;
+                            prefixText += inline.text ?? "";
+                        }
+                        const m = prefixText.match(GFM_RE);
                         if (!m) return;
                         const calloutNodeType = newState.schema.nodes.callout;
                         if (!calloutNodeType) return;
 
-                        const prefixLen = m[0]!.length;
+                        const prefixLen =
+                            m[0]!.length + (prefixText.slice(m[0]!.length).match(/^\s+/)?.[0].length ?? 0);
                         const type = m[1]!.toLowerCase();
                         const paragraphs: ProseMirrorNode[] = [];
 
                         node.forEach((child, _, i) => {
                             if (i === 0) {
-                                const inlines: ProseMirrorNode[] = [];
-                                let skip = prefixLen;
-                                child.forEach((inline) => {
-                                    if (skip > 0 && inline.isText) {
-                                        const t = inline.text!;
-                                        if (skip >= t.length) {
-                                            skip -= t.length;
-                                        } else {
-                                            const rest = t.slice(skip).replace(/^\s+/, "");
-                                            if (rest) inlines.push((inline as any).withText(rest));
-                                            skip = 0;
-                                        }
-                                    } else if (skip === 0) {
-                                        inlines.push(inline);
-                                    }
-                                });
-                                if (inlines.length > 0) {
-                                    paragraphs.push(child.copy(Fragment.from(inlines)));
+                                const content = child.content.cut(prefixLen);
+                                if (content.size > 0) {
+                                    paragraphs.push(child.copy(content));
                                 }
                             } else {
                                 paragraphs.push(child);

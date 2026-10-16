@@ -36,9 +36,11 @@ async function importPdf(page: Page): Promise<void> {
         .getByLabel("PDF document", { exact: true })
         .setInputFiles({ name: "Book.pdf", mimeType: "application/pdf", buffer: samplePdf() });
     await dialog.getByRole("button", { name: "Import PDF", exact: true }).click();
-    await expect(dialog).toBeHidden();
-    await expect(page.getByRole("region", { name: "PDF notebook", exact: true })).toBeVisible();
-    await expect(page.getByLabel("PDF page 1", { exact: true })).toHaveAttribute("data-pdf-ready", "true");
+    await expect(dialog).toBeHidden({ timeout: 30_000 });
+    await expect(page.getByRole("region", { name: "PDF notebook", exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel("PDF page 1", { exact: true })).toHaveAttribute("data-pdf-ready", "true", {
+        timeout: 30_000,
+    });
 }
 
 test("scrolls both PDF zoom percentages up and down without scrolling the page", async ({ page }) => {

@@ -1,6 +1,20 @@
+import type { Locator } from "@playwright/test";
+
 import { createNote, expect, goHome, test } from "./fixtures";
 
-const endOfLine = process.platform === "darwin" ? "Meta+ArrowRight" : "End";
+async function placeCaretAtEnd(block: Locator): Promise<void> {
+    await block.click();
+    await block.evaluate((element) => {
+        const selection = window.getSelection();
+        if (!selection) throw new Error("The editor has no native selection");
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        document.dispatchEvent(new Event("selectionchange"));
+    });
+}
 
 for (const [command, result] of [
     [">>math 1 + 1=", "1 + 1 = 2"],
@@ -12,8 +26,7 @@ for (const [command, result] of [
         await createNote(page, "Paragraph text commands", "Existing paragraph.");
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
         const paragraph = editor.locator("p").filter({ hasText: "Existing paragraph." }).last();
-        await paragraph.click();
-        await paragraph.press(endOfLine);
+        await placeCaretAtEnd(paragraph);
         await editor.pressSequentially(` ${command}`);
         await expect(paragraph).toHaveText(`Existing paragraph. ${result}`);
     });
@@ -25,11 +38,14 @@ for (const [type, selector, prefix, expected] of [
 ] as const) {
     test(`runs the space-triggered date command in a ${type}`, async ({ cleanPage: page }) => {
         await goHome(page);
-        await createNote(page, "Paragraph text commands", "Existing paragraph.");
+        await createNote(page, "Paragraph text commands", prefix);
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+        if (selector === "h1") {
+            await editor.click();
+            await editor.press("ControlOrMeta+Alt+1");
+        }
         const block = editor.locator(selector).filter({ hasText: prefix }).last();
-        await block.click();
-        await block.press(endOfLine);
+        await placeCaretAtEnd(block);
         await editor.pressSequentially(" >>date");
         await editor.press("Space");
         await expect(block).toHaveText(expected);
@@ -46,8 +62,7 @@ for (const [command, expected] of [
         await createNote(page, "Paragraph text commands", "Existing paragraph.");
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
         const paragraph = editor.locator("p").filter({ hasText: "Existing paragraph." }).last();
-        await paragraph.click();
-        await paragraph.press(endOfLine);
+        await placeCaretAtEnd(paragraph);
         await editor.pressSequentially(` ${command}`);
         await editor.press("Space");
         await expect(paragraph).toHaveText(expected);

@@ -1,18 +1,26 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import { createNote as createEditorNote, expect, test } from "./fixtures";
 
-const createNote = async (page: Page, title: string) => {
-    await page.keyboard.press("ControlOrMeta+n");
-    const dialog = page.getByRole("dialog", { name: /Create new note/i });
-    await expect(dialog).toBeVisible();
-    await dialog.getByTitle("Note title").fill(title);
-    await dialog.getByRole("button", { name: /^Create/ }).click();
-    await expect(page).toHaveURL(/\/note\/[^/]+$/);
-    await page.goto("/notes");
+const openAllNotes = async (page: Page): Promise<void> => {
+    const allNotes = page
+        .getByRole("navigation", { name: "Workspace views", exact: true })
+        .getByRole("button", { name: "All notes", exact: true });
+    await allNotes.click();
+    await expect(page).toHaveURL(/\/notes$/);
+};
+
+const createNote = async (page: Page, title: string): Promise<void> => {
+    await page
+        .getByRole("navigation", { name: "Workspace navigation", exact: true })
+        .getByRole("button", { name: "Go to home", exact: true })
+        .click();
+    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+    await createEditorNote(page, title);
+    await openAllNotes(page);
 };
 
 const openTrashPane = async (page: Page) => {
-    await page.getByRole("button", { name: "Trash" }).click();
+    await page.getByRole("button", { name: "Trash", exact: true }).click();
 };
 
 test.describe("Trash / soft-delete", () => {
@@ -24,7 +32,6 @@ test.describe("Trash / soft-delete", () => {
     test("deleting a note moves it to trash and hides it from the list", async ({ cleanPage: page }) => {
         await createNote(page, "Note to trash");
 
-        await page.goto("/notes");
         const row = page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Note to trash" });
         await expect(row).toBeVisible();
 
@@ -37,10 +44,9 @@ test.describe("Trash / soft-delete", () => {
     test("undo toast restores the note to the list", async ({ cleanPage: page }) => {
         await createNote(page, "Note to undo");
 
-        await page.goto("/notes");
         await page.getByRole("button", { name: "Move to Trash" }).click();
 
-        const undoButton = page.getByRole("button", { name: "Undo" });
+        const undoButton = page.getByRole("button", { name: "Undo", exact: true });
         await expect(undoButton).toBeVisible();
         await undoButton.click();
 
@@ -50,31 +56,29 @@ test.describe("Trash / soft-delete", () => {
     test("deleted note appears in the Trash pane", async ({ cleanPage: page }) => {
         await createNote(page, "Trashed note");
 
-        await page.goto("/notes");
         await page.getByRole("button", { name: "Move to Trash" }).click();
         await expect(page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Trashed note" })).toBeHidden();
 
         await openTrashPane(page);
-        await expect(page.getByText("Trashed note")).toBeVisible();
+        await expect(page.getByText("Trashed note", { exact: true })).toBeVisible();
     });
 
     test("restore from Trash pane returns note to all-notes list", async ({ cleanPage: page }) => {
         await createNote(page, "Restorable note");
 
-        await page.goto("/notes");
         await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await openTrashPane(page);
-        await expect(page.getByText("Restorable note")).toBeVisible();
+        await expect(page.getByText("Restorable note", { exact: true })).toBeVisible();
 
         const row = page.locator(".group", { hasText: "Restorable note" });
         await row.hover();
         await row.getByTitle("Restore").click();
 
-        await expect(page.getByText("Restorable note")).toBeHidden();
+        await expect(row).toBeHidden();
 
         await page.getByRole("button", { name: "Explorer" }).click();
-        await page.goto("/notes");
+        await openAllNotes(page);
         await expect(
             page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Restorable note" }),
         ).toBeVisible();
@@ -83,7 +87,6 @@ test.describe("Trash / soft-delete", () => {
     test("Delete permanently button is absent from Trash pane", async ({ cleanPage: page }) => {
         await createNote(page, "No permanent delete");
 
-        await page.goto("/notes");
         await page.getByRole("button", { name: "Move to Trash" }).click();
 
         await openTrashPane(page);
@@ -95,21 +98,19 @@ test.describe("Trash / soft-delete", () => {
 
     test("Empty Trash removes all trashed notes", async ({ cleanPage: page }) => {
         await createNote(page, "Trash item one");
-        await page.goto("/notes");
         await page.getByRole("button", { name: "Move to Trash" }).click();
+        await expect(page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Trash item one", exact: true })).toBeHidden();
 
-        await page.goto("/");
         await createNote(page, "Trash item two");
-        await page.goto("/notes");
-        const buttons = page.getByRole("button", { name: "Move to Trash" });
-        await buttons.first().click();
+        await page.getByRole("button", { name: "Move to Trash", exact: true }).click();
+        await expect(page.getByTestId("virtuoso-item-list").getByRole("link", { name: "Trash item two", exact: true })).toBeHidden();
 
         await openTrashPane(page);
-        await expect(page.getByText("Trash item one")).toBeVisible();
-        await expect(page.getByText("Trash item two")).toBeVisible();
+        await expect(page.locator(".group", { hasText: "Trash item one" }).getByRole("button", { name: "Restore", exact: true })).toBeVisible();
+        await expect(page.locator(".group", { hasText: "Trash item two" }).getByRole("button", { name: "Restore", exact: true })).toBeVisible();
 
         await page.getByRole("button", { name: "Empty Trash" }).click();
-        const confirmDialog = page.getByRole("dialog", { name: /Empty Trash/i });
+        const confirmDialog = page.getByRole("dialog", { name: "Empty Trash", exact: true });
         await expect(confirmDialog).toBeVisible();
         await confirmDialog.getByRole("button", { name: "Empty Trash" }).click();
 

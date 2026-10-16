@@ -7,7 +7,6 @@ import { editorSearchGlobalRef } from "@/app/editor-global-ref";
 import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
 import { repositories } from "@/store/repositories";
-
 import { NoteToolTooltip } from "./note-tool-tooltip";
 
 type NoteHistoryButtonProps = {
@@ -21,7 +20,7 @@ export function NoteHistoryButton({ onClick }: NoteHistoryButtonProps) {
                 type="button"
                 size="icon"
                 theme="ghost-muted"
-                className="writeme-note-tool-button"
+                className="size-8 min-h-8 shrink-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11 text-base"
                 aria-label="History"
                 icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
                 onClick={onClick}

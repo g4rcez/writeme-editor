@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "..",
+        "types": ["node", "vite/client"],
+        "allowImportingTsExtensions": true
+    },
+    "include": [
+        "e2e/research-excerpts.spec.ts",
+        "native/research-excerpts.spec.ts",
+        "helpers/research.ts",
+        "../packages/editor/src/**/*.d.ts"
+    ]
+}

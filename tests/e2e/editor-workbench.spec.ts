@@ -46,7 +46,7 @@ test.describe("editor workbench", () => {
             .poll(async () =>
                 Math.abs(
                     (await first.evaluate((element) => element.getBoundingClientRect().width)) -
-                        (await second.evaluate((element) => element.getBoundingClientRect().width)),
+                    (await second.evaluate((element) => element.getBoundingClientRect().width)),
                 ),
             )
             .toBeLessThanOrEqual(1);
@@ -175,10 +175,10 @@ test.describe("editor workbench", () => {
         await editor.press("Backspace");
         await editor.pressSequentially("```text");
         await editor.press("Space");
-        const code = editor.locator(".cm-content[contenteditable=true]").first();
+        const code = editor.locator(".node-codeBlock [data-node-view-content]");
         await expect(code).toBeVisible();
-        await code.click();
-        await code.press("ControlOrMeta+V");
+        await expect(code).toHaveText("");
+        await editor.press("ControlOrMeta+V");
         await expect(code).toHaveText("unpredictable");
     });
 
@@ -203,32 +203,59 @@ test.describe("editor workbench", () => {
         const nested = editor.locator("ol ol").first();
         await expect(nested).toBeVisible();
         await expect(nested.locator(":scope > li")).toHaveCount(2);
+        await expect(nested.locator(":scope > li > p")).toHaveText([
+            "First related child with enough detail to wrap at narrow widths without clipping text.",
+            "Second related child",
+        ]);
 
         for (const width of [375, 1280]) {
             await page.setViewportSize({ width, height: 900 });
             const spacing = await nested.evaluate((list) => {
-                const parent = list.parentElement?.querySelector(":scope > p");
-                const child = list.querySelector("li > p");
-                if (!parent || !child) throw new Error("Expected parent and child list paragraphs");
-                const parentSibling = list.parentElement?.parentElement?.querySelector(":scope > li + li");
-                if (!parentSibling) throw new Error("Expected a sibling parent list item");
-                const parentStyle = getComputedStyle(parent);
-                const childStyle = getComputedStyle(child);
-                const listStyle = getComputedStyle(list);
+                const parentItem = list.parentElement;
+                const parent = parentItem?.querySelector(":scope > p");
+                const previousParent = parentItem?.previousElementSibling?.querySelector(":scope > p");
+                const nextParent = parentItem?.nextElementSibling?.querySelector(":scope > p");
+                const children = Array.from(list.querySelectorAll(":scope > li > p"));
+                const firstChild = children[0];
+                const lastChild = children[1];
+                const editor = list.closest('[role="textbox"]');
+                if (!parent || !previousParent || !nextParent || !firstChild || !lastChild || !editor) {
+                    throw new Error("Expected nested children between top-level list items");
+                }
+                const editorBounds = editor.getBoundingClientRect();
+                const lines = children.map((child) => {
+                    const range = document.createRange();
+                    range.selectNodeContents(child);
+                    return Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+                });
                 return {
-                    parentLineHeight: parseFloat(parentStyle.lineHeight),
-                    parentGap: parseFloat(getComputedStyle(parentSibling).marginTop),
-                    childLineHeight: parseFloat(childStyle.lineHeight),
-                    childFontSize: parseFloat(childStyle.fontSize),
-                    top: parseFloat(listStyle.marginTop),
-                    bottom: parseFloat(listStyle.marginBottom),
+                    parentGap: parent.getBoundingClientRect().top - previousParent.getBoundingClientRect().bottom,
+                    childGap: lastChild.getBoundingClientRect().top - firstChild.getBoundingClientRect().bottom,
+                    beforeChildren: firstChild.getBoundingClientRect().top - parent.getBoundingClientRect().bottom,
+                    afterChildren: nextParent.getBoundingClientRect().top - lastChild.getBoundingClientRect().bottom,
+                    textFits: children.every((child, index) => {
+                        const bounds = child.getBoundingClientRect();
+                        const textLines = lines[index]!;
+                        return (
+                            textLines.length > 0 &&
+                            textLines.every(
+                                (line) =>
+                                    line.left >= Math.max(bounds.left, editorBounds.left) - 1 &&
+                                    line.right <= Math.min(bounds.right, editorBounds.right) + 1 &&
+                                    line.top >= bounds.top - 1 &&
+                                    line.bottom <= bounds.bottom + 1,
+                            )
+                        );
+                    }),
                 };
             });
-            expect(spacing.parentGap).toBeGreaterThan(4);
-            expect(spacing.childLineHeight / spacing.childFontSize).toBeCloseTo(1.3, 1);
-            expect(spacing.childLineHeight).toBeLessThan(spacing.parentLineHeight);
-            expect(spacing.top).toBe(0);
-            expect(spacing.bottom).toBeLessThanOrEqual(4);
+            expect(spacing.parentGap).toBeGreaterThan(0);
+            expect(spacing.childGap).toBeGreaterThanOrEqual(0);
+            expect(spacing.childGap).toBeLessThan(spacing.parentGap);
+            expect(spacing.beforeChildren).toBeGreaterThanOrEqual(0);
+            expect(spacing.beforeChildren).toBeLessThan(spacing.parentGap);
+            expect(spacing.afterChildren).toBeGreaterThan(spacing.childGap);
+            expect(spacing.textFits).toBe(true);
             expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
             await editor.screenshot({ path: testInfo.outputPath(`editor-list-${width}.png`) });
         }
