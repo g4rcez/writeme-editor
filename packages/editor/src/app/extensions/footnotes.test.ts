@@ -97,7 +97,7 @@ describe("Markdown footnotes", () => {
         });
         const original = Node.prototype.descendants;
         let traversals = 0;
-        const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function(this: Node, callback) {
+        const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function (this: Node, callback) {
             if (this.type.name === "doc") traversals++;
             return original.call(this, callback);
         });
@@ -249,6 +249,21 @@ describe("Markdown footnotes", () => {
             expect(positions(editor, "footnoteDefinition")[0]?.node.textContent).toBe("Shared source");
             editor.commands.undo();
             expect(positions(editor, "footnoteReference")).toHaveLength(2);
+        } finally {
+            editor.destroy();
+        }
+    });
+    it("deletes a footnote, all references and duplicate definitions in one undoable edit", () => {
+        const editor = createEditor("One [^a] and two [^a].\n\n[^a]: Shared source\n\n[^a]: Duplicate source");
+        try {
+            expect(editor.commands.deleteFootnote("missing")).toBe(false);
+            expect(editor.commands.deleteFootnote("a")).toBe(true);
+            expect(positions(editor, "footnoteReference")).toHaveLength(0);
+            expect(positions(editor, "footnoteDefinition")).toHaveLength(0);
+            expect(editor.getMarkdown()).not.toContain("[^a]");
+            editor.commands.undo();
+            expect(positions(editor, "footnoteReference")).toHaveLength(2);
+            expect(positions(editor, "footnoteDefinition")).toHaveLength(2);
         } finally {
             editor.destroy();
         }
