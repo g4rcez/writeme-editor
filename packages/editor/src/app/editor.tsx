@@ -8,6 +8,7 @@ import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { isRelativeLink } from "@/lib/link-utils";
 import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { applyMarkdownWorkerChunk } from "@/lib/markdown-worker/ingest";
 import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
 import { registerNoteLinkRepairHandler, repairTiptapLink } from "@/lib/note-link-repair";
@@ -597,14 +598,8 @@ const TiptapEditorCore = memo(
                     ric(() => {
                         if (generationRef.current !== myGen || editor.isDestroyed) return;
 
-                        if (firstChunk) {
-                            firstChunk = false;
-                            editor.commands.setContent(html);
-                        } else {
-                            editor.commands.insertContentAt(editor.state.doc.content.size, html, {
-                                parseOptions: { preserveWhitespace: true },
-                            });
-                        }
+                        applyMarkdownWorkerChunk(editor, html, firstChunk);
+                        firstChunk = false;
 
                         receivedChunks++;
                         if (totalChunks > 0) {

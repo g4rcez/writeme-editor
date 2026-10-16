@@ -2,6 +2,9 @@
 
 ### Improvements
 
+- Let authors choose a unique Markdown footnote ID when inserting a footnote;
+  leave the name blank to keep automatic `fn-N` IDs.
+
 - Split CI into a five-minute-target PR gate and full nightly/release verification.
   Discover browser, production and native regressions automatically, shard browser
   execution, and replace feature-specific lint/typecheck lists with directory scopes.

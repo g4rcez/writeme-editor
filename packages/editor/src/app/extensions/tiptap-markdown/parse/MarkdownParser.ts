@@ -2,6 +2,7 @@ import { Editor } from "@tiptap/core";
 import { Marked } from "marked";
 import { escapeHtml } from "@/lib/html";
 import { configureHighlightMarkdown } from "@/lib/markdown-highlight";
+import { configureFootnoteMarkdown } from "@/lib/markdown-footnotes";
 import { decodeMarkdownFilePath } from "@/lib/markdown-links";
 import { configureTableMarkdown } from "@/lib/markdown-table";
 import {
@@ -126,7 +127,6 @@ const appNoteUrlExtension = {
         },
     ],
 };
-
 export class MarkdownParser {
     editor: Editor | null = null;
     md: Marked | null = null;
@@ -135,6 +135,9 @@ export class MarkdownParser {
         this.editor = editor;
         this.md = new Marked({ gfm: true, breaks: breaks ?? true });
         configureHighlightMarkdown(this.md);
+        if (editor.extensionManager.extensions.some((extension) => extension.name === "footnoteDefinition")) {
+            configureFootnoteMarkdown(this.md);
+        }
         configureTableMarkdown(this.md);
         this.md.use(appNoteUrlExtension);
         this.md.use({

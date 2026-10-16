@@ -546,4 +546,87 @@ describe("Markdown extension", () => {
 
         editor.destroy();
     });
+    it("round-trips shared, multiline Markdown footnotes with nested formatting", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "First [^source] and again [^source].\n\n[^source]: A **formatted** note\n    continued text.",
+        });
+        try {
+            const markdown = editor.getMarkdown();
+            expect(markdown).toContain("[^source]");
+            expect(markdown).toContain("[^source]:");
+            expect(markdown).toContain("**formatted**");
+            expect(markdown).toContain("continued text.");
+
+            editor.commands.setContent(markdown);
+            const references: string[] = [];
+            const definitions: string[] = [];
+            editor.state.doc.descendants((node) => {
+                if (node.type.name === "footnoteReference") references.push(String(node.attrs.id));
+                if (node.type.name === "footnoteDefinition") definitions.push(String(node.attrs.id));
+            });
+            expect(references).toEqual(["source", "source"]);
+            expect(definitions).toEqual(["source"]);
+        } finally {
+            editor.destroy();
+        }
+    });
+
+    it("inserts a unique reference and editable definition through the editor command", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Text",
+        });
+        try {
+            editor.commands.setTextSelection(5);
+            expect(editor.commands.insertFootnote()).toBe(true);
+            expect(editor.getMarkdown()).toContain("[^fn-1]");
+            expect(editor.getMarkdown()).toContain("[^fn-1]:");
+            let definitions = 0;
+            editor.state.doc.descendants((node) => {
+                if (node.type.name === "footnoteDefinition") definitions++;
+            });
+            expect(definitions).toBe(1);
+            editor.commands.insertFootnote();
+            expect(editor.getMarkdown()).toContain("[^fn-2]");
+        } finally {
+            editor.destroy();
+        }
+    });
+    it("preserves unresolved references and duplicate imported definitions without conflating them", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Unresolved [^missing] and [^same].\n\n[^same]: First definition.\n\n[^same]: Second definition.",
+        });
+        try {
+            const references: string[] = [];
+            const definitions: string[] = [];
+            editor.state.doc.descendants((node) => {
+                if (node.type.name === "footnoteReference") references.push(String(node.attrs.id));
+                if (node.type.name === "footnoteDefinition") definitions.push(String(node.attrs.id));
+            });
+            expect(references).toEqual(["missing", "same"]);
+            expect(definitions).toEqual(["same", "same"]);
+            expect(editor.getMarkdown()).toContain("[^missing]");
+            expect(editor.getMarkdown()).toContain("[^same]:");
+            expect(editor.getMarkdown()).toContain("Second definition.");
+        } finally {
+            editor.destroy();
+        }
+    });
+
+    it("undoes an inserted footnote reference and definition as one edit", () => {
+        const editor = new Editor({
+            extensions: createExtensions(() => "github-dark" as BundledTheme),
+            content: "Text",
+        });
+        try {
+            editor.commands.setTextSelection(5);
+            editor.commands.insertFootnote();
+            editor.commands.undo();
+            expect(editor.getMarkdown()).toBe("Text");
+        } finally {
+            editor.destroy();
+        }
+    });
 });

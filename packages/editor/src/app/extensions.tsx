@@ -54,6 +54,7 @@ import { MarkdownHighlight } from "./extensions/markdown-highlight";
 import { Neovim } from "./extensions/neovim";
 import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
+import { FootnoteDefinition, FootnoteReference, Footnotes } from "./extensions/footnotes";
 import { Subscript } from "./extensions/subscript";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
@@ -232,6 +233,9 @@ const handleMediaFile = async (
 
 export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): AnyExtension[] => {
     return [
+        FootnoteReference,
+        FootnoteDefinition,
+        Footnotes,
         Frontmatter,
         ColorCode,
         StarterKit.configure({
