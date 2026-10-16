@@ -3,8 +3,9 @@ import { DatabaseIcon } from "@phosphor-icons/react/dist/csr/Database";
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getMissingStarterViews } from "@/lib/starter-views";
 import { repositories } from "@/store/repositories";
 import { View } from "@/store/repositories/entities/view";
 
@@ -12,19 +13,49 @@ export default function ViewsListPage() {
     const navigate = useNavigate();
     const [views, setViews] = useState<View[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
+    const missingStarters = getMissingStarterViews(views, new Date());
 
-    const load = async () => {
-        setLoading(true);
-        const all = await repositories.views.getAll();
-        setViews(all.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
-        setLoading(false);
-    };
+    const load = useCallback(
+        () =>
+            repositories.views
+                .getAll()
+                .then((all) => {
+                    setViews(all.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+                })
+                .catch(() => {
+                    setError("Could not load Views. Check storage and try again.");
+                })
+                .finally(() => {
+                    setLoading(false);
+                }),
+        [],
+    );
 
     useEffect(() => {
-        load();
-    }, []);
+        void load();
+    }, [load]);
+
+    const handleAddStarters = async (): Promise<void> => {
+        if (creating) return;
+        setCreating(true);
+        setError(null);
+        try {
+            const existing = await repositories.views.getAll();
+            for (const view of getMissingStarterViews(existing, new Date())) await repositories.views.save(view);
+            await load();
+        } catch {
+            setError("Could not add starter Views. Try again to add any missing Views.");
+        } finally {
+            setCreating(false);
+        }
+    };
 
     const handleCreate = async () => {
+        if (creating) return;
+        setCreating(true);
+        setError(null);
         const now = new Date();
         const view = new View(
             crypto.randomUUID(),
@@ -38,36 +69,80 @@ export default function ViewsListPage() {
             now,
             now,
         );
-        await repositories.views.save(view);
-        navigate(`/views/${view.id}`);
+        try {
+            await repositories.views.save(view);
+            navigate(`/views/${view.id}`);
+        } catch {
+            setError("Could not create a View. Check storage and try again.");
+        } finally {
+            setCreating(false);
+        }
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (!confirm("Delete this view?")) return;
-        await repositories.views.delete(id);
-        setViews((prev) => prev.filter((v) => v.id !== id));
+        try {
+            await repositories.views.delete(id);
+            setViews((prev) => prev.filter((v) => v.id !== id));
+        } catch {
+            setError("Could not delete this View. Check storage and try again.");
+        }
     };
 
     return (
         <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                 <h1 className="flex gap-2 items-center text-2xl font-bold">
-                    <DatabaseIcon className="w-6 h-6" />
+                    <DatabaseIcon className="w-6 h-6" aria-hidden="true" />
                     Views
                 </h1>
-                <Button size="small" theme="primary" onClick={handleCreate}>
-                    <PlusIcon className="w-4 h-4" />
+                <Button size="small" theme="primary" disabled={loading || creating} onClick={handleCreate}>
+                    <PlusIcon className="w-4 h-4" aria-hidden="true" />
                     New View
                 </Button>
             </div>
 
-            {!loading && views.length === 0 && (
+            {!loading && missingStarters.length > 0 && (
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">
+                        Start with your 20 most recently edited notes and a queue of Read it later notes.
+                    </p>
+                    <Button size="small" theme="muted" disabled={creating} onClick={() => void handleAddStarters()}>
+                        {creating ? "Adding…" : "Add starter Views"}
+                    </Button>
+                </div>
+            )}
+
+            {error && (
+                <div
+                    className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
+                    role="alert"
+                >
+                    <p className="text-sm text-foreground">{error}</p>
+                    <Button
+                        size="small"
+                        theme="muted"
+                        onClick={() => {
+                            setLoading(true);
+                            setError(null);
+                            void load();
+                        }}
+                    >
+                        Retry
+                    </Button>
+                </div>
+            )}
+
+            {loading && (
+                <output className="block py-12 text-center text-sm text-muted-foreground">Loading Views…</output>
+            )}
+            {!loading && !error && views.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-24 text-foreground/50">
-                    <DatabaseIcon className="w-12 h-12 mb-3 opacity-40" />
-                    <p className="text-sm mb-4">No views yet. Create one to query your notes.</p>
-                    <Button size="small" theme="primary" onClick={handleCreate}>
-                        <PlusIcon className="w-4 h-4" />
+                    <DatabaseIcon className="w-12 h-12 mb-3 opacity-40" aria-hidden="true" />
+                    <p className="text-sm mb-4">No Views yet. Create one to query your notes.</p>
+                    <Button size="small" theme="primary" disabled={creating} onClick={handleCreate}>
+                        <PlusIcon className="w-4 h-4" aria-hidden="true" />
                         New View
                     </Button>
                 </div>
@@ -75,19 +150,25 @@ export default function ViewsListPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {views.map((view) => (
-                    <div
+                    <article
                         key={view.id}
-                        onClick={() => navigate(`/views/${view.id}`)}
-                        className="group relative flex flex-col gap-1 p-4 rounded-lg border border-border bg-card cursor-pointer transition-colors hover:border-primary/50 hover:bg-card/80"
+                        className="group relative flex flex-col gap-1 p-4 rounded-lg border border-border bg-card transition-colors hover:border-primary/50 hover:bg-card/80"
                     >
                         <div className="flex items-start justify-between gap-2">
-                            <h2 className="font-semibold truncate">{view.title}</h2>
                             <button
-                                onClick={(e) => handleDelete(e, view.id)}
-                                className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-[color,background-color,opacity] hover:text-danger hover:bg-danger/10"
-                                title="Delete view"
+                                type="button"
+                                onClick={() => navigate(`/views/${view.id}`)}
+                                className="min-w-0 truncate text-left font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                <TrashIcon className="w-4 h-4" />
+                                {view.title}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => void handleDelete(e, view.id)}
+                                className="shrink-0 rounded p-1.5 text-foreground/50 transition-colors hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                aria-label={`Delete ${view.title}`}
+                            >
+                                <TrashIcon className="w-4 h-4" aria-hidden="true" />
                             </button>
                         </div>
                         {view.query ? (
@@ -97,11 +178,11 @@ export default function ViewsListPage() {
                         ) : (
                             <p className="text-xs text-foreground/40 italic mt-1">No query</p>
                         )}
-                        <div className="mt-2 flex items-center gap-1 text-xs text-foreground/40">
-                            <TableIcon size={12} />
+                        <div className="mt-2 flex items-center gap-1 text-xs text-foreground/50">
+                            <TableIcon size={12} aria-hidden="true" />
                             <span className="capitalize">{view.viewType}</span>
                         </div>
-                    </div>
+                    </article>
                 ))}
             </div>
         </div>

@@ -126,6 +126,15 @@
     @apply min-h-9;
 }
 
+@media (max-width: 767px) {
+    .writeme-sidebar-shell .writeme-search-pane button,
+    .writeme-sidebar-shell .writeme-search-pane input,
+    .writeme-sidebar-shell .writeme-search-pane select,
+    .writeme-sidebar-shell .writeme-search-mobile-nav button {
+        @apply min-h-11;
+    }
+}
+
 .writeme-sidebar-shell header > button,
 .writeme-sidebar-shell button[aria-label="Find anything"] {
     @apply min-w-9;

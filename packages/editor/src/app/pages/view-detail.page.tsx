@@ -1,4 +1,4 @@
-import { Input } from "@g4rcez/components";
+import { Button, Input } from "@g4rcez/components";
 import { ArrowLeftIcon, CodeIcon, FunnelIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -22,6 +22,8 @@ export default function ViewDetailPage() {
     const navigate = useNavigate();
     const [state] = useGlobalStore();
     const [view, setView] = useState<View | null>(null);
+    const [loadResult, setLoadResult] = useState<{ id: string; error: string | null } | null>(null);
+    const [loadAttempt, setLoadAttempt] = useState(0);
     const [title, setTitle] = useState<string | null>(null);
     const [query, setQuery] = useState("");
     const [columns, setColumns] = useState<ViewColumn[]>(viewColumns);
@@ -32,6 +34,8 @@ export default function ViewDetailPage() {
         id: crypto.randomUUID(),
     });
     const [isFilterComplex, setIsFilterComplex] = useState(false);
+    const [filterError, setFilterError] = useState<string | null>(null);
+    const filterModifiers = useRef<Parameters<typeof filterGroupToQueryString>[1]>({});
 
     const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -61,33 +65,57 @@ export default function ViewDetailPage() {
                 return { field, label: item.alias ?? field };
             });
         }
-        if (results.length > 0) {
-            return Object.keys(results[0]!).map((key) => ({
-                field: key,
-                label: key,
-            }));
+        if (
+            (parsedQuery?.select ||
+                parsedQuery?.groupBy ||
+                parsedQuery?.joins.length ||
+                (parsedQuery?.from && parsedQuery.from !== "notes")) &&
+            results.length > 0
+        ) {
+            return Object.keys(results[0]!).map((field) => ({ field, label: field }));
         }
         return columns;
     }, [parsedQuery, results, columns]);
 
     useEffect(() => {
         if (!viewId) return;
-        repositories.views.getOne(viewId).then((v) => {
-            if (!v) return;
-            setView(v);
-            setTitle(v.title);
-            setQuery(v.query);
-            setColumns(v.columns.length > 0 ? v.columns : [{ field: "title", label: "Title" }]);
-        });
-    }, [viewId]);
+        let active = true;
+        repositories.views
+            .getOne(viewId)
+            .then((v) => {
+                if (!active) return;
+                setLoadResult({ id: viewId, error: v ? null : "This View no longer exists." });
+                if (!v) {
+                    return;
+                }
+                setView(v);
+                setTitle(v.title);
+                setQuery(v.query);
+                setColumns(v.columns.length > 0 ? v.columns : [{ field: "title", label: "Title" }]);
+                setActiveTab("sql");
+            })
+            .catch(() => {
+                if (active)
+                    setLoadResult({ id: viewId, error: "Could not load this View. Check storage and try again." });
+            });
+        return () => {
+            active = false;
+        };
+    }, [viewId, loadAttempt]);
 
-    useEffect(() => {
-        if (activeTab !== "filters") return;
+    const showVisualFilters = (): void => {
         try {
             const parsed = parse(query);
             const group = astToFilterGroup(parsed.where, filterGroup.id);
-            if (group) {
+            if (group && !parsed.select && !parsed.from && parsed.joins.length === 0 && !parsed.groupBy) {
                 setFilterGroup(group);
+                filterModifiers.current = {
+                    orderBy: parsed.orderBy
+                        ? { field: parsed.orderBy.column.path.join("."), dir: parsed.orderBy.direction }
+                        : undefined,
+                    limit: parsed.limit,
+                };
+                setFilterError(null);
                 setIsFilterComplex(false);
             } else {
                 setIsFilterComplex(true);
@@ -95,7 +123,8 @@ export default function ViewDetailPage() {
         } catch {
             setIsFilterComplex(true);
         }
-    }, [activeTab]);
+        setActiveTab("filters");
+    };
 
     const scheduleSave = useCallback(
         (patch: Partial<View>) => {
@@ -129,9 +158,15 @@ export default function ViewDetailPage() {
 
     const handleFilterGroupChange = (group: FilterGroup) => {
         setFilterGroup(group);
-        const newQuery = filterGroupToQueryString(group);
-        setQuery(newQuery);
-        scheduleSave({ query: newQuery });
+        try {
+            const newQuery = filterGroupToQueryString(group, filterModifiers.current);
+            setFilterError(null);
+            setQuery(newQuery);
+            scheduleSave({ query: newQuery });
+        } catch (error) {
+            clearTimeout(timer.current);
+            setFilterError(error instanceof Error ? error.message : "Enter a valid filter value.");
+        }
     };
 
     const metadataKeys = useMemo(() => {
@@ -144,8 +179,32 @@ export default function ViewDetailPage() {
         return Array.from(keys);
     }, [state.notes]);
 
-    if (!view) {
-        return <div className="flex items-center justify-center min-h-full text-foreground text-sm">Loading…</div>;
+    if (!view || view.id !== viewId) {
+        return (
+            <div className="flex min-h-full flex-col items-center justify-center gap-3 text-foreground text-sm">
+                {!loadResult || loadResult.id !== viewId ? (
+                    <output>Loading View…</output>
+                ) : (
+                    <>
+                        <p role="alert">{loadResult.error}</p>
+                        <Button
+                            size="small"
+                            theme="muted"
+                            onClick={() => {
+                                setLoadResult(null);
+                                setView(null);
+                                setLoadAttempt((attempt) => attempt + 1);
+                            }}
+                        >
+                            Retry
+                        </Button>
+                        <Button size="small" theme="ghost-muted" onClick={() => navigate("/views")}>
+                            All Views
+                        </Button>
+                    </>
+                )}
+            </div>
+        );
     }
 
     return (
@@ -186,7 +245,7 @@ export default function ViewDetailPage() {
                         SQL Query
                     </button>
                     <button
-                        onClick={() => setActiveTab("filters")}
+                        onClick={showVisualFilters}
                         className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors border-b-2 ${
                             activeTab === "filters"
                                 ? "border-primary text-primary"
@@ -219,7 +278,14 @@ export default function ViewDetailPage() {
                             Complex query — switch to the SQL Query tab to edit it directly.
                         </div>
                     ) : (
-                        <FilterBuilder group={filterGroup} onChange={handleFilterGroupChange} />
+                        <>
+                            <FilterBuilder group={filterGroup} onChange={handleFilterGroupChange} />
+                            {filterError && (
+                                <p role="alert" className="mt-2 text-sm text-danger">
+                                    {filterError}
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

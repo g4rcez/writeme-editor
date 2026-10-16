@@ -5,7 +5,9 @@ import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
 import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
+import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { useEffect, useMemo, type JSX } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
@@ -157,6 +159,24 @@ export const SidebarShell = () => {
                                     layoutDispatch.setView({ type: "all" });
                                 }}
                             />
+                            <div className="writeme-search-mobile-nav md:hidden">
+                                <SidebarNavItem
+                                    label="Search"
+                                    icon={<MagnifyingGlassIcon size={15} />}
+                                    active={layout.activeActivity === "search"}
+                                    onClick={() => layoutDispatch.setActivity("search")}
+                                />
+                                <SidebarNavItem
+                                    label="Views"
+                                    icon={<TableIcon size={15} />}
+                                    active={location.pathname.startsWith("/views")}
+                                    onClick={() => {
+                                        layoutDispatch.setActivity("views");
+                                        navigate("/views");
+                                        uiDispatch.setSidebarOpen(false);
+                                    }}
+                                />
+                            </div>
                             <SidebarNavItem
                                 label="Today"
                                 active={location.pathname.startsWith("/today")}
