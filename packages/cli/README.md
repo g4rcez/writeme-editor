@@ -25,6 +25,24 @@ writeme open /path/to/folder
 writeme /path/to/note.md
 ```
 
+`writeme .` opens the working directory as a vault. To use Writeme for prompt editing in terminal coding agents, configure the standard external-editor variables before starting the agent:
+
+```sh
+export EDITOR="writeme --wait"
+export VISUAL="$EDITOR"
+```
+
+Claude Code, Codex, Pi, and other CLIs that launch `$VISUAL` or `$EDITOR` for their Ctrl+G external-editor action will open the temporary prompt in Writeme. `--wait` keeps the agent's editor action open until the Writeme window for that file is closed. Start the agent from the shell where these variables are exported.
+
+On Windows PowerShell, set the variables for the current terminal session before launching the agent:
+
+```powershell
+$env:EDITOR = "writeme --wait"
+$env:VISUAL = $env:EDITOR
+```
+
+Install the platform-matched CLI bundled with the desktop app from its command palette (`Install CLI`), or install the portable npm package with `npm install --global @writeme.dev/cli`. The desktop installer does not require Node.js; the npm package requires Node.js 22.13 or later. If your shell cannot find the desktop-installed command, add `~/.local/bin` to `PATH` (macOS/Linux) and restart the shell.
+
 Math commands work without the desktop app. Open commands need Writeme installed; query commands need its existing SQLite database. Queries open the database read-only.
 
 Node.js and Deno use `node:sqlite`; Bun uses `bun:sqlite`. Node.js must be at least 22.13. Tested with Node.js 24.18, Bun 1.3.14, and Deno 2.4.5.

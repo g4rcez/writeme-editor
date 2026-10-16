@@ -23,4 +23,13 @@ for (const [runtime, flags] of [
             else assert.notEqual(result.stderr.trim(), "");
         }
     });
+    test(`${runtime}: help documents folder opening and external editor setup`, () => {
+        const result = spawnSync(runtime, [...flags, cli, "--help"], { encoding: "utf8", timeout: 30000 });
+        assert.ifError(result.error);
+        assert.equal(result.status, 0, result.stderr);
+        assert.match(result.stdout, /writeme \[--wait\|-w\] \[path\]/);
+        assert.match(result.stdout, /writeme \./);
+        assert.match(result.stdout, /EDITOR="writeme --wait"/);
+        assert.match(result.stdout, /npm install --global @writeme\.dev\/cli/);
+    });
 }

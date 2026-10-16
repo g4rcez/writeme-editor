@@ -27,6 +27,7 @@ export function sendToSocket(socketPath: string, msg: CliMessage): Promise<void>
         }, 5000);
 
         client.on("connect", () => {
+            clearTimeout(timer);
             client.write(JSON.stringify(msg) + "\n");
 
             const isWait = msg.action === "open-file" && msg.wait;

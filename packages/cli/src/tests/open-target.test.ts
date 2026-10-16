@@ -20,6 +20,15 @@ describe("resolveOpenTarget", () => {
         }
     });
 
+    test("opens the current working directory when passed dot", async () => {
+        const target = await resolveOpenTarget(".", false);
+
+        expect(target).toEqual({
+            type: "folder",
+            folderPath: process.cwd(),
+        });
+    });
+
     test("opens an existing file as a file target", async () => {
         const dir = await mkdtemp(path.join(tmpdir(), "writeme-open-file-"));
         const filePath = path.join(dir, "note.md");
