@@ -70,10 +70,14 @@ afterEach(() => {
     Reflect.deleteProperty(window, "electronAPI");
 });
 
-describe("ContextPane drawer", () => {
-    it("keeps mentions collapsed, focuses a preview, and closes it before the drawer on Escape", () => {
-        renderContext(note, [note, target, Note.parse({ id: "source", title: "Source", content: "Review Current note." })]);
-        const drawer = screen.getByRole("dialog", { name: "Context" });
+describe("ContextPane", () => {
+    it("keeps mentions collapsed and closes a preview before the desktop context landmark on Escape", () => {
+        renderContext(note, [
+            note,
+            target,
+            Note.parse({ id: "source", title: "Source", content: "Review Current note." }),
+        ]);
+        const panel = screen.getByRole("complementary", { name: "Context" });
         const trigger = screen.getByRole("button", { name: "Preview link", hidden: true });
         expect(trigger.closest("details")).not.toHaveAttribute("open");
         fireEvent.click(screen.getByText("Unlinked mentions"));
@@ -82,13 +86,15 @@ describe("ContextPane drawer", () => {
         fireEvent.keyDown(document.activeElement!, { key: "Escape" });
         expect(screen.queryByRole("region", { name: "Link preview" })).not.toBeInTheDocument();
         expect(trigger).toHaveFocus();
-        expect(drawer).toBeInTheDocument();
+        expect(panel).toBeInTheDocument();
     });
 
-    it("renders the current note inside the design-system drawer", () => {
+    it("renders the current note inside a desktop complementary landmark", () => {
         renderContext();
 
-        expect(screen.getByRole("dialog", { name: "Context" })).toContainElement(screen.getByText("Current note"));
+        expect(screen.getByRole("complementary", { name: "Context" })).toContainElement(
+            screen.getByText("Current note"),
+        );
     });
 
     it("uses the design-system modal drawer at narrow widths", () => {
@@ -148,4 +154,3 @@ describe("ContextPane drawer", () => {
         expect(screen.getByText("#hashtag")).toBeInTheDocument();
     });
 });
-

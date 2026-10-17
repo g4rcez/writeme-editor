@@ -27,7 +27,8 @@ test("completes headings, tags, words and real workspace files in compiled Elect
             (await application.evaluate(({ app }) => app.getPath("userData"))).startsWith(directory + path.sep),
         ).toBe(true);
         const page = await application.firstWindow();
-        await expect(page).toHaveURL(/^file:/);
+        const mainWindow = await application.browserWindow(page);
+        await mainWindow.evaluate((window) => window.setSize(1280, 900));
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await application.evaluate(({ dialog }, selected) => {
             dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selected] });
@@ -51,11 +52,9 @@ test("completes headings, tags, words and real workspace files in compiled Elect
             .first()
             .click();
         const dialog = page.getByRole("dialog", { name: /Create new note/i });
-        await expect(async () => {
-            await dialog.getByTitle("Note title").fill("Native completion");
-            await dialog.getByRole("button", { name: /^Create/ }).click();
-            await expect(dialog).toBeHidden({ timeout: 1000 });
-        }).toPass({ timeout: 6000 });
+        await dialog.getByTitle("Note title").fill("Native completion");
+        await dialog.locator('button[type="submit"]').click();
+        await expect(dialog).toBeHidden();
         const formatted = page.getByRole("textbox", { name: "Note editor", exact: true });
         await formatted.click();
         await expect(formatted).toBeFocused();

@@ -47,9 +47,7 @@ async function seedArticle(page: Page): Promise<{ article: string; destination: 
 
 async function selectArticle(page: Page, paragraph = 0): Promise<void> {
     const text = page.locator(".ProseMirror p").nth(paragraph);
-    await text.click();
-    await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");
-    await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+ArrowRight" : "Shift+End");
+    await text.selectText();
     expect(await page.evaluate(() => window.getSelection()?.toString())).not.toBe("");
 }
 

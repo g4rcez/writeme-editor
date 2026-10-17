@@ -314,6 +314,49 @@ export function FreehandCanvas({
     }, [activePanel, toolsHidden]);
 
     useEffect(() => {
+        const paperViewport = viewport.current;
+        if (!paperViewport) return;
+
+        let previousSize: { width: number; height: number } | null = null;
+        const observer = new ResizeObserver(() => {
+            const { width, height } = paperViewport.getBoundingClientRect();
+            if (!previousSize) {
+                previousSize = { width, height };
+                return;
+            }
+            if (previousSize.width === width && previousSize.height === height) return;
+            previousSize = { width, height };
+            if (!window.matchMedia("(max-width: 900px)").matches) return;
+
+            const card = paperViewport.querySelector<HTMLElement>(".wm-sticky-link");
+            if (!card) return;
+            const viewportBounds = paperViewport.getBoundingClientRect();
+            const cardBounds = card.getBoundingClientRect();
+            const visibleTop = Math.max(0, viewportBounds.top);
+            const bottomToolbar = paperViewport
+                .closest<HTMLElement>(".wm-notebook")
+                ?.querySelector<HTMLElement>(".wm-notebook-bottom")
+                ?.getBoundingClientRect();
+            const toolbarOverlapsViewport =
+                bottomToolbar !== undefined &&
+                bottomToolbar.top < viewportBounds.bottom &&
+                bottomToolbar.bottom > viewportBounds.top;
+            const visibleBottom = Math.min(
+                document.documentElement.clientHeight,
+                viewportBounds.bottom,
+                toolbarOverlapsViewport ? bottomToolbar.top : Infinity,
+            );
+            if (cardBounds.bottom > visibleBottom) {
+                paperViewport.scrollTop += cardBounds.bottom - visibleBottom;
+            } else if (cardBounds.top < visibleTop) {
+                paperViewport.scrollTop -= visibleTop - cardBounds.top;
+            }
+        });
+        observer.observe(paperViewport);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
         if (toolsHidden) showToolsButton.current?.focus();
         else if (previouslyHidden.current) notebookOptionsButton.current?.focus();
         previouslyHidden.current = toolsHidden;

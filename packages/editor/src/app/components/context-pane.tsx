@@ -120,6 +120,27 @@ function ContextSection({
 }
 
 export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: ContextPaneProps) {
+  const [isNarrowViewport, setIsNarrowViewport] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 959px)").matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 959px)");
+    const updateViewport = () => setIsNarrowViewport(mediaQuery.matches);
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!open || isNarrowViewport) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isNarrowViewport, onClose, open]);
+
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
   const [repairError, setRepairError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ConnectionRepair | null>(null);
@@ -653,6 +674,26 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
       </ContextSection>
     </div>
   );
+  const paneContent = (
+    <>
+      <p className="writeme-context-modal-note">{note.title || "Untitled"}</p>
+      {sections}
+    </>
+  );
+
+  if (!open) return null;
+
+  if (!isNarrowViewport) {
+    return (
+      <aside
+        aria-label="Context"
+        className="fixed inset-y-0 right-0 z-50 flex w-80 max-w-[86vw] flex-col border-l bg-background"
+      >
+        {paneContent}
+      </aside>
+    );
+  }
+
 
   return (
     <Modal
@@ -668,8 +709,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
       className="writeme-context-modal"
       bodyClassName="writeme-context-modal-body"
     >
-      <p className="writeme-context-modal-note">{note.title || "Untitled"}</p>
-      {sections}
+      {paneContent}
     </Modal>
   );
 }

@@ -71,7 +71,7 @@ test("authors, previews, navigates, saves and round-trips Markdown footnotes", a
     const menu = page.getByRole("listbox", { name: "Slash command suggestions" });
     await expect(menu.getByText("Footnote", { exact: true })).toBeVisible();
     await menu.getByText("Footnote", { exact: true }).click();
-    await page.getByLabel("Footnote name").fill("bibliography");
+    await page.getByLabel("Name", { exact: true }).fill("bibliography");
     await page.getByRole("button", { name: "Insert", exact: true }).click();
 
     const reference = page.getByRole("button", { name: "Footnote bibliography", exact: true });

@@ -78,6 +78,10 @@
   navigating to `/` and reopening the persisted active tab.
 - Keep sticky-note controls reachable on narrow screens while preserving
   default-zoom paper coverage, zoom, and pan.
+- Keep note context available as a labeled desktop panel or narrow-screen drawer,
+  and keep note toolbar controls reachable on small screens.
+- Read the persisted note snapshot inside the queued save to avoid validating a
+  stale compare-and-swap expectation.
 
 ## [2.0.3](https://github.com/g4rcez/writeme-editor/compare/v2.0.2...v2.0.3) (2026-10-11)
 
