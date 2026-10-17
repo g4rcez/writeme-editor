@@ -24,6 +24,7 @@ jobs:
         env:
             CI: "true"
             NODE_OPTIONS: --max-old-space-size=4096
+            WRITEME_E2E_FAST: ${{ inputs.fast && '1' || '0' }}
             PLAYWRIGHT_ARTIFACT_DIR: artifacts/playwright/${{ matrix.target.platform }}/browser-${{ matrix.shard }}
         steps:
             - uses: actions/checkout@v4
