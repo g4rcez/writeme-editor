@@ -30,7 +30,7 @@ export function importFileName(relativePath: string): string {
     return relativePath.replaceAll("\\", "/").split("/").pop() ?? relativePath;
 }
 
-function canonicalImportPath(filePath: string): string {
+export function canonicalImportPath(filePath: string): string {
     const normalized = filePath.replaceAll("\\", "/");
     const segments = normalized.split("/");
     const resolved: string[] = [];

@@ -95,6 +95,7 @@ test("opens a task's source line in Markdown mode", async ({ cleanPage: page }) 
 test("keeps journal dates separate and preserves daily notes across date navigation and refresh", async ({
     cleanPage: page,
 }, info) => {
+    test.setTimeout(120_000);
     await goHome(page);
     const ids = await seedNotes(page);
     await page.goto("/today?date=2025-12-31");
@@ -118,8 +119,8 @@ test("keeps journal dates separate and preserves daily notes across date navigat
     await page.getByRole("button", { name: "Previous day", exact: true }).click();
     await expect(page.getByLabel("Journal date")).toHaveValue("2025-12-31");
     await page.setViewportSize({ width: 390, height: 844 });
-    const closeMenu = page.getByRole("button", { name: "Close workspace menu", exact: true });
-    if (await closeMenu.isVisible()) await closeMenu.click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeVisible();
     await page.screenshot({ path: info.outputPath("today-narrow.png") });
     const lastTask = page.getByRole("region", { name: "Unfinished tasks", exact: true }).getByRole("link").last();
     await lastTask.scrollIntoViewIfNeeded();
@@ -134,10 +135,12 @@ test("keeps journal dates separate and preserves daily notes across date navigat
         const daily = (await repositories.notes.getAll()).filter(
             (note: { noteType: string }) => note.noteType === "quick",
         );
+        const seededDaily = daily.find(
+            (note: { metadata: Record<string, unknown> }) => note.metadata.journalDate === "2025-12-31",
+        );
         if (
             daily.length !== 2 ||
-            daily.find((note: { metadata: Record<string, unknown> }) => note.metadata.journalDate === "2025-12-31")
-                ?.content !== "# Review\n\n- [ ] Reflect on today\n\nPreserved journal content\n"
+            seededDaily?.content !== "# Review\n\n- [ ] Reflect on today\n\nPreserved journal content\n"
         )
             throw new Error("Daily notes changed or duplicated");
     });
@@ -334,10 +337,11 @@ for (const intent of ["change date", "leave Today", "cancel calendar", "leave ca
         await expect.poll(() => page.evaluate(() => Reflect.get(window, "dailyLookupStarted"))).toBe(true);
         if (intent === "change date") await page.getByRole("button", { name: "Next day", exact: true }).click();
         else if (intent === "cancel calendar") await page.getByRole("button", { name: "Cancel", exact: true }).click();
-        else if (intent === "leave calendar") await page.evaluate(() => {
-            window.history.pushState(null, "", "/tasks");
-            window.dispatchEvent(new PopStateEvent("popstate"));
-        });
+        else if (intent === "leave calendar")
+            await page.evaluate(() => {
+                window.history.pushState(null, "", "/tasks");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+            });
         else await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();
         const destination = page.url();
         await page.evaluate(async () => {

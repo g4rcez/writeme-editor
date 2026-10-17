@@ -33,6 +33,7 @@ async function readCommentStorage(page: Page): Promise<{
 
 async function selectWords(page: Page, words: string, occurrence = 0): Promise<void> {
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toContainText(words);
     await editor.focus();
     await editor.evaluate(
         (element, { words, occurrence }) => {

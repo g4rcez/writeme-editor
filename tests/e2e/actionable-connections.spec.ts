@@ -3,11 +3,37 @@ import { createNote as createEmptyNote, goHome, test, expect } from "./fixtures"
 
 test.describe.configure({ timeout: 90_000 });
 
-async function createNote(page: Page, title: string, content = ""): Promise<string> {
-    const url = await createEmptyNote(page, title);
-    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+async function createNote(
+    page: Page,
+    title: string,
+    content = "",
+    mode: "Formatted" | "Markdown" = "Formatted",
+): Promise<string> {
+    let url: string;
+    if (mode === "Markdown") {
+        const previousUrl = page.url();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
+        const dialog = page.getByRole("dialog", { name: /Create new note/i });
+        await dialog.getByTitle("Note title").fill(title);
+        await dialog.getByRole("button", { name: /^Create/ }).click();
+        await expect(dialog).toBeHidden();
+        await expect(page).toHaveURL(
+            (currentUrl) => /\/note\/[^/]+$/.test(currentUrl.pathname) && currentUrl.href !== previousUrl,
+        );
+        url = page.url();
+    } else {
+        url = await createEmptyNote(page, title);
+    }
+    const editor = page.getByRole("textbox", {
+        name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
+        exact: true,
+    });
     await expect(editor).toBeVisible({ timeout: 30_000 });
-    await expect(editor).toHaveAttribute("contenteditable", "true");
+    if (mode === "Formatted") await expect(editor).toHaveAttribute("contenteditable", "true");
     if (content) {
         await editor.focus();
         await editor.pressSequentially(content);
@@ -125,14 +151,19 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     test(`chooses an existing target in ${mode}, preserving labels, undo, and persistence`, async ({
         cleanPage: page,
     }) => {
+        await page.goto("/settings/editor");
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Success", exact: true })
+            .getByRole("button", { name: "OK", exact: true })
+            .click();
         await goHome(page);
-        await createNote(page, "Existing target");
-        await createNote(page, "Repair source", "See [[Missing name#Heading|my label]] and [[Missing name]].");
-        if (mode === "Markdown")
-            await page
-                .getByRole("toolbar", { name: "Note tools" })
-                .getByRole("button", { name: "Markdown", exact: true })
-                .click();
+        await createNote(page, "Existing target", "", mode);
+        await createNote(page, "Repair source", "See [[Missing name#Heading|my label]] and [[Missing name]].", mode);
         const before = (await storedNotes(page)).find((note) => note.title === "Repair source")!;
         const context = await openContext(page);
         await context.getByText("Unresolved references", { exact: true }).click();
@@ -180,13 +211,6 @@ test("repairs complete Markdown references while preserving labels, titles, anch
     cleanPage: page,
 }) => {
     await goHome(page);
-    await createNote(page, "Markdown target");
-    const sourceUrl = await createNote(page, "Markdown source");
-    const notes = await storedNotes(page);
-    const target = notes.find((note) => note.title === "Markdown target")!;
-    const source = notes.find((note) => note.title === "Markdown source")!;
-    const file = '[README](docs/README.md "writeme-mention:file:docs/README.md")';
-    const content = `${file}\n\n[**Visible**](app://note/missing#section "tooltip") and [Linked][ref]\n\n[ref]: app://note/other`;
     await page.goto("/settings/editor");
     const settings = page.getByRole("main", { name: "Settings" });
     await settings.getByRole("combobox", { name: "Default editor mode", exact: true }).selectOption("markdown");
@@ -195,6 +219,13 @@ test("repairs complete Markdown references while preserving labels, titles, anch
         .getByRole("dialog", { name: "Success", exact: true })
         .getByRole("button", { name: "OK", exact: true })
         .click();
+    await createNote(page, "Markdown target", "", "Markdown");
+    const sourceUrl = await createNote(page, "Markdown source", "", "Markdown");
+    const notes = await storedNotes(page);
+    const target = notes.find((note) => note.title === "Markdown target")!;
+    const source = notes.find((note) => note.title === "Markdown source")!;
+    const file = '[README](docs/README.md "writeme-mention:file:docs/README.md")';
+    const content = `${file}\n\n[**Visible**](app://note/missing#section "tooltip") and [Linked][ref]\n\n[ref]: app://note/other`;
     await changeStoredNote(page, source.id, { content });
     await page.goto(sourceUrl);
     await expect(page.getByRole("textbox", { name: "Markdown note editor", exact: true })).toContainText(
@@ -443,9 +474,19 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         cleanPage: page,
     }) => {
         test.setTimeout(180_000);
+        await page.goto("/settings/editor");
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Success", exact: true })
+            .getByRole("button", { name: "OK", exact: true })
+            .click();
         await goHome(page);
-        await createNote(page, "Roundtrip target");
-        const sourceUrl = await createNote(page, "Roundtrip source");
+        await createNote(page, "Roundtrip target", "", mode);
+        const sourceUrl = await createNote(page, "Roundtrip source", "", mode);
         const source = (await storedNotes(page)).find((note) => note.title === "Roundtrip source")!;
         const content = [
             '[README.md](docs/README.md "writeme-mention:file:docs/README.md")',
@@ -457,16 +498,6 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             "[Reference][ref]\n\n[ref]: app://note/deleted",
             "Keep  this",
         ].join("\n\n");
-        await page.goto("/settings/editor");
-        const settings = page.getByRole("main", { name: "Settings" });
-        await settings
-            .getByRole("combobox", { name: "Default editor mode", exact: true })
-            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
-        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
-        await page
-            .getByRole("dialog", { name: "Success", exact: true })
-            .getByRole("button", { name: "OK", exact: true })
-            .click();
         await changeStoredNote(page, source.id, { content });
         await page.goto(sourceUrl);
         const editor = page.getByRole("textbox", {

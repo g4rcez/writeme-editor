@@ -81,6 +81,22 @@ const useCopyEvents = (editor: TipTapEditor | null) => {
     }, [editor]);
 };
 
+const useEditorInitialized = (editor: TipTapEditor | null): boolean => {
+    const [initializedEditor, setInitializedEditor] = useState<TipTapEditor | null>(null);
+    useEffect(() => {
+        if (!editor) return;
+        const markInitialized = (): void => {
+            if (!editor.isDestroyed) setInitializedEditor(editor);
+        };
+        editor.on("create", markInitialized);
+        if (editor.isInitialized) markInitialized();
+        return () => {
+            editor.off("create", markInitialized);
+        };
+    }, [editor]);
+    return Boolean(editor && initializedEditor === editor && editor.isInitialized && !editor.isDestroyed);
+};
+
 type WorkerOutMessage =
     | { type: "start"; gen: number; totalChunks: number }
     | {
@@ -422,13 +438,14 @@ const TiptapEditorCore = memo(
                 },
             },
         });
+        const editorInitialized = useEditorInitialized(editor);
         useEffect(() => {
-            if (editor && editor.storage.neovim.getState()?.enabled !== vimMode) {
+            if (editorInitialized && editor && editor.storage.neovim.getState()?.enabled !== vimMode) {
                 editor.storage.neovim.setEnabled(vimMode);
             }
-        }, [editor, vimMode]);
+        }, [editor, editorInitialized, vimMode]);
         useEffect(() => {
-            if (!editor) return;
+            if (!editorInitialized || !editor) return;
             editor.view.dom.setAttribute("aria-busy", String(vimConfigurationLoading));
             if (vimConfigurationLoading) return;
             const cleanup = applyTiptapVimConfiguration(editor.storage.neovim, vimConfiguration);
@@ -441,9 +458,9 @@ const TiptapEditorCore = memo(
             return () => {
                 if (!editor.isDestroyed) cleanup();
             };
-        }, [editor, vimConfiguration, vimMode, vimConfigurationLoading]);
+        }, [editor, vimConfiguration, vimMode, vimConfigurationLoading, editorInitialized]);
         const writingAssistantSelectionContext = useMemo(() => {
-            if (!editor) return null;
+            if (!editorInitialized || !editor) return null;
             return {
                 target: editor.view.dom,
                 readSelection: () => {
@@ -473,7 +490,7 @@ const TiptapEditorCore = memo(
                     }
                 },
             };
-        }, [editor]);
+        }, [editor, editorInitialized]);
 
         useEffect(() => {
             if (!editor) return;
@@ -779,11 +796,11 @@ const TiptapEditorCore = memo(
         }, [dispatch, editor, readonly, settings, id, active]);
 
         useEffect(() => {
-            if (editor) {
+            if (editorInitialized && editor) {
                 const tr = editor.state.tr.setMeta("shikiPluginForceDecoration", true);
                 editor.view.dispatch(tr);
             }
-        }, [theme, editor]);
+        }, [theme, editor, editorInitialized]);
 
         useEffect(() => {
             return () => {
