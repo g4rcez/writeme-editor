@@ -16,9 +16,8 @@
   Disable continuous video/trace frames only in the fast gate while retaining failure
   screenshots, DOM/source traces and full-run recordings. Bind fixture edits to the
   new note's editor and save once without autosave delays or redundant reloads;
-  dedicated typing/autosave/persistence coverage remains. Temporarily defer Linux
-  Chromium browser execution in the PR fast gate while troubleshooting hosted
-  timeouts; local and full/nightly browser runs remain unchanged.
+  dedicated typing/autosave/persistence coverage remains. Run all sixteen Linux
+  Chromium browser shards in the fast PR gate.
 - Use explicit `.mts` Vite and Tailwind configs plus `import.meta.dirname` for
   root-relative paths, removing module-mode and native-loader warnings without
   changing package-wide module semantics.
