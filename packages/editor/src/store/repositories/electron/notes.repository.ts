@@ -3,7 +3,7 @@ import type { NoteSnapshot } from "../../note-history";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
 import { generateNotePath, getUniqueFilePath } from "../../../lib/file-utils";
-import { isPathWithinImportRoot } from "../../../lib/obsidian-import";
+import { canonicalImportPath, isPathWithinImportRoot } from "../../../lib/obsidian-import";
 import { getStorageMode } from "../../../lib/storage-mode";
 import { isTaskNoteMarkdown } from "../../../lib/task-note-markdown";
 import { getWorkspaceDocumentTitle, isWorkspaceDocumentFile } from "../../../types/workspace-files";
@@ -197,8 +197,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
         const existingByPath = new Map<string, Note>();
         for (const note of existing) {
-            if (note.filePath && !existingByPath.has(note.filePath)) {
-                existingByPath.set(note.filePath, note);
+            if (note.filePath) {
+                const key = canonicalImportPath(note.filePath);
+                if (!existingByPath.has(key)) existingByPath.set(key, note);
             }
         }
 
@@ -207,7 +208,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         );
         const loadedNotes = await Promise.all(
             workspaceFiles.map(async (file: WorkspaceFile): Promise<[string, Note] | null> => {
-                const metadata = existingByPath.get(file.path);
+                const metadata = existingByPath.get(canonicalImportPath(file.path));
                 if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
 
                 let readResult: Awaited<ReturnType<typeof window.electronAPI.fs.readFile>>;
@@ -272,8 +273,12 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
         return {
             complete: true,
-            filePaths: new Set(workspaceFiles.map((file) => file.path)),
-            notes: new Map(loadedNotes.filter((entry): entry is [string, Note] => entry !== null)),
+            filePaths: new Set(workspaceFiles.map((file) => canonicalImportPath(file.path))),
+            notes: new Map(
+                loadedNotes
+                    .filter((entry): entry is [string, Note] => entry !== null)
+                    .map(([filePath, note]) => [canonicalImportPath(filePath), note]),
+            ),
         };
     }
 
@@ -311,7 +316,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             if (workspaceScan.complete) {
                 filtered = filtered.filter(
                     (n) =>
-                        !n.filePath || !isWorkspaceDocumentFile(n.filePath) || workspaceScan.filePaths.has(n.filePath),
+                        !n.filePath ||
+                        !isWorkspaceDocumentFile(n.filePath) ||
+                        workspaceScan.filePaths.has(canonicalImportPath(n.filePath)),
                 );
             }
         }
@@ -319,12 +326,12 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         const workspaceNotes = workspaceScan.notes;
         const hydratedPaths = new Set<string>();
         const notes = filtered.map((metadata) => {
-            const hydrated = metadata.filePath ? workspaceNotes.get(metadata.filePath) : undefined;
-            if (hydrated && metadata.filePath) hydratedPaths.add(metadata.filePath);
+            const hydrated = metadata.filePath ? workspaceNotes.get(canonicalImportPath(metadata.filePath)) : undefined;
+            if (hydrated && metadata.filePath) hydratedPaths.add(canonicalImportPath(metadata.filePath));
             return hydrated ?? Note.parse({ ...metadata, content: metadata.content || "" });
         });
         for (const [filePath, note] of workspaceNotes) {
-            if (!hydratedPaths.has(filePath)) notes.push(note);
+            if (!hydratedPaths.has(canonicalImportPath(filePath))) notes.push(note);
         }
 
         const sorted = notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);

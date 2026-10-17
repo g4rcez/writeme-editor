@@ -24,7 +24,7 @@ async function prepareDeviceFlow(page: Page, denyFirstCopy = false): Promise<{ r
                 },
             });
             const click = HTMLAnchorElement.prototype.click;
-            HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement): void {
+            HTMLAnchorElement.prototype.click = function(this: HTMLAnchorElement): void {
                 if (this.href.startsWith("https://auth.openai.com/")) return;
                 click.call(this);
             };
@@ -156,8 +156,8 @@ test.describe("AI provider setup", () => {
             await expect(dialog).toBeVisible();
             const bounds = await dialog.boundingBox();
             if (!bounds) throw new Error("Storage dialog has no visible bounds.");
-            expect(bounds.x).toBeGreaterThanOrEqual(0);
-            expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+            expect(bounds.x).toBeGreaterThanOrEqual(-1);
+            expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1);
             await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
         });
     }

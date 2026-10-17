@@ -231,15 +231,29 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                 beginComment();
             }
         };
-        editor.on("transaction", update);
-        editor.on("selectionUpdate", selection);
-        editor.view.dom.addEventListener("writeme:open-comment", click);
-        editor.view.dom.addEventListener("keydown", keydown);
+        let detachViewListeners: (() => void) | null = null;
+        const attachViewListeners = (): void => {
+            if (!editor.isInitialized || editor.isDestroyed || detachViewListeners) return;
+            editor.on("transaction", update);
+            editor.on("selectionUpdate", selection);
+            const view = editor.view;
+            view.dom.addEventListener("writeme:open-comment", click);
+            view.dom.addEventListener("keydown", keydown);
+            detachViewListeners = () => {
+                editor.off("transaction", update);
+                editor.off("selectionUpdate", selection);
+                view.dom.removeEventListener("writeme:open-comment", click);
+                view.dom.removeEventListener("keydown", keydown);
+            };
+        };
+        const onCreate = (): void => {
+            queueMicrotask(attachViewListeners);
+        };
+        editor.on("create", onCreate);
+        attachViewListeners();
         return () => {
-            editor.off("transaction", update);
-            editor.off("selectionUpdate", selection);
-            editor.view.dom.removeEventListener("writeme:open-comment", click);
-            editor.view.dom.removeEventListener("keydown", keydown);
+            editor.off("create", onCreate);
+            detachViewListeners?.();
         };
     }, [editor, note, beginComment]);
 

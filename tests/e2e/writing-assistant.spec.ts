@@ -692,6 +692,12 @@ for (const theme of ["light", "dark"] as const) {
 
         for (const width of [1_280, 720]) {
             await page.setViewportSize({ width, height: 800 });
+            await expect
+                .poll(async () => {
+                    const bounds = await panel.boundingBox();
+                    return bounds && bounds.x + bounds.width <= width;
+                })
+                .toBe(true);
             const panelBounds = await panel.boundingBox();
             const editorBounds = await editor.boundingBox();
             const acceptBounds = await accept.boundingBox();

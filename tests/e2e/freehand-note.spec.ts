@@ -530,7 +530,7 @@ test.describe("production safeguards", () => {
         ).toHaveAttribute("fill", "#ffffff");
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
         await page.reload();
-        await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
+        await expect(page.getByRole("img", { name: "Handwriting canvas", exact: true })).toBeVisible();
         expect((await readNotebook(page)).pages[0]!.strokes[0]!.color).toBe("#ffffff");
     });
 
