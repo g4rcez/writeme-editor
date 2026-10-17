@@ -1,10 +1,29 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Note } from "../../packages/editor/src/store/note";
-import { createNote } from "../e2e/fixtures";
 import { addNoteComment, selectCommentWords } from "../helpers/comments";
+
+const createNativeNote = async (page: Page, title: string, content: string): Promise<void> => {
+    await page
+        .getByRole("main")
+        .getByRole("button", { name: /^New note/ })
+        .first()
+        .click();
+    const dialog = page.getByRole("dialog", { name: /Create new note/i });
+    await dialog.getByTitle("Note title").fill(title);
+    await dialog.locator('button[type="submit"]').click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL((url) => /#\/note\/[^/]+$/.test(url.hash));
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toBeVisible({ timeout: 30_000 });
+    await editor.fill(content);
+    await editor.press("ControlOrMeta+s");
+    await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+        timeout: 15_000,
+    });
+};
 
 for (const filesystem of [false, true]) {
     test(`persists sentence comments in compiled Electron (${filesystem ? "filesystem" : "SQLite"})`, async ({
@@ -52,7 +71,7 @@ for (const filesystem of [false, true]) {
                 });
                 await page.reload();
             }
-            await createNote(page, "advisor", "Review native sentence.");
+            await createNativeNote(page, "advisor", "Review native sentence.");
             await selectCommentWords(page, "Review native sentence.");
             await addNoteComment(page, "Native first comment");
             const panel = page.getByRole("complementary", { name: "Sentence comments" });

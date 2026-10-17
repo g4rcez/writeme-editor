@@ -467,8 +467,8 @@ export default function NotePage() {
     const noteToolbar = (
         <div
             className={clsx(
-                "mx-auto flex min-h-9 w-full min-w-0 max-w-3xl items-center justify-between gap-2 border-b border-border/50 bg-background print:hidden",
-                "@max-2xl:relative @max-2xl:flex-col @max-2xl:justify-center @max-2xl:gap-y-1 @max-2xl:py-2",
+                "writeme-editor-column grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-border/50 bg-background print:hidden",
+                "@max-2xl:relative @max-2xl:grid-cols-1 @max-2xl:justify-center @max-2xl:gap-y-1 @max-2xl:py-2",
                 paneMode ? "shrink-0 px-4" : "px-3",
             )}
             role="toolbar"
@@ -483,12 +483,12 @@ export default function NotePage() {
                 ) : null}
             </div>
             <span
-                className="order-2 min-w-0 max-w-xs flex-1 truncate text-center text-sm font-medium text-foreground/80 @max-2xl:order-1 @max-2xl:w-full @max-2xl:flex-none"
+                className="order-2 min-w-0 max-w-xs flex-1 truncate text-center text-sm font-medium text-foreground/80 @max-2xl:order-1 @max-2xl:mx-auto @max-2xl:w-full @max-2xl:flex-none"
                 title={note.filePath ?? undefined}
             >
                 {fileName || note.title || "Untitled"}
             </span>
-            <fieldset className="order-3 m-0 flex shrink-0 flex-nowrap items-center justify-end gap-1 border-0 p-0 @max-2xl:w-full @max-2xl:justify-center">
+            <fieldset className="writeme-note-toolbar-actions order-3 m-0 flex shrink-0 flex-nowrap items-center justify-end gap-1 border-0 p-0 @max-2xl:w-full @max-2xl:justify-center">
                 <legend className="sr-only">Note actions</legend>
                 {hasRichEditor && !isLatexSource ? <AddFrontmatterButton /> : null}
                 {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}

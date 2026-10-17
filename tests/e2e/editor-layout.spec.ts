@@ -134,7 +134,7 @@ test.describe("note context layout", () => {
                     const editorBounds = await page.locator(".writeme-editor").first().boundingBox();
                     const modeBounds = await modeGroup.boundingBox();
                     const actionsBounds = await actionsGroup.boundingBox();
-                    const filename = toolbar.locator(".writeme-note-toolbar-file-name");
+                    const filename = toolbar.getByText("Toolbar layout note", { exact: true });
                     const filenameBounds = await filename.boundingBox();
                     if (
                         !headerBounds ||

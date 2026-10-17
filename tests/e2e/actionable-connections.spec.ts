@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { createNote as createEmptyNote, goHome, test, expect } from "./fixtures";
 
 test.describe.configure({ timeout: 90_000 });
@@ -71,17 +71,24 @@ async function changeStoredNote(page: Page, id: string, patch: Partial<StoredNot
     );
 }
 
-async function openContext(page: Page) {
+function contextSurface(page: Page): Locator {
+    const role = (page.viewportSize()?.width ?? 1280) <= 959 ? "dialog" : "complementary";
+    return page.getByRole(role, { name: "Context", exact: true });
+}
+
+async function openContext(page: Page): Promise<Locator> {
     await page.getByRole("button", { name: "Open note context", exact: true }).click();
-    return page.locator(".writeme-context-modal");
+    const surface = contextSurface(page);
+    await expect(surface).toBeVisible();
+    return surface;
 }
 async function closeContext(page: Page): Promise<void> {
-    const drawer = page.getByRole("dialog", { name: "Context" });
+    const surface = contextSurface(page);
     for (let attempt = 0; attempt < 2; attempt++) {
-        if ((await drawer.count()) === 0) return;
+        if ((await surface.count()) === 0) return;
         await page.keyboard.press("Escape");
     }
-    await expect(drawer).toHaveCount(0);
+    await expect(surface).toHaveCount(0);
 }
 
 test("creates a missing target once and immediately resolves repeated references", async ({ cleanPage: page }) => {
@@ -377,8 +384,13 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .click();
         await page.goto(targetUrl);
         let context = await openContext(page);
-        const drawer = page.getByRole("dialog", { name: "Context" });
-        await expect(drawer).toHaveAttribute("aria-modal", "true");
+        const surface = contextSurface(page);
+        await expect(surface).toBeVisible();
+        if ((page.viewportSize()?.width ?? 1280) <= 959) {
+            await expect(surface).toHaveAttribute("aria-modal", "true");
+        } else {
+            await expect(surface).not.toHaveAttribute("aria-modal", "true");
+        }
         await context.getByText("Unlinked mentions", { exact: true }).click();
         await context.getByRole("button", { name: "Preview link", exact: true }).click();
         await context.getByRole("button", { name: "Link this mention", exact: true }).click();
@@ -386,7 +398,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         const saved = (await storedNotes(page)).find((note) => note.id === source.id)!;
         expect(saved.content).toContain("writeme-mention:");
         await page.keyboard.press("Escape");
-        await expect(drawer).toHaveCount(0);
+        await expect(surface).toHaveCount(0);
         await page.getByRole("button", { name: "Open pane mode", exact: true }).click();
         const second = page.getByRole("region", { name: "Editor group 2", exact: true });
         await second.getByRole("combobox", { name: "Select note for pane 2" }).selectOption(source.id);
@@ -403,7 +415,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await context.getByRole("button", { name: "Undo link", exact: true }).click();
         await expect(context.getByRole("status")).toContainText("unsaved changes");
         await page.keyboard.press("Escape");
-        await expect(drawer).toHaveCount(0);
+        await expect(surface).toHaveCount(0);
         await expect(draft).toContainText("My unsaved draft must survive Undo link.");
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
         await draft.focus();
@@ -414,7 +426,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await context.getByRole("button", { name: "Undo link", exact: true }).click();
         await expect(context.getByRole("button", { name: "Undo link", exact: true })).toHaveCount(0);
         await page.keyboard.press("Escape");
-        await expect(drawer).toHaveCount(0);
+        await expect(surface).toHaveCount(0);
         await expect(draft).toHaveText(source.content);
         for (let iteration = 0; iteration < 2; iteration++) {
             await draft.focus();

@@ -287,6 +287,12 @@
     }
 }
 
+@media (max-width: 40rem) {
+    .writeme-note-toolbar-actions [data-component="button"] {
+        @apply min-h-11 min-w-11;
+    }
+}
+
 .writeme-editor-content {
     @apply h-full w-full outline-none print:block print:h-auto print:overflow-visible;
 }

@@ -51,6 +51,8 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
             recordVideo: { dir: videoDirectory, size: { width: 1280, height: 800 } },
         });
         const page = await application.firstWindow();
+        const mainWindow = await application.browserWindow(page);
+        await mainWindow.evaluate((window) => window.setSize(1280, 900));
         page.on("console", (message) => {
             if (message.type() === "error") rendererErrors.push(message.text());
         });

@@ -953,9 +953,9 @@ const RawEditorCore = memo(
 
         const saveContent = useCallback(
             (content: string): Promise<void> => {
-                const savingNote = persistedNoteRef.current;
                 const onSave = onSaveRef.current;
                 saveQueueRef.current = saveQueueRef.current.then(async () => {
+                    const savingNote = persistedNoteRef.current;
                     uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
                     try {
                         setSaveError(null);

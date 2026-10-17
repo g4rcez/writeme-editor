@@ -366,6 +366,21 @@ test.describe("sticky note links", () => {
                 await page.setViewportSize({ width: width!, height: height! });
                 const card = page.getByRole("group", { name: "Linked note: Project plan", exact: true });
                 await expect(card).toBeVisible({ timeout: 30_000 });
+                await expect
+                    .poll(() =>
+                        card.locator("button, a").evaluateAll((controls) =>
+                            controls.every((control) => {
+                                const bounds = control.getBoundingClientRect();
+                                return (
+                                    bounds.x >= 0 &&
+                                    bounds.right <= window.innerWidth &&
+                                    bounds.y >= 0 &&
+                                    bounds.bottom <= window.innerHeight
+                                );
+                            }),
+                        ),
+                    )
+                    .toBe(true);
                 for (const control of await card.locator("button, a").all()) {
                     const bounds = (await control.boundingBox())!;
                     expect(bounds.width).toBeGreaterThanOrEqual(44);
