@@ -923,7 +923,7 @@ const TiptapEditorCore = memo(
                             {saveError}
                         </p>
                     ) : null}
-                    <EditorContent key={id} editor={editor} className="writeme-block" />
+                    <EditorContent editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
         );

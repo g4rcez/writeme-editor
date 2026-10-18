@@ -4,7 +4,7 @@ Agent guidelines for the Writeme Electron application.
 
 ## Build/Lint/Test Commands
 
-**Package manager**: Use `npm` — not `pnpm` or `yarn`.
+**Package manager**: Use `npm` for installs, builds, and tests. The release command is the exception: use `pnpm release <patch|minor|major>` to publish all public npm packages; it invokes npm internally.
 
 - `npm run dev` / `npm start` - Start Electron app in development mode
 - `npm run browser:dev` - Start web version with Vite dev server

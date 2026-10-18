@@ -6,6 +6,7 @@ import {
     RangeSetBuilder,
     StateEffect,
     StateField,
+    Transaction,
     type Extension,
     type StateEffect as StateEffectType,
 } from "@codemirror/state";
@@ -366,7 +367,7 @@ export function RawMarkdownEditor({
     const editableCompartmentRef = useRef(new Compartment());
     const readOnlyCompartmentRef = useRef(new Compartment());
     const contentAttributesCompartmentRef = useRef(new Compartment());
-    const activateRef = useRef<() => void>(() => {});
+    const activateRef = useRef<() => void>(() => { });
     const [writingAssistantIntegration] = useState(() => createMarkdownWritingAssistant());
     const [writingAssistantAdapter, setWritingAssistantAdapter] = useState<WritingEditorAdapter | null>(null);
     const writingAssistantSelectionContext = useMemo(() => {
@@ -511,7 +512,7 @@ export function RawMarkdownEditor({
                 if (repairedMarkdown(view.state.doc.toString(), request) === null) return "conflict";
                 view.dispatch({
                     changes: { from: request.from, to: request.to, insert: request.replacement },
-                    annotations: isolateHistory.of("full"),
+                    annotations: [isolateHistory.of("full"), Transaction.userEvent.of("input.repair")],
                 });
                 return "applied";
             },
@@ -569,7 +570,7 @@ export function RawMarkdownEditor({
                 setEditorSearchGlobalRef(null);
             }
             if (activateRef.current === activation.activate) {
-                activateRef.current = () => {};
+                activateRef.current = () => { };
             }
             writingAssistantAdapterRef.current?.dispose();
             writingAssistantAdapterRef.current = null;

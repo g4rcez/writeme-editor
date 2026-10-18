@@ -117,6 +117,16 @@ async function closeContext(page: Page): Promise<void> {
     await expect(surface).toHaveCount(0);
 }
 
+function captureDuplicateKeyWarnings(page: Page): string[] {
+    const warnings: string[] = [];
+    page.on("console", function collectDuplicateKeyWarnings(message) {
+        if (message.type() === "error" && message.text().includes("Encountered two children with the same key")) {
+            warnings.push(message.text());
+        }
+    });
+    return warnings;
+}
+
 test("creates a missing target once and immediately resolves repeated references", async ({ cleanPage: page }) => {
     await goHome(page);
     await createNote(page, "Missing source", "See [[New target]] and [[New target]].");
@@ -474,6 +484,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         cleanPage: page,
     }) => {
         test.setTimeout(180_000);
+        const duplicateKeyWarnings = captureDuplicateKeyWarnings(page);
         await page.goto("/settings/editor");
         const settings = page.getByRole("main", { name: "Settings" });
         await settings
@@ -564,6 +575,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await expect(editor).toContainText(mode === "Markdown" ? "API" : "API_v2");
         if (mode === "Formatted") await expect(editor).toContainText("bracket [one] and *star*");
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(after);
+        expect(duplicateKeyWarnings).toEqual([]);
     });
 }
 

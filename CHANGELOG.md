@@ -8,6 +8,9 @@
 - Add a Delete footnote action that removes linked references and duplicate
   definitions together; one undo restores the footnote.
 
+- Add `pnpm release <patch|minor|major>` to validate, bump, and publish all public
+  npm packages in dependency order while retaining each package's version line.
+
 - Split CI into a five-minute-target PR gate and full nightly/release verification.
   Discover browser, production and native regressions automatically, shard browser
   execution, and replace feature-specific lint/typecheck lists with directory scopes.
@@ -37,12 +40,15 @@
 
 - Protect unsaved source drafts when undoing a note-link repair, and keep clean
   open-source undo in the editor's normal undo/redo history.
+- Deduplicate repeated note IDs in global state, keeping the newest version so
+  rendered note lists never receive duplicate React keys.
 - Preserve unrelated whitespace and live node attributes during occurrence-local
   link repairs, with whitespace retained through save/reload and undo/redo.
 - Keep workspace-file mentions out of missing-note actions and preserve literal
   link labels without overlapping wrapped app URLs.
 - Link existing workspace-file mentions to notes, count missing targets as
   unresolved, and show Markdown hashtags in the Context drawer.
+- Keep each Markdown note-link repair in its own undo/redo step, including after a redo.
 - Render PDF attachments as paginated documents in the media viewer instead of broken image previews.
 - Open nested agenda tasks at their Markdown source, and focus following
   top-level board tasks by source identity instead of a mismatched card index.

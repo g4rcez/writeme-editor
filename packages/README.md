@@ -70,27 +70,17 @@ Installation tests run `npm pack`, install the tarballs into temporary projects,
 
 ## Publish
 
-You need access to the `writeme.dev` npm organization. Each package has its own version and validation hook.
-
-From the repository root, release one package with npm's version argument:
+You need access to the `writeme.dev` npm organization. The repository command publishes all three public packages:
 
 ```sh
-pnpm release cli minor
-pnpm release math patch
-pnpm release mcp 0.2.0
-pnpm release math prerelease --preid beta --tag next
-pnpm release cli minor --dry-run
+pnpm release patch
+pnpm release minor
+pnpm release major
+pnpm release patch --dry-run
 ```
 
-The same script works through `npm run release -- cli minor`. pnpm is only the script launcher; versioning and publishing use npm. The selected package must be public and have release validation. Validation runs before `npm version`, then `npm publish` runs its `prepublishOnly` checks against the new version. npm updates the selected manifest and its local lockfile without creating a Git commit or tag. Other package versions and dependency ranges are unchanged.
+The script validates math, CLI, and MCP before changing any versions, then increments each package's own current version and publishes in dependency order: math, CLI, MCP. pnpm is the command launcher; npm performs versioning and publication, and each `prepublishOnly` hook validates again. `--dry-run` still runs validation but does not change versions or publish.
 
-Supported version arguments are `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`, `from-git`, or an exact version. `--preid` and `--allow-same-version` are forwarded to npm version. Prereleases publish with the `next` tag by default; `--tag` overrides it. `--dry-run` validates and previews the commands without bumping or publishing. If publication fails after the version update, retry `npm publish` from that package directory.
-
-Publish math first so the CLI dependency is available:
-
-```sh
-npm publish --workspace @writeme.dev/math --access public
-npm publish --workspace @writeme.dev/cli --access public
-```
+After publication, the updated package manifests and lockfiles remain in the working tree for review and commit through the normal pull-request workflow. A registry error can occur after an earlier package has published; the error identifies the remaining packages. Retry only those packages with `npm publish --workspaces=false --access public` from their package directories—do not bump the versions a second time.
 
 `test:packages:independent` copies each public package outside the repository, installs its own dependencies, and runs `npm publish --dry-run` through the real hook. It also verifies that broken source blocks publication. CLI uses the copied math tarball for its first-release check. No package is published by validation, tests, builds, or dry runs.
