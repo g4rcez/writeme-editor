@@ -63,10 +63,11 @@ for (const mode of ["formatted", "markdown"] as const) {
     });
 
     test(`preserves metadata written before and during a pending ${mode} draft`, async ({ cleanPage: page }) => {
-        await page.goto("/settings/editor");
-        await page.getByRole("checkbox").first().uncheck();
-        await page.getByRole("button", { name: "Save Editor", exact: true }).click();
         await goHome(page);
+        await page.evaluate(async () => {
+            const { SettingsService } = await import(String("/packages/editor/src/store/settings.ts"));
+            await SettingsService.save({ autosave: false });
+        });
         const url = await createNote(page, "Metadata save");
         const id = url.split("/").pop()!;
         if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();

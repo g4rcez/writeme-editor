@@ -447,7 +447,8 @@ test.describe("Search into saved Views", () => {
             { id: "latest", title: "Latest note" },
             { id: "reading", title: "Queued article", noteType: "read-it-later", updatedAt: "2026-10-13T15:00:00Z" },
         ]);
-        await page.goto("/views");
+        await page.getByRole("button", { name: "Views", exact: true }).click();
+        await expect(page).toHaveURL(/\/views$/);
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toHaveCount(0);
         await expect(page.getByRole("button", { name: "Recently edited", exact: true })).toHaveCount(1);
@@ -480,7 +481,9 @@ test.describe("Search into saved Views", () => {
         await page.getByRole("button", { name: "Delete Reading queue", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
         await page.reload();
+        await expect(page.getByRole("button", { name: "My recent notes", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toBeVisible();
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(1);
         await expect(page.getByRole("button", { name: "My recent notes", exact: true })).toHaveCount(1);

@@ -44,8 +44,13 @@ async function seedArticle(page: Page): Promise<{ article: string; destination: 
         await repositories.notes.save(destination);
         return { article: article.id, destination: destination.id };
     });
-    await page.goto(`/note/${ids.article}`);
-    await expect(noteEditor(page)).toContainText("A saved article phrase.");
+    await page.goto(`/note/${ids.article}`, { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(`/note/${ids.article}`, { timeout: 30_000 });
+    const editor = page.locator(`#editor-container-${ids.article}`).getByRole("textbox", {
+        name: "Note editor",
+        exact: true,
+    });
+    await expect(editor).toContainText("A saved article phrase.", { timeout: 30_000 });
     return ids;
 }
 

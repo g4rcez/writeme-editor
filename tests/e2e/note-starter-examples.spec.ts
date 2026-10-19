@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
 test.use({ launchOptions: { slowMo: process.env.WRITEME_CAPTURE_EVIDENCE === "1" ? 180 : 0 } });
@@ -19,6 +19,13 @@ async function settleForCapture(page: Page): Promise<void> {
 async function openNoteDialog(page: Page): Promise<void> {
     if (page.url() === "about:blank") await goHome(page);
     await page.locator(".writeme-app-header-actions").getByRole("button", { name: "New note", exact: true }).click();
+}
+
+async function selectOptionWithKeyboard(page: Page, combobox: Locator, optionName: string): Promise<void> {
+    await combobox.fill(optionName);
+    await expect(page.getByRole("option", { name: optionName, exact: true })).toBeVisible();
+    await combobox.press("ArrowDown");
+    await combobox.press("Enter");
 }
 
 test("offers a starter before the first saved template and persists its content", async ({ cleanPage: page }, info) => {
@@ -96,51 +103,31 @@ test("keeps saved templates available and mutually exclusive with starters", asy
     await expect(starter).toHaveValue("No starter example");
     await expect(template).toHaveValue("No saved template");
     await expect(dialog).toContainText("With neither selected, the note starts blank.");
-    await starter.fill("Reading notes");
-    await starter.press("ArrowDown");
-    await starter.press("Enter");
+    await selectOptionWithKeyboard(page, starter, "Reading notes");
     await expect(starter).toHaveValue("Reading notes");
     await expect(template).toHaveValue("No saved template");
-    await template.fill("No saved template");
-    await template.press("ArrowDown");
-    await template.press("Enter");
+    await selectOptionWithKeyboard(page, template, "No saved template");
     await expect(starter).toHaveValue("Reading notes");
-    await starter.fill("No starter example");
-    await starter.press("ArrowDown");
-    await starter.press("Enter");
+    await selectOptionWithKeyboard(page, starter, "No starter example");
     await expect(starter).toHaveValue("No starter example");
     await expect(template).toHaveValue("No saved template");
     await expect(dialog.getByText("Preview content", { exact: true })).toHaveCount(0);
-    await starter.fill("Reading notes");
-    await starter.press("ArrowDown");
-    await starter.press("Enter");
-    await template.fill("Team agenda");
-    await template.press("ArrowDown");
-    await template.press("Enter");
+    await selectOptionWithKeyboard(page, starter, "Reading notes");
+    await selectOptionWithKeyboard(page, template, "Team agenda");
     await expect(starter).toHaveValue("No starter example");
     await expect(template).toHaveValue("Team agenda");
-    await starter.fill("No starter example");
-    await starter.press("ArrowDown");
-    await starter.press("Enter");
+    await selectOptionWithKeyboard(page, starter, "No starter example");
     await expect(template).toHaveValue("Team agenda");
-    await template.fill("No saved template");
-    await template.press("ArrowDown");
-    await template.press("Enter");
+    await selectOptionWithKeyboard(page, template, "No saved template");
     await expect(starter).toHaveValue("No starter example");
     await expect(template).toHaveValue("No saved template");
     await expect(dialog.getByTitle("content")).toHaveCount(0);
-    await template.fill("Team agenda");
-    await template.press("ArrowDown");
-    await template.press("Enter");
+    await selectOptionWithKeyboard(page, template, "Team agenda");
     await expect(dialog.getByText("Preview content", { exact: true })).toHaveCount(0);
-    await starter.fill("Reading notes");
-    await starter.press("ArrowDown");
-    await starter.press("Enter");
+    await selectOptionWithKeyboard(page, starter, "Reading notes");
     await expect(starter).toHaveValue("Reading notes");
     await expect(template).toHaveValue("No saved template");
-    await template.fill("Team agenda");
-    await template.press("ArrowDown");
-    await template.press("Enter");
+    await selectOptionWithKeyboard(page, template, "Team agenda");
     await dialog.getByTitle("content").fill("Discuss next steps");
     await dialog.getByTitle("Note title").fill("Planning meeting");
     await dialog.getByRole("button", { name: "Create note", exact: true }).click();
@@ -162,9 +149,7 @@ for (const theme of ["light", "dark"] as const) {
         const dialog = page.getByRole("dialog", { name: "Create new note" });
         await dialog.getByTitle("Note title").fill("Try Markdown");
         const starter = dialog.getByRole("combobox", { name: "Starter example (optional)" });
-        await starter.fill("Markdown playground");
-        await page.keyboard.press("ArrowDown");
-        await page.keyboard.press("Enter");
+        await selectOptionWithKeyboard(page, starter, "Markdown playground");
         await expect(dialog).toContainText("Try headings, tasks, code, and tables in the editor.");
         const disclosure = dialog.getByText("Preview content", { exact: true });
         await disclosure.focus();
