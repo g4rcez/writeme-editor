@@ -3,6 +3,8 @@ import { createNote as createEmptyNote, goHome, test, expect } from "./fixtures"
 
 test.describe.configure({ timeout: 90_000 });
 
+const redoShortcut = "ControlOrMeta+y";
+
 async function createNote(
     page: Page,
     title: string,
@@ -188,7 +190,9 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await closeContext(page);
         await editor.focus();
         await page.keyboard.press("ControlOrMeta+s");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
@@ -196,15 +200,19 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .not.toBe(before.content);
         await page.keyboard.press("ControlOrMeta+z");
         await page.keyboard.press("ControlOrMeta+s");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
             })
             .toBe(before.content);
-        await page.keyboard.press("ControlOrMeta+Shift+z");
+        await page.keyboard.press(redoShortcut);
         await page.keyboard.press("ControlOrMeta+s");
-        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
@@ -480,7 +488,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             await page.keyboard.press("ControlOrMeta+z");
             if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
             else await expect(draft.locator('[data-type="mention"]')).toHaveCount(1);
-            await page.keyboard.press("ControlOrMeta+Shift+z");
+            await page.keyboard.press(redoShortcut);
             await expect(draft).toHaveText(source.content);
         }
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
@@ -567,7 +575,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
                         timeout: 15_000,
                     })
                     .toBe(before);
-                await page.keyboard.press("ControlOrMeta+Shift+z");
+                await page.keyboard.press(redoShortcut);
                 await page.keyboard.press("ControlOrMeta+s");
                 await expect
                     .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {

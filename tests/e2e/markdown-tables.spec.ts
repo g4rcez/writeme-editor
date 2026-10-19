@@ -140,42 +140,23 @@ for (const [tableCase, tableMarkdown] of tableCases) {
     }
 }
 
-test("keeps saved large note content after canceled or failed Markdown worker loading", async ({ cleanPage: page }) => {
-    test.setTimeout(120_000);
+test("keeps saved large note content after canceled Markdown worker loading", async ({ cleanPage: page }) => {
+    test.setTimeout(90_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/", { waitUntil: "commit" });
 
-    const savedNotes = await page.evaluate(async () => {
+    const noteId = await page.evaluate(async () => {
         const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
         const { Note } = await import("/packages/editor/src/store/note.ts");
-        const cancelledContent = `Keep the original note content intact. ${"Existing content must survive cancellation. ".repeat(55_000)}`;
-        const failedContent = `Keep the original note content intact. ${"Existing content must survive worker failure. ".repeat(2_000)}`;
-        const cancelledNote = Note.new("Canceled large note", cancelledContent);
-        const failedNote = Note.new("Failed large note", failedContent);
-        await repositories.notes.save(cancelledNote);
-        await repositories.notes.save(failedNote);
-
-        const { getMarkdownWorker } = await import("/packages/editor/src/lib/markdown-worker/index.ts");
-        const worker = getMarkdownWorker();
-        worker.postMessage = ((message: unknown) => {
-            const { gen } = message as { gen: number };
-            queueMicrotask(() => {
-                worker.dispatchEvent(
-                    new MessageEvent("message", {
-                        data: { type: "error", gen, error: "simulated worker failure" },
-                    }),
-                );
-            });
-        }) as typeof worker.postMessage;
-
-        return { cancelledId: cancelledNote.id, failedId: failedNote.id };
+        const content = `Keep the original note content intact. ${"Existing content must survive cancellation. ".repeat(55_000)}`;
+        const note = Note.new("Canceled large note", content);
+        await repositories.notes.save(note);
+        return note.id;
     });
-    const cancelledDigest = await storedNoteDigest(page, savedNotes.cancelledId);
-    const failedDigest = await storedNoteDigest(page, savedNotes.failedId);
+    const savedDigest = await storedNoteDigest(page, noteId);
 
-    await page.getByRole("link", { name: "All notes", exact: true }).click();
-    await page.getByRole("link", { name: "Canceled large note", exact: true }).click();
-    await expect(page.getByText("Large document", { exact: true })).toBeVisible();
+    await page.goto(`/note/${noteId}`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("Large document", { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
@@ -184,14 +165,50 @@ test("keeps saved large note content after canceled or failed Markdown worker lo
         page.getByText("Loading was canceled. The saved note is unchanged. Reload to try again."),
     ).toBeVisible();
     await page.keyboard.press("ControlOrMeta+s");
-    expect(await storedNoteDigest(page, savedNotes.cancelledId)).toBe(cancelledDigest);
+    expect(await storedNoteDigest(page, noteId)).toBe(savedDigest);
+});
 
-    await page.getByRole("link", { name: "All notes", exact: true }).click();
-    await page.getByRole("link", { name: "Failed large note", exact: true }).click();
-    await expect(editor).toHaveAttribute("contenteditable", "false");
+test("keeps saved large note content after Markdown worker failure", async ({ cleanPage: page }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+        const originalPostMessage = Worker.prototype.postMessage;
+        Worker.prototype.postMessage = function (message, transfer) {
+            if (typeof message === "object" && message !== null && "text" in message) {
+                const generation = (message as { gen?: unknown }).gen;
+                if (typeof generation === "number") {
+                    queueMicrotask(() => {
+                        this.dispatchEvent(
+                            new MessageEvent("message", {
+                                data: { type: "error", gen: generation, error: "simulated worker failure" },
+                            }),
+                        );
+                    });
+                    return;
+                }
+            }
+            return Reflect.apply(originalPostMessage, this, transfer === undefined ? [message] : [message, transfer]);
+        };
+    });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/", { waitUntil: "commit" });
+
+    const noteId = await page.evaluate(async () => {
+        const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+        const { Note } = await import("/packages/editor/src/store/note.ts");
+        const content = `Keep the original note content intact. ${"Existing content must survive worker failure. ".repeat(2_000)}`;
+        const note = Note.new("Failed large note", content);
+        await repositories.notes.save(note);
+        return note.id;
+    });
+    const savedDigest = await storedNoteDigest(page, noteId);
+
+    await page.goto(`/note/${noteId}`, { waitUntil: "domcontentloaded" });
     await expect(
         page.getByText("Could not parse the saved note. Its content is unchanged. Reload to try again."),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
+
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toHaveAttribute("contenteditable", "false");
     await page.keyboard.press("ControlOrMeta+s");
-    expect(await storedNoteDigest(page, savedNotes.failedId)).toBe(failedDigest);
+    expect(await storedNoteDigest(page, noteId)).toBe(savedDigest);
 });

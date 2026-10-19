@@ -632,10 +632,11 @@ const TiptapEditorCore = memo(
             }, 120_000);
 
             function handler(e: MessageEvent<WorkerOutMessage>) {
-                if (e.data.gen !== myGen || generationRef.current !== myGen) {
+                if (generationRef.current !== myGen || editor.isDestroyed) {
                     worker.removeEventListener("message", handler);
                     return;
                 }
+                if (e.data.gen !== myGen) return;
 
                 if (e.data.type === "start") {
                     totalChunks = e.data.totalChunks;
