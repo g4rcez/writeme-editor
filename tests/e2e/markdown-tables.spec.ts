@@ -120,6 +120,8 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             await expect(saveStatus).toHaveText("Saved", { timeout: 15_000 });
             await page.reload({ waitUntil: "domcontentloaded" });
             await expect(page).toHaveURL(noteUrl);
+            await expect(editor).toBeVisible({ timeout: 20_000 });
+            await expect(editor).toHaveAttribute("contenteditable", "true", { timeout: 20_000 });
             await expectPreservedTable(editor, afterTable + savedEdit);
             await page.screenshot({ path: testInfo.outputPath(`uneven-table-${size}-${action}-reopened.png`) });
         });

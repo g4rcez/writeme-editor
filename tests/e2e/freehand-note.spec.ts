@@ -1156,7 +1156,7 @@ for (const span of [400, 1e12])
         await expect(strokes).toHaveCount(1);
         await expect(strokes.first()).toHaveAttribute("d", untouchedPath!);
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(strokes).toHaveCount(1);
         const content = await page.evaluate(async () => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");
