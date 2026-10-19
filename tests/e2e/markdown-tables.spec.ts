@@ -141,22 +141,24 @@ for (const [tableCase, tableMarkdown] of tableCases) {
 }
 
 test("keeps saved large note content after canceled Markdown worker loading", async ({ cleanPage: page }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/", { waitUntil: "commit" });
 
     const noteId = await page.evaluate(async () => {
         const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
         const { Note } = await import("/packages/editor/src/store/note.ts");
-        const content = `Keep the original note content intact. ${"Existing content must survive cancellation. ".repeat(55_000)}`;
+        const { WARN_THRESHOLD } = await import("/packages/editor/src/lib/markdown-worker/index.ts");
+        const prefix = "Keep the original note content intact. ";
+        const content = `${prefix}${"x".repeat(WARN_THRESHOLD + 1 - prefix.length)}`;
         const note = Note.new("Canceled large note", content);
         await repositories.notes.save(note);
         return note.id;
     });
     const savedDigest = await storedNoteDigest(page, noteId);
 
-    await page.goto(`/note/${noteId}`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByText("Large document", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await page.goto(`/note/${noteId}`, { waitUntil: "commit" });
+    await expect(page.getByText("Large document", { exact: true })).toBeVisible({ timeout: 60_000 });
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });

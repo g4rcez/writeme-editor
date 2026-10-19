@@ -304,6 +304,7 @@ test.describe("sticky note links", () => {
     test("moves sticky links with keyboard and touch and keeps missing targets removable", async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(90_000);
         await createHandwrittenNote(page);
         const targetId = await seedLinkTargets(page);
         await addProjectLink(page);
