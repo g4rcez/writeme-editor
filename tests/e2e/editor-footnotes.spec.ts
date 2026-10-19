@@ -200,6 +200,8 @@ test("pastes portable footnotes and preserves shared definitions through deletio
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
+    // ProseMirror selects a selectable atom on the first forward-delete; the next removes it.
+    await page.keyboard.press("Delete");
     await page.keyboard.press("Delete");
     await expect(references).toHaveCount(1);
     await expect(editor.locator('[data-footnote-definition="a"] strong')).toHaveText("Shared source");

@@ -51,7 +51,7 @@ describe("Global Store", () => {
 
     it("deduplicates notes by id and keeps the freshest duplicate", () => {
         const older = Note.parse({
-            ...Note.new("Original"),
+            ...Note.new("Original", ""),
             id: "duplicate-note",
             title: "Older",
             updatedAt: new Date("2026-01-01T00:00:00.000Z"),
