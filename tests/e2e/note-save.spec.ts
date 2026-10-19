@@ -63,10 +63,11 @@ for (const mode of ["formatted", "markdown"] as const) {
     });
 
     test(`preserves metadata written before and during a pending ${mode} draft`, async ({ cleanPage: page }) => {
-        await page.goto("/settings/editor");
-        await page.getByRole("checkbox").first().uncheck();
-        await page.getByRole("button", { name: "Save Editor", exact: true }).click();
         await goHome(page);
+        await page.evaluate(async () => {
+            const { SettingsService } = await import(String("/packages/editor/src/store/settings.ts"));
+            await SettingsService.save({ autosave: false });
+        });
         const url = await createNote(page, "Metadata save");
         const id = url.split("/").pop()!;
         if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
@@ -111,14 +112,18 @@ for (const mode of ["formatted", "markdown"] as const) {
             cleanPage: page,
             context,
         }) => {
-            await page.goto("/settings/editor");
-            await page.getByRole("checkbox").first().uncheck();
-            await page.getByRole("button", { name: "Save Editor", exact: true }).click();
             await goHome(page);
+            await page.evaluate(async () => {
+                const { SettingsService } = await import(String("/packages/editor/src/store/settings.ts"));
+                await SettingsService.save({ autosave: false });
+            });
             const url = await createNote(page, "Conditional save");
             const id = url.split("/").pop()!;
             if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
-            const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+            const editor = page.locator(`#editor-container-${id}`).getByRole("textbox", {
+                name: mode === "formatted" ? "Note editor" : "Markdown note editor",
+                exact: true,
+            });
             await editor.click();
             await page.keyboard.type("Retain this local draft.");
             await page.evaluate(async () => {
@@ -138,7 +143,7 @@ for (const mode of ["formatted", "markdown"] as const) {
                 .poll(() => page.evaluate(() => (window as typeof window & { savePaused?: boolean }).savePaused))
                 .toBe(true);
             const other = await context.newPage();
-            await other.goto("/");
+            await other.goto("/", { waitUntil: "domcontentloaded" });
             await other.evaluate(
                 async ({ id, mutation }) => {
                     const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
@@ -190,7 +195,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.type("Retry this draft");
     await page.evaluate(() => {
         const put = IDBObjectStore.prototype.put;
-        IDBObjectStore.prototype.put = function(value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
             if (this.name === "notes") {
                 IDBObjectStore.prototype.put = put;
                 throw new DOMException("Unable to save note", "QuotaExceededError");
@@ -206,7 +211,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.press("Control+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator(".ProseMirror").first()).toContainText("Retry this draft");
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Retry this draft");
 });
 
 test("saves an existing note in the floating editor", async ({ cleanPage: page }) => {

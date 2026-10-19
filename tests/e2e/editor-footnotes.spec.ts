@@ -192,7 +192,11 @@ test("pastes portable footnotes and preserves shared definitions through deletio
     await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
         timeout: 15_000,
     });
-    await editor.locator("p").first().click();
+    const paragraph = editor.locator("p").first();
+    const paragraphBounds = await paragraph.boundingBox();
+    if (!paragraphBounds) throw new Error("Footnote paragraph is not visible");
+    await page.mouse.click(paragraphBounds.x + 2, paragraphBounds.y + paragraphBounds.height / 2);
+    await expect(editor).toBeFocused();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
@@ -200,6 +204,8 @@ test("pastes portable footnotes and preserves shared definitions through deletio
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
+    // ProseMirror selects a selectable atom on the first forward-delete; the next removes it.
+    await page.keyboard.press("Delete");
     await page.keyboard.press("Delete");
     await expect(references).toHaveCount(1);
     await expect(editor.locator('[data-footnote-definition="a"] strong')).toHaveText("Shared source");

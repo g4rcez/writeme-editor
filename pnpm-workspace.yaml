@@ -1,0 +1,9 @@
+packages:
+  - packages/mobile
+  - packages/ios
+  - packages/android
+  - packages/math
+  - packages/cli
+  - packages/mcp
+
+verifyDepsBeforeRun: warn

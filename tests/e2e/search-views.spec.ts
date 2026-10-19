@@ -109,7 +109,9 @@ async function savedQuery(page: Page): Promise<string | undefined> {
     });
 }
 
-test.use({ video: { mode: "on", size: { width: 1440, height: 900 } } });
+test.use({
+    video: process.env.WRITEME_E2E_FAST === "1" ? "off" : { mode: "on", size: { width: 1440, height: 900 } },
+});
 
 test.describe("Search into saved Views", () => {
     test.use({ timezoneId: "America/Sao_Paulo" });
@@ -445,7 +447,8 @@ test.describe("Search into saved Views", () => {
             { id: "latest", title: "Latest note" },
             { id: "reading", title: "Queued article", noteType: "read-it-later", updatedAt: "2026-10-13T15:00:00Z" },
         ]);
-        await page.goto("/views");
+        await page.getByRole("button", { name: "Views", exact: true }).click();
+        await expect(page).toHaveURL(/\/views$/);
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toHaveCount(0);
         await expect(page.getByRole("button", { name: "Recently edited", exact: true })).toHaveCount(1);
@@ -478,7 +481,9 @@ test.describe("Search into saved Views", () => {
         await page.getByRole("button", { name: "Delete Reading queue", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
         await page.reload();
+        await expect(page.getByRole("button", { name: "My recent notes", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Add starter Views", exact: true })).toBeVisible();
         await page.getByRole("button", { name: "Add starter Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toHaveCount(1);
         await expect(page.getByRole("button", { name: "My recent notes", exact: true })).toHaveCount(1);
@@ -564,7 +569,9 @@ test.describe("Search into saved Views", () => {
 
         await openSearch(page);
         await page.getByRole("button", { name: "Reset filters", exact: true }).click();
-        await page.getByRole("combobox", { name: "Filter by folder or location" }).selectOption("folder:/vault/Research");
+        await page
+            .getByRole("combobox", { name: "Filter by folder or location" })
+            .selectOption("folder:/vault/Research");
         await page.getByLabel("Updated on or after", { exact: true }).fill("2026-10-15");
         await page.getByLabel("Updated through", { exact: true }).fill("2026-10-15");
         await expect(results.getByRole("button")).toHaveCount(1);

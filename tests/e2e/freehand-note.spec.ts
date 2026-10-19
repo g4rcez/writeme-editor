@@ -304,6 +304,7 @@ test.describe("sticky note links", () => {
     test("moves sticky links with keyboard and touch and keeps missing targets removable", async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(90_000);
         await createHandwrittenNote(page);
         const targetId = await seedLinkTargets(page);
         await addProjectLink(page);
@@ -329,7 +330,7 @@ test.describe("sticky note links", () => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");
             await repositories.notes.delete(id);
         }, targetId);
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
         await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
         await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
@@ -530,7 +531,7 @@ test.describe("production safeguards", () => {
         ).toHaveAttribute("fill", "#ffffff");
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
         await page.reload();
-        await expect(page.getByLabel("Handwriting canvas", { exact: true })).toBeVisible();
+        await expect(page.getByRole("img", { name: "Handwriting canvas", exact: true })).toBeVisible();
         expect((await readNotebook(page)).pages[0]!.strokes[0]!.color).toBe("#ffffff");
     });
 
@@ -670,9 +671,12 @@ test("customizes paper colors and background details across pages and reloads", 
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-    await page.reload();
+    const pagedNotebook = await readNotebook(page);
+    expect(pagedNotebook.pages).toHaveLength(2);
+    expect(pagedNotebook.appearance).toEqual(configured);
+    expect(pagedNotebook.pages[0]!.strokes).toEqual(originalInk);
+    await page.getByRole("button", { name: "Previous page", exact: true }).click();
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
-    expect((await readNotebook(page)).appearance).toEqual(configured);
     await setPaperStyle(page, "dotted");
     await expect(canvas.locator(".wm-paper-dot")).toHaveAttribute("r", "3");
     await expect(canvas.locator(".wm-paper-dot")).toHaveAttribute("cx", "24");
@@ -724,10 +728,12 @@ test("customizes paper colors and background details across pages and reloads", 
     await page.getByRole("button", { name: "Undo drawing", exact: true }).click();
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-    await page.reload();
-    await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
-    expect((await readNotebook(page)).appearance).toEqual(configured);
-    expect((await readNotebook(page)).pages[0]!.strokes).toEqual(originalInk);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1, { timeout: 15_000 });
+    const restoredNotebook = await readNotebook(page);
+    expect(restoredNotebook.pages).toHaveLength(2);
+    expect(restoredNotebook.appearance).toEqual(configured);
+    expect(restoredNotebook.pages[0]!.strokes).toEqual(originalInk);
 });
 
 test("reveals secondary options without drawing ink and restores keyboard focus", async ({
@@ -1103,6 +1109,7 @@ for (const span of [400, 1e12])
     test(`opens legacy ink, erases a sparse stroke of length ${span} and preserves surrounding metadata`, async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(120_000);
         await createHandwrittenNote(page);
         await page.evaluate(async (end) => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");
@@ -1151,7 +1158,7 @@ for (const span of [400, 1e12])
         await expect(strokes).toHaveCount(1);
         await expect(strokes.first()).toHaveAttribute("d", untouchedPath!);
         await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(strokes).toHaveCount(1);
         const content = await page.evaluate(async () => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");

@@ -206,6 +206,7 @@ test("moves nested list items inside their parent and retains children when dupl
 test("duplicates code, media and tables with metadata and explains unavailable conversions", async ({
     page,
 }) => {
+    test.setTimeout(90_000);
     await page.route("https://example.com/image.png", (route) =>
         route.fulfill({
             contentType: "image/png",

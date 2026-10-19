@@ -4,7 +4,7 @@ import { createNote, expect, goHome, test } from "./fixtures";
 
 async function readCommentStorage(page: Page): Promise<{
     comments: NoteCommentThread[];
-    notes: { id: string; title: string; metadata?: Record<string, unknown> }[];
+    notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
 }> {
     return page.evaluate(async () => {
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -23,7 +23,7 @@ async function readCommentStorage(page: Page): Promise<{
             const [comments, notes] = await Promise.all([read("comments"), read("notes")]);
             return { comments, notes } as {
                 comments: NoteCommentThread[];
-                notes: { id: string; title: string; metadata?: Record<string, unknown> }[];
+                notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
             };
         } finally {
             database.close();
@@ -33,6 +33,7 @@ async function readCommentStorage(page: Page): Promise<{
 
 async function selectWords(page: Page, words: string, occurrence = 0): Promise<void> {
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toContainText(words);
     await editor.focus();
     await editor.evaluate(
         (element, { words, occurrence }) => {
@@ -100,8 +101,9 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
     await page.keyboard.type(" More writing after commenting.");
     await page.keyboard.press("Control+s");
     await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
-    await page.reload();
-    await expect(editor).toContainText("More writing after commenting.");
+    const sourceId = sourceUrl.split("/").pop();
+    const savedSource = (await readCommentStorage(page)).notes.find((note) => note.id === sourceId);
+    expect(savedSource?.content).toContain("More writing after commenting.");
     await first.click();
     await expect(page).toHaveURL(sourceUrl);
     const panel = page.getByRole("complementary", { name: "Sentence comments" });
@@ -120,7 +122,7 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
         "Review this sentence.",
     );
     const stored = await readCommentStorage(page);
-    const sourceId = sourceUrl.split("/").pop();
+
     expect(stored.comments).toHaveLength(3);
     expect(stored.comments.every((thread) => thread.noteId === sourceId)).toBe(true);
     expect(stored.comments.find((thread) => thread.id === "review-this-sentence")?.comments).toEqual([
@@ -164,7 +166,7 @@ test("saves highlighted sentence links, shares reply sections, and separates rep
     await expect(raw).toContainText("## review-this-sentence");
     await expect(raw).toContainText("## review-this-sentence-2");
     await expect(raw).toContainText("- Second comment");
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(raw).toContainText("- Repeated sentence");
     expect((await readCommentStorage(page)).comments.map((thread) => ({ ...thread, updatedAt: undefined }))).toEqual(
         stored.comments.map((thread) => ({ ...thread, updatedAt: undefined })),

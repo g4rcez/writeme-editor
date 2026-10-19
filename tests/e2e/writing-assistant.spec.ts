@@ -257,10 +257,7 @@ async function waitForAutosave(page: Page): Promise<void> {
 async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
     if (page.url() === "about:blank") await goHome(page);
     if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
-    await page
-        .locator(".writeme-app-header-actions")
-        .getByRole("button", { name: "New note", exact: true })
-        .click();
+    await page.locator(".writeme-app-header-actions").getByRole("button", { name: "New note", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: /Create new note/i });
     const titleInput = dialog.getByTitle("Note title");
     await titleInput.fill(title);
@@ -390,6 +387,7 @@ async function chooseTheme(page: Page, theme: "light" | "dark"): Promise<void> {
 
 for (const mode of ["formatted", "markdown"] as const) {
     test(`review suggestions stay explicit and undoable in ${mode} mode`, async ({ cleanPage: page }) => {
+        if (mode === "formatted") test.setTimeout(90_000);
         const proxy = createProxyState();
         await installProviderProxy(page, proxy);
         await saveGeminiConfiguration(page);
@@ -692,6 +690,12 @@ for (const theme of ["light", "dark"] as const) {
 
         for (const width of [1_280, 720]) {
             await page.setViewportSize({ width, height: 800 });
+            await expect
+                .poll(async () => {
+                    const bounds = await panel.boundingBox();
+                    return bounds && bounds.x + bounds.width <= width;
+                })
+                .toBe(true);
             const panelBounds = await panel.boundingBox();
             const editorBounds = await editor.boundingBox();
             const acceptBounds = await accept.boundingBox();

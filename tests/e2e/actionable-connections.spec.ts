@@ -3,11 +3,39 @@ import { createNote as createEmptyNote, goHome, test, expect } from "./fixtures"
 
 test.describe.configure({ timeout: 90_000 });
 
-async function createNote(page: Page, title: string, content = ""): Promise<string> {
-    const url = await createEmptyNote(page, title);
-    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+const redoShortcut = "ControlOrMeta+y";
+
+async function createNote(
+    page: Page,
+    title: string,
+    content = "",
+    mode: "Formatted" | "Markdown" = "Formatted",
+): Promise<string> {
+    let url: string;
+    if (mode === "Markdown") {
+        const previousUrl = page.url();
+        await page
+            .getByRole("main")
+            .getByRole("button", { name: /^New note/ })
+            .first()
+            .click();
+        const dialog = page.getByRole("dialog", { name: /Create new note/i });
+        await dialog.getByTitle("Note title").fill(title);
+        await dialog.getByRole("button", { name: /^Create/ }).click();
+        await expect(dialog).toBeHidden();
+        await expect(page).toHaveURL(
+            (currentUrl) => /\/note\/[^/]+$/.test(currentUrl.pathname) && currentUrl.href !== previousUrl,
+        );
+        url = page.url();
+    } else {
+        url = await createEmptyNote(page, title);
+    }
+    const editor = page.getByRole("textbox", {
+        name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
+        exact: true,
+    });
     await expect(editor).toBeVisible({ timeout: 30_000 });
-    await expect(editor).toHaveAttribute("contenteditable", "true");
+    if (mode === "Formatted") await expect(editor).toHaveAttribute("contenteditable", "true");
     if (content) {
         await editor.focus();
         await editor.pressSequentially(content);
@@ -91,6 +119,16 @@ async function closeContext(page: Page): Promise<void> {
     await expect(surface).toHaveCount(0);
 }
 
+function captureDuplicateKeyWarnings(page: Page): string[] {
+    const warnings: string[] = [];
+    page.on("console", function collectDuplicateKeyWarnings(message) {
+        if (message.type() === "error" && message.text().includes("Encountered two children with the same key")) {
+            warnings.push(message.text());
+        }
+    });
+    return warnings;
+}
+
 test("creates a missing target once and immediately resolves repeated references", async ({ cleanPage: page }) => {
     await goHome(page);
     await createNote(page, "Missing source", "See [[New target]] and [[New target]].");
@@ -125,39 +163,72 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     test(`chooses an existing target in ${mode}, preserving labels, undo, and persistence`, async ({
         cleanPage: page,
     }) => {
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
+        const settings = page.getByRole("main", { name: "Settings" });
+        await settings
+            .getByRole("combobox", { name: "Default editor mode", exact: true })
+            .selectOption(mode === "Markdown" ? "markdown" : "formatted");
+        await settings.getByRole("button", { name: "Save Editor", exact: true }).click();
+        await page
+            .getByRole("dialog", { name: "Success", exact: true })
+            .getByRole("button", { name: "OK", exact: true })
+            .click();
         await goHome(page);
-        await createNote(page, "Existing target");
-        await createNote(page, "Repair source", "See [[Missing name#Heading|my label]] and [[Missing name]].");
-        if (mode === "Markdown")
-            await page
-                .getByRole("toolbar", { name: "Note tools" })
-                .getByRole("button", { name: "Markdown", exact: true })
-                .click();
-        const before = (await storedNotes(page)).find((note) => note.title === "Repair source")!;
-        const context = await openContext(page);
-        await context.getByText("Unresolved references", { exact: true }).click();
-        await context.getByRole("button", { name: "Choose existing note", exact: true }).first().click();
-        await context.getByLabel("Find a note").fill("Existing");
-        await context.getByRole("button", { name: /Existing target/ }).click();
-        await expect(context.getByRole("status")).toContainText("Link added");
+        const content = "See [[Missing name#Heading|my label]] and [[Missing name]].";
+        const sourceId = await page.evaluate(async (sourceContent) => {
+            const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+            const { Note } = await import("/packages/editor/src/store/note.ts");
+            const target = Note.new("Existing target", "");
+            const source = Note.new("Repair source", sourceContent);
+            await repositories.notes.save(target);
+            await repositories.notes.save(source);
+            return source.id;
+        }, content);
+        await page.goto(`/note/${sourceId}`, { waitUntil: "domcontentloaded" });
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
+        });
+        await expect(editor).toBeVisible({ timeout: 30_000 });
+        const before = (await storedNotes(page)).find((note) => note.title === "Repair source")!;
+        expect(before.content).toBe(content);
+        await expect(editor).toContainText(mode === "Markdown" ? content : "See my label and Missing name.", {
+            timeout: 15_000,
+        });
+        const context = await openContext(page);
+        await context.getByText("Unresolved references", { exact: true }).click();
+        const chooseExisting = context.getByRole("button", { name: "Choose existing note", exact: true });
+        await expect(chooseExisting).toHaveCount(2);
+        await chooseExisting.first().click();
+        await context.getByLabel("Find a note").fill("Existing");
+        await context.getByRole("button", { name: /Existing target/ }).click();
+        await expect(context.getByRole("status")).toContainText("Link added");
+        await closeContext(page);
+        await editor.focus();
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
         });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
             })
             .not.toBe(before.content);
-        await closeContext(page);
-        await editor.focus();
         await page.keyboard.press("ControlOrMeta+z");
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
             })
             .toBe(before.content);
-        await page.keyboard.press("ControlOrMeta+Shift+z");
+        await page.keyboard.press(redoShortcut);
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
+            timeout: 15_000,
+        });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
@@ -170,7 +241,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .not.toBe(before.content);
         const after = (await storedNotes(page)).find((note) => note.id === before.id)!;
         expect(after.content).toContain("[[Missing name]]");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(editor).toContainText("my label");
         expect((await storedNotes(page)).find((note) => note.id === before.id)?.content).toBe(after.content);
     });
@@ -180,13 +251,6 @@ test("repairs complete Markdown references while preserving labels, titles, anch
     cleanPage: page,
 }) => {
     await goHome(page);
-    await createNote(page, "Markdown target");
-    const sourceUrl = await createNote(page, "Markdown source");
-    const notes = await storedNotes(page);
-    const target = notes.find((note) => note.title === "Markdown target")!;
-    const source = notes.find((note) => note.title === "Markdown source")!;
-    const file = '[README](docs/README.md "writeme-mention:file:docs/README.md")';
-    const content = `${file}\n\n[**Visible**](app://note/missing#section "tooltip") and [Linked][ref]\n\n[ref]: app://note/other`;
     await page.goto("/settings/editor");
     const settings = page.getByRole("main", { name: "Settings" });
     await settings.getByRole("combobox", { name: "Default editor mode", exact: true }).selectOption("markdown");
@@ -195,6 +259,13 @@ test("repairs complete Markdown references while preserving labels, titles, anch
         .getByRole("dialog", { name: "Success", exact: true })
         .getByRole("button", { name: "OK", exact: true })
         .click();
+    await createNote(page, "Markdown target", "", "Markdown");
+    const sourceUrl = await createNote(page, "Markdown source", "", "Markdown");
+    const notes = await storedNotes(page);
+    const target = notes.find((note) => note.title === "Markdown target")!;
+    const source = notes.find((note) => note.title === "Markdown source")!;
+    const file = '[README](docs/README.md "writeme-mention:file:docs/README.md")';
+    const content = `${file}\n\n[**Visible**](app://note/missing#section "tooltip") and [Linked][ref]\n\n[ref]: app://note/other`;
     await changeStoredNote(page, source.id, { content });
     await page.goto(sourceUrl);
     await expect(page.getByRole("textbox", { name: "Markdown note editor", exact: true })).toContainText(
@@ -433,7 +504,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             await page.keyboard.press("ControlOrMeta+z");
             if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
             else await expect(draft.locator('[data-type="mention"]')).toHaveCount(1);
-            await page.keyboard.press("ControlOrMeta+Shift+z");
+            await page.keyboard.press(redoShortcut);
             await expect(draft).toHaveText(source.content);
         }
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
@@ -443,20 +514,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         cleanPage: page,
     }) => {
         test.setTimeout(180_000);
-        await goHome(page);
-        await createNote(page, "Roundtrip target");
-        const sourceUrl = await createNote(page, "Roundtrip source");
-        const source = (await storedNotes(page)).find((note) => note.title === "Roundtrip source")!;
-        const content = [
-            '[README.md](docs/README.md "writeme-mention:file:docs/README.md")',
-            "[API_v2](/note/deleted)",
-            String.raw`[bracket \[one\] and \*star\*](/note/deleted)`,
-            '[Old name](app://note/deleted "writeme-mention:deleted") and app://note/deleted',
-            "[[Missing#Heading|wiki label]] and [[Missing#Heading|wiki label]]",
-            '[**Visible**](app://note/deleted#Heading "tooltip")',
-            "[Reference][ref]\n\n[ref]: app://note/deleted",
-            "Keep  this",
-        ].join("\n\n");
+        const duplicateKeyWarnings = captureDuplicateKeyWarnings(page);
         await page.goto("/settings/editor");
         const settings = page.getByRole("main", { name: "Settings" });
         await settings
@@ -467,6 +525,27 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .getByRole("dialog", { name: "Success", exact: true })
             .getByRole("button", { name: "OK", exact: true })
             .click();
+        await goHome(page);
+        const targetUrl = await createNote(page, "Roundtrip target", "", mode);
+        const sourceUrl = await createNote(page, "Roundtrip source", "", mode);
+        await expect(page.getByRole("status", { name: "Note save status", exact: true })).toHaveText("Saved");
+        const source = (await storedNotes(page)).find((note) => note.title === "Roundtrip source")!;
+        await page.getByRole("button", { name: "Close Roundtrip source", exact: true }).click();
+        await expect(page.getByRole("button", { name: "Close Roundtrip source", exact: true })).toHaveCount(0, {
+            timeout: 30_000,
+        });
+        await expect(page).toHaveURL(targetUrl);
+        await expect(page.locator(`#editor-container-${source.id}`)).toHaveCount(0);
+        const content = [
+            '[README.md](docs/README.md "writeme-mention:file:docs/README.md")',
+            "[API_v2](/note/deleted)",
+            String.raw`[bracket \[one\] and \*star\*](/note/deleted)`,
+            '[Old name](app://note/deleted "writeme-mention:deleted") and app://note/deleted',
+            "[[Missing#Heading|wiki label]] and [[Missing#Heading|wiki label]]",
+            '[**Visible**](app://note/deleted#Heading "tooltip")',
+            "[Reference][ref]\n\n[ref]: app://note/deleted",
+            "Keep  this",
+        ].join("\n\n");
         await changeStoredNote(page, source.id, { content });
         await page.goto(sourceUrl);
         const editor = page.getByRole("textbox", {
@@ -515,7 +594,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
                         timeout: 15_000,
                     })
                     .toBe(before);
-                await page.keyboard.press("ControlOrMeta+Shift+z");
+                await page.keyboard.press(redoShortcut);
                 await page.keyboard.press("ControlOrMeta+s");
                 await expect
                     .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content, {
@@ -533,6 +612,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await expect(editor).toContainText(mode === "Markdown" ? "API" : "API_v2");
         if (mode === "Formatted") await expect(editor).toContainText("bracket [one] and *star*");
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(after);
+        expect(duplicateKeyWarnings).toEqual([]);
     });
 }
 

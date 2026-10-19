@@ -49,6 +49,31 @@ describe("Global Store", () => {
         useGlobalStore.dispatchers.setNote(null);
     });
 
+    it("deduplicates notes by id and keeps the freshest duplicate", () => {
+        const older = Note.parse({
+            ...Note.new("Original", ""),
+            id: "duplicate-note",
+            title: "Older",
+            updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        });
+        const newer = Note.parse({
+            ...older,
+            title: "Newest",
+            updatedAt: new Date("2026-01-03T00:00:00.000Z"),
+        });
+        const middle = Note.parse({
+            ...older,
+            title: "Middle",
+            updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+        });
+
+        useGlobalStore.dispatchers.notes([older, newer, middle]);
+
+        expect(useGlobalStore.getState().notes).toHaveLength(1);
+        expect(useGlobalStore.getState().notes[0]).toBe(newer);
+    });
+
+
     it("keeps a legacy journal day durable when the Markdown heading synchronizes its title", async () => {
         const note = Note.parse({
             ...Note.new("2025-12-31-quicknote.md", "# Retrospective\n\nKeep this content\n", NoteType.quick),
@@ -70,7 +95,7 @@ describe("Global Store", () => {
         const other = Note.new("Other note", "Other content");
         useGlobalStore.dispatchers.notes([meeting, other]);
         useGlobalStore.dispatchers.setNote(meeting);
-        let finishSave = (): void => {};
+        let finishSave = (): void => { };
         vi.mocked(repositories.notes.updateMetadata).mockImplementationOnce(
             () =>
                 new Promise<void>((resolve) => {

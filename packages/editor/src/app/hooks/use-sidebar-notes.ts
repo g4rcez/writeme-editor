@@ -52,7 +52,12 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
                 }
                 tagsMap.get(h.filename)?.push(h.hashtag);
             });
-            const notesWithTags = allNotes.map((note: Note): NoteWithTags => {
+            const uniqueNotes = new Map<string, Note>();
+            for (const note of allNotes) {
+                const existing = uniqueNotes.get(note.id);
+                if (!existing || note.updatedAt > existing.updatedAt) uniqueNotes.set(note.id, note);
+            }
+            const notesWithTags = Array.from(uniqueNotes.values()).map((note: Note): NoteWithTags => {
                 const key = note.filePath || note.title;
                 const tags = Array.from(new Set([...note.tags, ...(tagsMap.get(key) ?? [])]));
                 return {

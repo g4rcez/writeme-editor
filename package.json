@@ -94,7 +94,6 @@
         "pwa:dev": "npm run pwa:assets && npm run browser:dev",
         "pwa:build": "npm run pwa:assets && npm run browser:build",
         "ci:local": "act workflow_dispatch -W .github/workflows/build-linux.yml --container-architecture linux/amd64",
-        "bump": "bash scripts/bump.sh",
         "knip": "knip"
     },
     "dependencies": {
@@ -268,6 +267,5 @@
         "node": ">=24.18.0",
         "npm": ">=10"
     },
-    "packageManager": "npm@12.0.2",
     "productName": "writeme"
 }

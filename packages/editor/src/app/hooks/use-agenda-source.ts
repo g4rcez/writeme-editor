@@ -36,22 +36,21 @@ export function useAgendaSource(noteId: string | null): void {
                 | (HTMLElement & { editor?: Editor })
                 | null;
             const editor = editorElement?.editor;
-            if (editor && editor.view.dom.contains(target)) {
-                if (!editor.isInitialized) {
-                    if (initializingEditor !== editor) {
-                        initializingEditor?.off("create", schedule);
-                        initializingEditor = editor;
-                        editor.on("create", schedule);
-                    }
-                    return false;
+            if (!editor || !editor.isInitialized || !editor.view.dom.isConnected || !editor.view.dom.contains(target)) {
+                if (editor && !editor.isInitialized && initializingEditor !== editor) {
+                    initializingEditor?.off("create", schedule);
+                    initializingEditor = editor;
+                    editor.on("create", schedule);
                 }
-                let current = 0;
-                let position: number | null = null;
-                editor.state.doc.descendants((node, pos) => {
-                    if (node.type.name === "taskItem" && current++ === index) position = pos + 2;
-                });
-                if (position !== null) editor.commands.focus(position, { scrollIntoView: true });
+                return false;
             }
+            let current = 0;
+            let position: number | null = null;
+            editor.state.doc.descendants((node, pos) => {
+                if (node.type.name === "taskItem" && current++ === index) position = pos + 2;
+            });
+            if (position === null) return false;
+            editor.commands.focus(position, { scrollIntoView: true });
             target.scrollIntoView({ behavior: "instant", block: "center" });
             return true;
         };

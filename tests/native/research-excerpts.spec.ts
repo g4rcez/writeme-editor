@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type {} from "../../packages/editor/src/preload";
+import type { } from "../../packages/editor/src/preload";
 import { researchPdf, selectPdfPhrase } from "../helpers/research";
 
 for (const filesystem of [false, true]) {
@@ -58,7 +58,7 @@ for (const filesystem of [false, true]) {
                 timeout: 30_000,
             });
             const sourceId = new URL(page.url()).hash.split("/").at(-1)!;
-            const sourceContent = filesystem ? await readFile(path.join(workspace, "Research.md"), "utf8") : "";
+            const sourceContent = filesystem ? await readFile(path.join(workspace, "research.md"), "utf8") : "";
             await page.getByRole("button", { name: "Next page", exact: true }).click();
             await expect(page.getByLabel("PDF page 2", { exact: true })).toHaveAttribute("data-pdf-ready", "true");
             await selectPdfPhrase(page);
@@ -86,7 +86,7 @@ for (const filesystem of [false, true]) {
                 expect(writing).toContain(`Open source](/note/${sourceId}?research=1`);
                 expect(writing).toContain("page=2&pdf=");
                 expect(writing).toContain("Portrait research phrase");
-                expect(await readFile(path.join(workspace, "Research.md"), "utf8")).toBe(sourceContent);
+                expect(await readFile(path.join(workspace, "research.md"), "utf8")).toBe(sourceContent);
                 expect(await readFile(path.join(workspace, "attachments", sourceId, "document.pdf"))).toEqual(
                     researchPdf(),
                 );

@@ -103,7 +103,7 @@ type Deferred<T> = {
 };
 
 function createDeferred<T>(): Deferred<T> {
-    let resolve: (value: T) => void = () => {};
+    let resolve: (value: T) => void = () => { };
     const promise = new Promise<T>((resolver) => {
         resolve = resolver;
     });
@@ -128,7 +128,7 @@ function createNoteTab(noteId = "note-1") {
 }
 
 function renderNoteRoute() {
-    render(
+    return render(
         <MemoryRouter initialEntries={["/note/note-1"]}>
             <Routes>
                 <Route path="/note/:noteId" element={<NotePage />} />
@@ -136,6 +136,13 @@ function renderNoteRoute() {
         </MemoryRouter>,
     );
 }
+
+type RouteState = { note: Note | null; tabs: Array<{ id: string; noteId: string; type: string }> };
+
+function createRouteNoteTab(): RouteState["tabs"][number] {
+    return { id: "tab-1", noteId: "note-1", type: "tab" };
+}
+
 
 describe("NotePage route loading", () => {
     beforeEach(() => {
@@ -159,9 +166,9 @@ describe("NotePage route loading", () => {
         vi.stubGlobal(
             "ResizeObserver",
             class {
-                observe(): void {}
-                unobserve(): void {}
-                disconnect(): void {}
+                observe(): void { }
+                unobserve(): void { }
+                disconnect(): void { }
             },
         );
     });
@@ -186,6 +193,36 @@ describe("NotePage route loading", () => {
             expect(dispatch.addTab).toHaveBeenCalledWith("note-1");
         });
         expect(dispatch.setNote).toHaveBeenCalledWith(note);
+    });
+
+    it("finishes loading a route note when adding its tab rerenders the page", async () => {
+        const dispatch = createDispatch();
+        const note = createNote();
+        const state: RouteState = { note: null, tabs: [] };
+        let rerenderRoute = (): void => { };
+        dispatch.addTab.mockImplementation(async () => {
+            state.tabs = [createRouteNoteTab()];
+            rerenderRoute();
+        });
+        vi.mocked(useGlobalStore).mockImplementation(() => [state, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+        vi.mocked(repositories.notes.getOne).mockResolvedValue(note);
+
+        const route = renderNoteRoute();
+        rerenderRoute = () => {
+            route.rerender(
+                <MemoryRouter initialEntries={["/note/note-1"]}>
+                    <Routes>
+                        <Route path="/note/:noteId" element={<NotePage />} />
+                    </Routes>
+                </MemoryRouter>,
+            );
+        };
+
+        await waitFor(() => {
+            expect(dispatch.addTab).toHaveBeenCalledWith("note-1");
+            expect(dispatch.setNote).toHaveBeenCalledWith(note);
+        });
     });
 
     it("does not reopen a route note that already has a tab", () => {
@@ -286,7 +323,7 @@ describe("NotePage route loading", () => {
         expect(screen.queryByRole("textbox", { name: "Note title" })).not.toBeInTheDocument();
         expect(
             screen.getByRole("toolbar", { name: "Note tools" }).compareDocumentPosition(screen.getByTestId("editor")) &
-                Node.DOCUMENT_POSITION_FOLLOWING,
+            Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
     });
 

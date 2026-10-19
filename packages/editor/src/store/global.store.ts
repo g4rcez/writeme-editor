@@ -166,16 +166,17 @@ export const loadHomedir = async (): Promise<string | null> => {
 };
 export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
   const setNotes = (notes: Note[]) => {
-    const state = get.state();
-    const existingNotesMap = new Map<string, Note>(state.notes.map((n) => [n.id, n]));
-    const mergedNotes = notes.map((note): Note => {
+    const existingNotesMap = new Map<string, Note>(get.state().notes.map((note) => [note.id, note]));
+    const mergedNotesMap = new Map<string, Note>();
+    for (const note of notes) {
       const existing = existingNotesMap.get(note.id);
-      if (existing) {
-        if (existing.updatedAt > note.updatedAt) return existing as Note;
-      }
-      return note;
-    });
-    return { notes: mergedNotes as Note[] };
+      const current = mergedNotesMap.get(note.id);
+      let freshest = note;
+      if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
+      if (current && current.updatedAt > freshest.updatedAt) freshest = current;
+      mergedNotesMap.set(note.id, freshest);
+    }
+    return { notes: Array.from(mergedNotesMap.values()) };
   };
 
   const updateNoteInList = (note: Note) => {

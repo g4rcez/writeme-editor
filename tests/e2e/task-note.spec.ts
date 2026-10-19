@@ -9,7 +9,8 @@ async function createBoard(page: Page): Promise<void> {
     const dialog = page.getByRole("dialog", { name: "Create task note" });
     await dialog.getByTitle("Note title").fill("Project tasks");
     await dialog.getByRole("button", { name: /^Create/ }).click();
-    await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/note\/[^/]+$/, { timeout: 15_000 });
+    await expect(page.getByRole("region", { name: "Task board", exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
 }
 async function addTask(page: Page, title = "Ship task board"): Promise<void> {

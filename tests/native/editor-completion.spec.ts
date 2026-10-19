@@ -8,9 +8,11 @@ test("completes headings, tags, words and real workspace files in compiled Elect
 }, testInfo) => {
     const directory = await mkdtemp(path.join(tmpdir(), "writeme-autocomplete-native-"));
     const workspace = path.join(directory, "workspace");
-    const assetPath = 'docs/Asset [1] #x "draft".svg';
+    const assetFilename =
+        process.platform === "win32" ? "Asset [1] #x draft.svg" : 'Asset [1] #x "draft".svg';
+    const assetPath = `docs/${assetFilename}`;
     await mkdir(path.join(workspace, "docs"), { recursive: true });
-    await writeFile(path.join(workspace, assetPath), "<svg></svg>");
+    await writeFile(path.join(workspace, "docs", assetFilename), "<svg></svg>");
     await writeFile(path.join(workspace, "reference.md"), "# Other heading\n\n#project/topic\n");
     const bootstrap = path.join(directory, "bootstrap.cjs");
     const buildRoot = path.resolve(process.env.COMPLETION_ELECTRON_BUILD_ROOT ?? ".vite");
@@ -74,7 +76,7 @@ test("completes headings, tags, words and real workspace files in compiled Elect
                 exact: true,
             });
             await editor.click();
-            await page.keyboard.press("Meta+End");
+            await page.keyboard.press(process.platform === "darwin" ? "Meta+End" : "Control+End");
             await page.keyboard.press("Enter");
             await page.keyboard.type("Section #Loc");
             await page.keyboard.press("Control+Space");
@@ -148,7 +150,7 @@ test("completes headings, tags, words and real workspace files in compiled Elect
         const saved = documents.find((filename) => filename.endsWith(".md") && filename !== "reference.md");
         expect(saved).toBeDefined();
         expect(await readFile(path.join(workspace, saved!), "utf8")).toContain(
-            "docs/Asset%20%5B1%5D%20%23x%20%22draft%22.svg",
+            assetPath.split("/").map(encodeURIComponent).join("/"),
         );
     } finally {
         await application.close();

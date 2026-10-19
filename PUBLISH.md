@@ -122,19 +122,29 @@ The macOS release job fails only when some Apple signing secrets are set and oth
 
 Optional: set `APPLE_SIGNING_IDENTITY` to the exact Developer ID Application identity if the imported keychain contains more than one valid signing identity.
 
-**Note:** `scripts/tag.sh` uses a date-based tag format (`YYYYMMDD.hash.N`). The release workflow triggers on `v*` tags. Use **semver tags** for releases: `git tag v1.0.0 && git push origin v1.0.0`. Update `package.json` version to match before tagging.
+Desktop releases are automated: merging a pull request into `main` creates a semver tag from the root app version and starts `.github/workflows/release.yml`. Do not create desktop version tags manually; `scripts/tag.sh` is for date-based development tags.
 
 ---
 
 ## Releasing a New Version
 
-1. Update `version` in `package.json` to the new semver (e.g. `1.1.0`)
-2. Commit: `git commit -am "chore: bump version to 1.1.0"`
-3. Tag: `git tag v1.1.0`
-4. Push: `git push origin main && git push origin v1.1.0`
-5. Watch the Actions run at https://github.com/g4rcez/writeme-editor/actions
-6. After all jobs pass, verify the release at https://github.com/g4rcez/writeme-editor/releases
-7. Verify the tap was updated: check both files in `g4rcez/homebrew-writeme`
+Publish all public npm packages from a clean checkout of `main`:
+
+```sh
+pnpm release patch
+pnpm release minor
+pnpm release major
+```
+
+The command validates every package before changing versions, bumps each package's own version, then publishes in dependency order: math, CLI, MCP. It uses npm for versioning and publication. `--dry-run` runs the validations and prints the planned operations without changing versions or publishing:
+
+```sh
+pnpm release patch --dry-run
+```
+
+The script leaves the updated package manifests and lockfiles in the working tree; commit those version changes through the normal pull-request workflow. If a publication fails, some earlier packages may already be live. The error lists the unpublished packages to retry; do not rerun the bump command for that release.
+
+The `writeme.dev` npm organization must be available in the active npm login. After publishing packages, desktop installers, GitHub release assets, and the Homebrew tap are still produced by the merge-triggered release workflow.
 
 ---
 
