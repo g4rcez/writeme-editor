@@ -526,12 +526,15 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .getByRole("button", { name: "OK", exact: true })
             .click();
         await goHome(page);
-        await createNote(page, "Roundtrip target", "", mode);
+        const targetUrl = await createNote(page, "Roundtrip target", "", mode);
         const sourceUrl = await createNote(page, "Roundtrip source", "", mode);
         await expect(page.getByRole("status", { name: "Note save status", exact: true })).toHaveText("Saved");
         const source = (await storedNotes(page)).find((note) => note.title === "Roundtrip source")!;
         await page.getByRole("button", { name: "Close Roundtrip source", exact: true }).click();
-        await goHome(page);
+        await expect(page.getByRole("button", { name: "Close Roundtrip source", exact: true })).toHaveCount(0, {
+            timeout: 30_000,
+        });
+        await expect(page).toHaveURL(targetUrl);
         await expect(page.locator(`#editor-container-${source.id}`)).toHaveCount(0);
         const content = [
             '[README.md](docs/README.md "writeme-mention:file:docs/README.md")',
