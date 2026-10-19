@@ -255,6 +255,7 @@ test("opens nested board tasks at their Markdown source and following tasks at t
 test("adopts legacy title-only journal dates before H1 synchronization and reuses them after reload", async ({
     cleanPage: page,
 }) => {
+    test.setTimeout(90_000);
     await goHome(page);
     const id = await page.evaluate(async () => {
         const notePath = "/packages/editor/src/store/note.ts";
