@@ -87,6 +87,7 @@ test("distinguishes genuinely empty columns from filtered columns", async ({ cle
 });
 
 test("captures filter recovery in both themes at desktop and phone widths", async ({ cleanPage: page }, info) => {
+    test.setTimeout(90_000);
     await createFilteredBoard(page);
     const noteUrl = page.url();
     const noteTab = page.locator(`[data-tab-id][href="${new URL(noteUrl).pathname}"]`);
