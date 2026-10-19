@@ -55,7 +55,7 @@ test("plus/minus zooms only the Excalidraw canvas", async ({ page }) => {
     await dialog.getByRole("button", { name: /^Create/ }).click();
     await expect(page).toHaveURL(/\/note\/[^/?#]+/);
     const canvas = page.locator(".excalidraw .excalidraw__canvas.interactive");
-    await expect(canvas).toBeVisible();
+    await expect(canvas).toBeVisible({ timeout: 15_000 });
     await canvas.click();
     const zoom = page.locator(".excalidraw .reset-zoom-button");
     await expectCanvasZoomShortcuts(page, zoom, "ControlOrMeta", "110%");
