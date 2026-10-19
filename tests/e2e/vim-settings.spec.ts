@@ -208,7 +208,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
     }) => {
         await page.setViewportSize({ width: 375, height: 800 });
         const url = await note(page);
-        await page.goto("/settings/vim");
+        await page.goto("/settings/vim", { waitUntil: "domcontentloaded" });
         await page.getByRole("checkbox", { name: "Enable Vim mode in all editors" }).check();
         const source = page.getByRole("textbox", { name: "Global init.ts" });
         await source.fill(init);
@@ -221,7 +221,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         expect(bounds?.x).toBeGreaterThanOrEqual(0);
         expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(375);
         await page.screenshot({ path: "test-results/vim-settings-narrow.png" });
-        await page.goto(url);
+        await page.goto(url, { waitUntil: "domcontentloaded" });
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
         await expect(editor).toHaveAttribute("data-neovim-mode", "normal");
         await editor.click();

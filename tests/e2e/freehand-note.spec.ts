@@ -670,7 +670,7 @@ test("customizes paper colors and background details across pages and reloads", 
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
     expect((await readNotebook(page)).appearance).toEqual(configured);
     await setPaperStyle(page, "dotted");
@@ -724,7 +724,7 @@ test("customizes paper colors and background details across pages and reloads", 
     await page.getByRole("button", { name: "Undo drawing", exact: true }).click();
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-    await page.reload();
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
     expect((await readNotebook(page)).appearance).toEqual(configured);
     expect((await readNotebook(page)).pages[0]!.strokes).toEqual(originalInk);
