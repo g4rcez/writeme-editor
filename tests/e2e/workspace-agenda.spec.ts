@@ -9,7 +9,7 @@ async function seedNotes(page: Page): Promise<Record<string, string>> {
         const { Note, NoteType } = await import(notePath);
         const ordinary = Note.new(
             "Project plan",
-            `# Introduction\n\n${"Some background.\n\n".repeat(40)}## Delivery\n\n- [x] Finished\n- [ ] Ship release\n- [ ] Ship release\n\n- ordinary list\n\n\`\`\`md\n- [ ] Code example\n\`\`\`\n`,
+            `# Project plan\n\n${"Some background.\n\n".repeat(40)}## Delivery\n\n- [x] Finished\n- [ ] Ship release\n- [ ] Ship release\n\n- ordinary list\n\n\`\`\`md\n- [ ] Code example\n\`\`\`\n`,
         );
         const daily = Note.new(
             "Renamed daily note",
@@ -54,9 +54,14 @@ test("aggregates only unfinished tasks and opens the precise source context with
     await second.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(new RegExp(`/note/${ids.ordinary}\\?task=2&line=`));
-    const target = page.locator(".ProseMirror li[data-checked]").nth(2);
-    await expect(target).toBeInViewport();
-    await expect(page.locator(".ProseMirror").first()).toBeFocused();
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toBeVisible({ timeout: 30_000 });
+    const taskItems = editor.locator("li[data-checked]");
+    await expect(taskItems).toHaveCount(3, { timeout: 15_000 });
+    const target = taskItems.nth(2);
+    await expect(target).toContainText("Ship release");
+    await expect(target).toBeInViewport({ timeout: 15_000 });
+    await expect(editor).toBeFocused();
     await page.screenshot({ path: info.outputPath("agenda-source.png") });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page

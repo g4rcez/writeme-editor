@@ -174,19 +174,35 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .getByRole("button", { name: "OK", exact: true })
             .click();
         await goHome(page);
-        await createNote(page, "Existing target", "", mode);
-        await createNote(page, "Repair source", "See [[Missing name#Heading|my label]] and [[Missing name]].", mode);
-        const before = (await storedNotes(page)).find((note) => note.title === "Repair source")!;
-        const context = await openContext(page);
-        await context.getByText("Unresolved references", { exact: true }).click();
-        await context.getByRole("button", { name: "Choose existing note", exact: true }).first().click();
-        await context.getByLabel("Find a note").fill("Existing");
-        await context.getByRole("button", { name: /Existing target/ }).click();
-        await expect(context.getByRole("status")).toContainText("Link added");
+        const content = "See [[Missing name#Heading|my label]] and [[Missing name]].";
+        const sourceId = await page.evaluate(async (sourceContent) => {
+            const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+            const { Note } = await import("/packages/editor/src/store/note.ts");
+            const target = Note.new("Existing target", "");
+            const source = Note.new("Repair source", sourceContent);
+            await repositories.notes.save(target);
+            await repositories.notes.save(source);
+            return source.id;
+        }, content);
+        await page.goto(`/note/${sourceId}`, { waitUntil: "domcontentloaded" });
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
         });
+        await expect(editor).toBeVisible({ timeout: 30_000 });
+        const before = (await storedNotes(page)).find((note) => note.title === "Repair source")!;
+        expect(before.content).toBe(content);
+        await expect(editor).toContainText(mode === "Markdown" ? content : "See my label and Missing name.", {
+            timeout: 15_000,
+        });
+        const context = await openContext(page);
+        await context.getByText("Unresolved references", { exact: true }).click();
+        const chooseExisting = context.getByRole("button", { name: "Choose existing note", exact: true });
+        await expect(chooseExisting).toHaveCount(2);
+        await chooseExisting.first().click();
+        await context.getByLabel("Find a note").fill("Existing");
+        await context.getByRole("button", { name: /Existing target/ }).click();
+        await expect(context.getByRole("status")).toContainText("Link added");
         await closeContext(page);
         await editor.focus();
         await page.keyboard.press("ControlOrMeta+s");
