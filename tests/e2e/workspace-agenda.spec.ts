@@ -63,7 +63,11 @@ test("aggregates only unfinished tasks and opens the precise source context with
     await tasks.getByRole("link", { name: "Open Board task in Release board, Todo", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${ids.board}`));
     await expect(page.getByRole("button", { name: "Edit Board task", exact: true })).toBeFocused();
-    await page.goto("/tasks");
+    await page
+        .getByRole("navigation", { name: "Workspace views", exact: true })
+        .getByRole("button", { name: "Open tasks", exact: true })
+        .click();
+    await expect(tasks.getByRole("link")).toHaveCount(5);
     await tasks.getByRole("link", { name: "Open Send summary in Team meeting, Actions", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${ids.meeting}`));
     await expect(page.locator(".ProseMirror li[data-checked]").first()).toBeInViewport();
