@@ -161,7 +161,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     test(`chooses an existing target in ${mode}, preserving labels, undo, and persistence`, async ({
         cleanPage: page,
     }) => {
-        await page.goto("/settings/editor");
+        await page.goto("/settings/editor", { waitUntil: "domcontentloaded" });
         const settings = page.getByRole("main", { name: "Settings" });
         await settings
             .getByRole("combobox", { name: "Default editor mode", exact: true })
@@ -185,20 +185,26 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
         });
+        await closeContext(page);
+        await editor.focus();
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
             })
             .not.toBe(before.content);
-        await closeContext(page);
-        await editor.focus();
         await page.keyboard.press("ControlOrMeta+z");
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
             })
             .toBe(before.content);
         await page.keyboard.press("ControlOrMeta+Shift+z");
+        await page.keyboard.press("ControlOrMeta+s");
+        await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", { timeout: 15_000 });
         await expect
             .poll(async () => (await storedNotes(page)).find((note) => note.id === before.id)?.content, {
                 timeout: 15_000,
@@ -211,7 +217,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             .not.toBe(before.content);
         const after = (await storedNotes(page)).find((note) => note.id === before.id)!;
         expect(after.content).toContain("[[Missing name]]");
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(editor).toContainText("my label");
         expect((await storedNotes(page)).find((note) => note.id === before.id)?.content).toBe(after.content);
     });

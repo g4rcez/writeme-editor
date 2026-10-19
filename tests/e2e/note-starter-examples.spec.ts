@@ -158,7 +158,7 @@ for (const theme of ["light", "dark"] as const) {
         await page.setViewportSize({ width: theme === "light" ? 375 : 768, height: 812 });
         await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
         await goHome(page);
-        await page.goto("/settings/appearance");
+        await page.goto("/settings/appearance", { waitUntil: "domcontentloaded" });
         await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption(theme);
         await page.getByRole("button", { name: "Save Appearance", exact: true }).click();
         await openNoteDialog(page);
@@ -197,7 +197,7 @@ for (const theme of ["light", "dark"] as const) {
             });
         }
         await dialog.getByRole("button", { name: "Create note", exact: true }).click();
-        await expect(page.locator(".ProseMirror").first()).toContainText("Try Markdown");
-        await expect(page.locator(".ProseMirror").first().locator("table")).toBeVisible();
+        await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Try Markdown");
+        await expect(page.getByRole("textbox", { name: "Note editor", exact: true }).getByRole("table")).toBeVisible();
     });
 }

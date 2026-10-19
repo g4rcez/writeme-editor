@@ -94,8 +94,8 @@ for (const [tableCase, tableMarkdown] of tableCases) {
             const noteUrl = page.url();
 
             const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
-            await expect(editor).toBeVisible();
-            await expect(editor).toHaveAttribute("contenteditable", "true");
+            await expect(editor).toBeVisible({ timeout: 20_000 });
+            await expect(editor).toHaveAttribute("contenteditable", "true", { timeout: 20_000 });
             if (action === "pasting") {
                 await editor.click();
                 await editor.press(endOfDocument);

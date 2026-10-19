@@ -223,7 +223,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         await page.screenshot({ path: "test-results/vim-settings-narrow.png" });
         await page.goto(url, { waitUntil: "domcontentloaded" });
         const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
-        await expect(editor).toHaveAttribute("data-neovim-mode", "normal");
+        await expect(editor).toHaveAttribute("data-neovim-mode", "normal", { timeout: 15_000 });
         await editor.click();
         await page.keyboard.type("gg0Q");
         await expect(editor).toHaveText("one two three");

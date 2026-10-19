@@ -118,7 +118,10 @@ for (const mode of ["formatted", "markdown"] as const) {
             const url = await createNote(page, "Conditional save");
             const id = url.split("/").pop()!;
             if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
-            const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+            const editor = page.locator(`#editor-container-${id}`).getByRole("textbox", {
+                name: mode === "formatted" ? "Note editor" : "Markdown note editor",
+                exact: true,
+            });
             await editor.click();
             await page.keyboard.type("Retain this local draft.");
             await page.evaluate(async () => {
@@ -190,7 +193,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.type("Retry this draft");
     await page.evaluate(() => {
         const put = IDBObjectStore.prototype.put;
-        IDBObjectStore.prototype.put = function(value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
+        IDBObjectStore.prototype.put = function (value: unknown, key?: IDBValidKey): IDBRequest<IDBValidKey> {
             if (this.name === "notes") {
                 IDBObjectStore.prototype.put = put;
                 throw new DOMException("Unable to save note", "QuotaExceededError");

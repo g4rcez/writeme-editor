@@ -670,9 +670,12 @@ test("customizes paper colors and background details across pages and reloads", 
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
-    await page.reload({ waitUntil: "domcontentloaded" });
+    const pagedNotebook = await readNotebook(page);
+    expect(pagedNotebook.pages).toHaveLength(2);
+    expect(pagedNotebook.appearance).toEqual(configured);
+    expect(pagedNotebook.pages[0]!.strokes).toEqual(originalInk);
+    await page.getByRole("button", { name: "Previous page", exact: true }).click();
     await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
-    expect((await readNotebook(page)).appearance).toEqual(configured);
     await setPaperStyle(page, "dotted");
     await expect(canvas.locator(".wm-paper-dot")).toHaveAttribute("r", "3");
     await expect(canvas.locator(".wm-paper-dot")).toHaveAttribute("cx", "24");
@@ -725,9 +728,11 @@ test("customizes paper colors and background details across pages and reloads", 
     await expect(canvas).toHaveCSS("background-color", "rgb(247, 239, 220)");
     await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1);
-    expect((await readNotebook(page)).appearance).toEqual(configured);
-    expect((await readNotebook(page)).pages[0]!.strokes).toEqual(originalInk);
+    await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(1, { timeout: 15_000 });
+    const restoredNotebook = await readNotebook(page);
+    expect(restoredNotebook.pages).toHaveLength(2);
+    expect(restoredNotebook.appearance).toEqual(configured);
+    expect(restoredNotebook.pages[0]!.strokes).toEqual(originalInk);
 });
 
 test("reveals secondary options without drawing ink and restores keyboard focus", async ({

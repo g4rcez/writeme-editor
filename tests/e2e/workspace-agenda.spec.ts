@@ -57,14 +57,17 @@ test("aggregates only unfinished tasks and opens the precise source context with
     await expect(target).toBeInViewport();
     await expect(page.locator(".ProseMirror").first()).toBeFocused();
     await page.screenshot({ path: info.outputPath("agenda-source.png") });
-    await page.goto("/tasks", { waitUntil: "domcontentloaded" });
     await page.reload({ waitUntil: "domcontentloaded" });
+    await page
+        .getByRole("navigation", { name: "Workspace views", exact: true })
+        .getByRole("button", { name: "Open tasks", exact: true })
+        .click();
     await expect(tasks.getByRole("link")).toHaveCount(5);
     await tasks.getByRole("link", { name: "Open Board task in Release board, Todo", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${ids.board}`));
     await expect(page.getByRole("button", { name: "Edit Board task", exact: true })).toBeFocused();
     await page
-        .getByRole("navigation", { name: "Workspace views", exact: true })
+        .getByRole("navigation", { name: "Workspace navigation", exact: true })
         .getByRole("button", { name: "Open tasks", exact: true })
         .click();
     await expect(tasks.getByRole("link")).toHaveCount(5);
@@ -266,7 +269,7 @@ test("adopts legacy title-only journal dates before H1 synchronization and reuse
         return note.id;
     });
     // Opening directly must also preserve identity, without going through the daily service.
-    await page.goto(`/note/${id}`);
+    await page.goto(`/note/${id}`, { waitUntil: "domcontentloaded" });
     await expect
         .poll(() =>
             page.evaluate(async (id) => {
@@ -287,8 +290,8 @@ test("adopts legacy title-only journal dates before H1 synchronization and reuse
             content: "# Retrospective\n\nPreserved legacy content\n",
             createdAt: new Date(2026, 0, 7).getTime(),
         });
-    await page.goto("/today?date=2025-12-31");
-    await page.reload();
+    await page.goto("/today?date=2025-12-31", { waitUntil: "domcontentloaded" });
+    await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Open daily note", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${id}$`));
     await page.goto("/calendar?date=2025-12-31", { waitUntil: "domcontentloaded" });
