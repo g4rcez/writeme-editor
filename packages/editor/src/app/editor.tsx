@@ -35,6 +35,7 @@ import {
     setEditorActionsGlobalRef,
     setEditorSearchGlobalRef,
 } from "./editor-global-ref";
+import { initializeEditorDocument } from "./editor-initialization";
 import { getThemeForMode } from "./elements/code-block";
 import { RawMarkdownEditor } from "./elements/raw-markdown-editor";
 import { createExtensions, handlePasteImage } from "./extensions";
@@ -268,6 +269,7 @@ const TiptapEditorCore = memo(
             enableCoreExtensions: true,
             shouldRerenderOnTransaction: false,
             parseOptions: { preserveWhitespace: "full" },
+            onMount: initializeEditorDocument,
             onUpdate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, noteRef.current);
                 lastEditorContentRef.current = getEditorMarkdown(currentEditor);
