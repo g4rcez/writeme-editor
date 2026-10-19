@@ -4,7 +4,7 @@ import { createNote, expect, goHome, test } from "./fixtures";
 
 async function readCommentStorage(page: Page): Promise<{
     comments: NoteCommentThread[];
-    notes: { id: string; title: string; metadata?: Record<string, unknown> }[];
+    notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
 }> {
     return page.evaluate(async () => {
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -23,7 +23,7 @@ async function readCommentStorage(page: Page): Promise<{
             const [comments, notes] = await Promise.all([read("comments"), read("notes")]);
             return { comments, notes } as {
                 comments: NoteCommentThread[];
-                notes: { id: string; title: string; metadata?: Record<string, unknown> }[];
+                notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
             };
         } finally {
             database.close();

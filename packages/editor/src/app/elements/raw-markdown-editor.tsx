@@ -652,6 +652,7 @@ export function RawMarkdownEditor({
         valueRef.current = value;
         view.dispatch({
             changes: { from: 0, to: currentValue.length, insert: value },
+            annotations: Transaction.addToHistory.of(false),
         });
     }, [value]);
 

@@ -329,7 +329,7 @@ test.describe("sticky note links", () => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");
             await repositories.notes.delete(id);
         }, targetId);
-        await page.reload();
+        await page.reload({ waitUntil: "domcontentloaded" });
         await expect(page.getByText("Note unavailable", { exact: true })).toBeVisible();
         await expect(page.getByRole("link", { name: "Open note: Project plan", exact: true })).toHaveCount(0);
         await page.getByRole("button", { name: "Remove linked note: Project plan", exact: true }).click();
