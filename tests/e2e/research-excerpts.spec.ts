@@ -1,9 +1,13 @@
 // Browser module imports must run inside page.evaluate, not in Playwright's Node process.
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { researchPdf, savedContent, selectPdfPhrase } from "../helpers/research";
 import { expect, goHome, test } from "./fixtures";
 
 test.setTimeout(120_000);
+
+function noteEditor(page: Page): Locator {
+    return page.getByRole("textbox", { name: "Note editor", exact: true });
+}
 
 async function importResearchPdf(page: Page): Promise<string> {
     await goHome(page);
@@ -41,12 +45,12 @@ async function seedArticle(page: Page): Promise<{ article: string; destination: 
         return { article: article.id, destination: destination.id };
     });
     await page.goto(`/note/${ids.article}`);
-    await expect(page.locator(".ProseMirror")).toContainText("A saved article phrase.");
+    await expect(noteEditor(page)).toContainText("A saved article phrase.");
     return ids;
 }
 
 async function selectArticle(page: Page, paragraph = 0): Promise<void> {
-    const text = page.locator(".ProseMirror p").nth(paragraph);
+    const text = noteEditor(page).locator("p").nth(paragraph);
     await text.selectText();
     expect(await page.evaluate(() => window.getSelection()?.toString())).not.toBe("");
 }
@@ -87,10 +91,10 @@ test("captures real PDF text, creates writing, appends another excerpt and retur
     await dialog.getByLabel("Destination note title", { exact: true }).fill("Research writing");
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.locator(".ProseMirror")).toContainText("Landscape research phrase");
+    await expect(noteEditor(page)).toContainText("Landscape research phrase");
     const destinationId = new URL(page.url()).pathname.split("/").at(-1)!;
     await page.reload();
-    await expect(page.locator(".ProseMirror")).toContainText("Research, p. 2");
+    await expect(noteEditor(page)).toContainText("Research, p. 2");
     const content = await savedContent(page, destinationId);
     expect(content).toContain(`Open source](/note/${sourceId}?research=1`);
     expect(content).toContain("page=2&pdf=");
@@ -103,9 +107,9 @@ test("captures real PDF text, creates writing, appends another excerpt and retur
     await page.keyboard.press("Enter");
     await dialog.getByLabel("Destination note", { exact: true }).selectOption(destinationId);
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror")).toContainText("Portrait research phrase");
+    await expect(noteEditor(page)).toContainText("Portrait research phrase");
     await page.reload();
-    await expect(page.locator(".ProseMirror blockquote")).toHaveCount(2);
+    await expect(noteEditor(page).locator("blockquote")).toHaveCount(2);
     expect(await savedContent(page, sourceId)).toBe(original);
     await page.screenshot({ path: testInfo.outputPath("pdf-excerpts.png") });
 });
@@ -149,7 +153,7 @@ test("keeps new-note creation retryable without duplicates and refuses a destina
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
     await expect(dialog.getByRole("alert")).toContainText("Retry");
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror blockquote")).toHaveCount(1);
+    await expect(noteEditor(page).locator("blockquote")).toHaveCount(1);
     expect(
         await page.evaluate(async () => {
             const { repositories } = (await import(
@@ -203,16 +207,16 @@ test("captures saved article with keyboard, cancels, appends to latest writing a
         await repositories.notes.updateContent(id, "Concurrent writing kept.");
     }, ids.destination);
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror")).toContainText("Concurrent writing kept.");
+    await expect(noteEditor(page)).toContainText("Concurrent writing kept.");
     await page.reload();
-    await expect(page.locator(".ProseMirror blockquote")).toContainText("A saved article phrase.");
+    await expect(noteEditor(page).locator("blockquote")).toContainText("A saved article phrase.");
     await expect(page.getByRole("link", { name: "Original article", exact: true })).toHaveAttribute(
         "href",
         "https://example.test/research?ref=original",
     );
     await page.getByRole("link", { name: "Open source", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${ids.article}\\?`));
-    await expect(page.locator(".ProseMirror")).toContainText("Another useful excerpt.");
+    await expect(noteEditor(page)).toContainText("Another useful excerpt.");
     expect(await savedContent(page, ids.article)).toBe(original);
     await page.setViewportSize({ width: 390, height: 844 });
     await selectArticle(page, 1);
@@ -221,7 +225,7 @@ test("captures saved article with keyboard, cancels, appends to latest writing a
     await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
     await page.screenshot({ path: testInfo.outputPath("article-excerpt-narrow.png") });
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror blockquote")).toHaveCount(2);
+    await expect(noteEditor(page).locator("blockquote")).toHaveCount(2);
 });
 
 test("recovers from a conditional-write race and an uncertain success without duplicating an excerpt", async ({
@@ -253,8 +257,8 @@ test("recovers from a conditional-write race and an uncertain success without du
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
     await expect(dialog.getByRole("alert")).toContainText("retry");
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror blockquote")).toHaveCount(1);
-    await expect(page.locator(".ProseMirror")).toContainText("Racing edit retained.");
+    await expect(noteEditor(page).locator("blockquote")).toHaveCount(1);
+    await expect(noteEditor(page)).toContainText("Racing edit retained.");
 });
 
 test("reports missing and replaced PDF assets, allows retry, and reports a removed source note", async ({ page }) => {
@@ -264,7 +268,7 @@ test("reports missing and replaced PDF assets, allows retry, and reports a remov
     await dialog.getByRole("button", { name: "Create a note", exact: true }).click();
     await dialog.getByLabel("Destination note title", { exact: true }).fill("Kept quotation");
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
-    await expect(page.locator(".ProseMirror")).toContainText("Portrait research phrase");
+    await expect(noteEditor(page)).toContainText("Portrait research phrase");
     const destination = page.url();
     const original = await page.evaluate(async (noteId) => {
         const { db } = (await import(
@@ -308,7 +312,7 @@ test("reports missing and replaced PDF assets, allows retry, and reports a remov
     await page.getByRole("link", { name: "Open source", exact: true }).click();
     await expect(page.getByRole("alert")).toContainText("source PDF has been replaced");
     await page.getByRole("button", { name: "Return to writing", exact: true }).click();
-    await expect(page.locator(".ProseMirror")).toContainText("Portrait research phrase");
+    await expect(noteEditor(page)).toContainText("Portrait research phrase");
     await page.evaluate(async (noteId) => {
         const { repositories } = (await import(
             String("/packages/editor/src/store/global.store.ts")
@@ -335,7 +339,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.getByRole("button", { name: "Save Editor", exact: true }).click();
         await page.goto(`/note/${ids.destination}`);
         if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
-        const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
+        const editor = mode === "formatted" ? noteEditor(page) : page.locator(".cm-content").first();
         await expect(editor).toContainText("My original writing.");
         await editor.click();
         await page.keyboard.press("Control+End");
@@ -344,7 +348,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         const sender = await context.newPage();
         await sender.goto(`/note/${ids.article}`);
         if (mode === "markdown") await sender.getByRole("button", { name: "Formatted", exact: true }).click();
-        await expect(sender.locator(".ProseMirror")).toContainText("A saved article phrase.");
+        await expect(noteEditor(sender)).toContainText("A saved article phrase.");
         await selectArticle(sender);
         await sender.getByRole("button", { name: "Send selection to note", exact: true }).click();
         const dialog = sender.getByRole("dialog", { name: "Send selection to note", exact: true });
@@ -389,7 +393,7 @@ test("saves and reloads literal selections in the complete editor Markdown diale
         { article: ids.article, text },
     );
     await page.reload();
-    const source = page.locator(".ProseMirror blockquote p").first();
+    const source = noteEditor(page).locator("blockquote p").first();
     await expect(source).toHaveText(text, { useInnerText: true });
     await source.evaluate((node) => {
         const range = document.createRange();
@@ -404,16 +408,14 @@ test("saves and reloads literal selections in the complete editor Markdown diale
     await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/note/${ids.destination}$`));
-    const quote = page.locator(".ProseMirror blockquote p").first();
+    const quote = noteEditor(page).locator("blockquote p").first();
     await expect(quote).toHaveText(text, { useInnerText: true });
-    await page.locator(".ProseMirror").click();
+    await noteEditor(page).click();
     await page.keyboard.press("Control+s");
     await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
     await page.reload();
     await expect(quote).toHaveText(text, { useInnerText: true });
-    await expect(
-        page.locator(".ProseMirror blockquote mark, .ProseMirror blockquote ul, .ProseMirror blockquote ol"),
-    ).toHaveCount(0);
+    await expect(noteEditor(page).locator("blockquote mark, blockquote ul, blockquote ol")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Open source", exact: true })).toBeVisible();
 });
 

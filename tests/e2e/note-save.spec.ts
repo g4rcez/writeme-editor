@@ -210,7 +210,7 @@ test("retains the pending tab dot after a failed save and allows retry", async (
     await page.keyboard.press("Control+s");
     await expect(status).toHaveText("Saved", { timeout: 2000 });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator(".ProseMirror").first()).toContainText("Retry this draft");
+    await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Retry this draft");
 });
 
 test("saves an existing note in the floating editor", async ({ cleanPage: page }) => {

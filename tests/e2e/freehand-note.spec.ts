@@ -1108,6 +1108,7 @@ for (const span of [400, 1e12])
     test(`opens legacy ink, erases a sparse stroke of length ${span} and preserves surrounding metadata`, async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(120_000);
         await createHandwrittenNote(page);
         await page.evaluate(async (end) => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");

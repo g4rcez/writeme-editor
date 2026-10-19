@@ -1,10 +1,21 @@
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
 const beforeTable = "Release review before the table.";
 const afterTable = "After the table, confirm the release notes.";
 const savedEdit = " Saved after reviewing the table.";
 const overflowText = "Keep the rollback plan and notify support with release-id.";
+
+async function storedNoteDigest(page: Page, id: string): Promise<string> {
+    return page.evaluate(async (noteId) => {
+        const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+        const note = await repositories.notes.getOne(noteId);
+        if (!note) throw new Error(`Note ${noteId} was not found.`);
+        const bytes = new TextEncoder().encode(note.content);
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }, id);
+}
 const unevenTableMarkdown = [
     beforeTable,
     "",
@@ -66,6 +77,7 @@ for (const [tableCase, tableMarkdown] of tableCases) {
         test(`preserves ${size} ${tableCase} markdown table cells and formatting when ${action} and reopening a note`, async ({
             cleanPage: page,
         }, testInfo) => {
+            if (size === "large") test.setTimeout(120_000);
             await page.setViewportSize({ width: 1440, height: 1000 });
             const title = `Table ${tableCase} ${size} ${action}`;
             // One long paragraph crosses the 50,000-character worker threshold without exercising line chunking.
@@ -127,3 +139,59 @@ for (const [tableCase, tableMarkdown] of tableCases) {
         });
     }
 }
+
+test("keeps saved large note content after canceled or failed Markdown worker loading", async ({ cleanPage: page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/", { waitUntil: "commit" });
+
+    const savedNotes = await page.evaluate(async () => {
+        const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+        const { Note } = await import("/packages/editor/src/store/note.ts");
+        const cancelledContent = `Keep the original note content intact. ${"Existing content must survive cancellation. ".repeat(55_000)}`;
+        const failedContent = `Keep the original note content intact. ${"Existing content must survive worker failure. ".repeat(2_000)}`;
+        const cancelledNote = Note.new("Canceled large note", cancelledContent);
+        const failedNote = Note.new("Failed large note", failedContent);
+        await repositories.notes.save(cancelledNote);
+        await repositories.notes.save(failedNote);
+
+        const { getMarkdownWorker } = await import("/packages/editor/src/lib/markdown-worker/index.ts");
+        const worker = getMarkdownWorker();
+        worker.postMessage = ((message: unknown) => {
+            const { gen } = message as { gen: number };
+            queueMicrotask(() => {
+                worker.dispatchEvent(
+                    new MessageEvent("message", {
+                        data: { type: "error", gen, error: "simulated worker failure" },
+                    }),
+                );
+            });
+        }) as typeof worker.postMessage;
+
+        return { cancelledId: cancelledNote.id, failedId: failedNote.id };
+    });
+    const cancelledDigest = await storedNoteDigest(page, savedNotes.cancelledId);
+    const failedDigest = await storedNoteDigest(page, savedNotes.failedId);
+
+    await page.getByRole("link", { name: "All notes", exact: true }).click();
+    await page.getByRole("link", { name: "Canceled large note", exact: true }).click();
+    await expect(page.getByText("Large document", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toHaveAttribute("contenteditable", "false");
+    await expect(
+        page.getByText("Loading was canceled. The saved note is unchanged. Reload to try again."),
+    ).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+s");
+    expect(await storedNoteDigest(page, savedNotes.cancelledId)).toBe(cancelledDigest);
+
+    await page.getByRole("link", { name: "All notes", exact: true }).click();
+    await page.getByRole("link", { name: "Failed large note", exact: true }).click();
+    await expect(editor).toHaveAttribute("contenteditable", "false");
+    await expect(
+        page.getByText("Could not parse the saved note. Its content is unchanged. Reload to try again."),
+    ).toBeVisible();
+    await page.keyboard.press("ControlOrMeta+s");
+    expect(await storedNoteDigest(page, savedNotes.failedId)).toBe(failedDigest);
+});

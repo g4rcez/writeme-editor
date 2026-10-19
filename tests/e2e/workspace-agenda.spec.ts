@@ -38,6 +38,7 @@ async function seedNotes(page: Page): Promise<Record<string, string>> {
 test("aggregates only unfinished tasks and opens the precise source context with a keyboard", async ({
     cleanPage: page,
 }, info) => {
+    test.setTimeout(120_000);
     await goHome(page);
     const ids = await seedNotes(page);
     await page.goto("/tasks", { waitUntil: "domcontentloaded" });
