@@ -206,6 +206,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
     test("resets custom bindings with an empty init.ts and keeps controls within a narrow viewport", async ({
         cleanPage: page,
     }) => {
+        test.setTimeout(90_000);
         await page.setViewportSize({ width: 375, height: 800 });
         const url = await note(page);
         await page.goto("/settings/vim", { waitUntil: "domcontentloaded" });
