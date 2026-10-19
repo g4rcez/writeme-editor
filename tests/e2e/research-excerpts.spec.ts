@@ -347,8 +347,14 @@ for (const mode of ["formatted", "markdown"] as const) {
         await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Unsaved changes");
         const sender = await context.newPage();
         await sender.goto(`/note/${ids.article}`);
+        await expect(sender).toHaveURL(`/note/${ids.article}`);
+        const articleEditorRoot = sender.locator(`#editor-container-${ids.article}`);
+        await expect(articleEditorRoot).toBeVisible({ timeout: 30_000 });
         if (mode === "markdown") await sender.getByRole("button", { name: "Formatted", exact: true }).click();
-        await expect(noteEditor(sender)).toContainText("A saved article phrase.");
+        await expect(articleEditorRoot.getByRole("textbox", { name: "Note editor", exact: true })).toContainText(
+            "A saved article phrase.",
+            { timeout: 30_000 },
+        );
         await selectArticle(sender);
         await sender.getByRole("button", { name: "Send selection to note", exact: true }).click();
         const dialog = sender.getByRole("dialog", { name: "Send selection to note", exact: true });

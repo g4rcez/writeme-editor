@@ -18,10 +18,7 @@ async function settleForCapture(page: Page): Promise<void> {
 
 async function openNoteDialog(page: Page): Promise<void> {
     if (page.url() === "about:blank") await goHome(page);
-    await page
-        .locator(".writeme-app-header-actions")
-        .getByRole("button", { name: "New note", exact: true })
-        .click();
+    await page.locator(".writeme-app-header-actions").getByRole("button", { name: "New note", exact: true }).click();
 }
 
 test("offers a starter before the first saved template and persists its content", async ({ cleanPage: page }, info) => {
@@ -197,7 +194,13 @@ for (const theme of ["light", "dark"] as const) {
             });
         }
         await dialog.getByRole("button", { name: "Create note", exact: true }).click();
-        await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toContainText("Try Markdown");
-        await expect(page.getByRole("textbox", { name: "Note editor", exact: true }).getByRole("table")).toBeVisible();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/, { timeout: 30_000 });
+        const noteId = new URL(page.url()).pathname.slice("/note/".length);
+        const editor = page.locator(`#editor-container-${noteId}`).getByRole("textbox", {
+            name: "Note editor",
+            exact: true,
+        });
+        await expect(editor).toContainText("Try Markdown", { timeout: 30_000 });
+        await expect(editor.getByRole("table")).toBeVisible({ timeout: 30_000 });
     });
 }

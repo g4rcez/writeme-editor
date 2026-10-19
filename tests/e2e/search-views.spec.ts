@@ -109,7 +109,9 @@ async function savedQuery(page: Page): Promise<string | undefined> {
     });
 }
 
-test.use({ video: { mode: "on", size: { width: 1440, height: 900 } } });
+test.use({
+    video: process.env.WRITEME_E2E_FAST === "1" ? "off" : { mode: "on", size: { width: 1440, height: 900 } },
+});
 
 test.describe("Search into saved Views", () => {
     test.use({ timezoneId: "America/Sao_Paulo" });
@@ -564,7 +566,9 @@ test.describe("Search into saved Views", () => {
 
         await openSearch(page);
         await page.getByRole("button", { name: "Reset filters", exact: true }).click();
-        await page.getByRole("combobox", { name: "Filter by folder or location" }).selectOption("folder:/vault/Research");
+        await page
+            .getByRole("combobox", { name: "Filter by folder or location" })
+            .selectOption("folder:/vault/Research");
         await page.getByLabel("Updated on or after", { exact: true }).fill("2026-10-15");
         await page.getByLabel("Updated through", { exact: true }).fill("2026-10-15");
         await expect(results.getByRole("button")).toHaveCount(1);
