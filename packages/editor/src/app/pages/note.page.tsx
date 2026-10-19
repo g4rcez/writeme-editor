@@ -290,6 +290,10 @@ export default function NotePage() {
     const note = state.note;
     useAgendaSource(note?.id === id ? (id ?? null) : null);
     const hasRouteNoteTab = id ? state.tabs.some((tab) => isNoteTabForNoteId(tab, id)) : false;
+    const hasRouteNoteTabRef = useRef(hasRouteNoteTab);
+    useEffect(() => {
+        hasRouteNoteTabRef.current = hasRouteNoteTab;
+    }, [hasRouteNoteTab]);
     const isLoading = note === null;
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
     const vimSettings = useVimSettings();
@@ -369,7 +373,7 @@ export default function NotePage() {
 
         const openRouteNote = async (): Promise<void> => {
             if (id === state.note?.id) {
-                if (!hasRouteNoteTab) await dispatch.addTab(id);
+                if (!hasRouteNoteTabRef.current) await dispatch.addTab(id);
                 return;
             }
 
@@ -391,7 +395,7 @@ export default function NotePage() {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, hasRouteNoteTab, id, state.note?.id]);
+    }, [dispatch, id, state.note?.id]);
 
     useEffect(() => {
         if (!isElectron() || !note?.filePath) return;

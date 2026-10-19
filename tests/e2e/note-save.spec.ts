@@ -111,10 +111,11 @@ for (const mode of ["formatted", "markdown"] as const) {
             cleanPage: page,
             context,
         }) => {
-            await page.goto("/settings/editor");
-            await page.getByRole("checkbox").first().uncheck();
-            await page.getByRole("button", { name: "Save Editor", exact: true }).click();
             await goHome(page);
+            await page.evaluate(async () => {
+                const { SettingsService } = await import(String("/packages/editor/src/store/settings.ts"));
+                await SettingsService.save({ autosave: false });
+            });
             const url = await createNote(page, "Conditional save");
             const id = url.split("/").pop()!;
             if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
@@ -141,7 +142,7 @@ for (const mode of ["formatted", "markdown"] as const) {
                 .poll(() => page.evaluate(() => (window as typeof window & { savePaused?: boolean }).savePaused))
                 .toBe(true);
             const other = await context.newPage();
-            await other.goto("/");
+            await other.goto("/", { waitUntil: "domcontentloaded" });
             await other.evaluate(
                 async ({ id, mutation }) => {
                     const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));

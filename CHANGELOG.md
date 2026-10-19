@@ -21,6 +21,8 @@
   new note's editor and save once without autosave delays or redundant reloads;
   dedicated typing/autosave/persistence coverage remains. Run all sixteen Linux
   Chromium browser shards in the fast PR gate.
+- Keep the five-minute PR verification target while giving browser shards a
+  six-minute hard timeout for slow hosted-runner execution.
 - Use explicit `.mts` Vite and Tailwind configs plus `import.meta.dirname` for
   root-relative paths, removing module-mode and native-loader warnings without
   changing package-wide module semantics.
@@ -63,6 +65,8 @@
   or Markdown draft. Conflicting saves retain the local draft and explain how to
   reconcile it without replacing the saved note. Metadata-only updates and published
   heading renames preserve dirty drafts without causing false save conflicts.
+- Load route-selected notes even when creating their tabs rerenders the page,
+  so direct note navigation cannot leave the previous editor active.
 - Keep selected highlights, entity spellings, list markers, setext underlines,
   dollar delimiters, and indentation literal through excerpt save and reload.
 - Refuse excerpt appends into unfinished Markdown fences or HTML comments without

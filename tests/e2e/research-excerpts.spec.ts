@@ -403,6 +403,7 @@ test("saves and reloads literal selections in the complete editor Markdown diale
     const dialog = page.getByRole("dialog", { name: "Send selection to note", exact: true });
     await dialog.getByLabel("Destination note", { exact: true }).selectOption(ids.destination);
     await dialog.getByRole("button", { name: "Send excerpt", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/note/${ids.destination}$`));
     const quote = page.locator(".ProseMirror blockquote p").first();
     await expect(quote).toHaveText(text, { useInnerText: true });
     await page.locator(".ProseMirror").click();
