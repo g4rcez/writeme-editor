@@ -46,7 +46,7 @@ import {
     isTerminalTab,
 } from "@/lib/tab-target";
 import { isFloatingEditorWindow } from "@/lib/window-mode";
-import { useGlobalStore } from "@/store/global.store";
+import { hasPendingTabPersistence, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { useUIStore } from "@/store/ui.store";
@@ -62,9 +62,23 @@ function getEditorNoteId(): string | null {
 }
 
 export const RootLayout = () => {
-    const [state, dispatch] = useGlobalStore();
-    const [uiState, uiDispatch] = useUIStore();
-    const [, layoutDispatch] = useLayoutStore();
+    const [state, dispatch] = useGlobalStore((state) => ({
+        tabs: state.tabs,
+        activeTabId: state.activeTabId,
+        directory: state.directory,
+        terminalSessions: state.terminalSessions,
+        note: state.note,
+        notes: state.notes,
+        commander: state.commander,
+        noteGroups: state.noteGroups,
+    }));
+    const [uiState, uiDispatch] = useUIStore((state) => ({
+        alert: state.alert,
+        confirm: state.confirm,
+        prompt: state.prompt,
+        focusMode: state.focusMode,
+    }));
+    const layoutDispatch = useLayoutStore.dispatchers;
     notificationRef.current = useNotification();
     usePwaUpdate();
     useMobileNavigation();
@@ -80,6 +94,14 @@ export const RootLayout = () => {
     useEffect(() => {
         clearSuppressedNoteRouteTabOpens();
     }, [location.pathname, location.search]);
+
+    useEffect(() => {
+        const protectPendingTabs = (event: BeforeUnloadEvent): void => {
+            if (hasPendingTabPersistence()) event.preventDefault();
+        };
+        window.addEventListener("beforeunload", protectPendingTabs);
+        return () => window.removeEventListener("beforeunload", protectPendingTabs);
+    }, []);
 
     const navigateToTab = useCallback(
         async (tab: (typeof state.tabs)[number]): Promise<void> => {

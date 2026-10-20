@@ -3,6 +3,53 @@ import { createNote, expect, goHome, test } from "./fixtures";
 const endOfDocument = process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End";
 
 test.describe("editor workbench", () => {
+    test("keeps concurrent large-document worker loads isolated between editor groups", async ({ cleanPage: page }) => {
+        await goHome(page);
+        const ids = await page.evaluate(async () => {
+            const { Note } = (await import(
+                String("/packages/editor/src/store/note.ts")
+            )) as typeof import("../../packages/editor/src/store/note");
+            const { repositories } = (await import(
+                String("/packages/editor/src/store/repositories/index.ts")
+            )) as typeof import("../../packages/editor/src/store/repositories");
+            const first = Note.new("First large document", `# FIRST_ONLY\n\n${"Alpha ".repeat(10000)}`);
+            const second = Note.new("Second large document", `# SECOND_ONLY\n\n${"Beta ".repeat(12000)}`);
+            await repositories.notes.save(first);
+            await repositories.notes.save(second);
+            return { first: first.id, second: second.id };
+        });
+        await page.goto(`/note/${ids.first}`, { waitUntil: "domcontentloaded" });
+        await expect(page.locator(".writeme-editor")).toHaveAttribute("aria-busy", "false");
+        await page.getByRole("button", { name: "Open pane mode", exact: true }).click();
+        const first = page.getByRole("region", { name: "Editor group 1", exact: true });
+        const second = page.getByRole("region", { name: "Editor group 2", exact: true });
+        await expect(first.locator(".writeme-editor")).toHaveAttribute("aria-busy", "false");
+        await expect(second.locator(".writeme-editor")).toHaveAttribute("aria-busy", "false");
+        const firstEditor = first.getByRole("textbox", { name: "Note editor", exact: true });
+        const secondEditor = second.getByRole("textbox", { name: "Note editor", exact: true });
+        await expect(firstEditor).toContainText("FIRST_ONLY");
+        await expect(firstEditor).not.toContainText("SECOND_ONLY");
+        await expect(secondEditor).toContainText("SECOND_ONLY");
+        await expect(secondEditor).not.toContainText("FIRST_ONLY");
+        await secondEditor.click();
+        await secondEditor.press(endOfDocument);
+        await secondEditor.press("Enter");
+        await secondEditor.pressSequentially("SECOND_EDIT");
+        await secondEditor.press("ControlOrMeta+s");
+        await expect
+            .poll(() =>
+                page.evaluate(async (id) => {
+                    const { repositories } = (await import(
+                        String("/packages/editor/src/store/repositories/index.ts")
+                    )) as typeof import("../../packages/editor/src/store/repositories");
+                    const saved = await repositories.notes.getOne(id);
+                    return saved?.content.includes("SECOND_EDIT") && !saved.content.includes("FIRST_ONLY");
+                }, ids.second),
+            )
+            .toBe(true);
+        await expect(firstEditor).not.toContainText("SECOND_EDIT");
+    });
+
     test("keeps documents in independent, resizable editor groups", async ({ cleanPage: page }, testInfo) => {
         await goHome(page);
         const referenceUrl = await createNote(page, "Reference document", "Reference text stays in its own editor.");
@@ -46,7 +93,7 @@ test.describe("editor workbench", () => {
             .poll(async () =>
                 Math.abs(
                     (await first.evaluate((element) => element.getBoundingClientRect().width)) -
-                    (await second.evaluate((element) => element.getBoundingClientRect().width)),
+                        (await second.evaluate((element) => element.getBoundingClientRect().width)),
                 ),
             )
             .toBeLessThanOrEqual(1);

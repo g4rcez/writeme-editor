@@ -1,42 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AIChat } from "@/store/repositories/electron/ai.repository";
 import type { Tab } from "@/store/repositories/entities/tab";
-import { AI_CHATS_CHANGED_EVENT } from "@/app/ai/events";
 import { getWorkspaceChatScope } from "@/app/ai/workspace-context";
 import { supportsAI } from "@/lib/platform";
 import { isAiChatTab } from "@/lib/tab-target";
-import { repositories } from "@/store/repositories";
+import { subscribeAiTabMetadata } from "./ai-tab-metadata";
+
+type Snapshot = { key: string; chats: AIChat[] };
 
 export function useAiChatTabs(directory: string | null, tabs: Tab[]): Map<string, AIChat> {
-    const [chats, setChats] = useState<AIChat[]>([]);
-    const chatScopeId = useMemo(() => (supportsAI() ? getWorkspaceChatScope(directory) : ""), [directory]);
-    const chatIds = useMemo(() => tabs.filter(isAiChatTab).map((tab) => tab.noteId), [tabs]);
-    const chatIdsKey = chatIds.join("\u0000");
-
-    const loadChats = useCallback(async (): Promise<void> => {
-        if (!supportsAI() || chatIds.length === 0) {
-            setChats([]);
-            return;
-        }
-
-        const chatIdsSet = new Set(chatIds);
-        const results = await repositories.ai.getChats(chatScopeId);
-        setChats(results.filter((chat) => chatIdsSet.has(chat.id)));
-    }, [chatIds, chatIdsKey, chatScopeId]);
+    const enabled = supportsAI();
+    const scope = enabled ? getWorkspaceChatScope(directory) : "";
+    const chatIdsKey = JSON.stringify([...new Set(tabs.filter(isAiChatTab).map((tab) => tab.noteId))].sort());
+    const key = JSON.stringify([scope, chatIdsKey]);
+    const [snapshot, setSnapshot] = useState<Snapshot>({ key: "", chats: [] });
 
     useEffect(() => {
-        void loadChats();
-    }, [loadChats]);
-
-    useEffect(() => {
-        const onChatsChanged = (): void => {
-            void loadChats();
-        };
-        window.addEventListener(AI_CHATS_CHANGED_EVENT, onChatsChanged);
+        if (!enabled || chatIdsKey === "[]") return;
+        let current = true;
+        const unsubscribe = subscribeAiTabMetadata(scope, chatIdsKey, (chats) => {
+            if (current) setSnapshot({ key, chats });
+        });
         return () => {
-            window.removeEventListener(AI_CHATS_CHANGED_EVENT, onChatsChanged);
+            current = false;
+            unsubscribe();
         };
-    }, [loadChats]);
+    }, [enabled, scope, chatIdsKey, key]);
 
-    return useMemo(() => new Map(chats.map((chat) => [chat.id, chat])), [chats]);
+    return useMemo(() => {
+        if (!enabled || snapshot.key !== key) return new Map<string, AIChat>();
+        const ids = new Set(tabs.filter(isAiChatTab).map((tab) => tab.noteId));
+        return new Map(snapshot.chats.filter((chat) => ids.has(chat.id)).map((chat) => [chat.id, chat]));
+    }, [enabled, snapshot, key, tabs]);
 }

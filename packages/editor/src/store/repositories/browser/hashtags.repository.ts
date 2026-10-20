@@ -1,4 +1,5 @@
 import { v7 as uuid } from "uuid";
+import { notifyHashtagsChanged } from "@/lib/hashtag-events";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { BaseRepository } from "../base.repository";
 import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
@@ -41,5 +42,6 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
                 await db.hashtags.bulkAdd(newEntries);
             }
         });
+        notifyHashtagsChanged();
     }
 }

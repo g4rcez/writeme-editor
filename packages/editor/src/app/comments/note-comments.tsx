@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import type { SelectionBookmark, Transaction } from "@tiptap/pm/state";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Button } from "@g4rcez/components";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +30,14 @@ type Props = {
     onSourcePersisted: (note: Note) => void;
 };
 
-export function getCommentAnchors(editor: Pick<Editor, "state">, note: Note): Anchor[] {
+const anchorCache = new WeakMap<ProseMirrorNode, { context: string; anchors: Anchor[] }>();
+
+export function getCommentAnchors(editor: { state: { doc: ProseMirrorNode } }, note: Note): Anchor[] {
+    const aliases = note.metadata.commentReferenceHrefs;
+    const context = JSON.stringify([getCommentCompanion(note).href,
+        Array.isArray(aliases) ? aliases.filter((value): value is string => typeof value === "string") : []]);
+    const cached = anchorCache.get(editor.state.doc);
+    if (cached?.context === context) return cached.anchors;
     const anchors: Anchor[] = [];
     editor.state.doc.descendants((node, position) => {
         if (!node.isText) return;
@@ -47,11 +55,12 @@ export function getCommentAnchors(editor: Pick<Editor, "state">, note: Note): An
             last.text += between + (node.text ?? "");
         } else anchors.push({ id, from: position, to: position + node.nodeSize, text: node.text ?? "" });
     });
+    anchorCache.set(editor.state.doc, { context, anchors });
     return anchors;
 }
 
 export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePersisted }: Props): JSX.Element {
-    const [state, dispatch] = useGlobalStore();
+    const [state, dispatch] = useGlobalStore((state) => ({ notes: state.notes }));
     const navigate = useNavigate();
     const inputId = useId();
     const panelId = useId();
@@ -71,7 +80,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const [sourceSavePending, setSourceSavePending] = useState(false);
     const [body, setBody] = useState("");
     const [revision, setRevision] = useState(0);
-    const [editorState, setEditorState] = useState(editor.state);
+    const [editorDocument, setEditorDocument] = useState(editor.state.doc);
     const panelRef = useRef<HTMLElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const listedCompanion = state.notes.find((entry) => entry.id === companion?.id);
@@ -80,7 +89,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             ? listedCompanion
             : companion;
     const threads = useMemo(() => parseCommentThreads(savedCompanion?.content ?? ""), [savedCompanion?.content]);
-    const anchors = useMemo(() => getCommentAnchors({ state: editorState }, note), [editorState, note]);
+    const anchors = useMemo(() => getCommentAnchors({ state: { doc: editorDocument } }, note), [editorDocument, note]);
     const thread = threads.find((entry) => entry.id === activeId);
     const anchor = anchors.find((entry) => entry.id === activeId);
 
@@ -195,8 +204,10 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     useEffect(() => {
         const update = ({ transaction }: { transaction: Transaction }): void => {
             if (draftRef.current) draftRef.current.bookmark = draftRef.current.bookmark.map(transaction.mapping);
-            setEditorState(editor.state);
-            setRevision((value) => value + 1);
+            if (transaction.docChanged) {
+                setEditorDocument(editor.state.doc);
+                setRevision((value) => value + 1);
+            }
         };
         const selection = (): void => {
             if (draftRef.current || busyRef.current) return;

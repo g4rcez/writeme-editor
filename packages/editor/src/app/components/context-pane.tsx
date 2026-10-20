@@ -204,10 +204,10 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     observer.observe(container, { subtree: true, childList: true, characterData: true });
     return () => observer.disconnect();
   }, [note.id, open]);
-  const fileReferences = useMemo(() => extractWorkspaceFileReferences(note.content), [note.content]);
+  const fileReferences = useMemo(() => open ? extractWorkspaceFileReferences(note.content) : [], [note.content, open]);
   const tags = useMemo(
-    () => [...new Set([...note.tags, ...extractCompletionTags(note.content)])],
-    [note.content, note.tags],
+    () => open ? [...new Set([...note.tags, ...extractCompletionTags(note.content)])] : [],
+    [note.content, note.tags, open],
   );
   useEffect(() => {
     if (!open || fileReferences.length === 0 || !isElectron()) return;
@@ -265,10 +265,10 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     [fileReferenceEntries, workspaceDirectory],
   );
 
-  const linkedNotes = useMemo(() => resolveNoteLinks(note, notes), [note, notes]);
-  const incomingNotes = useMemo(() => findIncomingNoteLinks(note, notes), [note, notes]);
-  const unresolvedLinks = useMemo(() => findUnresolvedNoteLinks(note, notes), [note, notes]);
-  const unlinkedMentions = useMemo(() => findUnlinkedNoteMentions(note, notes), [note, notes]);
+  const linkedNotes = useMemo(() => open ? resolveNoteLinks(note, notes) : [], [note, notes, open]);
+  const incomingNotes = useMemo(() => open ? findIncomingNoteLinks(note, notes) : [], [note, notes, open]);
+  const unresolvedLinks = useMemo(() => open ? findUnresolvedNoteLinks(note, notes) : [], [note, notes, open]);
+  const unlinkedMentions = useMemo(() => open ? findUnlinkedNoteMentions(note, notes) : [], [note, notes, open]);
   const unresolvedCount = unresolvedLinks.length + unresolvedFileReferences.length;
 
   const runAction = async (action: () => Promise<void>): Promise<void> => {

@@ -39,6 +39,23 @@ export const SettingsSchema = z.preprocess(
                 localSpeaker: "Me",
                 includeSystemAudio: true,
             }),
+        readItLaterFeeds: z
+            .array(
+                z.object({
+                    id: z.string().min(1),
+                    url: z.url().refine((value) => {
+                        try {
+                            const url = new URL(value);
+                            return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+                        } catch {
+                            return false;
+                        }
+                    }, "Use an HTTP or HTTPS feed URL without embedded credentials."),
+                    title: z.string().trim().min(1).max(200),
+                    lastFetchedAt: z.string().nullable().default(null),
+                }),
+            )
+            .default([]),
         autoSyncInterval: z.number().default(5000),
         conflictResolution: z.enum(["ask", "file-wins", "editor-wins"]).default("ask"),
         theme: z.enum(["light", "dark", "catppuccin-mocha", "tokyonight-night", "native"]).default("dark"),

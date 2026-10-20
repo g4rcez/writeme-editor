@@ -1,7 +1,7 @@
 import { type CommandItemTypes, CommandPalette, uuid } from "@g4rcez/components";
 import { ChatCircleDotsIcon, NoteIcon, TerminalIcon } from "@phosphor-icons/react";
 import { GithubLogoIcon } from "@phosphor-icons/react/dist/csr/GithubLogo";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { NoteGroup } from "@/store/repositories/entities/note-group";
 import type { Tab } from "@/store/repositories/entities/tab";
@@ -70,14 +70,34 @@ export const Commander = (props: Props) => {
         uiDispatch.setSidebarOpen(true);
     };
 
+    const openNoteVersion = useRef(0);
+    useEffect(() => () => { openNoteVersion.current += 1; }, []);
     const openNote = useCallback(
-        async (note: Note): Promise<void> => {
-            if (isFloatingEditorWindow) {
-                await dispatch.note(note, false);
-                navigate("/floating-editor");
+        async (noteId: string): Promise<void> => {
+            const version = ++openNoteVersion.current;
+            if (!isFloatingEditorWindow) {
+                navigate(`/note/${noteId}`);
                 return;
             }
-            navigate(`/note/${note.id}`);
+            const state = globalState();
+            const cached = state.note?.id === noteId ? state.note : state.notes.find((note) => note.id === noteId);
+            try {
+                const loaded = cached ?? await repositories.notes.getOne(noteId);
+                const current = globalState();
+                if (version !== openNoteVersion.current || current.directory !== state.directory) return;
+                const note = current.note?.id === noteId ? current.note : current.notes.find((note) => note.id === noteId) ?? loaded;
+                if (!note || note.deletedAt) {
+                    uiDispatch.setError("This note is no longer available.");
+                    return;
+                }
+                dispatch.syncNoteFromRepository(note);
+                dispatch.setNote(note);
+                navigate("/floating-editor");
+            } catch {
+                if (version === openNoteVersion.current && globalState().directory === state.directory) {
+                    uiDispatch.setError("Could not open this note. Try again.");
+                }
+            }
         },
         [dispatch, navigate],
     );
@@ -98,7 +118,7 @@ export const Commander = (props: Props) => {
                     try {
                         const existing = await getExistingDailyQuickNote(new Date());
                         if (existing) {
-                            await openNote(existing);
+                            await openNote(existing.id);
                         } else {
                             dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
                         }
@@ -120,7 +140,7 @@ export const Commander = (props: Props) => {
                       },
                   ]
                 : []),
-            ...globalState().notes.map((note: Note): CommandItemTypes => ({
+            ...globalState().notes.map(({ id, title }: Note): CommandItemTypes => ({
                 Icon: (
                     <span className="flex items-center gap-1 text-xs text-primary">
                         <NoteIcon />
@@ -128,10 +148,10 @@ export const Commander = (props: Props) => {
                     </span>
                 ),
                 type: "shortcut",
-                title: `${note.title}`,
+                title,
                 action: (args) => {
                     args.setOpen(false);
-                    void openNote(note);
+                    void openNote(id);
                 },
             })),
         ],
@@ -185,24 +205,20 @@ export const Commander = (props: Props) => {
                         title: `${typeLabel}: ${title}`,
                         action: async (args) => {
                             args.setOpen(false);
+                            if (isTerminal || isChatTab) openNoteVersion.current += 1;
                             if (isTerminal) {
                                 await dispatch.addTerminalTab(tab.noteId);
                             } else if (isChatTab) {
                                 await dispatch.addAiChatTab(tab.noteId);
-                            } else if (isFloatingEditorWindow && note) {
-                                await dispatch.note(note, false);
                             } else {
-                                await dispatch.selectNoteById(tab.noteId);
+                                await openNote(tab.noteId);
+                                return;
                             }
-                            navigate(
-                                isFloatingEditorWindow && !isTerminal && !isChatTab
-                                    ? "/floating-editor"
-                                    : getRouteForTab(tab),
-                            );
+                            navigate(getRouteForTab(tab));
                         },
                     };
                 }),
-        [props.tabs, notesById, chatsById, terminalSessionsById, dispatch, navigate],
+        [props.tabs, notesById, chatsById, terminalSessionsById, dispatch, navigate, openNote],
     );
 
     const createNewTerminal = useCallback(async (): Promise<void> => {

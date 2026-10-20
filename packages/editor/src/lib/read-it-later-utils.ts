@@ -1,3 +1,22 @@
+import { isElectron } from "./is-electron";
+import { isSafeHttpUrl } from "./read-it-later-library";
+
+export async function fetchReadItLaterUrl(url: string): Promise<string> {
+    if (!isSafeHttpUrl(url)) throw new Error("Use a valid HTTP or HTTPS URL without embedded credentials.");
+
+    if (isElectron()) {
+        const result = await window.electronAPI.readItLater.fetchUrl(url);
+        if (!result.success || typeof result.html !== "string") {
+            throw new Error(result.error || "Could not fetch this URL.");
+        }
+        return result.html;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Could not fetch this URL (HTTP ${response.status}).`);
+    return response.text();
+}
+
 const bundledLanguages = [
     "typescript",
     "javascript",
@@ -65,7 +84,16 @@ export function parseReadItLaterHtml(
     description: string | null;
     favicon: string | null;
 } {
-    const origin = new URL(url).origin;
+    let origin: string;
+    try {
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+            throw new Error("Only HTTP(S) URLs are supported.");
+        }
+        origin = parsedUrl.origin;
+    } catch {
+        throw new Error("Use a valid HTTP or HTTPS article URL.");
+    }
     const doc = new DOMParser().parseFromString(html, "text/html");
     doc.querySelectorAll("a[href]").forEach((anchor) => {
         const a = anchor as HTMLAnchorElement;
@@ -100,7 +128,9 @@ export function parseReadItLaterHtml(
     } else if (url) {
         try {
             favicon = new URL("/favicon.ico", url).href;
-        } catch {}
+        } catch {
+            favicon = null;
+        }
     }
 
     unwantedSelectors.forEach((selector) => {
@@ -110,18 +140,18 @@ export function parseReadItLaterHtml(
     doc.querySelectorAll("pre").forEach((pre) => {
         if (!pre.querySelector("code")) {
             const code = doc.createElement("code");
-            code.innerHTML = pre.innerHTML;
-            pre.innerHTML = "";
-            pre.appendChild(code);
+            code.append(...Array.from(pre.childNodes));
+            pre.replaceChildren(code);
         }
-        const original = pre.querySelector("code")!;
+        const original = pre.querySelector("code");
+        if (!original) return;
         const classes = [...pre.classList, ...original.classList];
         const langClass = classes.find((c) => {
             const lower = c.toLowerCase();
             return lower.startsWith("language-") || lower.startsWith("lang-") || bundledLanguages.includes(lower);
         });
         const children = Array.from(original.childNodes);
-        original.innerHTML = "";
+        original.replaceChildren();
         for (const child of children) {
             if (child.nodeType === Node.ELEMENT_NODE && ["DIV", "P"].includes((child as Element).tagName)) {
                 original.appendChild(doc.createTextNode((child.textContent ?? "") + "\n"));

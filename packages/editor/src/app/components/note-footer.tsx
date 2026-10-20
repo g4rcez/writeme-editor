@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/core";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { editorGlobalRef, editorSearchGlobalRef, subscribeEditorSearchGlobalRef } from "@/app/editor-global-ref";
 import { HARD_LIMIT, WARN_THRESHOLD } from "@/lib/markdown-worker";
 import { NeovimStatus } from "../extensions/neovim/status";
@@ -36,7 +36,8 @@ const HARD_LIMIT_LABEL = formatCount(HARD_LIMIT);
 export function NoteFooter({ noteId, content }: { noteId: string; content?: string }) {
     const [editorCounts, setEditorCounts] = useState<Counts>(INITIAL);
     const [activeEditor, setActiveEditor] = useState<Editor | null>(() => editorGlobalRef.current);
-    const counts = content === undefined ? editorCounts : getMarkdownCounts(content);
+    const suppliedCounts = useMemo(() => content === undefined ? null : getMarkdownCounts(content), [content]);
+    const counts = suppliedCounts ?? editorCounts;
 
     useEffect(() => {
         if (content !== undefined) return;
@@ -48,23 +49,25 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
             setActiveEditor(editor);
             if (!searchEditor && !editor) return false;
 
-            const compute = () => {
-                if (editorSearchGlobalRef.current) {
-                    setEditorCounts(getMarkdownCounts(editorSearchGlobalRef.current.getContent()));
-                    return;
-                }
-                if (editor) {
-                    setEditorCounts(getMarkdownCounts(editor.getMarkdown()));
-                }
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const compute = (): void => {
+                const markdown = searchEditor ? searchEditor.getContent() : editor?.getMarkdown();
+                if (markdown === undefined) return;
+                const next = getMarkdownCounts(markdown);
+                setEditorCounts((previous) => previous.chars === next.chars && previous.words === next.words &&
+                    previous.lines === next.lines ? previous : next);
             };
-
+            const schedule = (): void => {
+                clearTimeout(timer);
+                timer = setTimeout(compute, 150);
+            };
             compute();
-            cleanup = searchEditor
-                ? searchEditor.subscribe(compute)
-                : () => {
-                      editor?.off("update", compute);
-                  };
-            if (editor && !searchEditor) editor.on("update", compute);
+            const unsubscribe = searchEditor ? searchEditor.subscribe(schedule) : () => editor?.off("update", schedule);
+            if (editor && !searchEditor) editor.on("update", schedule);
+            cleanup = () => {
+                clearTimeout(timer);
+                unsubscribe();
+            };
             return true;
         };
 

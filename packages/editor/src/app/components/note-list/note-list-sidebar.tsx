@@ -14,6 +14,7 @@ import { useKeyboardNavigation } from "@/app/hooks/use-keyboard-navigation";
 import { useSidebarNotes } from "@/app/hooks/use-sidebar-notes";
 import { notificationRef } from "@/app/notification-ref";
 import { Dates } from "@/lib/dates";
+import { isReadItLaterNote } from "@/lib/read-it-later-library";
 import { globalDispatch, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
@@ -230,14 +231,23 @@ export const NoteListSidebar = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     useKeyboardNavigation(notes, activeNoteId, containerRef as any);
 
+    const isReadItLaterView = state.activeActivity === "read-it-later";
     const onSearch = (e: React.ChangeEvent<HTMLInputElement>) => layoutDispatch.setSearch(e.target.value);
 
-    const createNewNote = () => globalDispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+    const createNewNote = () => {
+        if (isReadItLaterView) {
+            globalDispatch.readItLaterDialog(true);
+            return;
+        }
+        globalDispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
+    };
 
     const getHeaderTitle = () => {
         switch (state.activeActivity) {
             case "favorites":
                 return "Favorites";
+            case "read-it-later":
+                return "Read It Later";
             case "tags":
                 return state.activeView.type === "tag" ? `Tag: #${state.activeView.id}` : "Tags";
             default:
@@ -259,6 +269,7 @@ export const NoteListSidebar = () => {
     const query = state.searchQuery.trim();
     const isFavoritesView = state.activeActivity === "favorites";
     const hasNotes = globalState.notes.some((note) => {
+        if (state.activeActivity === "read-it-later") return !note.deletedAt && isReadItLaterNote(note);
         if (state.activeActivity === "favorites") return note.favorite;
         if (state.activeActivity === "tags" && state.activeView.type === "tag") {
             return note.tags.includes(state.activeView.id);
@@ -344,14 +355,18 @@ export const NoteListSidebar = () => {
                                 ? "No matching notes"
                                 : isFavoritesView
                                   ? "No favorites yet"
-                                  : "No notes yet"}
+                                  : isReadItLaterView
+                                    ? "Your library is empty"
+                                    : "No notes yet"}
                         </p>
                         <p className="mt-1 text-xs leading-5">
                             {isFavoritesView && !query
                                 ? "Star a note to keep it close. Your favorites will appear here."
-                                : query || hasNotes
-                                  ? "Try a different search or clear the filter."
-                                  : "Create a note and your workspace will appear here."}
+                                : isReadItLaterView && !query
+                                  ? "Save a link or import a PDF to keep it in your library."
+                                  : query || hasNotes
+                                    ? "Try a different search or clear the filter."
+                                    : "Create a note and your workspace will appear here."}
                         </p>
                     </div>
                     {isFavoritesView && !query ? (
@@ -361,6 +376,14 @@ export const NoteListSidebar = () => {
                             className="min-h-9 rounded-none border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             Browse notes
+                        </button>
+                    ) : isReadItLaterView && !query ? (
+                        <button
+                            type="button"
+                            onClick={createNewNote}
+                            className="min-h-9 rounded-none border border-border/50 px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Save a link
                         </button>
                     ) : query || hasNotes ? (
                         <button

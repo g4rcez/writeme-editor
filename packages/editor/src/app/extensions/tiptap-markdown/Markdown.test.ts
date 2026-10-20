@@ -5,7 +5,7 @@ import { Mathematics } from "@tiptap/extension-mathematics";
 import { Slice } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getCommentAnchors } from "@/app/comments/note-comments";
 import { createExtensions } from "@/app/extensions";
 import { addFrontmatterToEditor } from "@/app/frontmatter";
@@ -13,8 +13,76 @@ import { processMarkdown } from "@/lib/markdown-worker/markdown.worker";
 import { Note } from "@/store/note";
 import { Markdown } from "./Markdown";
 import { MarkdownParser } from "./parse/MarkdownParser";
+import type { MarkdownSerializer } from "./serialize/MarkdownSerializer";
+import { setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
 
 describe("Markdown extension", () => {
+    it("serializes a document once across repeated reads and selection-only updates", () => {
+        const editor = new Editor({ extensions: [StarterKit, Markdown], content: "Original" });
+        const storage = editor.storage as unknown as { markdown: { serializer: MarkdownSerializer } };
+        const serialize = vi.spyOn(storage.markdown.serializer, "serialize");
+        try {
+            expect(editor.getMarkdown()).toBe("Original");
+            expect(editor.getMarkdown()).toBe("Original");
+            editor.commands.setTextSelection(3);
+            expect(editor.getMarkdown()).toBe("Original");
+            expect(serialize).toHaveBeenCalledTimes(1);
+            editor.view.dispatch(editor.state.tr.insertText("!"));
+            expect(editor.getMarkdown()).toBe("Or!iginal");
+            expect(serialize).toHaveBeenCalledTimes(2);
+            editor.commands.undo();
+            expect(editor.getMarkdown()).toBe("Original");
+        } finally {
+            serialize.mockRestore();
+            editor.destroy();
+        }
+    });
+
+    it("invalidates cached Markdown when serializer options or note context change", () => {
+        const editor = new Editor({ extensions: [StarterKit, Markdown], content: "- Item" });
+        const storage = editor.storage as unknown as { markdown: {
+            serializer: MarkdownSerializer; options: { bulletListMarker: string };
+        } };
+        const serialize = vi.spyOn(storage.markdown.serializer, "serialize");
+        try {
+            expect(editor.getMarkdown()).toBe("- Item");
+            storage.markdown.options.bulletListMarker = "*";
+            expect(editor.getMarkdown()).toBe("* Item");
+            setEditorNote(editor, Note.new("Context", ""));
+            expect(editor.getMarkdown()).toBe("* Item");
+            setEditorAllNotes(editor, []);
+            expect(editor.getMarkdown()).toBe("* Item");
+            expect(serialize).toHaveBeenCalledTimes(4);
+        } finally {
+            serialize.mockRestore();
+            editor.destroy();
+        }
+    });
+
+    it("reuses comment-anchor scans for selection changes and invalidates them for alias changes", () => {
+        const editor = new Editor({ extensions: createExtensions(() => "github-dark"),
+            content: "[==Important==](./comments_advisor.md#comment-1)" });
+        const note = Note.new("advisor", "");
+        const scan = vi.spyOn(editor.state.doc, "descendants");
+        try {
+            const anchors = getCommentAnchors(editor, note);
+            expect(anchors[0]?.id).toBe("comment-1");
+            expect(getCommentAnchors(editor, note)).toBe(anchors);
+            expect(scan).toHaveBeenCalledTimes(1);
+            editor.commands.setTextSelection(3);
+            const previousCalls = scan.mock.calls.length;
+            expect(getCommentAnchors(editor, note)).toBe(anchors);
+            expect(scan).toHaveBeenCalledTimes(previousCalls);
+            note.setTitle("Renamed");
+            expect(getCommentAnchors(editor, note)).toEqual([]);
+            note.metadata = { ...note.metadata, commentReferenceHrefs: ["./comments_advisor.md"] };
+            expect(getCommentAnchors(editor, note)[0]?.id).toBe("comment-1");
+        } finally {
+            scan.mockRestore();
+            editor.destroy();
+        }
+    });
+
     it.each([undefined, "full", false] as const)("honors setContent whitespace options: %s", (preserveWhitespace) => {
         const editor = new Editor({
             extensions: createExtensions(() => "github-dark"),

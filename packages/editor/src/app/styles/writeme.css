@@ -199,10 +199,6 @@
     letter-spacing: 0.05ch;
 }
 
-.writeme-note-metadata {
-    @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground;
-}
-
 .writeme-editor {
     @apply flex flex-col items-start justify-start bg-background print:block print:h-auto print:overflow-visible;
     padding-top: 1.25rem;

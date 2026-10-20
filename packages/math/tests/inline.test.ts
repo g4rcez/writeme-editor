@@ -60,6 +60,20 @@ describe("evaluateInlineMath", () => {
         });
     });
 
+    it("infers units for scalar arithmetic before converting the result", () => {
+        expect(evaluateInlineMath("300 - 1 year in days")).toEqual({
+            ok: true,
+            value: "109207.5075 days",
+        });
+    });
+
+    it("uses the final conversion target for mixed-unit arithmetic", () => {
+        expect(evaluateInlineMath("100 days in seconds - 80 days in minutes")).toEqual({
+            ok: true,
+            value: "28800 minutes",
+        });
+    });
+
     it("applies large-number shorthand preprocessor", () => {
         expect(evaluateInlineMath("2k + 3")).toEqual({ ok: true, value: "2003" });
     });

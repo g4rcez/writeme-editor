@@ -10,10 +10,10 @@ import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
 import { StarIcon } from "@phosphor-icons/react/dist/csr/Star";
 import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
+import { BookmarkIcon } from "@phosphor-icons/react/dist/csr/Bookmark";
 import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
 import { TrashSimpleIcon } from "@phosphor-icons/react/dist/csr/TrashSimple";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { Note } from "@/store/note";
 import { useLayoutStore, type ActivityType } from "@/app/contexts/layout-context";
 import { useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
@@ -64,10 +64,9 @@ const ActivityIcon = ({ icon: Icon, label, badge, active, onClick }: ActivityIco
 export const ActivityBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [layout, dispatchLayout] = useLayoutStore();
-    const [state] = useGlobalStore();
-    const [uiState] = useUIStore();
-    const favoritesCount = state.notes.filter((n: Note) => n.favorite).length;
+    const [layout, dispatchLayout] = useLayoutStore((state) => ({ activeActivity: state.activeActivity }));
+    const [favoritesCount] = useGlobalStore((state) => state.notes.filter((note) => note.favorite).length);
+    const [uiState] = useUIStore((state) => ({ sidebarOpen: state.sidebarOpen }));
 
     const onActivityClick = (activity: ActivityType, shouldCollapse = false) => {
         dispatchLayout.setActivity(activity);
@@ -116,6 +115,15 @@ export const ActivityBar = () => {
                     badge={favoritesCount}
                     onClick={() => onActivityClick("favorites")}
                     active={layout.activeActivity === "favorites"}
+                />
+                <ActivityIcon
+                    icon={BookmarkIcon}
+                    label="Read It Later"
+                    onClick={() => {
+                        dispatchLayout.setView({ type: "read-it-later" });
+                        onActivityClick("read-it-later");
+                    }}
+                    active={layout.activeActivity === "read-it-later" || location.pathname.startsWith("/read-it-later")}
                 />
                 <ActivityIcon
                     icon={CalendarDotsIcon}

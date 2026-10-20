@@ -165,6 +165,65 @@ describe("evaluateMathBlock", () => {
         });
     });
 
+    it("infers units for scalar arithmetic before converting the result", () => {
+        const result = evaluateMathBlock(
+            lines("1 years in days", "300 - 1 year in days", "amount = 300", "amount - 1 year in days", "300 - 1"),
+        );
+
+        expect(result[0]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "365.2425 days" },
+        });
+        expect(result[1]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "109207.5075 days" },
+        });
+        expect(result[3]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "109207.5075 days" },
+        });
+        expect(result[4]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "299" },
+        });
+    });
+
+    it("uses the final conversion target for arithmetic with multiple unit suffixes", () => {
+        const result = evaluateMathBlock(lines("100 days in seconds - 80 days in minutes"));
+
+        expect(result[0]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "28800 minutes" },
+        });
+    });
+
+    it("preserves nested conversions and compound conversion targets", () => {
+        const result = evaluateMathBlock(lines(
+            "(1 m in cm) / (1 m in cm)",
+            "1 m/s to km/h",
+            "1 m/s to m/s - 0.5 m/s to km/h",
+        ));
+
+        expect(result[0]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "1" },
+        });
+        expect(result[1]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "3.6 km / h" },
+        });
+        expect(result[2]).toMatchObject({
+            kind: "bare",
+            result: { ok: true, value: "1.8 km / h" },
+        });
+    });
+
+    it("does not infer units across incompatible unit operands", () => {
+        const result = evaluateMathBlock(lines("1 meter + 2 seconds"));
+
+        expect(result[0]).toMatchObject({ kind: "bare", result: { ok: false } });
+    });
+
     it("round(1 month in days) returns integer", () => {
         const result = evaluateMathBlock(lines("round(1 month in days)"));
         expect(result[0]).toMatchObject({

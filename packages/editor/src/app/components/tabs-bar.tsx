@@ -4,7 +4,7 @@ import { ChatCircleDotsIcon, FileTextIcon, TerminalIcon } from "@phosphor-icons/
 import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
 import { XIcon } from "@phosphor-icons/react/dist/csr/X";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { GlobalDispatchers } from "@/store/global.store";
 import type { Tab } from "@/store/repositories/entities/tab";
@@ -21,7 +21,7 @@ import {
     isTerminalTab,
 } from "@/lib/tab-target";
 import { Note } from "@/store/note";
-import { uiDispatch, useUIStore } from "@/store/ui.store";
+import { uiDispatch, useUIStore, type EditorSaveStatus } from "@/store/ui.store";
 import { useAiChatTabs } from "../hooks/use-ai-chat-tabs";
 import { useMotionTabDrop } from "../hooks/use-motion-tab-drop";
 import { useNoteTabs } from "../hooks/use-note-tabs";
@@ -44,8 +44,15 @@ type RenamingTarget = {
 const isSameRenamingTarget = (a: RenamingTarget | null, b: RenamingTarget): boolean =>
     a?.type === b.type && a.id === b.id;
 
-export const TabsBar = (props: Props) => {
-    const [{ noteSaveStatuses }] = useUIStore();
+function TabSaveStatus({ noteId, children }: {
+    noteId: string | undefined;
+    children: (status: EditorSaveStatus | undefined) => ReactNode;
+}): ReactNode {
+    const [status] = useUIStore((state) => noteId ? state.noteSaveStatuses[noteId] : undefined);
+    return children(status);
+}
+
+export const TabsBar = memo(function TabsBar(props: Props) {
     const dispatch = props.dispatch;
     const navigate = useNavigate();
     const location = useLocation();
@@ -229,8 +236,6 @@ export const TabsBar = (props: Props) => {
                     const isTerminal = isTerminalTab(tab);
                     const note = isChatTab || isTerminal ? undefined : notesById.get(tab.noteId);
                     const isActive = isCurrentTab(tab);
-                    const saveStatus = note ? noteSaveStatuses[tab.noteId] : undefined;
-                    const pending = saveStatus === "unsaved" || saveStatus === "saving" || saveStatus === "error";
                     const title = getTabTitle(tab);
                     const tabTitle = isTerminal ? title : isChatTab ? title : note?.filePath || title;
                     const renameTarget: RenamingTarget | null = isTerminal
@@ -240,131 +245,137 @@ export const TabsBar = (props: Props) => {
                           : { type: "note", id: tab.noteId };
                     const isRenaming = renameTarget ? isSameRenamingTarget(renamingTarget, renameTarget) : false;
                     return (
-                        <MotionEditorTab
-                            key={tab.id}
-                            tab={{ tabId: tab.id, noteId: tab.noteId }}
-                            title={title}
-                            disabled={isRenaming}
-                            className="relative flex h-full shrink-0"
-                            onDropTab={({ tab: dragged, x }, rect) => {
-                                if (!dragged?.tabId || dragged.tabId === tab.id) return;
-                                const source = props.tabs.find((item) => item.id === dragged.tabId);
-                                if (!source) return;
-                                const tabs = props.tabs.filter((item) => item.id !== source.id);
-                                const index = tabs.findIndex((item) => item.id === tab.id);
-                                tabs.splice(index + (x > rect.left + rect.width / 2 ? 1 : 0), 0, source);
-                                void dispatch.reorderTabs(tabs);
-                            }}
-                        >
-                            <Link
-                                data-tab-id={tab.id}
-                                data-save-status={saveStatus}
-                                draggable={false}
-                                title={tabTitle}
-                                to={getRouteForTab(tab)}
-                                onMouseDown={(e) => onMiddleClick(e, tab)}
-                                onClick={(e) => {
-                                    if (isRenaming) {
-                                        e.preventDefault();
-                                    } else if (!isChatTab && !isTerminal) {
-                                        const event = new CustomEvent(OPEN_EDITOR_NOTE_EVENT, {
-                                            detail: tab.noteId,
-                                            cancelable: true,
-                                        });
-                                        window.dispatchEvent(event);
-                                        if (event.defaultPrevented) e.preventDefault();
-                                    }
-                                }}
-                                aria-current={isActive ? "page" : undefined}
-                                className={css(
-                                    "group relative flex h-full min-w-28 max-w-xs items-center gap-1.5 border-r border-border/40 px-3",
-                                    "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                                    isActive
-                                        ? "bg-muted/50 text-foreground"
-                                        : "bg-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground",
-                                )}
-                            >
-                                {isTerminal ? (
-                                    <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                                ) : isChatTab ? (
-                                    <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                                ) : (
-                                    <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
-                                )}
-                                {renameTarget && isRenaming ? (
-                                    <input
-                                        autoFocus
-                                        value={renamingValue}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onBlur={() => void commitRename(renameTarget)}
-                                        onChange={(e) => setRenamingValue(e.target.value)}
-                                        className="flex-1 text-xs bg-transparent outline-none min-w-0"
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                commitRename(renameTarget);
-                                            }
-                                            if (e.key === "Escape") {
-                                                e.stopPropagation();
-                                                renameEscapedRef.current = true;
-                                                (e.target as HTMLInputElement).blur();
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <span
-                                        className="flex-1 text-xs truncate"
-                                        tabIndex={renameTarget ? 0 : undefined}
-                                        onDoubleClick={(e) => {
-                                            if (!renameTarget) return;
-                                            e.preventDefault();
-                                            renameCommittedRef.current = false;
-                                            setRenamingTarget(renameTarget);
-                                            setRenamingValue(title);
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (!renameTarget) return;
-                                            if (e.key === "Enter" || e.key === "F2") {
-                                                e.preventDefault();
-                                                renameCommittedRef.current = false;
-                                                setRenamingTarget(renameTarget);
-                                                setRenamingValue(title);
-                                            }
+                        <TabSaveStatus key={tab.id} noteId={note?.id}>
+                            {(saveStatus) => {
+                                const pending = saveStatus === "unsaved" || saveStatus === "saving" || saveStatus === "error";
+                                return (
+                                    <MotionEditorTab
+                                        tab={{ tabId: tab.id, noteId: tab.noteId }}
+                                        title={title}
+                                        disabled={isRenaming}
+                                        className="relative flex h-full shrink-0"
+                                        onDropTab={({ tab: dragged, x }, rect) => {
+                                            if (!dragged?.tabId || dragged.tabId === tab.id) return;
+                                            const source = props.tabs.find((item) => item.id === dragged.tabId);
+                                            if (!source) return;
+                                            const tabs = props.tabs.filter((item) => item.id !== source.id);
+                                            const index = tabs.findIndex((item) => item.id === tab.id);
+                                            tabs.splice(index + (x > rect.left + rect.width / 2 ? 1 : 0), 0, source);
+                                            void dispatch.reorderTabs(tabs);
                                         }}
                                     >
-                                        {title}
-                                    </span>
-                                )}
-                                <button
-                                    type="button"
-                                    aria-label={`Close ${title}${pending ? " (unsaved changes)" : ""}`}
-                                    onClick={(e) => void onCloseTab(e, tab)}
-                                    className={css(
-                                        "group/close flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
-                                        isActive || pending
-                                            ? "opacity-60 group-hover:opacity-100"
-                                            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                                    )}
-                                >
-                                    {pending && (
-                                        <span
-                                            aria-hidden="true"
-                                            title={saveStatus === "error" ? "Save failed" : "Unsaved changes"}
-                                            className="size-2 rounded-full bg-current group-hover/close:hidden group-focus-visible/close:hidden"
-                                        />
-                                    )}
-                                    <XIcon
-                                        className={
-                                            pending
-                                                ? "hidden size-2.5 group-hover/close:block group-focus-visible/close:block"
-                                                : "size-2.5"
-                                        }
-                                    />
-                                </button>
-                                {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
-                            </Link>
-                        </MotionEditorTab>
+                                        <Link
+                                            data-tab-id={tab.id}
+                                            data-save-status={saveStatus}
+                                            draggable={false}
+                                            title={tabTitle}
+                                            to={getRouteForTab(tab)}
+                                            onMouseDown={(e) => onMiddleClick(e, tab)}
+                                            onClick={(e) => {
+                                                if (isRenaming) {
+                                                    e.preventDefault();
+                                                } else if (!isChatTab && !isTerminal) {
+                                                    const event = new CustomEvent(OPEN_EDITOR_NOTE_EVENT, {
+                                                        detail: tab.noteId,
+                                                        cancelable: true,
+                                                    });
+                                                    window.dispatchEvent(event);
+                                                    if (event.defaultPrevented) e.preventDefault();
+                                                }
+                                            }}
+                                            aria-current={isActive ? "page" : undefined}
+                                            className={css(
+                                                "group relative flex h-full min-w-28 max-w-xs items-center gap-1.5 border-r border-border/40 px-3",
+                                                "cursor-pointer transition-[background-color,color] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                                                isActive
+                                                    ? "bg-muted/50 text-foreground"
+                                                    : "bg-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                                            )}
+                                        >
+                                            {isTerminal ? (
+                                                <TerminalIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                            ) : isChatTab ? (
+                                                <ChatCircleDotsIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                            ) : (
+                                                <FileTextIcon size={13} className="shrink-0 opacity-70" aria-hidden="true" />
+                                            )}
+                                            {renameTarget && isRenaming ? (
+                                                <input
+                                                    autoFocus
+                                                    value={renamingValue}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onBlur={() => void commitRename(renameTarget)}
+                                                    onChange={(e) => setRenamingValue(e.target.value)}
+                                                    className="flex-1 text-xs bg-transparent outline-none min-w-0"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            commitRename(renameTarget);
+                                                        }
+                                                        if (e.key === "Escape") {
+                                                            e.stopPropagation();
+                                                            renameEscapedRef.current = true;
+                                                            (e.target as HTMLInputElement).blur();
+                                                        }
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="flex-1 text-xs truncate"
+                                                    tabIndex={renameTarget ? 0 : undefined}
+                                                    onDoubleClick={(e) => {
+                                                        if (!renameTarget) return;
+                                                        e.preventDefault();
+                                                        renameCommittedRef.current = false;
+                                                        setRenamingTarget(renameTarget);
+                                                        setRenamingValue(title);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (!renameTarget) return;
+                                                        if (e.key === "Enter" || e.key === "F2") {
+                                                            e.preventDefault();
+                                                            renameCommittedRef.current = false;
+                                                            setRenamingTarget(renameTarget);
+                                                            setRenamingValue(title);
+                                                        }
+                                                    }}
+                                                >
+                                                    {title}
+                                                </span>
+                                            )}
+                                            <button
+                                                type="button"
+                                                aria-label={`Close ${title}${pending ? " (unsaved changes)" : ""}`}
+                                                onClick={(e) => void onCloseTab(e, tab)}
+                                                className={css(
+                                                    "group/close flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,opacity] hover:bg-foreground/10",
+                                                    isActive || pending
+                                                        ? "opacity-60 group-hover:opacity-100"
+                                                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                                                )}
+                                            >
+                                                {pending && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        title={saveStatus === "error" ? "Save failed" : "Unsaved changes"}
+                                                        className="size-2 rounded-full bg-current group-hover/close:hidden group-focus-visible/close:hidden"
+                                                    />
+                                                )}
+                                                <XIcon
+                                                    className={
+                                                        pending
+                                                            ? "hidden size-2.5 group-hover/close:block group-focus-visible/close:block"
+                                                            : "size-2.5"
+                                                    }
+                                                />
+                                            </button>
+                                            {isActive && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary" />}
+                                        </Link>
+                                    </MotionEditorTab>
+                                );
+                            }}
+                        </TabSaveStatus>
                     );
                 })}
             </motion.div>
@@ -379,4 +390,4 @@ export const TabsBar = (props: Props) => {
             </button>
         </div>
     );
-};
+});

@@ -60,23 +60,43 @@ before(() => {
 
 after(() => project?.cleanup());
 
-test("CLI tarball installs the executable and excludes the standalone binary and source tests", () => {
+test("CLI tarball installs writeme and math-cli executables and excludes standalone binaries and source tests", () => {
     assertPackageContents(project, "@writeme.dev/cli");
-    const entryPath = join(project.directory, "node_modules", "@writeme.dev", "cli", "dist", "index.js");
+    const packageDirectory = join(project.directory, "node_modules", "@writeme.dev", "cli");
+    const manifest = JSON.parse(readFileSync(join(packageDirectory, "package.json"), "utf8"));
+    assert.deepEqual(manifest.bin, {
+        writeme: "./dist/index.js",
+        "math-cli": "./dist/math-cli.js",
+    });
+
+    const entryPath = join(packageDirectory, "dist", "index.js");
+    const mathEntryPath = join(packageDirectory, "dist", "math-cli.js");
     assert.ok(readFileSync(entryPath, "utf8").startsWith("#!/usr/bin/env node\n"));
-    const executable = join(
-        project.directory,
-        "node_modules",
-        ".bin",
-        process.platform === "win32" ? "writeme.cmd" : "writeme",
-    );
-    assert.ok(existsSync(executable));
+    assert.ok(readFileSync(mathEntryPath, "utf8").startsWith("#!/usr/bin/env node\n"));
+    const binDirectory = join(project.directory, "node_modules", ".bin");
+    const writemeExecutable = join(binDirectory, process.platform === "win32" ? "writeme.cmd" : "writeme");
+    const mathExecutable = join(binDirectory, process.platform === "win32" ? "math-cli.cmd" : "math-cli");
+    assert.ok(existsSync(writemeExecutable));
+    assert.ok(existsSync(mathExecutable));
+
     if (process.platform !== "win32") {
-        assert.ok(statSync(entryPath).mode & 0o111, "Installed CLI entry must be executable");
-        const result = runCommand(process.execPath, [executable, "expr", "1 + 1"], project.directory, env);
-        assertSuccess(result);
-        assert.equal(result.stdout.trim(), "2");
+        assert.ok(statSync(entryPath).mode & 0o111, "Writeme CLI entry must be executable");
+        assert.ok(statSync(mathEntryPath).mode & 0o111, "Math CLI entry must be executable");
     }
+
+    const writemeResult =
+        process.platform === "win32"
+            ? runCommand(process.execPath, [entryPath, "expr", "1 + 1"], project.directory, env)
+            : runCommand(writemeExecutable, ["expr", "1 + 1"], project.directory, env);
+    assertSuccess(writemeResult);
+    assert.equal(writemeResult.stdout.trim(), "2");
+
+    const mathResult =
+        process.platform === "win32"
+            ? runCommand(process.execPath, [mathEntryPath], project.directory, env, "1 + 1\n.exit\n")
+            : runCommand(mathExecutable, [], project.directory, env, "1 + 1\n.exit\n");
+    assertSuccess(mathResult);
+    assert.match(mathResult.stdout, /2/);
 });
 
 for (const runtime of runtimes) {

@@ -56,6 +56,7 @@ import { SearchAndReplace } from "./extensions/search-replace";
 import { SlashCommand } from "./extensions/slash-command";
 import { FootnoteDefinition, FootnoteReference, Footnotes } from "./extensions/footnotes";
 import { Subscript } from "./extensions/subscript";
+import { TableControls } from "./extensions/table-controls";
 import { suggestion } from "./extensions/suggestion";
 import { Markdown } from "./extensions/tiptap-markdown/Markdown";
 import { WritingAssistant } from "./extensions/writing-assistant";
@@ -270,6 +271,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
                 allowTableNodeSelection: true,
             },
         }),
+        TableControls,
         MarkdownHighlight,
         Blockquote,
         ColorReplacer,

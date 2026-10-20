@@ -1,4 +1,6 @@
 import type { Editor } from "@tiptap/core";
+import type { Transaction } from "@tiptap/pm/state";
+import { createFrameTask } from "@/lib/animation-frame";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 
@@ -22,17 +24,20 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
     useEffect(() => {
         if (!editor) return;
         const update = () => forceUpdate((value) => value + 1);
+        const transactionUpdate = ({ transaction }: { transaction: Transaction }): void => {
+            if (transaction.docChanged || transaction.storedMarksSet) update();
+        };
         const selectionUpdate = () => {
             setDismissedEditor(null);
             update();
         };
         editor.on("selectionUpdate", selectionUpdate);
-        editor.on("transaction", update);
+        editor.on("transaction", transactionUpdate);
         editor.on("focus", update);
         editor.on("blur", update);
         return () => {
             editor.off("selectionUpdate", selectionUpdate);
-            editor.off("transaction", update);
+            editor.off("transaction", transactionUpdate);
             editor.off("focus", update);
             editor.off("blur", update);
         };
@@ -46,6 +51,7 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
             : "";
     const hasSelectedText = Boolean(selection && !selection.empty && selectedText.length > 0);
     const showToolbar = hasSelectedText && dismissedEditor !== activeEditor;
+    const editorDocument = activeEditor?.state.doc ?? null;
     const selectionFrom = selection?.from ?? null;
     const selectionTo = selection?.to ?? null;
 
@@ -64,32 +70,48 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
             return;
         }
 
-        try {
-            const start = activeEditor.view.coordsAtPos(selectionFrom);
-            const end = activeEditor.view.coordsAtPos(selectionTo);
-            const containerRect = container.getBoundingClientRect();
-            const toolbarWidth = toolbar.offsetWidth;
-            const toolbarHeight = toolbar.offsetHeight;
-            const selectionLeft = Math.min(start.left, end.left);
-            const selectionRight = Math.max(start.right, end.right);
-            const selectionTop = Math.min(start.top, end.top);
-            const selectionBottom = Math.max(start.bottom, end.bottom);
-            const preferredLeft = (selectionLeft + selectionRight) / 2 - containerRect.left - toolbarWidth / 2;
-            const maxLeft = Math.max(8, containerRect.width - toolbarWidth - 8);
-            const left = Math.min(Math.max(8, preferredLeft), maxLeft);
-            const aboveSelection = selectionTop - containerRect.top - toolbarHeight - 8;
-            const belowSelection = selectionBottom - containerRect.top + 8;
-            const preferredTop = aboveSelection >= 8 ? aboveSelection : belowSelection;
-            const maxTop = Math.max(8, container.clientHeight - toolbarHeight - 8);
-            const top = Math.min(Math.max(8, preferredTop), maxTop);
+        const position = (): void => {
+            if (activeEditor.isDestroyed) return;
+            try {
+                const start = activeEditor.view.coordsAtPos(selectionFrom);
+                const end = activeEditor.view.coordsAtPos(selectionTo);
+                const containerRect = container.getBoundingClientRect();
+                const toolbarWidth = toolbar.offsetWidth;
+                const toolbarHeight = toolbar.offsetHeight;
+                const selectionLeft = Math.min(start.left, end.left);
+                const selectionRight = Math.max(start.right, end.right);
+                const selectionTop = Math.min(start.top, end.top);
+                const selectionBottom = Math.max(start.bottom, end.bottom);
+                const preferredLeft = (selectionLeft + selectionRight) / 2 - containerRect.left - toolbarWidth / 2;
+                const maxLeft = Math.max(8, containerRect.width - toolbarWidth - 8);
+                const left = Math.min(Math.max(8, preferredLeft), maxLeft);
+                const aboveSelection = selectionTop - containerRect.top - toolbarHeight - 8;
+                const belowSelection = selectionBottom - containerRect.top + 8;
+                const preferredTop = aboveSelection >= 8 ? aboveSelection : belowSelection;
+                const maxTop = Math.max(8, container.clientHeight - toolbarHeight - 8);
+                const top = Math.min(Math.max(8, preferredTop), maxTop);
 
-            toolbar.style.top = `${top}px`;
-            toolbar.style.left = `${left}px`;
-            toolbar.setAttribute("data-positioned", "true");
-        } catch {
-            toolbar.setAttribute("data-positioned", "false");
-        }
-    }, [activeEditor, showToolbar, selectionFrom, selectionTo, selectedText]);
+                toolbar.style.top = `${top}px`;
+                toolbar.style.left = `${left}px`;
+                toolbar.setAttribute("data-positioned", "true");
+            } catch {
+                toolbar.setAttribute("data-positioned", "false");
+            }
+        };
+        const frame = createFrameTask(position);
+        toolbar.setAttribute("data-positioned", "false");
+        frame.schedule();
+        const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(frame.schedule);
+        observer?.observe(container);
+        window.addEventListener("scroll", frame.schedule, true);
+        window.addEventListener("resize", frame.schedule);
+        return () => {
+            frame.cancel();
+            observer?.disconnect();
+            window.removeEventListener("scroll", frame.schedule, true);
+            window.removeEventListener("resize", frame.schedule);
+        };
+    }, [activeEditor, showToolbar, selectionFrom, selectionTo, selectedText, editorDocument]);
 
     if (!activeEditor || !showToolbar) return null;
 
@@ -111,6 +133,12 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
             title: "Strikethrough",
             active: () => activeEditor.isActive("strike"),
             run: () => activeEditor.chain().focus().toggleStrike().run(),
+        },
+        {
+            label: "Highlight",
+            title: "Highlight selected text",
+            active: () => activeEditor.isActive("highlight"),
+            run: () => activeEditor.chain().focus().toggleHighlight().run(),
         },
         {
             label: "Code",

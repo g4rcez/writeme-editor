@@ -192,7 +192,11 @@
 }
 
 .writeme-editor-content table th {
-    @apply bg-table-background text-left font-bold;
+    @apply bg-table-header text-left font-bold;
+}
+
+.writeme-editor-content table tr > td:first-child {
+    @apply bg-table-header/60 font-medium;
 }
 
 .writeme-editor-content table .selectedCell:after {

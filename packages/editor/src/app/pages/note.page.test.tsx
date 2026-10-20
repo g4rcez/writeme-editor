@@ -137,7 +137,7 @@ function renderNoteRoute() {
     );
 }
 
-type RouteState = { note: Note | null; tabs: Array<{ id: string; noteId: string; type: string }> };
+type RouteState = { note: Note | null; notes: Note[]; tabs: Array<{ id: string; noteId: string; type: string }> };
 
 function createRouteNoteTab(): RouteState["tabs"][number] {
     return { id: "tab-1", noteId: "note-1", type: "tab" };
@@ -182,7 +182,7 @@ describe("NotePage route loading", () => {
 
     it("opens a tab after the route note is loaded", async () => {
         const dispatch = createDispatch();
-        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, tabs: [] }, dispatch] as never);
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, notes: [], tabs: [] }, dispatch] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
         const note = createNote();
         vi.mocked(repositories.notes.getOne).mockResolvedValue(note);
@@ -195,10 +195,21 @@ describe("NotePage route loading", () => {
         expect(dispatch.setNote).toHaveBeenCalledWith(note);
     });
 
+    it("opens a loaded route note without a repository read", async () => {
+        const dispatch = createDispatch();
+        const note = createNote();
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, notes: [note], tabs: [] }, dispatch] as never);
+        vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
+        renderNoteRoute();
+        await waitFor(() => expect(dispatch.setNote).toHaveBeenCalledWith(note));
+        expect(repositories.notes.getOne).not.toHaveBeenCalled();
+        expect(dispatch.addTab).toHaveBeenCalledWith(note.id);
+    });
+
     it("finishes loading a route note when adding its tab rerenders the page", async () => {
         const dispatch = createDispatch();
         const note = createNote();
-        const state: RouteState = { note: null, tabs: [] };
+        const state: RouteState = { note: null, notes: [], tabs: [] };
         let rerenderRoute = (): void => { };
         dispatch.addTab.mockImplementation(async () => {
             state.tabs = [createRouteNoteTab()];
@@ -452,7 +463,7 @@ describe("NotePage route loading", () => {
 
     it("does not open a suppressed note route while closing its tab", () => {
         const dispatch = createDispatch();
-        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, tabs: [] }, dispatch] as never);
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, notes: [], tabs: [] }, dispatch] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
         suppressNoteRouteTabOpen("note-1");
 
@@ -464,7 +475,7 @@ describe("NotePage route loading", () => {
 
     it("does not reopen a tab when the note route unmounts before loading finishes", async () => {
         const dispatch = createDispatch();
-        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, tabs: [] }, dispatch] as never);
+        vi.mocked(useGlobalStore).mockReturnValue([{ note: null, notes: [], tabs: [] }, dispatch] as never);
         vi.mocked(useUIStore).mockReturnValue([{ error: null }, {}] as never);
         const pendingNote = createDeferred<Note | null>();
         vi.mocked(repositories.notes.getOne).mockReturnValue(pendingNote.promise);
