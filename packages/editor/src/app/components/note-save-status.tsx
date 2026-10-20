@@ -2,8 +2,7 @@ import { CircleNotchIcon } from "@phosphor-icons/react";
 import { useUIStore } from "@/store/ui.store";
 
 export function NoteSaveStatus({ noteId }: { noteId: string }) {
-    const [{ noteSaveStatuses }] = useUIStore();
-    const status = noteSaveStatuses[noteId] ?? "saved";
+    const [status] = useUIStore((state) => state.noteSaveStatuses[noteId] ?? "saved");
     const label =
         status === "saving"
             ? "Saving…"

@@ -26,12 +26,20 @@ describe("uiStore — parsingContent", () => {
     });
 
     it("does not persist parsingContent to localStorage", () => {
-        localStorage.clear();
         uiDispatch.setParsingContent(true);
+        expect(localStorage.getItem("WRITEME_UI_SETTINGS")).toBeNull();
+
+        const width = useUIStore.getState().contentWidth === "wide" ? "medium" : "wide";
+        uiDispatch.setContentWidth(width);
         const raw = localStorage.getItem("WRITEME_UI_SETTINGS");
         expect(raw).not.toBeNull();
-        const persisted = JSON.parse(raw!);
-        expect(persisted).not.toHaveProperty("parsingContent");
-        expect(persisted).toHaveProperty("contentWidth");
+        expect(JSON.parse(raw ?? "{}")).toEqual({
+            contentWidth: width,
+            focusMode: useUIStore.getState().focusMode,
+            sidebarOpen: useUIStore.getState().sidebarOpen,
+        });
+
+        uiDispatch.setParsingContent(false);
+        expect(localStorage.getItem("WRITEME_UI_SETTINGS")).toBe(raw);
     });
 });

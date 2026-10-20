@@ -1,6 +1,6 @@
 import type { EvaluatedResult, ExchangeRateData } from "./types.js";
 import { Dates } from "./dates.js";
-import { applyBasePreprocessors, errorMessage, formatResult } from "./evaluator.js";
+import { errorMessage, evaluateMathExpression, formatResult } from "./evaluator.js";
 import { getMathInstance } from "./mathjs-extensions.js";
 
 export const INLINE_MATH_PATTERN = />>math [^=]+ ?=$/;
@@ -18,8 +18,7 @@ export function evaluateInlineMath(expr: string, ratesData?: ExchangeRateData | 
         const natural = Dates.evaluateNatural(expr);
         if (natural !== null) return { ok: true, value: natural };
         const math = getMathInstance(16, ratesData ?? null);
-        const cleaned = applyBasePreprocessors(expr);
-        const value = math.evaluate(cleaned) as unknown;
+        const value = evaluateMathExpression(expr, math);
         return { ok: true, value: formatResult(value) };
     } catch (e) {
         return { ok: false, message: errorMessage(e) };

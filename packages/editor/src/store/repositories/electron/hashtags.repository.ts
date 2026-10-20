@@ -1,3 +1,4 @@
+import { notifyHashtagsChanged } from "@/lib/hashtag-events";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 import { BaseRepository } from "../base.repository";
 import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
@@ -14,5 +15,6 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
 
     async sync(filename: string, tags: string[]): Promise<void> {
         await window.electronAPI.db.hashtags.sync(filename, tags);
+        notifyHashtagsChanged();
     }
 }

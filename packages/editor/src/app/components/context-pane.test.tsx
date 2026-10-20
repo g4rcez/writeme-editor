@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Note } from "@/store/note";
+import * as noteLinks from "@/lib/note-links";
 import { ContextPane } from "./context-pane";
 const mocks = vi.hoisted(() => ({
     isElectron: vi.fn(() => false),
@@ -66,11 +67,63 @@ beforeEach(() => {
 
 afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
     Reflect.deleteProperty(window, "matchMedia");
     Reflect.deleteProperty(window, "electronAPI");
 });
 
 describe("ContextPane", () => {
+    it("does not scan connections while closed and refreshes them when reopened", () => {
+        setMatchMedia();
+        const scans = [
+            vi.spyOn(noteLinks, "extractWorkspaceFileReferences"),
+            vi.spyOn(noteLinks, "resolveNoteLinks"),
+            vi.spyOn(noteLinks, "findIncomingNoteLinks"),
+            vi.spyOn(noteLinks, "findUnresolvedNoteLinks"),
+            vi.spyOn(noteLinks, "findUnlinkedNoteMentions"),
+        ];
+        const onClose = vi.fn();
+        const view = (open: boolean, current: Note) => (
+            <MemoryRouter>
+                <ContextPane note={current} notes={[current, target]} workspaceDirectory={null}
+                    open={open} onClose={onClose} />
+            </MemoryRouter>
+        );
+        const { rerender } = render(view(false, note));
+        for (const scan of scans) expect(scan).not.toHaveBeenCalled();
+        rerender(view(true, note));
+        for (const scan of scans) {
+            expect(scan).toHaveBeenCalled();
+            scan.mockClear();
+        }
+        const updated = Note.parse({ ...note, content: "Updated without links." });
+        rerender(view(false, updated));
+        for (const scan of scans) expect(scan).not.toHaveBeenCalled();
+        rerender(view(true, updated));
+        expect(screen.getByRole("complementary", { name: "Context" })).toBeInTheDocument();
+        for (const scan of scans) expect(scan).toHaveBeenCalled();
+    });
+
+    it("preserves a pending link preview across closing and reopening", () => {
+        setMatchMedia();
+        const source = Note.parse({ id: "source", title: "Source", content: "Review Current note." });
+        const notes = [note, target, source];
+        const onClose = vi.fn();
+        const view = (open: boolean) => (
+            <MemoryRouter>
+                <ContextPane note={note} notes={notes} workspaceDirectory={null} open={open} onClose={onClose} />
+            </MemoryRouter>
+        );
+        const { rerender } = render(view(true));
+        fireEvent.click(screen.getByText("Unlinked mentions"));
+        fireEvent.click(screen.getByRole("button", { name: "Preview link" }));
+        expect(screen.getByRole("region", { name: "Link preview" })).toBeInTheDocument();
+        rerender(view(false));
+        expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+        rerender(view(true));
+        expect(screen.getByRole("region", { name: "Link preview", hidden: true })).toBeInTheDocument();
+    });
+
     it("keeps mentions collapsed and closes a preview before the desktop context landmark on Escape", () => {
         renderContext(note, [
             note,

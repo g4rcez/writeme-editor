@@ -24,6 +24,8 @@ Start the CLI from that shell, then use its Ctrl+G external-editor shortcut.
 The editor command waits until the file is closed before returning.
 Install the CLI from Writeme's desktop command palette, or with:
   npm install --global @writeme.dev/cli
+
+This also installs the interactive math REPL as the math-cli command.
 `;
 
 function showHelp(): void {

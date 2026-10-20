@@ -12,6 +12,7 @@ export type ActivityType =
     | "explorer"
     | "settings"
     | "favorites"
+    | "read-it-later"
     | "templates";
 
 export type LayoutView =

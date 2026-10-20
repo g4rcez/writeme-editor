@@ -4,16 +4,16 @@ declare const __WRITEME_BUILD__: BuildProfile;
 
 const developmentFeatures = {
     ai: true,
-    terminal: true,
-    codeExecution: true,
-    templateScripts: true,
-    vimScripts: true,
-    git: true,
     cli: true,
-    meetingNotes: true,
-    localProxy: true,
+    git: true,
+    terminal: true,
     autoUpdate: true,
+    localProxy: true,
+    vimScripts: true,
+    meetingNotes: true,
+    codeExecution: true,
     multiInstance: true,
+    templateScripts: true,
 } as const;
 
 export const BUILD: BuildProfile = Object.freeze(

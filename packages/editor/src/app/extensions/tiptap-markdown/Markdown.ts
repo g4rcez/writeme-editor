@@ -1,5 +1,5 @@
 import { type Content, Extension, createNodeFromContent } from "@tiptap/core";
-import { DOMParser, Fragment } from "@tiptap/pm/model";
+import { DOMParser, Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { safeMarkdown } from "../../../lib/encoding";
 import { linkify } from "../../../lib/link-utils";
 import { normalizeMarkdownPaste } from "../../../lib/markdown-paste/normalize-markdown";
@@ -166,16 +166,28 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
         this.storage.options = { ...this.options };
         this.storage.parser = new MarkdownParser(this.editor, this.options);
         this.storage.serializer = new MarkdownSerializer(this.editor);
-        const getMarkdown = () => {
-            if (
-                !this.storage.serializer ||
-                !this.editor.schema ||
-                !this.editor.extensionManager ||
-                !this.editor.state?.doc
-            ) {
-                return "";
-            }
-            return this.storage.serializer.serialize(this.editor.state.doc);
+        let previousDocument: ProseMirrorNode | null = null;
+        let previousSerializer: MarkdownSerializer | null = null;
+        let previousOptions = "";
+        let previousNote: unknown;
+        let previousNotes: unknown;
+        let previousMarkdown = "";
+        const getMarkdown = (): string => {
+            const serializer = this.storage.serializer;
+            if (!serializer || !this.editor.schema || !this.editor.extensionManager || !this.editor.state?.doc) return "";
+            const document = this.editor.state.doc;
+            const options = JSON.stringify(this.storage.options);
+            const { note, allNotes: notes } = this.editor.storage as { note?: unknown; allNotes?: unknown };
+            if (document === previousDocument && serializer === previousSerializer &&
+                options === previousOptions && note === previousNote && notes === previousNotes) return previousMarkdown;
+            const markdown = serializer.serialize(document);
+            previousDocument = document;
+            previousSerializer = serializer;
+            previousOptions = options;
+            previousNote = note;
+            previousNotes = notes;
+            previousMarkdown = markdown;
+            return markdown;
         };
         this.storage.getMarkdown = getMarkdown;
         this.editor.getMarkdown = getMarkdown;

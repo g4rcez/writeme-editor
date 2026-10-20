@@ -12,9 +12,10 @@ deno run -A npm:@writeme.dev/cli expr "1 + 1"
 
 Each prints `2`. An invalid expression exits with status 1.
 
-Install with `npm install --global @writeme.dev/cli` to get the `writeme` command:
+Install with `npm install --global @writeme.dev/cli` to get the `writeme` and `math-cli` commands:
 
 ```sh
+math-cli
 writeme math
 writeme expr "1 + 1"
 writeme query notes --json
@@ -25,7 +26,7 @@ writeme open /path/to/folder
 writeme /path/to/note.md
 ```
 
-`writeme .` opens the working directory as a vault. To use Writeme for prompt editing in terminal coding agents, configure the standard external-editor variables before starting the agent:
+`math-cli` starts the interactive math REPL directly; `writeme math` remains available as an alias. `writeme .` opens the working directory as a vault. To use Writeme for prompt editing in terminal coding agents, configure the standard external-editor variables before starting the agent:
 
 ```sh
 export EDITOR="writeme --wait"
@@ -75,8 +76,8 @@ npm run test:package --workspace @writeme.dev/cli
 
 Unit tests use Bun. Runtime tests require all three runtimes on PATH and cover the compiled CLI, expression failure, and SQLite queries.
 
-Installation tests build and pack both the CLI and math dependency, then install the tarballs in a temporary project. They verify the installed executable, REPL state and history, expression results and errors, query filters and sorting, invalid arguments, and missing database failures in Node.js, Bun, and Deno. Database queries use an isolated temporary home and must leave the database unchanged.
+Installation tests build and pack both the CLI and math dependency, then install the tarballs in a temporary project. They verify both installed executables, the interactive math REPL, history, expression results and errors, query filters and sorting, invalid arguments, and missing database failures in Node.js, Bun, and Deno. Database queries use an isolated temporary home and must leave the database unchanged.
 
-`npm run build:standalone --workspace @writeme.dev/cli` still creates `dist/writeme` for desktop packaging. That executable is excluded from the npm tarball.
+`npm run build:standalone --workspace @writeme.dev/cli` creates standalone `dist/writeme` and `dist/math-cli` binaries for the current platform. These executables are excluded from the npm tarball.
 
 See [publishing](../README.md) for the release sequence.

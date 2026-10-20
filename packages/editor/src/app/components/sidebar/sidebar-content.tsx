@@ -18,6 +18,7 @@ export const SidebarContent = () => {
         case "search":
             return <SearchPane />;
         case "favorites":
+        case "read-it-later":
             return <NoteListSidebar />;
         case "tags":
             if (state.activeView.type === "tag") {

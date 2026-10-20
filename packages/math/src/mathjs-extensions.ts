@@ -1,6 +1,8 @@
 import { all, create } from "mathjs";
 import type { ExchangeRateData } from "./types.js";
 
+const MEAN_GREGORIAN_YEAR_SECONDS = 31_556_952;
+
 export type MathInstance = ReturnType<typeof create>;
 
 type Props = {
@@ -9,6 +11,8 @@ type Props = {
 
 export function createMathInstance(props: Props): MathInstance {
     const math = create(all!);
+    math.createUnit("year", `${MEAN_GREGORIAN_YEAR_SECONDS} s`, { override: true });
+    math.createUnit("years", `${MEAN_GREGORIAN_YEAR_SECONDS} s`, { override: true });
     math.createUnit("px");
     math.createUnit("pt", "1.3333 px", { override: true });
     math.createUnit("em", `${props.emCss || 16} px`, { override: true });

@@ -10,6 +10,7 @@
         "directory": "packages/cli"
     },
     "bin": {
+        "math-cli": "./dist/math-cli.js",
         "writeme": "./dist/index.js"
     },
     "files": [
@@ -25,11 +26,12 @@
     },
     "scripts": {
         "build": "tsc -p tsconfig.build.json",
+        "postbuild": "node scripts/mark-bin-executables.mjs",
         "dev": "bun src/index.ts",
         "test": "bun test src/tests",
         "typecheck": "tsc --noEmit",
         "prepack": "npm run build",
-        "build:standalone": "bun build --compile src/index.ts --outfile dist/writeme",
+        "build:standalone": "bun build --compile src/index.ts --outfile dist/writeme && bun build --compile src/math-cli.ts --outfile dist/math-cli",
         "test:runtime": "node --test tests/runtime.test.mjs",
         "test:package": "node --experimental-strip-types --test tests/package.test.mts",
         "typecheck:tests": "tsc -p tsconfig.tests.json",

@@ -69,7 +69,7 @@ export const MainLayout = () => {
         terminalSessions: s.terminalSessions,
         restoredTerminalSessionIds: s.restoredTerminalSessionIds,
     }));
-    const [uiState] = useUIStore();
+    const [uiState] = useUIStore((state) => ({ sidebarOpen: state.sidebarOpen }));
     const isNoteRoute = location.pathname.startsWith("/note/");
     const routeLabel = getRouteLabel(location.pathname);
 

@@ -10,7 +10,9 @@ import { uiDispatch } from "@/store/ui.store";
 import { TabsBar } from "./tabs-bar";
 
 vi.mock("@/store/ui.store", () => ({
-    useUIStore: () => [{ noteSaveStatuses: {} }],
+    useUIStore: (selector: (state: { noteSaveStatuses: Record<string, string> }) => unknown) => [
+        selector({ noteSaveStatuses: {} }),
+    ],
     uiDispatch: {
         clearConfirm: vi.fn(),
         setConfirm: vi.fn(),

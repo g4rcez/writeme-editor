@@ -1,5 +1,5 @@
 import { css } from "@g4rcez/components";
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Fragment, memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
 import { useGlobalStore } from "@/store/global.store";
@@ -12,9 +12,9 @@ const SIDEBAR_MAX_WIDTH = 520;
 
 const SIDEBAR_MAX_VIEWPORT_RATIO = 0.4;
 
-export const Sidebar = () => {
-    const [state, dispatch] = useGlobalStore();
-    const [uiState, uiDispatch] = useUIStore();
+export const Sidebar = memo(function Sidebar() {
+    const [state, dispatch] = useGlobalStore((state) => ({ sidebarWidth: state.sidebarWidth }));
+    const [uiState, uiDispatch] = useUIStore((state) => ({ sidebarOpen: state.sidebarOpen }));
     const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
     const resizeOffset = useRef(0);
     const collapsed = !uiState.sidebarOpen;
@@ -119,4 +119,4 @@ export const Sidebar = () => {
             )}
         </Fragment>
     );
-};
+});
