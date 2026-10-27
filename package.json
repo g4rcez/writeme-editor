@@ -81,7 +81,7 @@
         "package:app": "npm run build:cli && electron-forge package",
         "make": "npm run build:cli && electron-forge make",
         "publish": "npm run build:cli && electron-forge publish",
-        "postinstall": "electron-rebuild",
+        "postinstall": "electron-rebuild --only better-sqlite3,node-pty",
         "typecheck": "tsc --noEmit",
         "format": "oxfmt --write",
         "format:check": "oxfmt --check",
