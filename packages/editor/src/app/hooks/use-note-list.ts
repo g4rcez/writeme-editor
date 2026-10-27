@@ -1,14 +1,13 @@
 import { Modal } from "@g4rcez/components";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import type { Note } from "@/store/note";
 import { notificationRef } from "@/app/notification-ref";
 import { filterNotesByQuery } from "@/lib/note-search";
 import { useGlobalStore } from "@/store/global.store";
-import { repositories } from "@/store/repositories";
 
-export type NoteWithTags = Note & {
-    tagCount: number;
-};
+import { useNotesWithTags, type NoteWithTags } from "./use-notes-with-tags";
+
+export type { NoteWithTags } from "./use-notes-with-tags";
 
 type UseNoteListOptions = {
     noteType?: Note["noteType"];
@@ -16,52 +15,19 @@ type UseNoteListOptions = {
 };
 
 export function useNoteList(options: UseNoteListOptions = {}) {
-    const [state, dispatch] = useGlobalStore();
-    const [innerNotes, setInnerNotes] = useState<NoteWithTags[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [state, dispatch] = useGlobalStore((state) => ({ notes: state.notes, directory: state.directory }));
+    const { notes, loading, error, refresh } = useNotesWithTags(state.notes, state.directory);
+    const innerNotes = useMemo(() => options.noteType
+        ? notes.filter((note) => note.noteType === options.noteType)
+        : notes.filter((note) => note.noteType !== "template"), [notes, options.noteType]);
     const [search, setSearch] = useState("");
+    const deferredSearch = useDeferredValue(search);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const loadData = async (newNotes: Note[]) => {
-        setLoading(true);
-        try {
-            const allHashtags = await repositories.hashtags.getAll();
-            const tagsMap = new Map<string, string[]>();
-            allHashtags.forEach((h) => {
-                if (!tagsMap.has(h.filename)) {
-                    tagsMap.set(h.filename, []);
-                }
-                tagsMap.get(h.filename)?.push(h.hashtag);
-            });
-
-            const filteredByProp = options.noteType
-                ? newNotes.filter((n: Note) => n.noteType === options.noteType)
-                : newNotes.filter((n: Note) => n.noteType !== "template");
-            const notesWithTags = filteredByProp.map((note: Note): NoteWithTags => {
-                const key = note.filePath || note.title;
-                const tags = Array.from(new Set([...note.tags, ...(tagsMap.get(key) ?? [])]));
-                return {
-                    ...note,
-                    tags: tags,
-                    tagCount: tags.length,
-                } as NoteWithTags;
-            });
-            setInnerNotes(notesWithTags);
-        } catch (error) {
-            console.error("Failed to load notes list:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadData(state.notes);
-    }, [state.notes, options.noteType]);
-
     const filteredNotes = useMemo(() => {
-        if (search.trim()) {
+        if (deferredSearch.trim()) {
             // Search results are already ordered by fzf compatibility.
-            return filterNotesByQuery(innerNotes, search);
+            return filterNotesByQuery(innerNotes, deferredSearch);
         }
 
         const result = innerNotes;
@@ -71,7 +37,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
             );
         }
         return result;
-    }, [innerNotes, search, options.noteType]);
+    }, [innerNotes, deferredSearch, options.noteType]);
 
     const toggleSelection = (id: string) => {
         setSelectedIds((prev) => {
@@ -162,6 +128,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         toggleSelection,
         handleBatchDelete,
         notes: innerNotes,
-        refresh: loadData,
+        refresh,
+        error,
     };
 }

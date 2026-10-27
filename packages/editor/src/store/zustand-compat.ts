@@ -3,6 +3,7 @@ import { createWithEqualityFn } from "zustand/traditional";
 
 type ReducerContext<State> = {
     state: () => State;
+    patch: (patch: Partial<State>) => void;
     props: () => {};
     initialState: State;
     previousState: () => State;
@@ -46,6 +47,7 @@ export function createZustandCompatStore<State extends object, Factories extends
 
     const context: ReducerContext<State> = {
         state: () => useStore.getState(),
+        patch: (patch) => applyPatch(patch),
         props: () => ({}),
         initialState,
         previousState: () => useStore.getState(),
@@ -53,7 +55,7 @@ export function createZustandCompatStore<State extends object, Factories extends
 
     const rawFactories = reducerFactory(context);
 
-    const applyPatch = (patch: unknown): void => {
+    function applyPatch(patch: unknown): void {
         if (!patch) {
             return;
         }
@@ -67,7 +69,7 @@ export function createZustandCompatStore<State extends object, Factories extends
         for (const entry of interceptor) {
             entry(state);
         }
-    };
+    }
 
     const dispatchers = {} as ReducerDispatchers<Factories>;
     for (const [method, dispatch] of Object.entries(rawFactories) as [

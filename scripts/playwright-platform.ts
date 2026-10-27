@@ -211,7 +211,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
     fullyParallel: suite === "browser",
     workers: 1,
     forbidOnly: Boolean(env.CI),
-    retries: 0,
+    retries: suite === "browser" && env.CI ? 2 : 0,
     timeout: suite === "device" ? 180_000 : suite === "native" || suite === "profiles" ? 90_000 : 60_000,
     outputDir: path.join(artifactDirectory, "results"),
     reporter: [

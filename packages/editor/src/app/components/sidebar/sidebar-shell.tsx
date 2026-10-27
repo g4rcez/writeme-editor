@@ -1,13 +1,8 @@
 import { Button } from "@g4rcez/components";
-import { FileSearchIcon, NotePencilIcon, RobotIcon } from "@phosphor-icons/react";
+import { FileSearchIcon, NotePencilIcon } from "@phosphor-icons/react";
 import { GearIcon } from "@phosphor-icons/react/dist/csr/Gear";
-import { CalendarDotsIcon } from "@phosphor-icons/react/dist/csr/CalendarDots";
-import { CheckSquareIcon } from "@phosphor-icons/react/dist/csr/CheckSquare";
 import { InfoIcon } from "@phosphor-icons/react/dist/csr/Info";
-import { ListBulletsIcon } from "@phosphor-icons/react/dist/csr/ListBullets";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { SidebarIcon } from "@phosphor-icons/react/dist/csr/Sidebar";
-import { TableIcon } from "@phosphor-icons/react/dist/csr/Table";
 import { useEffect, useMemo, type JSX } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
@@ -20,7 +15,6 @@ import { WritemeLogo } from "../logo";
 import { SidebarContent } from "./sidebar-content";
 
 type SidebarNavItemProps = {
-    icon: JSX.Element;
     label: string;
     active?: boolean;
     onClick: () => void;
@@ -33,18 +27,15 @@ type SidebarFooterTabProps = {
     onClick: () => void;
 };
 
-function SidebarNavItem({ icon, label, active, onClick }: SidebarNavItemProps): JSX.Element {
+function SidebarNavItem({ label, active, onClick }: SidebarNavItemProps): JSX.Element {
     return (
         <Button
             size="small"
             onClick={onClick}
             aria-current={active ? "page" : undefined}
-            className="w-full justify-start gap-2.5 border border-transparent px-2.5"
+            className="w-full justify-start border border-transparent px-2.5 text-sm"
             theme={active ? "ghost-primary" : "ghost-muted"}
         >
-            <span className="shrink-0" aria-hidden="true">
-                {icon}
-            </span>
             <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         </Button>
     );
@@ -68,9 +59,17 @@ function SidebarFooterTab({ icon, label, active, onClick }: SidebarFooterTabProp
 }
 
 export const SidebarShell = () => {
-    const [state, dispatch] = useGlobalStore();
-    const [layout, layoutDispatch] = useLayoutStore();
-    const [uiState] = useUIStore();
+    const [state, dispatch] = useGlobalStore((state) => ({
+        explorerRoot: state.explorerRoot,
+        directory: state.directory,
+        homedir: state.homedir,
+        noteCount: state.notes.length,
+    }));
+    const [layout, layoutDispatch] = useLayoutStore((state) => ({ activeActivity: state.activeActivity }));
+    const [uiState] = useUIStore((state) => ({
+        sidebarOpen: state.sidebarOpen,
+        tasksDialog: state.tasksDialog,
+    }));
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -125,7 +124,7 @@ export const SidebarShell = () => {
                             <div className="mb-2 flex items-center justify-between px-1">
                                 <h2 className="text-xs font-medium text-muted-foreground">Workspace</h2>
                                 <span className="font-mono text-[10px] text-muted-foreground/60">
-                                    {state.notes.length}
+                                    {state.noteCount}
                                 </span>
                             </div>
                             <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -152,7 +151,6 @@ export const SidebarShell = () => {
                             <SidebarNavItem
                                 active={location.pathname.startsWith("/notes")}
                                 label="All notes"
-                                icon={<NotePencilIcon size={15} />}
                                 onClick={() => {
                                     navigate("/notes");
                                     layoutDispatch.setActivity("explorer");
@@ -162,13 +160,11 @@ export const SidebarShell = () => {
                             <div className="writeme-search-mobile-nav md:hidden">
                                 <SidebarNavItem
                                     label="Search"
-                                    icon={<MagnifyingGlassIcon size={15} />}
                                     active={layout.activeActivity === "search"}
                                     onClick={() => layoutDispatch.setActivity("search")}
                                 />
                                 <SidebarNavItem
                                     label="Views"
-                                    icon={<TableIcon size={15} />}
                                     active={location.pathname.startsWith("/views")}
                                     onClick={() => {
                                         layoutDispatch.setActivity("views");
@@ -180,25 +176,21 @@ export const SidebarShell = () => {
                             <SidebarNavItem
                                 label="Today"
                                 active={location.pathname.startsWith("/today")}
-                                icon={<CalendarDotsIcon size={15} />}
                                 onClick={() => { navigate("/today"); uiDispatch.setSidebarOpen(false); }}
                             />
                             <SidebarNavItem
                                 label="Open tasks"
                                 active={location.pathname.startsWith("/tasks")}
-                                icon={<CheckSquareIcon size={15} />}
                                 onClick={() => { navigate("/tasks"); uiDispatch.setSidebarOpen(false); }}
                             />
                             <SidebarNavItem
                                 label="Tasks"
                                 active={uiState.tasksDialog.isOpen}
-                                icon={<ListBulletsIcon size={15} />}
                                 onClick={() => uiDispatch.openTasksDialog()}
                             />
                             {supportsAI() && (
                                 <SidebarNavItem
                                     label="Workspace AI"
-                                    icon={<RobotIcon size={15} />}
                                     active={location.pathname.startsWith("/chat")}
                                     onClick={() => {
                                         layoutDispatch.setActivity("ai");

@@ -13,6 +13,12 @@ export type MediaSource = {
     title?: string;
 };
 
+const revokeMediaSources = (sources: MediaSource[]) => {
+    for (const source of sources) {
+        if (source.src.startsWith("blob:")) URL.revokeObjectURL(source.src);
+    }
+};
+
 export type MediaPreviewState = {
     open: boolean;
     sources: MediaSource[];
@@ -94,6 +100,18 @@ const initialState: UISettings = {
     noteSaveStatuses: {},
 };
 
+type PersistedUISettings = Pick<UISettings, "contentWidth" | "focusMode" | "sidebarOpen">;
+
+function getPersistedSettings(state: UISettings): PersistedUISettings {
+    return {
+        contentWidth: state.contentWidth,
+        focusMode: state.focusMode,
+        sidebarOpen: state.sidebarOpen,
+    };
+}
+
+let lastPersistedSettings = getPersistedSettings(initialState);
+
 export const useUIStore = createZustandCompatStore(
     initialState,
     (get: { state: () => UISettings }) => ({
@@ -120,41 +138,42 @@ export const useUIStore = createZustandCompatStore(
         setMediaPreview: (state: Partial<MediaPreviewState>) => ({
             mediaPreview: { ...get.state().mediaPreview, ...state },
         }),
-        openMediaPreview: (sources: MediaSource[], index = 0) => ({
-            mediaPreview: { open: true, sources, index },
-        }),
-        closeMediaPreview: () => ({
-            mediaPreview: { ...get.state().mediaPreview, open: false },
-        }),
+        openMediaPreview: (sources: MediaSource[], index = 0) => {
+            revokeMediaSources(get.state().mediaPreview.sources);
+            return { mediaPreview: { open: true, sources, index } };
+        },
+        closeMediaPreview: () => {
+            revokeMediaSources(get.state().mediaPreview.sources);
+            return { mediaPreview: { open: false, sources: [], index: 0 } };
+        },
         openTasksDialog: () => ({ tasksDialog: { isOpen: true } }),
         closeTasksDialog: () => ({ tasksDialog: { isOpen: false } }),
         openGitDialog: () => ({ gitDialog: { open: true } }),
         closeGitDialog: () => ({ gitDialog: { open: false } }),
         setParsingContent: (value: boolean) => ({ parsingContent: value }),
-        setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus, noteId?: string) => ({
-            editorSaveStatus,
-            ...(noteId ? { noteSaveStatuses: { ...get.state().noteSaveStatuses, [noteId]: editorSaveStatus } } : {}),
-        }),
+        setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus, noteId?: string) => {
+            const state = get.state();
+            const noteStatusChanged = Boolean(noteId && state.noteSaveStatuses[noteId] !== editorSaveStatus);
+            if (state.editorSaveStatus === editorSaveStatus && !noteStatusChanged) return;
+            return {
+                editorSaveStatus,
+                ...(noteStatusChanged && noteId
+                    ? { noteSaveStatuses: { ...state.noteSaveStatuses, [noteId]: editorSaveStatus } }
+                    : {}),
+            };
+        },
     }),
     {
         interceptor: [
             (state: UISettings) => {
-                const {
-                    error: _error,
-                    alert: _alert,
-                    prompt: _prompt,
-                    confirm: _confirm,
-                    findReplace: _findReplace,
-                    mediaPreview: _mediaPreview,
-                    tasksDialog: _tasksDialog,
-                    gitDialog: _gitDialog,
-                    parsingContent: _parsingContent,
-                    editorSaveStatus: _editorSaveStatus,
-                    noteSaveStatuses: _noteSaveStatuses,
-                    ...toPersist
-                } = state;
+                const toPersist = getPersistedSettings(state);
+                if (
+                    toPersist.contentWidth === lastPersistedSettings.contentWidth &&
+                    toPersist.focusMode === lastPersistedSettings.focusMode &&
+                    toPersist.sidebarOpen === lastPersistedSettings.sidebarOpen
+                ) return;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
-                return state;
+                lastPersistedSettings = toPersist;
             },
         ],
     },

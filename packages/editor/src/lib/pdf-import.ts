@@ -3,6 +3,7 @@ import { repositories } from "@/store/repositories";
 import { db } from "@/store/repositories/browser/dexie-db";
 import { SettingsService } from "@/store/settings";
 import { resolveLocalAssetCandidates } from "./attachment-paths";
+import { ensureReadItLaterFrontmatter } from "./read-it-later-library";
 import { PAPER_WIDTH, type FreehandNotebook } from "./freehand-note";
 import { isElectron } from "./is-electron";
 import { isMobile } from "./platform";
@@ -21,7 +22,7 @@ async function encodeFile(file: File): Promise<string> {
     });
 }
 
-export async function importPdfNote(file: File, title: string): Promise<Note> {
+export async function importPdfNote(file: File, title: string, options?: { readItLater?: boolean }): Promise<Note> {
     const data = new Uint8Array(await file.arrayBuffer());
     const loading = loadPdfDocument(data.slice());
     const note = Note.new(title, "", NoteType.pdf);
@@ -51,7 +52,9 @@ export async function importPdfNote(file: File, title: string): Promise<Note> {
             await db.pdfAssets.add({ id: note.id, data: isMobile() ? data : new Blob([data], { type: "application/pdf" }) });
         }
         stored = true;
-        note.content = buildPdfNoteContent({ version: 1, paper: "blank", pages, pdf: { source, filename: file.name } });
+        const content = buildPdfNoteContent({ version: 1, paper: "blank", pages, pdf: { source, filename: file.name } });
+        note.content = options?.readItLater ? ensureReadItLaterFrontmatter(content) : content;
+        if (options?.readItLater) note.metadata = { ...note.metadata, readItLater: true };
         return await repositories.notes.save(note);
     } catch (reason) {
         const saved = stored ? await repositories.notes.getOne(note.id).catch(() => undefined) : undefined;

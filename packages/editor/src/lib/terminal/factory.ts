@@ -10,7 +10,7 @@ function createWebTerminalBackend(): WebTerminalBackend {
 
     registry.register("list-notes", async (_, term) => {
         try {
-            const notes = await repositories.notes.getAll({ limit: 50 });
+            const notes = await repositories.notes.getRecentNotes(50);
             term.writeln(`\x1b[1;36mFound ${notes.length} notes:\x1b[0m`);
             for (const note of notes) {
                 term.writeln(`  \x1b[32m${note.id}\x1b[0m: ${note.title}`);

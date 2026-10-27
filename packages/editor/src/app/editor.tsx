@@ -3,11 +3,11 @@ import { CircleNotchIcon } from "@phosphor-icons/react";
 import { EditorContent, EditorContext, useEditor, type Editor as TipTapEditor } from "@tiptap/react";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "@/ipc/copy-event";
-import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
+import { getEditorMarkdown, setEditorAllNotesSource, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { isRelativeLink } from "@/lib/link-utils";
-import { getMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
+import { createMarkdownWorker, HARD_LIMIT, LARGE_MARKDOWN_THRESHOLD, WARN_THRESHOLD } from "@/lib/markdown-worker";
 import { applyMarkdownWorkerChunk } from "@/lib/markdown-worker/ingest";
 import { MOBILE_PAUSE_EVENT } from "@/lib/mobile-runtime";
 import { getCommentId } from "@/lib/note-comments";
@@ -15,16 +15,17 @@ import { registerNoteLinkRepairHandler, repairTiptapLink } from "@/lib/note-link
 import { findCompatibleNote } from "@/lib/note-lookup";
 import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
-import { useGlobalStore } from "@/store/global.store";
+import { globalState as readGlobalState, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
-import { uiDispatch, useUIStore } from "@/store/ui.store";
+import { uiDispatch } from "@/store/ui.store";
 import "katex/dist/katex.min.css";
 import { isLatexFilePath } from "@/types/workspace-files";
 import type { SearchReplaceStorage } from "./extensions/search-replace";
 import type { WritingEditorAdapter } from "./writing-assistant/types";
 import { NoteComments } from "./comments/note-comments";
+import { EditorTableControls } from "./components/editor-table-controls";
 import { FormattingToolbar } from "./components/formatting-toolbar";
 import {
     editorActionsGlobalRef,
@@ -108,8 +109,14 @@ type WorkerOutMessage =
       }
     | { type: "error"; gen: number; error: string };
 
-const ric: (cb: () => void) => void =
-    typeof requestIdleCallback === "undefined" ? (cb) => setTimeout(cb, 0) : (cb) => requestIdleCallback(cb);
+function scheduleEditorIdle(callback: () => void): () => void {
+    if (typeof requestIdleCallback === "function") {
+        const handle = requestIdleCallback(callback);
+        return () => { if (typeof cancelIdleCallback === "function") cancelIdleCallback(handle); };
+    }
+    const handle = setTimeout(callback, 0);
+    return () => clearTimeout(handle);
+}
 
 type GlobalDispatch = ReturnType<typeof useGlobalStore>[1];
 export type EditorMode = "formatted" | "markdown";
@@ -232,14 +239,14 @@ const TiptapEditorCore = memo(
             error: vimConfigurationError,
             loading: vimConfigurationLoading,
         } = useVimConfiguration();
-        const [globalState] = useGlobalStore();
         const noteRef = useRef(note);
         const persistedNoteRef = useRef(note);
         const dirtyRef = useRef(false);
         const [saveError, setSaveError] = useState<string | null>(null);
         const generationRef = useRef(0);
         const triggerWorkerParseRef = useRef<(text: string, isNoteContent?: boolean) => Promise<void>>(async () => {});
-        const [uiState] = useUIStore();
+        const [parsingContent, setParsingContent] = useState(false);
+        const cancelParseRef = useRef<() => void>(() => {});
         const sourceContent = content ?? "";
         const deferInitialContent =
             sourceContent.length > LARGE_MARKDOWN_THRESHOLD && sourceContent.length <= HARD_LIMIT;
@@ -248,7 +255,7 @@ const TiptapEditorCore = memo(
         const isSettingContent = useRef(deferInitialContent);
         const failedNoteContentRef = useRef<string | null>(null);
         const [contentLoadError, setContentLoadError] = useState<string | null>(null);
-        const lastEditorContentRef = useRef(initialEditorContent);
+        const lastEditorContentRef = useRef<string | null>(initialEditorContent);
         const initialActiveRef = useRef(active);
         const activateRef = useRef<() => void>(() => {});
         const [parseProgress, setParseProgress] = useState(0);
@@ -270,11 +277,10 @@ const TiptapEditorCore = memo(
             parseOptions: { preserveWhitespace: "full" },
             onUpdate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, noteRef.current);
-                lastEditorContentRef.current = getEditorMarkdown(currentEditor);
+                lastEditorContentRef.current = null;
             },
             onCreate: ({ editor: currentEditor }) => {
                 setEditorNote(currentEditor, note);
-                lastEditorContentRef.current = getEditorMarkdown(currentEditor);
             },
             editorProps: {
                 scrollThreshold: { top: 0, right: 0, bottom: 80, left: 0 },
@@ -337,7 +343,7 @@ const TiptapEditorCore = memo(
                             if (currentNote) {
                                 const fileName = href?.split("/").pop()?.replace(/\.md$/i, "");
                                 const target = findCompatibleNote(
-                                    globalState.notes,
+                                    readGlobalState().notes,
                                     isMentionLink ? mentionTarget : (fileName ?? href ?? ""),
                                 );
                                 if (target) {
@@ -545,13 +551,18 @@ const TiptapEditorCore = memo(
         useCopyEvents(editor);
 
         triggerWorkerParseRef.current = async (text: string, isNoteContent = false) => {
-            if (!editor) return;
+            if (!editor || editor.isDestroyed) return;
+            const myGen = ++generationRef.current;
+            cancelParseRef.current();
+            setParsingContent(false);
+            const current = (): boolean => generationRef.current === myGen && !editor.isDestroyed;
             const failNoteLoad = (message: string): void => {
-                if (!isNoteContent || editor.isDestroyed) return;
+                if (!isNoteContent || !current()) return;
                 generationRef.current += 1;
+                cancelParseRef.current();
                 failedNoteContentRef.current = text;
                 isSettingContent.current = true;
-                uiDispatch.setParsingContent(false);
+                setParsingContent(false);
                 setParseProgress(0);
                 editor.setEditable(false);
                 setContentLoadError(message);
@@ -571,15 +582,14 @@ const TiptapEditorCore = memo(
                         onCancel: () => resolve(false),
                     });
                 });
+                if (!current()) return;
                 if (!confirmed) {
                     failNoteLoad("Loading was canceled. The saved note is unchanged. Reload to try again.");
                     return;
                 }
             }
-            if (editor.isDestroyed) return;
-            generationRef.current += 1;
-            const myGen = generationRef.current;
-            uiDispatch.setParsingContent(true);
+            if (!current()) return;
+            setParsingContent(true);
             setParseProgress(0);
             isSettingContent.current = true;
             editor.setEditable(false);
@@ -590,110 +600,100 @@ const TiptapEditorCore = memo(
             let firstChunk = true;
             let worker: Worker;
             const recover = (message?: string): void => {
-                if (generationRef.current !== myGen || editor.isDestroyed) return;
+                if (!current()) return;
+                cancelParseRef.current();
                 if (isNoteContent) {
-                    failNoteLoad(
-                        message ?? "Could not load the saved note. Its content is unchanged. Reload to try again.",
-                    );
+                    failNoteLoad(message ?? "Could not load the saved note. Its content is unchanged. Reload to try again.");
                     return;
                 }
                 generationRef.current += 1;
-                uiDispatch.setParsingContent(false);
+                setParsingContent(false);
                 setParseProgress(0);
                 isSettingContent.current = false;
-                editor.setEditable(true);
+                editor.setEditable(!readonly);
             };
-            const finalize = () => {
-                if (generationRef.current !== myGen || editor.isDestroyed) return;
+            const finalize = (): void => {
+                if (!current()) return;
+                cancelParseRef.current();
                 isSettingContent.current = false;
                 failedNoteContentRef.current = null;
                 setContentLoadError(null);
-                uiDispatch.setParsingContent(false);
+                setParsingContent(false);
                 setParseProgress(0);
-                editor.setEditable(true);
+                editor.setEditable(!readonly);
                 const tr = editor.state.tr.setMeta("shikiSuspended", false).setMeta("shikiPluginForceDecoration", true);
                 editor.view.dispatch(tr);
             };
-
             try {
-                worker = getMarkdownWorker();
+                worker = createMarkdownWorker();
             } catch {
                 recover("Could not start the Markdown worker. The saved note is unchanged. Reload to try again.");
                 return;
             }
 
-            if (!editor.isDestroyed) {
-                editor.view.dispatch(editor.state.tr.setMeta("shikiSuspended", true));
-            }
-
-            const watchdogId = setTimeout(() => {
-                worker.removeEventListener("message", handler);
+            let stopped = false;
+            const idleJobs = new Set<() => void>();
+            const watchdog = setTimeout(() => {
                 recover("Loading timed out. The saved note is unchanged. Reload to try again.");
             }, 120_000);
+            const cleanup = (): void => {
+                if (stopped) return;
+                stopped = true;
+                clearTimeout(watchdog);
+                worker.removeEventListener("message", handler);
+                worker.removeEventListener("error", workerError);
+                worker.terminate();
+                for (const cancel of idleJobs) cancel();
+                idleJobs.clear();
+            };
+            cancelParseRef.current = cleanup;
 
-            function handler(e: MessageEvent<WorkerOutMessage>) {
-                if (generationRef.current !== myGen || editor.isDestroyed) {
-                    worker.removeEventListener("message", handler);
+            function handler(event: MessageEvent<WorkerOutMessage>): void {
+                if (stopped || !current() || event.data.gen !== myGen) return;
+                if (event.data.type === "start") {
+                    totalChunks = event.data.totalChunks;
+                    if (totalChunks === 0) finalize();
                     return;
                 }
-                if (e.data.gen !== myGen) return;
-
-                if (e.data.type === "start") {
-                    totalChunks = e.data.totalChunks;
-                    return;
-                }
-
-                if (e.data.type === "error") {
-                    clearTimeout(watchdogId);
-                    worker.removeEventListener("message", handler);
+                if (event.data.type === "error") {
                     recover("Could not parse the saved note. Its content is unchanged. Reload to try again.");
                     return;
                 }
-
-                if (e.data.type === "chunk") {
-                    const { html } = e.data;
-                    ric(() => {
-                        if (generationRef.current !== myGen || editor.isDestroyed) return;
-
-                        applyMarkdownWorkerChunk(editor, html, firstChunk);
-                        firstChunk = false;
-
-                        receivedChunks++;
-                        if (totalChunks > 0) {
-                            setParseProgress(Math.round((receivedChunks / totalChunks) * 100));
+                if (event.data.type === "chunk") {
+                    const { html } = event.data;
+                    const cancel = scheduleEditorIdle(() => {
+                        idleJobs.delete(cancel);
+                        if (stopped || !current()) return;
+                        try {
+                            applyMarkdownWorkerChunk(editor, html, firstChunk);
+                            firstChunk = false;
+                            receivedChunks += 1;
+                            if (totalChunks > 0) setParseProgress(Math.round(receivedChunks / totalChunks * 100));
+                            if (receivedChunks >= totalChunks && totalChunks > 0) finalize();
+                        } catch {
+                            recover("Could not insert parsed content. The saved note is unchanged. Reload to try again.");
                         }
-
-                        if (receivedChunks >= totalChunks && totalChunks > 0) {
-                            clearTimeout(watchdogId);
-                            worker.removeEventListener("message", handler);
-                            finalize();
-                        }
+                    });
+                    idleJobs.add(cancel);
+                }
+            }
+            function workerError(event: ErrorEvent): void {
+                event.preventDefault();
+                if (stopped || !current()) return;
+                recover("The Markdown worker failed. The saved note is unchanged. Reload to try again.");
+                if (!isNoteContent && !editor.isDestroyed) {
+                    (editor.commands as any).setContent(text, {
+                        contentType: "markdown",
+                        parseOptions: { preserveWhitespace: "full" },
                     });
                 }
             }
-
-            worker.onerror = () => {
-                clearTimeout(watchdogId);
-                worker.removeEventListener("message", handler);
-                if (generationRef.current !== myGen || editor.isDestroyed) return;
-                if (isNoteContent) {
-                    recover("The Markdown worker failed. The saved note is unchanged. Reload to try again.");
-                    return;
-                }
-                recover();
-                (editor.commands as any).setContent(text, {
-                    contentType: "markdown",
-                    parseOptions: { preserveWhitespace: "full" },
-                });
-                isSettingContent.current = false;
-            };
-
             worker.addEventListener("message", handler);
+            worker.addEventListener("error", workerError);
+            editor.view.dispatch(editor.state.tr.setMeta("shikiSuspended", true));
             try {
                 worker.postMessage({ text, gen: myGen });
             } catch {
-                clearTimeout(watchdogId);
-                worker.removeEventListener("message", handler);
                 recover("Could not send the saved note to the Markdown worker. Its content is unchanged.");
             }
         };
@@ -712,6 +712,15 @@ const TiptapEditorCore = memo(
             dirtyRef.current = false;
             persistedNoteRef.current = note;
             if (content === persistedContentRef.current) return;
+            if (content.length <= LARGE_MARKDOWN_THRESHOLD) {
+                generationRef.current += 1;
+                cancelParseRef.current();
+                setParsingContent(false);
+                setParseProgress(0);
+                if (isSettingContent.current) {
+                    editor.view.dispatch(editor.state.tr.setMeta("shikiSuspended", false).setMeta("shikiPluginForceDecoration", true));
+                }
+            }
             if (content === currentMarkdown || content === lastEditorContentRef.current) {
                 lastEditorContentRef.current = currentMarkdown;
                 failedNoteContentRef.current = null;
@@ -753,7 +762,7 @@ const TiptapEditorCore = memo(
         }, [editor, note]);
 
         useEffect(() => {
-            if (editor) setEditorAllNotes(editor, globalState.notes);
+            if (editor) setEditorAllNotesSource(editor, () => readGlobalState().notes);
         }, [editor]);
 
         useEditorScrollMemory(id, editor);
@@ -864,7 +873,8 @@ const TiptapEditorCore = memo(
 
         useEffect(() => {
             return () => {
-                uiDispatch.setParsingContent(false);
+                generationRef.current += 1;
+                cancelParseRef.current();
             };
         }, []);
 
@@ -874,10 +884,10 @@ const TiptapEditorCore = memo(
                 data-research-source={note?.noteType === "read-it-later" ? note.id : undefined}
                 className="writeme-editor relative"
                 style={{ fontSize: `${settings.editorFontSize}px` }}
-                aria-busy={uiState.parsingContent ? "true" : "false"}
+                aria-busy={parsingContent ? "true" : "false"}
                 onFocusCapture={() => activateRef.current()}
             >
-                {uiState.parsingContent && (
+                {parsingContent && (
                     <div
                         role="status"
                         aria-live="polite"
@@ -969,7 +979,7 @@ const TiptapEditorCore = memo(
                             adapter={writingAssistantBinding.adapter}
                             editor={writingAssistantBinding.editor}
                             selectionContext={writingAssistantSelectionContext}
-                            disabled={Boolean(readonly || uiState.parsingContent || isSettingContent.current)}
+                            disabled={Boolean(readonly || parsingContent || isSettingContent.current)}
                         />
                     )}
                     {vimMode && vimConfigurationLoading ? <output>Loading Vim configuration...</output> : null}
@@ -988,6 +998,7 @@ const TiptapEditorCore = memo(
                             {saveError}
                         </p>
                     ) : null}
+                    <EditorTableControls editor={editor} disabled={Boolean(readonly || parsingContent)} />
                     <EditorContent editor={editor} className="writeme-block" />
                 </EditorContext.Provider>
             </div>
@@ -1180,18 +1191,11 @@ const InnerEditor = (props: {
     active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
-    const [state, dispatch] = useGlobalStore();
+    const [state, dispatch] = useGlobalStore((state) => ({ theme: state.theme }));
     const onSaveRef = useRef(props.onSave);
     useEffect(() => {
         onSaveRef.current = props.onSave;
     }, [props.onSave]);
-
-    useEffect(() => {
-        if (props.mode !== "formatted") return;
-        if (editorGlobalRef.current) {
-            setEditorAllNotes(editorGlobalRef.current, state.notes);
-        }
-    }, [props.mode, state.notes]);
 
     if (props.mode === "markdown") {
         return (

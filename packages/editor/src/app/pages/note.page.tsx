@@ -283,8 +283,12 @@ function FavoriteNoteButton({
 }
 
 export default function NotePage() {
-    const [uiState] = useUIStore();
-    const [state, dispatch] = useGlobalStore();
+    const [uiState] = useUIStore((state) => ({ error: state.error }));
+    const [state, dispatch] = useGlobalStore((state) => ({
+        note: state.note,
+        notes: state.notes,
+        tabs: state.tabs,
+    }));
     const params = useParams<{ noteId: string }>();
     const id = params.noteId;
     const note = state.note;
@@ -377,7 +381,8 @@ export default function NotePage() {
                 return;
             }
 
-            const note = await repositories.notes.getOne(id);
+            const cached = state.notes.find((note) => note.id === id);
+            const note = cached ?? await repositories.notes.getOne(id);
             if (cancelled) return;
 
             if (!note) {
@@ -395,7 +400,7 @@ export default function NotePage() {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, id, state.note?.id]);
+    }, [dispatch, id, state.note?.id, state.notes]);
 
     useEffect(() => {
         if (!isElectron() || !note?.filePath) return;
@@ -594,21 +599,19 @@ export default function NotePage() {
                     />
                     {note.url ? (
                         <Link
+                            to={note.url}
                             target="_blank"
                             className="link truncate text-sm"
-                            to={note.url}
                             rel="noopener noreferrer nofollow"
                         >
                             {note.url}
                         </Link>
                     ) : null}
-                    <div className="writeme-note-metadata">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground writeme-note-metadata">
+                        <Tag size="tiny">Read it later</Tag>
                         <span>Reading list</span>
-                        {note.url ? <span className="truncate">/ {getUrlLabel(note.url)}</span> : null}
-                        <Tag size="small">Read it later</Tag>
-                        <span aria-hidden="true">·</span>
+                        {note.url ? <span className="truncate">{getUrlLabel(note.url)}</span> : null}
                         <time dateTime={note.createdAt.toISOString()}>{Dates.yearMonthDay(note.createdAt)}</time>
-                        <span aria-hidden="true">·</span>
                         <i>{getReadingTime(note.content).formatted}</i>
                     </div>
                     <SendResearchExcerpt key={note.id} source={{ kind: "article", note }} />

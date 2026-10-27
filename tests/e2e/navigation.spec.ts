@@ -1,7 +1,6 @@
 import { expect, goHome, test } from "./fixtures";
 
 test.describe("Navigation", () => {
-
     test("All notes link goes to notes list", async ({ cleanPage: page }) => {
         await goHome(page);
         await page.getByRole("link", { name: "All notes" }).click();
@@ -20,6 +19,28 @@ test.describe("Navigation", () => {
         await page.goto("/read-it-later", { waitUntil: "domcontentloaded" });
         await expect(page).toHaveURL(/\/read-it-later$/);
         await expect(page.getByRole("heading", { name: "Read It Later", exact: true })).toBeVisible();
+    });
+
+    test("Read It Later saves a video and moves it between sections", async ({ cleanPage: page }) => {
+        await page.goto("/read-it-later", { waitUntil: "domcontentloaded" });
+        await expect(page.getByRole("heading", { name: "Read It Later", exact: true })).toBeVisible();
+        await page.getByRole("button", { name: "Save a link or video" }).click();
+
+        const dialog = page.getByRole("dialog", { name: /Read it later/i });
+        await dialog.getByPlaceholder("https://example.com").fill("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        await dialog.getByRole("button", { name: "Create Note" }).click();
+        await expect(page).toHaveURL(/\/note\/[^/]+$/);
+
+        await page.goto("/read-it-later", { waitUntil: "domcontentloaded" });
+        const savedItem = page.getByRole("link", { name: "YouTube video", exact: true });
+        await expect(savedItem).toBeVisible();
+        await page.getByRole("button", { name: "Mark YouTube video read" }).click();
+        await expect(page.getByText("Read", { exact: true })).toBeVisible();
+        await page.getByRole("button", { name: "Move to Later" }).click();
+        await expect(savedItem).toHaveCount(0);
+
+        await page.getByRole("tab", { name: /Later/ }).click();
+        await expect(savedItem).toBeVisible();
     });
 
     test("create-note dialog closes on Escape", async ({ cleanPage: page }) => {

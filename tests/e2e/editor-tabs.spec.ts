@@ -1,6 +1,8 @@
 import { createNote, expect, goHome, test } from "./fixtures";
 
 const tabSelector = "[data-tab-id]";
+type TabPersistenceProbe = { started: boolean; release: () => void; restore: () => void };
+type ProbeWindow = Window & { tabPersistenceProbe?: TabPersistenceProbe };
 
 test.describe("Note tab lifecycle", () => {
     test.beforeEach(async ({ cleanPage }) => {
@@ -29,6 +31,73 @@ test.describe("Note tab lifecycle", () => {
         await page.reload();
         await expect(tabs).toHaveText(["First document", "Second document"]);
         await expect(tabs.last()).toHaveAttribute("aria-current", "page");
+    });
+
+    test("closes and reopens a tab while deletion is pending, then restores the final tab set", async ({
+        cleanPage: page,
+    }) => {
+        const deferredUrl = await createNote(page, "Deferred document", "Deferred document content.");
+        await createNote(page, "Active document", "Active document content.");
+        await page.evaluate(async () => {
+            const { repositories, flushTabPersistence } = (await import(
+                String("/packages/editor/src/store/global.store.ts")
+            )) as typeof import("../../packages/editor/src/store/global.store");
+            await flushTabPersistence();
+            let release = (): void => {};
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            const originalDelete = repositories.tabs.delete.bind(repositories.tabs);
+            const probe: TabPersistenceProbe = {
+                started: false,
+                release,
+                restore: () => {
+                    repositories.tabs.delete = originalDelete;
+                },
+            };
+            (window as ProbeWindow).tabPersistenceProbe = probe;
+            repositories.tabs.delete = async (id) => {
+                probe.started = true;
+                await pending;
+                return originalDelete(id);
+            };
+        });
+        try {
+            await page.getByRole("button", { name: "Close Deferred document", exact: true }).click();
+            await expect(page.locator(tabSelector)).toHaveText(["Active document"]);
+            await expect
+                .poll(() => page.evaluate(() => (window as ProbeWindow).tabPersistenceProbe?.started))
+                .toBe(true);
+            expect(
+                await page.evaluate(() => {
+                    const event = new Event("beforeunload", { cancelable: true });
+                    window.dispatchEvent(event);
+                    return event.defaultPrevented;
+                }),
+            ).toBe(true);
+            await page
+                .getByRole("list", { name: "Notes", exact: true })
+                .getByRole("button", { name: /^Deferred document / })
+                .click();
+            await expect(page).toHaveURL(deferredUrl);
+            await expect(page.locator(tabSelector)).toHaveText(["Active document", "Deferred document"]);
+        } finally {
+            await page.evaluate(async () => {
+                const probe = (window as ProbeWindow).tabPersistenceProbe;
+                probe?.release();
+                probe?.restore();
+                const { flushTabPersistence } = (await import(
+                    String("/packages/editor/src/store/global.store.ts")
+                )) as typeof import("../../packages/editor/src/store/global.store");
+                await flushTabPersistence();
+                delete (window as ProbeWindow).tabPersistenceProbe;
+            });
+        }
+        await page.reload();
+        await expect(page.locator(tabSelector)).toHaveText(["Active document", "Deferred document"]);
+        await expect(page.getByRole("textbox", { name: "Note editor", exact: true })).toHaveText(
+            "Deferred document content.",
+        );
     });
 
     test("closing a background tab leaves the active note intact and stays closed after reload", async ({

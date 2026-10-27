@@ -1,4 +1,5 @@
 import { findDailyQuickNote } from "@/lib/journal-date";
+import { mapConcurrent } from "@/lib/map-concurrent";
 import type { NoteSnapshot } from "../../note-history";
 import type { EntityBase } from "../../repository";
 import type { ITabRepository } from "../entities/tab";
@@ -11,6 +12,8 @@ import { type INoteRepository, Note, NoteType, type NoteDeletionOutcome } from "
 import { SettingsService } from "../../settings";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 import { BaseRepository } from "../base.repository";
+
+const WORKSPACE_READ_CONCURRENCY = 16;
 
 type WorkspaceFile = {
     name: string;
@@ -179,6 +182,69 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return Note.parse({ ...metadata, content: metadata.content || "" });
     }
 
+    /** Reads one workspace file and keeps its SQLite metadata row in sync. Returns null when it cannot be loaded. */
+    private async loadWorkspaceFile(file: WorkspaceFile, metadata: Note | undefined): Promise<[string, Note] | null> {
+        if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
+
+        let readResult: Awaited<ReturnType<typeof window.electronAPI.fs.readFile>>;
+        try {
+            readResult = await window.electronAPI.fs.readFile(file.path);
+        } catch {
+            return null;
+        }
+        if (!readResult.success || typeof readResult.content !== "string") return null;
+
+        const fileModified = new Date(readResult.lastModified ?? Date.now());
+        const lastModified = Number.isNaN(fileModified.getTime()) ? new Date() : fileModified;
+        const fileSize =
+            typeof readResult.fileSize === "number" ? readResult.fileSize : readResult.content.length;
+
+        if (metadata) {
+            const previousLastSynced = metadata.lastSynced ? new Date(metadata.lastSynced).getTime() : null;
+            const metadataChanged =
+                metadata.fileSize !== fileSize || previousLastSynced !== lastModified.getTime();
+            const nextMetadata = {
+                ...metadata,
+                content: readResult.content,
+                fileSize,
+                lastSynced: lastModified,
+            };
+            if (previousLastSynced === null || lastModified.getTime() > previousLastSynced) {
+                nextMetadata.updatedAt = lastModified;
+            }
+
+            const note = Note.parse(nextMetadata);
+            if (metadataChanged) {
+                const { content: _, ...persistedMetadata } = nextMetadata;
+                try {
+                    await this.adapter.save(this.collection, persistedMetadata);
+                    await this.saveSnapshot(note.id, readResult.content, lastModified);
+                } catch (error) {
+                    console.error(`Failed to update workspace note metadata ${file.path}:`, error);
+                }
+            }
+            return [file.path, note];
+        }
+
+        const note = Note.parse({
+            title: getWorkspaceDocumentTitle(file.name),
+            content: readResult.content,
+            filePath: file.path,
+            fileSize,
+            createdAt: lastModified,
+            updatedAt: lastModified,
+            lastSynced: lastModified,
+            noteType: isTaskNoteMarkdown(readResult.content) ? NoteType.task : NoteType.note,
+        });
+        try {
+            await this.save(note);
+            return [file.path, note];
+        } catch (error) {
+            console.error(`Failed to index workspace note ${file.path}:`, error);
+            return null;
+        }
+    }
+
     private async readWorkspaceNotes(directory: string, existing: readonly Note[]): Promise<WorkspaceNotesResult> {
         let directoryResult: Awaited<ReturnType<typeof window.electronAPI.fs.readDirRecursive>>;
         try {
@@ -206,69 +272,8 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         const workspaceFiles = directoryResult.files.flatMap((file: WorkspaceFile) =>
             isWorkspaceDocumentFile(file.path) ? [file] : [],
         );
-        const loadedNotes = await Promise.all(
-            workspaceFiles.map(async (file: WorkspaceFile): Promise<[string, Note] | null> => {
-                const metadata = existingByPath.get(canonicalImportPath(file.path));
-                if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
-
-                let readResult: Awaited<ReturnType<typeof window.electronAPI.fs.readFile>>;
-                try {
-                    readResult = await window.electronAPI.fs.readFile(file.path);
-                } catch {
-                    return null;
-                }
-                if (!readResult.success || typeof readResult.content !== "string") return null;
-
-                const fileModified = new Date(readResult.lastModified ?? Date.now());
-                const lastModified = Number.isNaN(fileModified.getTime()) ? new Date() : fileModified;
-                const fileSize =
-                    typeof readResult.fileSize === "number" ? readResult.fileSize : readResult.content.length;
-
-                if (metadata) {
-                    const previousLastSynced = metadata.lastSynced ? new Date(metadata.lastSynced).getTime() : null;
-                    const metadataChanged =
-                        metadata.fileSize !== fileSize || previousLastSynced !== lastModified.getTime();
-                    const nextMetadata = {
-                        ...metadata,
-                        content: readResult.content,
-                        fileSize,
-                        lastSynced: lastModified,
-                    };
-                    if (previousLastSynced === null || lastModified.getTime() > previousLastSynced) {
-                        nextMetadata.updatedAt = lastModified;
-                    }
-
-                    const note = Note.parse(nextMetadata);
-                    if (metadataChanged) {
-                        const { content: _, ...persistedMetadata } = nextMetadata;
-                        try {
-                            await this.adapter.save(this.collection, persistedMetadata);
-                            await this.saveSnapshot(note.id, readResult.content, lastModified);
-                        } catch (error) {
-                            console.error(`Failed to update workspace note metadata ${file.path}:`, error);
-                        }
-                    }
-                    return [file.path, note];
-                }
-
-                const note = Note.parse({
-                    title: getWorkspaceDocumentTitle(file.name),
-                    content: readResult.content,
-                    filePath: file.path,
-                    fileSize,
-                    createdAt: lastModified,
-                    updatedAt: lastModified,
-                    lastSynced: lastModified,
-                    noteType: isTaskNoteMarkdown(readResult.content) ? NoteType.task : NoteType.note,
-                });
-                try {
-                    await this.save(note);
-                    return [file.path, note];
-                } catch (error) {
-                    console.error(`Failed to index workspace note ${file.path}:`, error);
-                    return null;
-                }
-            }),
+        const loadedNotes = await mapConcurrent(workspaceFiles, WORKSPACE_READ_CONCURRENCY, (file) =>
+            this.loadWorkspaceFile(file, existingByPath.get(canonicalImportPath(file.path))),
         );
 
         return {
@@ -296,7 +301,16 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         }
     }
 
+    /**
+     * With `limit`, returns the most recently updated notes without scanning the workspace: the ordering comes from the
+     * SQLite metadata (a SQL `LIMIT`), and only those few files are read. Templates are not included in that mode.
+     */
     override async getAll(query?: { limit?: number }): Promise<Note[]> {
+        if (query?.limit) {
+            const recent = await this.getRecentNotes(query.limit);
+            const hydrated = await mapConcurrent(recent, 8, (note) => this.getOne(note.id));
+            return hydrated.filter((note): note is Note => note !== null);
+        }
         let all = await this.adapter.getAll<Note>(this.collection);
         const settings = SettingsService.load();
         const mode = getStorageMode(settings.directory);
@@ -334,11 +348,51 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             if (!hydratedPaths.has(canonicalImportPath(filePath))) notes.push(note);
         }
 
-        const sorted = notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
-        if (query?.limit) {
-            return sorted.slice(0, query.limit);
+        return notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
+    }
+
+    /**
+     * Brings an already loaded notes list up to date after files were added or removed, reading only the files that
+     * are new. Returns null when the workspace cannot be listed (callers keep what they have).
+     */
+    async syncWorkspaceDelta(known: readonly Note[]): Promise<Note[] | null> {
+        const settings = SettingsService.load();
+        const directory = getStorageMode(settings.directory) === "filesystem" ? settings.directory : null;
+        if (!directory) return null;
+        let listing: Awaited<ReturnType<typeof window.electronAPI.fs.readDirRecursive>>;
+        try {
+            listing = await window.electronAPI.fs.readDirRecursive(directory);
+        } catch (error) {
+            console.error("Failed to list workspace notes:", error);
+            return null;
         }
-        return sorted;
+        if (!listing.success) return null;
+
+        const files = listing.files.filter((file: WorkspaceFile) => isWorkspaceDocumentFile(file.path));
+        const onDisk = new Set(files.map((file: WorkspaceFile) => canonicalImportPath(file.path)));
+        const loaded = new Set<string>();
+        for (const note of known) {
+            if (note.filePath && isWorkspaceDocumentFile(note.filePath)) loaded.add(canonicalImportPath(note.filePath));
+        }
+        const added = files.filter((file: WorkspaceFile) => !loaded.has(canonicalImportPath(file.path)));
+
+        let addedNotes: Note[] = [];
+        if (added.length > 0) {
+            const rows = new Map<string, Note>();
+            for (const row of await this.adapter.getAll<Note>(this.collection)) {
+                if (row.filePath) rows.set(canonicalImportPath(row.filePath), row);
+            }
+            const results = await mapConcurrent(added, WORKSPACE_READ_CONCURRENCY, (file) =>
+                this.loadWorkspaceFile(file, rows.get(canonicalImportPath(file.path))),
+            );
+            addedNotes = results.flatMap((entry) => (entry ? [entry[1]] : []));
+        }
+
+        const kept = known.filter(
+            (note) =>
+                !note.filePath || !isWorkspaceDocumentFile(note.filePath) || onDisk.has(canonicalImportPath(note.filePath)),
+        );
+        return [...kept, ...addedNotes].toSorted((a, b) => +b.updatedAt - +a.updatedAt);
     }
 
     async getRecentNotes(limit?: number): Promise<Note[]> {
@@ -374,7 +428,9 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     }
 
     async getQuicknoteByDate(date: Date): Promise<Note | null> {
-        const metadata = findDailyQuickNote(await this.getAll(), date);
+        // metadata is enough to find the day's note (the SQL list is already limited to this workspace and to notes
+        // that are not deleted); only the match itself is read from disk, instead of every file in the workspace
+        const metadata = findDailyQuickNote(await this.getRecentNotes(), date);
         if (!metadata) return null;
         const note = await this.getOne(metadata.id);
         if (!note) {

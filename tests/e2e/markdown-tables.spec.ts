@@ -16,6 +16,17 @@ async function storedNoteDigest(page: Page, id: string): Promise<string> {
         return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
     }, id);
 }
+
+async function focusedTableCell(editor: Locator): Promise<{ rowIndex: number; cellIndex: number } | null> {
+    return editor.evaluate((element) => {
+        const focusNode = element.ownerDocument.getSelection()?.focusNode;
+        const focusElement = focusNode instanceof Element ? focusNode : focusNode?.parentElement;
+        const cell = focusElement?.closest("td, th");
+        const row = cell?.closest("tr");
+        if (!(cell instanceof HTMLTableCellElement) || !row) return null;
+        return { rowIndex: row.rowIndex, cellIndex: cell.cellIndex };
+    });
+}
 const unevenTableMarkdown = [
     beforeTable,
     "",
@@ -139,6 +150,91 @@ for (const [tableCase, tableMarkdown] of tableCases) {
         });
     }
 }
+
+test("offers table row and column controls plus row keyboard shortcuts", async ({ cleanPage: page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/", { waitUntil: "commit" });
+    const noteId = await page.evaluate(async () => {
+        const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
+        const { Note } = await import("/packages/editor/src/store/note.ts");
+        const content = ["| Item | Owner |", "| --- | --- |", "| Draft | Ada |", "| Ship | Lin |"].join("\n");
+        const note = Note.new("Table controls", content);
+        await repositories.notes.save(note);
+        return note.id;
+    });
+
+    await page.goto(`/note/${noteId}`, { waitUntil: "domcontentloaded" });
+    const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
+    await expect(editor).toHaveAttribute("contenteditable", "true", { timeout: 20_000 });
+    const table = editor.getByRole("table");
+    const rows = table.getByRole("row");
+    await expect(rows).toHaveCount(3);
+
+    const headerBackground = await rows
+        .first()
+        .getByRole("columnheader")
+        .first()
+        .evaluate((cell) => getComputedStyle(cell).backgroundColor);
+    const rowHeaderBackground = await rows
+        .nth(1)
+        .getByRole("cell")
+        .first()
+        .evaluate((cell) => getComputedStyle(cell).backgroundColor);
+    const bodyBackground = await rows
+        .nth(1)
+        .getByRole("cell")
+        .nth(1)
+        .evaluate((cell) => getComputedStyle(cell).backgroundColor);
+    expect(headerBackground).not.toBe(bodyBackground);
+    expect(rowHeaderBackground).not.toBe(bodyBackground);
+
+    const insertRowBelow = page.getByRole("button", { name: "Insert row below" });
+    await table.getByRole("cell", { name: "Ada" }).hover();
+    await insertRowBelow.hover();
+    await expect(page.getByRole("tooltip")).toContainText("Ctrl+Backspace deletes this row.");
+    await insertRowBelow.click();
+    await expect(rows).toHaveCount(4);
+    await expect(editor).toBeFocused();
+    await expect.poll(() => focusedTableCell(editor)).toEqual({ rowIndex: 2, cellIndex: 1 });
+
+    const insertRowAbove = page.getByRole("button", { name: "Insert row above" });
+    await table.getByRole("cell", { name: "Lin" }).hover();
+    await insertRowAbove.hover();
+    await expect(page.getByRole("tooltip")).toContainText("Add a blank row above this row.");
+    await insertRowAbove.click();
+    await expect(rows).toHaveCount(5);
+    await expect(editor).toBeFocused();
+    await expect.poll(() => focusedTableCell(editor)).toEqual({ rowIndex: 3, cellIndex: 1 });
+
+    const insertColumnLeft = page.getByRole("button", { name: "Insert column left" });
+    await table.getByRole("cell", { name: "Draft" }).hover();
+    await insertColumnLeft.hover();
+    await expect(page.getByRole("tooltip")).toContainText("Add a blank column to the left");
+    await insertColumnLeft.click();
+    await expect(rows.first().getByRole("columnheader")).toHaveCount(3);
+    await expect(editor).toBeFocused();
+    await expect.poll(() => focusedTableCell(editor)).toEqual({ rowIndex: 1, cellIndex: 0 });
+
+    const insertColumnRight = page.getByRole("button", { name: "Insert column right" });
+    await table.getByRole("cell", { name: "Draft" }).hover();
+    await insertColumnRight.hover();
+    await expect(page.getByRole("tooltip")).toContainText("Add a blank column to the right");
+    await insertColumnRight.click();
+    await expect(rows.first().getByRole("columnheader")).toHaveCount(4);
+    await expect(editor).toBeFocused();
+    await expect.poll(() => focusedTableCell(editor)).toEqual({ rowIndex: 1, cellIndex: 2 });
+
+    await table.getByRole("cell", { name: "Ada" }).click();
+    await editor.press("Control+Enter");
+    await expect(rows).toHaveCount(6);
+    await expect(editor).toBeFocused();
+    await expect.poll(() => focusedTableCell(editor)).toEqual({ rowIndex: 2, cellIndex: 3 });
+
+    await table.getByRole("cell", { name: "Ship" }).click();
+    await editor.press("Control+Backspace");
+    await expect(rows).toHaveCount(5);
+    await expect(table).not.toContainText("Ship");
+});
 
 test("keeps saved large note content after canceled Markdown worker loading", async ({ cleanPage: page }) => {
     test.setTimeout(120_000);

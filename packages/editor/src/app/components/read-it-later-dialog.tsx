@@ -1,15 +1,13 @@
 import { Button, Input, Modal } from "@g4rcez/components";
-import { Editor } from "@tiptap/core";
-import DOMPurify from "dompurify";
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isElectron } from "@/lib/is-electron";
-import { parseReadItLaterHtml } from "@/lib/read-it-later-utils";
+import { identifyDomain } from "@/lib/url-utils";
+import { ensureReadItLaterFrontmatter, isSafeHttpUrl } from "@/lib/read-it-later-library";
+import { fetchReadItLaterUrl, parseReadItLaterHtml } from "@/lib/read-it-later-utils";
 import { repositories, useGlobalStore } from "@/store/global.store";
 import { Note, NoteType } from "@/store/note";
 import { useUIStore } from "@/store/ui.store";
-import { getThemeForMode } from "../elements/code-block";
-import { createExtensions } from "../extensions";
+import { readItLaterHtmlToMarkdown } from "../read-it-later-content";
 
 export const ReadItLaterDialog = () => {
     const [state, dispatch] = useGlobalStore();
@@ -18,39 +16,41 @@ export const ReadItLaterDialog = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
+    const handleCreate = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!url) return;
+        const sourceUrl = url.trim();
+        if (!sourceUrl) return;
         setLoading(true);
         try {
-            let html: string;
-            if (isElectron()) {
-                const result = await window.electronAPI.readItLater.fetchUrl(url);
-                if (!result.success) throw new Error(result.error || "Failed to fetch URL");
-                html = result.html!;
+            if (!isSafeHttpUrl(sourceUrl)) throw new Error("Use a valid HTTP or HTTPS URL.");
+            const video = identifyDomain(sourceUrl);
+            let note: Note;
+            if (video) {
+                const videoUrl = video.url.replace(/[()]/g, (character) => encodeURIComponent(character));
+                const content = ensureReadItLaterFrontmatter(`![youtube](${videoUrl})\n`);
+                note = Note.new(
+                    "YouTube video",
+                    content,
+                    NoteType["read-it-later"],
+                    video.url,
+                    null,
+                    null,
+                    { readItLaterSource: "youtube", videoId: video.id },
+                );
             } else {
-                const response = await fetch(url);
-                html = await response.text();
+                const html = await fetchReadItLaterUrl(sourceUrl);
+                const article = parseReadItLaterHtml(html, sourceUrl, window.location.origin);
+                const markdown = readItLaterHtmlToMarkdown(article.html, state.theme);
+                note = Note.new(
+                    article.title,
+                    ensureReadItLaterFrontmatter(markdown),
+                    NoteType["read-it-later"],
+                    sourceUrl,
+                    article.description,
+                    article.favicon,
+                    { readItLaterSource: "web" },
+                );
             }
-            const article = parseReadItLaterHtml(
-                DOMPurify.sanitize(html, { WHOLE_DOCUMENT: true }),
-                url,
-                window.location.origin,
-            );
-            const tempEditor = new Editor({
-                content: article.html,
-                extensions: createExtensions(() => getThemeForMode(state.theme)),
-            });
-            const markdown = (tempEditor.storage as any).markdown.getMarkdown();
-            tempEditor.destroy();
-            const note = Note.new(
-                article.title,
-                markdown,
-                NoteType["read-it-later"],
-                url,
-                article.description,
-                article.favicon,
-            );
             await repositories.notes.save(note);
             dispatch.note(note);
             dispatch.readItLaterDialog(false);
@@ -87,7 +87,6 @@ export const ReadItLaterDialog = () => {
                     placeholder="https://example.com"
                     onChange={(e) => setUrl(e.target.value)}
                     className="p-2 w-full bg-transparent rounded border focus:ring-2 focus:outline-none border-input focus:ring-primary"
-                    autoFocus
                 />
                 <div className="flex gap-2 justify-end">
                     <Button

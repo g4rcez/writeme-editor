@@ -213,7 +213,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
         const pos = props.getPos();
         if (typeof pos !== "number") return;
         const targetNode = props.editor.state.doc.nodeAt(pos);
-        updateNodeContent(props.editor, targetNode, nextState);
+        updateNodeContent(props.editor, targetNode, nextState, { addToHistory: false });
     }, []);
 
     if (language === "excalidraw") {

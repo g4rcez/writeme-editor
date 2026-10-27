@@ -21,7 +21,8 @@ export async function loadCommentNote(source: Note): Promise<Note | null> {
         return loadBrowserCommentNote(source);
     }
     const companion = getCommentCompanion(source);
-    const notes = await repositories.notes.getAll();
+    // metadata only: the companion is found by id or path, so no note file has to be read to look for it
+    const notes = await repositories.notes.getRecentNotes(10_000);
     const existing =
         notes.find((note) => !note.deletedAt && note.metadata?.commentSourceId === source.id) ??
         notes.find(

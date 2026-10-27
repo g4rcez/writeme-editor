@@ -16,11 +16,29 @@ const normalizeSearchText = (value: SearchValue): string => {
 const isWordBoundary = (character: string | undefined): boolean =>
     character === undefined || !/[\p{L}\p{N}]/u.test(character);
 
+/** Fuzzy scoring allocates per character, so long fields are only scored over their first characters. */
+const SEARCH_TEXT_LIMIT = 20_000;
+
+const isSubsequence = (query: string, candidate: string): boolean => {
+    let position = 0;
+    for (const character of query) {
+        position = candidate.indexOf(character, position);
+        if (position === -1) return false;
+        position += character.length;
+    }
+    return true;
+};
+
 const getFzfRawScore = (query: string, candidate: SearchValue): number | null => {
     const normalizedQuery = normalizeSearchText(query).trim();
     const normalizedCandidate = normalizeSearchText(candidate);
     if (!normalizedQuery) return 0;
     if (!normalizedCandidate) return null;
+    return scoreNormalized(normalizedQuery, normalizedCandidate);
+};
+
+const scoreNormalized = (normalizedQuery: string, normalizedCandidate: string): number | null => {
+    if (!isSubsequence(normalizedQuery, normalizedCandidate)) return null;
 
     const queryCharacters = Array.from(normalizedQuery);
     const candidateCharacters = Array.from(normalizedCandidate);
@@ -109,12 +127,24 @@ const getNoteSearchScore = (note: NoteSearchable, query: string): number | null 
     if (!normalizedQuery) return 0;
 
     let bestScore: number | null = null;
-    const perfectScore = fzfScore(normalizedQuery, normalizedQuery);
+    const perfectScore = scoreNormalized(normalizedQuery, normalizedQuery);
 
     for (const field of getNoteSearchFields(note)) {
-        const score = fzfScore(query, field.value);
-        const accuracy = fzfAccuracy(query, field.value, score, perfectScore);
-        if (score === null || accuracy < MIN_FZF_ACCURACY) continue;
+        const text = normalizeSearchText(field.value);
+        if (!text) continue;
+        // a contiguous term is an intentional match wherever it appears, even past the scored window
+        const contiguous = text.includes(normalizedQuery);
+        const window = text.length > SEARCH_TEXT_LIMIT ? text.slice(0, SEARCH_TEXT_LIMIT) : text;
+        const score = scoreNormalized(normalizedQuery, window);
+        let accuracy: number;
+        if (score === null) {
+            if (!contiguous) continue;
+            accuracy = MIN_FZF_ACCURACY;
+        } else {
+            accuracy = fzfAccuracy(normalizedQuery, window, score, perfectScore);
+            if (contiguous) accuracy = Math.max(MIN_FZF_ACCURACY, accuracy);
+        }
+        if (accuracy < MIN_FZF_ACCURACY) continue;
 
         const weightedScore = accuracy + field.weight;
         if (bestScore === null || weightedScore > bestScore) bestScore = weightedScore;
@@ -124,7 +154,7 @@ const getNoteSearchScore = (note: NoteSearchable, query: string): number | null 
 };
 
 export function getNoteSearchSnippet(content: string, query: string, maxLength = 120): string {
-    const lines = content
+    const lines = (content.length > SEARCH_TEXT_LIMIT ? content.slice(0, SEARCH_TEXT_LIMIT) : content)
         .split(/\r?\n/)
         .map((line) =>
             markdownLineToPlainText(line.replace(/`/g, ""))

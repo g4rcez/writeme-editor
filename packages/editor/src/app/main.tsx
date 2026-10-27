@@ -1,3 +1,4 @@
+import { isSecondaryWindow } from "@/lib/window-mode";
 import { Button, ComponentsProvider, Notifications, type Tweaks } from "@g4rcez/components";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -132,9 +133,14 @@ export async function main() {
         }
         if (isElectron() && directory) {
             await window.electronAPI.app.chdir(directory);
-            await window.electronAPI.fs.startWatcher(directory);
+            // the main window owns the watcher; floating windows restarting it only re-crawled the workspace
+            if (!isSecondaryWindow) await window.electronAPI.fs.startWatcher(directory);
         }
-        const notes = await repositories.notes.getAll();
+        // Each window is its own renderer process with its own heap, so a floating window cannot share the main
+        // window's notes. It gets titles and paths only (no file reads, no content) and loads a note when it opens it.
+        const notes = isSecondaryWindow
+            ? await repositories.notes.getRecentNotes(10_000)
+            : await repositories.notes.getAll();
         const allTabs = await repositories.tabs.getAll();
         const allTerminalSessions = await repositories.terminalSessions.getAll();
         const workspaceKey = getWorkspaceKey(directory);
@@ -177,7 +183,7 @@ export async function main() {
                 if (note) globalDispatch.note(note);
             }
         }
-        if (isElectron()) {
+        if (isElectron() && !isSecondaryWindow) {
             runPurge().catch(console.error);
             setInterval(() => runPurge().catch(console.error), 60 * 60 * 1000);
         }

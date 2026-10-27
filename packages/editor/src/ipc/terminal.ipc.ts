@@ -31,11 +31,19 @@ export const terminalIpcHandler = () => {
             });
 
             ptyProcess.onData((data) => {
-                event.sender.send("terminal:data", { id, data });
+                if (!event.sender.isDestroyed()) event.sender.send("terminal:data", { id, data });
+            });
+
+            event.sender.once("destroyed", () => {
+                if (activeSessions.get(id) !== ptyProcess) return;
+                activeSessions.delete(id);
+                ptyProcess.kill();
             });
 
             ptyProcess.onExit(({ exitCode, signal }) => {
+                if (activeSessions.get(id) !== ptyProcess) return;
                 activeSessions.delete(id);
+                if (event.sender.isDestroyed()) return;
                 event.sender.send("terminal:data", {
                     id,
                     data: "\r\n\x1b[31m[Process exited]\x1b[0m\r\n",

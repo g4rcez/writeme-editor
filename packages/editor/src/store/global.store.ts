@@ -24,10 +24,30 @@ import { requireFeature } from "@/lib/build-features";
 import { SettingsService } from "./settings";
 import { uiDispatch } from "./ui.store";
 import { createZustandCompatStore } from "./zustand-compat";
+import { createTabPersistenceQueue } from "./tab-persistence";
 
 export type NoteCreationType = "note" | "quick" | "freehand" | "excalidraw" | "meeting-note" | "pdf" | "task";
 
 const LOCAL_WORKSPACE_KEY = "__local__";
+
+const tabPersistence = createTabPersistenceQueue(() => {
+  uiDispatch.setConfirm({
+    open: true,
+    type: "danger",
+    title: "Tab changes not saved",
+    message: "Tab changes are pending. Retry saving before closing or switching workspaces. Your note content is not affected.",
+    confirmText: "Retry saving",
+    cancelText: "Keep pending",
+    onConfirm: () => {
+      uiDispatch.clearConfirm();
+      tabPersistence.retry();
+    },
+    onCancel: () => uiDispatch.clearConfirm(),
+  });
+});
+
+export const flushTabPersistence = (): Promise<void> => tabPersistence.flush();
+export const hasPendingTabPersistence = (): boolean => tabPersistence.hasPending();
 
 export function getWorkspaceKey(directory: string | null): string {
   return directory && directory.trim().length > 0 ? directory : LOCAL_WORKSPACE_KEY;
@@ -165,6 +185,8 @@ export const loadHomedir = async (): Promise<string | null> => {
   }
 };
 export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
+  let tabSelectionVersion = 0;
+
   const setNotes = (notes: Note[]) => {
     const existingNotesMap = new Map<string, Note>(get.state().notes.map((note) => [note.id, note]));
     const mergedNotesMap = new Map<string, Note>();
@@ -172,7 +194,11 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const existing = existingNotesMap.get(note.id);
       const current = mergedNotesMap.get(note.id);
       let freshest = note;
-      if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
+      // an unchanged note keeps its previous object: stable identity keeps memoized views valid and lets the
+      // freshly parsed copy (and its content string) be collected
+      if (existing && existing.updatedAt >= freshest.updatedAt && existing.content === freshest.content) {
+        freshest = existing;
+      } else if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
       if (current && current.updatedAt > freshest.updatedAt) freshest = current;
       mergedNotesMap.set(note.id, freshest);
     }
@@ -228,12 +254,29 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     };
   };
 
-  const selectOrAddTab = async (note: Note, createTabIfMissing: boolean = true) => {
+  const selectTerminalTab = (session: TerminalSession, persistSession: boolean) => {
     const state = get.state();
-    if (state.activeTabId === note.id && state.note === note) {
-      return state;
+    const terminalSessions = state.terminalSessions.some((item) => item.id === session.id)
+      ? state.terminalSessions
+      : state.terminalSessions.concat(session);
+    const existingTab = state.tabs.find((tab) => isTerminalTab(tab) && tab.noteId === session.id);
+    if (existingTab) {
+      if (persistSession) tabPersistence.enqueue(() => repositories.terminalSessions.save(session));
+      return { activeTabId: existingTab.id, terminalSessions };
     }
+    const newTab = createTab(session.id, TERMINAL_TAB_TYPE);
+    tabPersistence.enqueue(async () => {
+      if (persistSession) await repositories.terminalSessions.save(session);
+      await repositories.tabs.save(newTab);
+    });
+    return { activeTabId: newTab.id, tabs: state.tabs.concat(newTab), terminalSessions };
+  };
+
+  const selectOrAddTab = (note: Note, createTabIfMissing: boolean = true) => {
+    tabSelectionVersion += 1;
+    const state = get.state();
     const existingTab = state.tabs.find((t) => isNoteTabForNoteId(t, note.id));
+    if (state.activeTabId === existingTab?.id && state.note === note) return {};
     const updatedNotes = updateNoteInList(note);
     if (existingTab) {
       return {
@@ -246,7 +289,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { note: note, notes: updatedNotes };
     }
     const newTab = createTab(note.id);
-    await repositories.tabs.save(newTab);
+    tabPersistence.enqueue(() => repositories.tabs.save(newTab));
     return {
       note: note,
       notes: updatedNotes,
@@ -354,20 +397,33 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     setTerminalVisible: (terminalVisible: boolean) => ({ terminalVisible }),
     setAiContext: (aiContext: AiContext | null) => ({ aiContext }),
     loadRecentNotes: async (limit = 20) => {
-      const recent = await repositories.notes.getAll({ limit });
+      // the recent-notes dialog only lists titles and paths, so no file has to be read for it
+      const recent = await repositories.notes.getRecentNotes(limit);
       return { recentNotes: recent };
     },
-    reorderTabs: async (tabs: Tab[]) => {
-      const updatedTabs = tabs.map((t, i) => ({ ...t, order: i }));
-      await repositories.tabs.updateOrder(updatedTabs);
+    reorderTabs: (tabs: Tab[]) => {
+      const current = get.state().tabs;
+      const byId = new Map(current.map((tab) => [tab.id, tab]));
+      const ordered: Tab[] = [];
+      for (const tab of tabs) {
+        const existing = byId.get(tab.id);
+        if (!existing) continue;
+        ordered.push(existing);
+        byId.delete(tab.id);
+      }
+      const updatedTabs = [...ordered, ...byId.values()].map((t, i) => ({ ...t, order: i }));
+      tabPersistence.enqueue(() => repositories.tabs.updateOrder(updatedTabs));
       return { tabs: updatedTabs };
     },
-    clearTabs: async () => {
+    clearTabs: () => {
+      tabSelectionVersion += 1;
       const state = get.state();
-      await Promise.all([
-        ...state.tabs.map((tab) => repositories.tabs.delete(tab.id)),
-        ...state.tabs.filter(isTerminalTab).map((tab) => repositories.terminalSessions.delete(tab.noteId)),
-      ]);
+      tabPersistence.enqueue(async () => {
+        for (const tab of state.tabs) {
+          await repositories.tabs.delete(tab.id);
+          if (isTerminalTab(tab)) await repositories.terminalSessions.delete(tab.noteId);
+        }
+      });
       return {
         tabs: [],
         activeTabId: null,
@@ -378,6 +434,8 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       };
     },
     switchWorkspace: async (directory: string | null) => {
+      tabSelectionVersion += 1;
+      await flushTabPersistence();
       await SettingsService.save({
         directory,
         explorerRoot: directory,
@@ -389,112 +447,99 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         await window.electronAPI.app.chdir(directory);
         await window.electronAPI.fs.startWatcher(directory);
       }
+      await flushTabPersistence();
       window.location.reload();
       return get.state();
     },
     directoryBrowserDialog: (directoryBrowserDialog: boolean) => ({
       directoryBrowserDialog,
     }),
-    note: async (note: Note, createTabIfMissing: boolean = true) => {
+    note: async (note: Note, createTabIfMissing: boolean = true): Promise<void> => {
       try {
         await repositories.notes.update(note.id, note);
       } catch (error: any) {
         uiDispatch.setError(error.message || "Failed to update note");
-        return {};
+        return;
       }
-      return selectOrAddTab(note, createTabIfMissing);
+      get.patch(selectOrAddTab(note, createTabIfMissing));
     },
-    addTab: async (noteId: string) => {
+    addTab: (noteId: string) => {
+      tabSelectionVersion += 1;
       const currentTabs = get.state().tabs;
       const existingTab = currentTabs.find((t) => isNoteTabForNoteId(t, noteId));
       if (existingTab) {
         return { activeTabId: existingTab.id };
       }
       const newTab = createTab(noteId);
-      await repositories.tabs.save(newTab);
+      tabPersistence.enqueue(() => repositories.tabs.save(newTab));
       return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
     },
-    addAiChatTab: async (chatId: string) => {
+    addAiChatTab: (chatId: string) => {
       requireFeature("ai");
+      tabSelectionVersion += 1;
       const currentTabs = get.state().tabs;
       const existingTab = currentTabs.find((tab) => isAiChatTab(tab) && tab.noteId === chatId);
       if (existingTab) {
         return { activeTabId: existingTab.id };
       }
       const newTab = createTab(chatId, AI_CHAT_TAB_TYPE);
-      await repositories.tabs.save(newTab);
+      tabPersistence.enqueue(() => repositories.tabs.save(newTab));
       return { activeTabId: newTab.id, tabs: currentTabs.concat(newTab) };
     },
-    ensureTerminalSession: async (sessionId: string) => {
+    ensureTerminalSession: async (sessionId: string): Promise<void> => {
       requireFeature("terminal");
       const state = get.state();
-      if (state.terminalSessions.some((item) => item.id === sessionId)) {
-        return state;
-      }
-
+      if (state.terminalSessions.some((item) => item.id === sessionId)) return;
       const existingSession = await repositories.terminalSessions.getOne(sessionId);
+      const current = get.state();
+      if (current.directory !== state.directory ||
+          !current.tabs.some((tab) => isTerminalTab(tab) && tab.noteId === sessionId) ||
+          current.terminalSessions.some((item) => item.id === sessionId)) return;
       const session = existingSession ?? createTerminalSession(sessionId);
-      if (!existingSession) {
-        await repositories.terminalSessions.save(session);
-      }
-      return { terminalSessions: state.terminalSessions.concat(session) };
+      if (!existingSession) tabPersistence.enqueue(() => repositories.terminalSessions.save(session));
+      get.patch({ terminalSessions: current.terminalSessions.concat(session) });
     },
-    addTerminalTab: async (sessionId: string) => {
+    addTerminalTab: (sessionId: string) => {
       requireFeature("terminal");
+      const version = ++tabSelectionVersion;
       const state = get.state();
-      let terminalSessions = state.terminalSessions;
-      let session = terminalSessions.find((item) => item.id === sessionId);
-
-      if (!session) {
-        const existingSession = await repositories.terminalSessions.getOne(sessionId);
-        session = existingSession ?? createTerminalSession(sessionId);
-        if (!existingSession) {
-          await repositories.terminalSessions.save(session);
-        }
-        terminalSessions = terminalSessions.concat(session);
-      }
-
-      const existingTab = state.tabs.find((tab) => isTerminalTab(tab) && tab.noteId === sessionId);
-      if (existingTab) {
-        return { activeTabId: existingTab.id, terminalSessions };
-      }
-
-      const newTab = createTab(sessionId, TERMINAL_TAB_TYPE);
-      await repositories.tabs.save(newTab);
-      return {
-        activeTabId: newTab.id,
-        tabs: state.tabs.concat(newTab),
-        terminalSessions,
-      };
+      const session = state.terminalSessions.find((item) => item.id === sessionId);
+      if (session) return selectTerminalTab(session, false);
+      return repositories.terminalSessions.getOne(sessionId).then((existing) => {
+        if (version !== tabSelectionVersion || get.state().directory !== state.directory) return;
+        get.patch(selectTerminalTab(existing ?? createTerminalSession(sessionId), !existing));
+      });
     },
-    renameTerminalSession: async (sessionId: string, title: string) => {
+    renameTerminalSession: async (sessionId: string, title: string): Promise<void> => {
       const trimmedTitle = title.trim();
-      if (!trimmedTitle) return get.state();
+      if (!trimmedTitle) return;
 
       const state = get.state();
+      const version = tabSelectionVersion;
       const session =
         state.terminalSessions.find((item) => item.id === sessionId) ??
         (await repositories.terminalSessions.getOne(sessionId));
-      if (!session) return state;
-
-      const updatedSession = {
-        ...session,
-        title: trimmedTitle,
-        updatedAt: new Date(),
-      };
-      await repositories.terminalSessions.save(updatedSession);
-      const terminalSessions = state.terminalSessions.some((item) => item.id === sessionId)
-        ? state.terminalSessions.map((item) => (item.id === sessionId ? updatedSession : item))
-        : state.terminalSessions.concat(updatedSession);
-      return { terminalSessions };
+      if (!session) return;
+      const current = get.state();
+      if (current.directory !== state.directory || version !== tabSelectionVersion) return;
+      const latest = current.terminalSessions.find((item) => item.id === sessionId) ?? session;
+      const updatedSession = { ...latest, title: trimmedTitle, updatedAt: new Date() };
+      tabPersistence.enqueue(() => repositories.terminalSessions.save(updatedSession));
+      const terminalSessions = current.terminalSessions.some((item) => item.id === sessionId)
+        ? current.terminalSessions.map((item) => item.id === sessionId ? updatedSession : item)
+        : current.terminalSessions.concat(updatedSession);
+      get.patch({ terminalSessions });
     },
-    removeTab: async (id: string) => {
+    removeTab: (id: string) => {
+      tabSelectionVersion += 1;
       const state = get.state();
       const closedTab = state.tabs.find((tab) => tab.id === id);
-      await repositories.tabs.delete(id);
-      if (closedTab && isTerminalTab(closedTab)) {
-        await repositories.terminalSessions.delete(closedTab.noteId);
-      }
+      tabPersistence.enqueue(async () => {
+        await repositories.tabs.delete(id);
+        if (closedTab && isTerminalTab(closedTab)) {
+          await repositories.terminalSessions.delete(closedTab.noteId);
+        }
+      });
       if (closedTab) rememberClosedTab(closedTab);
       const tabs = state.tabs.filter((tab) => tab.id !== id);
       const terminalSessions = closedTab
@@ -524,9 +569,10 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         terminalSessions,
       };
     },
-    removeTabByNoteId: async (noteId: string) => {
+    removeTabByNoteId: (noteId: string) => {
+      tabSelectionVersion += 1;
       const state = get.state();
-      await repositories.tabs.deleteByNoteId(noteId);
+      tabPersistence.enqueue(() => repositories.tabs.deleteByNoteId(noteId));
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, noteId));
       const activeTabId =
         state.activeTabId &&
@@ -537,8 +583,11 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { tabs, activeTabId, note };
     },
     deleteNote: async (id: string) => {
-      const state = get.state();
+      await flushTabPersistence();
       await repositories.notes.delete(id);
+      tabPersistence.enqueue(() => repositories.tabs.deleteByNoteId(id));
+      tabSelectionVersion += 1;
+      const state = get.state();
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
@@ -550,8 +599,11 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       return { notes, tabs, activeTabId, note };
     },
     hardDeleteNote: async (id: string) => {
+      await flushTabPersistence();
+      if (!(await repositories.notes.hardDelete(id))) return {};
+      tabPersistence.enqueue(() => repositories.tabs.deleteByNoteId(id));
+      tabSelectionVersion += 1;
       const state = get.state();
-      if (!(await repositories.notes.hardDelete(id))) return state;
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
@@ -629,14 +681,20 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       SettingsService.save({ theme: result as Theme });
       return { theme: result as Theme };
     },
-    selectNoteById: async (noteId: string) => {
+    selectNoteById: (noteId: string) => {
       const state = get.state();
-      const note = await repositories.notes.getOne(noteId);
-      if (!note) {
-        uiDispatch.setError("Failed to load note");
-        return state;
-      }
-      return selectOrAddTab(note);
+      const cached = state.note?.id === noteId ? state.note : state.notes.find((note) => note.id === noteId);
+      if (cached) return selectOrAddTab(cached);
+      const version = ++tabSelectionVersion;
+      const workspace = state.directory;
+      return repositories.notes.getOne(noteId).then((note) => {
+        if (version !== tabSelectionVersion || get.state().directory !== workspace) return;
+        if (!note) {
+          uiDispatch.setError("Failed to load note");
+          return;
+        }
+        get.patch(selectOrAddTab(note));
+      });
     },
     loadGroups: async () => {
       const [noteGroups, noteGroupMembers] = await Promise.all([

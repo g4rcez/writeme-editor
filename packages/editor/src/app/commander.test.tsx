@@ -1,18 +1,21 @@
-import { render, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Tab } from "@/store/repositories/entities/tab";
 import type { TerminalSession } from "@/store/repositories/entities/terminal-session";
 import { TERMINAL_TAB_TYPE } from "@/lib/tab-target";
 import { uiDispatch } from "@/store/ui.store";
 import { Commander } from "./commander";
+import { Note } from "@/store/note";
+import { repositories } from "@/store/repositories";
 
 const mocks = vi.hoisted(() => {
     const state = {
         commander: { enabled: true, type: "all" },
-        note: null,
+        note: null as Note | null,
+        directory: null as string | null,
         noteGroups: [],
-        notes: [],
-        tabs: [],
+        notes: [] as Note[],
+        tabs: [] as Tab[],
         terminalSessions: [],
         theme: "dark",
     };
@@ -29,12 +32,15 @@ const mocks = vi.hoisted(() => {
         setInspectJsonDialog: vi.fn(),
         removeTab: vi.fn(),
         setNote: vi.fn(),
+        syncNoteFromRepository: vi.fn(),
+        note: vi.fn(),
         updateNoteContent: vi.fn(),
         updateNoteTitle: vi.fn(),
         theme: vi.fn(),
     };
 
     return {
+        floating: false,
         commandPalette: vi.fn(() => null),
         editorActionsGlobalRef: {
             current: { addFrontmatter: vi.fn() },
@@ -126,6 +132,8 @@ vi.mock("@/lib/encoding", () => ({
     utf8ToBase64: vi.fn(() => ""),
 }));
 
+vi.mock("@/lib/window-mode", () => ({ get isFloatingEditorWindow() { return mocks.floating; } }));
+
 vi.mock("@/lib/is-electron", () => ({
     isElectron: vi.fn(() => true),
 }));
@@ -148,6 +156,7 @@ vi.mock("@/store/global.store", () => ({
 vi.mock("@/store/repositories", () => ({
     repositories: {
         notes: {
+            getOne: vi.fn(),
             getAll: vi.fn(),
             save: vi.fn(),
             update: vi.fn(),
@@ -180,9 +189,64 @@ function getFlattenedCommands(): CommandItem[] {
     return (props?.commands ?? []).flatMap((item) => item.items ?? [item]);
 }
 
+function commanderView() {
+    return <Commander note={mocks.state.note} notes={mocks.state.notes} tabs={mocks.state.tabs}
+        noteGroups={mocks.state.noteGroups} terminalSessions={mocks.state.terminalSessions}
+        commander={mocks.state.commander as never} dispatch={mocks.dispatch as never} />;
+}
+
+function findCommand(title: string) {
+    const command = getFlattenedCommands().find((command) => command.title === title);
+    if (!command?.action) throw new Error(`Missing command: ${title}`);
+    return command.action;
+}
+
 describe("Commander", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.floating = false;
+        mocks.state.commander = { enabled: true, type: "all" };
+        mocks.state.note = null;
+        mocks.state.notes = [];
+        mocks.state.tabs = [];
+    });
+
+    it.each(["Stable title", "Tab: Stable title"])("resolves current floating note content for %s without saving it", async (title) => {
+        mocks.floating = true;
+        const old = Note.parse({ id: "note-1", title: "Stable title", content: "Old content" });
+        mocks.state.notes = [old];
+        mocks.state.tabs = [createTab({ id: "note-tab", noteId: old.id })];
+        if (title.startsWith("Tab:")) mocks.state.commander = { enabled: true, type: "OpenTabs" };
+        const { rerender } = render(commanderView());
+        const open = findCommand(title);
+        const latest = Note.parse({ ...old, content: "Latest saved content" });
+        mocks.state.notes = [latest];
+        rerender(commanderView());
+        await open({ setOpen: vi.fn() });
+        await waitFor(() => expect(mocks.dispatch.setNote).toHaveBeenCalledWith(latest));
+        expect(mocks.dispatch.note).not.toHaveBeenCalled();
+        expect(repositories.notes.update).not.toHaveBeenCalled();
+        expect(mocks.dispatch.syncNoteFromRepository).toHaveBeenCalledWith(latest);
+        expect(mocks.navigate).toHaveBeenCalledWith("/floating-editor");
+    });
+
+    it("ignores an obsolete floating-note lookup after a newer selection", async () => {
+        mocks.floating = true;
+        const old = Note.parse({ id: "old", title: "Old target", content: "Old" });
+        const latest = Note.parse({ id: "latest", title: "Latest target", content: "Latest" });
+        mocks.state.notes = [old, latest];
+        render(commanderView());
+        const openOld = findCommand(old.title);
+        const openLatest = findCommand(latest.title);
+        mocks.state.notes = [latest];
+        let finish = (_note: Note | null): void => {};
+        const pending = new Promise<Note | null>((resolve) => { finish = resolve; });
+        vi.mocked(repositories.notes.getOne).mockReturnValueOnce(pending);
+        await openOld({ setOpen: vi.fn() });
+        await openLatest({ setOpen: vi.fn() });
+        await act(async () => { finish(old); await pending; });
+        expect(mocks.dispatch.setNote).toHaveBeenCalledTimes(1);
+        expect(mocks.dispatch.setNote).toHaveBeenCalledWith(latest);
     });
 
     it("opens or creates today's note from the quick switcher", async () => {
