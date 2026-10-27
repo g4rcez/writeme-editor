@@ -135,6 +135,8 @@ export type NoteDeletionOutcome = { deleted: number; failed: number };
 
 export interface INoteRepository extends Repository<Note> {
     getRecentNotes: (limit?: number) => Promise<Note[]>;
+    /** Electron filesystem storage only: reloads just the files added or removed since `known` was loaded. */
+    syncWorkspaceDelta?: (known: readonly Note[]) => Promise<Note[] | null>;
     getLatestQuicknote: () => Promise<Note | null>;
     getQuicknoteByDate: (date: Date) => Promise<Note | null>;
     getTemplates: () => Promise<Note[]>;

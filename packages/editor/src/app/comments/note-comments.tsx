@@ -68,6 +68,8 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const [loading, setLoading] = useState(true);
     const [loadFailed, setLoadFailed] = useState(false);
     const [loadRevision, setLoadRevision] = useState(0);
+    const noteRef = useRef(note);
+    noteRef.current = note;
     const loadErrorRef = useRef<string | null>(null);
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
@@ -182,12 +184,13 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             setLoadFailed(true);
             setLoading(false);
         };
-        if (isElectron()) void loadCommentNote(note).then(loaded, failed);
+        const source = noteRef.current;
+        if (isElectron()) void loadCommentNote(source).then(loaded, failed);
         else
             void Promise.all([import("dexie"), import("@/store/repositories/browser/comments.repository")]).then(
                 ([{ liveQuery }, { loadBrowserCommentNote }]) => {
                     if (cancelled) return;
-                    const subscription = liveQuery(() => loadBrowserCommentNote(note, true)).subscribe({
+                    const subscription = liveQuery(() => loadBrowserCommentNote(source, true)).subscribe({
                         next: loaded,
                         error: failed,
                     });
@@ -199,7 +202,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             cancelled = true;
             unsubscribe?.();
         };
-    }, [note, dispatch, loadRevision]);
+    }, [note.id, note.filePath, note.title, note.project, dispatch, loadRevision]);
 
     useEffect(() => {
         const update = ({ transaction }: { transaction: Transaction }): void => {

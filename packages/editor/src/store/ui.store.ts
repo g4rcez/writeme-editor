@@ -13,6 +13,12 @@ export type MediaSource = {
     title?: string;
 };
 
+const revokeMediaSources = (sources: MediaSource[]) => {
+    for (const source of sources) {
+        if (source.src.startsWith("blob:")) URL.revokeObjectURL(source.src);
+    }
+};
+
 export type MediaPreviewState = {
     open: boolean;
     sources: MediaSource[];
@@ -132,12 +138,14 @@ export const useUIStore = createZustandCompatStore(
         setMediaPreview: (state: Partial<MediaPreviewState>) => ({
             mediaPreview: { ...get.state().mediaPreview, ...state },
         }),
-        openMediaPreview: (sources: MediaSource[], index = 0) => ({
-            mediaPreview: { open: true, sources, index },
-        }),
-        closeMediaPreview: () => ({
-            mediaPreview: { ...get.state().mediaPreview, open: false },
-        }),
+        openMediaPreview: (sources: MediaSource[], index = 0) => {
+            revokeMediaSources(get.state().mediaPreview.sources);
+            return { mediaPreview: { open: true, sources, index } };
+        },
+        closeMediaPreview: () => {
+            revokeMediaSources(get.state().mediaPreview.sources);
+            return { mediaPreview: { open: false, sources: [], index: 0 } };
+        },
         openTasksDialog: () => ({ tasksDialog: { isOpen: true } }),
         closeTasksDialog: () => ({ tasksDialog: { isOpen: false } }),
         openGitDialog: () => ({ gitDialog: { open: true } }),

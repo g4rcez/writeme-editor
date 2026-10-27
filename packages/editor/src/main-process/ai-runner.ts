@@ -155,6 +155,7 @@ export class AIRunner {
             process.stdin?.end();
 
             process.stdout?.on("data", (data: Buffer) => {
+                if (sender.isDestroyed() || (AIRunner.activeProcess && AIRunner.activeProcess !== process)) return;
                 const chunk = data.toString();
                 sender.send("ai:chunk", { chunk });
             });
@@ -164,14 +165,16 @@ export class AIRunner {
             });
 
             process.on("close", (code: number | null) => {
+                // a newer run replaced this process: its events belong to the new stream
+                if (AIRunner.activeProcess && AIRunner.activeProcess !== process) return;
                 AIRunner.activeProcess = null;
-                sender.send("ai:done", { code });
+                if (!sender.isDestroyed()) sender.send("ai:done", { code });
             });
 
             process.on("error", (err: NodeJS.ErrnoException) => {
                 console.error("Failed to start AI process:", err);
-                sender.send("ai:error", { error: err.message });
-                AIRunner.activeProcess = null;
+                if (!sender.isDestroyed()) sender.send("ai:error", { error: err.message });
+                if (AIRunner.activeProcess === process) AIRunner.activeProcess = null;
             });
         } catch (error: any) {
             console.error("AI Runner Exception:", error);

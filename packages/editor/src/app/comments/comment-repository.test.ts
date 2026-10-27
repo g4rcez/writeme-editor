@@ -3,7 +3,7 @@ import { parseCommentThreads } from "@/lib/note-comments";
 import { Note } from "@/store/note";
 
 const mocks = vi.hoisted(() => ({
-    getAll: vi.fn(),
+    listNotes: vi.fn(),
     getOne: vi.fn(),
     save: vi.fn(),
     update: vi.fn(),
@@ -15,7 +15,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/store/repositories", () => ({
     repositories: {
         notes: {
-            getAll: mocks.getAll,
+            // the companion lookup reads note metadata only, never every file
+            getRecentNotes: mocks.listNotes,
             getOne: mocks.getOne,
             save: mocks.save,
             updateContentIfUnchanged: mocks.update,
@@ -43,7 +44,7 @@ beforeEach(() => {
             },
         },
     });
-    mocks.getAll.mockResolvedValue([]);
+    mocks.listNotes.mockResolvedValue([]);
     mocks.stat.mockResolvedValue({ success: true, exists: false });
     mocks.write.mockResolvedValue({ success: true, fileSize: 100, lastModified: "2026-10-10T12:00:00Z" });
     mocks.save.mockImplementation(async (note: Note) => note);
@@ -81,7 +82,7 @@ describe("comment persistence", () => {
             id: "other",
             filePath: "/workspace/elsewhere/comments_advisor.md",
         });
-        mocks.getAll.mockResolvedValue([elsewhere, existing]);
+        mocks.listNotes.mockResolvedValue([elsewhere, existing]);
         mocks.getOne.mockResolvedValue(existing);
         mocks.update.mockImplementation(async (_id: string, _expected: unknown, content: string) =>
             Note.parse({ ...existing, content }),
@@ -117,7 +118,7 @@ describe("comment persistence", () => {
             ...Note.new("comments_advisor", "Original"),
             filePath: "/workspace/plans/comments_advisor.md",
         });
-        mocks.getAll.mockResolvedValue([existing]);
+        mocks.listNotes.mockResolvedValue([existing]);
         mocks.getOne.mockResolvedValue(existing);
         mocks.update.mockResolvedValue(null);
         await expect(saveNoteComment(source(), "Words", "Comment", null, [])).rejects.toThrow("comments note changed");

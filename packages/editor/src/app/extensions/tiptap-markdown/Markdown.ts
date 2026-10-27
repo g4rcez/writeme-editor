@@ -1,3 +1,4 @@
+import { getEditorAllNotes } from "@/lib/editor-storage";
 import { type Content, Extension, createNodeFromContent } from "@tiptap/core";
 import { DOMParser, Fragment, type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { safeMarkdown } from "../../../lib/encoding";
@@ -170,22 +171,24 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
         let previousSerializer: MarkdownSerializer | null = null;
         let previousOptions = "";
         let previousNote: unknown;
-        let previousNotes: unknown;
+        // weak: the cache key must not keep an old array of every note alive
+        let previousNotes: WeakRef<object> | undefined;
         let previousMarkdown = "";
         const getMarkdown = (): string => {
             const serializer = this.storage.serializer;
             if (!serializer || !this.editor.schema || !this.editor.extensionManager || !this.editor.state?.doc) return "";
             const document = this.editor.state.doc;
             const options = JSON.stringify(this.storage.options);
-            const { note, allNotes: notes } = this.editor.storage as { note?: unknown; allNotes?: unknown };
+            const { note } = this.editor.storage as { note?: unknown };
+            const notes = getEditorAllNotes(this.editor);
             if (document === previousDocument && serializer === previousSerializer &&
-                options === previousOptions && note === previousNote && notes === previousNotes) return previousMarkdown;
+                options === previousOptions && note === previousNote && notes === previousNotes?.deref()) return previousMarkdown;
             const markdown = serializer.serialize(document);
             previousDocument = document;
             previousSerializer = serializer;
             previousOptions = options;
             previousNote = note;
-            previousNotes = notes;
+            previousNotes = new WeakRef(notes);
             previousMarkdown = markdown;
             return markdown;
         };

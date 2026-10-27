@@ -57,7 +57,7 @@ describe("Electron NotesRepository", () => {
         vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
         const note = Note.new("Retrospective", "Keep my review", NoteType.quick);
         note.metadata.journalDate = "2025-12-31";
-        getAll.mockResolvedValue([note]);
+        getRecentNotes.mockResolvedValue([note]);
         get.mockResolvedValue(note);
         const repository = new NotesRepository(tabs as never);
         expect((await repository.getQuicknoteByDate(new Date(2025, 11, 31)))?.id).toBe(note.id);
@@ -72,7 +72,10 @@ describe("Electron NotesRepository", () => {
         const local = Note.new("Renamed review", "", NoteType.quick);
         local.filePath = "/notes/archive/review.md";
         local.metadata.journalDate = "2025-12-31";
-        getAll.mockResolvedValue([elsewhere, local]);
+        // the SQL behind getRecentNotes only returns notes inside the workspace
+        getRecentNotes.mockImplementation(async (_limit: number, workspace: string | null) =>
+            [elsewhere, local].filter((note) => !workspace || !note.filePath || note.filePath.startsWith(`${workspace}/`)),
+        );
         get.mockImplementation(async (_collection: string, id: string) => (id === local.id ? local : elsewhere));
         readDirRecursive.mockResolvedValue({
             success: true,
@@ -86,13 +89,16 @@ describe("Electron NotesRepository", () => {
         const daily = await new NotesRepository(tabs as never).getQuicknoteByDate(new Date(2025, 11, 31));
         expect(daily?.id).toBe(local.id);
         expect(daily?.content).toBe("Preserved review");
+        // only the matching file was read; the workspace was not scanned
+        expect(readFile).toHaveBeenCalledTimes(1);
+        expect(readDirRecursive).not.toHaveBeenCalled();
     });
 
     it("rejects an unreadable renamed daily note instead of returning empty content", async () => {
         const note = Note.new("Review", "", NoteType.quick);
         note.filePath = "/notes/review.md";
         note.metadata.journalDate = "2025-12-31";
-        getAll.mockResolvedValue([note]);
+        getRecentNotes.mockResolvedValue([note]);
         get.mockResolvedValue(note);
         readDirRecursive.mockResolvedValue({
             success: true,
@@ -386,5 +392,81 @@ describe("Electron NotesRepository", () => {
 
         await repository.hardDelete(row.id);
         expect(hardDelete).toHaveBeenCalledWith(row.id);
+    });
+});
+
+describe("Electron NotesRepository workspace loading", () => {
+    const file = (name: string) => ({ name, path: `/notes/${name}`, relativePath: name });
+    const onDisk = (...names: string[]) => readDirRecursive.mockResolvedValue({ success: true, files: names.map(file) });
+    const content = (text: string) => ({ success: true, content: text, lastModified: "2026-01-01T00:00:00Z", fileSize: text.length });
+    const indexed = (name: string) => {
+        const note = Note.new(name.replace(/\.md$/, ""), "");
+        note.filePath = `/notes/${name}`;
+        return note;
+    };
+
+    it("limits the result without scanning the workspace", async () => {
+        const recent = [indexed("a.md"), indexed("b.md")];
+        getRecentNotes.mockResolvedValue(recent);
+        get.mockImplementation(async (_collection: string, id: string) => recent.find((note) => note.id === id));
+        readFile.mockResolvedValue(content("hello"));
+
+        const notes = await new NotesRepository(tabs as never).getAll({ limit: 2 });
+
+        expect(notes.map((note) => note.content)).toEqual(["hello", "hello"]);
+        expect(readDirRecursive).not.toHaveBeenCalled();
+        expect(readFile).toHaveBeenCalledTimes(2);
+        expect(getRecentNotes).toHaveBeenCalledWith(2, "/notes");
+    });
+
+    it("never reads more than 16 files at once when scanning a large workspace", async () => {
+        const names = Array.from({ length: 80 }, (_, index) => `note-${index}.md`);
+        onDisk(...names);
+        getAll.mockResolvedValue([]);
+        let running = 0;
+        let peak = 0;
+        readFile.mockImplementation(async () => {
+            running += 1;
+            peak = Math.max(peak, running);
+            await new Promise((resolve) => setTimeout(resolve, 1));
+            running -= 1;
+            return content("text");
+        });
+
+        await new NotesRepository(tabs as never).getAll();
+
+        expect(readFile).toHaveBeenCalledTimes(80);
+        expect(peak).toBeLessThanOrEqual(16);
+    });
+
+    it("loads only the added files and drops the removed ones when syncing a directory change", async () => {
+        const kept = indexed("kept.md");
+        const removed = indexed("removed.md");
+        onDisk("kept.md", "added.md");
+        getAll.mockResolvedValue([]);
+        readFile.mockResolvedValue(content("brand new"));
+
+        const synced = await new NotesRepository(tabs as never).syncWorkspaceDelta([kept, removed]);
+
+        expect(readFile).toHaveBeenCalledTimes(1);
+        expect(readFile).toHaveBeenCalledWith("/notes/added.md");
+        expect(synced?.map((note) => note.filePath).toSorted()).toEqual(["/notes/added.md", "/notes/kept.md"]);
+        expect(synced?.find((note) => note.filePath === "/notes/kept.md")).toBe(kept);
+    });
+
+    it("keeps notes that do not live in the workspace when syncing", async () => {
+        const standalone = Note.new("Standalone", "stays");
+        onDisk();
+        const synced = await new NotesRepository(tabs as never).syncWorkspaceDelta([standalone]);
+        expect(synced).toEqual([standalone]);
+        expect(readFile).not.toHaveBeenCalled();
+    });
+
+    it("reports that it cannot sync when the workspace cannot be listed or is not a folder", async () => {
+        readDirRecursive.mockResolvedValue({ success: false, error: "denied" });
+        expect(await new NotesRepository(tabs as never).syncWorkspaceDelta([])).toBeNull();
+
+        vi.spyOn(SettingsService, "load").mockReturnValue({ directory: null } as never);
+        expect(await new NotesRepository(tabs as never).syncWorkspaceDelta([])).toBeNull();
     });
 });

@@ -1,12 +1,4 @@
 import { type Options } from "prettier";
-import * as prettierPluginBabel from "prettier/plugins/babel";
-import * as prettierPluginEstree from "prettier/plugins/estree";
-import * as prettierPluginHtml from "prettier/plugins/html";
-import * as prettierPluginMarkdown from "prettier/plugins/markdown";
-import * as prettierPluginPostcss from "prettier/plugins/postcss";
-import * as prettierPluginTypescript from "prettier/plugins/typescript";
-import * as prettierPluginYaml from "prettier/plugins/yaml";
-import { format } from "prettier/standalone";
 
 export type SupportedLanguage =
     | "markdown"
@@ -24,68 +16,81 @@ export type SupportedLanguage =
     | "css"
     | "yaml";
 
-const PrettierOptionsByLang: Record<SupportedLanguage, { parser: string; plugins: any[] }> = {
+
+const PluginLoaders = {
+    babel: () => import("prettier/plugins/babel"),
+    estree: () => import("prettier/plugins/estree"),
+    html: () => import("prettier/plugins/html"),
+    markdown: () => import("prettier/plugins/markdown"),
+    postcss: () => import("prettier/plugins/postcss"),
+    typescript: () => import("prettier/plugins/typescript"),
+    yaml: () => import("prettier/plugins/yaml"),
+};
+
+type PluginName = keyof typeof PluginLoaders;
+
+const PrettierOptionsByLang: Record<SupportedLanguage, { parser: string; plugins: PluginName[] }> = {
     markdown: {
         parser: "markdown",
-        plugins: [prettierPluginMarkdown],
+        plugins: ["markdown"],
     },
     typescript: {
         parser: "typescript",
-        plugins: [prettierPluginTypescript, prettierPluginEstree],
+        plugins: ["typescript", "estree"],
     },
     javascript: {
         parser: "babel",
-        plugins: [prettierPluginBabel, prettierPluginEstree],
+        plugins: ["babel", "estree"],
     },
     tsx: {
         parser: "typescript",
-        plugins: [prettierPluginTypescript, prettierPluginEstree],
+        plugins: ["typescript", "estree"],
     },
     jsx: {
         parser: "babel",
-        plugins: [prettierPluginBabel, prettierPluginEstree],
+        plugins: ["babel", "estree"],
     },
     json: {
         parser: "json",
-        plugins: [prettierPluginBabel, prettierPluginEstree],
+        plugins: ["babel", "estree"],
     },
     json5: {
         parser: "json5",
-        plugins: [prettierPluginBabel, prettierPluginEstree],
+        plugins: ["babel", "estree"],
     },
     jsonc: {
         parser: "json",
-        plugins: [prettierPluginBabel, prettierPluginEstree],
+        plugins: ["babel", "estree"],
     },
     "angular-ts": {
         parser: "typescript",
-        plugins: [prettierPluginTypescript, prettierPluginEstree],
+        plugins: ["typescript", "estree"],
     },
     "angular-html": {
         parser: "angular",
-        plugins: [prettierPluginHtml, prettierPluginEstree],
+        plugins: ["html", "estree"],
     },
     vue: {
         parser: "vue",
         plugins: [
-            prettierPluginHtml,
-            prettierPluginBabel,
-            prettierPluginPostcss,
-            prettierPluginEstree,
-            prettierPluginTypescript,
+            "html",
+            "babel",
+            "postcss",
+            "estree",
+            "typescript",
         ],
     },
     "vue-html": {
         parser: "vue",
-        plugins: [prettierPluginHtml, prettierPluginBabel, prettierPluginPostcss, prettierPluginEstree],
+        plugins: ["html", "babel", "postcss", "estree"],
     },
     css: {
         parser: "css",
-        plugins: [prettierPluginPostcss],
+        plugins: ["postcss"],
     },
     yaml: {
         parser: "yaml",
-        plugins: [prettierPluginYaml],
+        plugins: ["yaml"],
     },
 };
 
@@ -96,9 +101,13 @@ export async function formatCode(code: string, language: string): Promise<string
         return code;
     }
 
-    const { parser, plugins } = PrettierOptionsByLang[language];
+    const { parser, plugins: pluginNames } = PrettierOptionsByLang[language];
 
     try {
+        const [{ format }, ...plugins] = await Promise.all([
+            import("prettier/standalone"),
+            ...pluginNames.map((name) => PluginLoaders[name]()),
+        ]);
         return await format(code, {
             parser,
             plugins,

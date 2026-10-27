@@ -23,6 +23,7 @@ vi.mock("@/lib/markdown-worker", () => ({
 }));
 vi.mock("@/store/global.store", () => ({
     useGlobalStore: (selector: (state: unknown) => unknown) => [selector({ notes: mocks.notes, theme: "dark" }), { syncNoteFromRepository: mocks.sync }],
+    globalState: () => ({ notes: mocks.notes }),
 }));
 vi.mock("@/store/settings", () => ({ SettingsService: { load: () => mocks.settings } }));
 vi.mock("@/store/ui.store", () => ({ uiDispatch: { setEditorSaveStatus: mocks.setSaveStatus, setPrompt: vi.fn() } }));

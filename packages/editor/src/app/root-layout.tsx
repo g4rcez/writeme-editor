@@ -46,10 +46,11 @@ import {
     isTerminalTab,
 } from "@/lib/tab-target";
 import { isFloatingEditorWindow } from "@/lib/window-mode";
-import { hasPendingTabPersistence, useGlobalStore } from "@/store/global.store";
+import { globalState, hasPendingTabPersistence, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { useUIStore } from "@/store/ui.store";
+import { canonicalImportPath } from "@/lib/obsidian-import";
 import { isWorkspaceDocumentFile } from "@/types/workspace-files";
 
 const waitMap = new Map<string, string>();
@@ -221,25 +222,58 @@ export const RootLayout = () => {
     useEffect(() => {
         if (!isElectron() || !state.directory) return;
 
-        let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-        const refreshNotes = () => {
-            if (refreshTimer) clearTimeout(refreshTimer);
-            refreshTimer = setTimeout(() => {
-                void repositories.notes
-                    .getAll()
-                    .then((notes) => dispatch.notes(notes))
+        // Only what changed is reloaded. A changed file refreshes that one note; added or removed files load just the
+        // files that appeared. Re-reading the whole workspace on every event cost one IPC read per note.
+        const fileTimers = new Map<string, ReturnType<typeof setTimeout>>();
+        let directoryTimer: ReturnType<typeof setTimeout> | null = null;
+        const refreshDirectory = () => {
+            if (directoryTimer) clearTimeout(directoryTimer);
+            directoryTimer = setTimeout(() => {
+                directoryTimer = null;
+                const sync = repositories.notes.syncWorkspaceDelta?.bind(repositories.notes);
+                const load = sync
+                    ? sync(globalState().notes)
+                    : repositories.notes.getAll();
+                void load
+                    .then((notes) => {
+                        if (notes) dispatch.notes(notes);
+                    })
                     .catch((error) => console.error("Failed to refresh workspace notes:", error));
-            }, 100);
+            }, 400);
+        };
+        const refreshFile = (filePath: string) => {
+            const pending = fileTimers.get(filePath);
+            if (pending) clearTimeout(pending);
+            fileTimers.set(
+                filePath,
+                setTimeout(() => {
+                    fileTimers.delete(filePath);
+                    const key = canonicalImportPath(filePath);
+                    const known = globalState().notes.find(
+                        (note) => note.filePath && canonicalImportPath(note.filePath) === key,
+                    );
+                    if (!known) return refreshDirectory();
+                    void repositories.notes
+                        .getOne(known.id)
+                        .then((fresh) => {
+                            if (!fresh) return refreshDirectory();
+                            // list only: the open note is not replaced underneath an editor that may hold edits
+                            dispatch.notes(globalState().notes.map((note) => (note.id === fresh.id ? fresh : note)));
+                        })
+                        .catch((error) => console.error("Failed to refresh changed note:", error));
+                }, 150),
+            );
         };
         const unsubscribeFileChanges = window.electronAPI.fs.onFileChanged(({ filePath }) => {
-            if (isWorkspaceDocumentFile(filePath)) refreshNotes();
+            if (isWorkspaceDocumentFile(filePath)) refreshFile(filePath);
         });
-        const unsubscribeDirectoryChanges = window.electronAPI.fs.onDirChanged(refreshNotes);
+        const unsubscribeDirectoryChanges = window.electronAPI.fs.onDirChanged(refreshDirectory);
 
         return () => {
             unsubscribeFileChanges();
             unsubscribeDirectoryChanges();
-            if (refreshTimer) clearTimeout(refreshTimer);
+            if (directoryTimer) clearTimeout(directoryTimer);
+            for (const timer of fileTimers.values()) clearTimeout(timer);
         };
     }, [dispatch, state.directory]);
 

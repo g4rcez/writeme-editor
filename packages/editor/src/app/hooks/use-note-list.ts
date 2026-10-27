@@ -1,5 +1,5 @@
 import { Modal } from "@g4rcez/components";
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import type { Note } from "@/store/note";
 import { notificationRef } from "@/app/notification-ref";
 import { filterNotesByQuery } from "@/lib/note-search";
@@ -21,12 +21,13 @@ export function useNoteList(options: UseNoteListOptions = {}) {
         ? notes.filter((note) => note.noteType === options.noteType)
         : notes.filter((note) => note.noteType !== "template"), [notes, options.noteType]);
     const [search, setSearch] = useState("");
+    const deferredSearch = useDeferredValue(search);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const filteredNotes = useMemo(() => {
-        if (search.trim()) {
+        if (deferredSearch.trim()) {
             // Search results are already ordered by fzf compatibility.
-            return filterNotesByQuery(innerNotes, search);
+            return filterNotesByQuery(innerNotes, deferredSearch);
         }
 
         const result = innerNotes;
@@ -36,7 +37,7 @@ export function useNoteList(options: UseNoteListOptions = {}) {
             );
         }
         return result;
-    }, [innerNotes, search, options.noteType]);
+    }, [innerNotes, deferredSearch, options.noteType]);
 
     const toggleSelection = (id: string) => {
         setSelectedIds((prev) => {

@@ -16,10 +16,24 @@ export const setEditorNote = (editor: Editor, note: Note | undefined): void => {
     (editor.storage as any).note = note;
 };
 
-export const getEditorAllNotes = (editor: Editor): Note[] => (editor.storage as any).allNotes ?? [];
+const NO_NOTES: Note[] = [];
+
+export const getEditorAllNotes = (editor: Editor): Note[] => {
+    const storage = editor.storage as { allNotes?: Note[]; allNotesSource?: () => Note[] };
+    // one shared empty array: callers compare the result by identity to know whether it changed
+    return storage.allNotesSource?.() ?? storage.allNotes ?? NO_NOTES;
+};
 
 export const setEditorAllNotes = (editor: Editor, notes: Note[]): void => {
     (editor.storage as any).allNotes = notes;
+};
+
+/**
+ * Lets the editor read the current notes on demand instead of holding an array. A stored array is a snapshot: the
+ * panes that were not the active editor never received later updates and kept an old copy of the workspace alive.
+ */
+export const setEditorAllNotesSource = (editor: Editor, source: () => Note[]): void => {
+    (editor.storage as any).allNotesSource = source;
 };
 
 export const getEditorMentionItems = (editor: Editor): EditorMentionItem[] | undefined => {

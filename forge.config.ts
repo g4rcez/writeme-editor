@@ -59,9 +59,27 @@ async function copyRuntimePaths(buildPath: string): Promise<void> {
     );
 }
 
+// node-pty starts shells through the `spawn-helper` executable. AutoUnpackNativesPlugin only unpacks `*.node`, and an
+// executable cannot run from inside app.asar, so every terminal spawn failed with `posix_spawnp failed`.
+const asarUnpack = [
+    ...(buildProfile.features.cli ? ["packages/cli/dist/**"] : []),
+    ...(buildProfile.features.terminal ? ["**/node_modules/node-pty/**/spawn-helper"] : []),
+];
+
+async function makeSpawnHelpersExecutable(buildPath: string): Promise<void> {
+    if (process.platform === "win32") return;
+    const root = path.join(buildPath, "node_modules/node-pty");
+    const entries = await fs.readdir(root, { recursive: true, withFileTypes: true }).catch(() => []);
+    await Promise.all(
+        entries
+            .filter((entry) => entry.isFile() && entry.name === "spawn-helper")
+            .map((entry) => fs.chmod(path.join(entry.parentPath, entry.name), 0o755)),
+    );
+}
+
 const config: ForgeConfig = {
     packagerConfig: {
-        asar: buildProfile.features.cli ? { unpack: "packages/cli/dist/**" } : true,
+        asar: asarUnpack.length ? { unpack: asarUnpack.length === 1 ? asarUnpack[0]! : `{${asarUnpack.join(",")}}` } : true,
         name: "writeme",
         executableName: "writeme",
         appBundleId: "dev.writeme.app",
@@ -118,6 +136,7 @@ const config: ForgeConfig = {
             if (!buildProfile.features.terminal)
                 await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });
             await copyRuntimePaths(buildPath);
+            if (buildProfile.features.terminal) await makeSpawnHelpersExecutable(buildPath);
             await fs.writeFile(path.join(buildPath, "writeme-build.json"), JSON.stringify(buildProfile, null, 2));
         },
     },

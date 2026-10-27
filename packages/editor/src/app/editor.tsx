@@ -3,7 +3,7 @@ import { CircleNotchIcon } from "@phosphor-icons/react";
 import { EditorContent, EditorContext, useEditor, type Editor as TipTapEditor } from "@tiptap/react";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COPY_EVENT_DISPATCHED, COPY_EVENT_FINISHED, COPY_EVENT_STARTED } from "@/ipc/copy-event";
-import { getEditorMarkdown, setEditorAllNotes, setEditorNote } from "@/lib/editor-storage";
+import { getEditorMarkdown, setEditorAllNotesSource, setEditorNote } from "@/lib/editor-storage";
 import { YAML } from "@/lib/encoding";
 import { isElectron } from "@/lib/is-electron";
 import { isRelativeLink } from "@/lib/link-utils";
@@ -15,7 +15,7 @@ import { registerNoteLinkRepairHandler, repairTiptapLink } from "@/lib/note-link
 import { findCompatibleNote } from "@/lib/note-lookup";
 import { supportsAI, isMobile } from "@/lib/platform";
 import { tiptapToHtml } from "@/lib/render-tiptap-to-html";
-import { useGlobalStore } from "@/store/global.store";
+import { globalState as readGlobalState, useGlobalStore } from "@/store/global.store";
 import { Note } from "@/store/note";
 import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
@@ -239,7 +239,6 @@ const TiptapEditorCore = memo(
             error: vimConfigurationError,
             loading: vimConfigurationLoading,
         } = useVimConfiguration();
-        const [globalState] = useGlobalStore((state) => ({ notes: state.notes }));
         const noteRef = useRef(note);
         const persistedNoteRef = useRef(note);
         const dirtyRef = useRef(false);
@@ -344,7 +343,7 @@ const TiptapEditorCore = memo(
                             if (currentNote) {
                                 const fileName = href?.split("/").pop()?.replace(/\.md$/i, "");
                                 const target = findCompatibleNote(
-                                    globalState.notes,
+                                    readGlobalState().notes,
                                     isMentionLink ? mentionTarget : (fileName ?? href ?? ""),
                                 );
                                 if (target) {
@@ -763,7 +762,7 @@ const TiptapEditorCore = memo(
         }, [editor, note]);
 
         useEffect(() => {
-            if (editor) setEditorAllNotes(editor, globalState.notes);
+            if (editor) setEditorAllNotesSource(editor, () => readGlobalState().notes);
         }, [editor]);
 
         useEditorScrollMemory(id, editor);
@@ -1192,18 +1191,11 @@ const InnerEditor = (props: {
     active?: boolean;
     onSave?: (content: string) => Promise<void>;
 }) => {
-    const [state, dispatch] = useGlobalStore((state) => ({ notes: state.notes, theme: state.theme }));
+    const [state, dispatch] = useGlobalStore((state) => ({ theme: state.theme }));
     const onSaveRef = useRef(props.onSave);
     useEffect(() => {
         onSaveRef.current = props.onSave;
     }, [props.onSave]);
-
-    useEffect(() => {
-        if (props.mode !== "formatted") return;
-        if (editorGlobalRef.current) {
-            setEditorAllNotes(editorGlobalRef.current, state.notes);
-        }
-    }, [props.mode, state.notes]);
 
     if (props.mode === "markdown") {
         return (

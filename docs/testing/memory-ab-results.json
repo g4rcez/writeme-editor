@@ -1,0 +1,1710 @@
+{
+  "measuredAt": "2026-10-27T13:12:48.006Z",
+  "runs": 3,
+  "results": [
+    {
+      "label": "baseline",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [
+          "excalidraw-DDaBUhk_.js",
+          "graphviz-D_WJAprS.js",
+          "mermaid-KK6-_gaA.js",
+          "shiki-B-IFjZzU.js",
+          "mathjs-DG6wfIUj.js"
+        ],
+        "startupJsKB": 28496,
+        "chunkCount": 148
+      },
+      "startup": {
+        "quiescentMs": 2011,
+        "fsReadFile": 3010,
+        "fsReadDirRecursive": 2,
+        "snapshot": {
+          "footprintMB": 581.0166015625,
+          "footprintByType": {
+            "Browser": 207,
+            "GPU": 73,
+            "Utility": 7.0166015625,
+            "Tab": 294
+          },
+          "mainHeapMB": 63.9851770401001,
+          "rssMB": 1017.984375,
+          "rssByType": {
+            "Browser": 381.984375,
+            "GPU": 89.359375,
+            "Utility": 48.328125,
+            "Tab": 498.3125
+          },
+          "processes": 4,
+          "jsHeapMB": 132.56072998046875,
+          "mainFds": 5646,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 2,
+            "fs:readFile": 3010,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "app:renderer-ready": 1,
+            "fs:readDir": 2,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 464.0166015625,
+        "footprintByType": {
+          "Browser": 187,
+          "GPU": 50,
+          "Utility": 7.0166015625,
+          "Tab": 217
+        },
+        "mainHeapMB": 21.37431240081787,
+        "rssMB": 946.453125,
+        "rssByType": {
+          "Browser": 376.53125,
+          "GPU": 89.34375,
+          "Utility": 48.34375,
+          "Tab": 429.140625
+        },
+        "processes": 4,
+        "jsHeapMB": 132.56072998046875,
+        "mainFds": 5646,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 11,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 2,
+          "fs:readFile": 3010,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "app:renderer-ready": 1,
+          "fs:readDir": 2,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 3013,
+        "readsPerAutosave": [
+          1508,
+          1508,
+          1508,
+          1508,
+          1508
+        ],
+        "after": {
+          "footprintMB": 500.0166015625,
+          "footprintByType": {
+            "Browser": 193,
+            "GPU": 56,
+            "Utility": 7.0166015625,
+            "Tab": 243
+          },
+          "mainHeapMB": 21.49699306488037,
+          "rssMB": 1000.609375,
+          "rssByType": {
+            "Browser": 393.640625,
+            "GPU": 95.609375,
+            "Utility": 48.359375,
+            "Tab": 463
+          },
+          "processes": 4,
+          "jsHeapMB": 132.56072998046875,
+          "mainFds": 5648,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 25,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 9,
+            "fs:readFile": 13563,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "app:renderer-ready": 1,
+            "fs:readDir": 34,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 7,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1506,
+        "addReads": 1507,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 5532,
+        "whileOpen": {
+          "footprintMB": 1105.1259765625,
+          "footprintByType": {
+            "Browser": 204,
+            "GPU": 70,
+            "Utility": 7.1259765625,
+            "Tab": 824
+          },
+          "mainHeapMB": 21.655150413513184,
+          "rssMB": 2240.375,
+          "rssByType": {
+            "Browser": 417.59375,
+            "GPU": 96.859375,
+            "Utility": 48.671875,
+            "Tab": 1677.25
+          },
+          "processes": 7,
+          "jsHeapMB": 444.4122314453125,
+          "mainFds": 5656,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 67,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "app:renderer-ready": 4,
+            "fs:readDir": 34,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 503.9072265625,
+          "footprintByType": {
+            "Browser": 170,
+            "GPU": 44,
+            "Utility": 6.9072265625,
+            "Tab": 252
+          },
+          "mainHeapMB": 21.60813808441162,
+          "rssMB": 1054.234375,
+          "rssByType": {
+            "Browser": 385.84375,
+            "GPU": 96.515625,
+            "Utility": 48.546875,
+            "Tab": 492.359375
+          },
+          "processes": 4,
+          "jsHeapMB": 132.56072998046875,
+          "mainFds": 5650,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 67,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "app:renderer-ready": 4,
+            "fs:readDir": 34,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "skipped": "no shell could be started in this build (node-pty spawn-helper missing); see ipc/terminal.ipc.test.ts"
+      },
+      "execution": {
+        "stdoutChars": 5000000
+      },
+      "errors": []
+    },
+    {
+      "label": "after",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [],
+        "startupJsKB": 8135,
+        "chunkCount": 653
+      },
+      "startup": {
+        "quiescentMs": 1507,
+        "fsReadFile": 1505,
+        "fsReadDirRecursive": 1,
+        "snapshot": {
+          "footprintMB": 422.0634765625,
+          "footprintByType": {
+            "Browser": 126,
+            "GPU": 102,
+            "Utility": 7.0634765625,
+            "Tab": 187
+          },
+          "mainHeapMB": 20.342835426330566,
+          "rssMB": 740.640625,
+          "rssByType": {
+            "Browser": 275.609375,
+            "GPU": 87.609375,
+            "Utility": 48.375,
+            "Tab": 329.046875
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1647,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1505,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "fs:readDir": 3,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 315.0478515625,
+        "footprintByType": {
+          "Browser": 94,
+          "GPU": 74,
+          "Utility": 7.0478515625,
+          "Tab": 112
+        },
+        "mainHeapMB": 16.396437644958496,
+        "rssMB": 662.46875,
+        "rssByType": {
+          "Browser": 240.671875,
+          "GPU": 85.75,
+          "Utility": 48.390625,
+          "Tab": 259.015625
+        },
+        "processes": 4,
+        "jsHeapMB": 54.168701171875,
+        "mainFds": 1646,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 11,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 1,
+          "fs:readFile": 1505,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "fs:readDir": 3,
+          "app:renderer-ready": 1,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 1,
+        "readsPerAutosave": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "after": {
+          "footprintMB": 307.0478515625,
+          "footprintByType": {
+            "Browser": 91,
+            "GPU": 77,
+            "Utility": 7.0478515625,
+            "Tab": 132
+          },
+          "mainHeapMB": 16.499342918395996,
+          "rssMB": 670.09375,
+          "rssByType": {
+            "Browser": 243.296875,
+            "GPU": 92.828125,
+            "Utility": 48.40625,
+            "Tab": 285.5625
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1653,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1516,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 35,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 2,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1,
+        "addReads": 1,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 4,
+        "whileOpen": {
+          "footprintMB": 585.1728515625,
+          "footprintByType": {
+            "Browser": 94,
+            "GPU": 96,
+            "Utility": 7.1728515625,
+            "Tab": 388
+          },
+          "mainHeapMB": 16.595210075378418,
+          "rssMB": 1384.765625,
+          "rssByType": {
+            "Browser": 256.1875,
+            "GPU": 94.21875,
+            "Utility": 48.734375,
+            "Tab": 985.765625
+          },
+          "processes": 7,
+          "jsHeapMB": 160.88485717773438,
+          "mainFds": 1661,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 277.9541015625,
+          "footprintByType": {
+            "Browser": 84,
+            "GPU": 69,
+            "Utility": 6.9541015625,
+            "Tab": 118
+          },
+          "mainHeapMB": 16.573267936706543,
+          "rssMB": 677.265625,
+          "rssByType": {
+            "Browser": 247.96875,
+            "GPU": 93.84375,
+            "Utility": 48.59375,
+            "Tab": 286.859375
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1655,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "shellsBeforeKill": 1,
+        "orphanShells": 0
+      },
+      "execution": {
+        "stdoutChars": 1000000
+      },
+      "errors": []
+    },
+    {
+      "label": "baseline",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [
+          "excalidraw-DDaBUhk_.js",
+          "graphviz-D_WJAprS.js",
+          "mermaid-KK6-_gaA.js",
+          "shiki-B-IFjZzU.js",
+          "mathjs-DG6wfIUj.js"
+        ],
+        "startupJsKB": 28496,
+        "chunkCount": 148
+      },
+      "startup": {
+        "quiescentMs": 2009,
+        "fsReadFile": 3010,
+        "fsReadDirRecursive": 2,
+        "snapshot": {
+          "footprintMB": 612.0478515625,
+          "footprintByType": {
+            "Browser": 207,
+            "GPU": 102,
+            "Utility": 7.0478515625,
+            "Tab": 296
+          },
+          "mainHeapMB": 58.63224983215332,
+          "rssMB": 1035.84375,
+          "rssByType": {
+            "Browser": 404.375,
+            "GPU": 87.078125,
+            "Utility": 48.375,
+            "Tab": 496.015625
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5647,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 13,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 2,
+            "fs:readFile": 3010,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "fs:readDir": 4,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 489.0478515625,
+        "footprintByType": {
+          "Browser": 168,
+          "GPU": 74,
+          "Utility": 7.0478515625,
+          "Tab": 216
+        },
+        "mainHeapMB": 21.3919095993042,
+        "rssMB": 952.03125,
+        "rssByType": {
+          "Browser": 366.984375,
+          "GPU": 87.0625,
+          "Utility": 48.390625,
+          "Tab": 426.59375
+        },
+        "processes": 4,
+        "jsHeapMB": 141.143798828125,
+        "mainFds": 5647,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 13,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 2,
+          "fs:readFile": 3010,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "fs:readDir": 4,
+          "app:renderer-ready": 1,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 3013,
+        "readsPerAutosave": [
+          1508,
+          1508,
+          1508,
+          1508,
+          1508
+        ],
+        "after": {
+          "footprintMB": 516.1259765625,
+          "footprintByType": {
+            "Browser": 181,
+            "GPU": 78,
+            "Utility": 7.1259765625,
+            "Tab": 250
+          },
+          "mainHeapMB": 21.524115562438965,
+          "rssMB": 991.109375,
+          "rssByType": {
+            "Browser": 388.703125,
+            "GPU": 92.734375,
+            "Utility": 48.484375,
+            "Tab": 461.1875
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5653,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 27,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 9,
+            "fs:readFile": 13563,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 37,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 7,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1506,
+        "addReads": 1507,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 5532,
+        "whileOpen": {
+          "footprintMB": 1227.1728515625,
+          "footprintByType": {
+            "Browser": 233,
+            "GPU": 97,
+            "Utility": 7.1728515625,
+            "Tab": 853
+          },
+          "mainHeapMB": 21.688639640808105,
+          "rssMB": 2317.140625,
+          "rssByType": {
+            "Browser": 452.09375,
+            "GPU": 94.171875,
+            "Utility": 48.75,
+            "Tab": 1687.9375
+          },
+          "processes": 7,
+          "jsHeapMB": 452.99530029296875,
+          "mainFds": 5661,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 69,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 38,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 581.9541015625,
+          "footprintByType": {
+            "Browser": 178,
+            "GPU": 71,
+            "Utility": 6.9541015625,
+            "Tab": 274
+          },
+          "mainHeapMB": 21.62507152557373,
+          "rssMB": 1097.90625,
+          "rssByType": {
+            "Browser": 399.40625,
+            "GPU": 93.78125,
+            "Utility": 48.609375,
+            "Tab": 504.109375
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5655,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 69,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 38,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "skipped": "no shell could be started in this build (node-pty spawn-helper missing); see ipc/terminal.ipc.test.ts"
+      },
+      "execution": {
+        "stdoutChars": 5000000
+      },
+      "errors": []
+    },
+    {
+      "label": "after",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [],
+        "startupJsKB": 8135,
+        "chunkCount": 653
+      },
+      "startup": {
+        "quiescentMs": 1506,
+        "fsReadFile": 1505,
+        "fsReadDirRecursive": 1,
+        "snapshot": {
+          "footprintMB": 422.0166015625,
+          "footprintByType": {
+            "Browser": 125,
+            "GPU": 104,
+            "Utility": 7.0166015625,
+            "Tab": 186
+          },
+          "mainHeapMB": 20.363712310791016,
+          "rssMB": 739.328125,
+          "rssByType": {
+            "Browser": 274.90625,
+            "GPU": 87.671875,
+            "Utility": 48.328125,
+            "Tab": 328.421875
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1647,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1505,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "fs:readDir": 3,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 312.0634765625,
+        "footprintByType": {
+          "Browser": 91,
+          "GPU": 74,
+          "Utility": 7.0478515625,
+          "Tab": 113
+        },
+        "mainHeapMB": 16.393458366394043,
+        "rssMB": 667.6875,
+        "rssByType": {
+          "Browser": 244.609375,
+          "GPU": 87.625,
+          "Utility": 48.40625,
+          "Tab": 259.453125
+        },
+        "processes": 4,
+        "jsHeapMB": 54.168701171875,
+        "mainFds": 1647,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 11,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 1,
+          "fs:readFile": 1505,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "fs:readDir": 3,
+          "app:renderer-ready": 1,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 1,
+        "readsPerAutosave": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "after": {
+          "footprintMB": 303.0478515625,
+          "footprintByType": {
+            "Browser": 87,
+            "GPU": 76,
+            "Utility": 7.0478515625,
+            "Tab": 133
+          },
+          "mainHeapMB": 16.50106716156006,
+          "rssMB": 674.734375,
+          "rssByType": {
+            "Browser": 244.671875,
+            "GPU": 95.96875,
+            "Utility": 48.421875,
+            "Tab": 285.6875
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1653,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1516,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 35,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 2,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1,
+        "addReads": 1,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 4,
+        "whileOpen": {
+          "footprintMB": 588.1884765625,
+          "footprintByType": {
+            "Browser": 93,
+            "GPU": 95,
+            "Utility": 7.1884765625,
+            "Tab": 393
+          },
+          "mainHeapMB": 16.597182273864746,
+          "rssMB": 1385.953125,
+          "rssByType": {
+            "Browser": 257.046875,
+            "GPU": 97.296875,
+            "Utility": 48.765625,
+            "Tab": 982.9375
+          },
+          "processes": 7,
+          "jsHeapMB": 160.88485717773438,
+          "mainFds": 1661,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 277.9697265625,
+          "footprintByType": {
+            "Browser": 84,
+            "GPU": 68,
+            "Utility": 6.9697265625,
+            "Tab": 119
+          },
+          "mainHeapMB": 16.57524013519287,
+          "rssMB": 681.21875,
+          "rssByType": {
+            "Browser": 248.46875,
+            "GPU": 96.921875,
+            "Utility": 48.625,
+            "Tab": 287.203125
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1655,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "shellsBeforeKill": 1,
+        "orphanShells": 0
+      },
+      "execution": {
+        "stdoutChars": 1000000
+      },
+      "errors": []
+    },
+    {
+      "label": "baseline",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [
+          "excalidraw-DDaBUhk_.js",
+          "graphviz-D_WJAprS.js",
+          "mermaid-KK6-_gaA.js",
+          "shiki-B-IFjZzU.js",
+          "mathjs-DG6wfIUj.js"
+        ],
+        "startupJsKB": 28496,
+        "chunkCount": 148
+      },
+      "startup": {
+        "quiescentMs": 2013,
+        "fsReadFile": 3010,
+        "fsReadDirRecursive": 2,
+        "snapshot": {
+          "footprintMB": 622.0166015625,
+          "footprintByType": {
+            "Browser": 213,
+            "GPU": 101,
+            "Utility": 7.0166015625,
+            "Tab": 301
+          },
+          "mainHeapMB": 58.01648807525635,
+          "rssMB": 1033.96875,
+          "rssByType": {
+            "Browser": 396.359375,
+            "GPU": 87.4375,
+            "Utility": 48.328125,
+            "Tab": 501.84375
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5647,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 13,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 2,
+            "fs:readFile": 3010,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "fs:readDir": 4,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 503.0166015625,
+        "footprintByType": {
+          "Browser": 177,
+          "GPU": 74,
+          "Utility": 7.0634765625,
+          "Tab": 224
+        },
+        "mainHeapMB": 21.369105339050293,
+        "rssMB": 963.875,
+        "rssByType": {
+          "Browser": 371.859375,
+          "GPU": 87.390625,
+          "Utility": 48.390625,
+          "Tab": 435.546875
+        },
+        "processes": 4,
+        "jsHeapMB": 141.143798828125,
+        "mainFds": 5647,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 13,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 2,
+          "fs:readFile": 3010,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "fs:readDir": 4,
+          "app:renderer-ready": 1,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 3013,
+        "readsPerAutosave": [
+          1508,
+          1508,
+          1508,
+          1508,
+          1508
+        ],
+        "after": {
+          "footprintMB": 534.0634765625,
+          "footprintByType": {
+            "Browser": 199,
+            "GPU": 77,
+            "Utility": 7.0634765625,
+            "Tab": 251
+          },
+          "mainHeapMB": 21.49336528778076,
+          "rssMB": 1020,
+          "rssByType": {
+            "Browser": 408.53125,
+            "GPU": 93.6875,
+            "Utility": 48.421875,
+            "Tab": 469.421875
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5653,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 27,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 9,
+            "fs:readFile": 13563,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 37,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 7,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1506,
+        "addReads": 1507,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 5532,
+        "whileOpen": {
+          "footprintMB": 1160.1572265625,
+          "footprintByType": {
+            "Browser": 202,
+            "GPU": 96,
+            "Utility": 7.1572265625,
+            "Tab": 852
+          },
+          "mainHeapMB": 21.663683891296387,
+          "rssMB": 2249.890625,
+          "rssByType": {
+            "Browser": 423.59375,
+            "GPU": 95.171875,
+            "Utility": 48.71875,
+            "Tab": 1682.40625
+          },
+          "processes": 7,
+          "jsHeapMB": 452.99530029296875,
+          "mainFds": 5661,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 69,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 38,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 550.9384765625,
+          "footprintByType": {
+            "Browser": 171,
+            "GPU": 69,
+            "Utility": 6.9384765625,
+            "Tab": 275
+          },
+          "mainHeapMB": 21.61121654510498,
+          "rssMB": 1079.4375,
+          "rssByType": {
+            "Browser": 394.375,
+            "GPU": 94.78125,
+            "Utility": 48.59375,
+            "Tab": 513.1875
+          },
+          "processes": 4,
+          "jsHeapMB": 141.143798828125,
+          "mainFds": 5655,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 69,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 4,
+            "fs:readDirRecursive": 22,
+            "fs:readFile": 33173,
+            "db:save": 1525,
+            "db:notes:saveSnapshot": 1517,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 4,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 38,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 14,
+            "fs:writeFile": 9,
+            "db:get": 23,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "skipped": "no shell could be started in this build (node-pty spawn-helper missing); see ipc/terminal.ipc.test.ts"
+      },
+      "execution": {
+        "stdoutChars": 5000000
+      },
+      "errors": []
+    },
+    {
+      "label": "after",
+      "workspace": {
+        "notes": 1500,
+        "folders": 30,
+        "noteChars": 8000,
+        "dotFiles": 4000,
+        "bigNotes": 5,
+        "bigNoteChars": 300000,
+        "directories": 71,
+        "totalChars": 13807650
+      },
+      "bundle": {
+        "heavyChunksAtStartup": [],
+        "startupJsKB": 8135,
+        "chunkCount": 653
+      },
+      "startup": {
+        "quiescentMs": 1513,
+        "fsReadFile": 1505,
+        "fsReadDirRecursive": 1,
+        "snapshot": {
+          "footprintMB": 418.0947265625,
+          "footprintByType": {
+            "Browser": 123,
+            "GPU": 101,
+            "Utility": 7.0947265625,
+            "Tab": 187
+          },
+          "mainHeapMB": 29.864262580871582,
+          "rssMB": 739.203125,
+          "rssByType": {
+            "Browser": 272.546875,
+            "GPU": 87.9375,
+            "Utility": 48.359375,
+            "Tab": 330.359375
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1647,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1505,
+            "db:save": 1505,
+            "db:notes:saveSnapshot": 1505,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 1,
+            "fs:readDir": 3,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4
+          }
+        }
+      },
+      "idle": {
+        "footprintMB": 315.0791015625,
+        "footprintByType": {
+          "Browser": 95,
+          "GPU": 74,
+          "Utility": 7.0791015625,
+          "Tab": 114
+        },
+        "mainHeapMB": 16.395968437194824,
+        "rssMB": 667.375,
+        "rssByType": {
+          "Browser": 245.9375,
+          "GPU": 87.890625,
+          "Utility": 48.375,
+          "Tab": 259.734375
+        },
+        "processes": 4,
+        "jsHeapMB": 54.168701171875,
+        "mainFds": 1647,
+        "windows": 1,
+        "ipc": {
+          "app:get-system-accent-color": 1,
+          "db:verifyCollection": 15,
+          "db:getAll": 11,
+          "app:get-launch-workspace": 1,
+          "app:set-launch-workspace": 1,
+          "app:chdir": 1,
+          "fs:watcher:start": 1,
+          "fs:readDirRecursive": 1,
+          "fs:readFile": 1505,
+          "db:save": 1505,
+          "db:notes:saveSnapshot": 1505,
+          "env:getHome": 2,
+          "db:notes:getTrashed": 1,
+          "fs:mkdir": 2,
+          "ai:get-configs": 1,
+          "fs:readDir": 3,
+          "app:renderer-ready": 1,
+          "db:notes:getTemplates": 4
+        }
+      },
+      "saves": {
+        "createReads": 1,
+        "readsPerAutosave": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "after": {
+          "footprintMB": 310.0791015625,
+          "footprintByType": {
+            "Browser": 90,
+            "GPU": 78,
+            "Utility": 7.0791015625,
+            "Tab": 135
+          },
+          "mainHeapMB": 16.499186515808105,
+          "rssMB": 675.59375,
+          "rssByType": {
+            "Browser": 245.8125,
+            "GPU": 95.1875,
+            "Utility": 48.390625,
+            "Tab": 286.203125
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1653,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 1,
+            "db:verifyCollection": 15,
+            "db:getAll": 11,
+            "app:get-launch-workspace": 1,
+            "app:set-launch-workspace": 1,
+            "app:chdir": 1,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 1,
+            "fs:readFile": 1516,
+            "db:save": 1513,
+            "db:notes:saveSnapshot": 1511,
+            "env:getHome": 2,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 35,
+            "app:renderer-ready": 1,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 2,
+            "fs:writeFile": 2,
+            "db:get": 12,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 1,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5
+          }
+        }
+      },
+      "external": {
+        "modifyReads": 1,
+        "addReads": 1,
+        "addedIndexed": true
+      },
+      "floating": {
+        "opened": 3,
+        "readsPerWindow": 4,
+        "whileOpen": {
+          "footprintMB": 589.2041015625,
+          "footprintByType": {
+            "Browser": 95,
+            "GPU": 97,
+            "Utility": 7.2041015625,
+            "Tab": 390
+          },
+          "mainHeapMB": 16.595053672790527,
+          "rssMB": 1389.015625,
+          "rssByType": {
+            "Browser": 257.796875,
+            "GPU": 96.5625,
+            "Utility": 48.734375,
+            "Tab": 985.921875
+          },
+          "processes": 7,
+          "jsHeapMB": 160.88485717773438,
+          "mainFds": 1661,
+          "windows": 4,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        },
+        "afterClose": {
+          "footprintMB": 283.0009765625,
+          "footprintByType": {
+            "Browser": 85,
+            "GPU": 70,
+            "Utility": 7.0478515625,
+            "Tab": 121
+          },
+          "mainHeapMB": 16.57394313812256,
+          "rssMB": 682.28125,
+          "rssByType": {
+            "Browser": 249.4375,
+            "GPU": 96.203125,
+            "Utility": 48.671875,
+            "Tab": 287.96875
+          },
+          "processes": 4,
+          "jsHeapMB": 54.168701171875,
+          "mainFds": 1655,
+          "windows": 1,
+          "ipc": {
+            "app:get-system-accent-color": 4,
+            "db:verifyCollection": 30,
+            "db:getAll": 23,
+            "app:get-launch-workspace": 4,
+            "app:set-launch-workspace": 4,
+            "app:chdir": 4,
+            "fs:watcher:start": 1,
+            "fs:readDirRecursive": 3,
+            "fs:readFile": 1530,
+            "db:save": 1522,
+            "db:notes:saveSnapshot": 1513,
+            "env:getHome": 5,
+            "db:notes:getTrashed": 1,
+            "fs:mkdir": 2,
+            "ai:get-configs": 2,
+            "fs:readDir": 36,
+            "app:renderer-ready": 4,
+            "db:notes:getTemplates": 4,
+            "fs:statFile": 9,
+            "fs:writeFile": 9,
+            "db:get": 24,
+            "ai:get-chats": 1,
+            "ai:save-chat": 1,
+            "db:notes:getRecentNotes": 13,
+            "fs:compareAndWriteFile": 5,
+            "db:hashtags:sync": 5,
+            "app:openQuickNote": 3,
+            "db:notes:getByFilePath": 1
+          }
+        }
+      },
+      "terminal": {
+        "shellsBeforeKill": 1,
+        "orphanShells": 0
+      },
+      "execution": {
+        "stdoutChars": 1000000
+      },
+      "errors": []
+    }
+  ]
+}

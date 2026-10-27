@@ -194,7 +194,11 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const existing = existingNotesMap.get(note.id);
       const current = mergedNotesMap.get(note.id);
       let freshest = note;
-      if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
+      // an unchanged note keeps its previous object: stable identity keeps memoized views valid and lets the
+      // freshly parsed copy (and its content string) be collected
+      if (existing && existing.updatedAt >= freshest.updatedAt && existing.content === freshest.content) {
+        freshest = existing;
+      } else if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
       if (current && current.updatedAt > freshest.updatedAt) freshest = current;
       mergedNotesMap.set(note.id, freshest);
     }
@@ -393,7 +397,8 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     setTerminalVisible: (terminalVisible: boolean) => ({ terminalVisible }),
     setAiContext: (aiContext: AiContext | null) => ({ aiContext }),
     loadRecentNotes: async (limit = 20) => {
-      const recent = await repositories.notes.getAll({ limit });
+      // the recent-notes dialog only lists titles and paths, so no file has to be read for it
+      const recent = await repositories.notes.getRecentNotes(limit);
       return { recentNotes: recent };
     },
     reorderTabs: (tabs: Tab[]) => {

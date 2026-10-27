@@ -2,7 +2,7 @@ import { Button, Input } from "@g4rcez/components";
 import { FileTextIcon } from "@phosphor-icons/react/dist/csr/FileText";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { TextTIcon } from "@phosphor-icons/react/dist/csr/TextT";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
@@ -47,7 +47,7 @@ export const SearchPane = () => {
     const [{ searchQuery }, layoutDispatch] = useLayoutStore((s) => ({
         searchQuery: s.searchQuery,
     }));
-    const [globalState] = useGlobalStore();
+    const [globalState] = useGlobalStore((state) => ({ notes: state.notes, note: state.note }));
     const [searchFocused, setSearchFocused] = useState(false);
     const [filters, setFilters] = useState<NoteSearchFilters>(EMPTY_NOTE_SEARCH_FILTERS);
     const [showSaveForm, setShowSaveForm] = useState(false);
@@ -70,10 +70,22 @@ export const SearchPane = () => {
         () => Array.from(new Set(globalState.notes.flatMap(({ tags }) => tags))).sort((a, b) => a.localeCompare(b)),
         [globalState.notes],
     );
+    // typing stays responsive: matching re-runs for the settled query instead of every keystroke
+    const deferredQuery = useDeferredValue(searchQuery);
     const textMatches = useMemo(
-        () => filterNotesByQuery(globalState.notes, searchQuery),
-        [globalState.notes, searchQuery],
+        () => filterNotesByQuery(globalState.notes, deferredQuery),
+        [globalState.notes, deferredQuery],
     );
+    const snippets = useMemo(() => new Map<string, string>(), [deferredQuery]);
+    const snippetFor = (note: { id: string; updatedAt: Date; content: string }): string => {
+        const key = `${note.id}:${+note.updatedAt}`;
+        let snippet = snippets.get(key);
+        if (snippet === undefined) {
+            snippet = getNoteSearchSnippet(note.content, deferredQuery);
+            snippets.set(key, snippet);
+        }
+        return snippet;
+    };
     const { filteredNotes, filterError } = useMemo(() => {
         try {
             return { filteredNotes: filterNotesByStructuredFilters(textMatches, filters), filterError: null };
@@ -438,7 +450,7 @@ export const SearchPane = () => {
                                                 {note.title || "Untitled"}
                                             </span>
                                             <span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-muted-foreground">
-                                                {getNoteSearchSnippet(note.content, searchQuery)}
+                                                {snippetFor(note)}
                                             </span>
                                             <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/75">
                                                 {location}

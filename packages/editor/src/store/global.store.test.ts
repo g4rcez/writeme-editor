@@ -74,6 +74,37 @@ describe("Global Store", () => {
     });
 
 
+    it("keeps the existing object when a reload brings an unchanged note", () => {
+        const loaded = Note.parse({ ...Note.new("Same", "body"), updatedAt: new Date("2026-01-01T00:00:00.000Z") });
+        useGlobalStore.dispatchers.notes([loaded]);
+        const reloaded = Note.parse({ ...loaded });
+        expect(reloaded).not.toBe(loaded);
+
+        useGlobalStore.dispatchers.notes([reloaded]);
+
+        expect(useGlobalStore.getState().notes[0]).toBe(loaded);
+    });
+
+    it("takes the reloaded copy when the content changed", () => {
+        const loaded = Note.parse({ ...Note.new("Edited", "before"), updatedAt: new Date("2026-01-01T00:00:00.000Z") });
+        useGlobalStore.dispatchers.notes([loaded]);
+        const reloaded = Note.parse({ ...loaded, content: "after", updatedAt: new Date("2026-01-02T00:00:00.000Z") });
+
+        useGlobalStore.dispatchers.notes([reloaded]);
+
+        expect(useGlobalStore.getState().notes[0]).toBe(reloaded);
+    });
+
+    it("loads recent notes from metadata instead of reading every note file", async () => {
+        const recent = [Note.new("Recent", "")];
+        vi.mocked(repositories.notes.getRecentNotes).mockResolvedValue(recent);
+
+        await useGlobalStore.dispatchers.loadRecentNotes(20);
+
+        expect(repositories.notes.getRecentNotes).toHaveBeenCalledWith(20);
+        expect(useGlobalStore.getState().recentNotes).toEqual(recent);
+    });
+
     it("keeps a legacy journal day durable when the Markdown heading synchronizes its title", async () => {
         const note = Note.parse({
             ...Note.new("2025-12-31-quicknote.md", "# Retrospective\n\nKeep this content\n", NoteType.quick),

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import type { Note } from "@/store/note";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { filterNotesByQuery } from "@/lib/note-search";
@@ -26,7 +26,8 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
     }, [state.notes]);
     const { notes: innerNotes, loading, error } = useNotesWithTags(uniqueNotes, state.directory);
 
-    const { activeView, searchQuery, activeActivity } = layoutState;
+    const { activeView, activeActivity } = layoutState;
+    const searchQuery = useDeferredValue(layoutState.searchQuery);
     const filteredNotes = useMemo(() => {
         let result = innerNotes;
         if (activeActivity === "read-it-later") {

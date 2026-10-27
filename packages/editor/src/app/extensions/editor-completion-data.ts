@@ -1,3 +1,4 @@
+import { isSecondaryWindow } from "@/lib/window-mode";
 import { marked, type Token } from "marked";
 import { parse as parseYaml } from "yaml";
 import { getRelativePath } from "@/lib/file-utils";
@@ -171,7 +172,8 @@ export async function loadWorkspaceCompletions(trigger: "#" | "@", editingNoteId
         notes.flatMap((note) => [...note.tags, ...(note.id === editingNoteId ? [] : noteCompletionTags(note))]),
     );
     for (const tag of storedTags) {
-        if (tag.project === workspaceKey && !filenames.has(tag.filename)) tags.add(tag.hashtag);
+        // floating windows only hold note metadata, so the tags of the listed notes must come from the stored hashtags
+        if (tag.project === workspaceKey && (isSecondaryWindow || !filenames.has(tag.filename))) tags.add(tag.hashtag);
     }
     return createTagItems(tags);
 }
