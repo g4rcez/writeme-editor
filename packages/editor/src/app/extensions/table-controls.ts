@@ -110,6 +110,9 @@ function selectionIsInTable(view: EditorView): boolean {
 export const TableControls = Extension.create({
     name: "tableControls",
 
+    // Ctrl is Mod on Linux/Windows, so Tiptap's Mod-Enter hard break would otherwise win
+    priority: 1000,
+
     addProseMirrorPlugins() {
         const editor = this.editor;
         return [
