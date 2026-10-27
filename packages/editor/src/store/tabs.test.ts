@@ -3,7 +3,7 @@ import { clearRecentlyClosedTabs, takeRecentlyClosedTab } from "@/lib/recently-c
 import { AI_CHAT_TAB_TYPE, TERMINAL_TAB_TYPE } from "@/lib/tab-target";
 import type { Tab } from "./repositories/entities/tab";
 import type { TerminalSession } from "./repositories/entities/terminal-session";
-import { getWorkspaceKey, normalizeWorkspaceTabs, useGlobalStore } from "./global.store";
+import { flushTabPersistence, getWorkspaceKey, normalizeWorkspaceTabs, useGlobalStore } from "./global.store";
 import { repositories } from "./repositories";
 
 // Mock repositories
@@ -197,6 +197,7 @@ describe("Tab Management Logic", () => {
         ]);
 
         await useGlobalStore.dispatchers.removeTab("terminal-tab");
+        await flushTabPersistence();
 
         expect(useGlobalStore.getState().tabs).toStrictEqual([]);
         expect(useGlobalStore.getState().terminalSessions).toStrictEqual([]);

@@ -354,7 +354,7 @@ export function childShells(parent: number): number {
         .split("\n")
         .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(.+)$/))
         .filter((match): match is RegExpMatchArray => match !== null)
-        .filter(([, , ppid, command]) => Number(ppid) === parent && /(?:^|[\/-])(zsh|bash|sh|fish)$/.test(command!)).length;
+        .filter(([, , ppid, command]) => Number(ppid) === parent && /(?:^|[/-])(zsh|bash|sh|fish)$/.test(command!)).length;
 }
 
 export const sleepMs = sleep;
