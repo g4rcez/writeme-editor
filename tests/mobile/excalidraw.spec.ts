@@ -70,6 +70,7 @@ for (const embedded of [false, true]) {
         }
         const canvas = page.locator(".excalidraw__canvas.interactive");
         await expect(canvas).toBeVisible();
+        expect(errors).toEqual([]);
         await page
             .locator(".excalidraw label")
             .filter({ has: page.getByRole("radio", { name: "Rectangle", exact: true }) })
@@ -129,6 +130,7 @@ for (const embedded of [false, true]) {
         expect(await readDrawing(page, embedded)).toEqual(saved);
         await page.reload();
         await expect(canvas).toBeVisible();
+        expect(errors).toEqual([]);
         expect(await readDrawing(page, embedded)).toEqual(saved);
         await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeEnabled();
         await page.getByRole("button", { name: "Open workspace menu", exact: true }).tap();
