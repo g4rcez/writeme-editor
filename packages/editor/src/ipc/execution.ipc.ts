@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import { ipcMain } from "electron";
 import which from "which";
+import { isMainFrameSender } from "./main-frame-sender";
 
 const EXECUTION_TIMEOUT_MS = 60_000;
 const MAX_OUTPUT_CHARS = 1_000_000;
@@ -15,6 +16,7 @@ export const executionIpcHandler = () => {
     });
 
     ipcMain.handle("execution:run", async (event, command: string, args: string[] = [], code: string) => {
+        if (!isMainFrameSender(event)) throw new Error("Execution access denied.");
         return new Promise<{
             stdout: string;
             stderr: string;

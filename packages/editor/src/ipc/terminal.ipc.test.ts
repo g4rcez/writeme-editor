@@ -40,7 +40,9 @@ class Sender extends EventEmitter {
 }
 
 let sender: Sender;
-const spawn = (id: string) => listeners.get("terminal:spawn")!({ sender }, id);
+const mainFrame = { url: "app://writeme" };
+const spawn = (id: string, senderFrame: unknown = mainFrame) =>
+    listeners.get("terminal:spawn")!({ sender: Object.assign(sender, { mainFrame }), senderFrame }, id);
 const kill = (id: string) => listeners.get("terminal:kill")!({ sender }, id);
 
 beforeEach(() => {
@@ -88,5 +90,11 @@ describe("terminal sessions", () => {
         spawned[0]!.data("output");
         spawned[0]!.exit();
         expect(sender.send).not.toHaveBeenCalled();
+    });
+
+    it("does not start a shell for a call from a sub frame", () => {
+        spawn("tab-1", { url: "https://evil.example" });
+        spawn("tab-2", null);
+        expect(spawned).toHaveLength(0);
     });
 });

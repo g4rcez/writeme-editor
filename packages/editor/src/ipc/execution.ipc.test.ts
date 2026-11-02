@@ -10,8 +10,11 @@ vi.mock("electron", () => ({
 
 import { executionIpcHandler } from "./execution.ipc";
 
+const mainFrame = { url: "app://writeme" };
+const eventFrom = (sender: EventEmitter, senderFrame: unknown = mainFrame) => ({ sender: Object.assign(sender, { mainFrame }), senderFrame });
+
 const run = (command: string, args: string[], sender: EventEmitter = new EventEmitter()) =>
-    handlers.get("execution:run")!({ sender }, command, args, "");
+    handlers.get("execution:run")!(eventFrom(sender), command, args, "");
 
 beforeEach(() => {
     handlers.clear();
@@ -51,5 +54,15 @@ describe("execution:run", () => {
         const result = await run(process.execPath, ["-e", "console.log('ok')"], sender);
         expect(result.stdout).toBe("ok\n");
         expect(sender.listenerCount("destroyed")).toBe(0);
+    });
+
+    it("rejects a call from a sub frame", async () => {
+        const call = handlers.get("execution:run")!(eventFrom(new EventEmitter(), { url: "https://evil.example" }), process.execPath, ["-e", "0"], "");
+        await expect(call).rejects.toThrow("Execution access denied.");
+    });
+
+    it("rejects a call whose sender frame is gone", async () => {
+        const call = handlers.get("execution:run")!(eventFrom(new EventEmitter(), null), process.execPath, ["-e", "0"], "");
+        await expect(call).rejects.toThrow("Execution access denied.");
     });
 });

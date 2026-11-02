@@ -2,12 +2,14 @@ import { ipcMain, type IpcMainEvent } from "electron";
 import { app } from "electron";
 import * as pty from "node-pty";
 import * as os from "os";
+import { isMainFrameSender } from "./main-frame-sender";
 
 // Store active pty sessions by ID
 const activeSessions = new Map<string, pty.IPty>();
 
 export const terminalIpcHandler = () => {
     ipcMain.on("terminal:spawn", (event: IpcMainEvent, id: string, providedCwd?: string) => {
+        if (!isMainFrameSender(event)) return;
         try {
             const existingSession = activeSessions.get(id);
             if (existingSession) {
