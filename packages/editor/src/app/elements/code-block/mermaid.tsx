@@ -1,4 +1,4 @@
-import { PeleError, render } from "pele";
+import { render } from "pele";
 import { type ReactElement, useMemo } from "react";
 
 type MermaidResult = { svg: string } | { error: string };
@@ -7,8 +7,8 @@ const renderChart = (chart: string): MermaidResult => {
     try {
         return { svg: render(chart).svg };
     } catch (error) {
-        if (error instanceof PeleError) return { error: error.message };
-        throw error;
+        // Any failure shows the alert, as before pele: a throw during render would unmount the editor tree.
+        return { error: error instanceof Error ? error.message : String(error) };
     }
 };
 
