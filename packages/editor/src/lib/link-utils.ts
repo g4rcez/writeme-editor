@@ -49,6 +49,10 @@ export function convertToMarkdownLink(text: string, label?: string): string {
     return text;
 }
 
+function countChar(text: string, char: string): number {
+    return text.split(char).length - 1;
+}
+
 /**
  * Finds URLs and relative paths in text and converts them to Markdown links.
  * Strips wrapping < > and separates trailing punctuation.
@@ -60,7 +64,7 @@ export function linkify(text: string): string {
     // 3. Absolute URLs: https?://...
     // 4. Relative paths: \.\.?\/... or \/... .md
     const combinedRegex =
-        /(!?\[.*?\]\(.*?\))|(<(?:https?:\/\/[^\s>]+|(?:\.\.?\/|\/)[^\s>]+)>)|(https?:\/\/[^\s<>]+)|((?:\.\.?\/|\/)[^\s<>]*(\.md|\/)?)/gi;
+        /(!?\[.*?\]\(.*?\))|(<(?:https?:\/\/[^\s>]+|(?:\.\.?\/|\/)[^\s>]+)>)|(https?:\/\/[^\s<>]+)|((?<![\w.~-])(?:\.\.?\/|\/)[^\s<>]*(\.md|\/)?)/gi;
 
     return text.replace(combinedRegex, (match, markdownLink) => {
         // If it matched an existing markdown link, return it as is
@@ -75,20 +79,21 @@ export function linkify(text: string): string {
             target = target.slice(1, -1);
         }
 
-        // 2. Separate trailing punctuation that shouldn't be part of the link
-        // Includes periods, commas, exclamation marks, question marks, semicolons, colons
-        const punctuationRegex = /([.,!?;:]+)$/;
-        const punctuationMatch = target.match(punctuationRegex);
+        // 2. Separate trailing punctuation, quotes and unbalanced closing brackets that are not part of the link
         let suffix = "";
-
-        if (punctuationMatch && punctuationMatch[1]) {
-            const punc = punctuationMatch[1];
+        for (;;) {
+            const last = target.slice(-1);
+            const isTrailing =
+                /[.,!?;:"']/.test(last) ||
+                (last === ")" && countChar(target, ")") > countChar(target, "(")) ||
+                (last === "]" && countChar(target, "]") > countChar(target, "[")) ||
+                (last === "}" && countChar(target, "}") > countChar(target, "{"));
+            if (!isTrailing) break;
             // Only strip if what's left is a valid URL or path
-            const potentialUrl = target.slice(0, -punc.length);
-            if (isValidUrl(potentialUrl) || isRelativeLink(potentialUrl)) {
-                target = potentialUrl;
-                suffix = punc;
-            }
+            const potentialUrl = target.slice(0, -1);
+            if (!isValidUrl(potentialUrl) && !isRelativeLink(potentialUrl)) break;
+            target = potentialUrl;
+            suffix = last + suffix;
         }
 
         // 3. Final validation and conversion
