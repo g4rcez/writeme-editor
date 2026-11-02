@@ -1,4 +1,6 @@
 import { render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { StrictMode } from "react";
 import { describe, expect, it } from "vitest";
 import { Mermaid } from "./mermaid";
@@ -81,5 +83,19 @@ describe("Mermaid", () => {
         );
 
         expect(container.innerHTML).not.toContain("javascript:");
+    });
+});
+
+describe("mermaid.css", () => {
+    const css = readFileSync(resolve(__dirname, "../../styles/mermaid.css"), "utf8");
+
+    it("maps error and critical colors to theme tokens", () => {
+        expect(css).toContain("--pele-error: var(--var-color-danger);");
+        expect(css).toContain("--pele-critical: var(--var-color-danger);");
+    });
+
+    it("has no hard-coded colors", () => {
+        expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+        expect(css).not.toMatch(/\b(?:rgb|hsl)a?\(/i);
     });
 });
