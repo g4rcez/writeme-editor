@@ -22,6 +22,8 @@ describe("isPublicHttpUrl", () => {
 
     it.each([
         "http://localhost:3000/",
+        "http://localhost./",
+        "http://foo.localhost./",
         "http://127.0.0.1/",
         "http://2130706433/",
         "http://10.1.2.3/",

@@ -56,7 +56,7 @@ export const isPublicHttpUrl = async (url: string, resolve: HostLookup = resolve
         return false;
     }
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    const host = parsed.hostname.replace(/^\[|\]$/g, "");
+    const host = parsed.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "");
     if (host === "localhost" || host.endsWith(".localhost")) return false;
     if (isIP(host)) return !isPrivateAddress(host);
     try {
