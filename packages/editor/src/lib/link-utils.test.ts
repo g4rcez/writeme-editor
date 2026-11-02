@@ -103,5 +103,20 @@ describe("link-utils", () => {
             const expected = "View [/path/to/my/note.md](/path/to/my/note.md)";
             expect(linkify(input)).toBe(expected);
         });
+
+        it("should not include closing brackets or quotes that wrap the link", () => {
+            expect(linkify("see (https://example.com) now")).toBe("see ([https://example.com](https://example.com)) now");
+            expect(linkify('"https://example.com/x"')).toBe('"[https://example.com/x](https://example.com/x)"');
+        });
+
+        it("should keep balanced brackets inside the link", () => {
+            expect(linkify("a https://example.com/foo_(bar) z")).toBe(
+                "a [https://example.com/foo_(bar)](https://example.com/foo_(bar)) z",
+            );
+        });
+
+        it("should not link a path segment in the middle of a word", () => {
+            expect(linkify("edit src/lib/ folder")).toBe("edit src/lib/ folder");
+        });
     });
 });
