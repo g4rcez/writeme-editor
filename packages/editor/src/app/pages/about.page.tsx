@@ -32,10 +32,6 @@ const DEPS: Dep[] = [
         description: "Slash-command menu extension for Tiptap",
     },
     {
-        name: "@iconify-json/logos",
-        description: "Iconify JSON icon set for technology brand logos",
-    },
-    {
         name: "@phosphor-icons/react",
         description: "Flexible, open-source icon family for React",
     },
@@ -225,12 +221,12 @@ const DEPS: Dep[] = [
         description: "Extensive math library with expression parser for JavaScript",
     },
     {
-        name: "mermaid",
-        description: "Diagram and flowchart generation from Markdown-like text",
-    },
-    {
         name: "motion",
         description: "Production-ready animation library for React",
+    },
+    {
+        name: "pele",
+        description: "Fast Mermaid renderer that outputs themeable SVG",
     },
     { name: "prettier", description: "Opinionated, zero-config code formatter" },
     {
