@@ -1,7 +1,7 @@
 import { ipcMain } from "electron";
 import puppeteer, { type Browser } from "puppeteer-core";
 import { findChromePath } from "@/lib/find-chrome";
-import { isPublicHttpUrl } from "./read-it-later-url";
+import { createCachedLookup, isPublicHttpUrl } from "./read-it-later-url";
 
 const LAUNCH_ARGS = ["--disable-dev-shm-usage", "--disable-gpu"];
 
@@ -64,15 +64,16 @@ export const readItLaterIpcHandler = () => {
             page = await browser.newPage();
             // Every request, including redirects and subresources, must target a public host.
             await page.setRequestInterception(true);
+            const lookup = createCachedLookup();
             page.on("request", (request) => {
                 const target = request.url();
                 if (target.startsWith("data:") || target.startsWith("blob:") || target === "about:blank") {
                     void request.continue();
                     return;
                 }
-                void isPublicHttpUrl(target).then((allowed) =>
-                    allowed ? request.continue() : request.abort("blockedbyclient"),
-                );
+                isPublicHttpUrl(target, lookup)
+                    .then((allowed) => (allowed ? request.continue() : request.abort("blockedbyclient")))
+                    .catch((error: unknown) => console.warn("[read-it-later] request handling failed", error));
             });
             await page.setUserAgent(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
