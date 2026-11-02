@@ -6,6 +6,8 @@ const { listeners, spawned } = vi.hoisted(() => ({
     listeners: new Map<string, (...args: any[]) => void>(),
     spawned: [] as Array<{
         kill: ReturnType<typeof vi.fn>;
+        write: ReturnType<typeof vi.fn>;
+        resize: ReturnType<typeof vi.fn>;
         exit: (code?: number) => void;
         data: (chunk: string) => void;
     }>,
@@ -13,7 +15,9 @@ const { listeners, spawned } = vi.hoisted(() => ({
 
 vi.mock("electron", () => ({
     app: { getPath: () => "/tmp" },
-    ipcMain: { on: vi.fn((channel: string, listener: (...args: any[]) => void) => void listeners.set(channel, listener)) },
+    ipcMain: {
+        on: vi.fn((channel: string, listener: (...args: any[]) => void) => void listeners.set(channel, listener)),
+    },
 }));
 vi.mock("node-pty", () => ({
     spawn: vi.fn(() => {
@@ -26,7 +30,13 @@ vi.mock("node-pty", () => ({
             onData: (listener: typeof onData) => void (onData = listener),
             onExit: (listener: typeof onExit) => void (onExit = listener),
         };
-        spawned.push({ kill: pty.kill, exit: (exitCode = 0) => onExit({ exitCode }), data: (chunk) => onData(chunk) });
+        spawned.push({
+            kill: pty.kill,
+            write: pty.write,
+            resize: pty.resize,
+            exit: (exitCode = 0) => onExit({ exitCode }),
+            data: (chunk) => onData(chunk),
+        });
         return pty;
     }),
 }));
@@ -43,7 +53,13 @@ let sender: Sender;
 const mainFrame = { url: "app://writeme" };
 const spawn = (id: string, senderFrame: unknown = mainFrame) =>
     listeners.get("terminal:spawn")!({ sender: Object.assign(sender, { mainFrame }), senderFrame }, id);
-const kill = (id: string) => listeners.get("terminal:kill")!({ sender }, id);
+const fromFrame = (senderFrame: unknown) => ({ sender: Object.assign(sender, { mainFrame }), senderFrame });
+const kill = (id: string, senderFrame: unknown = mainFrame) =>
+    listeners.get("terminal:kill")!(fromFrame(senderFrame), id);
+const write = (id: string, data: string, senderFrame: unknown = mainFrame) =>
+    listeners.get("terminal:write")!(fromFrame(senderFrame), id, data);
+const resize = (id: string, cols: number, rows: number, senderFrame: unknown = mainFrame) =>
+    listeners.get("terminal:resize")!(fromFrame(senderFrame), id, cols, rows);
 
 beforeEach(() => {
     listeners.clear();
@@ -96,5 +112,25 @@ describe("terminal sessions", () => {
         spawn("tab-1", { url: "https://evil.example" });
         spawn("tab-2", null);
         expect(spawned).toHaveLength(0);
+    });
+
+    it("forwards write and resize from the main frame", () => {
+        spawn("tab-1");
+        write("tab-1", "ls\r");
+        resize("tab-1", 100, 30);
+        expect(spawned[0]!.write).toHaveBeenCalledWith("ls\r");
+        expect(spawned[0]!.resize).toHaveBeenCalledWith(100, 30);
+    });
+
+    it("ignores write, resize and kill from a sub frame", () => {
+        spawn("tab-1");
+        const subFrame = { url: "https://evil.example" };
+        write("tab-1", "rm -rf ~\r", subFrame);
+        resize("tab-1", 100, 30, subFrame);
+        kill("tab-1", subFrame);
+        write("tab-1", "rm -rf ~\r", null);
+        expect(spawned[0]!.write).not.toHaveBeenCalled();
+        expect(spawned[0]!.resize).not.toHaveBeenCalled();
+        expect(spawned[0]!.kill).not.toHaveBeenCalled();
     });
 });
