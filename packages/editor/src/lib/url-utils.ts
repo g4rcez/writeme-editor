@@ -25,7 +25,7 @@ export function identifyDomain(url: string): DomainIdentification | null {
             const pathname = parsed.pathname;
 
             if (host === "youtu.be") {
-                id = pathname.slice(1);
+                id = pathname.split("/")[1] ?? null;
             } else if (pathname.startsWith("/live/")) {
                 id = pathname.split("/")[2] ?? null;
             } else if (pathname.startsWith("/embed/")) {
