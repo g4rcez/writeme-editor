@@ -1,18 +1,21 @@
+.mermaid {
+    --pele-bg: var(--var-color-background);
+    --pele-fg: var(--var-color-foreground);
+    --pele-muted: var(--var-color-muted-foreground);
+    --pele-line: var(--var-color-foreground);
+    --pele-surface: var(--var-color-primary-subtle);
+    --pele-surface-alt: var(--var-color-muted);
+    --pele-border: var(--var-color-primary);
+    --pele-accent: var(--var-color-primary);
+    --pele-font: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+    --pele-series-1: var(--var-color-primary);
+    --pele-series-2: var(--var-color-info);
+    --pele-series-3: var(--var-color-success);
+    --pele-series-4: var(--var-color-warn);
+    --pele-series-5: var(--var-color-danger);
+    --pele-series-6: var(--var-color-secondary);
+}
+
 .mermaid svg {
     max-width: 100%;
-}
-
-.mermaid svg text {
-    font-family: "JetBrains Mono Variable", "JetBrains Mono", monospace;
-}
-
-.mermaid svg .cluster rect {
-    stroke: var(--var-color-foreground);
-}
-
-.mermaid svg .edgeLabel,
-.mermaid svg .labelBkg {
-    background-color: var(--var-color-background);
-    color: var(--var-color-foreground);
-    fill: var(--var-color-background);
 }
