@@ -13,8 +13,8 @@ import { executionIpcHandler } from "./execution.ipc";
 const mainFrame = { url: "app://writeme" };
 const eventFrom = (sender: EventEmitter, senderFrame: unknown = mainFrame) => ({ sender: Object.assign(sender, { mainFrame }), senderFrame });
 
-const run = (command: string, args: string[], sender: EventEmitter = new EventEmitter()) =>
-    handlers.get("execution:run")!(eventFrom(sender), command, args, "");
+const run = (command: string, args: string[], sender: EventEmitter = new EventEmitter(), code = "") =>
+    handlers.get("execution:run")!(eventFrom(sender), command, args, code);
 
 beforeEach(() => {
     handlers.clear();
@@ -64,5 +64,10 @@ describe("execution:run", () => {
     it("rejects a call whose sender frame is gone", async () => {
         const call = handlers.get("execution:run")!(eventFrom(new EventEmitter(), null), process.execPath, ["-e", "0"], "");
         await expect(call).rejects.toThrow("Execution access denied.");
+    });
+
+    it("returns the exit code when the process exits without reading its stdin", async () => {
+        const result = await run(process.execPath, ["-e", "process.exit(3)"], new EventEmitter(), "x".repeat(5_000_000));
+        expect(result.exitCode).toBe(3);
     });
 });

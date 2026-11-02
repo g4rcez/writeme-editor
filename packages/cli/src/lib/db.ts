@@ -33,8 +33,9 @@ export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[
             bindParams.push(opts.type);
         }
         if (opts.search) {
-            conditions.push("(title LIKE ? OR content LIKE ?)");
-            bindParams.push(`%${opts.search}%`, `%${opts.search}%`);
+            conditions.push("(title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')");
+            const pattern = `%${opts.search.replace(/[\\%_]/g, "\\$&")}%`;
+            bindParams.push(pattern, pattern);
         }
 
         if (opts.tag) {
