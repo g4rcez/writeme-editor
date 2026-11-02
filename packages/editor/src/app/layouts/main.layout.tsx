@@ -2,13 +2,12 @@ import { FilePlusIcon } from "@phosphor-icons/react/dist/csr/FilePlus";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
 import { SidebarSimpleIcon } from "@phosphor-icons/react/dist/csr/SidebarSimple";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
 import { useLocation, useOutlet } from "react-router-dom";
 import { ContextPane } from "@/app/components/context-pane";
 import { MobileFileActions } from "@/app/components/mobile-file-actions";
 import { TabsBar } from "@/app/components/tabs-bar";
-import { TerminalWorkspace } from "@/app/components/terminal/terminal-workspace";
 import { mapShortcutOS } from "@/app/elements/shortcut-items";
 import { FEATURES } from "@/lib/build-features";
 import { isMobile } from "@/lib/platform";
@@ -17,6 +16,10 @@ import { CommanderType, useGlobalStore } from "@/store/global.store";
 import { uiDispatch, useUIStore } from "@/store/ui.store";
 import { useJsonDrop } from "../hooks/use-json-drop";
 import { Sidebar } from "./sidebar";
+
+const TerminalWorkspace = lazy(() =>
+    import("@/app/components/terminal/terminal-workspace").then((module) => ({ default: module.TerminalWorkspace })),
+);
 
 const routeTransition = {
     duration: 0.12,
@@ -169,15 +172,17 @@ export const MainLayout = () => {
                                     </div>
                                 </div>
                                 {FEATURES.terminal && !isMobile() && (
-                                    <TerminalWorkspace
-                                        tabs={state.tabs}
-                                        terminalSessions={state.terminalSessions}
-                                        restoredTerminalSessionIds={state.restoredTerminalSessionIds}
-                                        activeSessionId={activeTerminalSessionId}
-                                        directory={state.directory}
-                                        dispatch={dispatch}
-                                        className={activeTerminalSessionId ? "block" : "hidden"}
-                                    />
+                                    <Suspense fallback={null}>
+                                        <TerminalWorkspace
+                                            tabs={state.tabs}
+                                            terminalSessions={state.terminalSessions}
+                                            restoredTerminalSessionIds={state.restoredTerminalSessionIds}
+                                            activeSessionId={activeTerminalSessionId}
+                                            directory={state.directory}
+                                            dispatch={dispatch}
+                                            className={activeTerminalSessionId ? "block" : "hidden"}
+                                        />
+                                    </Suspense>
                                 )}
                             </div>
                         </Panel>
