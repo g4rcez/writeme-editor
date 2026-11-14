@@ -86,6 +86,7 @@ jobs:
                   name: platform-build-${{ matrix.platform }}
                   path: out/make/**
                   if-no-files-found: error
+                  retention-days: 1
             - name: Upload runtime evidence
               if: always()
               uses: actions/upload-artifact@v4
