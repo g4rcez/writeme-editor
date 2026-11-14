@@ -121,4 +121,4 @@ jobs:
                   name: mobile-verification-${{ matrix.platform }}
                   path: artifacts/playwright/${{ matrix.platform }}/
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3

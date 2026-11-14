@@ -103,6 +103,7 @@ jobs:
                   name: ${{ inputs.release && 'ios' || 'build-ios' }}
                   path: release-artifacts/
                   if-no-files-found: error
+                  retention-days: 7
 
             - name: Upload verification failures
               if: failure()
@@ -111,3 +112,4 @@ jobs:
                   name: mobile-ios-failures
                   path: artifacts/playwright/ios/
                   if-no-files-found: ignore
+                  retention-days: 7

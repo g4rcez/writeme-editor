@@ -98,4 +98,4 @@ jobs:
                       .omo/evidence/mcp-integration/native/
                   include-hidden-files: true
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3
