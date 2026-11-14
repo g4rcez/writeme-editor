@@ -34,3 +34,4 @@ jobs:
                   name: build-linux
                   path: out/make/**
                   if-no-files-found: error
+                  retention-days: 7

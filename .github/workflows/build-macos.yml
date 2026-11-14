@@ -36,3 +36,4 @@ jobs:
                   name: build-macos
                   path: out/make/**
                   if-no-files-found: error
+                  retention-days: 7

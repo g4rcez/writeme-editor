@@ -28,3 +28,4 @@ jobs:
                   name: build-windows
                   path: out/make/**
                   if-no-files-found: error
+                  retention-days: 7

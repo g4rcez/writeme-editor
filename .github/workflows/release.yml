@@ -124,7 +124,7 @@ jobs:
                   name: handwriting-release-macos
                   path: artifacts/playwright/osx/native/
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3
 
             - name: Verify macOS signature and notarization
               if: env.MACOS_SIGNING_MODE == 'signed'
@@ -181,6 +181,7 @@ jobs:
                   name: mac-arm64
                   path: release-artifacts/
                   if-no-files-found: error
+                  retention-days: 7
 
     build-windows:
         runs-on: windows-2022
@@ -229,7 +230,7 @@ jobs:
                   name: handwriting-release-windows
                   path: artifacts/playwright/windows/native/
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3
 
             - name: Stage artifacts
               shell: bash
@@ -263,6 +264,7 @@ jobs:
                   name: windows
                   path: release-artifacts/
                   if-no-files-found: error
+                  retention-days: 7
 
     build-linux:
         runs-on: ubuntu-latest
@@ -318,7 +320,7 @@ jobs:
                   name: handwriting-release-linux
                   path: artifacts/playwright/linux/native/
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3
 
             - name: Stage artifacts
               run: |
@@ -351,6 +353,7 @@ jobs:
                   name: linux
                   path: release-artifacts/
                   if-no-files-found: error
+                  retention-days: 7
 
     build-android:
         uses: ./.github/workflows/build-android.yml
