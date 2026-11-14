@@ -58,7 +58,7 @@ jobs:
                   --shard ${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }}
                   --workers ${{ inputs.fast && 4 || 2 }}
             - name: Upload shard evidence
-              if: ${{ always() }}
+              if: ${{ failure() }}
               uses: actions/upload-artifact@v4
               with:
                   name: >-
@@ -70,4 +70,4 @@ jobs:
                       matrix.shard
                       ) }}
                   if-no-files-found: error
-                  retention-days: 14
+                  retention-days: 3
