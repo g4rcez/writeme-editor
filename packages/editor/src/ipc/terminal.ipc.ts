@@ -2,12 +2,14 @@ import { ipcMain, type IpcMainEvent } from "electron";
 import { app } from "electron";
 import * as pty from "node-pty";
 import * as os from "os";
+import { isMainFrameSender } from "./main-frame-sender";
 
 // Store active pty sessions by ID
 const activeSessions = new Map<string, pty.IPty>();
 
 export const terminalIpcHandler = () => {
     ipcMain.on("terminal:spawn", (event: IpcMainEvent, id: string, providedCwd?: string) => {
+        if (!isMainFrameSender(event)) return;
         try {
             const existingSession = activeSessions.get(id);
             if (existingSession) {
@@ -61,7 +63,8 @@ export const terminalIpcHandler = () => {
         }
     });
 
-    ipcMain.on("terminal:write", (_, id: string, data: string) => {
+    ipcMain.on("terminal:write", (event: IpcMainEvent, id: string, data: string) => {
+        if (!isMainFrameSender(event)) return;
         const session = activeSessions.get(id);
         if (session) {
             try {
@@ -72,7 +75,8 @@ export const terminalIpcHandler = () => {
         }
     });
 
-    ipcMain.on("terminal:resize", (_, id: string, cols: number, rows: number) => {
+    ipcMain.on("terminal:resize", (event: IpcMainEvent, id: string, cols: number, rows: number) => {
+        if (!isMainFrameSender(event)) return;
         const session = activeSessions.get(id);
         if (session) {
             try {
@@ -83,7 +87,8 @@ export const terminalIpcHandler = () => {
         }
     });
 
-    ipcMain.on("terminal:kill", (_, id: string) => {
+    ipcMain.on("terminal:kill", (event: IpcMainEvent, id: string) => {
+        if (!isMainFrameSender(event)) return;
         const session = activeSessions.get(id);
         if (session) {
             try {
