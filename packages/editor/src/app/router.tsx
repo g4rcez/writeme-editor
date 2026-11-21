@@ -4,6 +4,7 @@ import { BUILD, FEATURES } from "../lib/build-features";
 import { isElectron } from "../lib/is-electron";
 import { isMobile } from "../lib/platform";
 import { RouteErrorBoundary } from "./components/route-error-boundary";
+import { usePhoneShell } from "./hooks/use-is-compact";
 import { RootLayout } from "./root-layout";
 
 const WorkspaceAgendaPage = lazy(() => import("./pages/workspace-agenda.page"));
@@ -58,6 +59,9 @@ const SettingsPlatformGate = lazy(() =>
     })),
 );
 
+/** Phones land on the note list; every other layout keeps the dashboard as home. */
+const HomeRoute = () => (usePhoneShell() ? <Navigate to="/notes" replace /> : <DashboardPage />);
+
 const createRouter = isElectron() || isMobile() || BUILD.os !== "web" ? createHashRouter : createBrowserRouter;
 
 export const router = createRouter([
@@ -68,7 +72,7 @@ export const router = createRouter([
         children: [
             {
                 index: true,
-                element: <DashboardPage />,
+                element: <HomeRoute />,
             },
             {
                 path: "note/:noteId",

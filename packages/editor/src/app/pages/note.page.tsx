@@ -41,6 +41,7 @@ import { JsonGraph } from "../elements/json-graph/json-graph";
 import { addFrontmatterToCurrentEditor } from "../frontmatter";
 import { useAgendaSource } from "../hooks/use-agenda-source";
 import { useEditorPanes } from "../hooks/use-editor-panes";
+import { usePhoneShell } from "../hooks/use-is-compact";
 
 const PdfNoteView = lazy(() =>
     import("../components/pdf-note-view").then((module) => ({ default: module.PdfNoteView })),
@@ -299,6 +300,7 @@ export default function NotePage() {
         hasRouteNoteTabRef.current = hasRouteNoteTab;
     }, [hasRouteNoteTab]);
     const isLoading = note === null;
+    const phone = usePhoneShell();
     const [editorMode, setEditorMode] = useState<EditorMode>(() => SettingsService.load().editorMode);
     const vimSettings = useVimSettings();
     const [pendingVimMode, setPendingVimMode] = useState<boolean | null>(null);
@@ -476,35 +478,57 @@ export default function NotePage() {
     const noteToolbar = (
         <div
             className={clsx(
-                "writeme-editor-column grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-border/50 bg-background print:hidden",
-                "@max-2xl:relative @max-2xl:grid-cols-1 @max-2xl:justify-center @max-2xl:gap-y-1 @max-2xl:py-2",
-                paneMode ? "shrink-0 px-4" : "px-3",
+                phone
+                    ? // One scrollable row; the note title lives in the phone header.
+                      "writeme-editor-column flex min-h-11 min-w-0 items-center justify-between gap-2 overflow-x-auto border-b border-border/50 bg-background px-2 print:hidden"
+                    : [
+                          "writeme-editor-column grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-border/50 bg-background print:hidden",
+                          "@max-2xl:relative @max-2xl:grid-cols-1 @max-2xl:justify-center @max-2xl:gap-y-1 @max-2xl:py-2",
+                          paneMode ? "shrink-0 px-4" : "px-3",
+                      ],
             )}
             role="toolbar"
             aria-label="Note tools"
         >
-            <div className="order-1 flex min-w-0 shrink-0 items-center justify-start @max-2xl:order-2 @max-2xl:w-full @max-2xl:justify-center">
+            <div
+                className={clsx(
+                    "order-1 flex min-w-0 shrink-0 items-center justify-start",
+                    !phone && "@max-2xl:order-2 @max-2xl:w-full @max-2xl:justify-center",
+                )}
+            >
                 {hasRichEditor ? (
-                    <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-3 @max-2xl:w-full @max-2xl:justify-center">
+                    <div
+                        className={clsx(
+                            "flex min-w-0 max-w-full flex-nowrap items-center gap-3",
+                            !phone && "@max-2xl:w-full @max-2xl:justify-center",
+                        )}
+                    >
                         {isLatexSource ? null : <EditorModeToggle mode={editorMode} onChange={changeEditorMode} />}
-                        <VimModeToggle enabled={vimMode} onChange={changeVimMode} />
+                        {phone ? null : <VimModeToggle enabled={vimMode} onChange={changeVimMode} />}
                     </div>
                 ) : null}
             </div>
-            <span
-                className="order-2 min-w-0 max-w-xs flex-1 truncate text-center text-sm font-medium text-foreground/80 @max-2xl:order-1 @max-2xl:mx-auto @max-2xl:w-full @max-2xl:flex-none"
-                title={note.filePath ?? undefined}
+            {phone ? null : (
+                <span
+                    className="order-2 min-w-0 max-w-xs flex-1 truncate text-center text-sm font-medium text-foreground/80 @max-2xl:order-1 @max-2xl:mx-auto @max-2xl:w-full @max-2xl:flex-none"
+                    title={note.filePath ?? undefined}
+                >
+                    {fileName || note.title || "Untitled"}
+                </span>
+            )}
+            <fieldset
+                className={clsx(
+                    "writeme-note-toolbar-actions order-3 m-0 flex shrink-0 flex-nowrap items-center justify-end gap-1 border-0 p-0",
+                    !phone && "@max-2xl:w-full @max-2xl:justify-center",
+                )}
             >
-                {fileName || note.title || "Untitled"}
-            </span>
-            <fieldset className="writeme-note-toolbar-actions order-3 m-0 flex shrink-0 flex-nowrap items-center justify-end gap-1 border-0 p-0 @max-2xl:w-full @max-2xl:justify-center">
                 <legend className="sr-only">Note actions</legend>
                 {hasRichEditor && !isLatexSource ? <AddFrontmatterButton /> : null}
                 {isHistoryEligible ? <NoteHistoryButton onClick={() => setHistoryOpen(true)} /> : null}
                 <FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />
                 {hasRichEditor ? (
                     <>
-                        {note.noteType !== NoteType["meeting-note"] ? (
+                        {!phone && note.noteType !== NoteType["meeting-note"] ? (
                             <EditorPaneToggleButton open={paneMode} onChange={togglePaneMode} />
                         ) : null}
                         <TableOfContents />

@@ -2,6 +2,7 @@ import { css } from "@g4rcez/components";
 import { Fragment, memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { SidebarShell } from "@/app/components/sidebar/sidebar-shell";
 import { EscapeLevel, useEscapeLayer } from "@/app/hooks/use-escape-layer";
+import { useIsCompact } from "@/app/hooks/use-is-compact";
 import { useGlobalStore } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 import { ActivityBar } from "../components/sidebar/activity-bar";
@@ -51,13 +52,10 @@ export const Sidebar = memo(function Sidebar() {
         return () => window.removeEventListener("resize", updateViewportWidth);
     }, []);
 
+    const compact = useIsCompact();
     useEffect(() => {
-        const mql = window.matchMedia("(max-width: 767px)");
-        const onNarrow = (e: MediaQueryListEvent) => (e.matches ? uiDispatch.setSidebarOpen(false) : undefined);
-        if (mql.matches) uiDispatch.setSidebarOpen(false);
-        mql.addEventListener("change", onNarrow);
-        return () => mql.removeEventListener("change", onNarrow);
-    }, [uiDispatch]);
+        if (compact) uiDispatch.setSidebarOpen(false);
+    }, [compact, uiDispatch]);
 
     useEscapeLayer(EscapeLevel.sidebar, !collapsed, () => uiDispatch.setSidebarOpen(false));
 
