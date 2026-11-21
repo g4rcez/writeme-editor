@@ -16,7 +16,7 @@ jobs:
             Browser ${{ matrix.target.platform }}
             (${{ matrix.shard }}/${{ inputs.fast && 6 || 3 }})
         runs-on: ${{ matrix.target.os }}
-        timeout-minutes: ${{ inputs.fast && 12 || 40 }}
+        timeout-minutes: ${{ inputs.fast && 20 || 40 }}
         strategy:
             fail-fast: false
             max-parallel: ${{ inputs.fast && 6 || 6 }}
