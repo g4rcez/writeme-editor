@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { beforeAll, describe, expect, test } from "bun:test";
+import { rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { queryNotes, queryProjects, querySettings, queryTags } from "../lib/db.ts";
@@ -118,5 +119,36 @@ describe("queryProjects", () => {
         const rows = queryProjects(TEST_DB);
         expect(rows.length).toBe(1);
         expect(rows[0]!.title).toBe("My Project");
+    });
+});
+
+describe("queryNotes search with LIKE metacharacters", () => {
+    const WILDCARD_DB = path.join(os.tmpdir(), "writeme-cli-test-wildcard.sqlite");
+
+    beforeAll(() => {
+        rmSync(WILDCARD_DB, { force: true });
+        const db = new Database(WILDCARD_DB);
+        db.prepare(
+            `CREATE TABLE notes (
+          id TEXT PRIMARY KEY, title TEXT, content TEXT, noteType TEXT, filePath TEXT, tags TEXT,
+          project TEXT, createdAt TEXT, updatedAt TEXT, favorite INTEGER DEFAULT 0, url TEXT, description TEXT
+        )`,
+        ).run();
+        const insert = db.prepare(`INSERT INTO notes (id, title, content, noteType, updatedAt) VALUES (?, ?, ?, 'note', ?)`);
+        insert.run("w1", "Budget", "spent 100% of it", "2024-01-01");
+        insert.run("w2", "Other", "spent 1000 dollars", "2024-01-02");
+        insert.run("w3", "Snake", "a_b", "2024-01-03");
+        insert.run("w4", "Plain", "axb", "2024-01-04");
+        db.close();
+    });
+
+    test("treats % as a literal character", () => {
+        const rows = queryNotes({ limit: 20, search: "100%" }, WILDCARD_DB);
+        expect(rows.map((row) => row.id)).toEqual(["w1"]);
+    });
+
+    test("treats _ as a literal character", () => {
+        const rows = queryNotes({ limit: 20, search: "a_b" }, WILDCARD_DB);
+        expect(rows.map((row) => row.id)).toEqual(["w3"]);
     });
 });

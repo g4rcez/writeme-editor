@@ -38,3 +38,183 @@ html.platform-mobile,
 .platform-mobile .__modal {
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
 }
+
+/* Phone shell: header, bottom tab bar and "More" sheet (see layouts/phone.layout.tsx). */
+.writeme-phone-layout {
+    height: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.writeme-phone-layout #main-scroll-container,
+.writeme-phone-layout .ProseMirror {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+}
+
+.writeme-phone-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 3rem;
+    padding: 0 0.25rem;
+    background-color: var(--wm-surface-1);
+    border-bottom: 1px solid color-mix(in srgb, var(--var-color-border) 55%, transparent);
+}
+
+.writeme-phone-header-action,
+.writeme-phone-header-spacer {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.writeme-phone-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.writeme-phone-title-large {
+    text-align: left;
+    padding-left: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.writeme-phone-tabbar {
+    display: flex;
+    flex-shrink: 0;
+    background-color: var(--wm-surface-1);
+    border-top: 1px solid color-mix(in srgb, var(--var-color-border) 55%, transparent);
+}
+
+.writeme-phone-tab {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 49px;
+    padding: 6px 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+}
+
+.writeme-phone-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.writeme-phone-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.4);
+}
+
+.writeme-phone-sheet-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem 0.5rem calc(49px + 0.5rem);
+    background-color: var(--wm-surface-1);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    animation: writeme-phone-sheet-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.writeme-phone-sheet-grabber {
+    align-self: center;
+    width: 2.25rem;
+    height: 4px;
+    margin-bottom: 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--var-color-border) 80%, transparent);
+}
+
+.writeme-phone-sheet-link {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    min-height: 48px;
+    padding: 0 0.75rem;
+    font-size: 1rem;
+}
+
+@keyframes writeme-phone-sheet-in {
+    from {
+        transform: translateY(24px);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .writeme-phone-sheet-panel {
+        animation: none;
+    }
+}
+
+/* Formatting bar that replaces the tab bar while the keyboard is open (components/phone-keyboard-toolbar.tsx). */
+.writeme-phone-keytoolbar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: stretch;
+    background-color: var(--wm-surface-1);
+    border-top: 1px solid color-mix(in srgb, var(--var-color-border) 55%, transparent);
+}
+
+.writeme-phone-keytoolbar-row {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.writeme-phone-keytoolbar-row::-webkit-scrollbar {
+    display: none;
+}
+
+.writeme-phone-keytool {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.writeme-phone-keytool:disabled {
+    opacity: 0.35;
+}
+
+.writeme-phone-keytool-done {
+    border-left: 1px solid color-mix(in srgb, var(--var-color-border) 55%, transparent);
+}

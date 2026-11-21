@@ -58,6 +58,10 @@ export const executionIpcHandler = () => {
                 resolve({ stdout, stderr, exitCode: -1 });
             });
 
+            // The process may exit before it reads stdin. "close" still reports the exit code.
+            child.stdin.on("error", (err: NodeJS.ErrnoException) => {
+                if (err.code !== "EPIPE") stderr = append(stderr, Buffer.from(`\nstdin failed: ${err.message}`));
+            });
             child.stdin.write(code);
             child.stdin.end();
         });

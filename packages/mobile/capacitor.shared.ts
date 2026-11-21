@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import type { KeyboardResize } from "@capacitor/keyboard";
 
 export const mobileConfig = {
     appId: "dev.writeme.app",
@@ -15,5 +16,6 @@ export const mobileConfig = {
     server: { hostname: "localhost", androidScheme: "https" },
     ios: { path: "native", contentInset: "never", preferredContentMode: "mobile" },
     android: { path: "native", allowMixedContent: false },
-    plugins: { Keyboard: { resize: "native", resizeOnFullScreen: true } },
+    // "native" resizes the web view itself, so a bottom-anchored toolbar sits on top of the keyboard.
+    plugins: { Keyboard: { resize: "native" as KeyboardResize, resizeOnFullScreen: true } },
 } satisfies CapacitorConfig;

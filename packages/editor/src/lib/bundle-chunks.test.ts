@@ -20,7 +20,7 @@ describe.each(["vite.renderer.config.mts", "vite.config.mts"])("%s manualChunks"
     it.each([
         "shiki/dist/index.mjs",
         "@shikijs/langs/dist/typescript.mjs",
-        "mermaid/dist/mermaid.core.mjs",
+        "pele/dist/pele.js",
         "@excalidraw/excalidraw/dist/index.js",
         "@viz-js/viz/dist/viz.js",
         "mathjs/lib/esm/index.js",
