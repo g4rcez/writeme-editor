@@ -23,9 +23,11 @@ import { RecentNotesDialog } from "@/app/components/recent-notes-dialog";
 import { TasksDialog } from "@/app/components/tasks-dialog";
 import { useLayoutStore } from "@/app/contexts/layout-context";
 import { editorSearchGlobalRef, editorGlobalRef } from "@/app/editor-global-ref";
+import { usePhoneShell } from "@/app/hooks/use-is-compact";
 import { useMobileNavigation } from "@/app/hooks/use-mobile-navigation";
 import { usePwaUpdate } from "@/app/hooks/use-pwa-update";
 import { MainLayout } from "@/app/layouts/main.layout";
+import { PhoneLayout } from "@/app/layouts/phone.layout";
 import { migrateWebOnlyNotesToDirectory } from "@/app/lib/open-directory-as-workspace";
 import { notificationRef } from "@/app/notification-ref";
 import { ShortcutsCommands } from "@/app/tutorial/shortcuts-commands";
@@ -63,6 +65,7 @@ function getEditorNoteId(): string | null {
 }
 
 export const RootLayout = () => {
+    const phoneShell = usePhoneShell();
     const [state, dispatch] = useGlobalStore((state) => ({
         tabs: state.tabs,
         activeTabId: state.activeTabId,
@@ -617,7 +620,7 @@ export const RootLayout = () => {
                 {supportsAI() && <AIDrawer />}
                 <KeyboardClickHints />
             </Fragment>
-            <MainLayout />
+            {phoneShell ? <PhoneLayout /> : <MainLayout />}
             {uiState.focusMode && (
                 <button
                     type="button"
