@@ -13,13 +13,9 @@ permissions:
 
 jobs:
     units:
-        name: Editor and build units (${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }})
+        name: Editor and build units
         runs-on: ubuntu-latest
-        timeout-minutes: ${{ inputs.fast && 5 || 15 }}
-        strategy:
-            fail-fast: false
-            matrix:
-                shard: ${{ fromJSON(inputs.fast && '[1,2]' || '[1]') }}
+        timeout-minutes: 15
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -27,7 +23,7 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
             - run: npm ci
-            - run: npm test -- --shard=${{ matrix.shard }}/${{ inputs.fast && 2 || 1 }}
+            - run: npm test
 
     test:
         runs-on: ubuntu-latest

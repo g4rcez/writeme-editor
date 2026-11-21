@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { canGoBack } from "@/lib/navigation-history";
 import { globalState, globalDispatch } from "@/store/global.store";
 import { useUIStore } from "@/store/ui.store";
 
@@ -26,8 +27,7 @@ export function useMobileNavigation(): void {
                         globalDispatch.setCreateNoteDialog({ isOpen: false, type: state.createNoteDialog.type });
                     else if (state.commander.enabled) globalDispatch.commander(false);
                     else if (ui.sidebarOpen) useUIStore.dispatchers.setSidebarOpen(false);
-                    else if (typeof window.history.state?.idx === "number" && window.history.state.idx > 0)
-                        navigate(-1);
+                    else if (canGoBack()) navigate(-1);
                     else void App.minimizeApp();
                 });
                 if (disposed) await listener.remove();

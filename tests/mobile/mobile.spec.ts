@@ -19,20 +19,33 @@ test("mobile shell has accessible touch controls and omits AI", async ({ page })
         if (/localhost:4079|api\.openai\.com|api\.anthropic\.com/.test(request.url())) aiRequests.push(request.url());
     });
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+    await expect(page).toHaveURL(/#\/notes$/);
+    await expect(page.getByRole("heading", { name: "Notes", exact: true })).toBeVisible();
     await expect(page.locator("html")).toHaveClass(/platform-mobile/);
     await expect(page.getByRole("button", { name: "Ask AI", exact: true })).toHaveCount(0);
-    const menu = page.getByRole("button", { name: "Open workspace menu", exact: true });
-    const bounds = await menu.boundingBox();
-    expect(bounds?.height).toBeGreaterThanOrEqual(44);
-    expect(bounds?.width).toBeGreaterThanOrEqual(44);
-    await menu.click();
-    await expect(page.getByRole("button", { name: "Workspace AI", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toHaveCount(0);
+    const tabbar = page.getByRole("navigation", { name: "Primary", exact: true });
+    await expect(tabbar.getByRole("button")).toHaveCount(4);
+    for (const control of [
+        ...(await tabbar.getByRole("button").all()),
+        page.locator(".writeme-phone-header").getByRole("button", { name: "New note", exact: true }),
+        page.locator(".writeme-phone-header").getByRole("button", { name: "Import Markdown", exact: true }),
+    ]) {
+        const bounds = await control.boundingBox();
+        expect(bounds?.height).toBeGreaterThanOrEqual(44);
+        expect(bounds?.width).toBeGreaterThanOrEqual(44);
+    }
+    await tabbar.getByRole("button", { name: "More", exact: true }).click();
+    const more = page.getByRole("dialog", { name: "More", exact: true });
+    await expect(more.getByRole("link", { name: "Settings", exact: true })).toBeVisible();
+    await expect(more.getByRole("link", { name: "Workspace AI", exact: true })).toHaveCount(0);
+    await expect(more.getByRole("button", { name: "Import PDF", exact: true })).toBeVisible();
     await page.goto("/#/settings/ai");
     await expect(page.getByRole("heading", { name: "Not found", exact: true })).toBeVisible();
     for (const route of ["chat", "oauth/callback", "terminal/example", "folder"]) {
         await page.goto(`/#/${route}`);
-        await expect(page).toHaveURL(/#\/$/);
+        // Disabled routes redirect home, and the phone shell's home is the note list.
+        await expect(page).toHaveURL(/#\/notes$/);
     }
     expect(errors).toEqual([]);
     expect(aiRequests).toEqual([]);
@@ -66,7 +79,7 @@ test("imports, edits, saves on backgrounding and exports a note offline", async 
     await editor.fill("Written offline");
     await page.evaluate(() => window.dispatchEvent(new Event("writeme:mobile-pause")));
     await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");
-    const header = page.locator(".writeme-app-header");
+    const header = page.locator(".writeme-phone-header");
     expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await page.screenshot({ path: `artifacts/playwright/mobile/${test.info().project.name}-editor.png` });
 });
@@ -178,4 +191,68 @@ test("Markdown import preserves handwritten note frontmatter", async ({ page }) 
     await expect(page.getByLabel("Handwritten notebook", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Handwritten notebook", { exact: true })).toBeVisible();
+});
+
+test("tablet-width windows keep the desktop layout instead of the phone shell", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto("/");
+    await expect(page.locator(".writeme-app-header")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toHaveCount(0);
+    await expect(page).not.toHaveURL(/#\/notes$/);
+    // Shrinking into a phone-width Split View switches shells without a reload.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+    await expect(page.locator(".writeme-app-header")).toHaveCount(0);
+});
+
+test("the keyboard swaps the tab bar for formatting tools without dropping editor focus", async ({ page }) => {
+    // A browser cannot open a software keyboard, so emulate what one does: shrink the visual viewport.
+    await page.addInitScript(() => {
+        const viewport = Object.assign(new EventTarget(), {
+            height: window.innerHeight,
+            offsetTop: 0,
+            width: window.innerWidth,
+            scale: 1,
+        });
+        Object.defineProperty(window, "visualViewport", { value: viewport, configurable: true });
+        Object.defineProperty(window, "__setKeyboard", {
+            value: (height: number) => {
+                viewport.height = window.innerHeight - height;
+                viewport.dispatchEvent(new Event("resize"));
+            },
+        });
+    });
+    await page.goto("/");
+    await importMarkdown(page, "Keyboard note", "Original text");
+    const tabbar = page.getByRole("navigation", { name: "Primary", exact: true });
+    const formatting = page.getByRole("toolbar", { name: "Formatting", exact: true });
+
+    // The note is named in the header, and its tools fit one compact row without the desktop-only controls.
+    await expect(page.locator(".writeme-phone-header").getByRole("heading", { name: "Keyboard note" })).toBeVisible();
+    const noteTools = page.getByRole("toolbar", { name: "Note tools", exact: true });
+    await expect(noteTools.getByText("Vim mode")).toHaveCount(0);
+    expect((await noteTools.boundingBox())?.height).toBeLessThan(64);
+    await expect(tabbar).toBeVisible();
+    await expect(formatting).toHaveCount(0);
+
+    const editor = page.locator(".ProseMirror").first();
+    await editor.click();
+    await editor.press("ControlOrMeta+a");
+    await page.evaluate(() => (window as unknown as { __setKeyboard: (height: number) => void }).__setKeyboard(300));
+    await expect(formatting).toBeVisible();
+    await expect(tabbar).toHaveCount(0);
+    for (const control of await formatting.getByRole("button").all()) {
+        const bounds = await control.boundingBox();
+        expect(bounds?.height).toBeGreaterThanOrEqual(44);
+        expect(bounds?.width).toBeGreaterThanOrEqual(44);
+    }
+
+    await formatting.getByRole("button", { name: "Bold", exact: true }).click();
+    await expect(editor.locator("strong")).toContainText("Original text");
+    await expect(editor).toBeFocused();
+    await expect(formatting.getByRole("button", { name: "Bold", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+    await page.evaluate(() => (window as unknown as { __setKeyboard: (height: number) => void }).__setKeyboard(0));
+    await expect(tabbar).toBeVisible();
+    await expect(formatting).toHaveCount(0);
 });

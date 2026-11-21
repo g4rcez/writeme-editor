@@ -24,7 +24,8 @@ function samplePdf(): Buffer {
 
 test("imports a PDF and reloads its on-device attachment", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Import PDF", exact: true }).click();
+    await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("button", { name: "More" }).click();
+    await page.getByRole("dialog", { name: "More", exact: true }).getByRole("button", { name: "Import PDF" }).click();
     const dialog = page.getByRole("dialog", { name: "Import PDF", exact: true });
     await dialog.getByLabel("PDF document", { exact: true }).setInputFiles({
         name: "Mobile.pdf",

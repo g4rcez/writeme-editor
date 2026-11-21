@@ -57,6 +57,8 @@
         "ios:open": "npm run open --workspace @writeme/ios",
         "ios:run": "npm run ios:sync && npm run run --workspace @writeme/ios",
         "ios:build": "npm run ios:sync && npm run build --workspace @writeme/ios",
+        "ios:device": "npm run ios:sync && npm run device --workspace @writeme/ios",
+        "ios:device:check": "npm run device:check --workspace @writeme/ios",
         "android:sync": "npm run build:profile -- android-google-play sync",
         "android:open": "npm run open --workspace @writeme/android",
         "android:run": "npm run android:sync && npm run run --workspace @writeme/android",

@@ -14,16 +14,16 @@ jobs:
     browser:
         name: >-
             Browser ${{ matrix.target.platform }}
-            (${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }})
+            (${{ matrix.shard }}/${{ inputs.fast && 6 || 3 }})
         runs-on: ${{ matrix.target.os }}
-        timeout-minutes: ${{ inputs.fast && 8 || 40 }}
+        timeout-minutes: ${{ inputs.fast && 12 || 40 }}
         strategy:
             fail-fast: false
-            max-parallel: ${{ inputs.fast && 16 || 6 }}
+            max-parallel: ${{ inputs.fast && 6 || 6 }}
             matrix:
                 shard: >-
                     ${{ fromJSON(inputs.fast &&
-                    '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]' ||
+                    '[1,2,3,4,5,6]' ||
                     '[1,2,3]') }}
                 target: >-
                     ${{ fromJSON(inputs.fast &&
@@ -50,12 +50,19 @@ jobs:
                   node-version-file: .nvmrc
                   cache: npm
             - run: npm ci --ignore-scripts
-            - run: npm exec playwright -- install --only-shell chromium
+            - name: Cache Playwright browsers
+              id: playwright-cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+            - if: steps.playwright-cache.outputs.cache-hit != 'true'
+              run: npm exec playwright -- install --only-shell chromium
             - name: Run all browser regressions
               run: >-
                   npm run test:e2e -- --platform ${{ matrix.target.platform }}
                   --suite browser --project chromium
-                  --shard ${{ matrix.shard }}/${{ inputs.fast && 16 || 3 }}
+                  --shard ${{ matrix.shard }}/${{ inputs.fast && 6 || 3 }}
                   --workers ${{ inputs.fast && 4 || 2 }}
             - name: Upload shard evidence
               if: ${{ always() }}

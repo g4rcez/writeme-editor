@@ -35,8 +35,9 @@ for (const embedded of [false, true]) {
         const content = embedded
             ? "# Embedded drawing\n\n```excalidraw\n[]\n```\n"
             : `---\ntype: excalidraw\nview: excalidraw\nschemaVersion: 1\n---\n\n\`\`\`json\n${JSON.stringify({ elements: [], appState: drawingViewport, files: {} })}\n\`\`\`\n`;
-        await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         const mobile = await page.locator("html").evaluate((element) => element.classList.contains("platform-mobile"));
+        if (mobile) await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
+        else await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         if (mobile) {
             await page.getByLabel("Import Markdown file", { exact: true }).setInputFiles({
                 name: "Drawing.md",
@@ -130,8 +131,11 @@ for (const embedded of [false, true]) {
         await page.reload();
         await expect(canvas).toBeVisible();
         expect(await readDrawing(page, embedded)).toEqual(saved);
-        await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeEnabled();
-        await page.getByRole("button", { name: "Open workspace menu", exact: true }).tap();
+        const menu = mobile
+            ? page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("button", { name: "More" })
+            : page.getByRole("button", { name: "Open workspace menu", exact: true });
+        await expect(menu).toBeEnabled();
+        await menu.tap();
         expect(errors).toEqual([]);
     });
 }
