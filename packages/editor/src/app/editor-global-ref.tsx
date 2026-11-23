@@ -34,7 +34,7 @@ type RegisteredEditor = {
     activate: () => void;
 };
 
-const registeredEditors: RegisteredEditor[] = [];
+const registeredEditors: Array<RegisteredEditor> = [];
 let activeEditor: RegisteredEditor | null = null;
 
 export function registerEditorActivation(activate: () => void): {
@@ -46,15 +46,15 @@ export function registerEditorActivation(activate: () => void): {
 
     return {
         activate: () => {
-            if (!registeredEditors.includes(registeredEditor)) return;
+            if (!registeredEditors.includes(registeredEditor)) {return;}
             activeEditor = registeredEditor;
             registeredEditor.activate();
         },
         unregister: () => {
             const index = registeredEditors.indexOf(registeredEditor);
-            if (index === -1) return;
+            if (index === -1) {return;}
             registeredEditors.splice(index, 1);
-            if (activeEditor !== registeredEditor) return;
+            if (activeEditor !== registeredEditor) {return;}
 
             activeEditor = registeredEditors.at(-1) ?? null;
             activeEditor?.activate();

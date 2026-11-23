@@ -23,7 +23,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("note tag projections", () => {
     it("combines a pending tag read with the latest notes rather than captured notes", async () => {
-        const pending = deferred<Hashtag[]>();
+        const pending = deferred<Array<Hashtag>>();
         getHashtags.mockReturnValueOnce(pending.promise);
         const old = Note.new("Stable title", "Old content");
         const updated = Note.parse({ ...old, content: "New content", tags: ["frontmatter"] });
@@ -38,8 +38,8 @@ describe("note tag projections", () => {
     });
 
     it("ignores an older refresh that completes after a newer refresh", async () => {
-        const first = deferred<Hashtag[]>();
-        const second = deferred<Hashtag[]>();
+        const first = deferred<Array<Hashtag>>();
+        const second = deferred<Array<Hashtag>>();
         const note = Note.new("Note", "");
         getHashtags.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
         const { result } = renderHook(() => useNotesWithTags([note], null));
@@ -68,7 +68,7 @@ describe("note tag projections", () => {
 
     it("refreshes committed tag changes without hiding loaded rows", async () => {
         const note = Note.new("Note", "");
-        const pending = deferred<Hashtag[]>();
+        const pending = deferred<Array<Hashtag>>();
         const { result } = renderHook(() => useNotesWithTags([note], null));
         await waitFor(() => expect(result.current.loading).toBe(false));
         getHashtags.mockReturnValueOnce(pending.promise);
@@ -101,8 +101,8 @@ describe("note tag projections", () => {
     });
 
     it("does not apply a previous workspace's tags", async () => {
-        const first = deferred<Hashtag[]>();
-        const second = deferred<Hashtag[]>();
+        const first = deferred<Array<Hashtag>>();
+        const second = deferred<Array<Hashtag>>();
         const note = Note.new("Same title", "");
         getHashtags.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
         const { result, rerender } = renderHook(({ directory }) => useNotesWithTags([note], directory), {
@@ -117,7 +117,7 @@ describe("note tag projections", () => {
     });
 
     it("ignores a pending read and removes the event listener on unmount", async () => {
-        const pending = deferred<Hashtag[]>();
+        const pending = deferred<Array<Hashtag>>();
         getHashtags.mockReturnValueOnce(pending.promise);
         const log = vi.spyOn(console, "error").mockImplementation(() => {});
         const { result, unmount } = renderHook(() => useNotesWithTags([], null));

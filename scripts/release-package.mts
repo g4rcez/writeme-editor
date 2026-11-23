@@ -19,7 +19,7 @@ type PackageRelease = {
     nextVersion: string;
 };
 
-export type NpmRunner = (args: string[], directory: string) => void;
+export type NpmRunner = (args: Array<string>, directory: string) => void;
 
 const packageDirectories = ["math", "cli", "mcp"] as const;
 const usage = "Usage: pnpm release <patch|minor|major> [--dry-run]";
@@ -32,28 +32,28 @@ function readManifest(directory: string): PackageManifest {
 
 function assertReleaseCheckout(repository: string): void {
     const branch = spawnSync("git", ["branch", "--show-current"], { cwd: repository, encoding: "utf8" });
-    if (branch.error) throw branch.error;
+    if (branch.error) {throw branch.error;}
     if (branch.status !== 0 || branch.stdout.trim() !== "main") {
         throw new Error("Package releases must run from the main branch.");
     }
 
     const status = spawnSync("git", ["status", "--porcelain"], { cwd: repository, encoding: "utf8" });
-    if (status.error) throw status.error;
+    if (status.error) {throw status.error;}
     if (status.status !== 0 || status.stdout.trim()) {
         throw new Error("Commit or stash worktree changes before publishing packages.");
     }
 }
-function runNpm(args: string[], directory: string): void {
+function runNpm(args: Array<string>, directory: string): void {
     const result = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", args, {
         cwd: directory,
         stdio: "inherit",
         env: { ...process.env, npm_config_ignore_scripts: "false", npm_config_dry_run: "false" },
     });
-    if (result.error) throw result.error;
-    if (result.status !== 0) throw new Error(`npm ${args.join(" ")} failed (${result.status ?? result.signal}).`);
+    if (result.error) {throw result.error;}
+    if (result.status !== 0) {throw new Error(`npm ${args.join(" ")} failed (${result.status ?? result.signal}).`);}
 }
 
-function readReleases(repository: string, bump: string): PackageRelease[] {
+function readReleases(repository: string, bump: string): Array<PackageRelease> {
     return packageDirectories.map((packageDirectory) => {
         const directory = join(repository, "packages", packageDirectory);
         let manifest: PackageManifest;
@@ -79,7 +79,7 @@ function readReleases(repository: string, bump: string): PackageRelease[] {
     });
 }
 
-export function releasePackages(args: string[], repository: string, run: NpmRunner = runNpm): void {
+export function releasePackages(args: Array<string>, repository: string, run: NpmRunner = runNpm): void {
     const { positionals, values } = parseArgs({
         args: args[0] === "--" ? args.slice(1) : args,
         allowPositionals: true,
@@ -91,7 +91,7 @@ export function releasePackages(args: string[], repository: string, run: NpmRunn
     }
 
     const releases = readReleases(repository, bump);
-    if (!values["dry-run"]) assertReleaseCheckout(repository);
+    if (!values["dry-run"]) {assertReleaseCheckout(repository);}
 
     for (const release of releases) {
         console.log(`Validating ${release.name}@${release.currentVersion}`);
@@ -148,7 +148,7 @@ export function releasePackages(args: string[], repository: string, run: NpmRunn
     }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename) {
     try {
         releasePackages(process.argv.slice(2), fileURLToPath(new URL("../", import.meta.url)));
     } catch (error) {

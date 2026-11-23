@@ -14,7 +14,7 @@ function useIsNarrowDiffViewport(): boolean {
     );
 
     useEffect(() => {
-        if (typeof window.matchMedia !== "function") return;
+        if (typeof window.matchMedia !== "function") {return;}
         const mediaQuery = window.matchMedia(NARROW_DIFF_QUERY);
         const handleChange = (event: MediaQueryListEvent): void => setIsNarrow(event.matches);
         mediaQuery.addEventListener("change", handleChange);
@@ -45,8 +45,8 @@ export const AIDiffView = ({ oldContent, newContent }: { oldContent: string; new
             diffFile.init();
             diffFile.buildSplitDiffLines();
             return diffFile;
-        } catch (e) {
-            console.error("Diff generation failed:", e);
+        } catch (error) {
+            console.error("Diff generation failed:", error);
             return new DiffFile("", "", "", "", [], "markdown", "markdown");
         }
     }, [oldContent, newContent]);

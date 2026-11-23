@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { RawMarkdownEditor } from "./raw-markdown-editor";
 
-const editors: ReturnType<typeof render>[] = [];
+const editors: Array<ReturnType<typeof render>> = [];
 
 afterEach(() => {
     editors.splice(0).forEach(({ unmount }) => unmount());
@@ -38,7 +38,7 @@ describe("RawMarkdownEditor spellcheck attributes", () => {
 
         const content = await waitFor(() => {
             const element = result.container.querySelector<HTMLElement>(".cm-content");
-            if (!element) throw new Error("CodeMirror content element was not mounted.");
+            if (!element) {throw new Error("CodeMirror content element was not mounted.");}
             return element;
         });
         const excludedSource = Array.from(content.querySelectorAll<HTMLElement>('[spellcheck="false"]'))
@@ -70,7 +70,7 @@ describe("RawMarkdownEditor spellcheck attributes", () => {
 
         const content = await waitFor(() => {
             const element = result.container.querySelector<HTMLElement>(".cm-content");
-            if (!element) throw new Error("CodeMirror content element was not mounted.");
+            if (!element) {throw new Error("CodeMirror content element was not mounted.");}
             return element;
         });
 

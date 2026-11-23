@@ -13,8 +13,8 @@ let requestContentType: string | undefined;
 
 beforeAll(async () => {
     server = createServer(async (request, response) => {
-        const chunks: Buffer[] = [];
-        for await (const chunk of request) chunks.push(Buffer.from(chunk));
+        const chunks: Array<Buffer> = [];
+        for await (const chunk of request) {chunks.push(Buffer.from(chunk));}
         requestBody = Buffer.concat(chunks).toString();
         requestAuthorization = request.headers.authorization;
         requestContentType = request.headers["content-type"];
@@ -23,7 +23,7 @@ beforeAll(async () => {
     });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
-    if (!address || typeof address === "string") throw new Error("The transcription fixture failed to start.");
+    if (!address || typeof address === "string") {throw new Error("The transcription fixture failed to start.");}
     endpoint = `http://127.0.0.1:${address.port}/v1/audio/transcriptions`;
 });
 
@@ -274,17 +274,17 @@ class RecordingTrack extends EventTarget {
 }
 
 class RecordingStream {
-    constructor(readonly tracks: RecordingTrack[]) {}
-    getTracks(): RecordingTrack[] {
+    constructor(readonly tracks: Array<RecordingTrack>) {}
+    getTracks(): Array<RecordingTrack> {
         return this.tracks;
     }
-    getAudioTracks(): RecordingTrack[] {
+    getAudioTracks(): Array<RecordingTrack> {
         return this.tracks.filter(({ kind }) => kind === "audio");
     }
 }
 
 class RecordingMediaRecorder extends EventTarget {
-    static instances: RecordingMediaRecorder[] = [];
+    static instances: Array<RecordingMediaRecorder> = [];
     static failSource: RecordingStream | undefined;
     static isTypeSupported(): boolean {
         return true;

@@ -16,17 +16,17 @@ type AttachmentError = {
 };
 
 type UseAIFileAttachmentsOptions = {
-    files: AIFile[];
-    onFilesChange: Dispatch<SetStateAction<AIFile[]>>;
+    files: Array<AIFile>;
+    onFilesChange: Dispatch<SetStateAction<Array<AIFile>>>;
     adapter: AIAdapter | undefined;
 };
 
 export type AIFileAttachmentController = {
-    addFiles(files: File[]): boolean;
+    addFiles(files: Array<File>): boolean;
     removeFile(id: string): void;
     clearErrors(): void;
     isPreparing: boolean;
-    errors: AttachmentError[];
+    errors: Array<AttachmentError>;
     accept: string;
 };
 
@@ -34,10 +34,10 @@ function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : "The file could not be prepared.";
 }
 
-export function getClipboardFiles(clipboardData: DataTransfer | null): File[] {
-    if (!clipboardData) return [];
+export function getClipboardFiles(clipboardData: DataTransfer | null): Array<File> {
+    if (!clipboardData) {return [];}
     const files = Array.from(clipboardData.files);
-    if (files.length > 0) return files;
+    if (files.length > 0) {return files;}
     return Array.from(clipboardData.items)
         .filter((item) => item.kind === "file")
         .map((item) => item.getAsFile())
@@ -50,7 +50,7 @@ export function useAIFileAttachments({
     adapter,
 }: UseAIFileAttachmentsOptions): AIFileAttachmentController {
     const [isPreparing, setIsPreparing] = useState(false);
-    const [errors, setErrors] = useState<AttachmentError[]>([]);
+    const [errors, setErrors] = useState<Array<AttachmentError>>([]);
     const filesRef = useRef(files);
     const adapterRef = useRef(adapter);
     const adapterGenerationRef = useRef(0);
@@ -64,7 +64,7 @@ export function useAIFileAttachments({
     }, [files]);
 
     useLayoutEffect(() => {
-        if (adapterRef.current === adapter) return;
+        if (adapterRef.current === adapter) {return;}
         adapterRef.current = adapter;
         adapterGenerationRef.current += 1;
         queueRef.current = Promise.resolve();
@@ -76,16 +76,16 @@ export function useAIFileAttachments({
         setIsPreparing(false);
     }, [adapter, onFilesChange]);
 
-    const addErrors = (nextErrors: Omit<AttachmentError, "id">[]): void => {
-        if (nextErrors.length === 0) return;
+    const addErrors = (nextErrors: Array<Omit<AttachmentError, "id">>): void => {
+        if (nextErrors.length === 0) {return;}
         setErrors((current) => [...current, ...nextErrors.map((error) => ({ ...error, id: ++errorIdRef.current }))]);
     };
 
-    const addFiles = (selectedFiles: File[]): boolean => {
-        if (selectedFiles.length === 0) return false;
+    const addFiles = (selectedFiles: Array<File>): boolean => {
+        if (selectedFiles.length === 0) {return false;}
 
-        const accepted: File[] = [];
-        const rejected: Omit<AttachmentError, "id">[] = [];
+        const accepted: Array<File> = [];
+        const rejected: Array<Omit<AttachmentError, "id">> = [];
         let nextCount = filesRef.current.length + reservedCountRef.current;
         let nextSize = filesRef.current.reduce((total, file) => total + file.size, 0) + reservedSizeRef.current;
 
@@ -113,7 +113,7 @@ export function useAIFileAttachments({
         }
 
         addErrors(rejected);
-        if (accepted.length === 0) return false;
+        if (accepted.length === 0) {return false;}
 
         reservedCountRef.current += accepted.length;
         reservedSizeRef.current += accepted.reduce((total, file) => total + file.size, 0);
@@ -122,8 +122,8 @@ export function useAIFileAttachments({
         const selectedGeneration = adapterGenerationRef.current;
 
         queueRef.current = queueRef.current.then(async () => {
-            const prepared: AIFile[] = [];
-            const preparationErrors: Omit<AttachmentError, "id">[] = [];
+            const prepared: Array<AIFile> = [];
+            const preparationErrors: Array<Omit<AttachmentError, "id">> = [];
 
             for (const file of accepted) {
                 if (
@@ -184,7 +184,7 @@ export function useAIFileAttachments({
 }
 
 type Props = {
-    files: AIFile[];
+    files: Array<AIFile>;
     controller: AIFileAttachmentController;
     disabled?: boolean;
 };

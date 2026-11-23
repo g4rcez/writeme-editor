@@ -4,7 +4,7 @@ import { registerHotkey, registerHotkeys } from "./hotkeys";
 let unregisterHandlers: Array<() => void> = [];
 
 function cleanup(): void {
-    for (const unregister of unregisterHandlers) unregister();
+    for (const unregister of unregisterHandlers) {unregister();}
     unregisterHandlers = [];
 }
 

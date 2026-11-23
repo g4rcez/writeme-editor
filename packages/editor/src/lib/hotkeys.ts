@@ -33,8 +33,8 @@ const registries = new WeakMap<Window, HotkeyRegistry>();
 
 function normalizeKey(key: string): string {
     const normalizedKey = key.trim().toLowerCase();
-    if (normalizedKey === "esc") return "escape";
-    if (normalizedKey === "space") return " ";
+    if (normalizedKey === "esc") {return "escape";}
+    if (normalizedKey === "space") {return " ";}
     return normalizedKey;
 }
 
@@ -88,12 +88,12 @@ function parseHotkey(hotkey: string): NormalizedHotkey {
 
 function matchesHotkey(event: HotkeyEvent, hotkey: NormalizedHotkey): boolean {
     const isShiftedDigit = hotkey.shiftKey && /^\d$/.test(hotkey.key) && event.code === `Digit${hotkey.key}`;
-    if (!isShiftedDigit && normalizeKey(event.key) !== hotkey.key) return false;
-    if (event.altKey !== hotkey.altKey) return false;
-    if (event.shiftKey !== hotkey.shiftKey) return false;
+    if (!isShiftedDigit && normalizeKey(event.key) !== hotkey.key) {return false;}
+    if (event.altKey !== hotkey.altKey) {return false;}
+    if (event.shiftKey !== hotkey.shiftKey) {return false;}
 
     if (hotkey.modKey) {
-        if (!event.ctrlKey && !event.metaKey) return false;
+        if (!event.ctrlKey && !event.metaKey) {return false;}
         return true;
     }
 
@@ -102,14 +102,14 @@ function matchesHotkey(event: HotkeyEvent, hotkey: NormalizedHotkey): boolean {
 
 function getRegistry(target: Window): HotkeyRegistry {
     const existingRegistry = registries.get(target);
-    if (existingRegistry) return existingRegistry;
+    if (existingRegistry) {return existingRegistry;}
 
     const bindings = new Set<HotkeyBinding>();
     const listener = (event: KeyboardEvent): void => {
         for (const binding of Array.from(bindings).reverse()) {
-            if (!matchesHotkey(event, binding.hotkey)) continue;
-            if (binding.preventDefault) event.preventDefault();
-            if (binding.stopPropagation) event.stopPropagation();
+            if (!matchesHotkey(event, binding.hotkey)) {continue;}
+            if (binding.preventDefault) {event.preventDefault();}
+            if (binding.stopPropagation) {event.stopPropagation();}
             binding.callback(event);
             break;
         }
@@ -121,7 +121,7 @@ function getRegistry(target: Window): HotkeyRegistry {
 }
 
 function removeRegistryIfEmpty(target: Window, registry: HotkeyRegistry): void {
-    if (registry.bindings.size > 0) return;
+    if (registry.bindings.size > 0) {return;}
     target.removeEventListener("keydown", registry.listener);
     registries.delete(target);
 }
@@ -159,6 +159,6 @@ export function registerHotkeys(
         }),
     );
     return () => {
-        for (const unregister of unregisterHandlers) unregister();
+        for (const unregister of unregisterHandlers) {unregister();}
     };
 }

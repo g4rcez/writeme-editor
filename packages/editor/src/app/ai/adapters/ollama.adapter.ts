@@ -21,11 +21,11 @@ type ModelTag = {
     model: string;
     digest: string;
     modified_at: string;
-    capabilities: string[];
+    capabilities: Array<string>;
     details: {
         family: string;
         format: string;
-        families: string[];
+        families: Array<string>;
         parent_model: string;
         context_length: number;
         parameter_size: string;
@@ -54,7 +54,7 @@ export class OllamaAdapter implements AIAdapter {
         return false;
     }
 
-    async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
+    async listModels(credentials: AuthCredentials): Promise<Array<AIModel>> {
         const apiHost = ollamaApiHostFromBaseUrl(credentials.baseUrl);
         try {
             const headers: Record<string, string> = {};
@@ -62,8 +62,8 @@ export class OllamaAdapter implements AIAdapter {
                 headers.Authorization = `Bearer ${credentials.apiKey}`;
             }
             const response = await proxyFetch(`${apiHost}/api/tags`, { headers });
-            if (!response.ok) return [];
-            const data = (await response.json()) as { models?: ModelTag[] };
+            if (!response.ok) {return [];}
+            const data = (await response.json()) as { models?: Array<ModelTag> };
             return (data.models ?? []).map((model) => ({
                 name: model.name,
                 id: model.model ?? model.name,
@@ -79,7 +79,7 @@ export class OllamaAdapter implements AIAdapter {
     }
 
     async *sendMessage(
-        messages: AIConversationMessage[],
+        messages: Array<AIConversationMessage>,
         options: SendOptions,
         signal?: AbortSignal,
     ): AsyncIterable<AIStreamEvent> {
@@ -93,7 +93,7 @@ export class OllamaAdapter implements AIAdapter {
 
         const model = options.model ?? this.defaultModel;
 
-        const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+        const mapped: Array<{ role: "user" | "assistant"; content: string | Array<any> }> = [];
         for (const msg of messages) {
             if (msg.role === "system") {
                 mapped.push({ role: "user", content: msg.content.text });
@@ -103,9 +103,9 @@ export class OllamaAdapter implements AIAdapter {
                 mapped.push({ role: msg.role, content: msg.content.text });
                 continue;
             }
-            const parts: any[] = [];
+            const parts: Array<any> = [];
             for (const file of msg.content.files) {
-                if (!file.mimeType.startsWith("image/")) continue;
+                if (!file.mimeType.startsWith("image/")) {continue;}
                 const base64 = await arrayBufferToBase64(file.data);
                 parts.push({
                     type: "image_url",
@@ -114,7 +114,7 @@ export class OllamaAdapter implements AIAdapter {
                     },
                 });
             }
-            if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
+            if (msg.content.text.trim()) {parts.push({ type: "text", text: msg.content.text });}
             mapped.push({ role: msg.role, content: parts });
         }
 
@@ -138,7 +138,7 @@ export class OllamaAdapter implements AIAdapter {
 
             for await (const event of eventChannel.consume(result)) {
                 yield event;
-                if (event.type === "error") return;
+                if (event.type === "error") {return;}
             }
         } catch (error: unknown) {
             if (isAIStreamAbortError(error)) {

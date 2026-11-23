@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
     chooseDirectory: vi.fn(),
     migrateNotes: vi.fn(),
     switchWorkspace: vi.fn(),
-    state: { notes: [] as unknown[], explorerRoot: null, note: null },
+    state: { notes: [] as Array<unknown>, explorerRoot: null, note: null },
 }));
 
 vi.mock("@g4rcez/components", () => ({

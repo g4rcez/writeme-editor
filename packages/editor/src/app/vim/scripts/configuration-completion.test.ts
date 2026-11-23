@@ -4,7 +4,7 @@ import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 import { vimConfigurationCompletion } from "./configuration-completion";
 
-function labels(doc: string): readonly string[] {
+function labels(doc: string): ReadonlyArray<string> {
     const state = EditorState.create({ doc, extensions: [javascript({ typescript: true })] });
     return (
         vimConfigurationCompletion(new CompletionContext(state, doc.length, true))?.options.map(
@@ -25,6 +25,6 @@ describe("init.ts completion", () => {
     });
     it("keeps unsupported paths, comments, and unrelated strings free of Vim suggestions", () => {
         for (const source of ["other.opt.", '// vim.keymap.set("', "/* vim.opt.", 'const value = "vim.opt.'])
-            expect(labels(source)).toEqual([]);
+            {expect(labels(source)).toEqual([]);}
     });
 });

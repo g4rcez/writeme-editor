@@ -13,15 +13,15 @@ export type MediaSource = {
     title?: string;
 };
 
-const revokeMediaSources = (sources: MediaSource[]) => {
+const revokeMediaSources = (sources: Array<MediaSource>) => {
     for (const source of sources) {
-        if (source.src.startsWith("blob:")) URL.revokeObjectURL(source.src);
+        if (source.src.startsWith("blob:")) {URL.revokeObjectURL(source.src);}
     }
 };
 
 export type MediaPreviewState = {
     open: boolean;
-    sources: MediaSource[];
+    sources: Array<MediaSource>;
     index: number;
 };
 
@@ -138,7 +138,7 @@ export const useUIStore = createZustandCompatStore(
         setMediaPreview: (state: Partial<MediaPreviewState>) => ({
             mediaPreview: { ...get.state().mediaPreview, ...state },
         }),
-        openMediaPreview: (sources: MediaSource[], index = 0) => {
+        openMediaPreview: (sources: Array<MediaSource>, index = 0) => {
             revokeMediaSources(get.state().mediaPreview.sources);
             return { mediaPreview: { open: true, sources, index } };
         },
@@ -154,7 +154,7 @@ export const useUIStore = createZustandCompatStore(
         setEditorSaveStatus: (editorSaveStatus: EditorSaveStatus, noteId?: string) => {
             const state = get.state();
             const noteStatusChanged = Boolean(noteId && state.noteSaveStatuses[noteId] !== editorSaveStatus);
-            if (state.editorSaveStatus === editorSaveStatus && !noteStatusChanged) return;
+            if (state.editorSaveStatus === editorSaveStatus && !noteStatusChanged) {return;}
             return {
                 editorSaveStatus,
                 ...(noteStatusChanged && noteId
@@ -171,7 +171,7 @@ export const useUIStore = createZustandCompatStore(
                     toPersist.contentWidth === lastPersistedSettings.contentWidth &&
                     toPersist.focusMode === lastPersistedSettings.focusMode &&
                     toPersist.sidebarOpen === lastPersistedSettings.sidebarOpen
-                ) return;
+                ) {return;}
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist));
                 lastPersistedSettings = toPersist;
             },

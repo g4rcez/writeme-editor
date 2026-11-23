@@ -13,7 +13,7 @@ type Step = {
     env?: Record<string, string>;
 };
 type Workflow = {
-    jobs: Record<string, { uses?: string; needs?: string[]; with?: Record<string, unknown>; steps?: Step[] }>;
+    jobs: Record<string, { uses?: string; needs?: Array<string>; with?: Record<string, unknown>; steps?: Array<Step> }>;
 };
 
 async function workflow(name: string): Promise<Workflow> {
@@ -28,7 +28,7 @@ async function runStep(
 ): Promise<SpawnSyncReturns<string>> {
     const steps = (await workflow(`build-${platform}`)).jobs.build?.steps;
     const command = steps?.find((step) => step.id === id)?.run;
-    if (!command) throw new Error(`Missing ${platform} ${id} step`);
+    if (!command) {throw new Error(`Missing ${platform} ${id} step`);}
     return spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", command], {
         cwd,
         env: { ...process.env, ...env },

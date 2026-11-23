@@ -52,7 +52,7 @@ const SUPPORTED_LANGUAGES = [
 
 type Opt = { value: string; label: string };
 
-const LANGUAGE_OPTIONS: Opt[] = [
+const LANGUAGE_OPTIONS: Array<Opt> = [
     { value: "plaintext", label: "Plain text" },
     ...SUPPORTED_LANGUAGES.map((lang): Opt => ({
         value: lang,

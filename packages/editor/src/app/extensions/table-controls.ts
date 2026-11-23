@@ -33,7 +33,7 @@ function getCellPosition(editor: Editor, cell?: HTMLTableCellElement): CellPosit
             }
         }
 
-        if (cellDepth === null || tableDepth === null) return null;
+        if (cellDepth === null || tableDepth === null) {return null;}
 
         const table = resolved.node(tableDepth);
         const tableStart = resolved.start(tableDepth);
@@ -68,24 +68,24 @@ function runTableInsertionCommand(editor: Editor, action: TableInsertionAction):
 }
 
 export function insertTableAction(editor: Editor, action: TableInsertionAction, cell?: HTMLTableCellElement): boolean {
-    if (editor.isDestroyed || !editor.isEditable || (cell && !cell.isConnected)) return false;
+    if (editor.isDestroyed || !editor.isEditable || (cell && !cell.isConnected)) {return false;}
 
     const position = getCellPosition(editor, cell);
-    if (!position) return false;
+    if (!position) {return false;}
 
     const sourceSelection = TextSelection.create(editor.state.doc, position.cursor);
     editor.view.dispatch(editor.state.tr.setSelection(sourceSelection));
     editor.view.focus();
 
-    if (!runTableInsertionCommand(editor, action)) return false;
+    if (!runTableInsertionCommand(editor, action)) {return false;}
 
     const table = editor.state.doc.nodeAt(position.tableStart - 1);
-    if (!table || table.type.name !== "table") throw new Error("The inserted table could not be located.");
+    if (table?.type.name !== "table") {throw new Error("The inserted table could not be located.");}
 
     let row = position.row;
     let column = position.column;
-    if (action === "addRowAfter") row = position.rowAfter;
-    if (action === "addColumnAfter") column = position.columnAfter;
+    if (action === "addRowAfter") {row = position.rowAfter;}
+    if (action === "addColumnAfter") {column = position.columnAfter;}
 
     const cellPosition = TableMap.get(table).positionAt(row, column, table);
     const cursor = position.tableStart + cellPosition + 2;
@@ -102,7 +102,7 @@ export function insertTableAction(editor: Editor, action: TableInsertionAction, 
 function selectionIsInTable(view: EditorView): boolean {
     const { $from } = view.state.selection;
     for (let depth = $from.depth; depth > 0; depth--) {
-        if ($from.node(depth).type.name === "table") return true;
+        if ($from.node(depth).type.name === "table") {return true;}
     }
     return false;
 }
@@ -133,7 +133,7 @@ export const TableControls = Extension.create({
                         }
 
                         if (event.key === "Enter") {
-                            if (!insertTableAction(editor, "addRowAfter")) return false;
+                            if (!insertTableAction(editor, "addRowAfter")) {return false;}
                             event.preventDefault();
                             return true;
                         }

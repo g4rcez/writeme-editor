@@ -1,4 +1,4 @@
-import { type CDPSession, type Page } from "@playwright/test";
+import type { CDPSession, Page } from "@playwright/test";
 import { expectCanvasZoomShortcuts, expectCanvasZoomWheel } from "../helpers/canvas-zoom";
 import { expect, goHome, test } from "./fixtures";
 
@@ -90,7 +90,7 @@ test("turns PDF pages with all four arrow keys and keeps page input keys local",
 async function draw(page: Page): Promise<void> {
     const canvas = page.getByLabel("Handwriting canvas", { exact: true });
     const bounds = await canvas.boundingBox();
-    if (!bounds) throw new Error("PDF canvas missing");
+    if (!bounds) {throw new Error("PDF canvas missing");}
     await page.mouse.move(bounds.x + bounds.width * 0.3, bounds.y + bounds.height * 0.45);
     await page.mouse.down();
     await page.mouse.move(bounds.x + bounds.width * 0.6, bounds.y + bounds.height * 0.48, { steps: 10 });
@@ -142,7 +142,7 @@ test("fits PDF book pages without scrolling", async ({ page }) => {
 async function dragOrigin(page: Page): Promise<{ x: number; y: number }> {
     const bounds = await page.getByLabel("Handwriting canvas", { exact: true }).boundingBox();
     const viewport = await page.locator(".wm-paper-viewport").boundingBox();
-    if (!bounds || !viewport) throw new Error("PDF canvas missing");
+    if (!bounds || !viewport) {throw new Error("PDF canvas missing");}
     return {
         x: Math.min(bounds.x + bounds.width / 2, viewport.x + viewport.width / 2),
         y: Math.min(bounds.y + bounds.height * 0.55, viewport.y + viewport.height * 0.55),
@@ -165,7 +165,7 @@ test("turns book pages with mouse drags and keeps selection, ink, zoom and keybo
     await mouseDrag(page, -100, 130);
     await expect(page.getByLabel("Go to page", { exact: true })).toHaveValue("1");
     const text = await page.locator(".wm-pdf-text-layer span").first().boundingBox();
-    if (!text) throw new Error("PDF text missing");
+    if (!text) {throw new Error("PDF text missing");}
     await page.mouse.move(text.x + 1, text.y + text.height / 2);
     await page.mouse.down();
     await page.mouse.move(text.x + text.width - 1, text.y + text.height / 2, { steps: 8 });
@@ -185,7 +185,7 @@ test("turns book pages with mouse drags and keeps selection, ink, zoom and keybo
     await expect(page.getByLabel("Go to page", { exact: true })).toHaveValue("1");
     await page.getByRole("button", { name: "Read PDF", exact: true }).click();
     await page.getByRole("button", { name: "Notebook options", exact: true }).click();
-    for (let index = 0; index < 4; index++) await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+    for (let index = 0; index < 4; index++) {await page.getByRole("button", { name: "Zoom in", exact: true }).click();}
     await page.getByRole("button", { name: "Close options", exact: true }).click();
     await expect(page.getByLabel("PDF page 1", { exact: true })).toHaveAttribute("data-pdf-ready", "true");
     await mouseDrag(page, -140, -120);
@@ -238,7 +238,7 @@ for (const viewport of [
             await expect(page.getByLabel("PDF page 1", { exact: true })).toHaveAttribute("data-pdf-ready", "true");
 
             const bounds = await page.getByLabel("Handwriting canvas", { exact: true }).boundingBox();
-            if (!bounds) throw new Error("PDF canvas missing");
+            if (!bounds) {throw new Error("PDF canvas missing");}
             const first = { x: bounds.x + bounds.width * 0.3, y: bounds.y + bounds.height * 0.55, id: 1 };
             const second = { ...first, x: first.x + 60, id: 2 };
             await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first, second] });
@@ -270,7 +270,7 @@ for (const viewport of [
 }
 
 test("imports one PDF note and saves independent page annotations across zoom and reload", async ({ page }) => {
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await importPdf(page);
     await expect(page.locator(".ProseMirror")).toHaveCount(0);

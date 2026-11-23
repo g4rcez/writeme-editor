@@ -8,18 +8,18 @@ export function registerNoteSaveShortcut(id: string, save: () => void, active?: 
             event.shiftKey ||
             event.key.toLowerCase() !== "s"
         )
-            return;
+            {return;}
         const container = document.getElementById(`editor-container-${id}`);
-        if (!container) return;
+        if (!container) {return;}
         const focusedEditor = document.activeElement?.closest(".writeme-editor");
         if (
             focusedEditor
                 ? focusedEditor !== container
                 : !(active ?? document.querySelectorAll(".writeme-editor").length === 1)
         )
-            return;
+            {return;}
         event.preventDefault();
-        if (!event.repeat) save();
+        if (!event.repeat) {save();}
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);

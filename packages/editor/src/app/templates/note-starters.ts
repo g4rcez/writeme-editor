@@ -5,7 +5,7 @@ type NoteStarter = {
     content: string;
 };
 
-export const NOTE_STARTERS: readonly NoteStarter[] = [
+export const NOTE_STARTERS: ReadonlyArray<NoteStarter> = [
     {
         id: "project-brief",
         title: "Project brief",

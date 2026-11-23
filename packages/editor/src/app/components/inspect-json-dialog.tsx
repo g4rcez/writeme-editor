@@ -30,7 +30,7 @@ export const InspectJsonDialog = () => {
 
     const handleInspect = async () => {
         try {
-            if (!json.trim()) return;
+            if (!json.trim()) {return;}
             JSON.parse(json);
             const finalTitle = title.trim() || getUniqueNoteTitle("JSON", state.notes);
             const note = Note.new(finalTitle, json, "json" as any);
@@ -39,8 +39,8 @@ export const InspectJsonDialog = () => {
             dispatch.note(note);
             onClose();
             navigate(`/note/${note.id}`);
-        } catch (e: any) {
-            setError(e.message);
+        } catch (error_: any) {
+            setError(error_.message);
         }
     };
 

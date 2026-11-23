@@ -27,7 +27,7 @@ describe("MathBlock", () => {
             base: "EUR",
             date: "2023-01-01",
             rates: { USD: 1.1 },
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
         });
 
         render(<MathBlock code="1 + 1" />);
@@ -40,7 +40,7 @@ describe("MathBlock", () => {
             base: "EUR",
             date: "2023-01-01",
             rates: { USD: 2.0 }, // 1 EUR = 2 USD => 1 USD = 0.5 EUR
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
         });
 
         render(<MathBlock code="10 USD to EUR" />);
@@ -121,7 +121,7 @@ describe("MathBlock", () => {
                     base: "EUR",
                     date: "2023-01-01",
                     rates: { USD: 2.0 },
-                    timestamp: 1234567890,
+                    timestamp: 1_234_567_890,
                 },
                 fetchedAt: now,
                 expiresAt: now + 60 * 60 * 1000,
@@ -182,7 +182,7 @@ describe("MathBlock – currency symbols and percentage", () => {
             base: "EUR",
             date: "2023-01-01",
             rates: { USD: 1.1, JPY: 130, GBP: 0.85, BRL: 5.4 },
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
         });
     });
 

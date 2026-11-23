@@ -10,15 +10,15 @@ function normalizeHeaders(headers: HeadersInit | undefined, extra: Record<string
 }
 
 function resolveUrl(input: RequestInfo | URL): string {
-    if (typeof input === "string") return input;
-    if (input instanceof URL) return input.toString();
+    if (typeof input === "string") {return input;}
+    if (input instanceof URL) {return input.toString();}
     return input.url;
 }
 
 function retryDelay(attempt: number, retryAfterHeader: string | null): number {
     if (retryAfterHeader) {
         const seconds = Number(retryAfterHeader);
-        if (!Number.isNaN(seconds)) return seconds * 1000;
+        if (!Number.isNaN(seconds)) {return seconds * 1000;}
     }
     return 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s
 }
@@ -53,7 +53,7 @@ async function fetchThroughProxy(input: RequestInfo | URL, init?: RequestInit): 
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         const response = await fetch(PROXY_URL, proxyInit);
-        if (response.status !== 429 || attempt === MAX_RETRIES) return response;
+        if (response.status !== 429 || attempt === MAX_RETRIES) {return response;}
         await response.body?.cancel();
         await waitToRetry(retryDelay(attempt, response.headers.get("retry-after")), init?.signal);
     }

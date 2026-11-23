@@ -26,7 +26,7 @@ const MAX_LIMIT = 200;
 const SNIPPET_LENGTH = 420;
 
 function truncate(value: string, length: number): string {
-    if (value.length <= length) return value;
+    if (value.length <= length) {return value;}
     return `${value.slice(0, length).trimEnd()}…`;
 }
 
@@ -46,25 +46,25 @@ function toSafeNoteSummary(note: WorkspaceNote): Record<string, unknown> {
     };
 }
 
-type SerializedValue = null | boolean | number | string | SerializedValue[] | { [key: string]: SerializedValue };
+type SerializedValue = null | boolean | number | string | Array<SerializedValue> | { [key: string]: SerializedValue };
 
 function toSerializedValue(value: unknown): SerializedValue {
-    if (value instanceof Date) return value.toISOString();
-    if (value == null) return null;
-    if (Array.isArray(value)) return value.map(toSerializedValue);
+    if (value instanceof Date) {return value.toISOString();}
+    if (value == null) {return null;}
+    if (Array.isArray(value)) {return value.map(toSerializedValue);}
     if (typeof value === "object") {
         const out: { [key: string]: SerializedValue } = {};
-        for (const [key, nested] of Object.entries(value as Record<string, unknown>)) out[key] = toSerializedValue(nested);
+        for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {out[key] = toSerializedValue(nested);}
         return out;
     }
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {return value;}
     return String(value);
 }
 
-function toQueryRows(rows: Record<string, unknown>[]) {
+function toQueryRows(rows: Array<Record<string, unknown>>) {
     return rows.slice(0, MAX_QUERY_RESULTS).map((row) => {
         const transformed: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(row)) transformed[key] = toSerializedValue(value);
+        for (const [key, value] of Object.entries(row)) {transformed[key] = toSerializedValue(value);}
         return transformed;
     });
 }
@@ -77,9 +77,9 @@ function toQueryableNote(note: WorkspaceNote): Omit<WorkspaceNote, "filePath"> {
 
 function withLimits(limit: number | undefined): number {
     const parsedLimit = Math.trunc(limit ?? MAX_LIST_RESULTS);
-    if (Number.isNaN(parsedLimit)) return MAX_LIST_RESULTS;
-    if (parsedLimit < MIN_LIMIT) return MIN_LIMIT;
-    if (parsedLimit > MAX_LIMIT) return MAX_LIMIT;
+    if (Number.isNaN(parsedLimit)) {return MAX_LIST_RESULTS;}
+    if (parsedLimit < MIN_LIMIT) {return MIN_LIMIT;}
+    if (parsedLimit > MAX_LIMIT) {return MAX_LIMIT;}
     return parsedLimit;
 }
 
@@ -88,9 +88,9 @@ function buildListError(error: unknown): ToolExecutionError {
 }
 
 function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceToolSession {
-    const activities: AIWorkspaceActivity[] = [];
-    const sources: AIWorkspaceSource[] = [];
-    const proposals: AINoteEditProposal[] = [];
+    const activities: Array<AIWorkspaceActivity> = [];
+    const sources: Array<AIWorkspaceSource> = [];
+    const proposals: Array<AINoteEditProposal> = [];
     const snapshot = (): AIWorkspaceData => ({
         activities: activities.map((activity) => ({ ...activity })),
         sources: sources.map((source) => ({ ...source })),
@@ -100,7 +100,7 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
     const addSources = (notes: Array<{ id: string; title: string }>): void => {
         const known = new Set(sources.map((source) => source.noteId));
         for (const note of notes) {
-            if (known.has(note.id)) continue;
+            if (known.has(note.id)) {continue;}
             known.add(note.id);
             sources.push({ noteId: note.id, title: note.title });
         }
@@ -122,7 +122,7 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
             return buildListError(error);
         }
     };
-    const getAllNotes = async (): Promise<WorkspaceNote[]> => repositories.notes.getAll();
+    const getAllNotes = async (): Promise<Array<WorkspaceNote>> => repositories.notes.getAll();
 
     const getWorkspaceNote = async (id: string): Promise<WorkspaceNote | null> =>
         (await getAllNotes()).find((note) => note.id === id) ?? null;
@@ -165,7 +165,7 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
             execute: async ({ noteId, includeContent }: { noteId: string; includeContent: boolean }) =>
                 run("readNote", "Read a workspace note", async () => {
                     const note = await getWorkspaceNote(noteId);
-                    if (!note) return { success: false as const, result: { noteId, found: false, message: "Note not found in current workspace." } };
+                    if (!note) {return { success: false as const, result: { noteId, found: false, message: "Note not found in current workspace." } };}
                     addSources([note]);
                     return {
                         success: true as const,
@@ -204,23 +204,23 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
             execute: async ({ query, limit }: { query: string; limit: number }) => run("runNotesQuery", "Queried workspace notes", async () => {
                 const parsed = parse(query);
                 const targetTable = parsed.from ?? "notes";
-                if (targetTable !== "notes") return { success: false as const, message: "Only `notes` dataset is currently supported." };
+                if (targetTable !== "notes") {return { success: false as const, message: "Only `notes` dataset is currently supported." };}
                 if (parsed.joins.some((join) => join.table !== "notes")) {
                     return { success: false as const, message: "Joins are currently supported only for the notes dataset and notes aliases." };
                 }
                 const notes = await getAllNotes();
-                const queryRows = executeQuery(parsed, { notes: notes.map(toQueryableNote) as Record<string, unknown>[] });
+                const queryRows = executeQuery(parsed, { notes: notes.map(toQueryableNote) as Array<Record<string, unknown>> });
                 const normalizedRows = toQueryRows(queryRows);
                 const limited = normalizedRows.slice(0, withLimits(limit));
                 const ids = new Set(limited.map((row) => row.id).filter((id): id is string => typeof id === "string"));
-                if (ids.size) addSources(notes.filter((note) => ids.has(note.id)));
+                if (ids.size) {addSources(notes.filter((note) => ids.has(note.id)));}
                 return { success: true as const, result: { query, totalRows: normalizedRows.length, rows: limited, limit: withLimits(limit), rowCount: limited.length } };
             }),
         }),
         proposeNoteEdit: tool({
             description: "Stage a proposal to replace an existing note's full Markdown. Provide updatedAt from a full readNote; never writes the note.",
             inputSchema: z.object({
-                noteId: z.string().min(1).max(1_024),
+                noteId: z.string().min(1).max(1024),
                 rationale: z.string().min(1).max(10_000),
                 proposedMarkdown: z.string().max(50_000_000),
                 updatedAt: z.iso.datetime(),
@@ -228,11 +228,11 @@ function createTools(onChange?: (snapshot: AIWorkspaceData) => void): WorkspaceT
             execute: async ({ noteId, rationale, proposedMarkdown, updatedAt }: { noteId: string; rationale: string; proposedMarkdown: string; updatedAt: string }) =>
                 run("proposeNoteEdit", "Staged a note edit proposal", async () => {
                     const note = await getWorkspaceNote(noteId);
-                    if (!note) return { success: false as const, message: "Note not found in current workspace; no proposal was staged." };
+                    if (!note) {return { success: false as const, message: "Note not found in current workspace; no proposal was staged." };}
                     const currentUpdatedAt = toSafeDateString(note.updatedAt);
-                    if (currentUpdatedAt !== updatedAt) return { success: false as const, message: "Note changed since it was read; read it again before proposing an edit." };
-                    if ((note.content || "") === proposedMarkdown) return { success: false as const, message: "The proposed Markdown is unchanged; no proposal was staged." };
-                    if (proposals.some((proposal) => proposal.noteId === noteId)) return { success: false as const, message: "A proposal for this note already exists in this tool session." };
+                    if (currentUpdatedAt !== updatedAt) {return { success: false as const, message: "Note changed since it was read; read it again before proposing an edit." };}
+                    if ((note.content || "") === proposedMarkdown) {return { success: false as const, message: "The proposed Markdown is unchanged; no proposal was staged." };}
+                    if (proposals.some((proposal) => proposal.noteId === noteId)) {return { success: false as const, message: "A proposal for this note already exists in this tool session." };}
                     const proposal: AINoteEditProposal = {
                         id: uuid(), noteId, title: note.title, rationale, baseUpdatedAt: currentUpdatedAt,
                         baseMarkdown: note.content || "", proposedMarkdown, status: "pending", createdAt: new Date().toISOString(),

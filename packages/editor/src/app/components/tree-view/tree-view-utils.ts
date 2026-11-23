@@ -8,7 +8,7 @@ import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
 import { PencilSimpleIcon } from "@phosphor-icons/react/dist/csr/PencilSimple";
 import { RobotIcon } from "@phosphor-icons/react/dist/csr/Robot";
 import { NoteType, type Note } from "@/store/note";
-import { type FlattenedNode, type TreeNode } from "@/types/tree";
+import type { FlattenedNode, TreeNode } from "@/types/tree";
 
 export type FileExtensionConfig = {
     icon: ElementType;
@@ -139,9 +139,9 @@ const FILE_NAME_CONFIGS: Record<string, FileExtensionConfig> = {
 };
 
 export const getFileConfig = (node: TreeNode, note: Note | null): FileExtensionConfig | undefined => {
-    if (note?.noteType === NoteType.pdf) return FILE_EXTENSION_CONFIGS[".pdf"];
-    if (note?.noteType === NoteType.freehand) return FILE_NAME_CONFIGS.freehand;
-    if (note?.noteType === NoteType.task) return FILE_NAME_CONFIGS.task;
+    if (note?.noteType === NoteType.pdf) {return FILE_EXTENSION_CONFIGS[".pdf"];}
+    if (note?.noteType === NoteType.freehand) {return FILE_NAME_CONFIGS.freehand;}
+    if (note?.noteType === NoteType.task) {return FILE_NAME_CONFIGS.task;}
     if (note?.noteType === NoteType["meeting-note"]) {
         return FILE_NAME_CONFIGS["meeting-note"];
     }
@@ -163,7 +163,7 @@ export const getPathDirName = (path: string): string => {
 export const joinPath = (dir: string, name: string): string => `${dir.replace(/\/$/, "")}/${name}`;
 
 export const isEditableTarget = (target: EventTarget | null): boolean => {
-    if (!(target instanceof HTMLElement)) return false;
+    if (!(target instanceof HTMLElement)) {return false;}
     return (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -173,13 +173,13 @@ export const isEditableTarget = (target: EventTarget | null): boolean => {
 };
 
 export const flattenVisibleNodes = (
-    nodes: TreeNode[],
+    nodes: Array<TreeNode>,
     expandedPaths: Set<string>,
-    childrenCache: Map<string, TreeNode[]>,
+    childrenCache: Map<string, Array<TreeNode>>,
     searchQuery: string,
     depth = 0,
     parentPath: string | null = null,
-): FlattenedNode[] => {
+): Array<FlattenedNode> => {
     const query = searchQuery.toLowerCase();
     return nodes.flatMap((node) => {
         const children = node.type === "directory" ? childrenCache.get(node.path) || [] : [];
@@ -199,10 +199,10 @@ export const flattenVisibleNodes = (
                 depth + 1,
                 node.path,
             );
-            if (subResult.length === 0) return [];
+            if (subResult.length === 0) {return [];}
             return [{ node, depth, isExpanded, parentPath }, ...subResult];
         }
-        const result: FlattenedNode[] = [{ node, depth, isExpanded, parentPath }];
+        const result: Array<FlattenedNode> = [{ node, depth, isExpanded, parentPath }];
         if (node.type === "directory" && isExpanded) {
             result.push(
                 ...flattenVisibleNodes(children, expandedPaths, childrenCache, searchQuery, depth + 1, node.path),

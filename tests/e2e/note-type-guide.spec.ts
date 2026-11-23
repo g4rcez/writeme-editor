@@ -114,7 +114,7 @@ test("keeps examples and actions usable on narrow screens and both themes", asyn
     await expect(guide.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
     for (const action of ["Continue", "Cancel"]) {
         const bounds = await guide.getByRole("button", { name: action, exact: true }).boundingBox();
-        if (!bounds) throw new Error(`${action} has no visible bounds.`);
+        if (!bounds) {throw new Error(`${action} has no visible bounds.`);}
         expect(bounds.height).toBeGreaterThanOrEqual(44);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);

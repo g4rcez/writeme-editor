@@ -24,14 +24,14 @@ async function openViews(page: Page): Promise<void> {
     await expect(page.getByRole("main").getByRole("heading", { name: "Views", exact: true })).toBeVisible();
 }
 
-async function storedViews(page: Page): Promise<StoredView[]> {
+async function storedViews(page: Page): Promise<Array<StoredView>> {
     return page.evaluate(() => window.electronAPI.db.getAll<StoredView>("views"));
 }
 
 test("adds, reloads, edits and reopens both starter Views through Electron SQLite", async () => {
     const directory = await mkdtemp(path.join(tmpdir(), "writeme-views-native-"));
     let application: ElectronApplication | undefined;
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     try {
         application = await launchViewsApp(directory);
         let page = await application.firstWindow();

@@ -11,7 +11,7 @@ describe("tab persistence queue", () => {
     it("returns immediately and writes in order while flush waits for completion", async () => {
         const started = deferred();
         const gate = deferred();
-        const calls: string[] = [];
+        const calls: Array<string> = [];
         const queue = createTabPersistenceQueue(vi.fn());
         queue.enqueue(async () => {
             calls.push("save");

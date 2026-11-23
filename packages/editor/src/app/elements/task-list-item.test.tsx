@@ -72,9 +72,9 @@ describe("TaskListItem", () => {
 
     it("keeps ordinary bullets ordinary when they share a Markdown list with tasks", () => {
         editor = createEditor("- ordinary first\n- [ ] Open task\n- ordinary middle\n- [x] Completed task\n- ordinary last");
-        const types: string[] = [];
+        const types: Array<string> = [];
         editor.state.doc.descendants((node) => {
-            if (node.type.name === "taskItem" || node.type.name === "listItem") types.push(node.type.name);
+            if (node.type.name === "taskItem" || node.type.name === "listItem") {types.push(node.type.name);}
         });
         expect(types).toEqual(["listItem", "taskItem", "listItem", "taskItem", "listItem"]);
         const markdown = editor.getMarkdown();

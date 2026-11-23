@@ -15,7 +15,7 @@ export function sendToSocket(socketPath: string, msg: CliMessage): Promise<void>
         let settled = false;
 
         const settle = (fn: () => void) => {
-            if (settled) return;
+            if (settled) {return;}
             settled = true;
             clearTimeout(timer);
             fn();
@@ -41,7 +41,7 @@ export function sendToSocket(socketPath: string, msg: CliMessage): Promise<void>
             client.on("data", (chunk) => {
                 buffer += chunk.toString();
                 const nl = buffer.indexOf("\n");
-                if (nl === -1) return;
+                if (nl === -1) {return;}
                 const line = buffer.slice(0, nl);
                 try {
                     const parsed = JSON.parse(line) as { status: string };

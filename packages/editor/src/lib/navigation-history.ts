@@ -11,6 +11,6 @@ export function canGoBack(): boolean {
 
 /** Pops the app history when there is an entry to return to, otherwise lands on `home`. */
 export function goBackOrHome(navigate: Navigate, home = "/notes"): void {
-    if (canGoBack()) navigate(-1);
-    else navigate(home, { replace: true });
+    if (canGoBack()) {navigate(-1);}
+    else {navigate(home, { replace: true });}
 }

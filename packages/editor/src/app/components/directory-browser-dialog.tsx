@@ -21,8 +21,8 @@ type ParentEntry = {
 type BrowserEntry = TreeNode | ParentEntry;
 
 const normalizePath = (value: string): string => {
-    const normalized = value.replace(/\\/g, "/");
-    if (normalized === "/") return normalized;
+    const normalized = value.replaceAll('\\', "/");
+    if (normalized === "/") {return normalized;}
     return normalized.replace(/\/+$/, "");
 };
 
@@ -34,7 +34,7 @@ const getDirectoryName = (directory: string): string => {
 const getRelativeWorkspacePath = (workspaceDirectory: string, entryPath: string): string => {
     const workspace = normalizePath(workspaceDirectory);
     const entry = normalizePath(entryPath);
-    if (workspace === entry) return "";
+    if (workspace === entry) {return "";}
 
     const prefix = workspace === "/" ? "/" : `${workspace}/`;
     return entry.startsWith(prefix) ? entry.slice(prefix.length) : entry;
@@ -61,10 +61,10 @@ export const DirectoryBrowserDialog = () => {
     const [state, dispatch] = useGlobalStore();
     const [homeDirectory, setHomeDirectory] = useState<string | null>(null);
     const [navigationPath, setNavigationPath] = useState<string | null>(null);
-    const [entries, setEntries] = useState<TreeNode[]>([]);
+    const [entries, setEntries] = useState<Array<TreeNode>>([]);
     const [query, setQuery] = useState("");
     const [error, setError] = useState<string | null>(null);
-    const [searchEntries, setSearchEntries] = useState<TreeNode[]>([]);
+    const [searchEntries, setSearchEntries] = useState<Array<TreeNode>>([]);
     const [searchStatus, setSearchStatus] = useState<SearchStatus>("idle");
     const [searchError, setSearchError] = useState<string | null>(null);
     const [searchTruncated, setSearchTruncated] = useState(false);
@@ -97,24 +97,24 @@ export const DirectoryBrowserDialog = () => {
     }, [handleDialogChange]);
 
     useEffect(() => {
-        if (!state.directoryBrowserDialog || state.directory || homeDirectory) return;
+        if (!state.directoryBrowserDialog || state.directory || homeDirectory) {return;}
         void window.electronAPI.env.getHome().then(setHomeDirectory);
     }, [homeDirectory, state.directory, state.directoryBrowserDialog]);
 
     useEffect(() => {
-        if (!state.directoryBrowserDialog) return;
+        if (!state.directoryBrowserDialog) {return;}
         const timeoutId = window.setTimeout(() => inputRef.current?.focus(), 10);
         return () => window.clearTimeout(timeoutId);
     }, [state.directoryBrowserDialog, workspaceDirectory]);
 
     useEffect(() => {
-        if (!state.directoryBrowserDialog || !currentDirectory) return;
+        if (!state.directoryBrowserDialog || !currentDirectory) {return;}
 
         let isCurrentRequest = true;
         void window.electronAPI.fs
             .readDir(currentDirectory)
             .then((result) => {
-                if (!isCurrentRequest) return;
+                if (!isCurrentRequest) {return;}
                 setLoadedDirectory(currentDirectory);
                 if (result.error) {
                     setEntries([]);
@@ -123,11 +123,11 @@ export const DirectoryBrowserDialog = () => {
                 }
                 setEntries(result.entries ?? []);
             })
-            .catch((reason: unknown) => {
-                if (!isCurrentRequest) return;
+            .catch((error_: unknown) => {
+                if (!isCurrentRequest) {return;}
                 setLoadedDirectory(currentDirectory);
                 setEntries([]);
-                setError(reason instanceof Error ? reason.message : "Failed to load directory");
+                setError(error_ instanceof Error ? error_.message : "Failed to load directory");
             });
 
         return () => {
@@ -155,7 +155,7 @@ export const DirectoryBrowserDialog = () => {
         setSearchTruncated(false);
 
         const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
-            if (!isCurrentRequest || event.requestId !== requestId) return;
+            if (!isCurrentRequest || event.requestId !== requestId) {return;}
 
             if (event.type === "batch") {
                 startTransition(() => {
@@ -178,14 +178,14 @@ export const DirectoryBrowserDialog = () => {
             void fsApi
                 .startFileSearch(currentDirectory, normalizedQuery, requestId)
                 .then((result) => {
-                    if (!isCurrentRequest || result.success) return;
+                    if (!isCurrentRequest || result.success) {return;}
                     setSearchStatus("error");
                     setSearchError(result.error);
                 })
-                .catch((reason: unknown) => {
-                    if (!isCurrentRequest) return;
+                .catch((error_: unknown) => {
+                    if (!isCurrentRequest) {return;}
                     setSearchStatus("error");
-                    setSearchError(reason instanceof Error ? reason.message : "Failed to search directory");
+                    setSearchError(error_ instanceof Error ? error_.message : "Failed to search directory");
                 });
         }, 180);
 
@@ -198,8 +198,8 @@ export const DirectoryBrowserDialog = () => {
     }, [currentDirectory, query, state.directoryBrowserDialog]);
 
     const parentEntry = useMemo<ParentEntry | null>(() => {
-        if (!workspaceDirectory || !currentDirectory) return null;
-        if (!getRelativeWorkspacePath(workspaceDirectory, currentDirectory)) return null;
+        if (!workspaceDirectory || !currentDirectory) {return null;}
+        if (!getRelativeWorkspacePath(workspaceDirectory, currentDirectory)) {return null;}
 
         return {
             type: "parent",
@@ -208,12 +208,12 @@ export const DirectoryBrowserDialog = () => {
         };
     }, [currentDirectory, workspaceDirectory]);
 
-    const browserEntries = useMemo<BrowserEntry[]>(
+    const browserEntries = useMemo<Array<BrowserEntry>>(
         () => (parentEntry ? [parentEntry, ...entries] : entries),
         [entries, parentEntry],
     );
 
-    const visibleEntries = useMemo<BrowserEntry[]>(
+    const visibleEntries = useMemo<Array<BrowserEntry>>(
         () =>
             isSearching && (searchEntries.length > 0 || searchStatus === "complete") ? searchEntries : browserEntries,
         [browserEntries, isSearching, searchEntries, searchStatus],
@@ -251,8 +251,8 @@ export const DirectoryBrowserDialog = () => {
                 await repositories.notes.save(newNote);
                 await dispatch.note(newNote);
                 closeDialog();
-            } catch (reason: unknown) {
-                setError(reason instanceof Error ? reason.message : "Failed to open file");
+            } catch (error_: unknown) {
+                setError(error_ instanceof Error ? error_.message : "Failed to open file");
             } finally {
                 setOpeningPath(null);
             }
@@ -286,7 +286,7 @@ export const DirectoryBrowserDialog = () => {
     }, [currentDirectory, query, setSelectedIndex]);
 
     useEffect(() => {
-        if (!listRef.current || visibleEntries.length === 0) return;
+        if (!listRef.current || visibleEntries.length === 0) {return;}
         const selectedElement = listRef.current.children[selectedIndex] as HTMLElement | undefined;
         selectedElement?.scrollIntoView({ block: "nearest" });
     }, [selectedIndex, visibleEntries]);
@@ -403,7 +403,7 @@ export const DirectoryBrowserDialog = () => {
                                             )}
                                             onClick={() => selectEntry(entry)}
                                             onKeyDown={(event) => {
-                                                if (event.key !== "Enter") return;
+                                                if (event.key !== "Enter") {return;}
                                                 event.preventDefault();
                                                 event.stopPropagation();
                                                 selectEntry(entry);

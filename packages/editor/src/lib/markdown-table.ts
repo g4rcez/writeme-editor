@@ -9,7 +9,7 @@ function rowShape(row: string): { columns: number; closingPipe: boolean } {
             index += 1;
         } else if (text[index] === "|") {
             closingPipe = index === text.length - 1;
-            if (index !== 0 && !closingPipe) columns += 1;
+            if (index !== 0 && !closingPipe) {columns += 1;}
         }
     }
     return { columns, closingPipe };
@@ -18,7 +18,7 @@ function rowShape(row: string): { columns: number; closingPipe: boolean } {
 function padRow(row: string, columns: number, cell: string): string {
     const shape = rowShape(row);
     const missing = columns - shape.columns;
-    if (missing === 0) return row;
+    if (missing === 0) {return row;}
     return `${row.trimEnd()}${shape.closingPipe ? "" : " |"}${` ${cell} |`.repeat(missing)}`;
 }
 
@@ -29,7 +29,7 @@ export function configureTableMarkdown(markdown: Marked): void {
                 const match = this.rules.block.table.exec(source);
                 const header = match?.[1];
                 const delimiter = match?.[2];
-                if (!match || !header || !delimiter || !this.rules.other.tableDelimiter.test(delimiter)) return false;
+                if (!match || !header || !delimiter || !this.rules.other.tableDelimiter.test(delimiter)) {return false;}
                 const headerColumns = rowShape(header).columns;
                 const delimiterColumns = rowShape(delimiter).columns;
                 const rows = match[3]?.trim() ? match[3].trimEnd().split("\n") : [];
@@ -37,14 +37,14 @@ export function configureTableMarkdown(markdown: Marked): void {
                     (width, row) => Math.max(width, rowShape(row).columns),
                     Math.max(headerColumns, delimiterColumns),
                 );
-                if (columns === headerColumns && columns === delimiterColumns) return false;
+                if (columns === headerColumns && columns === delimiterColumns) {return false;}
 
                 const delimiterEnd = match[0].indexOf("\n", match[0].indexOf("\n") + 1);
                 const normalized =
                     `${padRow(header, columns, "")}\n${padRow(delimiter, columns, "---")}` +
                     (delimiterEnd === -1 ? "" : match[0].slice(delimiterEnd));
                 const token = Tokenizer.prototype.table.call(this, normalized);
-                if (!token) return false;
+                if (!token) {return false;}
                 // Advance the lexer over the original source, not the padded rows.
                 token.raw = match[0].replace(/\n+$/, "");
                 return token;

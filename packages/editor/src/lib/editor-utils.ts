@@ -88,7 +88,7 @@ export function updateNodeContent(
     newContent: string,
     options: { addToHistory?: boolean } = {},
 ) {
-    if (editor.isDestroyed) return false;
+    if (editor.isDestroyed) {return false;}
     const { state } = editor;
     const { tr } = state;
     let updated = false;
@@ -115,7 +115,7 @@ export function updateNodeContent(
 
     if (updated) {
         // generated content (a drawing) has its own undo; recording every rewrite kept a full copy per step
-        if (options.addToHistory === false) tr.setMeta("addToHistory", false);
+        if (options.addToHistory === false) {tr.setMeta("addToHistory", false);}
         editor.view.dispatch(tr);
         return true;
     }

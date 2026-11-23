@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import type { Note } from "../../packages/editor/src/store/note";
 import type { NoteCommentThread } from "../../packages/editor/src/store/note-comment";
 
-export async function readCommentStorage(page: Page): Promise<{ comments: NoteCommentThread[]; notes: Note[] }> {
+export async function readCommentStorage(page: Page): Promise<{ comments: Array<NoteCommentThread>; notes: Array<Note> }> {
     return page.evaluate(async () => {
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
             const request = indexedDB.open("writeme");
@@ -11,14 +11,14 @@ export async function readCommentStorage(page: Page): Promise<{ comments: NoteCo
         });
         try {
             const transaction = database.transaction(["comments", "notes"], "readonly");
-            const read = (store: string): Promise<unknown[]> =>
+            const read = (store: string): Promise<Array<unknown>> =>
                 new Promise((resolve, reject) => {
                     const request = transaction.objectStore(store).getAll();
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = () => reject(request.error);
                 });
             const [comments, notes] = await Promise.all([read("comments"), read("notes")]);
-            return { comments, notes } as { comments: NoteCommentThread[]; notes: Note[] };
+            return { comments, notes } as { comments: Array<NoteCommentThread>; notes: Array<Note> };
         } finally {
             database.close();
         }
@@ -31,7 +31,7 @@ export async function selectCommentWords(page: Page, words: string, occurrence =
     await editor.evaluate(
         (element, { words, occurrence }) => {
             const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-            const nodes: Text[] = [];
+            const nodes: Array<Text> = [];
             let text = "";
             while (walker.nextNode()) {
                 const node = walker.currentNode as Text;
@@ -39,12 +39,12 @@ export async function selectCommentWords(page: Page, words: string, occurrence =
                 text += node.data;
             }
             let start = -1;
-            for (let index = 0; index <= occurrence; index++) start = text.indexOf(words, start + 1);
-            if (start < 0) throw new Error(`Text not found: ${words}`);
+            for (let index = 0; index <= occurrence; index++) {start = text.indexOf(words, start + 1);}
+            if (start < 0) {throw new Error(`Text not found: ${words}`);}
             const range = document.createRange();
             let offset = 0;
             for (const node of nodes) {
-                if (start >= offset && start < offset + node.length) range.setStart(node, start - offset);
+                if (start >= offset && start < offset + node.length) {range.setStart(node, start - offset);}
                 const end = start + words.length;
                 if (end > offset && end <= offset + node.length) {
                     range.setEnd(node, end - offset);

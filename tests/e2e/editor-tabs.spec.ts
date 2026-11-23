@@ -16,7 +16,7 @@ test.describe("Note tab lifecycle", () => {
         await expect(tabs).toHaveText(["First document", "Second document"]);
         const firstTabId = await tabs.first().getAttribute("data-tab-id");
 
-        if (!firstTabId) throw new Error("Expected the first document tab to have an ID.");
+        if (!firstTabId) {throw new Error("Expected the first document tab to have an ID.");}
         await page
             .getByRole("list", { name: "Notes", exact: true })
             .getByRole("button", { name: /^First document / })

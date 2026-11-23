@@ -55,9 +55,9 @@ function getUrlLabel(value: string): string {
     }
 }
 
-function NoteReferences({ note, notes }: { note: Note; notes: Note[] }) {
+function NoteReferences({ note, notes }: { note: Note; notes: Array<Note> }) {
     const refs = resolveNoteLinks(note, notes);
-    if (refs.length === 0) return null;
+    if (refs.length === 0) {return null;}
     return (
         <footer className="my-4 flex flex-col gap-2 border-t border-card-border py-4">
             <p className="text-sm font-medium text-muted-foreground">Linked notes</p>
@@ -100,7 +100,7 @@ function EditableNoteTitle({ value, onSave }: { value: string; onSave: (title: s
     const commit = async (): Promise<void> => {
         const nextTitle = draft.trim() || "Untitled";
         setDraft(nextTitle);
-        if (nextTitle === value.trim()) return;
+        if (nextTitle === value.trim()) {return;}
         setSaving(true);
         try {
             await onSave(nextTitle);
@@ -226,7 +226,7 @@ function EditorPaneToggleButton({ open, onChange }: { open: boolean; onChange: (
 }
 
 function ExportNoteButton({ note }: { note: Note }) {
-    if (isMobile()) return null;
+    if (isMobile()) {return null;}
     return (
         <NoteToolTooltip title="Export document" description="Print this note or save it as a PDF.">
             <Button
@@ -316,9 +316,9 @@ export default function NotePage() {
     const paneMode = editorPanes.state !== null;
     useEffect(() => {
         const panes = editorPanes.state;
-        if (!panes) return;
+        if (!panes) {return;}
         const openNote = (event: Event): void => {
-            if (!(event instanceof CustomEvent) || typeof event.detail !== "string") return;
+            if (!(event instanceof CustomEvent) || typeof event.detail !== "string") {return;}
             const selected = state.notes.find((note) => note.id === event.detail);
             if (
                 !selected ||
@@ -328,7 +328,7 @@ export default function NotePage() {
                 selected.noteType === NoteType.pdf ||
                 selected.noteType === NoteType["meeting-note"]
             )
-                return;
+                {return;}
             event.preventDefault();
             editorPanes.selectNote(panes.activePaneId, selected.id);
         };
@@ -344,12 +344,12 @@ export default function NotePage() {
         };
     }, [editorPanes.state, editorPanes.selectNote, state.notes]);
     const togglePaneMode = useCallback((): void => {
-        if (paneMode) editorPanes.exit();
-        else editorPanes.enter();
+        if (paneMode) {editorPanes.exit();}
+        else {editorPanes.enter();}
     }, [editorPanes, paneMode]);
     const changeEditorMode = useCallback((nextMode: EditorMode): void => {
         setEditorMode((currentMode) => {
-            if (currentMode === nextMode) return currentMode;
+            if (currentMode === nextMode) {return currentMode;}
             void SettingsService.save({ editorMode: nextMode }).catch((error) => {
                 console.error("Failed to save editor mode:", error);
             });
@@ -368,24 +368,24 @@ export default function NotePage() {
                 });
             })
             .finally(() => {
-                if (version === vimSaveVersion.current) setPendingVimMode(null);
+                if (version === vimSaveVersion.current) {setPendingVimMode(null);}
             });
     }, []);
 
     useEffect(() => {
-        if (!id || isNoteRouteTabOpenSuppressed(id)) return;
+        if (!id || isNoteRouteTabOpenSuppressed(id)) {return;}
 
         let cancelled = false;
 
         const openRouteNote = async (): Promise<void> => {
             if (id === state.note?.id) {
-                if (!hasRouteNoteTabRef.current) await dispatch.addTab(id);
+                if (!hasRouteNoteTabRef.current) {await dispatch.addTab(id);}
                 return;
             }
 
             const cached = state.notes.find((note) => note.id === id);
             const note = cached ?? await repositories.notes.getOne(id);
-            if (cancelled) return;
+            if (cancelled) {return;}
 
             if (!note) {
                 dispatch.setNote(null);
@@ -393,7 +393,7 @@ export default function NotePage() {
             }
 
             await dispatch.addTab(id);
-            if (cancelled) return;
+            if (cancelled) {return;}
             dispatch.setNote(note);
         };
 
@@ -405,12 +405,12 @@ export default function NotePage() {
     }, [dispatch, id, state.note?.id, state.notes]);
 
     useEffect(() => {
-        if (!isElectron() || !note?.filePath) return;
+        if (!isElectron() || !note?.filePath) {return;}
         const filePath = note.filePath;
         return window.electronAPI.fs.onFileChanged(async ({ filePath: changedPath }) => {
-            if (changedPath !== filePath) return;
+            if (changedPath !== filePath) {return;}
             const result = await window.electronAPI.fs.readFile(changedPath);
-            if (!result.success) return;
+            if (!result.success) {return;}
             if (result.content !== note.content) {
                 dispatch.setNote(Note.parse({ ...note, content: result.content }));
             }
@@ -422,29 +422,29 @@ export default function NotePage() {
         !isLatexSource && note && !note.metadata.commentSourceId ? findFirstMarkdownH1(note.content || "") : null;
     const markdownTitleText = markdownTitle?.title;
     useEffect(() => {
-        if (!note?.id || !markdownTitleText || markdownTitleText === note.title) return;
+        if (!note?.id || !markdownTitleText || markdownTitleText === note.title) {return;}
         void dispatch.updateNoteTitle(note.id, markdownTitleText);
     }, [dispatch, markdownTitleText, note?.id, note?.title]);
 
     const saveTitle = useCallback(
         async (title: string): Promise<void> => {
-            if (!note) return;
+            if (!note) {return;}
             await saveNoteTitle(note, title, dispatch);
         },
         [dispatch, note],
     );
 
     const toggleFavorite = useCallback(async (): Promise<void> => {
-        if (!note || favoriteSaving) return;
+        if (!note || favoriteSaving) {return;}
         setFavoriteSaving(true);
         const updatedNote = Note.parse({ ...note, favorite: !note.favorite });
         dispatch.syncNoteState(updatedNote);
         try {
             await repositories.notes.update(updatedNote.id, updatedNote);
-        } catch (reason) {
+        } catch (error) {
             dispatch.syncNoteState(note);
             notificationRef.current?.(
-                <span>{reason instanceof Error ? reason.message : "Failed to update favorites"}</span>,
+                <span>{error instanceof Error ? error.message : "Failed to update favorites"}</span>,
                 { theme: "danger", closable: true, timeout: 4000 },
             );
         } finally {
@@ -540,7 +540,7 @@ export default function NotePage() {
     );
 
     if (isPdf)
-        return (
+        {return (
             <Suspense fallback={<p role="status">Opening PDF…</p>}>
                 <PdfNoteView
                     key={note.id}
@@ -548,16 +548,16 @@ export default function NotePage() {
                     actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
                 />
             </Suspense>
-        );
+        );}
 
     if (isTask)
-        return (
+        {return (
             <TaskNoteView
                 key={note.id}
                 note={note}
                 actions={<FavoriteNoteButton note={note} disabled={favoriteSaving} onToggle={toggleFavorite} />}
             />
-        );
+        );}
 
     if (isFreehand) {
         return (

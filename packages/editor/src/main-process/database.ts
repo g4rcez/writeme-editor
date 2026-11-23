@@ -21,7 +21,6 @@ export class DatabaseManager {
  public db: Database.Database;
 
  public constructor(dbPath = path.join(app.getPath("userData"), "writeme.sqlite")) {
-  console.log("Initializing SQLite database at:", dbPath);
   this.db = new Database(dbPath);
   this.init();
  }
@@ -45,16 +44,14 @@ export class DatabaseManager {
      .get();
     if (viewsTable) {
      // Both tables exist — copy rows from bases not already in views, then drop
-     console.log("Migrating: merging bases into existing views table...");
      this.db.prepare("INSERT OR IGNORE INTO views SELECT * FROM bases").run();
      this.db.prepare("DROP TABLE bases").run();
     } else {
-     console.log("Migrating: renaming bases table to views...");
      this.db.prepare("ALTER TABLE bases RENAME TO views").run();
     }
    }
-  } catch (e) {
-   console.error("Failed to migrate bases to views:", e);
+  } catch (error) {
+   console.error("Failed to migrate bases to views:", error);
   }
 
   this.db.exec(`
@@ -250,7 +247,6 @@ export class DatabaseManager {
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='templates'")
     .get();
    if (templatesTable) {
-    console.log("Migrating templates to notes table...");
     this.db.exec(`
           INSERT OR IGNORE INTO notes (
             id, type, title, content, filePath, createdAt, updatedAt, noteType, 
@@ -261,11 +257,10 @@ export class DatabaseManager {
             '', '[]', 'system', 'system', length(content), 0
           FROM templates;
         `);
-    console.log("Dropping templates table...");
     this.db.exec("DROP TABLE templates;");
    }
-  } catch (e) {
-   console.error("Failed to migrate templates to notes:", e);
+  } catch (error) {
+   console.error("Failed to migrate templates to notes:", error);
   }
 
   // Migration for missing 'type' column if tables existed without it
@@ -295,11 +290,10 @@ export class DatabaseManager {
 
   for (const table of tables) {
    try {
-    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<any>;
 
     for (const col of commonColumns) {
      if (!columns.some((c: any) => c.name === col)) {
-      console.log(`Migrating table ${table}: adding '${col}' column`);
       this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`).run();
      }
     }
@@ -307,7 +301,6 @@ export class DatabaseManager {
     if (table === "notes") {
      for (const col of noteColumns) {
       if (!columns.some((c: any) => c.name === col)) {
-       console.log(`Migrating table ${table}: adding '${col}' column`);
        const type = col === "favorite" ? "INTEGER DEFAULT 0" : "TEXT DEFAULT NULL";
        this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`).run();
       }
@@ -317,7 +310,6 @@ export class DatabaseManager {
     if (table === "aiMessages") {
      for (const col of aiMessageColumns) {
       if (!columns.some((c: any) => c.name === col)) {
-       console.log(`Migrating table ${table}: adding '${col}' column`);
        this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`).run();
       }
      }
@@ -326,7 +318,6 @@ export class DatabaseManager {
     if (table === "aiConfigs") {
      for (const col of aiConfigColumns) {
       if (!columns.some((c: any) => c.name === col)) {
-       console.log(`Migrating table ${table}: adding '${col}' column`);
        this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`).run();
       }
      }
@@ -347,14 +338,13 @@ export class DatabaseManager {
     }
 
     if (table === "tabs") {
-     const currentColumns = this.db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+     const currentColumns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<any>;
      if (!currentColumns.some((c: any) => c.name === "scrollY")) {
-      console.log(`Migrating table ${table}: adding 'scrollY' column`);
       this.db.prepare(`ALTER TABLE ${table} ADD COLUMN scrollY REAL DEFAULT 0`).run();
      }
     }
-   } catch (e) {
-    console.error(`Failed to migrate table ${table}:`, e);
+   } catch (error) {
+    console.error(`Failed to migrate table ${table}:`, error);
    }
   }
 
@@ -375,7 +365,7 @@ export class DatabaseManager {
  }
 
  public normalizeRow(row: any) {
-  if (!row) return row;
+  if (!row) {return row;}
   if (row.tags) {
    try {
     row.tags = JSON.parse(row.tags);
@@ -435,7 +425,7 @@ export class DatabaseManager {
  }
 
  private collection(table: string): DatabaseCollection {
-  if (!isDatabaseCollection(table)) throw new TypeError(`Unknown database collection: ${table}`);
+  if (!isDatabaseCollection(table)) {throw new TypeError(`Unknown database collection: ${table}`);}
   return table;
  }
 
@@ -443,7 +433,7 @@ export class DatabaseManager {
   this.db.close();
  }
 
- public migrateCollection(table: string, records: unknown[]): MigrationCounts {
+ public migrateCollection(table: string, records: Array<unknown>): MigrationCounts {
   const collection = this.collection(table);
   const counts: MigrationCounts = {
    found: records.length,
@@ -475,7 +465,7 @@ export class DatabaseManager {
      counts.imported++;
      continue;
     }
-    if (collection === "settings" || collection === "cursorPositions") source.id = String(destination.id);
+    if (collection === "settings" || collection === "cursorPositions") {source.id = String(destination.id);}
     const sourceEntries = Object.entries(source).filter(([, value]) => value !== undefined);
     const identical = sourceEntries.every(([key, value]) => {
      const serialized =
@@ -511,7 +501,7 @@ export class DatabaseManager {
 
  public verifyCollection(
   table: string,
-  records: unknown[],
+  records: Array<unknown>,
  ): { sourceCount: number; destinationCount: number; matched: number } {
   const collection = this.collection(table);
   const find =
@@ -530,7 +520,7 @@ export class DatabaseManager {
      : collection === "cursorPositions"
       ? sourceRecord.noteId
       : source.id;
-   if (find.get(identity)) matched++;
+   if (find.get(identity)) {matched++;}
   }
   return {
    sourceCount: records.length,
@@ -546,10 +536,10 @@ export class DatabaseManager {
   return this.normalizeRow(result) as T;
  }
 
- public getAll<T>(table: string): T[] {
+ public getAll<T>(table: string): Array<T> {
   const collection = this.collection(table);
   const stmt = this.db.prepare(`SELECT * FROM ${collection}`);
-  const results = stmt.all() as any[];
+  const results = stmt.all() as Array<any>;
   return results.map((row) => this.normalizeRow(row));
  }
 
@@ -581,7 +571,7 @@ export class DatabaseManager {
    if (Array.isArray(v) || (v !== null && typeof v === "object" && !(v instanceof Date))) {
     return JSON.stringify(v);
    }
-   if (v instanceof Date) return v.toISOString();
+   if (v instanceof Date) {return v.toISOString();}
    return v;
   });
 
@@ -626,7 +616,7 @@ export class DatabaseManager {
   return this.normalizeRow(result);
  }
 
- public getRecentNotes(limit: number, workspacePath: string | null): any[] {
+ public getRecentNotes(limit: number, workspacePath: string | null): Array<any> {
   const workspacePrefix = workspacePath ? `${workspacePath.replace(/[\\/]+$/, "")}${path.sep}` : null;
   const stmt = this.db.prepare(
    `SELECT * FROM notes
@@ -636,15 +626,15 @@ export class DatabaseManager {
 			 ORDER BY updatedAt DESC
 			 LIMIT ?`,
   );
-  const results = stmt.all(workspacePath, workspacePath, workspacePrefix, workspacePrefix, limit) as any[];
+  const results = stmt.all(workspacePath, workspacePath, workspacePrefix, workspacePrefix, limit) as Array<any>;
   return results.map((row) => this.normalizeRow(row));
  }
 
- public getTemplates(): any[] {
+ public getTemplates(): Array<any> {
   const stmt = this.db.prepare(
    `SELECT * FROM notes WHERE noteType = 'template' AND deletedAt IS NULL ORDER BY updatedAt DESC`,
   );
-  const results = stmt.all() as any[];
+  const results = stmt.all() as Array<any>;
   return results.map((row) => this.normalizeRow(row));
  }
 
@@ -672,9 +662,9 @@ export class DatabaseManager {
   this.db.prepare("UPDATE notes SET deletedAt = NULL WHERE id = ?").run(id);
  }
 
- public getTrashedNotes(): any[] {
+ public getTrashedNotes(): Array<any> {
   const stmt = this.db.prepare(`SELECT * FROM notes WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC`);
-  return (stmt.all() as any[]).map((row) => this.normalizeRow(row));
+  return (stmt.all() as Array<any>).map((row) => this.normalizeRow(row));
  }
 
  public moveNoteToTrash(id: string, trashPath: string, originalFilePath: string | null, deletedAt: string): void {
@@ -691,7 +681,7 @@ export class DatabaseManager {
    .run(id);
  }
 
- public updateTabsOrder(tabs: { id: string; order: number }[]): void {
+ public updateTabsOrder(tabs: Array<{ id: string; order: number }>): void {
   const updateStmt = this.db.prepare('UPDATE tabs SET "order" = ? WHERE id = ?');
   const transaction = this.db.transaction((tabs) => {
    for (const tab of tabs) {
@@ -706,19 +696,19 @@ export class DatabaseManager {
   stmt.run(noteId);
  }
 
- public syncHashtags(filename: string, tags: string[]): void {
+ public syncHashtags(filename: string, tags: Array<string>): void {
   const getExistingStmt = this.db.prepare("SELECT * FROM hashtags WHERE filename = ?");
   const deleteStmt = this.db.prepare("DELETE FROM hashtags WHERE id = ?");
   const insertStmt = this.db.prepare("INSERT INTO hashtags (id, hashtag, filename, project) VALUES (?, ?, ?, ?)");
 
   const transaction = this.db.transaction(() => {
-   const existing = getExistingStmt.all(filename) as any[];
+   const existing = getExistingStmt.all(filename) as Array<any>;
    const existingTags = existing.map((e) => e.hashtag);
 
    const added = tags.filter((t) => !existingTags.includes(t));
    const removed = existingTags.filter((t) => !tags.includes(t));
 
-   if (added.length === 0 && removed.length === 0) return;
+   if (added.length === 0 && removed.length === 0) {return;}
 
    const idsToRemove = existing.filter((e) => removed.includes(e.hashtag)).map((e) => e.id);
    for (const id of idsToRemove) {
@@ -735,7 +725,7 @@ export class DatabaseManager {
   const latest = this.db
    .prepare("SELECT content FROM noteHistory WHERE noteId = ? ORDER BY createdAt DESC, rowid DESC LIMIT 1")
    .get(noteId) as { content?: string } | undefined;
-  if (latest?.content === content) return;
+  if (latest?.content === content) {return;}
 
   this.db
    .prepare("INSERT INTO noteHistory (id, type, noteId, content, createdAt) VALUES (?, ?, ?, ?, ?)")
@@ -756,10 +746,10 @@ export class DatabaseManager {
   })();
  }
 
- public getNoteHistory(noteId: string): any[] {
+ public getNoteHistory(noteId: string): Array<any> {
   const rows = this.db
    .prepare("SELECT * FROM noteHistory WHERE noteId = ? ORDER BY createdAt DESC, rowid DESC")
-   .all(noteId) as any[];
+   .all(noteId) as Array<any>;
   return rows.map((row) => this.normalizeRow(row));
  }
 
@@ -784,7 +774,7 @@ export class DatabaseManager {
   const result = this.db
    .prepare("UPDATE notes SET metadata = ?, updatedAt = ? WHERE id = ? AND deletedAt IS NULL")
    .run(JSON.stringify(metadata), new Date().toISOString(), id);
-  if (result.changes === 0) throw new Error("Note not found.");
+  if (result.changes === 0) {throw new Error("Note not found.");}
  }
 
  public updateNoteContentIfUnchanged(
@@ -803,7 +793,7 @@ export class DatabaseManager {
       WHERE id = ? AND deletedAt IS NULL AND title = ? AND updatedAt = ? AND COALESCE(content, '') = ?`,
     )
     .run(content, fileSize, updatedAt, updatedBy, id, expected.title, expected.updatedAt, expected.content);
-   if (updated.changes === 0) return null;
+   if (updated.changes === 0) {return null;}
    this.saveNoteSnapshotWithinTransaction(id, content, updatedAt);
    return this.db.prepare("SELECT * FROM notes WHERE id = ?").get(id) as Record<string, unknown>;
   })();
@@ -817,21 +807,21 @@ export class DatabaseManager {
   })();
  }
 
- public getNoteGroupsByNoteId(noteId: string): any[] {
+ public getNoteGroupsByNoteId(noteId: string): Array<any> {
   const stmt = this.db.prepare(
    `SELECT g.* FROM noteGroups g
        INNER JOIN noteGroupMembers m ON m.groupId = g.id
        WHERE m.noteId = ?`,
   );
-  return (stmt.all(noteId) as any[]).map((row) => this.normalizeRow(row));
+  return (stmt.all(noteId) as Array<any>).map((row) => this.normalizeRow(row));
  }
 
- public getNoteGroupMembersByGroupId(groupId: string): any[] {
+ public getNoteGroupMembersByGroupId(groupId: string): Array<any> {
   const stmt = this.db.prepare(`SELECT * FROM noteGroupMembers WHERE groupId = ? ORDER BY "order" ASC`);
-  return (stmt.all(groupId) as any[]).map((row) => this.normalizeRow(row));
+  return (stmt.all(groupId) as Array<any>).map((row) => this.normalizeRow(row));
  }
 
- public reorderNoteGroupMembers(members: { id: string; order: number }[]): void {
+ public reorderNoteGroupMembers(members: Array<{ id: string; order: number }>): void {
   const updateStmt = this.db.prepare(`UPDATE noteGroupMembers SET "order" = ? WHERE id = ?`);
   const transaction = this.db.transaction((ms) => {
    for (const m of ms) {

@@ -43,10 +43,10 @@ function isDisabledControl(element: HTMLElement): boolean {
 }
 
 function isElementVisible(element: HTMLElement): boolean {
-    if (element.closest("[data-click-hints-overlay]")) return false;
-    if (element.closest("[hidden],[inert],[aria-hidden='true']")) return false;
-    if (isDisabledControl(element)) return false;
-    if (element.getAttribute("aria-disabled") === "true") return false;
+    if (element.closest("[data-click-hints-overlay]")) {return false;}
+    if (element.closest("[hidden],[inert],[aria-hidden='true']")) {return false;}
+    if (isDisabledControl(element)) {return false;}
+    if (element.getAttribute("aria-disabled") === "true") {return false;}
 
     const style = window.getComputedStyle(element);
     if (style.display === "none" || style.visibility === "hidden" || style.pointerEvents === "none") {
@@ -63,7 +63,7 @@ function isElementVisible(element: HTMLElement): boolean {
     );
 }
 
-export function getVisibleClickableElements(root: ParentNode = document): HTMLElement[] {
+export function getVisibleClickableElements(root: ParentNode = document): Array<HTMLElement> {
     return Array.from(root.querySelectorAll(CLICKABLE_SELECTOR)).filter(
         (element): element is HTMLElement => element instanceof HTMLElement && isElementVisible(element),
     );
@@ -85,11 +85,11 @@ function getHintPosition(element: HTMLElement): Pick<ClickHint, "left" | "top"> 
     return { left, top };
 }
 
-export function createClickHints(elements: HTMLElement[]): ClickHint[] {
-    const hints: ClickHint[] = [];
+export function createClickHints(elements: Array<HTMLElement>): Array<ClickHint> {
+    const hints: Array<ClickHint> = [];
     for (const element of elements) {
         const code = getClickHintCode(hints.length);
-        if (!code) break;
+        if (!code) {break;}
         hints.push({ code, element, ...getHintPosition(element) });
     }
 
@@ -106,7 +106,7 @@ function isClickHintsShortcut(event: KeyboardEvent): boolean {
 }
 
 function getLetterKey(event: KeyboardEvent): string | null {
-    if (event.key.length !== 1) return null;
+    if (event.key.length !== 1) {return null;}
     const key = event.key.toUpperCase();
     return LETTERS.includes(key) ? key : null;
 }
@@ -114,7 +114,7 @@ function getLetterKey(event: KeyboardEvent): string | null {
 export function KeyboardClickHints(): ReactElement | null {
     const [isOpen, setIsOpen] = useState(false);
     const [typedCode, setTypedCode] = useState("");
-    const [hints, setHints] = useState<ClickHint[]>([]);
+    const [hints, setHints] = useState<Array<ClickHint>>([]);
 
     const refreshHints = useCallback((): void => {
         setHints(createClickHints(getVisibleClickableElements()));
@@ -135,12 +135,12 @@ export function KeyboardClickHints(): ReactElement | null {
     }, [isOpen, refreshHints]);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
 
         const controller = new AbortController();
         let frame = 0;
         const scheduleRefresh = (): void => {
-            if (frame) window.cancelAnimationFrame(frame);
+            if (frame) {window.cancelAnimationFrame(frame);}
             frame = window.requestAnimationFrame(refreshHints);
         };
 
@@ -157,7 +157,7 @@ export function KeyboardClickHints(): ReactElement | null {
         });
 
         return () => {
-            if (frame) window.cancelAnimationFrame(frame);
+            if (frame) {window.cancelAnimationFrame(frame);}
             controller.abort();
         };
     }, [closeHints, isOpen, refreshHints]);
@@ -172,8 +172,8 @@ export function KeyboardClickHints(): ReactElement | null {
                 return;
             }
 
-            if (!isOpen) return;
-            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (!isOpen) {return;}
+            if (event.metaKey || event.ctrlKey || event.altKey) {return;}
 
             event.preventDefault();
             event.stopPropagation();
@@ -189,7 +189,7 @@ export function KeyboardClickHints(): ReactElement | null {
             }
 
             if (event.key === "Enter") {
-                if (typedCode.length !== 2) return;
+                if (typedCode.length !== 2) {return;}
 
                 const hint = hints.find((current) => current.code === typedCode);
                 if (!hint) {
@@ -203,7 +203,7 @@ export function KeyboardClickHints(): ReactElement | null {
             }
 
             const letter = getLetterKey(event);
-            if (!letter) return;
+            if (!letter) {return;}
 
             setTypedCode((current) => (current.length >= 2 ? letter : `${current}${letter}`));
         };
@@ -214,7 +214,7 @@ export function KeyboardClickHints(): ReactElement | null {
         };
     }, [closeHints, hints, isOpen, typedCode]);
 
-    if (!isOpen) return null;
+    if (!isOpen) {return null;}
 
     return (
         <div

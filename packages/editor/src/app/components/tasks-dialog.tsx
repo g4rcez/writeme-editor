@@ -37,13 +37,13 @@ export type Card = {
 
 export type Stack = {
     title: string;
-    cards: Card[];
+    cards: Array<Card>;
     pos?: number;
     endPos?: number;
 };
 
-export function parseEditorTasks(doc: ProseMirrorNode): Stack[] {
-    const stacks: Stack[] = [];
+export function parseEditorTasks(doc: ProseMirrorNode): Array<Stack> {
+    const stacks: Array<Stack> = [];
     let currentStack: Stack | null = null;
     let currentCard: Card | null = null;
     let awaitingDescription = false;
@@ -153,13 +153,13 @@ function findInsertPosForStack(doc: ProseMirrorNode, stack: Stack, insertBeforeC
         }
     });
 
-    if (lastRelevantPos !== -1) return lastRelevantPos;
+    if (lastRelevantPos !== -1) {return lastRelevantPos;}
 
     if (stack.pos !== undefined) {
         const headingNode = doc.nodeAt(stack.pos);
         let pos = stack.pos + (headingNode?.nodeSize ?? 0);
         const nextNode = doc.nodeAt(pos);
-        if (nextNode && nextNode.type.name === "paragraph") {
+        if (nextNode?.type.name === "paragraph") {
             pos += nextNode.nodeSize;
         }
         return pos;
@@ -174,7 +174,7 @@ export function moveTaskItemBetweenStacks(
     targetStack: Stack,
     insertBeforeCard?: Card,
 ) {
-    if (card.pos === undefined || card.endPos === undefined) return;
+    if (card.pos === undefined || card.endPos === undefined) {return;}
 
     editor
         .chain()
@@ -187,7 +187,7 @@ export function moveTaskItemBetweenStacks(
             let deleteTo = card.endPos!;
             if (card.parentTaskListPos !== undefined) {
                 const taskListNode = state.doc.nodeAt(card.parentTaskListPos);
-                if (taskListNode && taskListNode.childCount === 1) {
+                if (taskListNode?.childCount === 1) {
                     deleteFrom = card.parentTaskListPos;
                     deleteTo = card.parentTaskListPos + taskListNode.nodeSize;
                 }
@@ -202,9 +202,9 @@ export function moveTaskItemBetweenStacks(
                 tr.insert(mappedInsertPos, slice.content);
             } else {
                 const firstNode = slice.content.firstChild;
-                if (firstNode && firstNode.type.name === "taskItem") {
+                if (firstNode?.type.name === "taskItem") {
                     const taskList = state.schema.nodes.taskList?.create(null, [firstNode]);
-                    if (taskList) tr.insert(mappedInsertPos, taskList);
+                    if (taskList) {tr.insert(mappedInsertPos, taskList);}
                     if (slice.content.childCount > 1) {
                         tr.insert(mappedInsertPos + (taskList?.nodeSize ?? 0), slice.content.cut(firstNode.nodeSize));
                     }
@@ -227,7 +227,7 @@ export function updateTaskContent(
         .command(({ tr, state }) => {
             if (updates.title !== undefined && card.titlePos !== undefined) {
                 const node = state.doc.nodeAt(card.titlePos);
-                if (node && node.type.name === "paragraph") {
+                if (node?.type.name === "paragraph") {
                     tr.insertText(updates.title, card.titlePos + 1, card.titlePos + node.nodeSize - 1);
                 }
             }
@@ -235,7 +235,7 @@ export function updateTaskContent(
             if (updates.description !== undefined) {
                 if (card.descriptionPos !== undefined) {
                     const node = state.doc.nodeAt(card.descriptionPos);
-                    if (node && node.type.name === "paragraph") {
+                    if (node?.type.name === "paragraph") {
                         const mappedDescPos = tr.mapping.map(card.descriptionPos);
                         tr.insertText(updates.description, mappedDescPos + 1, mappedDescPos + node.nodeSize - 1);
                     }
@@ -248,7 +248,7 @@ export function updateTaskContent(
                     const insertPos = card.pos !== undefined && taskNode
                         ? card.pos + taskNode.nodeSize - 1
                         : card.endPos ?? 0;
-                    if (descriptionNode) tr.insert(tr.mapping.map(insertPos), descriptionNode);
+                    if (descriptionNode) {tr.insert(tr.mapping.map(insertPos), descriptionNode);}
                 }
             }
             return true;
@@ -278,7 +278,7 @@ export function addTaskToStack(
                 tr.insert(insertPos, taskItem);
             } else {
                 const taskList = state.schema.nodes.taskList?.create(null, taskItem);
-                if (taskList) tr.insert(insertPos, taskList);
+                if (taskList) {tr.insert(insertPos, taskList);}
             }
             return true;
         })
@@ -297,7 +297,7 @@ const NewTaskModal = ({ isOpen, onClose, onAdd, stackTitle }: NewTaskModalProps)
     const [description, setDescription] = useState("");
 
     const handleAdd = () => {
-        if (!title.trim()) return;
+        if (!title.trim()) {return;}
         onAdd({ title, description });
         setTitle("");
         setDescription("");
@@ -381,7 +381,7 @@ const TaskCard = ({ card, onToggle, onUpdate, isDragging, isOverlay }: TaskCardP
                             onChange={(e) => setTitle(e.target.value)}
                             onBlur={handleSave}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSave();
+                                if (e.key === "Enter") {handleSave();}
                                 if (e.key === "Escape") {
                                     setTitle(card.title);
                                     setEditingField(null);
@@ -461,7 +461,7 @@ function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
                         {stack.cards.length}
                     </span>
                 </div>
-                <button
+                <button type="button"
                     onClick={() => onAddTask(stack)}
                     className="p-1 rounded-md hover:bg-muted text-foreground/70 transition-colors"
                     title="Add task"
@@ -511,7 +511,7 @@ function DroppableColumn({ stack, onAddTask, children }: DroppableColumnProps) {
 
 export const TasksDialog = () => {
     const [uiState, uiDispatch] = useUIStore();
-    const [stacks, setStacks] = useState<Stack[]>([]);
+    const [stacks, setStacks] = useState<Array<Stack>>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [overId, setOverId] = useState<string | null>(null);
     const [newTaskStack, setNewTaskStack] = useState<Stack | null>(null);
@@ -528,7 +528,7 @@ export const TasksDialog = () => {
         (id: string, currentStacks = stacks): { si: number; ci: number } | null => {
             for (let si = 0; si < currentStacks.length; si++) {
                 const ci = currentStacks[si]!.cards.findIndex((c) => c.id === id);
-                if (ci !== -1) return { si, ci };
+                if (ci !== -1) {return { si, ci };}
             }
             return null;
         },
@@ -537,7 +537,7 @@ export const TasksDialog = () => {
 
     useEffect(() => {
         const editor = editorGlobalRef.current;
-        if (!editor || !uiState.tasksDialog.isOpen) return;
+        if (!editor || !uiState.tasksDialog.isOpen) {return;}
 
         const handleSync = () => {
             setStacks(parseEditorTasks(editor.state.doc));
@@ -553,7 +553,7 @@ export const TasksDialog = () => {
 
     const toggleTask = (card: Card) => {
         const editor = editorGlobalRef.current;
-        if (!editor || card.pos === undefined) return;
+        if (!editor || card.pos === undefined) {return;}
         const pos = card.pos;
         const newChecked = !card.checked;
         editor
@@ -578,13 +578,13 @@ export const TasksDialog = () => {
 
     const handleDragOver = (event: DragOverEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+        if (!over || active.id === over.id) {return;}
 
         const activeId = String(active.id);
         const overId = String(over.id);
 
         const activeLoc = findCardLocation(activeId);
-        if (!activeLoc) return;
+        if (!activeLoc) {return;}
 
         const overLoc = findCardLocation(overId);
         const overStackIndex = stacks.findIndex((s) => `stack-${s.pos}` === overId);
@@ -593,14 +593,14 @@ export const TasksDialog = () => {
             setStacks((prev) => {
                 const currentActiveLoc = findCardLocation(activeId, prev);
                 const currentOverLoc = findCardLocation(overId, prev);
-                if (!currentActiveLoc || !currentOverLoc) return prev;
+                if (!currentActiveLoc || !currentOverLoc) {return prev;}
 
                 const newStacks = [...prev];
                 const activeStack = { ...newStacks[currentActiveLoc.si]! };
                 const overStack = { ...newStacks[currentOverLoc.si]! };
 
                 const [movedCard] = activeStack.cards.splice(currentActiveLoc.ci, 1);
-                if (!movedCard) return prev;
+                if (!movedCard) {return prev;}
 
                 overStack.cards.splice(currentOverLoc.ci, 0, movedCard);
 
@@ -611,12 +611,12 @@ export const TasksDialog = () => {
         } else if (overStackIndex !== -1 && activeLoc.si !== overStackIndex) {
             setStacks((prev) => {
                 const currentActiveLoc = findCardLocation(activeId, prev);
-                if (!currentActiveLoc) return prev;
+                if (!currentActiveLoc) {return prev;}
                 const newStacks = Array.from(prev);
                 const activeStack = { ...newStacks[currentActiveLoc.si]! };
                 const overStack = { ...newStacks[overStackIndex]! };
                 const [movedCard] = activeStack.cards.splice(currentActiveLoc.ci, 1);
-                if (!movedCard) return prev;
+                if (!movedCard) {return prev;}
                 overStack.cards.push(movedCard);
                 newStacks[currentActiveLoc.si] = activeStack;
                 newStacks[overStackIndex] = overStack;
@@ -631,7 +631,7 @@ export const TasksDialog = () => {
         setOverId(null);
 
         const editor = editorGlobalRef.current;
-        if (!editor) return;
+        if (!editor) {return;}
 
         if (!over) {
             setStacks(parseEditorTasks(editor.state.doc));
@@ -642,7 +642,7 @@ export const TasksDialog = () => {
         const overId = String(over.id);
 
         const activeLoc = findCardLocation(activeId, stacks);
-        if (!activeLoc) return;
+        if (!activeLoc) {return;}
 
         const finalLocInUI = { ...activeLoc };
         const targetStackInUI = { ...stacks[activeLoc.si]! };
@@ -689,15 +689,15 @@ export const TasksDialog = () => {
     };
 
     const getActiveCard = () => {
-        if (!activeId) return null;
+        if (!activeId) {return null;}
         const loc = findCardLocation(activeId);
         return loc ? stacks[loc.si]!.cards[loc.ci] : null;
     };
 
     const getOverColumnIndex = (id: string | null) => {
-        if (!id) return null;
+        if (!id) {return null;}
         const loc = findCardLocation(id);
-        if (loc) return loc.si;
+        if (loc) {return loc.si;}
         return stacks.findIndex((s) => `stack-${s.pos}` === id);
     };
 

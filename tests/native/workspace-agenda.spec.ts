@@ -55,7 +55,7 @@ async function openCalendarSlot(page: Page): Promise<void> {
     });
     await expect(page.getByRole("grid")).toBeVisible();
     const collapseSidebar = page.getByRole("button", { name: "Collapse Sidebar", exact: true });
-    if (await collapseSidebar.isVisible()) await collapseSidebar.click();
+    if (await collapseSidebar.isVisible()) {await collapseSidebar.click();}
     await page
         .getByRole("grid")
         .getByRole("button", { name: /Wednesday, Dec 31, 2025/ })
@@ -117,7 +117,7 @@ test("preserves a title-only legacy day in SQLite and reuses a renamed filesyste
         await page.evaluate(
             async ({ id, filePath }) => {
                 const note = await window.electronAPI.db.get<Note>("notes", id);
-                if (!note) throw new Error("Legacy note disappeared");
+                if (!note) {throw new Error("Legacy note disappeared");}
                 await window.electronAPI.db.save("notes", {
                     ...note,
                     filePath,
@@ -170,10 +170,10 @@ test("does not redirect obsolete native daily I/O after date, route or calendar-
             // Remove each prior completed note so every request crosses the canonical-file I/O boundary.
             await page.evaluate(async () => {
                 for (const note of await window.electronAPI.db.getAll<Note>("notes"))
-                    await window.electronAPI.db.notes.hardDelete(note.id);
+                    {await window.electronAPI.db.notes.hardDelete(note.id);}
             });
             await rm(path.join(workspace, "quicknotes"), { recursive: true, force: true });
-            if (calendar) await openCalendarSlot(page);
+            if (calendar) {await openCalendarSlot(page);}
             else {
                 await page.evaluate(() => {
                     window.location.hash = "/today?date=2025-12-31";
@@ -184,12 +184,12 @@ test("does not redirect obsolete native daily I/O after date, route or calendar-
             await application.evaluate(({ ipcMain }) => {
                 const handlers = Reflect.get(ipcMain, "_invokeHandlers");
                 const original = handlers.get("fs:statFile");
-                if (typeof original !== "function") throw new Error("Filesystem stat handler unavailable");
+                if (typeof original !== "function") {throw new Error("Filesystem stat handler unavailable");}
                 const gate = Promise.withResolvers<void>();
                 Reflect.set(globalThis, "releaseAgendaDaily", gate.resolve);
                 Reflect.set(globalThis, "agendaDailyStarted", false);
                 ipcMain.removeHandler("fs:statFile");
-                ipcMain.handle("fs:statFile", async (...args: unknown[]) => {
+                ipcMain.handle("fs:statFile", async (...args: Array<unknown>) => {
                     if (typeof args[1] === "string" && args[1].endsWith("2025-12-31-quicknote.md")) {
                         Reflect.set(globalThis, "agendaDailyStarted", true);
                         await gate.promise;
@@ -207,10 +207,10 @@ test("does not redirect obsolete native daily I/O after date, route or calendar-
             await expect
                 .poll(() => application.evaluate(() => Reflect.get(globalThis, "agendaDailyStarted")))
                 .toBe(true);
-            if (intent === "date") await page.getByRole("button", { name: "Next day", exact: true }).click();
-            else if (intent === "cancel") await page.getByRole("button", { name: "Cancel", exact: true }).click();
-            else if (intent === "calendar route") await page.evaluate(() => { window.location.hash = "/tasks"; });
-            else await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();
+            if (intent === "date") {await page.getByRole("button", { name: "Next day", exact: true }).click();}
+            else if (intent === "cancel") {await page.getByRole("button", { name: "Cancel", exact: true }).click();}
+            else if (intent === "calendar route") {await page.evaluate(() => { window.location.hash = "/tasks"; });}
+            else {await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();}
             const destination = page.url();
             await application.evaluate(() => Reflect.get(globalThis, "releaseAgendaDaily")());
             await expect

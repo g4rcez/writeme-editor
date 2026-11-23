@@ -10,10 +10,10 @@ export function applyTiptapVimConfiguration(vim: NeovimApi, configuration: VimCo
             mode,
         })),
     );
-    for (const mapping of bindings) vim.keymap.set(mapping.mode, mapping.lhs, mapping.rhs, mapping.options);
+    for (const mapping of bindings) {vim.keymap.set(mapping.mode, mapping.lhs, mapping.rhs, mapping.options);}
     return () => {
         vim.flushPending();
-        for (const mapping of bindings) vim.keymap.del(mapping.mode, mapping.lhs);
-        for (const mapping of previous) vim.keymap.set(mapping.mode, mapping.keys.join(""), mapping.action, mapping);
+        for (const mapping of bindings) {vim.keymap.del(mapping.mode, mapping.lhs);}
+        for (const mapping of previous) {vim.keymap.set(mapping.mode, mapping.keys.join(""), mapping.action, mapping);}
     };
 }

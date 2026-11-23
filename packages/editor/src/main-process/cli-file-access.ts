@@ -13,7 +13,7 @@ export function revokeCliEditorFile(requestId: string): void {
 export function isCliEditorFilePath(filePath: string): boolean {
     const normalizedPath = path.resolve(filePath);
     for (const allowedPath of filePathByRequestId.values()) {
-        if (allowedPath === normalizedPath) return true;
+        if (allowedPath === normalizedPath) {return true;}
     }
     return false;
 }

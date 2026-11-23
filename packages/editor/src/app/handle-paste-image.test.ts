@@ -15,18 +15,18 @@ vi.mock("@/store/global.store", () => ({
 // Mock handlePasteImage directly from extensions instead of importing it
 // to avoid the JSON import issue in sub-dependencies
 const handlePasteImage = async (currentEditor: any) => {
-    if (!isElectron()) return false;
+    if (!isElectron()) {return false;}
 
     const imageData = await window.electronAPI.notes.clipboardImage();
-    if (!imageData) return false;
+    if (!imageData) {return false;}
 
     const state = globalState();
     const projectDir = state.directory;
     const noteTitle = state.note?.title || "untitled";
 
-    if (!projectDir) return false;
+    if (!projectDir) {return false;}
 
-    const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+    const sanitizedTitle = noteTitle.replaceAll(/[^a-z0-9]/gi, "_").toLowerCase();
     const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
 
     try {
@@ -43,8 +43,8 @@ const handlePasteImage = async (currentEditor: any) => {
             currentEditor.chain().insertContent({ type: "image", attrs: { src } }).focus().run();
             return true;
         }
-    } catch (e) {
-        console.error("Failed to save pasted image", e);
+    } catch (error) {
+        console.error("Failed to save pasted image", error);
     }
     return false;
 };

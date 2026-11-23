@@ -114,8 +114,8 @@ const loadingLanguages = new Set<SupportedShikiLanguage>();
 const loadingThemes = new Set<BundledTheme>();
 
 type HighlighterOptions = {
-    themes: (BundledTheme | null | undefined)[];
-    languages: (string | null | undefined)[];
+    themes: Array<BundledTheme | null | undefined>;
+    languages: Array<string | null | undefined>;
 };
 
 const THEME_MAP = {
@@ -165,8 +165,8 @@ async function loadTheme(theme: BundledTheme) {
 }
 
 async function loadLanguage(language: string | null | undefined) {
-    if (!highlighter || !language || isLoadedLanguage(language)) return false;
-    if (loadingLanguages.has(language as SupportedShikiLanguage)) return false;
+    if (!highlighter || !language || isLoadedLanguage(language)) {return false;}
+    if (loadingLanguages.has(language as SupportedShikiLanguage)) {return false;}
 
     if (isCustomShikiLanguage(language)) {
         loadingLanguages.add(language);
@@ -203,8 +203,8 @@ async function initHighlighter({
         try {
             const loader = loadHighlighter({ languages, themes });
             await loader;
-        } catch (e) {
-            console.warn("Failed to load Shiki highlighter:", e);
+        } catch (error) {
+            console.warn("Failed to load Shiki highlighter:", error);
         }
     } else {
         try {
@@ -213,8 +213,8 @@ async function initHighlighter({
                     .flatMap((theme) => loadTheme(theme))
                     .concat(languages.flatMap((language) => !!language && loadLanguage(language))),
             );
-        } catch (e) {
-            console.warn("Failed to load Shiki themes/languages:", e);
+        } catch (error) {
+            console.warn("Failed to load Shiki themes/languages:", error);
         }
     }
 }
@@ -240,15 +240,15 @@ function getDecorations({
     renderBackground?: boolean;
     positions?: Set<number>;
 }) {
-    const decorations: Decoration[] = [];
+    const decorations: Array<Decoration> = [];
     const codeBlocks = findChildren(doc, (node) => node.type.name === name);
     codeBlocks.forEach((block) => {
-        if (positions !== undefined && !positions.has(block.pos)) return;
+        if (positions !== undefined && !positions.has(block.pos)) {return;}
         let from = block.pos + 1;
         let language = block.node.attrs.language || defaultLanguage;
         const theme = block.node.attrs.theme || defaultTheme;
         const highlighter = getShiki();
-        if (!highlighter) return;
+        if (!highlighter) {return;}
         if (!highlighter.getLoadedLanguages().includes(language)) {
             language = "plaintext";
         }
@@ -309,14 +309,14 @@ export function ShikiPlugin({
                     this.initDecorations();
                 }
                 update() {
-                    if (this.debouncedCheckTimer !== null) window.clearTimeout(this.debouncedCheckTimer);
+                    if (this.debouncedCheckTimer !== null) {window.clearTimeout(this.debouncedCheckTimer);}
                     this.debouncedCheckTimer = window.setTimeout(() => {
                         this.debouncedCheckTimer = null;
                         this.checkUndecoratedBlocks();
                     }, 300);
                 }
                 destroy() {
-                    if (this.debouncedCheckTimer !== null) window.clearTimeout(this.debouncedCheckTimer);
+                    if (this.debouncedCheckTimer !== null) {window.clearTimeout(this.debouncedCheckTimer);}
                 }
                 async initDecorations() {
                     const doc = view.state.doc;
@@ -333,8 +333,8 @@ export function ShikiPlugin({
                     try {
                         const tr = view.state.tr.setMeta("shikiPluginForceDecoration", true);
                         view.dispatch(tr);
-                    } catch (e) {
-                        console.warn("[code-block]", e);
+                    } catch (error) {
+                        console.warn("[code-block]", error);
                     }
                 }
                 async checkUndecoratedBlocks() {
@@ -471,7 +471,7 @@ const PastePlugin = (name: string) =>
                             const item = items[i];
                             if (item?.kind === "file" && item.type.startsWith("image/")) {
                                 const editor = editorGlobalRef.current;
-                                if (!editor) return false;
+                                if (!editor) {return false;}
                                 const insertPos = editor.state.selection.anchor;
                                 void handlePasteImage(editor, insertPos);
                                 return true;
@@ -547,10 +547,10 @@ export const ShikiBlock = CodeBlock.extend<CodeBlockShikiOptions>({
                 key: new PluginKey("codeBlockSelectAll"),
                 props: {
                     handleKeyDown(view, event) {
-                        if (!(event.key === "a" && (event.metaKey || event.ctrlKey))) return false;
+                        if (!(event.key === "a" && (event.metaKey || event.ctrlKey))) {return false;}
                         const { state } = view;
                         const { $from } = state.selection;
-                        if ($from.parent.type.name !== nodeName) return false;
+                        if ($from.parent.type.name !== nodeName) {return false;}
                         event.preventDefault();
                         const tr = state.tr.setSelection(TextSelection.create(state.doc, $from.start(), $from.end()));
                         view.dispatch(tr);

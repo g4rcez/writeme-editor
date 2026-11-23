@@ -14,7 +14,7 @@ const checkForServiceWorkerUpdate = (registration: ServiceWorkerRegistration): v
 const watchForServiceWorkerUpdates = (
     registration: ServiceWorkerRegistration | undefined,
 ): (() => void) | undefined => {
-    if (ELECTRON || !registration) return undefined;
+    if (ELECTRON || !registration) {return undefined;}
 
     const checkForUpdate = () => checkForServiceWorkerUpdate(registration);
 
@@ -23,7 +23,7 @@ const watchForServiceWorkerUpdates = (
     const intervalId = window.setInterval(checkForUpdate, PWA_UPDATE_CHECK_INTERVAL_MS);
 
     const handleVisibilityChange = () => {
-        if (document.visibilityState === "visible") checkForUpdate();
+        if (document.visibilityState === "visible") {checkForUpdate();}
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -43,7 +43,7 @@ export const usePwaUpdate = (): void => {
     } = useRegisterSW({
         immediate: true,
         onNeedReload: () => {
-            if (!ELECTRON) window.location.reload();
+            if (!ELECTRON) {window.location.reload();}
         },
         onRegisteredSW: (_swScriptUrl, registration) => {
             updateCleanupRef.current?.();
@@ -55,7 +55,7 @@ export const usePwaUpdate = (): void => {
     });
 
     useEffect(() => {
-        if (!ELECTRON && needRefresh) void updateServiceWorker(true);
+        if (!ELECTRON && needRefresh) {void updateServiceWorker(true);}
     }, [needRefresh, updateServiceWorker]);
 
     useEffect(

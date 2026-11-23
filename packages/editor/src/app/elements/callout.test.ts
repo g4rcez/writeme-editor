@@ -96,7 +96,7 @@ describe("parseDocusaurusAdmonitions", () => {
 
 describe("callout serialize", () => {
     function makeSerializeState() {
-        const calls: string[] = [];
+        const calls: Array<string> = [];
         let out = "";
         let closed: unknown = null;
         return {
@@ -118,7 +118,7 @@ describe("callout serialize", () => {
             },
             ensureNewLine() {
                 calls.push("ensureNewLine");
-                if (!out.endsWith("\n")) out += "\n";
+                if (!out.endsWith("\n")) {out += "\n";}
             },
             closeBlock(_n: unknown) {
                 calls.push("closeBlock");

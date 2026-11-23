@@ -17,8 +17,8 @@ export async function openFile(rawFilePath: string | null, rawWait: boolean): Pr
             wait: args.wait,
             requestId: randomUUID(),
         });
-    } catch (err) {
-        const e = err as NodeJS.ErrnoException;
+    } catch (error) {
+        const e = error as NodeJS.ErrnoException;
         if (e.code === "ECONNREFUSED" || e.code === "ENOENT") {
             await ensureAppRunning(socketPath);
             await sendToSocket(socketPath, {
@@ -28,7 +28,7 @@ export async function openFile(rawFilePath: string | null, rawWait: boolean): Pr
                 requestId: randomUUID(),
             });
         } else {
-            throw err;
+            throw error;
         }
     }
 }

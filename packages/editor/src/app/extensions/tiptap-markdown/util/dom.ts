@@ -10,7 +10,7 @@ export function elementFromString(value: string): HTMLBodyElement {
 }
 
 export function escapeHTML(value: string): string {
-    return value?.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return value?.replaceAll('<', "&lt;").replaceAll('>', "&gt;");
 }
 
 export function extractElement(node: Element): void {
@@ -30,6 +30,6 @@ export function extractElement(node: Element): void {
 
 export function unwrapElement(node: Element): void {
     const parent = node.parentNode!;
-    while (node.firstChild) parent.insertBefore(node.firstChild, node);
+    while (node.firstChild) {parent.insertBefore(node.firstChild, node);}
     parent.removeChild(node);
 }

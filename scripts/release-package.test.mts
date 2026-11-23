@@ -26,7 +26,7 @@ function fixture(): { repository: string; directories: Record<PackageName, strin
                     name,
                     version,
                     private: false,
-                    scripts: { validate: "node -e \\\"process.exit(0)\\\"", prepublishOnly: "npm run validate" },
+                    scripts: { validate: String.raw`node -e \"process.exit(0)\"`, prepublishOnly: "npm run validate" },
                 }),
             );
             writeFileSync(
@@ -71,7 +71,7 @@ test("validates all packages before bumping and publishes each version in depend
     const project = fixture();
     try {
         const rootBefore = readFileSync(join(project.repository, "package.json"), "utf8");
-        const calls: Array<{ args: string[]; directory: string }> = [];
+        const calls: Array<{ args: Array<string>; directory: string }> = [];
         const run: NpmRunner = (args, directory) => {
             calls.push({ args, directory });
             if (args[0] === "version") {
@@ -144,12 +144,12 @@ test("validates all packages before bumping and publishes each version in depend
 test("validation failure blocks every version change and publication", () => {
     const project = fixture();
     try {
-        const calls: string[][] = [];
+        const calls: Array<Array<string>> = [];
         assert.throws(
             () =>
                 releasePackages(["minor"], project.repository, (args) => {
                     calls.push(args);
-                    if (args[0] === "run" && calls.length === 2) throw new Error("CLI validation failed");
+                    if (args[0] === "run" && calls.length === 2) {throw new Error("CLI validation failed");}
                 }),
             /CLI validation failed/,
         );
@@ -168,7 +168,7 @@ test("validation failure blocks every version change and publication", () => {
 test("dry run validates all packages without versioning or publication", () => {
     const project = fixture();
     try {
-        const calls: string[][] = [];
+        const calls: Array<Array<string>> = [];
         releasePackages(["--", "major", "--dry-run"], project.repository, (args) => calls.push(args));
         assert.deepEqual(calls.map(([command]) => command), ["run", "run", "run"]);
         for (const packageDirectory of packages) {
@@ -219,7 +219,7 @@ test("rejects unsupported version arguments and packages before invoking npm", (
 test("reports partial publication and stops after the first registry failure", () => {
     const project = fixture();
     try {
-        const calls: string[][] = [];
+        const calls: Array<Array<string>> = [];
         assert.throws(
             () =>
                 releasePackages(["patch"], project.repository, (args, directory) => {
@@ -279,7 +279,7 @@ appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args: process.argv.slice
         const calls = readFileSync(log, "utf8")
             .trim()
             .split("\n")
-            .map((line) => JSON.parse(line) as { args: string[]; cwd: string });
+            .map((line) => JSON.parse(line) as { args: Array<string>; cwd: string });
         assert.equal(calls.length, packages.length);
         assert.ok(calls.every(({ args }) => args[0] === "run" && args[1] === "validate"));
         assert.ok(calls.every(({ cwd }) => packages.some((packageDirectory) => realpathSync(cwd) === realpathSync(project.directories[packageDirectory]))));

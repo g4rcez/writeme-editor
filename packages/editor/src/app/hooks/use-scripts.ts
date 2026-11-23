@@ -4,7 +4,7 @@ import { Script } from "@/store/repositories/entities/script";
 
 export const useScripts = () => {
     const [globalState] = useGlobalStore();
-    const [scripts, setScripts] = useState<Script[]>([]);
+    const [scripts, setScripts] = useState<Array<Script>>([]);
     const [loading, setLoading] = useState(true);
 
     const loadScripts = useCallback(async () => {

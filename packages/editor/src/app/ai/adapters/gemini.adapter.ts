@@ -32,7 +32,7 @@ export class GeminiAdapter implements AIAdapter {
     }
 
     async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
-        if (!credentials.refreshToken) return credentials;
+        if (!credentials.refreshToken) {return credentials;}
         try {
             const resp = await proxyFetch("https://oauth2.googleapis.com/token", {
                 method: "POST",
@@ -43,7 +43,7 @@ export class GeminiAdapter implements AIAdapter {
                     client_id: getGoogleClientId(),
                 }),
             });
-            if (!resp.ok) return credentials;
+            if (!resp.ok) {return credentials;}
             const data = (await resp.json()) as {
                 access_token: string;
                 expires_in: number;
@@ -64,7 +64,7 @@ export class GeminiAdapter implements AIAdapter {
         return credentials.expiresAt != null && Date.now() > credentials.expiresAt;
     }
 
-    async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
+    async listModels(credentials: AuthCredentials): Promise<Array<AIModel>> {
         try {
             const url = new URL("https://generativelanguage.googleapis.com/v1beta/models");
             const headers: Record<string, string> = {};
@@ -74,13 +74,13 @@ export class GeminiAdapter implements AIAdapter {
                 url.searchParams.set("key", credentials.apiKey);
             }
             const resp = await proxyFetch(url.toString(), { headers });
-            if (!resp.ok) return [];
+            if (!resp.ok) {return [];}
             const data = (await resp.json()) as {
-                models: {
+                models: Array<{
                     name: string;
                     displayName?: string;
-                    supportedGenerationMethods?: string[];
-                }[];
+                    supportedGenerationMethods?: Array<string>;
+                }>;
             };
             return (data.models ?? [])
                 .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
@@ -98,7 +98,7 @@ export class GeminiAdapter implements AIAdapter {
     }
 
     async *sendMessage(
-        messages: AIConversationMessage[],
+        messages: Array<AIConversationMessage>,
         options: SendOptions,
         signal?: AbortSignal,
     ): AsyncIterable<AIStreamEvent> {
@@ -121,12 +121,12 @@ export class GeminiAdapter implements AIAdapter {
                     content: msg.content.text,
                 };
             }
-            const parts: any[] = msg.content.files.map((f) => ({
+            const parts: Array<any> = msg.content.files.map((f) => ({
                 type: "file",
                 data: f.data,
                 mimeType: f.mimeType,
             }));
-            if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
+            if (msg.content.text.trim()) {parts.push({ type: "text", text: msg.content.text });}
             return { role: msg.role as "user" | "assistant", content: parts };
         });
 
@@ -150,7 +150,7 @@ export class GeminiAdapter implements AIAdapter {
 
             for await (const event of eventChannel.consume(result)) {
                 yield event;
-                if (event.type === "error") return;
+                if (event.type === "error") {return;}
             }
         } catch (error: unknown) {
             if (isAIStreamAbortError(error)) {

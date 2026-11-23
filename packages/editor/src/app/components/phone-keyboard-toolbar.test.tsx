@@ -32,13 +32,13 @@ afterEach(() => {
 type Prompt = { title: string; onConfirm: (value: string) => void };
 const promptAt = (index: number): Prompt => {
     const prompt = mocks.setPrompt.mock.calls[index]?.[0] as Prompt | undefined;
-    if (!prompt) throw new Error(`No prompt was opened at call ${index}`);
+    if (!prompt) {throw new Error(`No prompt was opened at call ${index}`);}
     return prompt;
 };
 
 const action = (id: string) => {
     const found = buildPhoneToolbarActions(editor).find((candidate) => candidate.id === id);
-    if (!found) throw new Error(`Missing action ${id}`);
+    if (!found) {throw new Error(`Missing action ${id}`);}
     return found;
 };
 
@@ -55,7 +55,7 @@ describe("phone toolbar actions", () => {
     });
 
     it("cycles heading levels back to a paragraph", () => {
-        const seen: string[] = [];
+        const seen: Array<string> = [];
         for (let step = 0; step < 4; step++) {
             cycleHeading(editor);
             seen.push(

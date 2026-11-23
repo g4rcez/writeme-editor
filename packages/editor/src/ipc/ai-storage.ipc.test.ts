@@ -41,7 +41,7 @@ let manager: DatabaseManager;
 
 function invoke(name: string, value: unknown): Promise<unknown> {
     const handler = mocks.handlers.get(name);
-    if (!handler) throw new Error("Handler not registered");
+    if (!handler) {throw new Error("Handler not registered");}
     return Promise.resolve(handler(undefined, value));
 }
 

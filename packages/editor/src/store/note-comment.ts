@@ -11,9 +11,9 @@ export type NoteCommentThread = CommentThread & {
 export type CommentSourceUpdate = (id: string, href: string) => string;
 export type CommentSaveResult = { note: Note; id: string; source?: Note; href?: string };
 
-export function noteCommentThreads(note: Note): NoteCommentThread[] {
+export function noteCommentThreads(note: Note): Array<NoteCommentThread> {
     const noteId = note.metadata?.commentSourceId;
-    if (typeof noteId !== "string") return [];
+    if (typeof noteId !== "string") {return [];}
     return parseCommentThreads(note.content).map((thread, position) => ({
         ...thread,
         noteId,

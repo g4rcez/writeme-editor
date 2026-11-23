@@ -11,7 +11,7 @@ import { View } from "@/store/repositories/entities/view";
 
 export default function ViewsListPage() {
     const navigate = useNavigate();
-    const [views, setViews] = useState<View[]>([]);
+    const [views, setViews] = useState<Array<View>>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
@@ -38,12 +38,12 @@ export default function ViewsListPage() {
     }, [load]);
 
     const handleAddStarters = async (): Promise<void> => {
-        if (creating) return;
+        if (creating) {return;}
         setCreating(true);
         setError(null);
         try {
             const existing = await repositories.views.getAll();
-            for (const view of getMissingStarterViews(existing, new Date())) await repositories.views.save(view);
+            for (const view of getMissingStarterViews(existing, new Date())) {await repositories.views.save(view);}
             await load();
         } catch {
             setError("Could not add starter Views. Try again to add any missing Views.");
@@ -53,7 +53,7 @@ export default function ViewsListPage() {
     };
 
     const handleCreate = async () => {
-        if (creating) return;
+        if (creating) {return;}
         setCreating(true);
         setError(null);
         const now = new Date();
@@ -81,7 +81,7 @@ export default function ViewsListPage() {
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm("Delete this view?")) return;
+        if (!confirm("Delete this view?")) {return;}
         try {
             await repositories.views.delete(id);
             setViews((prev) => prev.filter((v) => v.id !== id));

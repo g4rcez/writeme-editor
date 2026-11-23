@@ -5,7 +5,7 @@ import { repositories } from "@/store/repositories";
 import { SettingsService } from "@/store/settings";
 
 export const useTemplates = () => {
-    const [templates, setTemplates] = useState<Note[]>([]);
+    const [templates, setTemplates] = useState<Array<Note>>([]);
     const [loading, setLoading] = useState(true);
 
     const loadTemplates = useCallback(async () => {
@@ -44,7 +44,7 @@ export const useTemplates = () => {
             await window.electronAPI.fs.mkdir(templatesDir);
 
             // Read files
-            let result = await window.electronAPI.fs.readDir(templatesDir);
+            const result = await window.electronAPI.fs.readDir(templatesDir);
 
             if (!result.error) {
                 const files = result.entries.filter((f) => f.type === "file" && f.name.endsWith(".md"));

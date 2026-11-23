@@ -9,7 +9,7 @@ export function isMobile(): boolean {
 }
 
 export function getAppPlatform(): AppPlatform {
-    if (isElectron()) return "electron";
+    if (isElectron()) {return "electron";}
     return isMobile() ? "mobile" : "web";
 }
 

@@ -19,7 +19,7 @@ export const ClipboardListenerCommand: ReplacerCommand = {
         window.dispatchEvent(new CustomEvent(COPY_EVENT_STARTED));
         interval = setInterval(async () => {
             const content = await controller.clipboard();
-            if (clipboardState === content) return;
+            if (clipboardState === content) {return;}
             clipboardState = content;
             const event = new CustomEvent(COPY_EVENT_DISPATCHED, { detail: content });
             window.dispatchEvent(event);

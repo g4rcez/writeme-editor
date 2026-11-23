@@ -7,7 +7,7 @@ import { getOrCreateAiProxyToken } from "./ai-proxy-token";
 let userDataDirectory: string;
 
 afterEach(() => {
-    if (userDataDirectory) fs.rmSync(userDataDirectory, { recursive: true, force: true });
+    if (userDataDirectory) {fs.rmSync(userDataDirectory, { recursive: true, force: true });}
 });
 
 describe("getOrCreateAiProxyToken", () => {

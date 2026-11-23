@@ -6,7 +6,7 @@ import { desktopProfile } from "../build/profiles.mts";
 async function main(): Promise<void> {
     const profile = desktopProfile();
     const name = process.env.WRITEME_BUILD_PROFILE;
-    if (!name) throw new Error("Set WRITEME_BUILD_PROFILE to build native verification assets.");
+    if (!name) {throw new Error("Set WRITEME_BUILD_PROFILE to build native verification assets.");}
     const root = path.resolve("artifacts/build-profiles", name);
 
     for (const surface of ["main", "preload"] as const) {
@@ -54,8 +54,8 @@ async function main(): Promise<void> {
         ],
         { stdio: "inherit" },
     );
-    if (result.error) throw result.error;
-    if (result.status !== 0) throw new Error("Native verification renderer build failed.");
+    if (result.error) {throw result.error;}
+    if (result.status !== 0) {throw new Error("Native verification renderer build failed.");}
     console.log(`Compiled native ${profile.os}/${profile.channel} verification assets at ${root}`);
 }
 

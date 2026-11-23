@@ -38,8 +38,8 @@ function getComposerDraft(chatId: string): string {
 
 function saveComposerDraft(chatId: string, value: string): void {
     try {
-        if (value) sessionStorage.setItem(`writeme:ai-chat-draft:${chatId}`, value);
-        else sessionStorage.removeItem(`writeme:ai-chat-draft:${chatId}`);
+        if (value) {sessionStorage.setItem(`writeme:ai-chat-draft:${chatId}`, value);}
+        else {sessionStorage.removeItem(`writeme:ai-chat-draft:${chatId}`);}
     } catch {
         // Keep the active draft in component state when storage is unavailable.
     }
@@ -47,7 +47,7 @@ function saveComposerDraft(chatId: string, value: string): void {
 
 type RenderChatContentProps = {
     isLoading: boolean;
-    messages: AIMessage[];
+    messages: Array<AIMessage>;
     isReviewing: boolean;
     reviewData?: AIWorkspaceData;
     reviewMessage?: AIMessage;
@@ -165,9 +165,9 @@ const RenderChatContent = ({
                 maxWidthClass="max-w-safe"
                 loadingMessageIndex={loadingMessageIndex}
                 renderActions={(message) => {
-                    if (message.role !== "assistant") return null;
+                    if (message.role !== "assistant") {return null;}
                     const workspaceData = workspaceDataForMessage(message);
-                    if (!workspaceData) return null;
+                    if (!workspaceData) {return null;}
                     const isLiveMessage = isStreaming && message.id === messages.at(-1)?.id;
                     const summaryData = isLiveMessage ? { ...workspaceData, proposals: [] } : workspaceData;
                     if (
@@ -219,7 +219,7 @@ export default function ChatPage() {
     const [reviewMessageId, setReviewMessageId] = useState<string | null>(null);
     const [sourceError, setSourceError] = useState<string | null>(null);
 
-    const [workspaceFiles, setWorkspaceFiles] = useState<WorkspaceMentionFile[]>([]);
+    const [workspaceFiles, setWorkspaceFiles] = useState<Array<WorkspaceMentionFile>>([]);
 
     useEffect(() => {
         setWorkspaceFiles([]);
@@ -233,10 +233,10 @@ export default function ChatPage() {
         void window.electronAPI.fs
             .readDirRecursive(directory, undefined, true)
             .then((result) => {
-                if (isCurrentRequest) setWorkspaceFiles(result.success ? result.files : []);
+                if (isCurrentRequest) {setWorkspaceFiles(result.success ? result.files : []);}
             })
             .catch(() => {
-                if (isCurrentRequest) setWorkspaceFiles([]);
+                if (isCurrentRequest) {setWorkspaceFiles([]);}
             });
 
         return () => {
@@ -263,9 +263,9 @@ export default function ChatPage() {
     const adapter = config ? adapterRegistry.get(config.adapterId) : undefined;
     const workspaceDataForMessage = useCallback(
         (message: AIMessage): AIWorkspaceData | undefined => {
-            if (workspaceDataOverrides[message.id]) return workspaceDataOverrides[message.id];
-            if (message.workspaceData) return message.workspaceData;
-            if (isStreaming && message.id === messages.at(-1)?.id) return liveWorkspaceData ?? undefined;
+            if (workspaceDataOverrides[message.id]) {return workspaceDataOverrides[message.id];}
+            if (message.workspaceData) {return message.workspaceData;}
+            if (isStreaming && message.id === messages.at(-1)?.id) {return liveWorkspaceData ?? undefined;}
             return undefined;
         },
         [isStreaming, liveWorkspaceData, messages, workspaceDataOverrides],
@@ -283,7 +283,7 @@ export default function ChatPage() {
     const composerDraft = composerDrafts[composerDraftKey] ?? getComposerDraft(composerDraftKey);
 
     const updateComposerDraft = (value: string): void => {
-        if (!composerDraftKey) return;
+        if (!composerDraftKey) {return;}
         setComposerDrafts((current) => ({ ...current, [composerDraftKey]: value }));
         saveComposerDraft(composerDraftKey, value);
     };
@@ -291,7 +291,7 @@ export default function ChatPage() {
     const renameConversation = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault();
         const title = titleDraft.trim();
-        if (!title || !chat) return;
+        if (!title || !chat) {return;}
         await renameChat(title);
         setIsEditingTitle(false);
     };
@@ -304,17 +304,17 @@ export default function ChatPage() {
     }, [selectedChatId]);
 
     useEffect(() => {
-        if (isReviewing) return;
+        if (isReviewing) {return;}
         const messageId = reviewFocusTargetIdRef.current;
-        if (!messageId) return;
+        if (!messageId) {return;}
         document.getElementById(`review-changes-${messageId}`)?.focus();
         reviewFocusTargetIdRef.current = null;
     }, [isReviewing]);
 
     useEffect(() => {
-        if (!chat) return;
-        void dispatch.addAiChatTab(chat.id);
-        if (selectedChatId === chat.id) return;
+        if (!chat) {return;}
+         dispatch.addAiChatTab(chat.id);
+        if (selectedChatId === chat.id) {return;}
         setSearchParams({ chatId: chat.id }, { replace: true });
     }, [chat, dispatch, selectedChatId, setSearchParams]);
 
@@ -325,7 +325,7 @@ export default function ChatPage() {
 
     useEffect(() => {
         const container = listRef.current;
-        if (!container || !shouldFollowMessagesRef.current) return;
+        if (!container || !shouldFollowMessagesRef.current) {return;}
         const behavior =
             isStreaming || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
         container.scrollTo({ top: container.scrollHeight, behavior });
@@ -345,7 +345,7 @@ export default function ChatPage() {
     const updateMessageFollowState = useCallback(
         (isAtLatest: boolean): void => {
             setMessageScrollState((current) => {
-                if (current.chatId === selectedChatId && current.isAtLatest === isAtLatest) return current;
+                if (current.chatId === selectedChatId && current.isAtLatest === isAtLatest) {return current;}
                 return { chatId: selectedChatId, isAtLatest };
             });
         },
@@ -354,7 +354,7 @@ export default function ChatPage() {
 
     const handleMessageListScroll = (): void => {
         const container = listRef.current;
-        if (!container) return;
+        if (!container) {return;}
         const isAtLatest =
             container.scrollHeight - container.scrollTop - container.clientHeight <= CHAT_FOLLOW_DISTANCE;
         shouldFollowMessagesRef.current = isAtLatest;
@@ -363,7 +363,7 @@ export default function ChatPage() {
 
     const scrollToLatestMessage = (): void => {
         const container = listRef.current;
-        if (!container) return;
+        if (!container) {return;}
         shouldFollowMessagesRef.current = true;
         updateMessageFollowState(true);
         const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
@@ -376,9 +376,9 @@ export default function ChatPage() {
     };
 
     const submitPrompt = useCallback(
-        async (value: string, files: AIFile[] = []): Promise<boolean> => {
+        async (value: string, files: Array<AIFile> = []): Promise<boolean> => {
             const prompt = value.trim();
-            if ((!prompt && files.length === 0) || !config || isLoading || isStreaming) return false;
+            if ((!prompt && files.length === 0) || !config || isLoading || isStreaming) {return false;}
             workspaceToolSession.reset();
             shouldFollowMessagesRef.current = true;
             updateMessageFollowState(true);
@@ -432,13 +432,13 @@ export default function ChatPage() {
             const persistedMessage = (await repositories.ai.getMessages(message.chatId)).find(
                 (candidate) => candidate.id === message.id,
             );
-            if (!persistedMessage) throw new Error("This review is no longer available.");
+            if (!persistedMessage) {throw new Error("This review is no longer available.");}
             const currentData =
                 workspaceDataOverrides[message.id] ?? persistedMessage.workspaceData ?? message.workspaceData;
-            if (!currentData) throw new Error("This review is no longer available.");
+            if (!currentData) {throw new Error("This review is no longer available.");}
             const proposal = currentData.proposals.find((candidate) => candidate.id === proposalId);
-            if (!proposal) throw new Error("This proposed change is no longer available.");
-            if (proposal.status !== "pending") return;
+            if (!proposal) {throw new Error("This proposed change is no longer available.");}
+            if (proposal.status !== "pending") {return;}
 
             const workspaceData: AIWorkspaceData = {
                 ...currentData,
@@ -496,7 +496,7 @@ export default function ChatPage() {
 
     const rejectProposal = useCallback(
         async (message: AIMessage, proposal: AINoteEditProposal): Promise<void> => {
-            if (proposal.status !== "pending") return;
+            if (proposal.status !== "pending") {return;}
             await persistProposalStatus(message, proposal.id, "rejected");
         },
         [persistProposalStatus],
@@ -508,7 +508,7 @@ export default function ChatPage() {
     }, []);
     const handleExamplePrompt = useCallback(
         (prompt: string): void => {
-            if (isStreaming || isLoading || !config) return;
+            if (isStreaming || isLoading || !config) {return;}
             void submitPrompt(prompt, []);
         },
         [config, isLoading, isStreaming, submitPrompt],

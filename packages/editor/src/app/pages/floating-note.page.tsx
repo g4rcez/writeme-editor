@@ -24,7 +24,7 @@ async function getOrCreateMathScratchpad(): Promise<Note> {
     const existing = mathNoteId ? await repositories.notes.getOne(mathNoteId) : null;
 
     if (existing) {
-        if (existing.noteType === NoteType.math) return existing;
+        if (existing.noteType === NoteType.math) {return existing;}
 
         const migrated = Note.parse({ ...existing, noteType: NoteType.math });
         await repositories.notes.save(migrated);
@@ -65,7 +65,7 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
             setError(null);
             try {
                 const note = await config.getOrCreateNote();
-                if (ignored) return;
+                if (ignored) {return;}
                 dispatch.note(note, false);
             } catch (error) {
                 console.error(`Failed to open ${config.kind} floating note:`, error);
@@ -73,7 +73,7 @@ export function FloatingNotePage({ kind }: { kind: FloatingNoteKind }) {
                     setError(error instanceof Error ? error.message : `Failed to open ${config.errorLabel}`);
                 }
             } finally {
-                if (!ignored) setLoading(false);
+                if (!ignored) {setLoading(false);}
             }
         }
         request();

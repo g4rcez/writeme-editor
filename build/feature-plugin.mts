@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { BuildProfile, FeatureName } from "./profiles.mts";
 
-const restrictedPaths: Partial<Record<FeatureName, string[]>> = {
+const restrictedPaths: Partial<Record<FeatureName, Array<string>>> = {
     ai: [
         "app/ai/",
         "app/writing-assistant/writing-assistant.tsx",
@@ -43,14 +43,14 @@ const restrictedPaths: Partial<Record<FeatureName, string[]>> = {
 
 export function restrictedFeature(id: string, profile: BuildProfile): FeatureName | undefined {
     const relative = id.replaceAll("\\", "/").split("/packages/editor/src/")[1]?.split("?")[0];
-    if (!relative || relative.endsWith("/types.ts") || relative === "app/ai/events.ts") return undefined;
-    return (Object.entries(restrictedPaths) as [FeatureName, string[]][]).find(
+    if (!relative || relative.endsWith("/types.ts") || relative === "app/ai/events.ts") {return undefined;}
+    return (Object.entries(restrictedPaths) as Array<[FeatureName, Array<string>]>).find(
         ([feature, paths]) => !profile.features[feature] && paths.some((prefix) => relative.startsWith(prefix)),
     )?.[0];
 }
 
 function disabledModule(source: string, id: string, feature: FeatureName): string {
-    if (id.endsWith("/execution-config.ts")) return "export const EXECUTION_CONFIG = {};";
+    if (id.endsWith("/execution-config.ts")) {return "export const EXECUTION_CONFIG = {};";}
     const file = parse(source, { sourceType: "module", plugins: ["typescript", "jsx"] });
     const exports = new Set<string>();
     let defaultExport = false;
@@ -59,22 +59,22 @@ function disabledModule(source: string, id: string, feature: FeatureName): strin
             defaultExport = true;
             continue;
         }
-        if (statement.type === "ExportAllDeclaration") throw new Error(`Unsupported disabled re-export in ${id}`);
-        if (statement.type !== "ExportNamedDeclaration" || statement.exportKind === "type") continue;
+        if (statement.type === "ExportAllDeclaration") {throw new Error(`Unsupported disabled re-export in ${id}`);}
+        if (statement.type !== "ExportNamedDeclaration" || statement.exportKind === "type") {continue;}
         const declaration = statement.declaration;
         if (declaration?.type === "FunctionDeclaration" || declaration?.type === "ClassDeclaration") {
-            if (declaration.id) exports.add(declaration.id.name);
+            if (declaration.id) {exports.add(declaration.id.name);}
         } else if (declaration?.type === "TSEnumDeclaration") {
             exports.add(declaration.id.name);
         } else if (declaration?.type === "VariableDeclaration") {
             for (const variable of declaration.declarations) {
-                if (variable.id.type !== "Identifier") throw new Error(`Unsupported disabled export in ${id}`);
+                if (variable.id.type !== "Identifier") {throw new Error(`Unsupported disabled export in ${id}`);}
                 exports.add(variable.id.name);
             }
         }
         for (const specifier of statement.specifiers) {
-            if (specifier.type === "ExportSpecifier" && specifier.exportKind === "type") continue;
-            if (specifier.exported.type !== "Identifier") throw new Error(`Unsupported disabled export in ${id}`);
+            if (specifier.type === "ExportSpecifier" && specifier.exportKind === "type") {continue;}
+            if (specifier.exported.type !== "Identifier") {throw new Error(`Unsupported disabled export in ${id}`);}
             exports.add(specifier.exported.name);
         }
     }
@@ -102,11 +102,11 @@ export function buildFeaturePlugin(profile: BuildProfile, surface: "main" | "pre
         }),
         async load(id) {
             const feature = restrictedFeature(id, profile);
-            if (!feature) return null;
+            if (!feature) {return null;}
             excluded.add(path.relative(process.cwd(), id).replaceAll("\\", "/"));
             const filePath = id.split("?")[0]!;
             if (!/\.tsx?$/.test(filePath))
-                throw new Error(`Executable resources for disabled feature ${feature} cannot be bundled: ${filePath}`);
+                {throw new Error(`Executable resources for disabled feature ${feature} cannot be bundled: ${filePath}`);}
             return disabledModule(await fs.readFile(filePath, "utf8"), filePath, feature);
         },
         generateBundle(_options, bundle) {

@@ -2,7 +2,7 @@
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { children } = vi.hoisted(() => ({ children: [] as any[] }));
+const { children } = vi.hoisted(() => ({ children: [] as Array<any> }));
 
 vi.mock("node:child_process", () => ({
     spawn: vi.fn(() => {

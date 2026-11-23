@@ -27,7 +27,7 @@ type ImportSummary = {
     notes: number;
     assets: number;
     skipped: number;
-    errors: string[];
+    errors: Array<string>;
 };
 
 type ObsidianImporterProps = {
@@ -47,7 +47,7 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
     const importing = progress !== null;
 
     const importVault = async (): Promise<void> => {
-        if (importingRef.current) return;
+        if (importingRef.current) {return;}
         if (!destinationDirectory?.trim()) {
             setError("Choose a notes directory before importing a vault.");
             return;
@@ -64,15 +64,15 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
 
         try {
             const vaultPath = await window.electronAPI.fs.chooseObsidianVault();
-            if (!vaultPath) return;
+            if (!vaultPath) {return;}
             if (isPathWithinImportRoot(vaultPath, destinationDirectory)) {
                 throw new Error("Choose a destination outside the Obsidian vault so the vault is not changed.");
             }
 
             const result = await window.electronAPI.fs.readDirRecursive(vaultPath, 32, true);
-            if (!result.success) throw new Error(result.error ?? "Failed to read the Obsidian vault");
+            if (!result.success) {throw new Error(result.error ?? "Failed to read the Obsidian vault");}
 
-            const files = Array.isArray(result.files) ? (result.files as VaultFile[]) : [];
+            const files = Array.isArray(result.files) ? (result.files as Array<VaultFile>) : [];
             const nextSummary: ImportSummary = { notes: 0, assets: 0, skipped: 0, errors: [] };
             setProgress({ current: 0, total: files.length, path: "Starting import" });
 
@@ -90,7 +90,7 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
 
                 try {
                     const existing = await window.electronAPI.fs.statFile(targetPath);
-                    if (!existing.success) throw new Error(existing.error ?? "Could not check the destination");
+                    if (!existing.success) {throw new Error(existing.error ?? "Could not check the destination");}
                     if (existing.exists) {
                         nextSummary.skipped += 1;
                         setProgress({ current: index + 1, total: files.length, path: displayPath });
@@ -103,7 +103,7 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
                             throw new Error(source.error ?? "Could not read the note");
                         }
                         const written = await window.electronAPI.fs.writeFile(targetPath, source.content);
-                        if (!written.success) throw new Error(written.error ?? "Could not write the note");
+                        if (!written.success) {throw new Error(written.error ?? "Could not write the note");}
 
                         const note = Note.new(getWorkspaceDocumentTitle(importFileName(relativePath)), source.content);
                         note.setFilePath(
@@ -115,19 +115,19 @@ export function ObsidianImporter({ destinationDirectory }: ObsidianImporterProps
                         nextSummary.notes += 1;
                     } else {
                         const copied = await window.electronAPI.fs.copyFile(file.path, targetPath);
-                        if (!copied.success) throw new Error(copied.error ?? "Could not copy the asset");
+                        if (!copied.success) {throw new Error(copied.error ?? "Could not copy the asset");}
                         nextSummary.assets += 1;
                     }
-                } catch (reason) {
-                    nextSummary.errors.push(`${displayPath}: ${getErrorMessage(reason)}`);
+                } catch (error_) {
+                    nextSummary.errors.push(`${displayPath}: ${getErrorMessage(error_)}`);
                 }
                 setProgress({ current: index + 1, total: files.length, path: displayPath });
             }
 
             dispatch.notes(await repositories.notes.getAll());
             setSummary(nextSummary);
-        } catch (reason) {
-            setError(getErrorMessage(reason));
+        } catch (error_) {
+            setError(getErrorMessage(error_));
         } finally {
             importingRef.current = false;
             setProgress(null);

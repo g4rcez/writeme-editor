@@ -11,7 +11,7 @@ export default function SettingsTrashPage() {
     const [saving, setSaving] = useState(false);
 
     const onSave = async () => {
-        if (!settings) return;
+        if (!settings) {return;}
         setSaving(true);
         try {
             await saveSettingsPatch({
@@ -27,7 +27,7 @@ export default function SettingsTrashPage() {
         }
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings) {return <div className="p-8">Loading settings...</div>;}
 
     return (
         <SettingsPageShell

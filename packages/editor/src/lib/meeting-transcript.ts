@@ -24,10 +24,10 @@ export function meetingSpeakerKey(segment: MeetingSegment): string {
     return segment.speakerId ?? JSON.stringify([segment.source, segment.speaker]);
 }
 
-export function identifyMeetingSpeakers(segments: MeetingSegment[]): MeetingSegment[] {
+export function identifyMeetingSpeakers(segments: Array<MeetingSegment>): Array<MeetingSegment> {
     const identities = new Map<string, string>();
     return segments.map((segment) => {
-        if (segment.speakerId) return segment;
+        if (segment.speakerId) {return segment;}
         const key = meetingSpeakerKey(segment);
         const speakerId = identities.get(key) ?? crypto.randomUUID();
         identities.set(key, speakerId);
@@ -36,7 +36,7 @@ export function identifyMeetingSpeakers(segments: MeetingSegment[]): MeetingSegm
 }
 
 export function parseMeetingTranscript(value: unknown): MeetingTranscript {
-    if (value === undefined || value === null) return { segments: [] };
+    if (value === undefined || value === null) {return { segments: [] };}
     return MeetingTranscriptSchema.parse(typeof value === "string" ? JSON.parse(value) : value);
 }
 
@@ -60,11 +60,11 @@ function parseTimestamp(value: string): number {
 function decodeText(value: string): string {
     const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
     return value
-        .replace(/<[^>]*>/g, "")
-        .replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity: string, key: string) => {
-            if (!key.startsWith("#")) return entities[key.toLowerCase()] ?? entity;
+        .replaceAll(/<[^>]*>/g, "")
+        .replaceAll(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (entity: string, key: string) => {
+            if (!key.startsWith("#")) {return entities[key.toLowerCase()] ?? entity;}
             const point = key.toLowerCase().startsWith("#x") ? Number.parseInt(key.slice(2), 16) : Number(key.slice(1));
-            return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : entity;
+            return point > 0 && point <= 0x10_ff_ff ? String.fromCodePoint(point) : entity;
         })
         .trim();
 }
@@ -80,7 +80,7 @@ function createSegment(start: number, end: number, speaker: string, text: string
     return { id: crypto.randomUUID(), start, end, speaker, text, source: "import" };
 }
 
-function parseCueText(value: string, start: number, end: number): MeetingSegment[] {
+function parseCueText(value: string, start: number, end: number): Array<MeetingSegment> {
     const voices = [...value.matchAll(/<v(?:\.[\w.-]+)?\s+([^>]+)>([\s\S]*?)(?=<v(?:\.[\w.-]+)?\s|$)/g)];
     const firstVoice = voices[0];
     if (!firstVoice) {
@@ -91,46 +91,46 @@ function parseCueText(value: string, start: number, end: number): MeetingSegment
     const segments = leadingText ? [createSegment(start, end, "", leadingText)] : [];
     for (const voice of voices) {
         const text = decodeText(voice[2] ?? "");
-        if (text) segments.push(createSegment(start, end, decodeText(voice[1] ?? ""), text));
+        if (text) {segments.push(createSegment(start, end, decodeText(voice[1] ?? ""), text));}
     }
     return segments;
 }
 
-function parseTimedTranscript(value: string): MeetingSegment[] {
-    const segments: MeetingSegment[] = [];
+function parseTimedTranscript(value: string): Array<MeetingSegment> {
+    const segments: Array<MeetingSegment> = [];
     for (const block of value.split(/\n\s*\n/)) {
         const lines = block.split("\n");
-        if (/^(WEBVTT|NOTE|STYLE|REGION)(?:\s|$)/.test(lines[0] ?? "")) continue;
+        if (/^(WEBVTT|NOTE|STYLE|REGION)(?:\s|$)/.test(lines[0] ?? "")) {continue;}
         const timingIndex = lines.findIndex((line) => line.includes("-->"));
-        if (timingIndex === -1) continue;
+        if (timingIndex === -1) {continue;}
         const timing = lines[timingIndex]?.match(
             /^\s*(\d{1,3}:\d{2}(?::\d{2})?(?:[.,]\d+)?)\s+-->\s+(\d{1,3}:\d{2}(?::\d{2})?(?:[.,]\d+)?)(?:\s.*)?$/,
         );
-        if (!timing?.[1] || !timing[2]) throw new Error("A transcript cue has invalid timestamps.");
+        if (!timing?.[1] || !timing[2]) {throw new Error("A transcript cue has invalid timestamps.");}
         const start = parseTimestamp(timing[1]);
         const end = parseTimestamp(timing[2]);
-        if (end < start) throw new Error("A transcript cue ends before it starts.");
+        if (end < start) {throw new Error("A transcript cue ends before it starts.");}
         segments.push(...parseCueText(lines.slice(timingIndex + 1).join("\n"), start, end));
     }
     return segments;
 }
 
-function parsePlainTranscript(value: string): MeetingSegment[] {
-    const segments: MeetingSegment[] = [];
+function parsePlainTranscript(value: string): Array<MeetingSegment> {
+    const segments: Array<MeetingSegment> = [];
     let pendingStart = 0;
     let pendingSpeaker = "";
     for (const rawLine of value.split("\n")) {
         const line = rawLine.trim();
-        if (!line) continue;
+        if (!line) {continue;}
         const timedLine = line.match(/^\[?(\d{1,3}:\d{2}(?::\d{2})?(?:[.,]\d+)?)\]?\s*(.*)$/);
         const body = timedLine ? (timedLine[2] ?? "") : line;
-        if (timedLine?.[1]) pendingStart = parseTimestamp(timedLine[1]);
+        if (timedLine?.[1]) {pendingStart = parseTimestamp(timedLine[1]);}
         const speakerText = parseSpeakerText(body);
         if (!speakerText.text && speakerText.speaker) {
             pendingSpeaker = speakerText.speaker;
             continue;
         }
-        if (!speakerText.text) continue;
+        if (!speakerText.text) {continue;}
         const speaker = speakerText.speaker || pendingSpeaker;
         const previous = segments.at(-1);
         if (!timedLine && !speakerText.speaker && !pendingSpeaker && previous) {
@@ -147,11 +147,11 @@ export function importMeetingTranscript(text: string, platform: MeetingPlatform)
     MeetingPlatformSchema.parse(platform);
     const value = TranscriptInputSchema.parse(text)
         .replace(/^\uFEFF/, "")
-        .replace(/\r\n?/g, "\n");
+        .replaceAll(/\r\n?/g, "\n");
     const segments =
         value.includes("-->") || /^WEBVTT(?:\s|$)/.test(value)
             ? parseTimedTranscript(value)
             : parsePlainTranscript(value);
-    if (segments.length === 0) throw new Error("The file contains no transcript text.");
+    if (segments.length === 0) {throw new Error("The file contains no transcript text.");}
     return MeetingTranscriptSchema.parse({ segments: identifyMeetingSpeakers(segments) });
 }

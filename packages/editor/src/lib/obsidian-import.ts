@@ -20,7 +20,7 @@ export function normalizeImportRelativePath(relativePath: string): string | null
 
 export function joinImportPath(rootPath: string, relativePath: string): string | null {
     const normalized = normalizeImportRelativePath(relativePath);
-    if (!normalized) return null;
+    if (!normalized) {return null;}
 
     const separator = rootPath.includes("\\") ? "\\" : "/";
     return `${rootPath.replace(/[\\/]+$/, "")}${separator}${normalized.replaceAll("/", separator)}`;
@@ -33,9 +33,9 @@ export function importFileName(relativePath: string): string {
 export function canonicalImportPath(filePath: string): string {
     const normalized = filePath.replaceAll("\\", "/");
     const segments = normalized.split("/");
-    const resolved: string[] = [];
+    const resolved: Array<string> = [];
     for (const segment of segments) {
-        if (!segment || segment === ".") continue;
+        if (!segment || segment === ".") {continue;}
         if (segment === "..") {
             resolved.pop();
             continue;
@@ -51,6 +51,6 @@ export function canonicalImportPath(filePath: string): string {
 export function isPathWithinImportRoot(rootPath: string, candidatePath: string): boolean {
     const root = canonicalImportPath(rootPath);
     const candidate = canonicalImportPath(candidatePath);
-    if (root === "/") return candidate.startsWith("/");
+    if (root === "/") {return candidate.startsWith("/");}
     return candidate === root || candidate.startsWith(`${root}/`);
 }

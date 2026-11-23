@@ -9,7 +9,7 @@ async function seed(page: Page, html: string): Promise<void> {
     await page.evaluate(async (content) => {
         const path = "/packages/editor/src/app/editor-global-ref.tsx";
         const { editorGlobalRef } = await import(path);
-        if (!editorGlobalRef.current) throw new Error("Note editor was not activated");
+        if (!editorGlobalRef.current) {throw new Error("Note editor was not activated");}
         editorGlobalRef.current.commands.setContent(content);
     }, html);
 }
@@ -19,7 +19,7 @@ async function readDocument(page: Page) {
         // This module must load in the browser's Vite runtime, not Playwright's Node process.
         const path = "/packages/editor/src/app/editor-global-ref.tsx";
         const { editorGlobalRef } = await import(path);
-        if (!editorGlobalRef.current) throw new Error("Note editor was not activated");
+        if (!editorGlobalRef.current) {throw new Error("Note editor was not activated");}
         return editorGlobalRef.current.getJSON();
     });
 }

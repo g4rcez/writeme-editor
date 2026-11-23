@@ -10,15 +10,15 @@ const MAC_PATHS = [
 const LINUX_BINARIES = ["google-chrome", "google-chrome-stable", "chromium-browser", "chromium"];
 
 const WIN_PATHS = [
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    String.raw`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+    String.raw`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
     `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
 ];
 
 let cached: string | null | undefined;
 
 export function findChromePath(): string | null {
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {return cached;}
     cached = discover();
     return cached;
 }
@@ -28,16 +28,16 @@ function discover(): string | null {
 
     if (platform === "darwin") {
         for (const p of MAC_PATHS) {
-            if (existsSync(p)) return p;
+            if (existsSync(p)) {return p;}
         }
     } else if (platform === "linux") {
         for (const bin of LINUX_BINARIES) {
             const path = whichSync.sync(bin, { nothrow: true });
-            if (path) return path;
+            if (path) {return path;}
         }
     } else if (platform === "win32") {
         for (const p of WIN_PATHS) {
-            if (p && existsSync(p)) return p;
+            if (p && existsSync(p)) {return p;}
         }
     }
 

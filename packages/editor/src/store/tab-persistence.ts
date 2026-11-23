@@ -2,7 +2,7 @@
 type TabWrite = () => Promise<unknown>;
 
 export function createTabPersistenceQueue(onError: () => void) {
-    const writes: TabWrite[] = [];
+    const writes: Array<TabWrite> = [];
     let running: Promise<void> | undefined;
     let failure: unknown;
     let failed = false;
@@ -10,7 +10,7 @@ export function createTabPersistenceQueue(onError: () => void) {
     async function drain(): Promise<void> {
         while (writes.length > 0) {
             const write = writes[0];
-            if (!write) return;
+            if (!write) {return;}
             try {
                 await write();
                 writes.shift();
@@ -24,7 +24,7 @@ export function createTabPersistenceQueue(onError: () => void) {
     }
 
     function start(): void {
-        if (running || failed || writes.length === 0) return;
+        if (running || failed || writes.length === 0) {return;}
         running = Promise.resolve().then(drain).finally(() => {
             running = undefined;
             start();
@@ -34,7 +34,7 @@ export function createTabPersistenceQueue(onError: () => void) {
     return {
         enqueue(write: TabWrite): void {
             writes.push(write);
-            if (failed) onError();
+            if (failed) {onError();}
             start();
         },
         hasPending(): boolean {
@@ -53,7 +53,7 @@ export function createTabPersistenceQueue(onError: () => void) {
             while (running || writes.length > 0) {
                 start();
                 await running;
-                if (failed) throw failure;
+                if (failed) {throw failure;}
             }
         },
     };

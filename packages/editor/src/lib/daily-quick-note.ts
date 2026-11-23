@@ -25,8 +25,8 @@ async function getExistingElectronNote(filePath: string, day: Date): Promise<Not
     }
 
     const statResult = await window.electronAPI.fs.statFile(filePath);
-    if (!statResult.success) throw new Error("Failed to check the daily quick note.");
-    if (!statResult.exists) return null;
+    if (!statResult.success) {throw new Error("Failed to check the daily quick note.");}
+    if (!statResult.exists) {return null;}
 
     const readResult = await window.electronAPI.fs.readFile(filePath);
     if (!readResult.success || typeof readResult.content !== "string") {
@@ -83,10 +83,10 @@ async function createDailyQuickNote(
     if (useDesktopWorkspace && settings.directory) {
         const filePath = getDailyQuickNotePath(settings.directory, day);
         const existing = await findExistingDailyQuickNote(day, settings, useDesktopWorkspace);
-        if (existing) return existing;
+        if (existing) {return existing;}
 
         const fileResult = await window.electronAPI.fs.writeFile(filePath, content);
-        if (!fileResult.success) throw new Error("Failed to create the daily quick note.");
+        if (!fileResult.success) {throw new Error("Failed to create the daily quick note.");}
 
         const note = Note.new(title, content, NoteType.quick);
         note.metadata.journalDate = Dates.isoDate(day);
@@ -97,7 +97,7 @@ async function createDailyQuickNote(
     }
 
     const dayNote = await findExistingDailyQuickNote(day, settings, useDesktopWorkspace);
-    if (dayNote) return dayNote;
+    if (dayNote) {return dayNote;}
 
     const note = Note.new(title, content, NoteType.quick);
     note.metadata.journalDate = Dates.isoDate(day);
@@ -114,10 +114,10 @@ export function getOrCreateDailyQuickNote(date: Date, options: DailyQuickNoteOpt
             ? getDailyQuickNotePath(settings.directory, day)
             : `repository:${Dates.isoDate(day)}`;
     const pending = pendingNotes.get(key);
-    if (pending) return pending;
+    if (pending) {return pending;}
 
     const request = createDailyQuickNote(day, options, settings, useDesktopWorkspace).finally(() => {
-        if (pendingNotes.get(key) === request) pendingNotes.delete(key);
+        if (pendingNotes.get(key) === request) {pendingNotes.delete(key);}
     });
     pendingNotes.set(key, request);
     return request;

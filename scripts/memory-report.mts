@@ -3,12 +3,12 @@ import type { ScenarioResult } from "../tests/helpers/memory-scenarios.ts";
 
 /** Turns the JSON written by `measure-memory.mts` into a markdown comparison (median of the runs per build). */
 const [file, baselineLabel = "baseline", currentLabel = "current"] = process.argv.slice(2);
-if (!file) throw new Error("Usage: memory-report.mts <results.json> [baselineLabel] [currentLabel]");
+if (!file) {throw new Error("Usage: memory-report.mts <results.json> [baselineLabel] [currentLabel]");}
 
-const { results, runs } = JSON.parse(await readFile(file, "utf8")) as { results: ScenarioResult[]; runs: number };
+const { results, runs } = JSON.parse(await readFile(file, "utf8")) as { results: Array<ScenarioResult>; runs: number };
 const pick = (label: string) => results.filter((result) => result.label === label);
-const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
-const read = <T,>(label: string, get: (result: ScenarioResult) => T | undefined): T[] =>
+const median = (values: Array<number>) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
+const read = <T,>(label: string, get: (result: ScenarioResult) => T | undefined): Array<T> =>
     pick(label).flatMap((result) => {
         const value = get(result);
         return value === undefined ? [] : [value];
@@ -20,8 +20,8 @@ const med = (label: string, get: (result: ScenarioResult) => number | undefined)
 
 const fmt = (value: number, digits = 0) => (Number.isNaN(value) ? "n/a" : value.toFixed(digits));
 const delta = (before: number, after: number) => {
-    if (Number.isNaN(before) || Number.isNaN(after)) return "n/a";
-    if (before === 0) return after === 0 ? "0%" : "n/a";
+    if (Number.isNaN(before) || Number.isNaN(after)) {return "n/a";}
+    if (before === 0) {return after === 0 ? "0%" : "n/a";}
     const change = ((after - before) / before) * 100;
     return `${change > 0 ? "+" : ""}${change.toFixed(0)}%`;
 };
@@ -30,7 +30,7 @@ type Row = [metric: string, unit: string, get: (result: ScenarioResult) => numbe
 const floating = (get: (value: Extract<ScenarioResult["floating"], { opened: number }>) => number) => (result: ScenarioResult) =>
     "opened" in result.floating ? get(result.floating) : undefined;
 
-const sections: Array<[title: string, rows: Row[]]> = [
+const sections: Array<[title: string, rows: Array<Row>]> = [
     [
         "Memory: physical footprint of all Electron processes (what Activity Monitor shows)",
         [
@@ -88,7 +88,7 @@ const sections: Array<[title: string, rows: Row[]]> = [
 
 const range = (label: string, get: (result: ScenarioResult) => number | undefined, digits: number): string => {
     const values = read(label, get);
-    if (values.length < 2 || Number.isNaN(med(label, get))) return "";
+    if (values.length < 2 || Number.isNaN(med(label, get))) {return "";}
     const min = Math.min(...values);
     const max = Math.max(...values);
     return min === max ? "" : ` (${fmt(min, digits)}–${fmt(max, digits)})`;

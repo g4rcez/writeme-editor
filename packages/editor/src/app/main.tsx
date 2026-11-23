@@ -50,10 +50,10 @@ const normalizeSystemAccentColor = (accentColor: string): string | null => {
 };
 
 const setSystemAccentColor = (accentColor: string | null): void => {
-    if (!accentColor) return;
+    if (!accentColor) {return;}
 
     const color = normalizeSystemAccentColor(accentColor);
-    if (!color) return;
+    if (!color) {return;}
     document.documentElement.style.setProperty("--native-system-accent", color);
 };
 
@@ -111,7 +111,7 @@ export async function main() {
     if (!rootElement) {
         throw new Error("Root element not found");
     }
-    if (supportsAI()) setupAIAdapters();
+    if (supportsAI()) {setupAIAdapters();}
     platformConfiguration();
     themeConfiguration();
     void initializeMobileRuntime().catch((error: unknown) => {
@@ -134,7 +134,7 @@ export async function main() {
         if (isElectron() && directory) {
             await window.electronAPI.app.chdir(directory);
             // the main window owns the watcher; floating windows restarting it only re-crawled the workspace
-            if (!isSecondaryWindow) await window.electronAPI.fs.startWatcher(directory);
+            if (!isSecondaryWindow) {await window.electronAPI.fs.startWatcher(directory);}
         }
         // Each window is its own renderer process with its own heap, so a floating window cannot share the main
         // window's notes. It gets titles and paths only (no file reads, no content) and loads a note when it opens it.
@@ -180,7 +180,7 @@ export async function main() {
             const find = notes.find((x) => x.id === tab?.noteId);
             if (find) {
                 const note = await repositories.notes.getOne(find.id);
-                if (note) globalDispatch.note(note);
+                if (note) {globalDispatch.note(note);}
             }
         }
         if (isElectron() && !isSecondaryWindow) {

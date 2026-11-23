@@ -34,8 +34,8 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "comment.block.math",
-                    begin: "/\\*",
-                    end: "\\*/",
+                    begin: String.raw`/\*`,
+                    end: String.raw`\*/`,
                 },
             ],
         },
@@ -43,43 +43,43 @@ export const shikiMathGrammer = {
             patterns: [
                 {
                     name: "support.function.trigonometric.math",
-                    match: "\\b(sin|cos|tan|cot|sec|csc|asin|acos|atan|atan2|acot|asec|acsc|sinh|cosh|tanh|coth|sech|csch|asinh|acosh|atanh|acoth|asech|acsch)\\b",
+                    match: String.raw`\b(sin|cos|tan|cot|sec|csc|asin|acos|atan|atan2|acot|asec|acsc|sinh|cosh|tanh|coth|sech|csch|asinh|acosh|atanh|acoth|asech|acsch)\b`,
                 },
                 {
                     name: "support.function.logarithmic.math",
-                    match: "\\b(log|ln|log2|log10|exp|exp2|exp10)\\b",
+                    match: String.raw`\b(log|ln|log2|log10|exp|exp2|exp10)\b`,
                 },
                 {
                     name: "support.function.root.math",
-                    match: "\\b(sqrt|cbrt|root)\\b",
+                    match: String.raw`\b(sqrt|cbrt|root)\b`,
                 },
                 {
                     name: "support.function.statistical.math",
-                    match: "\\b(sum|prod|mean|median|mode|var|std|cov|corr|min|max|avg)\\b",
+                    match: String.raw`\b(sum|prod|mean|median|mode|var|std|cov|corr|min|max|avg)\b`,
                 },
                 {
                     name: "support.function.calculus.math",
-                    match: "\\b(lim|int|diff|grad|div|curl|laplacian)\\b",
+                    match: String.raw`\b(lim|int|diff|grad|div|curl|laplacian)\b`,
                 },
                 {
                     name: "support.function.combinatorial.math",
-                    match: "\\b(factorial|permutation|combination|binomial)\\b",
+                    match: String.raw`\b(factorial|permutation|combination|binomial)\b`,
                 },
                 {
                     name: "support.function.rounding.math",
-                    match: "\\b(floor|ceil|round|trunc|abs|sign|sgn)\\b",
+                    match: String.raw`\b(floor|ceil|round|trunc|abs|sign|sgn)\b`,
                 },
                 {
                     name: "support.function.complex.math",
-                    match: "\\b(real|imag|conj|arg|magnitude|phase)\\b",
+                    match: String.raw`\b(real|imag|conj|arg|magnitude|phase)\b`,
                 },
                 {
                     name: "support.function.matrix.math",
-                    match: "\\b(det|trace|rank|inv|transpose|eigenvalue|eigenvector)\\b",
+                    match: String.raw`\b(det|trace|rank|inv|transpose|eigenvalue|eigenvector)\b`,
                 },
                 {
                     name: "support.function.special.math",
-                    match: "\\b(gamma|beta|erf|erfc|bessel|legendre|hermite|laguerre)\\b",
+                    match: String.raw`\b(gamma|beta|erf|erfc|bessel|legendre|hermite|laguerre)\b`,
                 },
             ],
         },
@@ -99,23 +99,23 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "constant.numeric.complex.math",
-                    match: "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?[ij]\\b",
+                    match: String.raw`\b\d+(\.\d+)?([eE][+-]?\d+)?[ij]\b`,
                 },
                 {
                     name: "constant.numeric.float.math",
-                    match: "\\b\\d+\\.\\d+([eE][+-]?\\d+)?\\b",
+                    match: String.raw`\b\d+\.\d+([eE][+-]?\d+)?\b`,
                 },
                 {
                     name: "constant.numeric.scientific.math",
-                    match: "\\b\\d+([eE][+-]?\\d+)\\b",
+                    match: String.raw`\b\d+([eE][+-]?\d+)\b`,
                 },
                 {
                     name: "constant.numeric.integer.math",
-                    match: "\\b\\d+\\b",
+                    match: String.raw`\b\d+\b`,
                 },
                 {
                     name: "constant.numeric.variables.greek",
-                    match: "\\b[αβγδεζηθικλμνξοπρσςτυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]\\b",
+                    match: String.raw`\b[αβγδεζηθικλμνξοπρσςτυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]\b`,
                 },
             ],
         },
@@ -123,19 +123,19 @@ export const shikiMathGrammer = {
             patterns: [
                 {
                     name: "constant.language.mathematical.math",
-                    match: "\\b(pi|π|e|phi|φ|tau|τ|euler|golden)\\b",
+                    match: String.raw`\b(pi|π|e|phi|φ|tau|τ|euler|golden)\b`,
                 },
                 {
                     name: "constant.language.infinity.math",
-                    match: "\\b(inf|infinity|∞)\\b",
+                    match: String.raw`\b(inf|infinity|∞)\b`,
                 },
                 {
                     name: "constant.language.nan.math",
-                    match: "\\b(nan|NaN)\\b",
+                    match: String.raw`\b(nan|NaN)\b`,
                 },
                 {
                     name: "constant.language.boolean.math",
-                    match: "\\b(true|false)\\b",
+                    match: String.raw`\b(true|false)\b`,
                 },
             ],
         },
@@ -147,11 +147,11 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "variable.other.subscript.math",
-                    match: "[a-zA-Z]\\w*_\\w+",
+                    match: String.raw`[a-zA-Z]\w*_\w+`,
                 },
                 {
                     name: "variable.other.math",
-                    match: "[a-zA-Z]\\w*",
+                    match: String.raw`[a-zA-Z]\w*`,
                 },
             ],
         },
@@ -164,7 +164,7 @@ export const shikiMathGrammer = {
                     patterns: [
                         {
                             name: "constant.character.escape.math",
-                            match: "\\\\.",
+                            match: String.raw`\\.`,
                         },
                     ],
                 },
@@ -175,7 +175,7 @@ export const shikiMathGrammer = {
                     patterns: [
                         {
                             name: "constant.character.escape.math",
-                            match: "\\\\.",
+                            match: String.raw`\\.`,
                         },
                     ],
                 },
@@ -185,19 +185,19 @@ export const shikiMathGrammer = {
             patterns: [
                 {
                     name: "keyword.operator.logical.and.math",
-                    match: "&&|∧|\\band\\b",
+                    match: String.raw`&&|∧|\band\b`,
                 },
                 {
                     name: "keyword.operator.logical.or.math",
-                    match: "\\|\\||∨|\\bor\\b",
+                    match: String.raw`\|\||∨|\bor\b`,
                 },
                 {
                     name: "keyword.operator.logical.not.math",
-                    match: "!|¬|\\bnot\\b",
+                    match: String.raw`!|¬|\bnot\b`,
                 },
                 {
                     name: "keyword.operator.logical.xor.math",
-                    match: "⊕|\\bxor\\b",
+                    match: String.raw`⊕|\bxor\b`,
                 },
                 {
                     name: "keyword.operator.logical.implies.math",
@@ -249,7 +249,7 @@ export const shikiMathGrammer = {
             patterns: [
                 {
                     name: "keyword.operator.arithmetic.plus.math",
-                    match: "\\+|⊕",
+                    match: String.raw`\+|⊕`,
                 },
                 {
                     name: "keyword.operator.arithmetic.minus.math",
@@ -257,7 +257,7 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "keyword.operator.arithmetic.multiply.math",
-                    match: "\\*|×|·|⊗",
+                    match: String.raw`\*|×|·|⊗`,
                 },
                 {
                     name: "keyword.operator.arithmetic.divide.math",
@@ -265,11 +265,11 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "keyword.operator.arithmetic.modulo.math",
-                    match: "%|\\bmod\\b",
+                    match: String.raw`%|\bmod\b`,
                 },
                 {
                     name: "keyword.operator.arithmetic.power.math",
-                    match: "\\^|\\*\\*",
+                    match: String.raw`\^|\*\*`,
                 },
                 {
                     name: "keyword.operator.arithmetic.factorial.math",
@@ -365,7 +365,7 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "punctuation.bracket.square.math",
-                    match: "[\\[\\]]",
+                    match: String.raw`[\[\]]`,
                 },
                 {
                     name: "punctuation.bracket.curly.math",
@@ -377,7 +377,7 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "punctuation.bracket.absolute.math",
-                    match: "\\|",
+                    match: String.raw`\|`,
                 },
                 {
                     name: "punctuation.bracket.norm.math",
@@ -401,7 +401,7 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "punctuation.terminator.statement.math",
-                    match: "\\.",
+                    match: String.raw`\.`,
                 },
                 {
                     name: "keyword.operator.assignment.math",
@@ -425,7 +425,7 @@ export const shikiMathGrammer = {
                 },
                 {
                     name: "keyword.operator.ellipsis.math",
-                    match: "\\.\\.\\.|…|⋯|⋮|⋱",
+                    match: String.raw`\.\.\.|…|⋯|⋮|⋱`,
                 },
             ],
         },

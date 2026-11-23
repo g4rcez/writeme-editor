@@ -33,16 +33,16 @@ const tagThemeMap: Record<Note["noteType"], { title: string; theme: TagProps["th
 export default function TagPage() {
     const { id } = useParams<{ id: string }>();
     const [loading, setLoading] = useState(true);
-    const [notes, setNotes] = useState<TagNoteResult[]>([]);
+    const [notes, setNotes] = useState<Array<TagNoteResult>>([]);
     const [state] = useGlobalStore();
 
     useEffect(() => {
-        if (!id) return;
+        if (!id) {return;}
         const loadData = async () => {
             setLoading(true);
             try {
                 const [allNotes] = await Promise.all([repositories.notes.getAll()]);
-                const matchedNotes: TagNoteResult[] = [];
+                const matchedNotes: Array<TagNoteResult> = [];
                 const tag = hashtagKey(id);
                 for (const note of allNotes) {
                     const matches = findHashtags(note.content).filter((match) => {

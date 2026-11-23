@@ -10,6 +10,6 @@ export interface Repository<T extends EntityBase> {
     save(item: T): Promise<T>;
     delete(id: EntityBase["id"]): Promise<boolean>;
     getOne(id: EntityBase["id"]): Promise<T | null>;
-    getAll(query?: { limit?: number }): Promise<T[]>;
+    getAll(query?: { limit?: number }): Promise<Array<T>>;
     update(id: EntityBase["id"], item: T): Promise<T>;
 }

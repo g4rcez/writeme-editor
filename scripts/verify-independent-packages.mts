@@ -18,7 +18,7 @@ const environment = {
         .join(delimiter),
 };
 
-async function run(directory: string, args: string[]): Promise<void> {
+async function run(directory: string, args: Array<string>): Promise<void> {
     const status = await new Promise<number | null>((resolveStatus, reject) => {
         const child = spawn(process.execPath, [npm!, ...args, "--workspaces=false"], {
             cwd: directory,

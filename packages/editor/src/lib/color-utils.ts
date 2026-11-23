@@ -9,10 +9,10 @@ const f = (n: number, hue: number, alpha: number, lFraction: number) => {
 export const parseHslaToHex = (hslaString: string) => {
     const sep = hslaString.includes(",") ? "," : " ";
     const parts = hslaString.split(new RegExp(`hsla?\\(|\\)|${sep}|/`, "g")).filter(Boolean);
-    if (parts.length < 3) return "#000000";
-    const hue = parseFloat(parts[0]!);
-    const saturation = parseFloat(parts[1]!);
-    const lightness = parseFloat(parts[2]!);
+    if (parts.length < 3) {return "#000000";}
+    const hue = Number.parseFloat(parts[0]!);
+    const saturation = Number.parseFloat(parts[1]!);
+    const lightness = Number.parseFloat(parts[2]!);
     const sFraction = saturation / 100;
     const lFraction = lightness / 100;
     const alpha = sFraction * Math.min(lFraction, 1 - lFraction);

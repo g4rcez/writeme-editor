@@ -31,7 +31,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         : [];
       const next = appendNoteSnapshot(snapshots, noteId, content, createdAt);
       const added = next.find((snapshot) => snapshot.id !== latest?.id);
-      if (added) await db.noteHistory.add(added);
+      if (added) {await db.noteHistory.add(added);}
     });
   }
 
@@ -42,12 +42,12 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
   }
 
   async hardDelete(id: EntityBase["id"]): Promise<boolean> {
-    if (!(await db.notes.get(id))) return false;
+    if (!(await db.notes.get(id))) {return false;}
     await db.transaction(
       "rw",
       [db.notes, db.pdfAssets, db.comments, db.noteHistory, db.tabs, db.noteGroupMembers, db.cursorPositions, db.aiChats, db.aiMessages],
       async () => {
-        const chatIds = (await db.aiChats.where("noteId").equals(id).primaryKeys()) as string[];
+        const chatIds = (await db.aiChats.where("noteId").equals(id).primaryKeys()) as Array<string>;
         if (chatIds.length) {
           await db.aiMessages.where("chatId").anyOf(chatIds).delete();
         }
@@ -70,7 +70,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return this.getOne(id);
   }
 
-  async getTrashed(): Promise<Note[]> {
+  async getTrashed(): Promise<Array<Note>> {
     const all = await db.notes.toArray();
     return all
       .filter((n) => (n as any).deletedAt != null)
@@ -140,19 +140,19 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
   override async getOne(id: EntityBase["id"]): Promise<Note | null> {
     const metadata: any = await super.getOne(id);
-    if (!metadata) return null;
-    if (metadata.deletedAt != null) return null;
+    if (!metadata) {return null;}
+    if (metadata.deletedAt != null) {return null;}
     return Note.parse({ ...metadata, content: metadata.content || "" });
   }
 
-  override async getAll(query?: { limit?: number }): Promise<Note[]> {
+  override async getAll(query?: { limit?: number }): Promise<Array<Note>> {
     const items = await super.getAll(query);
     return items
       .filter((n) => (n as any).deletedAt == null)
       .map((metadata) => Note.parse({ ...metadata, content: metadata.content || "" }));
   }
 
-  async getRecentNotes(limit?: number): Promise<Note[]> {
+  async getRecentNotes(limit?: number): Promise<Array<Note>> {
     const metadataList = await db.notes
       .where("noteType")
       .notEqual("template")
@@ -178,7 +178,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
       .reverse()
       .sortBy("updatedAt");
 
-    if (result.length === 0) return null;
+    if (result.length === 0) {return null;}
 
     const metadata = result[0] as any;
     return Note.parse({ ...metadata, content: metadata.content || "" });
@@ -192,7 +192,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return findDailyQuickNote(result.map((note) => Note.parse(note)), date);
   }
 
-  async getTemplates(): Promise<Note[]> {
+  async getTemplates(): Promise<Array<Note>> {
     const result = await db.notes
       .where("noteType")
       .equals("template")
@@ -202,7 +202,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
     return result.map((metadata) => Note.parse({ ...metadata, content: metadata.content || "" }));
   }
 
-  async getHistory(noteId: string): Promise<NoteSnapshot[]> {
+  async getHistory(noteId: string): Promise<Array<NoteSnapshot>> {
     const snapshots = await db.noteHistory.where("noteId").equals(noteId).toArray();
     return snapshots
       .map((snapshot) => ({
@@ -214,7 +214,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
   async restoreSnapshot(noteId: string, snapshotId: string): Promise<Note | null> {
     const snapshot = await db.noteHistory.get(snapshotId);
-    if (!snapshot || snapshot.noteId !== noteId) return null;
+    if (!snapshot || snapshot.noteId !== noteId) {return null;}
     await this.updateContent(noteId, snapshot.content);
     return this.getOne(noteId);
   }
@@ -244,7 +244,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
   async updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void> {
     await db.transaction("rw", db.notes, async () => {
       const note = await db.notes.get(id);
-      if (!note || note.deletedAt != null) throw new Error("Note not found.");
+      if (!note || note.deletedAt != null) {throw new Error("Note not found.");}
       await db.notes.update(id, { metadata, updatedAt: new Date() });
     });
   }
@@ -260,7 +260,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     await db.transaction("rw", [db.notes, db.comments], async () => {
       const rawNote = await db.notes.get(id);
-      if (!rawNote || rawNote.deletedAt != null) return;
+      if (!rawNote || rawNote.deletedAt != null) {return;}
       const existing = Note.parse({ ...rawNote, content: rawNote.content || "" });
       if (
         existing.title !== expected.title ||
@@ -279,7 +279,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
       await syncCommentThreads(updatedNote);
     });
 
-    if (updatedNote && expected.content !== content) await this.saveSnapshot(id, content, updatedAt);
+    if (updatedNote && expected.content !== content) {await this.saveSnapshot(id, content, updatedAt);}
     return updatedNote;
   }
 }

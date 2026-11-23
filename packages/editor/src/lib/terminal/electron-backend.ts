@@ -16,7 +16,7 @@ export class ElectronTerminalBackend implements ITerminalBackend {
         }
 
         console.error("Electron API for terminal not available");
-        this.onDataCallback?.("\r\n\x1b[31mError: Terminal IPC not available\x1b[0m\r\n");
+        this.onDataCallback?.("\r\n\u001b[31mError: Terminal IPC not available\u001b[0m\r\n");
         return Promise.resolve();
     }
 
@@ -57,7 +57,7 @@ export class ElectronTerminalBackend implements ITerminalBackend {
     }
 
     private registerListeners(): void {
-        if (!window.electronAPI?.terminal || this.removeDataListener) return;
+        if (!window.electronAPI?.terminal || this.removeDataListener) {return;}
 
         this.removeDataListener = window.electronAPI.terminal.onData((data) => {
             if (data.id === this.ptyId) {

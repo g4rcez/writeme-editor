@@ -6,7 +6,7 @@ type FileSearchOptions = {
     rootPath: string;
     query: string;
     signal: AbortSignal;
-    onBatch: (entries: FileSearchEntry[]) => void | Promise<void>;
+    onBatch: (entries: Array<FileSearchEntry>) => void | Promise<void>;
 };
 
 export type FileSearchSummary = {
@@ -44,7 +44,7 @@ const globPatternMatches = (pattern: string, value: string): boolean => {
     const match = (patternIndex: number, valueIndex: number): boolean => {
         const key = `${patternIndex}:${valueIndex}`;
         const cached = memo.get(key);
-        if (cached !== undefined) return cached;
+        if (cached !== undefined) {return cached;}
 
         if (patternIndex >= pattern.length) {
             const result = valueIndex >= value.length;
@@ -57,7 +57,7 @@ const globPatternMatches = (pattern: string, value: string): boolean => {
 
         if (character === "*") {
             let nextPatternIndex = patternIndex + 1;
-            while (pattern[nextPatternIndex] === "*") nextPatternIndex += 1;
+            while (pattern[nextPatternIndex] === "*") {nextPatternIndex += 1;}
 
             if (pattern[nextPatternIndex] === "/") {
                 result =
@@ -128,18 +128,18 @@ const globPatternMatches = (pattern: string, value: string): boolean => {
 
 const trimTrailingSpaces = (value: string): string => {
     let end = value.length;
-    while (end > 0 && value[end - 1] === " " && value[end - 2] !== "\\") end -= 1;
+    while (end > 0 && value[end - 1] === " " && value[end - 2] !== "\\") {end -= 1;}
     return value.slice(0, end);
 };
 
-const parseIgnoreRules = (content: string, basePath: string): IgnoreRule[] => {
-    const rules: IgnoreRule[] = [];
+const parseIgnoreRules = (content: string, basePath: string): Array<IgnoreRule> => {
+    const rules: Array<IgnoreRule> = [];
 
     for (const rawLine of content.split(/\r?\n/u)) {
         let line = trimTrailingSpaces(rawLine);
-        if (!line) continue;
+        if (!line) {continue;}
 
-        if (line.startsWith("\\#") || line.startsWith("\\!")) {
+        if (line.startsWith(String.raw`\#`) || line.startsWith(String.raw`\!`)) {
             line = line.slice(1);
         } else if (line.startsWith("#")) {
             continue;
@@ -151,14 +151,14 @@ const parseIgnoreRules = (content: string, basePath: string): IgnoreRule[] => {
             line = line.slice(1);
         }
 
-        if (!line) continue;
+        if (!line) {continue;}
 
-        const directoryOnly = line.endsWith("/") && !line.endsWith("\\/");
-        if (directoryOnly) line = line.slice(0, -1);
+        const directoryOnly = line.endsWith("/") && !line.endsWith(String.raw`\/`);
+        if (directoryOnly) {line = line.slice(0, -1);}
 
         const anchored = line.startsWith("/");
         line = line.replace(/^\/+/, "");
-        if (!line) continue;
+        if (!line) {continue;}
 
         rules.push({
             anchored,
@@ -173,17 +173,17 @@ const parseIgnoreRules = (content: string, basePath: string): IgnoreRule[] => {
     return rules;
 };
 
-const getCandidatePrefixes = (candidate: string): string[] => {
+const getCandidatePrefixes = (candidate: string): Array<string> => {
     const segments = candidate.split("/");
     return segments.map((_, index) => segments.slice(0, index + 1).join("/"));
 };
 
 const matchesIgnoreRule = (rule: IgnoreRule, relativePath: string, isDirectory: boolean): boolean => {
     const basePrefix = rule.basePath ? `${rule.basePath}/` : "";
-    if (!relativePath.startsWith(basePrefix)) return false;
+    if (!relativePath.startsWith(basePrefix)) {return false;}
 
     const candidate = relativePath.slice(basePrefix.length);
-    if (!candidate) return false;
+    if (!candidate) {return false;}
 
     if (!rule.hasSlash && !rule.anchored) {
         const segments = candidate.split("/");
@@ -201,7 +201,7 @@ const matchesIgnoreRule = (rule: IgnoreRule, relativePath: string, isDirectory: 
     );
 };
 
-type GitignoreMatcher = IgnoreRule[];
+type GitignoreMatcher = Array<IgnoreRule>;
 
 const addIgnoreRules = (matcher: GitignoreMatcher, content: string, basePath: string): void => {
     matcher.push(...parseIgnoreRules(content, basePath));
@@ -210,7 +210,7 @@ const addIgnoreRules = (matcher: GitignoreMatcher, content: string, basePath: st
 const isIgnored = (matcher: GitignoreMatcher, relativePath: string, isDirectory: boolean): boolean => {
     let ignored = false;
     for (const rule of matcher) {
-        if (matchesIgnoreRule(rule, relativePath, isDirectory)) ignored = !rule.negated;
+        if (matchesIgnoreRule(rule, relativePath, isDirectory)) {ignored = !rule.negated;}
     }
     return ignored;
 };
@@ -264,17 +264,17 @@ export const searchWorkspaceFiles = async ({
     signal,
 }: FileSearchOptions): Promise<FileSearchSummary> => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery || signal.aborted) return { cancelled: signal.aborted, truncated: false };
+    if (!normalizedQuery || signal.aborted) {return { cancelled: signal.aborted, truncated: false };}
 
-    const batch: FileSearchEntry[] = [];
-    const directoryJobs: DirectorySearchJob[] = [{ path: rootPath, relativePath: "", inheritedMatcher: [] }];
+    const batch: Array<FileSearchEntry> = [];
+    const directoryJobs: Array<DirectorySearchJob> = [{ path: rootPath, relativePath: "", inheritedMatcher: [] }];
     let lastBatchAt = 0;
     let resultCount = 0;
     let truncated = false;
 
     const flushBatch = async (force = false): Promise<void> => {
-        if (batch.length === 0) return;
-        if (!force && batch.length < SEARCH_BATCH_SIZE && Date.now() - lastBatchAt < SEARCH_BATCH_INTERVAL_MS) return;
+        if (batch.length === 0) {return;}
+        if (!force && batch.length < SEARCH_BATCH_SIZE && Date.now() - lastBatchAt < SEARCH_BATCH_INTERVAL_MS) {return;}
         if (signal.aborted) {
             batch.length = 0;
             return;
@@ -286,23 +286,23 @@ export const searchWorkspaceFiles = async ({
     };
 
     while (directoryJobs.length > 0 && !truncated) {
-        if (signal.aborted) return { cancelled: true, truncated: false };
+        if (signal.aborted) {return { cancelled: true, truncated: false };}
 
         const job = directoryJobs.pop();
-        if (!job) break;
+        if (!job) {break;}
 
         const matcher = await loadDirectoryMatcher({
             directoryPath: job.path,
             inheritedMatcher: job.inheritedMatcher,
             relativePath: job.relativePath,
         });
-        if (signal.aborted) return { cancelled: true, truncated: false };
+        if (signal.aborted) {return { cancelled: true, truncated: false };}
 
         try {
             const directory = await opendir(job.path);
             for await (const entry of directory) {
-                if (signal.aborted) return { cancelled: true, truncated: false };
-                if (entry.name.startsWith(".")) continue;
+                if (signal.aborted) {return { cancelled: true, truncated: false };}
+                if (entry.name.startsWith(".")) {continue;}
 
                 const relativePath = job.relativePath ? `${job.relativePath}/${entry.name}` : entry.name;
                 if (isDefaultIgnoredPath(relativePath) || isIgnored(matcher, relativePath, entry.isDirectory())) {
@@ -324,7 +324,7 @@ export const searchWorkspaceFiles = async ({
 
                 batch.push(createFileSearchEntry(rootPath, relativePath, isDirectory ? "directory" : "file"));
                 resultCount += 1;
-                if (batch.length >= SEARCH_BATCH_SIZE) await flushBatch(true);
+                if (batch.length >= SEARCH_BATCH_SIZE) {await flushBatch(true);}
 
                 if (resultCount >= FILE_SEARCH_RESULT_LIMIT) {
                     truncated = true;
@@ -332,7 +332,7 @@ export const searchWorkspaceFiles = async ({
                 }
             }
         } catch (error) {
-            if (!job.relativePath) throw error;
+            if (!job.relativePath) {throw error;}
         }
 
         await flushBatch();

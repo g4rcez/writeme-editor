@@ -46,10 +46,10 @@ test("persists handwriting through the compiled Electron renderer and SQLite", a
         }
         for (const filename of await readdir(testInfo.outputPath("videos"))) {
             if (filename.endsWith(".webm"))
-                await testInfo.attach("Electron session", {
+                {await testInfo.attach("Electron session", {
                     path: testInfo.outputPath("videos", filename),
                     contentType: "video/webm",
-                });
+                });}
         }
     }
 });

@@ -64,32 +64,32 @@ export function SendResearchExcerpt({ source }: Props): JSX.Element {
     }, [source]);
 
     function close(): void {
-        if (inFlight.current) return;
+        if (inFlight.current) {return;}
         setOpen(false);
         button.current?.focus();
     }
 
     async function send(): Promise<void> {
-        if (inFlight.current) return;
+        if (inFlight.current) {return;}
         inFlight.current = true;
         setError(null);
         setSaving(true);
         try {
             let destination: Note | null = null;
             if (createNew) {
-                if (!title.trim()) throw new Error("Enter a title for the destination note.");
+                if (!title.trim()) {throw new Error("Enter a title for the destination note.");}
                 if (/[/\\]/.test(title) || [".", ".."].includes(title.trim()))
-                    throw new Error("Enter a note title without a folder path.");
+                    {throw new Error("Enter a note title without a folder path.");}
                 newNote.current ??= Note.new(title.trim(), `${excerpt}\n`, NoteType.note);
                 const existing = await repositories.notes.getOne(newNote.current.id);
                 destination = existing ?? (await repositories.notes.save(newNote.current));
             } else {
-                if (!destinationId) throw new Error("Choose a destination note.");
+                if (!destinationId) {throw new Error("Choose a destination note.");}
                 const status = useUIStore.getState().noteSaveStatuses[destinationId];
                 if (status && status !== "saved")
-                    throw new Error(
+                    {throw new Error(
                         "Save the destination note's pending edits before sending this excerpt, then retry.",
-                    );
+                    );}
                 destination = await saveResearchExcerpt(
                     repositories.notes,
                     destinationId,
@@ -98,15 +98,15 @@ export function SendResearchExcerpt({ source }: Props): JSX.Element {
                     source.note.id,
                 );
             }
-            if (!destination) throw new Error("Could not find the destination note. Try again.");
+            if (!destination) {throw new Error("Could not find the destination note. Try again.");}
             const current = globalState();
             globalDispatch.notes([...current.notes.filter((note) => note.id !== destination.id), destination]);
-            if (current.note?.id === destination.id) globalDispatch.setNote(destination);
+            if (current.note?.id === destination.id) {globalDispatch.setNote(destination);}
             await globalDispatch.addTab(destination.id);
             setOpen(false);
             navigate(`/note/${destination.id}`);
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : "Could not send this excerpt. Retry.");
+        } catch (error_) {
+            setError(error_ instanceof Error ? error_.message : "Could not send this excerpt. Retry.");
         } finally {
             inFlight.current = false;
             setSaving(false);
@@ -167,7 +167,7 @@ export function SendResearchExcerpt({ source }: Props): JSX.Element {
     }
 
     function handleModalChange(nextOpen: boolean): void {
-        if (!nextOpen) close();
+        if (!nextOpen) {close();}
     }
 
     function handleSend(): void {

@@ -1,4 +1,4 @@
-import { type EntityBase, type Repository } from "@/store/repository";
+import type { EntityBase, Repository } from "@/store/repository";
 
 export class Hashtag implements EntityBase {
     public constructor(
@@ -13,6 +13,6 @@ export class Hashtag implements EntityBase {
 }
 
 export interface IHashtagRepository extends Repository<Hashtag> {
-    findByHashtag(tag: string): Promise<Hashtag[]>;
-    sync(filename: string, tags: string[]): Promise<void>;
+    findByHashtag(tag: string): Promise<Array<Hashtag>>;
+    sync(filename: string, tags: Array<string>): Promise<void>;
 }

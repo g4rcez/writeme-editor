@@ -4,7 +4,7 @@ import { expect, goHome, test } from "./fixtures";
 async function createFilteredBoard(page: Page): Promise<void> {
     await goHome(page);
     const close = page.getByRole("button", { name: "Close workspace menu", exact: true });
-    if (await close.isVisible()) await close.click();
+    if (await close.isVisible()) {await close.click();}
     await page.getByRole("button", { name: "Task board", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Create task note" });
     await dialog.getByTitle("Note title").fill("Release checklist");
@@ -58,7 +58,7 @@ test("keeps recovery controls within a narrow viewport", async ({ cleanPage: pag
     const reset = page.getByRole("button", { name: "Clear filters", exact: true });
     await expect(reset).toBeVisible();
     const bounds = await reset.boundingBox();
-    if (!bounds) throw new Error("Clear filters has no visible bounds");
+    if (!bounds) {throw new Error("Clear filters has no visible bounds");}
     expect(bounds.height).toBeGreaterThanOrEqual(44);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

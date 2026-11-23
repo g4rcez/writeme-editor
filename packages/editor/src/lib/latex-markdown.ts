@@ -15,7 +15,7 @@ type MarkdownExtension = {
 };
 
 export type MarkedLike = {
-    use(extension: { extensions: MarkdownExtension[] }): void;
+    use(extension: { extensions: Array<MarkdownExtension> }): void;
 };
 
 const blockMathExtension = {
@@ -26,10 +26,10 @@ const blockMathExtension = {
     },
     tokenizer(src: string): MathToken | undefined {
         const match = src.match(/^\$\$(?:\r?\n([\s\S]*?)\r?\n\$\$|([^\r\n]+)\$\$)(?:\r?\n|$)/);
-        if (!match) return undefined;
+        if (!match) {return undefined;}
 
         const latex = (match[1] ?? match[2] ?? "").trim();
-        if (!latex) return undefined;
+        if (!latex) {return undefined;}
 
         return {
             type: "blockMath",
@@ -50,7 +50,7 @@ const inlineMathExtension = {
     },
     tokenizer(src: string): MathToken | undefined {
         const match = src.match(/^\$(?!\$)(?!\d+\$)([^$\n]+?)\$(?!\d)/);
-        if (!match) return undefined;
+        if (!match) {return undefined;}
 
         return {
             type: "inlineMath",

@@ -2,7 +2,7 @@ import { isElectron } from "./is-electron";
 import { isSafeHttpUrl } from "./read-it-later-library";
 
 export async function fetchReadItLaterUrl(url: string): Promise<string> {
-    if (!isSafeHttpUrl(url)) throw new Error("Use a valid HTTP or HTTPS URL without embedded credentials.");
+    if (!isSafeHttpUrl(url)) {throw new Error("Use a valid HTTP or HTTPS URL without embedded credentials.");}
 
     if (isElectron()) {
         const result = await window.electronAPI.readItLater.fetchUrl(url);
@@ -13,7 +13,7 @@ export async function fetchReadItLaterUrl(url: string): Promise<string> {
     }
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Could not fetch this URL (HTTP ${response.status}).`);
+    if (!response.ok) {throw new Error(`Could not fetch this URL (HTTP ${response.status}).`);}
     return response.text();
 }
 
@@ -144,7 +144,7 @@ export function parseReadItLaterHtml(
             pre.replaceChildren(code);
         }
         const original = pre.querySelector("code");
-        if (!original) return;
+        if (!original) {return;}
         const classes = [...pre.classList, ...original.classList];
         const langClass = classes.find((c) => {
             const lower = c.toLowerCase();

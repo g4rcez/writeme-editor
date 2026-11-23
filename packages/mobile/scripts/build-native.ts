@@ -14,7 +14,7 @@ function findJavaHome(): string | undefined {
         ...(existsSync(installations) ? readdirSync(installations).map((name) => path.join(installations, name)) : []),
     ];
     return candidates.find((candidate) => {
-        if (!candidate) return false;
+        if (!candidate) {return false;}
         const java = path.join(candidate, "bin", process.platform === "win32" ? "java.exe" : "java");
         const result = spawnSync(java, ["-version"], { encoding: "utf8" });
         const major = Number(/version "(\d+)/.exec(result.stderr ?? "")?.[1]);
@@ -39,21 +39,21 @@ if (platform === "ios") {
         ],
         { stdio: "inherit" },
     );
-    if (result.error) console.error(result.error.message);
+    if (result.error) {console.error(result.error.message);}
     process.exit(result.status ?? 1);
 } else if (platform === "android") {
     const sdk =
         process.env.ANDROID_HOME ??
         process.env.ANDROID_SDK_ROOT ??
         path.join(homedir(), process.platform === "darwin" ? "Library/Android/sdk" : "Android/Sdk");
-    if (!existsSync(sdk)) throw new Error("Install the Android SDK and set ANDROID_HOME to its location.");
+    if (!existsSync(sdk)) {throw new Error("Install the Android SDK and set ANDROID_HOME to its location.");}
     const javaHome = findJavaHome();
     const result = spawnSync(process.platform === "win32" ? "gradlew.bat" : "./gradlew", ["assembleDebug"], {
         cwd: path.join(root, "packages/android/native"),
         stdio: "inherit",
         env: { ...process.env, ANDROID_HOME: sdk, ...(javaHome ? { JAVA_HOME: javaHome } : {}) },
     });
-    if (result.error) console.error(result.error.message);
+    if (result.error) {console.error(result.error.message);}
     process.exit(result.status ?? 1);
 } else {
     throw new Error("Choose ios or android for the native build.");

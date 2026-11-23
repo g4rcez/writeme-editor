@@ -1,7 +1,7 @@
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
 
-export type HostLookup = (hostname: string) => Promise<string[]>;
+export type HostLookup = (hostname: string) => Promise<Array<string>>;
 
 const resolveAll: HostLookup = async (hostname) => (await lookup(hostname, { all: true })).map((a) => a.address);
 
@@ -36,7 +36,7 @@ const isPrivateAddress = (ip: string): boolean => privateRanges.check(ip, isIP(i
 
 /** Resolver that looks up each hostname once. Use one per page fetch. */
 export const createCachedLookup = (resolve: HostLookup = resolveAll): HostLookup => {
-    const cache = new Map<string, Promise<string[]>>();
+    const cache = new Map<string, Promise<Array<string>>>();
     return (hostname) => {
         const cached = cache.get(hostname) ?? resolve(hostname);
         cache.set(hostname, cached);
@@ -55,10 +55,10 @@ export const isPublicHttpUrl = async (url: string, resolve: HostLookup = resolve
     } catch {
         return false;
     }
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    const host = parsed.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "");
-    if (host === "localhost" || host.endsWith(".localhost")) return false;
-    if (isIP(host)) return !isPrivateAddress(host);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {return false;}
+    const host = parsed.hostname.replaceAll(/^\[|\]$/g, "").replace(/\.$/, "");
+    if (host === "localhost" || host.endsWith(".localhost")) {return false;}
+    if (isIP(host)) {return !isPrivateAddress(host);}
     try {
         const addresses = await resolve(host);
         return addresses.length > 0 && addresses.every((address) => !isPrivateAddress(address));

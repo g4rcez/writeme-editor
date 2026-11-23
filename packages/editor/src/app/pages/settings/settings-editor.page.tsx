@@ -13,7 +13,7 @@ export default function SettingsEditorPage() {
     const [saving, setSaving] = useState(false);
 
     const onSave = async () => {
-        if (!settings) return;
+        if (!settings) {return;}
         setSaving(true);
         try {
             await saveSettingsPatch({
@@ -34,7 +34,7 @@ export default function SettingsEditorPage() {
         }
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings) {return <div className="p-8">Loading settings...</div>;}
 
     return (
         <SettingsPageShell

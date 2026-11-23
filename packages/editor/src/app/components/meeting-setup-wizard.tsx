@@ -31,8 +31,8 @@ const OPENAI_ENDPOINT = "https://api.openai.com/v1/audio/transcriptions";
 function providerOf(endpoint: string): Provider {
     try {
         const url = new URL(endpoint);
-        if (url.origin === "https://api.openai.com") return "openai";
-        if (["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return "local";
+        if (url.origin === "https://api.openai.com") {return "openai";}
+        if (["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {return "local";}
     } catch {
         return "custom";
     }
@@ -51,9 +51,9 @@ function validate(configuration: Configuration): Configuration {
     }
     const model = configuration.model.trim();
     const localSpeaker = configuration.localSpeaker.trim();
-    if (!model || !localSpeaker) throw new Error("Enter a model and your speaker name.");
+    if (!model || !localSpeaker) {throw new Error("Enter a model and your speaker name.");}
     if (model.length > 200 || localSpeaker.length > 200)
-        throw new Error("Model IDs and names must be 200 characters or fewer.");
+        {throw new Error("Model IDs and names must be 200 characters or fewer.");}
     return { ...configuration, endpoint: endpoint.toString(), model, localSpeaker };
 }
 
@@ -105,7 +105,7 @@ export function MeetingSetupWizard({
     }
 
     function chooseProvider(next: Provider): void {
-        if (next === provider) return;
+        if (next === provider) {return;}
         setProvider(next);
         setKey("");
         setSavedKey(false);
@@ -122,14 +122,14 @@ export function MeetingSetupWizard({
         const origin = new URL(draft.endpoint.trim()).origin;
         if (savedKey) {
             if (origin !== "https://api.openai.com")
-                throw new Error("The saved OpenAI key requires an OpenAI endpoint.");
+                {throw new Error("The saved OpenAI key requires an OpenAI endpoint.");}
             const credentials = await repositories.ai.loadCredentials("openai");
             if (!credentials?.apiKey)
-                throw new Error("No saved OpenAI API key was found. Enter a key or save one in AI settings.");
+                {throw new Error("No saved OpenAI API key was found. Enter a key or save one in AI settings.");}
             return credentials.apiKey;
         }
         if (origin === "https://api.openai.com" && !key.trim())
-            throw new Error("Enter an OpenAI API key or use a saved API key.");
+            {throw new Error("Enter an OpenAI API key or use a saved API key.");}
         return key.trim();
     }
 
@@ -143,21 +143,21 @@ export function MeetingSetupWizard({
                     throw new Error("Choose Custom server to use a different provider's endpoint.");
                 }
                 await resolveKey();
-                if (!mounted.current) return;
+                if (!mounted.current) {return;}
                 setDraft(valid);
             }
             setStep((current) => Math.min(current + 1, STEPS.length - 1));
-        } catch (reason) {
-            if (mounted.current) setError(errorMessage(reason));
+        } catch (error_) {
+            if (mounted.current) {setError(errorMessage(error_));}
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
     async function stopTest(): Promise<void> {
         clearTimeout(timer.current);
         const active = recording.current;
-        if (!active) return;
+        if (!active) {return;}
         recording.current = null;
         setPhase("transcribing");
         try {
@@ -168,12 +168,12 @@ export function MeetingSetupWizard({
                 source: "microphone",
                 signal: controller.current?.signal,
             });
-            if (!segments.length) throw new Error("No speech was detected. Speak during the sample and try again.");
-            if (mounted.current) setSample(segments.map(({ text }) => text).join(" "));
-        } catch (reason) {
-            if (mounted.current) setError(errorMessage(reason));
+            if (!segments.length) {throw new Error("No speech was detected. Speak during the sample and try again.");}
+            if (mounted.current) {setSample(segments.map(({ text }) => text).join(" "));}
+        } catch (error_) {
+            if (mounted.current) {setError(errorMessage(error_));}
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
@@ -194,9 +194,9 @@ export function MeetingSetupWizard({
             recording.current = active;
             setPhase("recording");
             timer.current = setTimeout(() => void stopTest(), 5000);
-        } catch (reason) {
+        } catch (error_) {
             if (mounted.current) {
-                setError(errorMessage(reason));
+                setError(errorMessage(error_));
                 setPhase("idle");
             }
         }
@@ -208,10 +208,10 @@ export function MeetingSetupWizard({
         try {
             const valid = validate(draft);
             await resolveKey();
-            if (mounted.current) await onSave(valid, key.trim(), savedKey);
-        } catch (reason) {
+            if (mounted.current) {await onSave(valid, key.trim(), savedKey);}
+        } catch (error_) {
             if (mounted.current) {
-                setError(errorMessage(reason));
+                setError(errorMessage(error_));
                 setPhase("idle");
             }
         }
@@ -273,7 +273,7 @@ export function MeetingSetupWizard({
             footer={actions}
             closable={phase !== "saving"}
             onChange={(open) => {
-                if (!open && phase !== "saving") onClose();
+                if (!open && phase !== "saving") {onClose();}
             }}
         >
             <div className="flex min-w-0 flex-col gap-5 py-2 text-foreground">
@@ -325,7 +325,7 @@ export function MeetingSetupWizard({
                                     description:
                                         "Connect another provider or a self-hosted server with a compatible transcription API.",
                                 },
-                            ] satisfies { value: Provider; title: string; description: string }[]
+                            ] satisfies Array<{ value: Provider; title: string; description: string }>
                         ).map((option) => (
                             <div key={option.value} className="rounded-lg border border-border bg-background p-3">
                                 <Radiobox
@@ -362,7 +362,7 @@ export function MeetingSetupWizard({
                                         onChange={(event) => {
                                             const value = event.target.value;
                                             if (value === "macos" || value === "windows" || value === "linux")
-                                                setInstallerOS(value);
+                                                {setInstallerOS(value);}
                                         }}
                                     >
                                         <option value="" disabled>
@@ -380,11 +380,11 @@ export function MeetingSetupWizard({
                                     theme="muted"
                                     disabled={!installerOS}
                                     onClick={() => {
-                                        if (!installerOS) return;
+                                        if (!installerOS) {return;}
                                         try {
                                             downloadMeetingInstaller(installerOS);
-                                        } catch (reason) {
-                                            setError(errorMessage(reason));
+                                        } catch (error_) {
+                                            setError(errorMessage(error_));
                                         }
                                     }}
                                 >

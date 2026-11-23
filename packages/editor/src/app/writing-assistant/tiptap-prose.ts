@@ -22,7 +22,7 @@ export function isEligibleTiptapWritingText(
     );
 }
 
-export function sameTiptapMarks(left: readonly ProseMirrorMark[], right: readonly ProseMirrorMark[]): boolean {
+export function sameTiptapMarks(left: ReadonlyArray<ProseMirrorMark>, right: ReadonlyArray<ProseMirrorMark>): boolean {
     return left.length === right.length && left.every((mark, index) => {
         const other = right[index];
         return other !== undefined && mark.eq(other);
@@ -32,28 +32,28 @@ export function sameTiptapMarks(left: readonly ProseMirrorMark[], right: readonl
 export function getTiptapWritingTextRanges(
     doc: ProseMirrorNode,
     selection?: TiptapWritingSelection,
-): WritingTextRange[] {
-    if (selection && (selection.from < 0 || selection.to <= selection.from)) return [];
+): Array<WritingTextRange> {
+    if (selection && (selection.from < 0 || selection.to <= selection.from)) {return [];}
 
-    const ranges: WritingTextRange[] = [];
-    let activeRange: { parts: string[]; from: number; to: number; marks: readonly ProseMirrorMark[] } | null = null;
+    const ranges: Array<WritingTextRange> = [];
+    let activeRange: { parts: Array<string>; from: number; to: number; marks: ReadonlyArray<ProseMirrorMark> } | null = null;
     const flush = (): void => {
-        if (!activeRange) return;
+        if (!activeRange) {return;}
         ranges.push({ text: activeRange.parts.join(""), from: activeRange.from, to: activeRange.to });
         activeRange = null;
     };
 
     doc.descendants((node, position, parent) => {
-        if (!isEligibleTiptapWritingText(node, parent)) return;
+        if (!isEligibleTiptapWritingText(node, parent)) {return;}
 
         const text = node.text;
-        if (!text) return;
+        if (!text) {return;}
         const from = selection ? Math.max(position, selection.from) : position;
         const to = selection ? Math.min(position + text.length, selection.to) : position + text.length;
-        if (from >= to) return;
+        if (from >= to) {return;}
 
         const clippedText = text.slice(from - position, to - position);
-        if (activeRange && activeRange.to === from && sameTiptapMarks(activeRange.marks, node.marks)) {
+        if (activeRange?.to === from && sameTiptapMarks(activeRange.marks, node.marks)) {
             activeRange.parts.push(clippedText);
             activeRange.to = to;
             return;

@@ -58,7 +58,7 @@ const markdownSearchDecorations = StateField.define<DecorationSet>({
     update(decorations, transaction) {
         const mappedDecorations = decorations.map(transaction.changes);
         for (const effect of transaction.effects) {
-            if (effect.is(setMarkdownSearchDecorations)) return effect.value;
+            if (effect.is(setMarkdownSearchDecorations)) {return effect.value;}
         }
         return mappedDecorations;
     },
@@ -67,16 +67,16 @@ const markdownSearchDecorations = StateField.define<DecorationSet>({
 
 type MarkdownMatch = { from: number; to: number };
 
-function findMarkdownMatches(content: string, searchTerm: string, caseSensitive: boolean): MarkdownMatch[] {
-    if (!searchTerm) return [];
+function findMarkdownMatches(content: string, searchTerm: string, caseSensitive: boolean): Array<MarkdownMatch> {
+    if (!searchTerm) {return [];}
     const source = caseSensitive ? content : content.toLocaleLowerCase();
     const needle = caseSensitive ? searchTerm : searchTerm.toLocaleLowerCase();
-    const matches: MarkdownMatch[] = [];
+    const matches: Array<MarkdownMatch> = [];
     let from = 0;
 
     while (from <= source.length - needle.length) {
         const index = source.indexOf(needle, from);
-        if (index === -1) break;
+        if (index === -1) {break;}
         matches.push({ from: index, to: index + needle.length });
         from = index + Math.max(needle.length, 1);
     }
@@ -84,7 +84,7 @@ function findMarkdownMatches(content: string, searchTerm: string, caseSensitive:
     return matches;
 }
 
-function buildMarkdownSearchDecorations(matches: MarkdownMatch[], resultIndex: number): DecorationSet {
+function buildMarkdownSearchDecorations(matches: Array<MarkdownMatch>, resultIndex: number): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
     for (const [index, match] of matches.entries()) {
         builder.add(
@@ -102,17 +102,17 @@ export function createMarkdownSearchController(
     let searchTerm = "";
     let replaceTerm = "";
     let caseSensitive = false;
-    let matches: MarkdownMatch[] = [];
+    let matches: Array<MarkdownMatch> = [];
     let resultIndex = 0;
     const listeners = new Set<() => void>();
 
     const notify = (): void => {
-        for (const listener of listeners) listener();
+        for (const listener of listeners) {listener();}
     };
 
     const updateView = (selectCurrent: boolean): void => {
         const current = matches[resultIndex];
-        const effects: StateEffectType<unknown>[] = [
+        const effects: Array<StateEffectType<unknown>> = [
             setMarkdownSearchDecorations.of(buildMarkdownSearchDecorations(matches, resultIndex)),
         ];
         if (selectCurrent && current) {
@@ -155,25 +155,25 @@ export function createMarkdownSearchController(
             refresh(true);
         },
         nextSearchResult: () => {
-            if (matches.length === 0) return;
+            if (matches.length === 0) {return;}
             resultIndex = (resultIndex + 1) % matches.length;
             updateView(true);
         },
         previousSearchResult: () => {
-            if (matches.length === 0) return;
+            if (matches.length === 0) {return;}
             resultIndex = (resultIndex - 1 + matches.length) % matches.length;
             updateView(true);
         },
         replace: (nextReplaceTerm) => {
             const current = matches[resultIndex];
-            if (!current) return;
+            if (!current) {return;}
             view.dispatch({
                 changes: { from: current.from, to: current.to, insert: nextReplaceTerm },
             });
             refresh(true);
         },
         replaceAll: (nextReplaceTerm) => {
-            if (!searchTerm || matches.length === 0) return;
+            if (!searchTerm || matches.length === 0) {return;}
             view.dispatch({
                 changes: matches.map((match) => ({ from: match.from, to: match.to, insert: nextReplaceTerm })),
             });
@@ -215,7 +215,7 @@ function getEditorTopInScrollContainer(view: EditorView, scrollContainer: HTMLEl
 
 function scrollMainContainerToCursor(view: EditorView): void {
     const scrollContainer = document.getElementById(MAIN_SCROLL_CONTAINER_ID);
-    if (!scrollContainer) return;
+    if (!scrollContainer) {return;}
 
     const cursorPosition = view.state.selection.main.head;
     const lineBlock = view.lineBlockAt(cursorPosition);
@@ -235,17 +235,17 @@ function scrollMainContainerToCursor(view: EditorView): void {
     }
 }
 
-function createKeymapExtensions(vimMode: boolean): Extension[] {
-    if (!vimMode) return [keymap.of(vscodeKeymap)];
+function createKeymapExtensions(vimMode: boolean): Array<Extension> {
+    if (!vimMode) {return [keymap.of(vscodeKeymap)];}
 
     const vimModifierKeymap = EditorView.domEventHandlers({
         keydown: (event, view) => {
-            if (event.key.toLowerCase() !== "w" || !event.ctrlKey || event.altKey || event.shiftKey) return false;
+            if (event.key.toLowerCase() !== "w" || !event.ctrlKey || event.altKey || event.shiftKey) {return false;}
 
             event.preventDefault();
             event.stopPropagation();
             const cm = getCM(view);
-            if (cm) Vim.handleKey(cm, "<C-w>", "user");
+            if (cm) {Vim.handleKey(cm, "<C-w>", "user");}
             return true;
         },
     });
@@ -372,12 +372,12 @@ export function RawMarkdownEditor({
     const [writingAssistantAdapter, setWritingAssistantAdapter] = useState<WritingEditorAdapter | null>(null);
     const writingAssistantSelectionContext = useMemo(() => {
         const view = writingAssistantAdapter ? viewRef.current : null;
-        if (!view) return null;
+        if (!view) {return null;}
         return {
             target: view.dom,
             readSelection: () => {
                 const { from, to } = view.state.selection.main;
-                if (from < to) return { from, to };
+                if (from < to) {return { from, to };}
 
                 const selection = view.dom.ownerDocument.getSelection();
                 if (
@@ -393,7 +393,7 @@ export function RawMarkdownEditor({
                         const head = view.posAtDOM(selection.focusNode, selection.focusOffset);
                         const from = Math.min(anchor, head);
                         const to = Math.max(anchor, head);
-                        if (from < to) return { from, to };
+                        if (from < to) {return { from, to };}
                     } catch {
                         return null;
                     }
@@ -405,7 +405,7 @@ export function RawMarkdownEditor({
                 try {
                     const lineStart = view.state.doc.lineAt(currentSelection.from).from;
                     const start = view.coordsAtPos(lineStart);
-                    if (!start) return null;
+                    if (!start) {return null;}
                     const end = view.coordsAtPos(currentSelection.to) ?? start;
                     return { left: start.left, top: start.top, bottom: end.bottom };
                 } catch {
@@ -428,12 +428,12 @@ export function RawMarkdownEditor({
     }, [value]);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
 
         let cursorScrollFrame: number | null = null;
         let searchController: (EditorSearchHandle & { dispose: () => void; refreshDocument: () => void }) | null = null;
         const scheduleCursorScroll = (editorView: EditorView): void => {
-            if (cursorScrollFrame !== null) return;
+            if (cursorScrollFrame !== null) {return;}
             cursorScrollFrame = requestAnimationFrame(() => {
                 cursorScrollFrame = null;
                 scrollMainContainerToCursor(editorView);
@@ -488,7 +488,7 @@ export function RawMarkdownEditor({
                             scheduleCursorScroll(update.view);
                         }
 
-                        if (!update.docChanged) return;
+                        if (!update.docChanged) {return;}
                         searchController?.refreshDocument();
                         if (isSyncingExternalValueRef.current) {
                             isSyncingExternalValueRef.current = false;
@@ -508,8 +508,8 @@ export function RawMarkdownEditor({
             getContent: () => view.state.doc.toString(),
             isEditable: () => !view.state.readOnly,
             apply: (request) => {
-                if (view.state.readOnly) return "unavailable";
-                if (repairedMarkdown(view.state.doc.toString(), request) === null) return "conflict";
+                if (view.state.readOnly) {return "unavailable";}
+                if (repairedMarkdown(view.state.doc.toString(), request) === null) {return "conflict";}
                 view.dispatch({
                     changes: { from: request.from, to: request.to, insert: request.replacement },
                     annotations: [isolateHistory.of("full"), Transaction.userEvent.of("input.repair")],
@@ -551,7 +551,7 @@ export function RawMarkdownEditor({
         activateRef.current = activation.activate;
         view.dom.addEventListener("focus", activation.activate, true);
         if (initialActiveRef.current || (!editorActionsGlobalRef.current && !editorSearchGlobalRef.current))
-            activation.activate();
+            {activation.activate();}
         if (!initialReadonly && initialActiveRef.current) {
             requestAnimationFrame(() => view.focus());
         }
@@ -582,7 +582,7 @@ export function RawMarkdownEditor({
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view || writingAssistantEnabledRef.current === writingAssistantEnabled) return;
+        if (!view || writingAssistantEnabledRef.current === writingAssistantEnabled) {return;}
 
         writingAssistantAdapterRef.current?.dispose();
         writingAssistantAdapterRef.current = null;
@@ -609,12 +609,12 @@ export function RawMarkdownEditor({
         }
     }, [readonly, writingAssistantEnabled, writingAssistantIntegration]);
     useEffect(() => {
-        if (active) activateRef.current();
+        if (active) {activateRef.current();}
     }, [active]);
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         const isDark = theme !== "light";
         view.dispatch({
             effects: [
@@ -635,19 +635,19 @@ export function RawMarkdownEditor({
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view || vimConfigurationLoading) return;
+        if (!view || vimConfigurationLoading) {return;}
         applyCodeMirrorVimConfiguration(vimConfiguration);
         view.dispatch({ effects: keymapCompartmentRef.current.reconfigure(createKeymapExtensions(vimMode)) });
         const cm = getCM(view);
         if (vimMode && cm && vimConfiguration.options.initialMode === "insert" && !cm.state.vim?.insertMode)
-            Vim.handleKey(cm, "i", "api");
+            {Vim.handleKey(cm, "i", "api");}
     }, [vimMode, vimConfiguration, vimConfigurationLoading]);
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         const currentValue = view.state.doc.toString();
-        if (currentValue === value) return;
+        if (currentValue === value) {return;}
         isSyncingExternalValueRef.current = true;
         valueRef.current = value;
         view.dispatch({

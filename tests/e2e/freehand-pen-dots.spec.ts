@@ -13,17 +13,17 @@ test.describe("production pen dots", { tag: ["@production", "@production-only"] 
             { style: "pencil", label: "Pencil" },
         ].entries()) {
             const trigger = page.getByRole("button", { name: "Pen", exact: true });
-            if ((await trigger.getAttribute("aria-pressed")) !== "true") await trigger.click();
+            if ((await trigger.getAttribute("aria-pressed")) !== "true") {await trigger.click();}
             await trigger.click();
             await page.getByRole("button", { name: pen.label, exact: true }).click();
             await page.getByRole("button", { name: "Close options", exact: true }).click();
             const bounds = await canvas.boundingBox();
-            if (!bounds) throw new Error("Canvas is not visible");
+            if (!bounds) {throw new Error("Canvas is not visible");}
             await page.mouse.click(bounds.x + 100 + index * 30, bounds.y + 180);
             await expect(page.locator(".wm-save-state output")).toHaveText("Saved");
             const dot = canvas.locator(`[data-pen-style="${pen.style}"]`).last();
             const dimensions = await dot.evaluate((element) => {
-                if (!(element instanceof SVGGraphicsElement)) throw new Error("Missing SVG ink");
+                if (!(element instanceof SVGGraphicsElement)) {throw new Error("Missing SVG ink");}
                 const box = element.getBBox();
                 return { width: box.width, height: box.height };
             });

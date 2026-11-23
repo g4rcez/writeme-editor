@@ -34,7 +34,7 @@ export function MobileFileActions(): JSX.Element {
                 onChange={async (event) => {
                     const file = event.currentTarget.files?.[0];
                     event.currentTarget.value = "";
-                    if (!file) return;
+                    if (!file) {return;}
                     setBusy(true);
                     try {
                         const content = await file.text();
@@ -72,7 +72,7 @@ export function MobileFileActions(): JSX.Element {
                     disabled={busy}
                     onClick={async () => {
                         const note = activeNote;
-                        if (!note) return;
+                        if (!note) {return;}
                         setBusy(true);
                         try {
                             if (note.noteType === NoteType.pdf) {

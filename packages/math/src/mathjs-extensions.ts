@@ -53,7 +53,7 @@ export function getMathInstance(emCss: number, ratesData: ExchangeRateData | nul
     if (cached === null || cachedTs !== ts) {
         cached = createMathInstance({ emCss });
         cachedTs = ts;
-        if (ratesData) registerCurrencyUnits(cached, ratesData);
+        if (ratesData) {registerCurrencyUnits(cached, ratesData);}
         return cached;
     }
     reconfigureEm(cached, emCss);

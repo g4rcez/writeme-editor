@@ -10,7 +10,7 @@ describe("createWorkspaceMentionItems", () => {
             ],
             [
                 { name: "roadmap.md", path: "/workspace/docs/roadmap.md", relativePath: "docs/roadmap.md" },
-                { name: "diagram.png", path: "/workspace/assets/diagram.png", relativePath: "assets\\diagram.png" },
+                { name: "diagram.png", path: "/workspace/assets/diagram.png", relativePath: String.raw`assets\diagram.png` },
             ],
             "/workspace",
         );

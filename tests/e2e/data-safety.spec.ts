@@ -54,7 +54,7 @@ const seedDatabase = async (
                     database.createObjectStore("projects", { keyPath: "id" });
                 }
                 if (version >= 18) {
-                    const stores: [string, string][] = [
+                    const stores: Array<[string, string]> = [
                         ["hashtags", "id"],
                         ["settings", "id"],
                         ["scripts", "id"],
@@ -116,8 +116,8 @@ test.describe("browser data safety", () => {
 
         const records = await page.evaluate(() => {
             const { promise, resolve, reject } = Promise.withResolvers<{
-                source: { id: string; title: string; notes: string[] } | undefined;
-                migrated: { id: string; title: string; notes: string[]; folderPath: string } | undefined;
+                source: { id: string; title: string; notes: Array<string> } | undefined;
+                migrated: { id: string; title: string; notes: Array<string>; folderPath: string } | undefined;
             }>();
             const request = indexedDB.open("writeme");
             request.onsuccess = () => {
@@ -128,7 +128,7 @@ test.describe("browser data safety", () => {
                 let remaining = 2;
                 const finish = () => {
                     remaining -= 1;
-                    if (remaining !== 0) return;
+                    if (remaining !== 0) {return;}
                     resolve({ source: sourceRequest.result, migrated: migratedRequest.result });
                     database.close();
                 };
@@ -167,7 +167,7 @@ test.describe("browser data safety", () => {
                 let remaining = 2;
                 const finish = () => {
                     remaining -= 1;
-                    if (remaining !== 0) return;
+                    if (remaining !== 0) {return;}
                     resolve({ source: sourceRequest.result, migrated: migratedRequest.result });
                     database.close();
                 };
@@ -210,7 +210,7 @@ test.describe("browser data safety", () => {
                 let remaining = 3;
                 const finish = () => {
                     remaining -= 1;
-                    if (remaining !== 0) return;
+                    if (remaining !== 0) {return;}
                     resolve({
                         template: templatesRequest.result,
                         migratedTemplate: migratedNoteRequest.result,
@@ -256,7 +256,7 @@ test.describe("browser data safety", () => {
                 let remaining = 2;
                 const finish = () => {
                     remaining -= 1;
-                    if (remaining !== 0) return;
+                    if (remaining !== 0) {return;}
                     resolve({ version: database.version, note: noteRequest.result, template: templateRequest.result });
                     database.close();
                 };
@@ -291,7 +291,7 @@ test.describe("browser data safety", () => {
                 let remaining = 2;
                 const finish = () => {
                     remaining -= 1;
-                    if (remaining !== 0) return;
+                    if (remaining !== 0) {return;}
                     resolve({ base: baseRequest.result, view: viewRequest.result });
                     database.close();
                 };

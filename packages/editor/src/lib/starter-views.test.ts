@@ -34,7 +34,7 @@ describe("starter Views", () => {
         expect(recent[19]?.["notes.id"]).toBe("note-5");
         const parsed = parse(starters[0]!.query);
         const group = astToFilterGroup(parsed.where);
-        if (!group || !parsed.orderBy) throw new Error("Expected simple starter query");
+        if (!group || !parsed.orderBy) {throw new Error("Expected simple starter query");}
         const edited = filterGroupToQueryString(group, {
             orderBy: { field: parsed.orderBy.column.path.join("."), dir: parsed.orderBy.direction },
             limit: parsed.limit,

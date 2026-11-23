@@ -9,7 +9,7 @@ export type SystemVariable = {
     value: (content: string, dict: Record<string, string>) => string;
 };
 
-export const SYSTEM_VARIABLES: SystemVariable[] = [
+export const SYSTEM_VARIABLES: Array<SystemVariable> = [
     {
         name: "DATE",
         description: "Current date in YYYY-MM-DD format.",
@@ -62,7 +62,7 @@ export const SYSTEM_VARIABLES: SystemVariable[] = [
 /**
  * Extracts all {{VARIABLE}} placeholders from content
  */
-const extractVariables = (content: string): string[] => {
+const extractVariables = (content: string): Array<string> => {
     const regex = /\{\{([^{}]+)\}\}/g;
     const matches = new Set<string>();
     let match;
@@ -75,7 +75,7 @@ const extractVariables = (content: string): string[] => {
 /**
  * Filters out system variables and script variables to get only user-defined ones
  */
-export const getUserVariables = (content: string, scriptNames: string[] = []): string[] => {
+export const getUserVariables = (content: string, scriptNames: Array<string> = []): Array<string> => {
     const allVars = extractVariables(content);
     return allVars.filter(
         (v) => !SYSTEM_VARIABLES.some((sv) => sv.name === v.toUpperCase()) && !scriptNames.includes(v),
@@ -92,7 +92,7 @@ const executeScript = (script: Script, context: any): string => {
     }
 };
 
-const sanitize = (s: string) => s.replace(/\{\{/g, "").replace(/\}\}/g, "");
+const sanitize = (s: string) => s.replaceAll('{{', "").replaceAll('}}', "");
 
 const compareScriptName = (name: string, script: Script) => sanitize(name) === sanitize(script.name);
 
@@ -102,9 +102,9 @@ const compareScriptName = (name: string, script: Script) => sanitize(name) === s
 export const substituteVariables = (
     content: string,
     userValues: Record<string, string> = {},
-    scripts: Script[] = [],
+    scripts: Array<Script> = [],
 ): string => {
-    return content.replace(/\{\{([^{}]+)\}\}/g, (_, variableName) => {
+    return content.replaceAll(/\{\{([^{}]+)\}\}/g, (_, variableName) => {
         const name = variableName.trim();
         const upperName = name.toUpperCase();
         if (name in userValues) {
@@ -119,7 +119,7 @@ export const substituteVariables = (
         }
         const script = scripts.find((script) => compareScriptName(name, script));
         if (script) {
-            if (!FEATURES.templateScripts) return `{{${name}}}`;
+            if (!FEATURES.templateScripts) {return `{{${name}}}`;}
             return executeScript(script, { userValues, content });
         }
         return "";

@@ -65,8 +65,8 @@ function renderTabsBar({
     initialRoute = "/",
     dispatch = createDispatch(),
 }: {
-    tabs: Tab[];
-    terminalSessions: TerminalSession[];
+    tabs: Array<Tab>;
+    terminalSessions: Array<TerminalSession>;
     activeTabId?: string | null;
     initialRoute?: string;
     dispatch?: ReturnType<typeof createDispatch>;

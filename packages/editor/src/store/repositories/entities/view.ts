@@ -1,4 +1,4 @@
-import { type EntityBase, type Repository } from "../../repository";
+import type { EntityBase, Repository } from "../../repository";
 
 export type ViewColumn = {
     field: string;
@@ -15,7 +15,7 @@ export class View implements EntityBase {
         public readonly id: string,
         public title: string,
         public query: string,
-        public columns: ViewColumn[],
+        public columns: Array<ViewColumn>,
         public viewType: ViewDisplayType,
         public sortField: string | null,
         public sortDirection: "ASC" | "DESC",

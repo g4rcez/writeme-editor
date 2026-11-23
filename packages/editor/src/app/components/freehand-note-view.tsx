@@ -29,8 +29,8 @@ export function FreehandNoteView({
     const [state] = useGlobalStore();
     const workspaceKey = getWorkspaceKey(state.directory);
     const linkableNotes = state.notes.filter((item) => {
-        if (item.id === note.id || item.deletedAt) return false;
-        if (item.filePath) return state.directory !== null && isPathWithinImportRoot(state.directory, item.filePath);
+        if (item.id === note.id || item.deletedAt) {return false;}
+        if (item.filePath) {return state.directory !== null && isPathWithinImportRoot(state.directory, item.filePath);}
         return item.project === workspaceKey || (!state.directory && ["", "default"].includes(item.project));
     });
     useEffect(() => {
@@ -60,11 +60,11 @@ export function FreehandNoteView({
     const blocker = useBlocker(status !== "Saved");
 
     useEffect(() => {
-        if (status === "Saved" && blocker.state === "blocked") blocker.proceed();
+        if (status === "Saved" && blocker.state === "blocked") {blocker.proceed();}
     }, [status, blocker]);
 
     useEffect(() => {
-        if (status === "Saved") return;
+        if (status === "Saved") {return;}
         const beforeUnload = (event: BeforeUnloadEvent): void => {
             event.preventDefault();
         };
@@ -79,23 +79,23 @@ export function FreehandNoteView({
         pending.current = pending.current.then(async () => {
             try {
                 const existing = await repositories.notes.getOne(note.id);
-                if (!existing || existing.content !== persisted.current.content) throw new NotebookConflict();
+                if (!existing || existing.content !== persisted.current.content) {throw new NotebookConflict();}
                 const content = replaceFreehandNoteContent(existing.content, data);
                 const updated = await repositories.notes.updateContentIfUnchanged(note.id, existing, content);
-                if (!updated) throw new NotebookConflict();
+                if (!updated) {throw new NotebookConflict();}
                 persisted.current = updated;
                 const state = globalState();
                 globalDispatch.notes(state.notes.map((item) => (item.id === note.id ? updated : item)));
-                if (state.note?.id === note.id) globalDispatch.setNote(updated);
+                if (state.note?.id === note.id) {globalDispatch.setNote(updated);}
                 if (mounted.current && revision.current === currentRevision) {
                     setStatus("Saved");
                     setNotice(null);
                 }
-            } catch (reason) {
+            } catch (error) {
                 if (mounted.current && revision.current === currentRevision) {
                     setStatus("Could not save");
                     setNotice(
-                        reason instanceof NotebookConflict
+                        error instanceof NotebookConflict
                             ? "This notebook changed in another editor. Your local changes are kept here. Download a copy before reopening the saved version."
                             : "Could not save this notebook. Your local changes are kept here. Retry or download a copy.",
                     );
@@ -105,7 +105,7 @@ export function FreehandNoteView({
     }
 
     function downloadLocalCopy(): void {
-        if (!latest.current) return;
+        if (!latest.current) {return;}
         const content = replaceFreehandNoteContent(persisted.current.content, latest.current);
         void exportFile(
             `${note.title || "Notebook"}-local-copy.md`,
@@ -115,23 +115,23 @@ export function FreehandNoteView({
         );
     }
     function retrySave(): void {
-        if (latest.current) save(latest.current);
+        if (latest.current) {save(latest.current);}
     }
 
     function resetBlockedNavigation(): void {
-        if (blocker.state === "blocked") blocker.reset();
+        if (blocker.state === "blocked") {blocker.reset();}
     }
 
     function leaveWithoutSaving(): void {
-        if (blocker.state === "blocked") blocker.proceed();
+        if (blocker.state === "blocked") {blocker.proceed();}
     }
 
     if (!parsed.data)
-        return (
+        {return (
             <div className="p-6 text-foreground" role="alert">
                 {parsed.error}
             </div>
-        );
+        );}
     return (
         <div className="wm-notebook-view">
             <FreehandCanvas

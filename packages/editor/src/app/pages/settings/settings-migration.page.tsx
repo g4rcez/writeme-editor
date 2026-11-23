@@ -32,10 +32,10 @@ export default function SettingsMigrationPage() {
                                     message: `Migrated ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                     type: "success",
                                 });
-                            } catch (err) {
+                            } catch (error) {
                                 uiDispatch.setAlert({
                                     open: true,
-                                    message: err instanceof Error ? err.message : "Migration failed.",
+                                    message: error instanceof Error ? error.message : "Migration failed.",
                                     type: "error",
                                 });
                             } finally {
@@ -56,7 +56,7 @@ export default function SettingsMigrationPage() {
                         className="hidden"
                         onChange={async (event) => {
                             const file = event.target.files?.[0];
-                            if (!file) return;
+                            if (!file) {return;}
                             event.target.value = "";
                             try {
                                 const counts = await importFromFile(file);
@@ -65,10 +65,10 @@ export default function SettingsMigrationPage() {
                                     message: `Imported ${counts.notes} notes, ${counts.tabs} tabs, ${counts.settings} settings, ${counts.hashtags} hashtags, ${counts.scripts} scripts, and ${counts.noteHistory} history snapshots.`,
                                     type: "success",
                                 });
-                            } catch (err) {
+                            } catch (error) {
                                 uiDispatch.setAlert({
                                     open: true,
-                                    message: err instanceof Error ? err.message : "Import failed.",
+                                    message: error instanceof Error ? error.message : "Import failed.",
                                     type: "error",
                                 });
                             }

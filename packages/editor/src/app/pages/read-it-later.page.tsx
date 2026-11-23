@@ -31,16 +31,16 @@ import { useNoteList } from "../hooks/use-note-list";
 type LibraryTab = ReadItLaterStatus;
 type ReadItLaterFeed = AppSettings["readItLaterFeeds"][number];
 
-const tabs: { id: LibraryTab; label: string }[] = [
+const tabs: Array<{ id: LibraryTab; label: string }> = [
     { id: "inbox", label: "Inbox" },
     { id: "later", label: "Later" },
     { id: "archive", label: "Archive" },
 ];
 
 function htmlToPlainText(html: string): string {
-    if (!html) return "";
+    if (!html) {return "";}
     const safeHtml = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
-    return new DOMParser().parseFromString(safeHtml, "text/html").body.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    return new DOMParser().parseFromString(safeHtml, "text/html").body.textContent?.replaceAll(/\s+/g, " ").trim() ?? "";
 }
 
 async function saveFeedEntries(feed: ReadItLaterFeed, parsed: ParsedReadItLaterFeed, theme: Parameters<typeof readItLaterHtmlToMarkdown>[1]): Promise<number> {
@@ -53,7 +53,7 @@ async function saveFeedEntries(feed: ReadItLaterFeed, parsed: ParsedReadItLaterF
     let importedCount = 0;
 
     for (const item of parsed.items) {
-        if (savedItemIds.has(item.id)) continue;
+        if (savedItemIds.has(item.id)) {continue;}
 
         const html = item.content || item.description;
         const content = ensureReadItLaterFrontmatter(readItLaterHtmlToMarkdown(html, theme));
@@ -85,7 +85,7 @@ export default function ReadItLaterPage() {
     const [state] = useGlobalStore();
     const { loading, notes, search, setSearch, filteredNotes, handleDelete } = useNoteList();
     const [activeTab, setActiveTab] = useState<LibraryTab>("inbox");
-    const [feeds, setFeeds] = useState<ReadItLaterFeed[]>(() => SettingsService.load().readItLaterFeeds);
+    const [feeds, setFeeds] = useState<Array<ReadItLaterFeed>>(() => SettingsService.load().readItLaterFeeds);
     const [feedUrl, setFeedUrl] = useState("");
     const [feedActionId, setFeedActionId] = useState<string | null>(null);
     const [importingPdf, setImportingPdf] = useState(false);
@@ -120,7 +120,7 @@ export default function ReadItLaterPage() {
         setError(null);
         setNotice(null);
         const content = updateReadItLaterFrontmatter(note.content, update);
-        if (content === note.content) return;
+        if (content === note.content) {return;}
 
         try {
             const saved = await repositories.notes.updateContentIfUnchanged(note.id, note, content);
@@ -152,8 +152,8 @@ export default function ReadItLaterPage() {
             await SettingsService.save({ readItLaterFeeds: nextFeeds });
             setFeeds(nextFeeds);
             setNotice(importedCount === 0 ? `“${feed.title}” is up to date.` : `Added ${importedCount} items from “${updatedFeed.title}”.`);
-        } catch (reason) {
-            const message = reason instanceof Error ? reason.message : "Could not refresh this feed.";
+        } catch (error_) {
+            const message = error_ instanceof Error ? error_.message : "Could not refresh this feed.";
             setError(`${message}${isElectron() ? "" : " In the browser app, the feed must allow cross-origin requests."}`);
         } finally {
             setFeedActionId(null);
@@ -197,8 +197,8 @@ export default function ReadItLaterPage() {
             await SettingsService.save({ readItLaterFeeds: refreshedFeeds });
             setFeeds(refreshedFeeds);
             setNotice(importedCount === 0 ? `Subscribed to “${feed.title}”.` : `Added ${importedCount} items from “${feed.title}”.`);
-        } catch (reason) {
-            const message = reason instanceof Error ? reason.message : "Could not add this feed.";
+        } catch (error_) {
+            const message = error_ instanceof Error ? error_.message : "Could not add this feed.";
             setError(message);
         } finally {
             setFeedActionId(null);
@@ -220,7 +220,7 @@ export default function ReadItLaterPage() {
     const importPdf = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.currentTarget.files?.[0];
         event.currentTarget.value = "";
-        if (!file) return;
+        if (!file) {return;}
 
         setError(null);
         setNotice(null);
@@ -230,8 +230,8 @@ export default function ReadItLaterPage() {
             await importPdfNote(file, title, { readItLater: true });
             globalDispatch.notes(await repositories.notes.getAll());
             setNotice(`Added “${title}” to your Inbox.`);
-        } catch (reason) {
-            const message = reason instanceof Error ? reason.message : "Could not import this PDF.";
+        } catch (error_) {
+            const message = error_ instanceof Error ? error_.message : "Could not import this PDF.";
             setError(message);
         } finally {
             setImportingPdf(false);

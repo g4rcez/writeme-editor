@@ -13,7 +13,7 @@ export class TabsRepository extends BaseRepository<Tab> implements ITabRepositor
         await db.tabs.clear();
     }
 
-    async updateOrder(tabs: Tab[]): Promise<void> {
+    async updateOrder(tabs: Array<Tab>): Promise<void> {
         await db.transaction("rw", db.tabs, async () => {
             for (const tab of tabs) {
                 await db.tabs.update(tab.id, { order: tab.order });

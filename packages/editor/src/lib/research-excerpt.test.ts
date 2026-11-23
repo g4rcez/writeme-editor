@@ -24,7 +24,7 @@ describe("research excerpts", () => {
         const excerpt = createResearchExcerpt("A *literal* [phrase]\nSecond line", pdf, "action-1");
         expect(excerpt).toContain("> A \\*literal\\* \\[phrase\\]\n> Second line");
         expect(excerpt).toContain(`Open source](/note/${source.id}?research=1&excerpt=action-1&page=2&pdf=asset-hash)`);
-        expect(excerpt).toContain("Book \\[draft\\], p. 2");
+        expect(excerpt).toContain(String.raw`Book \[draft\], p. 2`);
         expect(source.content).toBe("Original text");
     });
 

@@ -38,7 +38,7 @@ function TaskRow({ task }: { task: WorkspaceTask }): JSX.Element {
     );
 }
 
-function TaskList({ tasks }: { tasks: WorkspaceTask[] }): JSX.Element {
+function TaskList({ tasks }: { tasks: Array<WorkspaceTask> }): JSX.Element {
     if (tasks.length === 0) {
         return <p className="px-3 py-5 text-sm text-muted-foreground">No open tasks in this workspace.</p>;
     }
@@ -80,11 +80,11 @@ export default function WorkspaceAgendaPage(): JSX.Element {
             setLoadError("");
             try {
                 const notes = await repositories.notes.getAll();
-                if (requestVersion.current !== version || signal?.aborted) return;
+                if (requestVersion.current !== version || signal?.aborted) {return;}
                 dispatch.notes(notes);
                 setLoadState("ready");
             } catch (error) {
-                if (requestVersion.current !== version || signal?.aborted) return;
+                if (requestVersion.current !== version || signal?.aborted) {return;}
                 setLoadError(error instanceof Error ? error.message : "Workspace notes could not be loaded.");
                 setLoadState("error");
             }
@@ -95,7 +95,7 @@ export default function WorkspaceAgendaPage(): JSX.Element {
     useEffect(() => {
         const controller = new AbortController();
         queueMicrotask(() => {
-            if (!controller.signal.aborted) void loadNotes(controller.signal);
+            if (!controller.signal.aborted) {void loadNotes(controller.signal);}
         });
         return () => {
             controller.abort();
@@ -113,13 +113,13 @@ export default function WorkspaceAgendaPage(): JSX.Element {
         setActionError("");
         try {
             const note = await getOrCreateDailyQuickNote(date);
-            if (!isCurrent()) return;
+            if (!isCurrent()) {return;}
             navigate(`/note/${encodeURIComponent(note.id)}`);
         } catch (error) {
-            if (!isCurrent()) return;
+            if (!isCurrent()) {return;}
             setActionError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            if (isCurrent()) setOpeningDaily(false);
+            if (isCurrent()) {setOpeningDaily(false);}
         }
     };
 
@@ -131,9 +131,9 @@ export default function WorkspaceAgendaPage(): JSX.Element {
     };
 
     const selectDate = (value: string): void => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {return;}
         const selected = parseJournalDay(value);
-        if (!selected) return;
+        if (!selected) {return;}
         dailyRequest.current?.abort();
         setSearchParams({ date: formatJournalDate(selected) });
     };

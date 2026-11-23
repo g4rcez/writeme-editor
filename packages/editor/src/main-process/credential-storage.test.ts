@@ -16,7 +16,7 @@ const secureStorage = {
     encryptString: vi.fn<(value: string) => Buffer | Promise<Buffer>>((value) => Buffer.from(`encrypted:${value}`)),
     decryptString: vi.fn((value: Buffer) => {
         const stored = value.toString();
-        if (!stored.startsWith("encrypted:")) throw new Error("Not encrypted");
+        if (!stored.startsWith("encrypted:")) {throw new Error("Not encrypted");}
         return stored.replace(/^encrypted:/, "");
     }),
 };

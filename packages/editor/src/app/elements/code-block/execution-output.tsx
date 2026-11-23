@@ -13,7 +13,7 @@ type ExecutionProps = {
 
 export const ExecutionOutput = ({ output, stderr, html, onClose }: ExecutionProps) => {
     const converter = useMemo(() => new Convert({ newline: true, escapeXML: true, stream: false }), []);
-    if (!output && !stderr && !html) return null;
+    if (!output && !stderr && !html) {return null;}
     const htmlOutput = output ? converter.toHtml(sanitizeAnsi(output)) : "";
     const htmlStderr = stderr ? converter.toHtml(sanitizeAnsi(stderr)) : "";
     return (

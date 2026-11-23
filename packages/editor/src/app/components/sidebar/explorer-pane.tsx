@@ -56,7 +56,7 @@ export const ExplorerPane = () => {
         async (targetPath: string): Promise<boolean> => {
             try {
                 const writeResult = await window.electronAPI.fs.writeFile(targetPath, "");
-                if (!writeResult?.success) return false;
+                if (!writeResult?.success) {return false;}
                 const title = getWorkspaceDocumentTitle(targetPath.substring(targetPath.lastIndexOf("/") + 1));
                 const note = Note.new(title, "");
                 note.filePath = targetPath;
@@ -85,11 +85,11 @@ export const ExplorerPane = () => {
         async (sourceNode: TreeNode, _targetDirectoryPath: string, destinationPath: string): Promise<boolean> => {
             try {
                 const result = await window.electronAPI.fs.moveFile(sourceNode.path, destinationPath);
-                if (!result?.success) return false;
+                if (!result?.success) {return false;}
 
                 const allNotes = await repositories.notes.getAll();
                 const movedNotes = allNotes.filter((note) => {
-                    if (!note.filePath) return false;
+                    if (!note.filePath) {return false;}
                     return sourceNode.type === "directory"
                         ? note.filePath === sourceNode.path || note.filePath.startsWith(sourceNode.path + "/")
                         : note.filePath === sourceNode.path;
@@ -108,7 +108,7 @@ export const ExplorerPane = () => {
                 const activeNote = state.note;
                 if (activeNote?.filePath) {
                     const updatedActiveNote = updatedNotes.find((note) => note.id === activeNote.id);
-                    if (updatedActiveNote) globalDispatch.setNote(updatedActiveNote);
+                    if (updatedActiveNote) {globalDispatch.setNote(updatedActiveNote);}
                 }
                 return true;
             } catch (error) {
@@ -146,7 +146,7 @@ export const ExplorerPane = () => {
 
     const handleTreeRootContextMenu = useCallback(
         (e: React.MouseEvent) => {
-            if (!state.explorerRoot) return;
+            if (!state.explorerRoot) {return;}
             e.preventDefault();
             window.electronAPI.contextMenu.showExplorer(state.explorerRoot, true);
         },
@@ -168,7 +168,7 @@ export const ExplorerPane = () => {
             let note = allNotes.find((n) => n.filePath === node.path);
             if (!note) {
                 const result = await window.electronAPI.fs.readFile(node.path);
-                if (!result?.success || typeof result.content !== "string") return;
+                if (!result?.success || typeof result.content !== "string") {return;}
                 note = Note.new(getWorkspaceDocumentTitle(node.name), result.content);
                 note.setFilePath(node.path, result.lastModified ? new Date(result.lastModified) : new Date());
                 note.fileSize = typeof result.fileSize === "number" ? result.fileSize : result.content.length;
@@ -201,7 +201,7 @@ export const ExplorerPane = () => {
                     siblingMediaFiles.map(async (sibling) => {
                         const { mediaType, mimeType } = MEDIA_EXTENSION_MAP[sibling.extension! as EXTENSION_TYPE];
                         const result = await window.electronAPI.fs.readBinaryFile(sibling.path);
-                        if (!result || result.success === false || !result.data) return null;
+                        if (!result || result.success === false || !result.data) {return null;}
                         const blobUrl = URL.createObjectURL(
                             new Blob([result.data as any as ArrayBuffer], { type: mimeType }),
                         );
@@ -209,7 +209,7 @@ export const ExplorerPane = () => {
                     }),
                 )
             ).filter((s): s is NonNullable<typeof s> => s !== null);
-            if (sources.length === 0) return;
+            if (sources.length === 0) {return;}
             const clickedIndex = siblingMediaFiles.findIndex((entry) => entry.path === node.path);
             uiDispatch.openMediaPreview(sources, Math.max(0, clickedIndex));
         }

@@ -11,7 +11,7 @@ export default function SettingsQuickPage() {
     const [saving, setSaving] = useState(false);
 
     const onPatch = async (patch: Partial<AppSettings>) => {
-        if (!settings) return;
+        if (!settings) {return;}
 
         const next = { ...settings, ...patch };
         setSettings(next);
@@ -33,7 +33,7 @@ export default function SettingsQuickPage() {
         }
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings) {return <div className="p-8">Loading settings...</div>;}
 
     return (
         <SettingsPageShell

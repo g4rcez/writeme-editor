@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-first plan</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#5b6672; --line:#e2e6ea; --card:#f6f8fa; --accent:#0b57d0; --warn:#b45309; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1317; --fg:#e6e9ec; --muted:#9aa5b1; --line:#262d34; --card:#171c22; --accent:#8ab4f8; --warn:#f0b35a; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  h2 { font-size: 1.25rem; margin: 40px 0 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+  h3 { font-size: 1rem; margin: 0 0 6px; }
+  .meta, .muted { color: var(--muted); font-size: .9rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin: 12px 0; }
+  .tags span { display:inline-block; font-size:.75rem; border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-right:6px; color:var(--muted); }
+  .tags .dep { color: var(--warn); border-color: var(--warn); }
+  dl { margin: 8px 0 0; display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; }
+  dt { color: var(--muted); font-size: .85rem; }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  code, pre { font: .85rem/1.4 ui-monospace, Menlo, monospace; }
+  pre { background: var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; overflow-x:auto; }
+  ol.steps li { margin: 6px 0; }
+  @media (max-width: 520px) { dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agent-first plan</h1>
+  <p class="meta">Repo: g4rcez/writeme-editor · Date: 2026-11-23 · Linter: oxlint (minimal config) · Formatter: oxfmt · Package manager: npm (workspaces) · Read-only audit. No changes applied.</p>
+
+  <h2>Summary</h2>
+  <div class="card">
+    <p><strong>Trust level:</strong> MEDIUM. Types are strict and CI is strong (Playwright shards, merge gate, knip). But oxlint does not run on the main app code in CI, and <code>CLAUDE.md</code> points to a <code>src/</code> directory that no longer exists.</p>
+    <p class="muted">Stack: Electron + React 19 + Tiptap + Vite, npm workspaces (<code>packages/editor</code>, <code>cli</code>, <code>math</code>, <code>mcp</code>, <code>mobile</code>, <code>ios</code>, <code>android</code>, <code>landing</code>). Tests: Vitest + Playwright. Also: knip, oxfmt, <code>tsc</code> with <code>strict</code> + <code>noUncheckedIndexedAccess</code>.</p>
+    <ol>
+      <li>Run oxlint on <code>packages/*/src</code> in CI. Today CI lints only <code>tests</code>, <code>build</code> and scripts (<code>.github/workflows/test.yml:52</code>).</li>
+      <li>Fix <code>CLAUDE.md</code>. 27 lines reference <code>src/…</code>, which was moved to <code>packages/editor/src/</code>. Agents get wrong paths.</li>
+      <li>Add one <code>verify</code> script (lint + typecheck + test) and ban the type escapes and effect/timer patches that the scans found.</li>
+    </ol>
+  </div>
+
+  <h2>Layer 1 - Constraints in code</h2>
+
+  <div class="card">
+    <h3>1. Lint gate skips the app code</h3>
+    <div class="tags"><span>effort S</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>CI runs <code>oxlint --deny-warnings</code> only on <code>tests build playwright.*.config.ts scripts/…</code> (<code>.github/workflows/test.yml:52</code>). No other workflow runs <code>lint</code>. <code>npm run lint</code> exists but is not in CI. (observed)</dd>
+      <dt>Why it hurts</dt><dd>An agent can add code to <code>packages/editor/src</code> that fails lint and still get a green PR. Rules are advisory. (inferred)</dd>
+      <dt>Fix</dt><dd>Run lint on the whole repo in CI. First run it locally and see the count. The config sets <code>correctness</code> and <code>nursery</code> to <code>warn</code>; warnings are ignored by agents. Set them to <code>error</code> after the backlog is fixed, or run with <code>--deny-warnings</code> once clean.</dd>
+      <dt>Error message</dt><dd><code>Lint failed. Cause: the rule found a real defect. Fix: change the code, not the rule. Do not add a disable comment.</code> (CI step name or script echo; oxlint core rules cannot carry custom text.)</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>2. Minimal oxlint config. Adopt the nkzw baseline</h3>
+    <div class="tags"><span>effort M</span><span class="dep">needs dependency change</span></div>
+    <dl>
+      <dt>Evidence</dt><dd><code>oxlint.config.ts</code> has 7 plugins, 2 categories at <code>warn</code>, and 1 rule. No type-aware rules, no <code>no-console</code>, no <code>no-explicit-any</code>. (observed)</dd>
+      <dt>Why it hurts</dt><dd>Agents copy what exists. The scans show the patterns below already spread widely. (inferred)</dd>
+      <dt>Fix</dt><dd>Add <code>@nkzw/oxlint-config</code> (check the repo <code>index.js</code> for current rule names before adoption). Path: (1) extend preset, (2) set every newly failing rule to <code>"off"</code>, commit green, (3) enable one rule at a time and fix, one commit each. Also set <code>reportUnusedDisableDirectives: 'error'</code> (only 1 disable comment exists today). Type-aware rules need oxlint 1.94+ and <code>tsrs</code>. Confirm which rules stay off with the maintainer.</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>3. Type escapes: <code>any</code>, non-null <code>!</code>, <code>@ts-ignore</code></h3>
+    <div class="tags"><span>effort L (any) / S (ts-ignore)</span></div>
+    <dl>
+      <dt>Evidence</dt><dd><code>any</code>: 343 matches (245 in non-test code). Top: <code>main-process/database.ts</code> (30), <code>preload.ts</code> (21), <code>store/repositories/browser/notes.repository.ts</code> (15). Non-null assertions: 220 (47 non-test). <code>@ts-ignore</code> / <code>@ts-expect-error</code>: 5, e.g. <code>lib/migration-service.ts:97</code> (bare <code>@ts-ignore</code>), <code>app/lib/open-directory-as-workspace.ts:27</code>. (observed; regex scan, may include false positives)</dd>
+      <dt>Why it hurts</dt><dd>The IPC and DB boundary is where <code>any</code> concentrates. Agents will copy it into new IPC handlers. The type checker is then blind exactly where Electron bugs live. (inferred)</dd>
+      <dt>Fix</dt><dd>Enable <code>typescript/no-explicit-any</code>, <code>typescript/ban-ts-comment</code> (allow <code>@ts-expect-error</code> with description), <code>typescript/no-non-null-assertion</code>. Start with a ratchet: error for new files, <code>off</code> via <code>overrides</code> for the listed files. Type the IPC channel map in <code>preload.ts</code> first; most <code>any</code> follows from it.</dd>
+      <dt>Error message</dt><dd><code>`any` hides the real type. Cause: the value shape is not modeled. Fix: define the type (or use `unknown` and narrow). Do not cast or suppress.</code> (needs <code>no-restricted-syntax</code> to carry custom text.)</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>4. <code>useEffect</code> outside wrappers (opt-in)</h3>
+    <div class="tags"><span>effort L</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>282 calls. Top: <code>app/editor.tsx</code> (19), <code>app/root-layout.tsx</code> (13), <code>app/elements/raw-markdown-editor.tsx</code> (9). (observed)</dd>
+      <dt>Why it hurts</dt><dd>Effects need judgment on dependencies and cleanup. Agents add effects to sync state and create loops. (inferred)</dd>
+      <dt>Fix</dt><dd>Do not ban at once. Turn on <code>react/exhaustive-deps</code>, <code>react/rules-of-hooks</code>, and <code>react/set-state-in-effect</code> (if the installed oxlint has it) at <code>error</code>. Ban new <code>useEffect</code> only in new files via <code>overrides</code>, with an approved wrapper (for example <code>useMountEffect</code> / <code>useSubscription</code>). Team choice.</dd>
+      <dt>Error message</dt><dd><code>Direct useEffect is not allowed here. Cause: effects hide data flow. Fix: derive the value, use an event handler, or use the approved wrapper. Do not add an effect to sync state.</code></dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>5. Imperative timers (opt-in)</h3>
+    <div class="tags"><span>effort M</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>152 calls to <code>setTimeout</code>/<code>setInterval</code>/<code>requestAnimationFrame</code> (81 <code>setTimeout</code>/<code>rAF</code> in non-test code). Top: <code>app/commander.tsx</code> (11), <code>app/extensions/search-replace.ts</code> (4). A wrapper already exists: <code>lib/animation-frame.ts</code>. (observed)</dd>
+      <dt>Why it hurts</dt><dd>Timers are the usual patch for ordering bugs between Tiptap, React and Electron. Agents add <code>setTimeout(…, 0)</code> until the test passes. (inferred)</dd>
+      <dt>Fix</dt><dd><code>no-restricted-globals</code> for <code>setTimeout</code>, <code>requestAnimationFrame</code> in <code>app/</code>. Allow only <code>lib/animation-frame.ts</code> and a named debounce helper. Existing hits go in an override list that must shrink.</dd>
+      <dt>Error message</dt><dd><code>Timer used to delay work. Cause: ordering or state model is wrong. Fix: fix the ordering, or use lib/animation-frame or the debounce helper. Do not patch with a timer.</code></dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>6. Import boundaries: renderer vs main process, and <code>../</code> paths</h3>
+    <div class="tags"><span>effort M</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>Renderer code imports main-side folders in 3 files: <code>store/repositories/adapters/electron.adapter.ts</code>, <code>app/editor.tsx</code>, <code>app/commands/clipboard-listener.command.ts</code> (some may be type-only; not verified). 50 files use <code>from "../../…"</code> although <code>CLAUDE.md</code> says never to. 57 files touch <code>window.electronAPI</code>. Layout has <code>app/</code>, <code>main-process/</code>, <code>ipc/</code>, <code>server/</code> under one <code>src/</code>. (observed)</dd>
+      <dt>Why it hurts</dt><dd>A renderer file that imports Node code breaks the PWA or the sandbox at runtime, not at lint time. A prose rule about <code>@/</code> is already ignored 50 times. (inferred)</dd>
+      <dt>Fix</dt><dd>(a) <code>no-restricted-imports</code> with pattern <code>["../*"]</code> to enforce <code>@/</code>. (b) Boundary rule: <code>app/**</code>, <code>store/**</code>, <code>lib/**</code> may not import <code>main-process/**</code>, <code>ipc/**</code>, <code>server/**</code> (allow <code>import type</code>). Use oxlint <code>overrides</code> with <code>no-restricted-imports</code>, or add <code>dependency-cruiser</code> if you need a graph rule. (c) Optional: the 57 <code>window.electronAPI</code> call sites should go through one guarded module; ban direct <code>window.electronAPI</code> with <code>no-restricted-syntax</code>.</dd>
+      <dt>Error message</dt><dd><code>Renderer code imports main-process code. Cause: process boundary crossed. Fix: add a typed IPC channel in preload.ts and call it through the guarded electronAPI module. Do not import main-process modules here.</code></dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>7. Smaller baseline rules with evidence</h3>
+    <div class="tags"><span>effort S</span></div>
+    <dl>
+      <dt>Evidence</dt><dd><code>console.log/debug</code>: 87. <code>instanceof</code>: 206. <code>.only(</code>: 0. Suppressions: 1. (observed)</dd>
+      <dt>Fix</dt><dd><code>no-console</code> (allow <code>warn</code>, <code>error</code>) and <code>no-only-tests/no-only-tests</code> (cheap, zero cost today). Skip <code>@nkzw/no-instanceof</code> at first: 206 hits, and Electron/DOM code needs it. Floating promises: count unknown. Needs type-aware lint evidence (<code>no-floating-promises</code>).</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>8. Comments (optional, team choice)</h3>
+    <div class="tags"><span>effort S</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>916 comment lines in TS. 0 TODO/FIXME markers. <code>AGENTS.md</code> already says "Avoid comments unless absolutely necessary". (observed)</dd>
+      <dt>Fix</dt><dd>The prose rule has no enforcement. If the team wants it enforced, add <code>no-warning-comments</code> for <code>@nocommit</code> only. A full ban on comments is contested; do not adopt without a decision.</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>9. Strictness already good. Keep it.</h3>
+    <div class="tags"><span>effort S</span></div>
+    <dl>
+      <dt>Evidence</dt><dd><code>tsconfig.json</code>: <code>strict</code>, <code>noUncheckedIndexedAccess</code>, <code>noUnusedLocals</code>, <code>noImplicitOverride</code>, <code>verbatimModuleSyntax</code>. <code>knip</code> is configured. (observed)</dd>
+      <dt>Fix</dt><dd>One gap: <code>tsconfig.json</code> includes only <code>packages/editor/src</code>. Other packages typecheck through their own workspace scripts. Confirm each has <code>tsc</code> in CI (<code>mobile:typecheck</code> and <code>test:packages:types</code> exist). Add <code>knip</code> to CI if it is not run (no CI hit found).</dd>
+    </dl>
+  </div>
+
+  <h2>Layer 2 - Verification</h2>
+
+  <div class="card">
+    <h3>One fast <code>verify</code> command</h3>
+    <div class="tags"><span>effort S</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>Local scripts: <code>lint</code>, <code>typecheck</code>, <code>test</code>, <code>knip</code>, <code>format:check</code> are separate. CI runs <code>typecheck</code> and <code>test</code> in separate jobs, lint on a subset, and no <code>knip</code> or <code>format:check</code> was found in workflows. (observed)</dd>
+      <dt>Fix</dt><dd>Add one script. CI and agents call the same command. Run time not measured (skipped).</dd>
+    </dl>
+    <pre>"verify": "npm run lint && npm run format:check && npm run typecheck && npm test",
+"verify:full": "npm run verify && npm run knip"</pre>
+  </div>
+
+  <div class="card">
+    <h3>Runtime verification and test gaps</h3>
+    <div class="tags"><span>effort M</span></div>
+    <dl>
+      <dt>Evidence</dt><dd>Playwright suites by platform (<code>tests/e2e</code>, <code>tests/native</code>, <code>tests/mobile</code>), a merge-gate script (<code>scripts/pr-checks.mts</code>), and <code>AGENTS.md</code> already demand a Playwright test per feature. Vitest includes only <code>packages/editor/src/**</code> and <code>build/**</code>. (observed)</dd>
+      <dt>Fix</dt><dd>Strong already. Two gains: (1) add a feature map file (feature → route → Playwright spec → key source dir) so an agent finds the right spec without searching. (2) The IPC layer (<code>ipc/*.ipc.ts</code>, <code>main-process/</code>): check whether each channel has a unit or contract test. Not measured; the coverage report was not run.</dd>
+    </dl>
+  </div>
+
+  <h2>Layer 3 - Prose</h2>
+  <div class="card">
+    <h3>CLAUDE.md and AGENTS.md</h3>
+    <dl>
+      <dt>Evidence</dt><dd><code>CLAUDE.md</code> 141 lines, <code>AGENTS.md</code> 47 lines, plus <code>LESSONS.md</code> (109), <code>CONTEXT.md</code>, <code>DESIGN.md</code>, <code>PRODUCT.md</code>. <code>src/</code> is gone; 27 lines in <code>CLAUDE.md</code> use <code>src/…</code> paths and <code>AGENTS.md</code> says "Dexie repositories in <code>src/store/repositories/dexie/</code>" (the repo has <code>browser/</code>, not <code>dexie/</code>). The two files also give different advice: <code>AGENTS.md</code> bans <code>pnpm</code> for release but <code>.npmrc</code>/<code>pnpm-workspace.yaml</code> exist. (observed)</dd>
+      <dt>Why it hurts</dt><dd>Stale paths send agents to files that do not exist. Two overlapping files drift. (inferred)</dd>
+      <dt>Fix</dt><dd>(1) Make <code>AGENTS.md</code> the one source and let <code>CLAUDE.md</code> be a one-line pointer. (2) Fix all paths to <code>packages/editor/src/…</code>. (3) Keep: verify command, repo map, PR rules, Electron sandbox rules, editor pitfalls, the Dexie "add-only" rule. (4) Move to Layer 1: "always use <code>@/</code>" (finding 6), "never import lucide-react" (<code>no-restricted-imports</code>, zero cost), "no raw Tailwind palette colors" (a lint or grep check in <code>verify</code>), "type over interface", "avoid comments". (5) Fold the rule list in <code>LESSONS.md</code> the same way where it can be checked by code.</dd>
+    </dl>
+  </div>
+
+  <h2>Rollout order</h2>
+  <ol class="steps">
+    <li>Docs only: fix paths in <code>CLAUDE.md</code> / <code>AGENTS.md</code>, make one the pointer. No code risk.</li>
+    <li>Add the <code>verify</code> script. Use it in <code>AGENTS.md</code>. Repo stays green.</li>
+    <li>Run <code>npm run lint</code> locally (not run in this audit). Record the count. Fix or turn off failing rules so it is green, then add it to CI for <code>packages/*/src</code>.</li>
+    <li>Add zero-cost bans: <code>no-restricted-imports</code> for <code>lucide-react</code>, <code>no-only-tests</code>, <code>ban-ts-comment</code> (5 hits to fix).</li>
+    <li>Add the import-boundary rule and the <code>../</code> ban (fix 50 files, mostly autofixable by search/replace).</li>
+    <li>Adopt <code>@nkzw/oxlint-config</code> with failing rules set to <code>off</code>. Ask first: dependency change.</li>
+    <li>Enable rules one by one, one commit each: <code>no-explicit-any</code> (ratchet), <code>no-console</code>, <code>exhaustive-deps</code>, type-aware async rules.</li>
+    <li>Opt-in: restrict timers and new <code>useEffect</code> with the error messages above.</li>
+    <li>Add the feature map. Add <code>knip</code> to CI.</li>
+  </ol>
+
+  <h2>Skipped checks and risks</h2>
+  <ul>
+    <li>Not run (needs approval): <code>npm run lint</code>, <code>typecheck</code>, <code>test</code>, <code>knip</code>, builds. Lint backlog size and <code>verify</code> run time are unknown.</li>
+    <li>Counts come from <code>rg</code> text scans. <code>any</code> and non-null patterns may include false positives (for example strings, test code). Type-aware findings (floating promises) are not measured.</li>
+    <li>Boundary hits in finding 6 were listed by import path only. Some may be <code>import type</code> and allowed.</li>
+    <li>The oxlint preset version, rule names and <code>react/set-state-in-effect</code> availability must be checked against the installed oxlint before adoption.</li>
+    <li>Risk: banning <code>useEffect</code> or <code>instanceof</code> repo-wide would produce hundreds of failures. Use a ratchet (override list that only shrinks).</li>
+    <li>Risk: <code>.npmrc</code> has <code>engine-strict</code> and <code>save-exact</code>; a new dev dependency must be pinned exactly.</li>
+    <li>Scope: JS/TS only. Native code in <code>packages/ios</code> and <code>packages/android</code> was not audited.</li>
+  </ul>
+</main>
+</body>
+</html>

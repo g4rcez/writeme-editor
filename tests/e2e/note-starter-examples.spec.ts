@@ -17,7 +17,7 @@ async function settleForCapture(page: Page): Promise<void> {
 }
 
 async function openNoteDialog(page: Page): Promise<void> {
-    if (page.url() === "about:blank") await goHome(page);
+    if (page.url() === "about:blank") {await goHome(page);}
     await page.locator(".writeme-app-header-actions").getByRole("button", { name: "New note", exact: true }).click();
 }
 
@@ -57,7 +57,7 @@ test("offers a starter before the first saved template and persists its content"
     await expect(editor).toContainText("Define the problem");
     const video = page.video();
     await page.context().close();
-    if (video) await info.attach("Starter walkthrough", { path: await video.path(), contentType: "video/webm" });
+    if (video) {await info.attach("Starter walkthrough", { path: await video.path(), contentType: "video/webm" });}
 });
 
 test("resets cancelled choices and creates a blank note", async ({ cleanPage: page }) => {
@@ -156,7 +156,7 @@ for (const theme of ["light", "dark"] as const) {
         await page.keyboard.press("Enter");
         await expect(dialog.getByRole("region", { name: "Starter content preview" })).toContainText("```typescript");
         const bounds = await dialog.boundingBox();
-        if (!bounds) throw new Error("Starter dialog has no bounds");
+        if (!bounds) {throw new Error("Starter dialog has no bounds");}
         expect(bounds.x).toBeGreaterThanOrEqual(0);
         expect(bounds.x + bounds.width).toBeLessThanOrEqual(theme === "light" ? 376 : 769);
         await expect(dialog.getByRole("button", { name: "Create note", exact: true })).toBeInViewport();

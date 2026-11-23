@@ -42,7 +42,7 @@ export function isStoreProfile(profile: Pick<BuildProfile, "channel">): boolean 
 }
 
 export function resolveBuildProfile(name: string, disabled = ""): BuildProfile {
-    if (!Object.hasOwn(BUILD_PROFILES, name)) throw new Error(`Unknown Writeme build profile: ${name}`);
+    if (!Object.hasOwn(BUILD_PROFILES, name)) {throw new Error(`Unknown Writeme build profile: ${name}`);}
     const target = BUILD_PROFILES[name as BuildProfileName];
     const desktop = ["macos", "windows", "linux"].includes(target.os);
     const mobile = target.os === "ios" || target.os === "android";
@@ -64,10 +64,10 @@ export function resolveBuildProfile(name: string, disabled = ""): BuildProfile {
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean)) {
-        if (!FEATURE_NAMES.includes(feature as FeatureName)) throw new Error(`Unknown disabled feature: ${feature}`);
+        if (!FEATURE_NAMES.includes(feature as FeatureName)) {throw new Error(`Unknown disabled feature: ${feature}`);}
         features[feature as FeatureName] = false;
     }
-    if (!features.localProxy) features.ai = features.meetingNotes = false;
+    if (!features.localProxy) {features.ai = features.meetingNotes = false;}
     return Object.freeze({ ...target, features: Object.freeze(features) });
 }
 
@@ -89,19 +89,19 @@ export function desktopProfile(): BuildProfile {
               : "linux-direct";
     const profile = profileFromEnvironment(fallback);
     if (!["macos", "windows", "linux"].includes(profile.os))
-        throw new Error("Electron requires a desktop build profile.");
+        {throw new Error("Electron requires a desktop build profile.");}
     return profile;
 }
 
 export function mobileProfile(): BuildProfile {
     const profile = profileFromEnvironment("android-google-play");
     if (profile.os !== "ios" && profile.os !== "android")
-        throw new Error("Capacitor requires an iOS or Android build profile.");
+        {throw new Error("Capacitor requires an iOS or Android build profile.");}
     return profile;
 }
 
 export function webProfile(): BuildProfile {
     const profile = profileFromEnvironment("web-direct");
-    if (profile.os !== "web") throw new Error("The PWA build requires a web profile.");
+    if (profile.os !== "web") {throw new Error("The PWA build requires a web profile.");}
     return profile;
 }

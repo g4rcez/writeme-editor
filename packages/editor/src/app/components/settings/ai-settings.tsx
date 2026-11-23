@@ -115,7 +115,7 @@ export const AISettings = (): ReactElement => {
     const [saving, setSaving] = useState(false);
     const [testStatus, setTestStatus] = useState<TestStatus>("idle");
     const [testError, setTestError] = useState("");
-    const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [availableModels, setAvailableModels] = useState<Array<AIModel>>([]);
     const [ollamaModelsLoading, setOllamaModelsLoading] = useState(false);
     const [openAIModelsLoading, setOpenAIModelsLoading] = useState(false);
     const [openAIModelsError, setOpenAIModelsError] = useState("");
@@ -165,10 +165,10 @@ export const AISettings = (): ReactElement => {
         const requestId = ++credentialRequestId.current;
         setCredentialStatus("loading");
         const pendingClear = pendingCredentialClears.current.get(id);
-        if (pendingClear) await pendingClear.catch(() => undefined);
-        if (requestId !== credentialRequestId.current) return;
+        if (pendingClear) {await pendingClear.catch(() => undefined);}
+        if (requestId !== credentialRequestId.current) {return;}
         const creds = await repositories.ai.loadCredentials(id);
-        if (requestId !== credentialRequestId.current) return;
+        if (requestId !== credentialRequestId.current) {return;}
         if (!creds) {
             setCredentialStatus("disconnected");
             return;
@@ -193,7 +193,7 @@ export const AISettings = (): ReactElement => {
                     }),
                 ),
             ]);
-            if (disposed) return;
+            if (disposed) {return;}
 
             const defaultConfig = configs.find((config) => config.isDefault) ?? configs[0];
             const configuredAdapterIds = credentialEntries
@@ -239,7 +239,7 @@ export const AISettings = (): ReactElement => {
     }, []);
 
     const handleAdapterChange = async (id: string) => {
-        if (id === adapterId) return;
+        if (id === adapterId) {return;}
         storageRequestId.current += 1;
         setStorageConsent(null);
         setStoragePreparing(false);
@@ -272,9 +272,9 @@ export const AISettings = (): ReactElement => {
     };
 
     const loadOpenAIModels = useCallback(async (): Promise<void> => {
-        if (adapterId !== OPENAI_ADAPTER_ID) return;
+        if (adapterId !== OPENAI_ADAPTER_ID) {return;}
         const openAIAdapter = adapterRegistry.get(OPENAI_ADAPTER_ID);
-        if (!openAIAdapter) return;
+        if (!openAIAdapter) {return;}
 
         const requestId = ++openAIModelRequestId.current;
         setOpenAIModelsLoading(true);
@@ -282,7 +282,7 @@ export const AISettings = (): ReactElement => {
         try {
             const credentials = await authManager.getCredentials(OPENAI_ADAPTER_ID, openAIAdapter);
             const models = await openAIAdapter.listModels(credentials);
-            if (requestId !== openAIModelRequestId.current) return;
+            if (requestId !== openAIModelRequestId.current) {return;}
 
             setAvailableModels(models);
             if (models.length === 0) {
@@ -297,7 +297,7 @@ export const AISettings = (): ReactElement => {
                     : (models[0]?.id ?? ""),
             );
         } catch (error: unknown) {
-            if (requestId !== openAIModelRequestId.current) return;
+            if (requestId !== openAIModelRequestId.current) {return;}
             setAvailableModels([]);
             setOpenAIModelsError(error instanceof Error ? error.message : "Failed to load OpenAI models.");
         } finally {
@@ -308,7 +308,7 @@ export const AISettings = (): ReactElement => {
     }, [adapterId]);
 
     useEffect(() => {
-        if (adapterId !== OPENAI_ADAPTER_ID || credentialStatus !== "connected") return;
+        if (adapterId !== OPENAI_ADAPTER_ID || credentialStatus !== "connected") {return;}
 
         void loadOpenAIModels();
         return () => {
@@ -317,7 +317,7 @@ export const AISettings = (): ReactElement => {
     }, [adapterId, credentialStatus, loadOpenAIModels]);
 
     useEffect(() => {
-        if (!focusOpenAIModelAfterRetryRef.current || openAIModelsLoading) return;
+        if (!focusOpenAIModelAfterRetryRef.current || openAIModelsLoading) {return;}
         focusOpenAIModelAfterRetryRef.current = false;
         if (adapterId === OPENAI_ADAPTER_ID && !openAIModelsError && availableModels.length > 0) {
             openAIModelSelectRef.current?.focus();
@@ -340,7 +340,7 @@ export const AISettings = (): ReactElement => {
         try {
             const savedCreds = await repositories.ai.loadCredentials(OLLAMA_ADAPTER_ID);
             const models = await ollamaAdapter.listModels({
-                ...(savedCreds ?? {}),
+                ...savedCreds,
                 ...(!silent && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
                 baseUrl: baseUrl.trim(),
             });
@@ -366,11 +366,11 @@ export const AISettings = (): ReactElement => {
                 setTestError("Could not reach Ollama or no models are installed. Check the base URL and try again.");
             }
             return false;
-        } catch (err: unknown) {
-            if (requestId !== ollamaModelRequestId.current) return false;
+        } catch (error: unknown) {
+            if (requestId !== ollamaModelRequestId.current) {return false;}
             if (!silent) {
                 setTestStatus("error");
-                setTestError(err instanceof Error ? err.message : "Connection failed.");
+                setTestError(error instanceof Error ? error.message : "Connection failed.");
             }
             return false;
         } finally {
@@ -381,11 +381,11 @@ export const AISettings = (): ReactElement => {
     };
 
     useEffect(() => {
-        if (adapterId !== OLLAMA_ADAPTER_ID) return;
+        if (adapterId !== OLLAMA_ADAPTER_ID) {return;}
         ollamaModelRequestId.current += 1;
         setAvailableModels([]);
         setOllamaModelsLoading(false);
-        if (!baseUrl.trim()) return;
+        if (!baseUrl.trim()) {return;}
 
         const timeoutId = window.setTimeout(() => {
             void loadOllamaModels(true);
@@ -398,7 +398,7 @@ export const AISettings = (): ReactElement => {
     }, [adapterId, baseUrl]);
 
     const handleTestConnection = async () => {
-        if (!adapter) return;
+        if (!adapter) {return;}
         const requestId = ++testRequestId.current;
         const enteredApiKey = apiKey.trim();
         const isCurrentRequest = (): boolean => requestId === testRequestId.current;
@@ -408,14 +408,14 @@ export const AISettings = (): ReactElement => {
         try {
             if (adapterId === OLLAMA_ADAPTER_ID) {
                 const loaded = await loadOllamaModels(false);
-                if (!isCurrentRequest() || !loaded) return;
+                if (!isCurrentRequest() || !loaded) {return;}
                 if (enteredApiKey) {
                     setTestStatus("testing");
                     await authManager.saveCredentials(adapterId, {
                         apiKey: enteredApiKey,
                         baseUrl: baseUrl.trim(),
                     });
-                    if (!isCurrentRequest()) return;
+                    if (!isCurrentRequest()) {return;}
                     setApiKey("");
                     setTestStatus("success");
                 }
@@ -423,9 +423,9 @@ export const AISettings = (): ReactElement => {
             }
 
             const savedCreds = await repositories.ai.loadCredentials(adapterId);
-            if (!isCurrentRequest()) return;
+            if (!isCurrentRequest()) {return;}
             const creds = {
-                ...(savedCreds ?? {}),
+                ...savedCreds,
                 ...(enteredApiKey ? { apiKey: enteredApiKey } : {}),
             };
             if (!("apiKey" in creds) && !("accessToken" in creds)) {
@@ -434,27 +434,27 @@ export const AISettings = (): ReactElement => {
                 return;
             }
             const models = await adapter.listModels(creds);
-            if (!isCurrentRequest()) return;
+            if (!isCurrentRequest()) {return;}
             if (models.length > 0) {
                 setAvailableModels(models);
                 if (enteredApiKey) {
                     await authManager.saveCredentials(adapterId, {
                         apiKey: enteredApiKey,
                     });
-                    if (!isCurrentRequest()) return;
+                    if (!isCurrentRequest()) {return;}
                     setApiKey("");
                 }
-                if (!isCurrentRequest()) return;
+                if (!isCurrentRequest()) {return;}
                 setCredentialStatus("connected");
                 setTestStatus("success");
             } else {
                 setTestStatus("error");
                 setTestError("Could not reach the API. Check your credentials and try again.");
             }
-        } catch (err: unknown) {
-            if (!isCurrentRequest()) return;
+        } catch (error: unknown) {
+            if (!isCurrentRequest()) {return;}
             setTestStatus("error");
-            setTestError(err instanceof Error ? err.message : "Connection failed.");
+            setTestError(error instanceof Error ? error.message : "Connection failed.");
         }
     };
 
@@ -465,21 +465,21 @@ export const AISettings = (): ReactElement => {
         setAuthLoading(true);
         try {
             const result = await authManager.startOAuthFlow(authAdapterId);
-            if (requestId !== authRequestId.current) return;
+            if (requestId !== authRequestId.current) {return;}
             setOauthInstruction(result.message);
             setOauthDeviceCode(result.deviceCode);
             setOauthPending(true);
             setOauthCode("");
-        } catch (err: unknown) {
-            if (requestId !== authRequestId.current) return;
-            setAuthError(err instanceof Error ? err.message : "Sign-in could not start. Try again.");
+        } catch (error: unknown) {
+            if (requestId !== authRequestId.current) {return;}
+            setAuthError(error instanceof Error ? error.message : "Sign-in could not start. Try again.");
         } finally {
-            if (requestId === authRequestId.current) setAuthLoading(false);
+            if (requestId === authRequestId.current) {setAuthLoading(false);}
         }
     };
 
     const handleSubmitOAuthCode = async (): Promise<void> => {
-        if (authLoading || (adapterId !== OPENAI_ADAPTER_ID && !oauthCode.trim())) return;
+        if (authLoading || (adapterId !== OPENAI_ADAPTER_ID && !oauthCode.trim())) {return;}
         setCodeCopying(false);
         const requestId = ++authRequestId.current;
         const authAdapterId = adapterId;
@@ -487,7 +487,7 @@ export const AISettings = (): ReactElement => {
         setAuthLoading(true);
         try {
             await authManager.completeOAuthFlow(authAdapterId, oauthCode.trim());
-            if (requestId !== authRequestId.current) return;
+            if (requestId !== authRequestId.current) {return;}
             setOauthPending(false);
             setOauthCode("");
             if (authAdapterId === OPENAI_ADAPTER_ID) {
@@ -500,11 +500,11 @@ export const AISettings = (): ReactElement => {
                 message: `Connected to ${adapter?.name ?? authAdapterId}.`,
                 type: "success",
             });
-        } catch (err: unknown) {
-            if (requestId !== authRequestId.current) return;
-            setAuthError(err instanceof Error ? err.message : "Sign-in could not finish. Try again.");
+        } catch (error: unknown) {
+            if (requestId !== authRequestId.current) {return;}
+            setAuthError(error instanceof Error ? error.message : "Sign-in could not finish. Try again.");
         } finally {
-            if (requestId === authRequestId.current) setAuthLoading(false);
+            if (requestId === authRequestId.current) {setAuthLoading(false);}
         }
     };
 
@@ -521,7 +521,7 @@ export const AISettings = (): ReactElement => {
     };
 
     const requestConnection = (action: "oauth" | "api-key"): void => {
-        if (connectionBusy) return;
+        if (connectionBusy) {return;}
         setAuthError("");
         setTestStatus("idle");
         setTestError("");
@@ -530,9 +530,9 @@ export const AISettings = (): ReactElement => {
     };
 
     const requestTestConnection = (): void => {
-        if (connectionBusy) return;
-        if (apiKey.trim()) requestConnection("api-key");
-        else void handleTestConnection();
+        if (connectionBusy) {return;}
+        if (apiKey.trim()) {requestConnection("api-key");}
+        else {void handleTestConnection();}
     };
 
     const handleCancelStorage = (): void => {
@@ -544,19 +544,19 @@ export const AISettings = (): ReactElement => {
 
     const handleAllowStorage = async (): Promise<void> => {
         const action = storageConsent;
-        if (!action || storagePreparing) return;
+        if (!action || storagePreparing) {return;}
         const requestId = ++storageRequestId.current;
         setStoragePreparing(true);
         setStorageError("");
         try {
-            if (desktop) await window.electronAPI.ai.prepareCredentialStorage();
-            if (requestId !== storageRequestId.current) return;
+            if (desktop) {await window.electronAPI.ai.prepareCredentialStorage();}
+            if (requestId !== storageRequestId.current) {return;}
             setStorageConsent(null);
             setStoragePreparing(false);
-            if (action === "oauth") await handleConnectOAuth();
-            else await handleTestConnection();
+            if (action === "oauth") {await handleConnectOAuth();}
+            else {await handleTestConnection();}
         } catch (error: unknown) {
-            if (requestId !== storageRequestId.current) return;
+            if (requestId !== storageRequestId.current) {return;}
             const message = error instanceof Error ? error.message : "";
             if (
                 typeof window.electronAPI?.ai?.prepareCredentialStorage !== "function" ||
@@ -575,17 +575,17 @@ export const AISettings = (): ReactElement => {
                 );
             }
         } finally {
-            if (requestId === storageRequestId.current) setStoragePreparing(false);
+            if (requestId === storageRequestId.current) {setStoragePreparing(false);}
         }
     };
 
     const handleCopyCode = async (): Promise<void> => {
-        if (!oauthDeviceCode || codeCopying) return;
+        if (!oauthDeviceCode || codeCopying) {return;}
         const requestId = authRequestId.current;
         const userCode = oauthDeviceCode.userCode;
         setCodeCopying(true);
         const copied = await copyDeviceCode(userCode);
-        if (requestId !== authRequestId.current) return;
+        if (requestId !== authRequestId.current) {return;}
         setOauthDeviceCode((current) => (current ? { ...current, copied } : current));
         setCodeCopying(false);
     };
@@ -609,7 +609,7 @@ export const AISettings = (): ReactElement => {
         setOpenAIModelsLoading(false);
         setOllamaModelsLoading(false);
         await trackCredentialClear(disconnectedAdapterId);
-        if (requestId !== authRequestId.current) return;
+        if (requestId !== authRequestId.current) {return;}
         setCredentialStatus("disconnected");
         setTestStatus("idle");
         setAvailableModels([]);
@@ -659,10 +659,10 @@ export const AISettings = (): ReactElement => {
                 message: "AI configuration saved.",
                 type: "success",
             });
-        } catch (err: unknown) {
+        } catch (error: unknown) {
             uiDispatch.setAlert({
                 open: true,
-                message: err instanceof Error ? err.message : "Failed to save configuration.",
+                message: error instanceof Error ? error.message : "Failed to save configuration.",
                 type: "error",
             });
         } finally {
@@ -685,7 +685,7 @@ export const AISettings = (): ReactElement => {
             <Modal
                 open={storageConsent !== null}
                 onChange={(open) => {
-                    if (!open) handleCancelStorage();
+                    if (!open) {handleCancelStorage();}
                 }}
                 title={desktop ? "Allow secure credential storage?" : "Store credentials in this browser?"}
                 footer={
@@ -850,7 +850,7 @@ export const AISettings = (): ReactElement => {
                                         placeholder={DEFAULT_OLLAMA_BASE_URL}
                                         onChange={(event) => setBaseUrl(event.target.value)}
                                         onKeyDown={(event) => {
-                                            if (event.key === "Enter") requestTestConnection();
+                                            if (event.key === "Enter") {requestTestConnection();}
                                         }}
                                     />
                                     <p
@@ -882,7 +882,7 @@ export const AISettings = (): ReactElement => {
                                             autoComplete="off"
                                             onChange={(event) => setApiKey(event.target.value)}
                                             onKeyDown={(event) => {
-                                                if (event.key === "Enter") requestTestConnection();
+                                                if (event.key === "Enter") {requestTestConnection();}
                                             }}
                                             placeholder={meta?.keyHint ?? "Optional API key"}
                                         />
@@ -1067,7 +1067,7 @@ export const AISettings = (): ReactElement => {
                                                 placeholder={meta?.keyHint ?? "API key"}
                                                 onChange={(event) => setApiKey(event.target.value)}
                                                 onKeyDown={(event) => {
-                                                    if (event.key === "Enter" && apiKey.trim()) requestTestConnection();
+                                                    if (event.key === "Enter" && apiKey.trim()) {requestTestConnection();}
                                                 }}
                                             />
                                             <Button
@@ -1111,7 +1111,7 @@ export const AISettings = (): ReactElement => {
                                         }
                                         onChange={(event) => setApiKey(event.target.value)}
                                         onKeyDown={(event) => {
-                                            if (event.key === "Enter") requestTestConnection();
+                                            if (event.key === "Enter") {requestTestConnection();}
                                         }}
                                     />
                                     <Button

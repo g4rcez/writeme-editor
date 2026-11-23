@@ -50,7 +50,7 @@ export const YoutubeBlock = Node.create({
             {
                 tag: "div[data-youtube-video]",
                 getAttributes: (element: string | HTMLElement) => {
-                    if (typeof element === "string") return {};
+                    if (typeof element === "string") {return {};}
                     const url = element.getAttribute("data-url");
                     const info = identifyDomain(url || "");
                     return {

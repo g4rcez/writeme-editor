@@ -18,15 +18,15 @@ export function useVimConfiguration(): {
         let cancelled = false;
         void loadVimConfiguration(source)
             .then((next) => {
-                if (cancelled) return;
+                if (cancelled) {return;}
                 setResult({ source, configuration: next, error: "" });
             })
-            .catch((reason: unknown) => {
-                if (cancelled) return;
+            .catch((error: unknown) => {
+                if (cancelled) {return;}
                 setResult((current) => ({
                     source,
                     configuration: current.configuration,
-                    error: reason instanceof Error ? reason.message : String(reason),
+                    error: error instanceof Error ? error.message : String(error),
                 }));
             });
         return () => {

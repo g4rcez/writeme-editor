@@ -10,7 +10,7 @@ export function hasMarkdownFrontmatter(content: string): boolean {
 }
 
 export function addMarkdownFrontmatter(content: string): string {
-    if (hasMarkdownFrontmatter(content)) return content;
+    if (hasMarkdownFrontmatter(content)) {return content;}
     const separator = content.length > 0 ? "\n\n" : "";
     return `${EMPTY_MARKDOWN_FRONTMATTER}${separator}${content}`;
 }
@@ -23,11 +23,11 @@ export function addFrontmatterToCurrentEditor(): void {
     }
 
     const editor = editorGlobalRef.current;
-    if (editor) addFrontmatterToEditor(editor);
+    if (editor) {addFrontmatterToEditor(editor);}
 }
 
 export function addFrontmatterToEditor(editor: Editor): boolean {
-    if (editor.isDestroyed || !editor.isEditable || !editor.schema.nodes.frontmatter) return false;
+    if (editor.isDestroyed || !editor.isEditable || !editor.schema.nodes.frontmatter) {return false;}
 
     let hasFrontmatter = false;
     editor.state.doc.descendants((node) => {

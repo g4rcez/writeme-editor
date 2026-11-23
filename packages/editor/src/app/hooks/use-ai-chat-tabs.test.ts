@@ -33,7 +33,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("shared AI tab metadata", () => {
     it("shares the initial request and one invalidation request across consumers", async () => {
-        const pending = deferred<AIChat[]>();
+        const pending = deferred<Array<AIChat>>();
         mocks.getChats.mockReturnValueOnce(pending.promise);
         const tabs = [tab("chat")];
         const { result } = renderHook(() => ({ first: useAiChatTabs(null, tabs), second: useAiChatTabs(null, tabs) }));
@@ -60,8 +60,8 @@ describe("shared AI tab metadata", () => {
     });
 
     it("ignores results for an obsolete AI-tab set", async () => {
-        const first = deferred<AIChat[]>();
-        const second = deferred<AIChat[]>();
+        const first = deferred<Array<AIChat>>();
+        const second = deferred<Array<AIChat>>();
         mocks.getChats.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
         const { result, rerender } = renderHook(({ tabs }) => useAiChatTabs(null, tabs), {
             initialProps: { tabs: [tab("first")] },
@@ -76,8 +76,8 @@ describe("shared AI tab metadata", () => {
     });
 
     it("does not let an old refresh overwrite a newer response", async () => {
-        const first = deferred<AIChat[]>();
-        const second = deferred<AIChat[]>();
+        const first = deferred<Array<AIChat>>();
+        const second = deferred<Array<AIChat>>();
         mocks.getChats.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
         const { result } = renderHook(() => useAiChatTabs(null, [tab("chat")]));
         await waitFor(() => expect(mocks.getChats).toHaveBeenCalledTimes(1));
@@ -89,7 +89,7 @@ describe("shared AI tab metadata", () => {
     });
 
     it("keeps metadata scoped to the current workspace", async () => {
-        const second = deferred<AIChat[]>();
+        const second = deferred<Array<AIChat>>();
         mocks.getChats.mockResolvedValueOnce([chat("chat", "First workspace")]).mockReturnValueOnce(second.promise);
         const { result, rerender } = renderHook(({ directory }) => useAiChatTabs(directory, [tab("chat")]), {
             initialProps: { directory: "/first" },

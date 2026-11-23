@@ -8,11 +8,11 @@ export type NoteSnapshot = Readonly<{
 }>;
 
 export function appendNoteSnapshot(
-    snapshots: readonly NoteSnapshot[],
+    snapshots: ReadonlyArray<NoteSnapshot>,
     noteId: string,
     content: string,
     createdAt = new Date(),
-): NoteSnapshot[] {
+): Array<NoteSnapshot> {
     const ordered = [...snapshots].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     if (ordered[0]?.content === content) {
         return ordered;

@@ -19,8 +19,8 @@ type CredentialMigrationResult = { status: "imported" | "updated" | "identical" 
 
 async function isSecureStorageSuitable(secureStorage: SecureStorage): Promise<boolean> {
     try {
-        if (!(await secureStorage.isEncryptionAvailable())) return false;
-        if (process.platform !== "linux") return true;
+        if (!(await secureStorage.isEncryptionAvailable())) {return false;}
+        if (process.platform !== "linux") {return true;}
         const backend = secureStorage.getSelectedStorageBackend();
         return backend !== "basic_text" && backend !== "unknown";
     } catch {
@@ -29,8 +29,8 @@ async function isSecureStorageSuitable(secureStorage: SecureStorage): Promise<bo
 }
 
 async function revealSecret(secret: string | null, secureStorage: SecureStorage): Promise<RevealedSecret> {
-    if (!secret) return { value: null, protected: true };
-    if (!(await secureStorage.isEncryptionAvailable())) return { value: secret, protected: false };
+    if (!secret) {return { value: null, protected: true };}
+    if (!(await secureStorage.isEncryptionAvailable())) {return { value: secret, protected: false };}
 
     try {
         return {
@@ -51,7 +51,7 @@ async function inspectStoredCredentials(
     let unreadable = false;
     for (const key of CREDENTIAL_KEYS) {
         const stored = row[key];
-        if (typeof stored !== "string") continue;
+        if (typeof stored !== "string") {continue;}
         const revealed = await revealSecret(stored, secureStorage);
         value[key] = revealed.value;
         if (stored.trim() && !revealed.protected) {
@@ -66,7 +66,7 @@ export async function withStoredCredentials(
     row: Record<string, unknown> | null,
     secureStorage: SecureStorage,
 ): Promise<Record<string, unknown> | null> {
-    if (!row) return null;
+    if (!row) {return null;}
     const inspected = await inspectStoredCredentials(row, secureStorage);
     return inspected.protected ? inspected.value : null;
 }
@@ -119,8 +119,8 @@ export async function migrateCredentialRow(
     const existing = inspected?.value ?? null;
     const comparableKeys = [...CREDENTIAL_KEYS, "expiresAt", "baseUrl", "accountId"] as const;
     const sameSecrets = existing && comparableKeys.every((key) => (existing[key] ?? null) === (creds[key] ?? null));
-    if (sameSecrets && inspected?.protected) return { status: "identical" };
-    if (inspected?.unreadable && !sameSecrets) return { status: "skipped" };
+    if (sameSecrets && inspected?.protected) {return { status: "identical" };}
+    if (inspected?.unreadable && !sameSecrets) {return { status: "skipped" };}
 
     const sourceTime = Date.parse(String(creds.updatedAt ?? ""));
     const destinationTime = Date.parse(String(existing?.updatedAt ?? ""));

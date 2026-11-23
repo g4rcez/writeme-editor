@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { Note, NoteType } from "../../packages/editor/src/store/note";
 
 type DrawingElement = { type: string; width: number; height: number; isDeleted: boolean };
-type DrawingScene = { elements: DrawingElement[]; appState?: Record<string, unknown>; title?: string };
+type DrawingScene = { elements: Array<DrawingElement>; appState?: Record<string, unknown>; title?: string };
 
 async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene> {
     return page.evaluate(async (embedded) => {
@@ -18,7 +18,7 @@ async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene>
         });
         db.close();
         const json = notes[0]?.content.match(/```(?:json|excalidraw)\n([\s\S]*?)\n```/)?.[1];
-        if (!json) return { elements: [] };
+        if (!json) {return { elements: [] };}
         const data = JSON.parse(json);
         return embedded
             ? { elements: data, title: notes[0]?.title }
@@ -28,7 +28,7 @@ async function readDrawing(page: Page, embedded: boolean): Promise<DrawingScene>
 
 for (const embedded of [false, true]) {
     test(`${embedded ? "embedded" : "full-page"} Excalidraw remains responsive on mobile`, async ({ page }) => {
-        const errors: string[] = [];
+        const errors: Array<string> = [];
         page.on("pageerror", (error) => errors.push(error.message));
         await page.goto("/");
         const drawingViewport = { scrollX: -800, scrollY: 600, zoom: { value: 0.8 } };
@@ -36,8 +36,8 @@ for (const embedded of [false, true]) {
             ? "# Embedded drawing\n\n```excalidraw\n[]\n```\n"
             : `---\ntype: excalidraw\nview: excalidraw\nschemaVersion: 1\n---\n\n\`\`\`json\n${JSON.stringify({ elements: [], appState: drawingViewport, files: {} })}\n\`\`\`\n`;
         const mobile = await page.locator("html").evaluate((element) => element.classList.contains("platform-mobile"));
-        if (mobile) await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();
-        else await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
+        if (mobile) {await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toBeVisible();}
+        else {await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();}
         if (mobile) {
             await page.getByLabel("Import Markdown file", { exact: true }).setInputFiles({
                 name: "Drawing.md",
@@ -77,9 +77,9 @@ for (const embedded of [false, true]) {
             .tap();
         await expect(page.getByRole("radio", { name: "Rectangle", exact: true })).toBeChecked();
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Drawing canvas is missing.");
+        if (!bounds) {throw new Error("Drawing canvas is missing.");}
         const viewport = page.viewportSize();
-        if (!viewport) throw new Error("Mobile viewport is missing.");
+        if (!viewport) {throw new Error("Mobile viewport is missing.");}
         const drawingY = Math.min(bounds.y + bounds.height / 2, viewport.height - 220);
         expect(
             await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.className, {
@@ -104,7 +104,7 @@ for (const embedded of [false, true]) {
         await canvas.dispatchEvent("pointerup", { ...end, buttons: 0 });
         if (embedded) {
             await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeEnabled();
-            if (mobile) await page.evaluate(() => window.dispatchEvent(new Event("writeme:mobile-pause")));
+            if (mobile) {await page.evaluate(() => window.dispatchEvent(new Event("writeme:mobile-pause")));}
             await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved", {
                 timeout: 15_000,
             });
@@ -125,7 +125,7 @@ for (const embedded of [false, true]) {
             )
             .toBe(true);
         const saved = await readDrawing(page, embedded);
-        if (!embedded) expect(saved.appState).toMatchObject(drawingViewport);
+        if (!embedded) {expect(saved.appState).toMatchObject(drawingViewport);}
         await page.waitForTimeout(1200);
         expect(await readDrawing(page, embedded)).toEqual(saved);
         await page.reload();

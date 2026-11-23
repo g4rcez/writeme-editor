@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { BuildProfile } from "./profiles.mts";
 
-export function runtimePathsForProfile(profile: BuildProfile): string[] {
+export function runtimePathsForProfile(profile: BuildProfile): Array<string> {
     return [
         "public",
         "node_modules/better-sqlite3",
@@ -21,9 +21,9 @@ export function assertPackagePlatform(profile: BuildProfile, platform: string): 
               ? "win32"
               : "linux";
     if (platform !== expected)
-        throw new Error(
+        {throw new Error(
             `Build profile ${profile.os}/${profile.channel} requires packaging platform ${expected}, received ${platform}.`,
-        );
+        );}
 }
 
 export async function assertCompiledProfiles(profile: BuildProfile, buildPath: string): Promise<void> {

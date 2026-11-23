@@ -31,7 +31,7 @@ export class MigrationService {
      */
     static async migrateAllNotes(
         onProgress?: (current: number, total: number) => void,
-    ): Promise<{ success: number; failed: number; errors: string[] }> {
+    ): Promise<{ success: number; failed: number; errors: Array<string> }> {
         const settings = SettingsService.load();
 
         if (!settings.directory) {
@@ -43,7 +43,7 @@ export class MigrationService {
 
         let success = 0;
         let failed = 0;
-        const errors: string[] = [];
+        const errors: Array<string> = [];
 
         for (let i = 0; i < notesToMigrate.length; i++) {
             const note: any = notesToMigrate[i];
@@ -94,7 +94,6 @@ export class MigrationService {
             lastSynced: new Date(writeResult.lastModified),
             content: undefined,
         };
-        // @ts-ignore
         await repositories.notes.update(note.id, updatedNote);
     }
 }

@@ -21,10 +21,10 @@ test("keeps slash-command suggestions above a caret near the viewport bottom", a
         const selection = window.getSelection();
         const caret = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : null;
         const popupRect = popup?.getBoundingClientRect();
-        if (!caret || !popupRect) return null;
+        if (!caret || !popupRect) {return null;}
         return { caretTop: caret.top, popupBottom: popupRect.bottom, viewportHeight: window.innerHeight };
     });
-    if (!placement) throw new Error("Unable to read slash-command popup placement");
+    if (!placement) {throw new Error("Unable to read slash-command popup placement");}
     expect(placement.popupBottom).toBeLessThanOrEqual(placement.viewportHeight);
     expect(placement.popupBottom).toBeLessThanOrEqual(placement.caretTop + 2);
 });

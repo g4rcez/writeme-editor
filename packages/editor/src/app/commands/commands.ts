@@ -31,9 +31,9 @@ const CurrencyCommand: ReplacerCommand = {
         if (!from || !to) {
             return "";
         }
-        const amount = from.replace(/[A-Z]{3}$/g, "");
+        const amount = from.replaceAll(/[A-Z]{3}$/g, "");
         from = from.match(/[A-Z]{3}$/g)?.[0];
-        if (!from) return "";
+        if (!from) {return "";}
         convertCurrency(Number(amount), from, to).then((result) => {
             editor.chain().focus().insertContent(formatConversionResult(result)).run();
         });
@@ -54,7 +54,7 @@ const EvalCommand: ReplacerCommand = {
     find: />>eval [^;]+ ?;$/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>eval /, "").trim();
-        if (expr === "") return "";
+        if (expr === "") {return "";}
         const x = runJavascript(expr);
         return `${x}`;
     },
@@ -66,7 +66,7 @@ const TimeCommand: ReplacerCommand = {
     find: />>time $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>time /, "").trim();
-        if (expr === "") return "";
+        if (expr === "") {return "";}
         return Dates.time(new Date());
     },
 };
@@ -77,7 +77,7 @@ const DateCommand: ReplacerCommand = {
     find: />>date $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>date /, "").trim();
-        if (expr === "") return "";
+        if (expr === "") {return "";}
         return Dates.isoDate(new Date());
     },
 };
@@ -88,7 +88,7 @@ const DateTimeCommand: ReplacerCommand = {
     find: />>datetime $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>datetime /, "").trim();
-        if (expr === "") return "";
+        if (expr === "") {return "";}
         return `${Dates.isoDate(new Date())} ${Dates.time(new Date())}`;
     },
 };
@@ -99,7 +99,7 @@ export const UuidCommand: ReplacerCommand = {
     find: />>uuid $/,
     replace: (capture) => {
         const expr = (capture[0].trim() || "").replace(/^>>uuid /, "").trim();
-        if (expr === "") return "";
+        if (expr === "") {return "";}
         return uuid();
     },
 };
@@ -124,7 +124,7 @@ const LatexInlineCommand: ReplacerCommand = {
     },
 };
 
-const onlyNumbers = (x: string) => x.replace(/[^0-9]/g, "");
+const onlyNumbers = (x: string) => x.replaceAll(/[^0-9]/g, "");
 const FRONTMATTER_PENDING_META = "frontmatterCommandPending";
 type PendingFrontmatter = { position: number };
 
@@ -166,11 +166,11 @@ const Rule3Command: ReplacerCommand = {
     replace: (capture) => {
         const match = capture[0].trim();
         const inner = match.match(/rule3\s*\(\s*([^)]+)\)/)?.[1];
-        if (!inner) return match;
+        if (!inner) {return match;}
         const values = inner.split(",").map((value) => value.trim());
         const expression = values.length === 4 ? `${values[0]}/${values[1]},${values[2]}/${values[3]}` : inner;
         const result = solveRule3(expression);
-        if (!result.ok) return match;
+        if (!result.ok) {return match;}
         return `${result.variable} = ${result.value}`;
     },
 };
@@ -181,7 +181,7 @@ const LatexInlineTransformerCommand: ReplacerCommand = {
     find: /\$\$[^$]+\$\$ /,
     replace: (regex, _, editor) => {
         const latex = regex[0];
-        if (!latex) return "";
+        if (!latex) {return "";}
         setTimeout(() => {
             editor
                 .chain()
@@ -238,16 +238,16 @@ export const ReplacerCommands = Extension.create({
                             | PendingFrontmatter
                             | null
                             | undefined;
-                        if (meta === null) return null;
-                        if (meta) return { position: transaction.mapping.map(meta.position) };
-                        if (!previous) return null;
+                        if (meta === null) {return null;}
+                        if (meta) {return { position: transaction.mapping.map(meta.position) };}
+                        if (!previous) {return null;}
                         return { position: transaction.mapping.map(previous.position) };
                     },
                 },
                 props: {
                     handleKeyDown: (view, event) => {
                         const pending = pluginKey.getState(view.state);
-                        if (!pending) return false;
+                        if (!pending) {return false;}
 
                         const { from, to } = view.state.selection;
                         if (from !== pending.position || to !== pending.position) {
@@ -266,7 +266,7 @@ export const ReplacerCommands = Extension.create({
                     },
                     handleTextInput: (view, from, to, text) => {
                         const pending = pluginKey.getState(view.state);
-                        if (!pending) return false;
+                        if (!pending) {return false;}
 
                         if (from !== pending.position || to !== pending.position) {
                             clearPending(view);

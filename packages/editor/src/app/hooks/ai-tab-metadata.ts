@@ -2,9 +2,9 @@ import type { AIChat } from "@/store/repositories/electron/ai.repository";
 import { AI_CHATS_CHANGED_EVENT } from "@/app/ai/events";
 import { repositories } from "@/store/repositories";
 
-type Listener = (chats: AIChat[]) => void;
+type Listener = (chats: Array<AIChat>) => void;
 type Entry = {
-    chats: AIChat[];
+    chats: Array<AIChat>;
     listeners: Set<Listener>;
     version: number;
     refresh: () => void;
@@ -24,14 +24,14 @@ export function subscribeAiTabMetadata(scope: string, chatIdsKey: string, listen
                 const version = ++resource.version;
                 const current = (): boolean => entries.get(key) === resource && resource.version === version;
                 void Promise.resolve().then(async () => {
-                    if (!current()) return;
+                    if (!current()) {return;}
                     try {
                         const chats = await repositories.ai.getChats(scope);
-                        if (!current()) return;
+                        if (!current()) {return;}
                         resource.chats = chats;
-                        for (const subscriber of resource.listeners) subscriber(chats);
+                        for (const subscriber of resource.listeners) {subscriber(chats);}
                     } catch (error) {
-                        if (current()) console.error("Failed to load AI tab metadata:", error);
+                        if (current()) {console.error("Failed to load AI tab metadata:", error);}
                     }
                 });
             },
@@ -44,12 +44,12 @@ export function subscribeAiTabMetadata(scope: string, chatIdsKey: string, listen
     const resource = entry;
     resource.listeners.add(listener);
     listener(resource.chats);
-    if (created) resource.refresh();
+    if (created) {resource.refresh();}
     return () => {
         resource.listeners.delete(listener);
-        if (resource.listeners.size > 0) return;
+        if (resource.listeners.size > 0) {return;}
         resource.version += 1;
         window.removeEventListener(AI_CHATS_CHANGED_EVENT, resource.refresh);
-        if (entries.get(key) === resource) entries.delete(key);
+        if (entries.get(key) === resource) {entries.delete(key);}
     };
 }

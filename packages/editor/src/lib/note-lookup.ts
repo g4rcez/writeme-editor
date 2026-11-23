@@ -1,4 +1,4 @@
-import { type Note } from "@/store/note";
+import type { Note } from "@/store/note";
 
 export type CompatibleNoteTarget = {
     id?: string | null;
@@ -7,24 +7,24 @@ export type CompatibleNoteTarget = {
     target?: string | null;
 };
 
-export function findCompatibleNote(notes: readonly Note[], target: CompatibleNoteTarget | string): Note | undefined {
+export function findCompatibleNote(notes: ReadonlyArray<Note>, target: CompatibleNoteTarget | string): Note | undefined {
     return findCompatibleNotes(notes, target)[0];
 }
 
-export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNoteTarget | string): Note[] {
+export function findCompatibleNotes(notes: ReadonlyArray<Note>, target: CompatibleNoteTarget | string): Array<Note> {
     const idTargets = typeof target === "string" ? [target] : [target.id, target.path, target.target];
     for (const value of idTargets) {
-        if (!value) continue;
+        if (!value) {continue;}
         const decoded = decodeLookupValue(value);
         for (const id of [decoded, stripSubpath(decoded), extractNoteIdFromPath(decoded)]) {
-            if (!id) continue;
+            if (!id) {continue;}
             const match = notes.find((note) => note.id === id);
-            if (match) return [match];
+            if (match) {return [match];}
         }
     }
     const rawValues = getRawTargetValues(target);
     const hasQualifiedTarget = rawValues.some((value) =>
-        stripSubpath(decodeLookupValue(value)).replace(/\\/g, "/").includes("/"),
+        stripSubpath(decodeLookupValue(value)).replaceAll('\\', "/").includes("/"),
     );
 
     if (hasQualifiedTarget) {
@@ -32,7 +32,7 @@ export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNo
             includeBasename: false,
         });
         const qualifiedMatches = findByLookupValues(notes, qualifiedLookupValues);
-        if (qualifiedMatches.length > 0) return qualifiedMatches;
+        if (qualifiedMatches.length > 0) {return qualifiedMatches;}
     }
 
     const lookupValues = createNormalizedValueSet(rawValues, {
@@ -41,8 +41,8 @@ export function findCompatibleNotes(notes: readonly Note[], target: CompatibleNo
     return findByLookupValues(notes, lookupValues);
 }
 
-function findByLookupValues(notes: readonly Note[], lookupValues: Set<string>): Note[] {
-    if (lookupValues.size === 0) return [];
+function findByLookupValues(notes: ReadonlyArray<Note>, lookupValues: Set<string>): Array<Note> {
+    if (lookupValues.size === 0) {return [];}
 
     return notes.filter((note) => {
         const candidates = createNoteCandidateValues(note);
@@ -50,14 +50,14 @@ function findByLookupValues(notes: readonly Note[], lookupValues: Set<string>): 
     });
 }
 
-function getRawTargetValues(target: CompatibleNoteTarget | string): string[] {
+function getRawTargetValues(target: CompatibleNoteTarget | string): Array<string> {
     if (typeof target === "string") {
         return [target];
     }
     return [target.id ?? "", target.label ?? "", target.path ?? "", target.target ?? ""];
 }
 
-function createNoteCandidateValues(note: Note): string[] {
+function createNoteCandidateValues(note: Note): Array<string> {
     return [
         note.id,
         note.title,
@@ -69,7 +69,7 @@ function createNoteCandidateValues(note: Note): string[] {
     ];
 }
 
-function createNormalizedValueSet(values: string[], { includeBasename }: { includeBasename: boolean }): Set<string> {
+function createNormalizedValueSet(values: Array<string>, { includeBasename }: { includeBasename: boolean }): Set<string> {
     const normalizedValues = new Set<string>();
     values.forEach((value) => {
         const decodedValue = decodeLookupValue(value);
@@ -89,16 +89,16 @@ function createNormalizedValueSet(values: string[], { includeBasename }: { inclu
 
         variants.forEach((variant) => {
             const normalizedValue = normalizeLookupValue(variant);
-            if (normalizedValue) normalizedValues.add(normalizedValue);
+            if (normalizedValue) {normalizedValues.add(normalizedValue);}
         });
     });
     return normalizedValues;
 }
 
-export function getNoteAliases({ metadata }: Pick<Note, "metadata">): string[] {
-    if (!metadata) return [];
+export function getNoteAliases({ metadata }: Pick<Note, "metadata">): Array<string> {
+    if (!metadata) {return [];}
     const aliases = metadata.aliases ?? metadata.alias;
-    if (Array.isArray(aliases)) return aliases.map(String);
+    if (Array.isArray(aliases)) {return aliases.map(String);}
     if (typeof aliases === "string") {
         return aliases
             .split(",")
@@ -125,7 +125,7 @@ function decodeLookupValue(value: string): string {
 function normalizeLookupValue(value: string): string {
     return stripSubpath(value)
         .trim()
-        .replace(/\\/g, "/")
+        .replaceAll('\\', "/")
         .replace(/^\.\/+/, "")
         .replace(/^\/+/, "")
         .normalize("NFC")
@@ -140,8 +140,8 @@ function basename(value: string): string {
     return stripSubpath(value).split(/[\\/]/).pop() ?? value;
 }
 
-function createPathSuffixes(value: string): string[] {
-    const cleanValue = stripSubpath(value).replace(/\\/g, "/");
+function createPathSuffixes(value: string): Array<string> {
+    const cleanValue = stripSubpath(value).replaceAll('\\', "/");
     const parts = cleanValue.split("/").filter(Boolean);
     return parts.flatMap((_, index) => {
         const suffix = parts.slice(index).join("/");

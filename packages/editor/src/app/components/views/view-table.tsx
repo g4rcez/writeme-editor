@@ -18,16 +18,16 @@ const NOTE_TYPE_THEME: Record<string, TagProps["theme"]> = {
 };
 
 function formatDate(value: unknown): string {
-    if (!value) return "";
+    if (!value) {return "";}
     const d = value instanceof Date ? value : new Date(value as string);
-    if (isNaN(d.getTime())) return String(value);
+    if (Number.isNaN(d.getTime())) {return String(value);}
     return Dates.yearMonthDay(d);
 }
 
 function getRowValue(row: Row, field: string): unknown {
-    if (field in row) return row[field];
+    if (field in row) {return row[field];}
     for (const key of Object.keys(row)) {
-        if (key.endsWith(`.${field}`)) return row[key];
+        if (key.endsWith(`.${field}`)) {return row[key];}
     }
     return undefined;
 }
@@ -60,8 +60,8 @@ const CellValue = ({ row, column }: { row: Row; column: ViewColumn }) => {
         );
     }
     if (isNoteField(field, "tags")) {
-        const tags = Array.isArray(value) ? (value as string[]) : [];
-        if (tags.length === 0) return <span className="text-foreground/30">—</span>;
+        const tags = Array.isArray(value) ? (value as Array<string>) : [];
+        if (tags.length === 0) {return <span className="text-foreground/30">—</span>;}
         return (
             <div className="flex flex-wrap gap-1">
                 {tags.map((tag) => (
@@ -82,11 +82,11 @@ const CellValue = ({ row, column }: { row: Row; column: ViewColumn }) => {
         const str = String(value ?? "");
         return <span className="text-foreground text-xs truncate max-w-48 block">{str.slice(0, 80)}</span>;
     }
-    if (value == null) return <span className="text-foreground">—</span>;
+    if (value == null) {return <span className="text-foreground">—</span>;}
     return <span>{String(value)}</span>;
 };
 
-type ViewTableProps = { rows: Row[]; columns: ViewColumn[] };
+type ViewTableProps = { rows: Array<Row>; columns: Array<ViewColumn> };
 
 export function ViewTable({ rows, columns }: ViewTableProps) {
     const cols = createColumns((c) => {
@@ -105,7 +105,7 @@ export function ViewTable({ rows, columns }: ViewTableProps) {
     }
     return (
         <Fragment>
-            <Table rows={rows} name="views" useControl={false} cols={cols as any[]} />
+            <Table rows={rows} name="views" useControl={false} cols={cols as Array<any>} />
             {/* <table className="w-full border-collapse text-sm"> */}
             {/*   <thead> */}
             {/*     <tr className="border-b border-border"> */}

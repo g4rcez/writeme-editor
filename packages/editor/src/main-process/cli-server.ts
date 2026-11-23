@@ -26,14 +26,14 @@ type PendingRendererSend = {
 const waitConnections = new Map<string, WaitEntry>();
 const readyWebContentsIds = new Set<number>();
 const workspacePathByWebContentsId = new Map<number, string | null>();
-const pendingRendererSends: PendingRendererSend[] = [];
+const pendingRendererSends: Array<PendingRendererSend> = [];
 let server: net.Server | null = null;
 let windowRef: BrowserWindow | null = null;
 let cliServerOptions: CliServerOptions = {};
 
 function getSocketPath(): string {
     if (process.platform === "win32") {
-        return "\\\\.\\pipe\\writeme-cli";
+        return String.raw`\\.\pipe\writeme-cli`;
     }
     return path.join(app.getPath("userData"), "writeme.sock");
 }
@@ -60,7 +60,7 @@ export function startCliServer(mainWindow: BrowserWindow, options: CliServerOpti
         socket.on("data", (data) => {
             buffer += data.toString();
             const nl = buffer.indexOf("\n");
-            if (nl === -1) return;
+            if (nl === -1) {return;}
             const line = buffer.slice(0, nl);
             buffer = buffer.slice(nl + 1);
             try {
@@ -75,7 +75,6 @@ export function startCliServer(mainWindow: BrowserWindow, options: CliServerOpti
     });
 
     server.listen(socketPath, () => {
-        console.log(`CLI server listening on ${socketPath}`);
     });
 
     server.on("error", (err) => {
@@ -88,7 +87,7 @@ export function markCliRendererReady(webContents: WebContents, workspacePath: st
     workspacePathByWebContentsId.set(webContents.id, workspacePath);
     for (let index = pendingRendererSends.length - 1; index >= 0; index--) {
         const pending = pendingRendererSends[index];
-        if (!pending) continue;
+        if (!pending) {continue;}
         if (pending.webContentsId === webContents.id) {
             pendingRendererSends.splice(index, 1);
             pending.send();
@@ -110,7 +109,7 @@ function finishOpenFolderSocket(
     socket: net.Socket | null,
     response: Record<string, string> = { status: "opened" },
 ): void {
-    if (!socket || socket.destroyed) return;
+    if (!socket || socket.destroyed) {return;}
     socket.write(JSON.stringify(response) + "\n");
     socket.end();
 }
@@ -203,7 +202,7 @@ export function stopCliServer(): void {
     }
     waitConnections.clear();
     activeServer?.close();
-    if (!activeServer) return;
+    if (!activeServer) {return;}
     if (process.platform !== "win32") {
         try {
             fs.unlinkSync(getSocketPath());

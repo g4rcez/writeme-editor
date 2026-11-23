@@ -14,10 +14,10 @@ function createEditor(content: string): Editor {
     return new Editor({ extensions: createExtensions(() => "github-dark"), content });
 }
 
-function positions(editor: Editor, name: string): { node: Node; position: number }[] {
-    const result: { node: Node; position: number }[] = [];
+function positions(editor: Editor, name: string): Array<{ node: Node; position: number }> {
+    const result: Array<{ node: Node; position: number }> = [];
     editor.state.doc.descendants((node, position) => {
-        if (node.type.name === name) result.push({ node, position });
+        if (node.type.name === name) {result.push({ node, position });}
     });
     return result;
 }
@@ -52,13 +52,13 @@ describe("Markdown footnotes", () => {
                 expect(positions(editor, "footnoteReference").map(({ node }) => node.attrs.id)).toEqual(["a|b"]);
                 expect(positions(editor, "tableRow").map(({ node }) => node.childCount)).toEqual([1, 1]);
                 expect(positions(editor, "tableCell")[0]?.node.textContent).toBe("A .");
-                expect(editor.getMarkdown()).toContain("| A [^a\\|b]. |");
+                expect(editor.getMarkdown()).toContain(String.raw`| A [^a\|b]. |`);
                 let copied = "";
                 editor.view.someProp("clipboardTextSerializer", (serialize) => {
                     copied = serialize(editor.state.doc.slice(0, editor.state.doc.content.size), editor.view);
                     return true;
                 });
-                expect(copied).toContain("[^a\\|b]");
+                expect(copied).toContain(String.raw`[^a\|b]`);
                 editor.commands.setContent(copied);
                 expect(editor.getJSON()).toEqual(document);
             }
@@ -98,7 +98,7 @@ describe("Markdown footnotes", () => {
         const original = Node.prototype.descendants;
         let traversals = 0;
         const spy = vi.spyOn(Node.prototype, "descendants").mockImplementation(function (this: Node, callback) {
-            if (this.type.name === "doc") traversals++;
+            if (this.type.name === "doc") {traversals++;}
             return original.call(this, callback);
         });
         try {

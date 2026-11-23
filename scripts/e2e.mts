@@ -13,10 +13,10 @@ function main(): void {
     let liveWhisper = false;
     for (let index = 0; index < forwarded.length; index++) {
         const arg = forwarded[index]!;
-        if (arg !== "--grep" && arg !== "-g" && !arg.startsWith("--grep=") && !arg.startsWith("-g=")) continue;
+        if (arg !== "--grep" && arg !== "-g" && !arg.startsWith("--grep=") && !arg.startsWith("-g=")) {continue;}
         const valueIndex = arg.includes("=") ? index : index + 1;
         const pattern = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : forwarded[valueIndex];
-        if (!pattern) continue; // Playwright reports a missing option value.
+        if (!pattern) {continue;} // Playwright reports a missing option value.
         if (suite === "production") {
             liveWhisper ||= pattern.includes("@live-local-whisper") || pattern.includes("live local Whisper");
             const selection =
@@ -29,7 +29,7 @@ function main(): void {
         }
     }
     if (liveWhisper && !listing && (!process.env.MEETING_WHISPER_ENDPOINT || !process.env.MEETING_AUDIO_FIXTURE))
-        throw new Error("Live Whisper requires MEETING_WHISPER_ENDPOINT and MEETING_AUDIO_FIXTURE.");
+        {throw new Error("Live Whisper requires MEETING_WHISPER_ENDPOINT and MEETING_AUDIO_FIXTURE.");}
     if (suite === "device" && !listing && !process.env.PLAYWRIGHT_DEVICE_BASE_URL) {
         throw new Error(
             "Set PLAYWRIGHT_DEVICE_BASE_URL to an HTTPS or device-local localhost app URL; physical Android/ADB and an operator with a pen are required.",
@@ -41,7 +41,7 @@ function main(): void {
     ) {
         const host = { windows: "win32", osx: "darwin", linux: "linux" };
         if (platform in host && host[platform as keyof typeof host] !== process.platform)
-            throw new Error("Run native Electron tests on the requested desktop OS.");
+            {throw new Error("Run native Electron tests on the requested desktop OS.");}
     }
     const env: NodeJS.ProcessEnv = {
         ...process.env,
@@ -50,20 +50,20 @@ function main(): void {
         WRITEME_E2E_LIVE_WHISPER: liveWhisper ? "1" : "0",
     };
     platformConfig(platform, env);
-    const run = (command: string, args: string[], childEnv = env): boolean => {
+    const run = (command: string, args: Array<string>, childEnv = env): boolean => {
         const result = spawnSync(command, args, {
             cwd: root,
             env: childEnv,
             stdio: "inherit",
             shell: process.platform === "win32" && command === "npm.cmd",
         });
-        if (result.error) throw result.error;
+        if (result.error) {throw result.error;}
         process.exitCode = result.status ?? 1;
         return result.status === 0;
     };
     if (!listing && env.WRITEME_E2E_PREBUILT !== "1") {
         if (suite === "native" && !run(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "package:app"]))
-            return;
+            {return;}
         if (suite === "profiles" && platform === "osx" && matchesProject("native-store", projects)) {
             if (
                 !run(process.execPath, ["--import", "tsx", "scripts/build-native-profile.ts"], {
@@ -71,7 +71,7 @@ function main(): void {
                     WRITEME_BUILD_PROFILE: "macos-app-store",
                 })
             )
-                return;
+                {return;}
         }
     }
     run(process.execPath, [

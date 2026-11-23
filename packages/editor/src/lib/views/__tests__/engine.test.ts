@@ -28,7 +28,7 @@ function makeNote(overrides: Partial<Note> & { id: string }): Note {
     } as Note;
 }
 
-const notes: Note[] = [
+const notes: Array<Note> = [
     makeNote({
         id: "1",
         title: "Dune",
@@ -141,13 +141,13 @@ describe("engine", () => {
     it("sorts ASC by title", () => {
         const result = executeQuery(parse("ORDER BY title ASC"), dataSources);
         expect(result[0]!["notes.title"]).toBe("Clean Code");
-        expect(result[result.length - 1]!["notes.title"]).toBe("Tolkien research");
+        expect(result.at(-1)!["notes.title"]).toBe("Tolkien research");
     });
 
     it("sorts DESC by metadata.rating", () => {
         const result = executeQuery(parse("WHERE tags CONTAINS 'book' ORDER BY metadata.rating DESC"), dataSources);
         expect((result[0]!["notes.metadata"] as Record<string, unknown>).rating).toBe(5);
-        expect((result[result.length - 1]!["notes.metadata"] as Record<string, unknown>).rating).toBe(4);
+        expect((result.at(-1)!["notes.metadata"] as Record<string, unknown>).rating).toBe(4);
     });
 
     it("limits results", () => {

@@ -5,9 +5,9 @@ import { ExcalidrawCode } from "./excalidraw";
 vi.mock("@excalidraw/excalidraw", () => ({
     Excalidraw: ({ onChange, initialData }: any) => (
         <div data-testid="excalidraw-mock">
-            <button onClick={() => onChange([{ type: "rectangle", id: "1" }])}>Change</button>
-            <button onClick={() => onChange(initialData.elements)}>Unchanged</button>
-            <button onClick={() => onChange([])}>Clear</button>
+            <button type="button" onClick={() => onChange([{ type: "rectangle", id: "1" }])}>Change</button>
+            <button type="button" onClick={() => onChange(initialData.elements)}>Unchanged</button>
+            <button type="button" onClick={() => onChange([])}>Clear</button>
             <span>Elements: {JSON.stringify(initialData?.elements)}</span>
         </div>
     ),

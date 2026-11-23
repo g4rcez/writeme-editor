@@ -6,13 +6,13 @@ import { globalState, useGlobalStore } from "@/store/global.store";
 export const AddToGroupDialog = () => {
     const [state, dispatch] = useGlobalStore();
     const [newTitle, setNewTitle] = useState("");
-    if (!state.note) return null;
+    if (!state.note) {return null;}
     const noteId = state.note.id;
 
     const onSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         const value = newTitle.trim();
-        if (!value) return;
+        if (!value) {return;}
         await dispatch.createGroup(value);
         const created = globalState().noteGroups.at(-1);
         if (created) {

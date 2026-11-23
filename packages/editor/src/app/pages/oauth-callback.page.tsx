@@ -37,9 +37,9 @@ export default function OAuthCallbackPage() {
                 const returnTo = state ?? "/settings/ai";
                 setTimeout(() => navigate(returnTo), 1500);
             })
-            .catch((err) => {
+            .catch((error) => {
                 setStatus("error");
-                setErrorMsg(err?.message ?? "Authentication failed.");
+                setErrorMsg(error?.message ?? "Authentication failed.");
             });
     }, []);
 

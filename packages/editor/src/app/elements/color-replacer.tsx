@@ -5,7 +5,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 function findColors(doc: Node): DecorationSet {
     const hexColor = /(#[0-9a-f]{3,6})\b/gi;
-    const decorations: Decoration[] = [];
+    const decorations: Array<Decoration> = [];
     doc.descendants((node, position) => {
         if (!node.text) {
             return;
@@ -36,7 +36,7 @@ export const ColorReplacer = Extension.create({
                         return findColors(doc);
                     },
                     apply(transaction, oldDecorations) {
-                        if (!transaction.docChanged) return oldDecorations.map(transaction.mapping, transaction.doc);
+                        if (!transaction.docChanged) {return oldDecorations.map(transaction.mapping, transaction.doc);}
                         return findColors(transaction.doc);
                     },
                 },

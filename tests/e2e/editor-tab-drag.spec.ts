@@ -58,7 +58,7 @@ test("reorders group tabs, nests splits, and collapses an emptied source group",
     const a = await first.boundingBox();
     const b = await second.boundingBox();
     const c = await third.boundingBox();
-    if (!a || !b || !c) throw new Error("Expected three editor groups");
+    if (!a || !b || !c) {throw new Error("Expected three editor groups");}
     expect(c.y).toBeLessThan(a.y);
     expect(b.x).toBeGreaterThan(a.x);
     expect(b.height).toBeGreaterThan(a.height);
@@ -81,7 +81,7 @@ test("previews an edge split and leaves the layout intact when dragging is cance
         .filter({ hasText: "Reference tab" })
         .boundingBox();
     const target = await page.locator(".writeme-editor-drop-target").boundingBox();
-    if (!source || !target) throw new Error("Expected a tab and an editor");
+    if (!source || !target) {throw new Error("Expected a tab and an editor");}
     await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
     await page.mouse.down();
     await page.mouse.move(source.x + source.width / 2 + 12, source.y + source.height / 2, { steps: 3 });
@@ -127,7 +127,7 @@ test("copies a dragged tab with the platform modifier", async ({ cleanPage: page
 
 async function dragToEdge(tab: Locator, target: Locator, side: string): Promise<void> {
     const box = await target.boundingBox();
-    if (!box) throw new Error("Expected an editor drop target");
+    if (!box) {throw new Error("Expected an editor drop target");}
     await dragTab(tab, target, {
         x: side === "left" ? 8 : side === "right" ? box.width - 8 : box.width / 2,
         y: side === "top" ? 8 : side === "bottom" ? box.height - 8 : box.height / 2,
@@ -138,7 +138,7 @@ async function dragTab(tab: Locator, target: Locator, point?: { x: number; y: nu
     await tab.scrollIntoViewIfNeeded();
     const source = await tab.boundingBox();
     const destination = await target.boundingBox();
-    if (!source || !destination) throw new Error("Expected visible drag source and target");
+    if (!source || !destination) {throw new Error("Expected visible drag source and target");}
     const page = tab.page();
     await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
     await page.mouse.down();
@@ -201,7 +201,7 @@ test("moves a tab to the empty end of the strip", async ({ cleanPage: page }) =>
     const tabs = page.locator(".writeme-tabs-bar-list [data-tab-id]");
     const list = page.locator(".writeme-tabs-bar-list");
     const rect = await list.boundingBox();
-    if (!rect) throw new Error("Expected a tab strip");
+    if (!rect) {throw new Error("Expected a tab strip");}
     await dragTab(tabs.filter({ hasText: "First tab" }), list, { x: rect.width - 8, y: rect.height / 2 });
     await expect(tabs.last()).toContainText("First tab");
 });
@@ -227,7 +227,7 @@ for (const side of ["left", "right", "top", "bottom"]) {
         await expect(working).toHaveCount(1);
         const a = await reference.boundingBox();
         const b = await working.boundingBox();
-        if (!a || !b) throw new Error("Expected both editor groups");
+        if (!a || !b) {throw new Error("Expected both editor groups");}
         expect(
             side === "left" ? a.x < b.x : side === "right" ? a.x > b.x : side === "top" ? a.y < b.y : a.y > b.y,
         ).toBe(true);

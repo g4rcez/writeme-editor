@@ -20,16 +20,16 @@ export type ReadItLaterFeedItem = {
 
 export type ParsedReadItLaterFeed = {
     title: string | null;
-    items: ReadItLaterFeedItem[];
+    items: Array<ReadItLaterFeedItem>;
 };
 
 const FRONTMATTER_PATTERN = /^(\uFEFF?---\r?\n)([\s\S]*?)(\r?\n---(?:\r?\n|$))/;
-function parseFrontmatterFields(content: string): string[] {
+function parseFrontmatterFields(content: string): Array<string> {
     const fields = FRONTMATTER_PATTERN.exec(content)?.[2];
     return fields ? fields.split(/\r?\n/).filter((line) => line.trim().length > 0) : [];
 }
 
-function setFrontmatterField(lines: string[], key: "read" | "status", value: string): string[] {
+function setFrontmatterField(lines: Array<string>, key: "read" | "status", value: string): Array<string> {
     const matchingIndexes = lines
         .map((line, index) => {
             const colonIndex = line.indexOf(":");
@@ -54,7 +54,7 @@ export function getReadItLaterState(content: string): ReadItLaterState {
     const statusValue = statusField?.match(/^\s*status\s*:\s*([a-z-]+)\s*(?:#.*)?$/i)?.[1]?.toLowerCase();
 
     let status: ReadItLaterStatus = "inbox";
-    if (statusValue === "later" || statusValue === "archive" || statusValue === "inbox") status = statusValue;
+    if (statusValue === "later" || statusValue === "archive" || statusValue === "inbox") {status = statusValue;}
 
     return { read: readValue === "true", status };
 }
@@ -70,9 +70,9 @@ export function updateReadItLaterFrontmatter(content: string, update: ReadItLate
     const bom = frontmatter?.[1]?.startsWith("\uFEFF") ? "\uFEFF" : "";
     const body = frontmatter ? content.slice(frontmatter[0].length) : content;
     let separator = "\n\n";
-    if (body.length === 0) separator = "\n";
-    else if (body.startsWith("\n\n")) separator = "";
-    else if (body.startsWith("\n")) separator = "\n";
+    if (body.length === 0) {separator = "\n";}
+    else if (body.startsWith("\n\n")) {separator = "";}
+    else if (body.startsWith("\n")) {separator = "\n";}
 
     return `${bom}---\n${withStatus.join("\n")}\n---${separator}${body}`;
 }
@@ -95,14 +95,14 @@ export function isSafeHttpUrl(value: string): boolean {
     }
 }
 
-function findDirectChild(parent: Element, names: string[]): Element | undefined {
+function findDirectChild(parent: Element, names: Array<string>): Element | undefined {
     const children = Array.from(parent.children);
     return names
         .map((name) => children.find((child) => child.localName.toLowerCase() === name))
         .find((child) => child !== undefined);
 }
 
-function getChildText(parent: Element, names: string[]): string {
+function getChildText(parent: Element, names: Array<string>): string {
     return findDirectChild(parent, names)?.textContent?.trim() ?? "";
 }
 
@@ -125,7 +125,7 @@ function getFeedItemUrl(item: Element, baseUrl: string): string | null {
     }
 
     const id = getChildText(item, ["guid", "id"]);
-    if (!isSafeHttpUrl(id)) return null;
+    if (!isSafeHttpUrl(id)) {return null;}
     try {
         return new URL(id).href;
     } catch {
@@ -134,16 +134,16 @@ function getFeedItemUrl(item: Element, baseUrl: string): string | null {
 }
 
 function normalizePublishedAt(value: string): string | null {
-    if (!value) return null;
+    if (!value) {return null;}
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export function parseReadItLaterFeed(xml: string, feedUrl: string): ParsedReadItLaterFeed {
-    if (!isSafeHttpUrl(feedUrl)) throw new Error("Use a valid HTTP or HTTPS feed URL.");
+    if (!isSafeHttpUrl(feedUrl)) {throw new Error("Use a valid HTTP or HTTPS feed URL.");}
 
     const document = new DOMParser().parseFromString(xml, "application/xml");
-    if (document.querySelector("parsererror")) throw new Error("The feed returned invalid XML.");
+    if (document.querySelector("parsererror")) {throw new Error("The feed returned invalid XML.");}
 
     const root = document.documentElement;
     const isAtom = root.localName.toLowerCase() === "feed";
@@ -166,6 +166,6 @@ export function parseReadItLaterFeed(xml: string, feedUrl: string): ParsedReadIt
         return { id, title: itemTitle, url, publishedAt, content, description };
     });
 
-    if (items.length === 0) throw new Error("This URL did not return an RSS or Atom feed with entries.");
+    if (items.length === 0) {throw new Error("This URL did not return an RSS or Atom feed with entries.");}
     return { title, items };
 }

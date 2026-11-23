@@ -51,7 +51,7 @@ export class NeovimController {
     };
     readonly operators = {
         register: (key: string, handler: Operator): void => {
-            if (!/^[^\d\s<>]$/u.test(key)) throw new Error("An operator must be one non-numeric key");
+            if (!/^[^\d\s<>]$/u.test(key)) {throw new Error("An operator must be one non-numeric key");}
             this.operatorHandlers.set(key, handler);
         },
     };
@@ -76,7 +76,7 @@ export class NeovimController {
     }
 
     private get editor(): Editor {
-        if (!this.attachedEditor) throw new UnmountedNeovimError("Neovim is not attached to an editor");
+        if (!this.attachedEditor) {throw new UnmountedNeovimError("Neovim is not attached to an editor");}
         return this.attachedEditor;
     }
 
@@ -93,11 +93,11 @@ export class NeovimController {
         this.update({ enabled, mode: "normal", pending: [], anchor: null, command: "", insertSession: null });
     }
 
-    setMode(mode: NeovimMode, keys: readonly string[] = [], position?: number): void {
+    setMode(mode: NeovimMode, keys: ReadonlyArray<string> = [], position?: number): void {
         this.cancelTimer();
         const focused = this.editor.view.hasFocus();
         const state = this.getState();
-        if (!state) return;
+        if (!state) {return;}
         const doc = this.editor.state.doc;
         let pos = position ?? state.cursor;
         let lastChange = state.lastChange;
@@ -106,7 +106,7 @@ export class NeovimController {
             const end = state.insertSession.doc.content.findDiffEnd(doc.content);
             const inserted = from !== null && end ? doc.slice(from, Math.max(from, end.b)) : undefined;
             if (!this.replaying && (inserted || state.insertSession.keys[0] === "c"))
-                lastChange = { keys: state.insertSession.keys, inserted, visual: state.insertSession.visual };
+                {lastChange = { keys: state.insertSession.keys, inserted, visual: state.insertSession.visual };}
             pos = previousCharacter(doc, this.editor.state.selection.head);
         }
         const inserting = mode === "insert" || mode === "replace";
@@ -114,7 +114,7 @@ export class NeovimController {
         pos = inserting ? pos : normalPosition(doc, pos);
         const tr = this.editor.state.tr;
         tr.setSelection(Selection.near(doc.resolve(pos)));
-        if (inserting && this.editor.state.storedMarks) tr.ensureMarks(this.editor.state.storedMarks);
+        if (inserting && this.editor.state.storedMarks) {tr.ensureMarks(this.editor.state.storedMarks);}
         tr.setMeta(neovimKey, {
             mode,
             pending: [],
@@ -131,10 +131,10 @@ export class NeovimController {
         this.editor.view.dispatch(inserting && ["c", "C", "o", "O"].includes(keys[0] ?? "") ? tr : closeHistory(tr));
         if (focused) {
             // WebKit needs native focus renewed after removing the noneditable cursor widget.
-            if (inserting) this.editor.view.dom.blur();
+            if (inserting) {this.editor.view.dom.blur();}
             this.editor.view.focus();
         }
-        if (visual) this.move(pos);
+        if (visual) {this.move(pos);}
     }
 
     private context(count: number): MotionContext {
@@ -149,7 +149,7 @@ export class NeovimController {
 
     private move(target: number, vertical = false): void {
         const vim = this.getState();
-        if (!vim) return;
+        if (!vim) {return;}
         const { doc } = this.editor.state;
         const pos = normalPosition(doc, target);
         const tr = this.editor.state.tr;
@@ -163,7 +163,7 @@ export class NeovimController {
             }
             case "visual-line": {
                 const range = lineRange(doc, anchor, pos);
-                if (range) tr.setSelection(TextSelection.between(doc.resolve(range.from), doc.resolve(range.to)));
+                if (range) {tr.setSelection(TextSelection.between(doc.resolve(range.from), doc.resolve(range.to)));}
                 break;
             }
             default:
@@ -176,7 +176,7 @@ export class NeovimController {
             goalColumn: vertical ? (vim.goalColumn ?? vim.cursor - (line?.from ?? vim.cursor)) : null,
         });
         this.editor.view.dispatch(tr.scrollIntoView());
-        if (this.editor.view.hasFocus()) this.editor.view.focus();
+        if (this.editor.view.hasFocus()) {this.editor.view.focus();}
     }
 
     private cancelTimer(): void {
@@ -191,17 +191,17 @@ export class NeovimController {
     flushPending(): void {
         this.cancelTimer();
         const vim = this.getState();
-        if (!vim?.pending.length) return;
+        if (!vim?.pending.length) {return;}
         this.update({ pending: [], ...(vim.mode === "operator-pending" ? { mode: "normal" } : {}) });
         switch (vim.mode) {
             case "insert":
                 this.editor.view.dispatch(this.editor.state.tr.insertText(vim.pending.join("")));
                 break;
             case "replace":
-                for (const key of vim.pending) this.feed(key, false);
+                for (const key of vim.pending) {this.feed(key, false);}
                 break;
             case "command":
-                for (const key of vim.pending) this.commandKey(key);
+                for (const key of vim.pending) {this.commandKey(key);}
                 break;
             case "normal":
             case "visual":
@@ -211,28 +211,28 @@ export class NeovimController {
         }
     }
 
-    private pending(keys: readonly string[], mode?: NeovimMode): void {
+    private pending(keys: ReadonlyArray<string>, mode?: NeovimMode): void {
         this.update({ pending: keys, ...(mode ? { mode } : {}) });
     }
 
-    private mapping(mapping: Mapping, count: number, depth: number, prefix: readonly string[] = []): boolean {
+    private mapping(mapping: Mapping, count: number, depth: number, prefix: ReadonlyArray<string> = []): boolean {
         const state = this.getState();
-        if (!state) return false;
+        if (!state) {return false;}
         this.cancelTimer();
         this.update({ pending: prefix });
         if (typeof mapping.action === "function")
-            return mapping.action({ ...this.context(count), editor: this.editor, mode: state.mode });
+            {return mapping.action({ ...this.context(count), editor: this.editor, mode: state.mode });}
         if (depth >= 20) {
             this.update({ message: "Recursive key mapping exceeded 20 expansions" });
             return true;
         }
         for (let repeat = 0; repeat < (prefix.length ? 1 : count); repeat++)
-            for (const key of this.keymap.parse(mapping.action)) {
+            {for (const key of this.keymap.parse(mapping.action)) {
                 const handled = this.feed(key, mapping.remap === true, depth + 1);
                 const mode = this.getState()?.mode;
                 if (!handled && (mode === "insert" || mode === "replace") && !key.startsWith("<"))
-                    this.editor.commands.insertContent(key);
-            }
+                    {this.editor.commands.insertContent(key);}
+            }}
         return true;
     }
 
@@ -241,25 +241,25 @@ export class NeovimController {
             const handled = this.feed(key);
             const mode = this.getState()?.mode;
             if (!handled && (mode === "insert" || mode === "replace") && !key.startsWith("<"))
-                this.editor.view.dispatch(this.editor.state.tr.insertText(key));
+                {this.editor.view.dispatch(this.editor.state.tr.insertText(key));}
         }
     }
 
     feed(key: string, mappings = true, depth = 0): boolean {
         const vim = this.getState();
-        if (!vim?.enabled || !this.editor.isEditable) return false;
+        if (!vim?.enabled || !this.editor.isEditable) {return false;}
         this.cancelTimer();
         if (key === "<Esc>" || key === "<C-[>") {
             this.flushPending();
             this.setMode("normal");
             return true;
         }
-        if (!["insert", "replace", "command"].includes(vim.mode) && key === "<BS>") key = "h";
+        if (!["insert", "replace", "command"].includes(vim.mode) && key === "<BS>") {key = "h";}
         const keys = [...vim.pending, key];
         const countMatch = keys.join("").match(/^([1-9]\d*)/u);
         const count = Math.min(9999, Number(countMatch?.[1] ?? 1));
         const mappingKeys = countMatch ? keys.slice(countMatch[1]?.length ?? 0) : keys;
-        let prefix: readonly string[] = [];
+        let prefix: ReadonlyArray<string> = [];
         let lookupKeys = ["insert", "replace", "command"].includes(vim.mode) ? keys : mappingKeys;
         let mappingCount = count;
         if (vim.mode === "operator-pending") {
@@ -278,21 +278,21 @@ export class NeovimController {
             if (match.prefix && !match.exact?.nowait) {
                 this.pending(keys);
                 this.timer = setTimeout(() => {
-                    if (this.editor.isDestroyed) return;
-                    if (match.exact) this.mapping(match.exact, mappingCount, depth, prefix);
+                    if (this.editor.isDestroyed) {return;}
+                    if (match.exact) {this.mapping(match.exact, mappingCount, depth, prefix);}
                     else {
                         const pending = this.getState()?.pending ?? [];
                         this.update({ pending: [] });
                         for (const buffered of pending) {
                             const handled = this.feed(buffered, false);
                             if (!handled && vim.mode === "insert")
-                                this.editor.view.dispatch(this.editor.state.tr.insertText(buffered));
+                                {this.editor.view.dispatch(this.editor.state.tr.insertText(buffered));}
                         }
                     }
                 }, this.timeout);
                 return true;
             }
-            if (match.exact) return this.mapping(match.exact, mappingCount, depth, prefix);
+            if (match.exact) {return this.mapping(match.exact, mappingCount, depth, prefix);}
             if (vim.pending.length) {
                 const previousKeys = lookupKeys.slice(0, -1);
                 const previous = this.keymap.resolve(vim.mode, previousKeys);
@@ -303,8 +303,8 @@ export class NeovimController {
             }
         }
         if (key === "<C-c>") {
-            if (vim.mode === "normal") this.reset();
-            else this.setMode("normal");
+            if (vim.mode === "normal") {this.reset();}
+            else {this.setMode("normal");}
             return true;
         }
         if (key === "<C-w>") {
@@ -331,7 +331,7 @@ export class NeovimController {
         }
         if (vim.mode === "command") {
             this.update({ pending: [] });
-            for (const buffered of vim.pending) this.commandKey(buffered);
+            for (const buffered of vim.pending) {this.commandKey(buffered);}
             return this.commandKey(key);
         }
         if (vim.mode === "insert") {
@@ -367,10 +367,10 @@ export class NeovimController {
         const state = this.editor.state;
         const position = state.selection.head;
         const line = currentLine(state.doc, position);
-        if (!line || position <= line.from) return true;
+        if (!line || position <= line.from) {return true;}
         const prefix = line.text.slice(0, Math.min(line.text.length, position - line.from));
         const word = /\S+$/u.exec(prefix)?.[0];
-        if (!word) return true;
+        if (!word) {return true;}
         const from = position - word.length;
         const tr = state.tr.delete(from, position);
         tr.setSelection(TextSelection.create(tr.doc, from));
@@ -378,9 +378,9 @@ export class NeovimController {
         return true;
     }
 
-    private normalKeys(keys: readonly string[], count: number, commandKeys: readonly string[]): boolean {
+    private normalKeys(keys: ReadonlyArray<string>, count: number, commandKeys: ReadonlyArray<string>): boolean {
         const vim = this.getState();
-        if (!vim) return false;
+        if (!vim) {return false;}
         if (!commandKeys.length) {
             this.pending(keys);
             return true;
@@ -398,7 +398,7 @@ export class NeovimController {
                               to: this.editor.state.selection.to,
                               shape: "character" as const,
                           };
-                if (range) this.operate(first, range, keys, count);
+                if (range) {this.operate(first, range, keys, count);}
                 return true;
             }
             if (commandKeys.length === 1) {
@@ -421,14 +421,14 @@ export class NeovimController {
                     vim.cursor,
                     all[Math.min(all.length - 1, index + total - 1)]?.from ?? vim.cursor,
                 );
-                if (range) this.operate(first, range, keys, total);
+                if (range) {this.operate(first, range, keys, total);}
                 return true;
             }
             const object = this.objectHandlers.get(motionKey);
             if (object) {
                 const range = object(this.context(total));
-                if (range) this.operate(first, range, keys, total);
-                else this.reset();
+                if (range) {this.operate(first, range, keys, total);}
+                else {this.reset();}
                 return true;
             }
             const effectiveKey =
@@ -450,7 +450,7 @@ export class NeovimController {
             const line = currentLine(this.editor.state.doc, vim.cursor);
             if (line) {
                 let to = vim.cursor;
-                for (let index = 0; index < count; index++) to = nextCharacter(this.editor.state.doc, to);
+                for (let index = 0; index < count; index++) {to = nextCharacter(this.editor.state.doc, to);}
                 if (to > vim.cursor) {
                     const tr = this.editor.state.tr.insertText((commandKeys[1] ?? "").repeat(count), vim.cursor, to);
                     tr.setMeta(neovimKey, { lastChange: { keys }, pending: [] });
@@ -469,9 +469,9 @@ export class NeovimController {
                 case "R": {
                     let pos = vim.cursor;
                     const line = currentLine(this.editor.state.doc, pos);
-                    if (first === "a") pos = nextCharacter(this.editor.state.doc, pos);
-                    if (first === "I") pos = line ? line.from + Math.max(0, line.text.search(/\S/u)) : pos;
-                    if (first === "A") pos = line?.to ?? pos;
+                    if (first === "a") {pos = nextCharacter(this.editor.state.doc, pos);}
+                    if (first === "I") {pos = line ? line.from + Math.max(0, line.text.search(/\S/u)) : pos;}
+                    if (first === "A") {pos = line?.to ?? pos;}
                     this.setMode(first === "R" ? "replace" : "insert", keys, pos);
                     return true;
                 }
@@ -493,14 +493,14 @@ export class NeovimController {
                 case "C": {
                     const line = currentLine(this.editor.state.doc, vim.cursor);
                     let to = vim.cursor;
-                    for (let index = 0; index < count; index++) to = nextCharacter(this.editor.state.doc, to);
+                    for (let index = 0; index < count; index++) {to = nextCharacter(this.editor.state.doc, to);}
                     if (line)
-                        this.operate(
+                        {this.operate(
                             first === "C" ? "c" : "d",
                             { from: vim.cursor, to: first === "x" ? to : line.to, shape: "character" },
                             keys,
                             count,
-                        );
+                        );}
                     return true;
                 }
                 case "p":
@@ -508,11 +508,11 @@ export class NeovimController {
                     return this.put(first === "p", keys, count);
                 case "u":
                     this.reset();
-                    for (let index = 0; index < count; index++) this.editor.commands.undo();
+                    for (let index = 0; index < count; index++) {this.editor.commands.undo();}
                     return true;
                 case "<C-r>":
                     this.reset();
-                    for (let index = 0; index < count; index++) this.editor.commands.redo();
+                    for (let index = 0; index < count; index++) {this.editor.commands.redo();}
                     return true;
                 case ".":
                     return this.repeat(count);
@@ -538,7 +538,7 @@ export class NeovimController {
                             first === "," ? (reverse[this.lastFind.key] ?? "f") : this.lastFind.key,
                             this.lastFind.char,
                         );
-                        if (found) this.move(found.pos);
+                        if (found) {this.move(found.pos);}
                     }
                     this.reset();
                     return true;
@@ -548,13 +548,13 @@ export class NeovimController {
         return this.resolveMotion(command, count, keys);
     }
 
-    private resolveMotion(key: string, count: number, keys: readonly string[], operator?: string): boolean {
+    private resolveMotion(key: string, count: number, keys: ReadonlyArray<string>, operator?: string): boolean {
         const vim = this.getState();
-        if (!vim) return false;
+        if (!vim) {return false;}
         const motion = this.motionHandlers.get(key);
         const find = /^[fFtT][^]$/u.test(key) ? findCharacter(this.context(count), key[0] ?? "f", key.slice(1)) : null;
         const target = motion?.(this.context(count)) ?? find;
-        if (find) this.lastFind = { key: key[0] ?? "f", char: key.slice(1) };
+        if (find) {this.lastFind = { key: key[0] ?? "f", char: key.slice(1) };}
         if (target) {
             if (operator) {
                 const from = Math.min(vim.cursor, target.pos);
@@ -567,8 +567,8 @@ export class NeovimController {
                               to: target.inclusive ? nextCharacter(this.editor.state.doc, to) : to,
                               shape: "character" as const,
                           };
-                if (range) this.operate(operator, range, keys, count);
-            } else this.move(target.pos, ["j", "k"].includes(key));
+                if (range) {this.operate(operator, range, keys, count);}
+            } else {this.move(target.pos, ["j", "k"].includes(key));}
             return true;
         }
         const prefix =
@@ -588,7 +588,7 @@ export class NeovimController {
         this.update({ pending: [], ...(mode === "operator-pending" ? { mode: "normal" } : {}) });
     }
 
-    private operate(operator: string, range: VimRange, keys: readonly string[], count: number): void {
+    private operate(operator: string, range: VimRange, keys: ReadonlyArray<string>, count: number): void {
         const state = this.editor.state;
         const vim = this.getState();
         const visual =
@@ -639,14 +639,14 @@ export class NeovimController {
             lastChange: operator === "y" || this.replaying ? vim?.lastChange : { keys, visual },
         });
         this.editor.view.dispatch(operator === "y" ? tr : closeHistory(tr));
-        if (operator === "c") this.setMode("insert", keys);
-        else this.move(this.editor.state.selection.head);
+        if (operator === "c") {this.setMode("insert", keys);}
+        else {this.move(this.editor.state.selection.head);}
     }
 
-    private openLine(key: string, keys: readonly string[]): boolean {
+    private openLine(key: string, keys: ReadonlyArray<string>): boolean {
         const state = this.editor.state;
         const $pos = state.doc.resolve(this.getState()?.cursor ?? state.selection.head);
-        if (!$pos.parent.isTextblock) return true;
+        if (!$pos.parent.isTextblock) {return true;}
         const at = key === "o" ? $pos.after() : $pos.before();
         const paragraph = state.schema.nodes.paragraph?.create();
         if (
@@ -659,7 +659,7 @@ export class NeovimController {
                     paragraph.type,
                 )
         )
-            return true;
+            {return true;}
         const tr = state.tr.insert(at, paragraph);
         tr.setSelection(TextSelection.create(tr.doc, at + 1));
         this.editor.view.dispatch(closeHistory(tr));
@@ -667,7 +667,7 @@ export class NeovimController {
         return true;
     }
 
-    private put(after: boolean, keys: readonly string[], count: number): boolean {
+    private put(after: boolean, keys: ReadonlyArray<string>, count: number): boolean {
         const vim = this.getState();
         if (!vim?.register) {
             this.reset();
@@ -688,7 +688,7 @@ export class NeovimController {
                 : after
                   ? nextCharacter(state.doc, vim.cursor)
                   : vim.cursor;
-        if (at === undefined) return true;
+        if (at === undefined) {return true;}
         const tr = state.tr;
         let pos = at;
         for (let index = 0; index < count; index++) {
@@ -716,11 +716,11 @@ export class NeovimController {
             for (let index = 0; index < count; index++) {
                 if (change.visual) {
                     const range = this.repeatedRange(change.visual);
-                    if (range) this.operate(change.keys.at(-1) ?? "d", range, change.keys, 1);
-                } else for (const key of change.keys) this.feed(key, false);
-                if (change.inserted) this.insertSlice(change.inserted);
+                    if (range) {this.operate(change.keys.at(-1) ?? "d", range, change.keys, 1);}
+                } else {for (const key of change.keys) {this.feed(key, false);}}
+                if (change.inserted) {this.insertSlice(change.inserted);}
                 const mode = this.getState()?.mode;
-                if (mode === "insert" || mode === "replace") this.setMode("normal");
+                if (mode === "insert" || mode === "replace") {this.setMode("normal");}
             }
         } finally {
             this.replaying = false;
@@ -735,7 +735,7 @@ export class NeovimController {
         if (this.getState()?.mode === "replace") {
             let to = state.selection.head;
             const count = boundaries(slice.content.textBetween(0, slice.content.size)).length - 1;
-            for (let index = 0; index < count; index++) to = nextCharacter(state.doc, to);
+            for (let index = 0; index < count; index++) {to = nextCharacter(state.doc, to);}
             tr.setSelection(TextSelection.create(state.doc, state.selection.head, to));
         }
         this.editor.view.dispatch(tr.replaceSelection(slice));
@@ -765,7 +765,7 @@ export class NeovimController {
         const all = lines(doc);
         const index = all.findIndex((line) => from >= line.from && from <= line.to);
         if (visual.shape === "line")
-            return lineRange(doc, from, all[Math.min(all.length - 1, index + visual.size - 1)]?.from ?? from);
+            {return lineRange(doc, from, all[Math.min(all.length - 1, index + visual.size - 1)]?.from ?? from);}
         const positions = all
             .flatMap((line) => boundaries(line.text).map((offset) => line.from + offset))
             .filter((pos) => pos >= from);
@@ -781,19 +781,19 @@ export class NeovimController {
         if (key === "<CR>") {
             const query = command.slice(1);
             this.update({ mode: "normal", command: "" });
-            if (command.startsWith("/")) this.search(query || this.getState()?.search || "", 1, 1);
-            else if (command.startsWith("?")) this.search(query || this.getState()?.search || "", -1, 1);
+            if (command.startsWith("/")) {this.search(query || this.getState()?.search || "", 1, 1);}
+            else if (command.startsWith("?")) {this.search(query || this.getState()?.search || "", -1, 1);}
             else if (/^\d+$/u.test(query))
-                this.move(
+                {this.move(
                     lines(this.editor.state.doc)[
                         Math.max(0, Math.min(lines(this.editor.state.doc).length - 1, Number(query) - 1))
                     ]?.from ?? 1,
-                );
-            else if (query === "noh" || query === "nohlsearch") this.update({ search: "", message: "" });
-            else this.update({ message: `Unsupported command: ${query}` });
+                );}
+            else if (query === "noh" || query === "nohlsearch") {this.update({ search: "", message: "" });}
+            else {this.update({ message: `Unsupported command: ${query}` });}
             return true;
         }
-        if (!key.startsWith("<")) this.update({ command: command + key });
+        if (!key.startsWith("<")) {this.update({ command: command + key });}
         return true;
     }
 
@@ -802,7 +802,7 @@ export class NeovimController {
             this.reset();
             return;
         }
-        const matches: number[] = [];
+        const matches: Array<number> = [];
         for (const line of lines(this.editor.state.doc)) {
             let offset = line.text.indexOf(query);
             while (offset >= 0) {
@@ -812,10 +812,10 @@ export class NeovimController {
         }
         let pos = this.getState()?.cursor ?? 1;
         for (let index = 0; index < count; index++)
-            pos =
+            {pos =
                 direction === 1
                     ? (matches.find((match) => match > pos) ?? matches[0] ?? pos)
-                    : (matches.filter((match) => match < pos).at(-1) ?? matches.at(-1) ?? pos);
+                    : (matches.filter((match) => match < pos).at(-1) ?? matches.at(-1) ?? pos);}
         this.move(pos);
         this.update({
             search: query,

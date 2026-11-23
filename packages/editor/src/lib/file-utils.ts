@@ -1,15 +1,15 @@
 import { uuid } from "@g4rcez/components";
 
-function joinPath(...segments: string[]): string {
+function joinPath(...segments: Array<string>): string {
     return segments
         .join("/")
-        .replace(/\/+/g, "/") // Collapse multiple slashes
+        .replaceAll(/\/+/g, "/") // Collapse multiple slashes
         .replace(/\/$/, ""); // Remove trailing slash
 }
 
 export function getDirname(filePath: string): string {
     const lastSlash = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"));
-    if (lastSlash === -1) return ".";
+    if (lastSlash === -1) {return ".";}
     return filePath.substring(0, lastSlash) || "/";
 }
 
@@ -23,8 +23,8 @@ function getExtension(filePath: string): string {
 }
 
 export function getRelativePath(from: string, to: string): string {
-    const normalizedFrom = from.replace(/\\/g, "/");
-    const normalizedTo = to.replace(/\\/g, "/");
+    const normalizedFrom = from.replaceAll('\\', "/");
+    const normalizedTo = to.replaceAll('\\', "/");
     if (normalizedTo.startsWith(normalizedFrom)) {
         return normalizedTo.substring(normalizedFrom.length).replace(/^\//, "");
     }
@@ -33,14 +33,14 @@ export function getRelativePath(from: string, to: string): string {
 }
 
 function sanitizeFilename(title: string): string {
-    const invalidChars = /[<>:"/\\|?*\x00-\x1F]/g;
+    const invalidChars = /[<>:"/\\|?*\u0000-\u001F]/g;
     const sanitized = title
-        .replace(invalidChars, "") // Remove invalid characters
-        .replace(/\s+/g, "-") // Replace whitespace with hyphens
-        .replace(/-+/g, "-") // Collapse multiple hyphens
+        .replaceAll(invalidChars, "") // Remove invalid characters
+        .replaceAll(/\s+/g, "-") // Replace whitespace with hyphens
+        .replaceAll(/-+/g, "-") // Collapse multiple hyphens
         .toLowerCase()
         .trim()
-        .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+        .replaceAll(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
     const maxLength = 255 - 3; // Reserve space for .md extension
     const truncated = sanitized.substring(0, maxLength);
     return truncated || "untitled";
@@ -91,7 +91,7 @@ export function createStandaloneNote(filePath: string, content: string) {
         updatedAt: now,
         fileSize: content.length,
         lastSynced: now,
-        tags: [] as string[],
+        tags: [] as Array<string>,
         createdBy: "user",
         updatedBy: "user",
     };
@@ -104,7 +104,7 @@ export function createStandaloneNote(filePath: string, content: string) {
  * - Example: "A/B/C/D" -> "A / ... / C / D"
  */
 export function formatSimplifiedPath(path: string): string {
-    if (!path) return "";
+    if (!path) {return "";}
 
     const segments = path.split("/").filter(Boolean);
 
@@ -122,8 +122,8 @@ export function formatSimplifiedPath(path: string): string {
     // A / B / C / D -> A / ... / C / D
 
     const first = segments[0];
-    const last = segments[segments.length - 1];
-    const secondLast = segments[segments.length - 2];
+    const last = segments.at(-1);
+    const secondLast = segments.at(-2);
 
     // If 4 segments: A, B, C, D -> A / ... / C / D ?
     // Or A / B / C / D ?
@@ -138,7 +138,7 @@ export function formatSimplifiedPath(path: string): string {
  * @param existingNotes - Array of notes to check against
  * @returns A unique title (e.g., "Untitled", "Untitled-1", "Untitled-2")
  */
-export function getUniqueNoteTitle(baseTitle: string, existingNotes: { title: string }[]): string {
+export function getUniqueNoteTitle(baseTitle: string, existingNotes: Array<{ title: string }>): string {
     const existingTitles = new Set(existingNotes.map((n) => n.title));
     if (!existingTitles.has(baseTitle)) {
         return baseTitle;

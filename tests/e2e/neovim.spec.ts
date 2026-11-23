@@ -32,7 +32,7 @@ test("keeps Vim motions authoritative while a native selection change is pending
     const editor = page.getByRole("textbox", { name: "Note editor", exact: true });
     const prefix = await editor.evaluate((element) => {
         const selection = window.getSelection();
-        if (!selection) throw new Error("The editor has no native selection");
+        if (!selection) {throw new Error("The editor has no native selection");}
         const range = document.createRange();
         range.selectNodeContents(element);
         range.collapse(false);
@@ -47,7 +47,7 @@ test("keeps Vim motions authoritative while a native selection change is pending
                 new KeyboardEvent("keydown", { key, code, keyCode, bubbles: true, cancelable: true }),
             );
         }
-        if (!selection.focusNode) throw new Error("The Vim motion lost the native selection");
+        if (!selection.focusNode) {throw new Error("The Vim motion lost the native selection");}
         const beforeCursor = document.createRange();
         beforeCursor.selectNodeContents(element);
         beforeCursor.setEnd(selection.focusNode, selection.focusOffset);

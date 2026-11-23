@@ -57,7 +57,7 @@ type Drawing = {
     pointerType: string;
     stroke: InkStroke;
     before: FreehandNotebook;
-    erased: InkStroke[];
+    erased: Array<InkStroke>;
 };
 
 type Touch = { x: number; y: number };
@@ -107,7 +107,7 @@ const penTypes = [
         icon: PencilSimpleIcon,
     },
 ] satisfies Array<{ style: PenStyle; label: string; name: string; description: string; icon: typeof PenIcon }>;
-const penPreviewPoints: InkPoint[] = Array.from({ length: 12 }, (_, index) => [
+const penPreviewPoints: Array<InkPoint> = Array.from({ length: 12 }, (_, index) => [
     12 + index * 12,
     22 + Math.sin(index * 0.6) * 10,
     0.1 + (index / 11) * 0.8,
@@ -134,7 +134,7 @@ function PaperColor({
     function accept(color: string): void {
         setDraft(color);
         setInvalid(false);
-        if (color.toLowerCase() !== value.toLowerCase()) onChange(color.toLowerCase());
+        if (color.toLowerCase() !== value.toLowerCase()) {onChange(color.toLowerCase());}
     }
     function updateFromColorPicker(event: ChangeEvent<HTMLInputElement>): void {
         accept(event.target.value);
@@ -147,12 +147,12 @@ function PaperColor({
 
     function commitColorDraft(): void {
         const color = draft.trim();
-        if (/^#[\da-f]{6}$/i.test(color)) accept(color);
-        else setInvalid(true);
+        if (/^#[\da-f]{6}$/i.test(color)) {accept(color);}
+        else {setInvalid(true);}
     }
 
     function handleColorKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Enter") {event.currentTarget.blur();}
     }
     return (
         <div className="wm-paper-color">
@@ -194,7 +194,7 @@ const StrokePath = memo(function StrokePath({
     stroke: InkStroke;
     sample?: boolean;
 }): JSX.Element {
-    const textureId = useId().replace(/:/g, "");
+    const textureId = useId().replaceAll(':', "");
     const pencil = stroke.tool === "pen" && stroke.penStyle === "pencil";
     return (
         <>
@@ -235,7 +235,7 @@ export function FreehandCanvas({
     saveStatus: "Saved" | "Saving…" | "Could not save";
     onRetry: () => void;
     actions?: ReactNode;
-    linkableNotes: readonly NoteLinkTarget[];
+    linkableNotes: ReadonlyArray<NoteLinkTarget>;
     selectionAction?: ReactNode;
     initialPageIndex?: number;
     pageBackground?: (pageIndex: number, zoom: number) => ReactNode;
@@ -276,9 +276,9 @@ export function FreehandCanvas({
     const touches = useRef(new Map<number, Touch>());
     const moving = useRef<{ pointerId: number; x: number; y: number } | null>(null);
     const viewport = useRef<HTMLDivElement>(null);
-    const undo = useRef<FreehandNotebook[]>([]);
-    const redo = useRef<FreehandNotebook[]>([]);
-    const patternId = useId().replace(/:/g, "");
+    const undo = useRef<Array<FreehandNotebook>>([]);
+    const redo = useRef<Array<FreehandNotebook>>([]);
+    const patternId = useId().replaceAll(':', "");
     const panelId = useId();
     const penDescriptionId = useId();
     const page = notebook.pages[pageIndex]!;
@@ -299,23 +299,23 @@ export function FreehandCanvas({
     });
 
     const zoomWithWheel = useEffectEvent((event: WheelEvent): void => {
-        if (event.deltaY === 0) return;
+        if (event.deltaY === 0) {return;}
         event.preventDefault();
         event.stopPropagation();
         changeZoom(zoomRef.current + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
     });
 
     useEffect(() => {
-        const controls: (HTMLElement | null)[] = [zoomOptions.current, zoomReset.current];
-        for (const control of controls) control?.addEventListener("wheel", zoomWithWheel, { passive: false });
+        const controls: Array<HTMLElement | null> = [zoomOptions.current, zoomReset.current];
+        for (const control of controls) {control?.addEventListener("wheel", zoomWithWheel, { passive: false });}
         return () => {
-            for (const control of controls) control?.removeEventListener("wheel", zoomWithWheel);
+            for (const control of controls) {control?.removeEventListener("wheel", zoomWithWheel);}
         };
     }, [activePanel, toolsHidden]);
 
     useEffect(() => {
         const paperViewport = viewport.current;
-        if (!paperViewport) return;
+        if (!paperViewport) {return;}
 
         let previousSize: { width: number; height: number } | null = null;
         const observer = new ResizeObserver(() => {
@@ -324,12 +324,12 @@ export function FreehandCanvas({
                 previousSize = { width, height };
                 return;
             }
-            if (previousSize.width === width && previousSize.height === height) return;
+            if (previousSize.width === width && previousSize.height === height) {return;}
             previousSize = { width, height };
-            if (!window.matchMedia("(max-width: 900px)").matches) return;
+            if (!window.matchMedia("(max-width: 900px)").matches) {return;}
 
             const card = paperViewport.querySelector<HTMLElement>(".wm-sticky-link");
-            if (!card) return;
+            if (!card) {return;}
             const viewportBounds = paperViewport.getBoundingClientRect();
             const cardBounds = card.getBoundingClientRect();
             const visibleTop = Math.max(0, viewportBounds.top);
@@ -357,23 +357,23 @@ export function FreehandCanvas({
     }, []);
 
     useEffect(() => {
-        if (toolsHidden) showToolsButton.current?.focus();
-        else if (previouslyHidden.current) notebookOptionsButton.current?.focus();
+        if (toolsHidden) {showToolsButton.current?.focus();}
+        else if (previouslyHidden.current) {notebookOptionsButton.current?.focus();}
         previouslyHidden.current = toolsHidden;
     }, [toolsHidden]);
 
     useEffect(() => {
-        if (!activePanel) return;
+        if (!activePanel) {return;}
         const trigger =
             activePanel === "pen" ? penOptionsButton : activePanel === "ink" ? inkOptionsButton : notebookOptionsButton;
         optionsPanel.current?.querySelector<HTMLElement>("input[type='search'], select, button[aria-pressed]")?.focus();
         const dismissOutside = (event: Event): void => {
-            if (!(event.target instanceof Node)) return;
-            if (optionsPanel.current?.contains(event.target) || trigger.current?.contains(event.target)) return;
+            if (!(event.target instanceof Node)) {return;}
+            if (optionsPanel.current?.contains(event.target) || trigger.current?.contains(event.target)) {return;}
             setActivePanel(null);
         };
         const dismissWithEscape = (event: globalThis.KeyboardEvent): void => {
-            if (event.key !== "Escape") return;
+            if (event.key !== "Escape") {return;}
             event.preventDefault();
             event.stopPropagation();
             setActivePanel(null);
@@ -390,7 +390,7 @@ export function FreehandCanvas({
     }, [activePanel]);
 
     useEffect(() => {
-        if (!placingLinkId) return;
+        if (!placingLinkId) {return;}
         const cancelPlacement = (event: globalThis.KeyboardEvent): void => {
             if (event.key === "Escape") {
                 event.preventDefault();
@@ -423,11 +423,11 @@ export function FreehandCanvas({
         onChange(next);
     }
 
-    function withStrokes(strokes: InkStroke[], base = notebookRef.current): FreehandNotebook {
+    function withStrokes(strokes: Array<InkStroke>, base = notebookRef.current): FreehandNotebook {
         return { ...base, pages: base.pages.map((page, index) => (index === pageIndex ? { ...page, strokes } : page)) };
     }
 
-    function updateLinks(links: FreehandNoteLink[]): void {
+    function updateLinks(links: Array<FreehandNoteLink>): void {
         cancelDrawing();
         const base = notebookRef.current;
         commit({ ...base, pages: base.pages.map((page, index) => (index === pageIndex ? { ...page, links } : page)) });
@@ -497,21 +497,21 @@ export function FreehandCanvas({
     }
 
     function cancelDrawing(): void {
-        if (drawing.current) show(drawing.current.before);
+        if (drawing.current) {show(drawing.current.before);}
         drawing.current = null;
         setPreview(null);
     }
 
     function pointerDown(event: PointerEvent<SVGSVGElement>): void {
-        if (event.button !== 0 || (event.pointerType === "touch" && (event.width > 40 || event.height > 40))) return;
+        if (event.button !== 0 || (event.pointerType === "touch" && (event.width > 40 || event.height > 40))) {return;}
         if (placingLinkId) {
             event.preventDefault();
             const [x, y] = pointFromEvent(event.nativeEvent, event.currentTarget);
             moveLink(placingLinkId, { x, y });
             return;
         }
-        if (drawing.current?.pointerType === "pen" || drawing.current?.pointerType === "mouse") return;
-        if (drawing.current && event.pointerType === "pen") cancelDrawing();
+        if (drawing.current?.pointerType === "pen" || drawing.current?.pointerType === "mouse") {return;}
+        if (drawing.current && event.pointerType === "pen") {cancelDrawing();}
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
         if (event.pointerType === "touch") {
@@ -525,8 +525,8 @@ export function FreehandCanvas({
             moving.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
             return;
         }
-        if (drawing.current) return;
-        if (event.pointerType !== "touch") touches.current.clear();
+        if (drawing.current) {return;}
+        if (event.pointerType !== "touch") {touches.current.clear();}
         moving.current = null;
         const stroke: InkStroke = {
             points: [pointFromEvent(event.nativeEvent, event.currentTarget)],
@@ -543,13 +543,13 @@ export function FreehandCanvas({
             before: notebookRef.current,
             erased: page.strokes,
         };
-        if (tool === "eraser") erase(stroke.points[0]!, stroke.points[0]!);
-        else setPreview({ ...stroke });
+        if (tool === "eraser") {erase(stroke.points[0]!, stroke.points[0]!);}
+        else {setPreview({ ...stroke });}
     }
 
     function erase(from: InkPoint, to: InkPoint): void {
         const active = drawing.current;
-        if (!active) return;
+        if (!active) {return;}
         active.erased = active.erased.filter((stroke) => !strokeIntersects(stroke, from, to, 14));
         show(withStrokes(active.erased));
     }
@@ -563,7 +563,7 @@ export function FreehandCanvas({
             if (previous.length === 2 && next.length === 2) {
                 const oldDistance = Math.hypot(previous[0]!.x - previous[1]!.x, previous[0]!.y - previous[1]!.y);
                 const newDistance = Math.hypot(next[0]!.x - next[1]!.x, next[0]!.y - next[1]!.y);
-                if (oldDistance > 0) changeZoom((zoomRef.current * newDistance) / oldDistance);
+                if (oldDistance > 0) {changeZoom((zoomRef.current * newDistance) / oldDistance);}
             }
         }
         const active = drawing.current;
@@ -573,9 +573,9 @@ export function FreehandCanvas({
                 const point = pointFromEvent(sample, event.currentTarget);
                 const previous = active.stroke.points.at(-1)!;
                 active.stroke.points.push(point);
-                if (tool === "eraser") erase(previous, point);
+                if (tool === "eraser") {erase(previous, point);}
             }
-            if (tool !== "eraser") setPreview({ ...active.stroke, points: [...active.stroke.points] });
+            if (tool !== "eraser") {setPreview({ ...active.stroke, points: [...active.stroke.points] });}
         } else if (moving.current?.pointerId === event.pointerId && viewport.current) {
             viewport.current.scrollLeft -= event.clientX - moving.current.x;
             viewport.current.scrollTop -= event.clientY - moving.current.y;
@@ -585,9 +585,9 @@ export function FreehandCanvas({
 
     function pointerEnd(event: PointerEvent<SVGSVGElement>, cancelled = false): void {
         touches.current.delete(event.pointerId);
-        if (moving.current?.pointerId === event.pointerId) moving.current = null;
+        if (moving.current?.pointerId === event.pointerId) {moving.current = null;}
         const active = drawing.current;
-        if (active?.pointerId !== event.pointerId) return;
+        if (active?.pointerId !== event.pointerId) {return;}
         if (cancelled) {
             cancelDrawing();
             return;
@@ -597,7 +597,7 @@ export function FreehandCanvas({
         if (tool === "eraser") {
             erase(active.stroke.points.at(-1)!, finalPoint);
             if (active.erased.length !== active.before.pages[pageIndex]!.strokes.length)
-                commit(withStrokes(active.erased), active.before);
+                {commit(withStrokes(active.erased), active.before);}
         } else {
             active.stroke.points.push(finalPoint);
             commit(withStrokes([...page.strokes, active.stroke]), active.before);
@@ -612,7 +612,7 @@ export function FreehandCanvas({
         const source = direction === "undo" ? undo : redo;
         const destination = direction === "undo" ? redo : undo;
         const next = source.current.pop();
-        if (!next) return;
+        if (!next) {return;}
         destination.current.push(notebookRef.current);
         setPageIndex((index) => Math.min(index, next.pages.length - 1));
         show(next);
@@ -620,20 +620,20 @@ export function FreehandCanvas({
     }
     function focusNotebookFromPointer(event: PointerEvent<HTMLElement>): void {
         if (event.target instanceof Node && viewport.current?.contains(event.target))
-            event.currentTarget.focus({ preventScroll: true });
+            {event.currentTarget.focus({ preventScroll: true });}
     }
 
     function handleNotebookKeyDown(event: KeyboardEvent<HTMLElement>): void {
-        if (event.altKey) return;
+        if (event.altKey) {return;}
         if (!(event.metaKey || event.ctrlKey)) {
-            if (!fixedPages || event.target !== event.currentTarget) return;
+            if (!fixedPages || event.target !== event.currentTarget) {return;}
             const direction =
                 event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown"
                     ? 1
                     : event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp"
                       ? -1
                       : 0;
-            if (!direction) return;
+            if (!direction) {return;}
             event.preventDefault();
             cancelDrawing();
             setPageIndex(Math.max(0, Math.min(notebook.pages.length - 1, pageIndex + direction)));
@@ -643,11 +643,11 @@ export function FreehandCanvas({
         }
         const direction = event.key === "=" || event.key === "+" ? 1 : event.key === "-" ? -1 : 0;
         const reset = event.key === "0";
-        if (!direction && !reset) return;
+        if (!direction && !reset) {return;}
         event.preventDefault();
         event.stopPropagation();
-        if (reset) resetZoom();
-        else changeZoom(zoomRef.current + direction * ZOOM_STEP);
+        if (reset) {resetZoom();}
+        else {changeZoom(zoomRef.current + direction * ZOOM_STEP);}
     }
 
     function showTools(): void {
@@ -662,7 +662,7 @@ export function FreehandCanvas({
 
     function selectDrawingTool(event: MouseEvent<HTMLButtonElement>): void {
         const value = tools.find(({ tool: candidate }) => candidate === event.currentTarget.dataset.tool)?.tool;
-        if (!value || value === "hand") return;
+        if (!value || value === "hand") {return;}
         cancelDrawing();
         setActivePanel(value === "pen" && tool === "pen" ? (activePanel === "pen" ? null : "pen") : null);
         setTool(value);
@@ -708,7 +708,7 @@ export function FreehandCanvas({
     }
 
     function handlePageNumberKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Enter") {event.currentTarget.blur();}
     }
 
     function handlePageNumberBlur(event: FocusEvent<HTMLInputElement>): void {
@@ -733,7 +733,7 @@ export function FreehandCanvas({
 
     function selectPenType(event: MouseEvent<HTMLButtonElement>): void {
         const selected = penTypes.find(({ style }) => style === event.currentTarget.dataset.penStyle);
-        if (!selected) return;
+        if (!selected) {return;}
         cancelDrawing();
         setPenStyle(selected.style);
         setTool("pen");
@@ -742,7 +742,7 @@ export function FreehandCanvas({
 
     function selectInk(event: MouseEvent<HTMLButtonElement>): void {
         const selected = INKS.find(({ color }) => color === event.currentTarget.dataset.inkColor);
-        if (!selected) return;
+        if (!selected) {return;}
         setInk(selected.color);
         setTool("pen");
         setPlacingLinkId(null);

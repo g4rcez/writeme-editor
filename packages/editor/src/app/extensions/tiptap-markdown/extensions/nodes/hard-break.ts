@@ -23,14 +23,14 @@ export default HardBreak.extend({
                     index: number,
                 ) {
                     for (let i = index + 1; i < parent.childCount; i++)
-                        if (parent.child(i).type != node.type) {
+                        {if (parent.child(i).type != node.type) {
                             if (state.inTable) {
                                 HTMLNode.storage.markdown.serialize.call(this, state, node, parent);
                             } else {
                                 state.write("  \n");
                             }
                             return;
-                        }
+                        }}
                 },
                 parse: {},
             },

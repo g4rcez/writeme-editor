@@ -4,7 +4,7 @@ import { TagsGraph } from "@/app/components/tags-graph";
 import { repositories, useGlobalStore } from "@/store/global.store";
 
 export default function TagsPage() {
-    const [graphData, setGraphData] = useState<{ nodes: any[]; links: any[] }>({
+    const [graphData, setGraphData] = useState<{ nodes: Array<any>; links: Array<any> }>({
         nodes: [],
         links: [],
     });
@@ -19,8 +19,8 @@ export default function TagsPage() {
                     repositories.notes.getAll(),
                     repositories.hashtags.getAll(),
                 ]);
-                const nodes: any[] = [];
-                const links: any[] = [];
+                const nodes: Array<any> = [];
+                const links: Array<any> = [];
                 const tagSet = new Set<string>();
                 const noteMap = new Map<string, string>(); // filename/path/title -> noteId
                 const noteIdSet = new Set<string>();
@@ -33,7 +33,7 @@ export default function TagsPage() {
                         name: note.title || "Untitled",
                     });
                     noteIdSet.add(note.id);
-                    if (note.filePath) noteMap.set(note.filePath, note.id);
+                    if (note.filePath) {noteMap.set(note.filePath, note.id);}
                     noteMap.set(note.title, note.id); // Fallback mapping
                 });
                 allHashtags.forEach((entry) => {
@@ -63,18 +63,18 @@ export default function TagsPage() {
 
                     for (const m of content.matchAll(/\[([^\]]+)\]\([^)]*"writeme-mention:([^"]+)"\)/g)) {
                         const targetId = m[2]!;
-                        if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
+                        if (noteIdSet.has(targetId)) {mentionedIds.add(targetId);}
                     }
 
                     for (const m of content.matchAll(/app:\/\/note\/([^\s<>"')\]]+)/g)) {
                         const targetId = m[1]!;
-                        if (noteIdSet.has(targetId)) mentionedIds.add(targetId);
+                        if (noteIdSet.has(targetId)) {mentionedIds.add(targetId);}
                     }
 
                     for (const m of content.matchAll(/\[\[([^\]]+)\]\]/g)) {
                         const raw = m[1]!;
                         const targetId = noteIdSet.has(raw) ? raw : (noteMap.get(raw) ?? null);
-                        if (targetId && targetId !== note.id) mentionedIds.add(targetId);
+                        if (targetId && targetId !== note.id) {mentionedIds.add(targetId);}
                     }
 
                     mentionedIds.forEach((targetId) => {

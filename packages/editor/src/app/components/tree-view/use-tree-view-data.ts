@@ -1,26 +1,26 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isElectron } from "@/lib/is-electron";
-import { type FileSearchEvent, type FlattenedNode, type TreeNode } from "@/types/tree";
+import type { FileSearchEvent, FlattenedNode, TreeNode } from "@/types/tree";
 import { createFileSearchRequestId, flattenVisibleNodes, type FileSearchStatus } from "./tree-view-utils";
 
 export const useTreeViewData = (rootPath: string, searchQuery: string) => {
-    const [rootChildren, setRootChildren] = useState<TreeNode[] | null>(null);
+    const [rootChildren, setRootChildren] = useState<Array<TreeNode> | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [permissionDenied, setPermissionDenied] = useState(false);
     const [isRequestingAccess, setIsRequestingAccess] = useState(false);
     const [expandedPaths, setExpandedPaths] = useState(() => new Set<string>());
-    const [childrenCache, setChildrenCache] = useState(new Map<string, TreeNode[]>());
+    const [childrenCache, setChildrenCache] = useState(new Map<string, Array<TreeNode>>());
     const [loadingPaths, setLoadingPaths] = useState(new Set<string>());
-    const [searchResults, setSearchResults] = useState<TreeNode[]>([]);
+    const [searchResults, setSearchResults] = useState<Array<TreeNode>>([]);
     const [searchStatus, setSearchStatus] = useState<FileSearchStatus>("idle");
     const [searchError, setSearchError] = useState<string | null>(null);
     const [searchTruncated, setSearchTruncated] = useState(false);
     const [searchRefreshToken, setSearchRefreshToken] = useState(0);
     const hasRequestedDirectoryAccessRef = useRef(false);
-    const childrenCacheRef = useRef(new Map<string, TreeNode[]>());
+    const childrenCacheRef = useRef(new Map<string, Array<TreeNode>>());
     const expandedPathsRef = useRef(new Set<string>());
-    const flattenedNodesRef = useRef<FlattenedNode[]>([]);
+    const flattenedNodesRef = useRef<Array<FlattenedNode>>([]);
     const isSearching = searchQuery.trim().length > 0;
 
     const loadRoot = useCallback(async () => {
@@ -35,8 +35,8 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
                 setPermissionDenied(false);
                 setRootChildren(result.entries);
             }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load directory");
+        } catch (error_) {
+            setError(error_ instanceof Error ? error_.message : "Failed to load directory");
         } finally {
             setIsLoading(false);
         }
@@ -87,7 +87,7 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
         setSearchTruncated(false);
 
         const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
-            if (!isCurrentSearch || event.requestId !== requestId) return;
+            if (!isCurrentSearch || event.requestId !== requestId) {return;}
 
             if (event.type === "batch") {
                 startTransition(() => {
@@ -110,14 +110,14 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
             void fsApi
                 .startFileSearch(rootPath, query, requestId)
                 .then((result) => {
-                    if (!isCurrentSearch || result.success) return;
+                    if (!isCurrentSearch || result.success) {return;}
                     setSearchStatus("error");
                     setSearchError(result.error);
                 })
-                .catch((reason: unknown) => {
-                    if (!isCurrentSearch) return;
+                .catch((error_: unknown) => {
+                    if (!isCurrentSearch) {return;}
                     setSearchStatus("error");
-                    setSearchError(reason instanceof Error ? reason.message : "Failed to search workspace files");
+                    setSearchError(error_ instanceof Error ? error_.message : "Failed to search workspace files");
                 });
         }, 180);
 
@@ -132,15 +132,15 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
     }, [rootPath, searchQuery, searchRefreshToken]);
 
     useEffect(() => {
-        if (!permissionDenied || hasRequestedDirectoryAccessRef.current) return;
+        if (!permissionDenied || hasRequestedDirectoryAccessRef.current) {return;}
         hasRequestedDirectoryAccessRef.current = true;
         void requestDirectoryAccess();
     }, [permissionDenied, requestDirectoryAccess]);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         return window.electronAPI.fs.onDirChanged(({ dirPath }) => {
-            if (isSearching) setSearchRefreshToken((previous) => previous + 1);
+            if (isSearching) {setSearchRefreshToken((previous) => previous + 1);}
             if (dirPath === rootPath) {
                 loadRoot();
             } else if (childrenCacheRef.current.has(dirPath)) {
@@ -160,7 +160,7 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
                 parentPath: null,
             }));
         }
-        if (!rootChildren) return [];
+        if (!rootChildren) {return [];}
         return flattenVisibleNodes(rootChildren, expandedPaths, childrenCache, "");
     }, [isSearching, searchResults, rootChildren, expandedPaths, childrenCache]);
 
@@ -187,7 +187,7 @@ export const useTreeViewData = (rootPath: string, searchQuery: string) => {
         [loadRoot, rootPath],
     );
 
-    const loadChildren = useCallback(async (path: string): Promise<TreeNode[]> => {
+    const loadChildren = useCallback(async (path: string): Promise<Array<TreeNode>> => {
         setLoadingPaths((prev) => new Set(prev).add(path));
         try {
             const result = await window.electronAPI.fs.readDir(path);

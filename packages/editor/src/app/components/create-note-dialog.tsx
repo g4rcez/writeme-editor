@@ -29,7 +29,7 @@ export const CreateNoteDialog = () => {
     const [errorDetails, setErrorDetails] = useState<string | null>(null);
     const [pdfFile, setPdfFile] = useState<File | null>(null);
     const [importing, setImporting] = useState(false);
-    const [folders, setFolders] = useState<string[]>([]);
+    const [folders, setFolders] = useState<Array<string>>([]);
     const [folderSearchError, setFolderSearchError] = useState<string | null>(null);
     const initializedDialog = useRef<string | null>(null);
     const { templates } = useTemplates();
@@ -55,24 +55,24 @@ export const CreateNoteDialog = () => {
         setFolders([]);
         setFolderSearchError(null);
         const workspaceDirectory = state.directory;
-        if (!isOpen || !supportsFolders || !workspaceDirectory) return;
+        if (!isOpen || !supportsFolders || !workspaceDirectory) {return;}
         let active = true;
         const loadFolders = async (directory: string, prefix: string, depth: number): Promise<void> => {
             try {
                 const result = await window.electronAPI.fs.readDir(directory);
-                if (!active) return;
-                if (result.error) throw new Error(result.error);
+                if (!active) {return;}
+                if (result.error) {throw new Error(result.error);}
                 const directories = result.entries.filter((entry) => entry.type === "directory" && entry.name !== ".git");
                 const paths = directories.map((entry) => `${prefix}${entry.name}`);
                 setFolders((previous) => [...previous, ...paths]);
                 if (depth < 2) {
                     for (const [index, entry] of directories.entries()) {
-                        if (!active) return;
+                        if (!active) {return;}
                         await loadFolders(entry.path, `${paths[index]}/`, depth + 1);
                     }
                 }
-            } catch (reason: unknown) {
-                if (active) setFolderSearchError(reason instanceof Error ? reason.message : "Failed to load folders.");
+            } catch (error_: unknown) {
+                if (active) {setFolderSearchError(error_ instanceof Error ? error_.message : "Failed to load folders.");}
             }
         };
         void loadFolders(workspaceDirectory, "", 1);
@@ -87,14 +87,14 @@ export const CreateNoteDialog = () => {
     );
 
     const userVariables = useMemo(() => {
-        if (!selectedTemplate) return [];
+        if (!selectedTemplate) {return [];}
         const scriptNames = scripts.map((s) => s.name);
         return getUserVariables(selectedTemplate.content, scriptNames);
     }, [selectedTemplate, scripts]);
 
     useEffect(() => {
         const key = isOpen ? JSON.stringify([type, templateId, initialTitle]) : null;
-        if (key === initializedDialog.current) return;
+        if (key === initializedDialog.current) {return;}
         initializedDialog.current = key;
         if (isOpen) {
             setError(null);
@@ -114,7 +114,7 @@ export const CreateNoteDialog = () => {
     }, [isOpen, type, templateId, initialTitle, state.notes, state.directory]);
 
     const onClose = () => {
-        if (importing) return;
+        if (importing) {return;}
         setError(null);
         dispatch.setCreateNoteDialog({ isOpen: false, type });
     };
@@ -125,13 +125,13 @@ export const CreateNoteDialog = () => {
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!title.trim() || importing) return;
+        if (!title.trim() || importing) {return;}
         setErrorDetails(null);
         if (supportsFolders && /[/\\]$/.test(title.trim())) {
             setError("Enter a note name after the folder path.");
             return;
         }
-        const relativeTitle = title.trim().replace(/\\/g, "/").replace(/^\//, "");
+        const relativeTitle = title.trim().replaceAll('\\', "/").replace(/^\//, "");
         const pathSegments = relativeTitle.split("/");
         if (supportsFolders && (pathSegments.some((segment) => segment === ".." || segment === "." || !segment) ||
             /^[A-Za-z]:/.test(title.trim()))) {
@@ -144,7 +144,7 @@ export const CreateNoteDialog = () => {
         try {
             if (type === "pdf") {
                 failureMessage = "Couldn’t import the PDF. Check that the file opens in a PDF viewer, then try again.";
-                if (!pdfFile) throw new Error("Choose a PDF to import.");
+                if (!pdfFile) {throw new Error("Choose a PDF to import.");}
                 setImporting(true);
                 const { importPdfNote } = await import("@/lib/pdf-import");
                 const note = await importPdfNote(pdfFile, title.trim());
@@ -162,7 +162,7 @@ export const CreateNoteDialog = () => {
                     : type === "freehand"
                       ? buildFreehandNoteContent()
                       : "";
-            if (type === "note" && selectedStarter) content = selectedStarter.content;
+            if (type === "note" && selectedStarter) {content = selectedStarter.content;}
             if ((type === "note" || type === "quick") && selectedTemplateId) {
                 const latestTemplate = await repositories.notes.getOne(selectedTemplateId);
                 if (latestTemplate) {
@@ -184,7 +184,7 @@ export const CreateNoteDialog = () => {
             if (supportsFolders && state.directory && /[/\\]/.test(title)) {
                 failureMessage = "Couldn’t open the workspace folder. Check folder access or choose another workspace in settings.";
                 const folderResult = await window.electronAPI.fs.readDir(state.directory);
-                if (folderResult.error) throw new Error(`Could not access the workspace folder: ${folderResult.error}`);
+                if (folderResult.error) {throw new Error(`Could not access the workspace folder: ${folderResult.error}`);}
 
                 failureMessage = "Couldn’t check for an existing note. Check folder access or enter a different folder path and try again.";
                 const noteName = pathSegments.pop()!;
@@ -192,7 +192,7 @@ export const CreateNoteDialog = () => {
                 const filePath = await getUniqueFilePath(candidatePath, async (path) => {
                     const result = await window.electronAPI.fs.statFile(path);
                     if (!result.success)
-                        throw new Error(result.error ?? "Could not check whether the note already exists.");
+                        {throw new Error(result.error ?? "Could not check whether the note already exists.");}
                     return result.exists;
                 });
                 failureMessage = "Couldn’t save the note in this folder. Check folder access or enter a different folder path and try again.";
@@ -205,7 +205,7 @@ export const CreateNoteDialog = () => {
                 note.lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : new Date();
             }
             failureMessage = "Couldn’t finish creating the note. Check your notes before trying again.";
-            if (type !== "quick") await repositories.notes.save(note);
+            if (type !== "quick") {await repositories.notes.save(note);}
             await dispatch.note(note, !isFloatingEditorWindow);
             onClose();
             if (isFloatingEditorWindow) {
@@ -215,9 +215,9 @@ export const CreateNoteDialog = () => {
             } else {
                 navigate(`/note/${note.id}`);
             }
-        } catch (reason) {
+        } catch (error_) {
             setError(failureMessage);
-            setErrorDetails(reason instanceof Error ? reason.message : null);
+            setErrorDetails(error_ instanceof Error ? error_.message : null);
         } finally {
             setImporting(false);
         }
@@ -258,7 +258,7 @@ export const CreateNoteDialog = () => {
                                 const file = event.target.files?.[0] ?? null;
                                 setPdfFile(file);
                                 setError(null);
-                                if (file) setTitle(getUniqueNoteTitle(file.name.replace(/\.pdf$/i, ""), state.notes));
+                                if (file) {setTitle(getUniqueNoteTitle(file.name.replace(/\.pdf$/i, ""), state.notes));}
                             }}
                         />
                         {importing ? <span role="status">Importing PDF…</span> : null}
@@ -321,7 +321,7 @@ export const CreateNoteDialog = () => {
                             ]}
                             onChange={(event) => {
                                 const starter = NOTE_STARTERS.find((item) => item.id === event.target.value);
-                                if (!starter && contentChoice.type !== "starter") return;
+                                if (!starter && contentChoice.type !== "starter") {return;}
                                 setContentChoice(starter ? { type: "starter", id: starter.id } : { type: "blank" });
                                 setVariableValues({});
                             }}
@@ -360,7 +360,7 @@ export const CreateNoteDialog = () => {
                             title="Template (optional)"
                             onChange={(event) => {
                                 const template = templates.find((item) => item.id === event.target.value);
-                                if (!template && contentChoice.type !== "template") return;
+                                if (!template && contentChoice.type !== "template") {return;}
                                 setContentChoice(template ? { type: "template", id: template.id } : { type: "blank" });
                                 setVariableValues({});
                             }}

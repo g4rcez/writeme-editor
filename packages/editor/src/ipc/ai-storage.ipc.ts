@@ -11,7 +11,7 @@ export function registerAICredentialHandlers(getManager: () => DatabaseManager):
         const result = previous.then(operation, operation);
         pending.set(adapterId, result);
         const cleanup = (): void => {
-            if (pending.get(adapterId) === result) pending.delete(adapterId);
+            if (pending.get(adapterId) === result) {pending.delete(adapterId);}
         };
         void result.then(cleanup, cleanup);
         return result;

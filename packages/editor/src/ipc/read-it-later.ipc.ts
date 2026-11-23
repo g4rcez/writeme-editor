@@ -25,7 +25,7 @@ async function getBrowser(executablePath: string): Promise<Browser> {
 }
 
 function scheduleBrowserClose() {
-    if (closeTimer) clearTimeout(closeTimer);
+    if (closeTimer) {clearTimeout(closeTimer);}
     closeTimer = setTimeout(async () => {
         if (browserInstance) {
             await browserInstance
@@ -87,7 +87,7 @@ export const readItLaterIpcHandler = () => {
                         value.startsWith("blob:") ||
                         value.startsWith("javascript:")
                     )
-                        return value;
+                        {return value;}
                     try {
                         return new URL(value, pageUrl).href;
                     } catch {
@@ -95,7 +95,7 @@ export const readItLaterIpcHandler = () => {
                     }
                 };
 
-                const attrs: Record<string, string[]> = {
+                const attrs: Record<string, Array<string>> = {
                     a: ["href"],
                     img: ["src", "srcset"],
                     video: ["src", "poster"],
@@ -111,7 +111,7 @@ export const readItLaterIpcHandler = () => {
                     for (const el of document.querySelectorAll(tag)) {
                         for (const attr of attrList) {
                             const val = el.getAttribute(attr);
-                            if (!val) continue;
+                            if (!val) {continue;}
                             if (attr === "srcset") {
                                 el.setAttribute(
                                     attr,
@@ -140,7 +140,7 @@ export const readItLaterIpcHandler = () => {
             return { success: false, error: message };
         } finally {
             if (page)
-                await page.close().catch((error: unknown) => console.warn("read-it-later: page close failed:", error));
+                {await page.close().catch((error: unknown) => console.warn("read-it-later: page close failed:", error));}
             scheduleBrowserClose();
         }
     });

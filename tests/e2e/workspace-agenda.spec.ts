@@ -29,7 +29,7 @@ async function seedNotes(page: Page): Promise<Record<string, string>> {
         );
         const deleted = Note.new("Deleted", "- [ ] Deleted task");
         const template = Note.new("Template", "- [ ] Template task", NoteType.template);
-        for (const note of [ordinary, daily, meeting, board, deleted, template]) await repositories.notes.save(note);
+        for (const note of [ordinary, daily, meeting, board, deleted, template]) {await repositories.notes.save(note);}
         await repositories.notes.delete(deleted.id);
         return { ordinary: ordinary.id, daily: daily.id, meeting: meeting.id, board: board.id };
     });
@@ -155,7 +155,7 @@ test("keeps journal dates separate and preserves daily notes across date navigat
             daily.length !== 2 ||
             seededDaily?.content !== "# Review\n\n- [ ] Reflect on today\n\nPreserved journal content\n"
         )
-            throw new Error("Daily notes changed or duplicated");
+            {throw new Error("Daily notes changed or duplicated");}
     });
 });
 
@@ -349,14 +349,14 @@ for (const intent of ["change date", "leave Today", "cancel calendar", "leave ca
         await deferDailyLookup(page);
         await page.getByRole("button", { name: "Open daily note", exact: true }).click();
         await expect.poll(() => page.evaluate(() => Reflect.get(window, "dailyLookupStarted"))).toBe(true);
-        if (intent === "change date") await page.getByRole("button", { name: "Next day", exact: true }).click();
-        else if (intent === "cancel calendar") await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        if (intent === "change date") {await page.getByRole("button", { name: "Next day", exact: true }).click();}
+        else if (intent === "cancel calendar") {await page.getByRole("button", { name: "Cancel", exact: true }).click();}
         else if (intent === "leave calendar")
-            await page.evaluate(() => {
+            {await page.evaluate(() => {
                 window.history.pushState(null, "", "/tasks");
                 window.dispatchEvent(new PopStateEvent("popstate"));
-            });
-        else await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();
+            });}
+        else {await page.getByRole("button", { name: "Open tasks", exact: true }).first().click();}
         const destination = page.url();
         await page.evaluate(async () => {
             Reflect.get(window, "releaseDailyLookup")();

@@ -9,8 +9,8 @@ type NoteSearchField = {
 };
 
 const normalizeSearchText = (value: SearchValue): string => {
-    if (typeof value !== "string") return "";
-    return value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+    if (typeof value !== "string") {return "";}
+    return value.normalize("NFKD").replaceAll(/\p{M}/gu, "").toLowerCase();
 };
 
 const isWordBoundary = (character: string | undefined): boolean =>
@@ -23,7 +23,7 @@ const isSubsequence = (query: string, candidate: string): boolean => {
     let position = 0;
     for (const character of query) {
         position = candidate.indexOf(character, position);
-        if (position === -1) return false;
+        if (position === -1) {return false;}
         position += character.length;
     }
     return true;
@@ -32,19 +32,19 @@ const isSubsequence = (query: string, candidate: string): boolean => {
 const getFzfRawScore = (query: string, candidate: SearchValue): number | null => {
     const normalizedQuery = normalizeSearchText(query).trim();
     const normalizedCandidate = normalizeSearchText(candidate);
-    if (!normalizedQuery) return 0;
-    if (!normalizedCandidate) return null;
+    if (!normalizedQuery) {return 0;}
+    if (!normalizedCandidate) {return null;}
     return scoreNormalized(normalizedQuery, normalizedCandidate);
 };
 
 const scoreNormalized = (normalizedQuery: string, normalizedCandidate: string): number | null => {
-    if (!isSubsequence(normalizedQuery, normalizedCandidate)) return null;
+    if (!isSubsequence(normalizedQuery, normalizedCandidate)) {return null;}
 
     const queryCharacters = Array.from(normalizedQuery);
     const candidateCharacters = Array.from(normalizedCandidate);
     const scoreCharacter = (candidateIndex: number): number => {
         let score = 1;
-        if (isWordBoundary(candidateCharacters[candidateIndex - 1])) score += 8;
+        if (isWordBoundary(candidateCharacters[candidateIndex - 1])) {score += 8;}
         return score - candidateIndex * 0.01;
     };
 
@@ -65,29 +65,29 @@ const scoreNormalized = (normalizedQuery: string, normalizedCandidate: string): 
                 bestPreviousScore =
                     bestPreviousScore === null ? previousScore : Math.max(bestPreviousScore, previousScore);
             }
-            if (candidateCharacters[candidateIndex] !== queryCharacters[queryIndex]) continue;
+            if (candidateCharacters[candidateIndex] !== queryCharacters[queryIndex]) {continue;}
 
             const consecutiveScore = candidateIndex > 0 ? (scores[candidateIndex - 1] ?? null) : null;
             let bestScore = bestPreviousScore;
             if (consecutiveScore !== null) {
                 const consecutiveMatchScore = consecutiveScore + 4;
-                if (bestScore === null || consecutiveMatchScore > bestScore) bestScore = consecutiveMatchScore;
+                if (bestScore === null || consecutiveMatchScore > bestScore) {bestScore = consecutiveMatchScore;}
             }
-            if (bestScore !== null) nextScores[candidateIndex] = bestScore + scoreCharacter(candidateIndex);
+            if (bestScore !== null) {nextScores[candidateIndex] = bestScore + scoreCharacter(candidateIndex);}
         }
         scores = nextScores;
     }
 
     const score = scores.reduce<number | null>((best, current) => {
-        if (current === null) return best;
-        if (best === null) return current;
+        if (current === null) {return best;}
+        if (best === null) {return current;}
         return Math.max(best, current);
     }, null);
-    if (score === null) return null;
+    if (score === null) {return null;}
 
     let totalScore = score;
-    if (normalizedCandidate.startsWith(normalizedQuery)) totalScore += 16;
-    if (queryCharacters.length === candidateCharacters.length) totalScore += 4;
+    if (normalizedCandidate.startsWith(normalizedQuery)) {totalScore += 16;}
+    if (queryCharacters.length === candidateCharacters.length) {totalScore += 4;}
     return totalScore - candidateCharacters.length * 0.001;
 };
 
@@ -105,15 +105,15 @@ const fzfAccuracy = (
 ): number => {
     const normalizedQuery = normalizeSearchText(query).trim();
     const normalizedCandidate = normalizeSearchText(candidate);
-    if (!normalizedQuery || !normalizedCandidate) return 0;
-    if (score === null || perfectScore === null || perfectScore <= 0) return 0;
+    if (!normalizedQuery || !normalizedCandidate) {return 0;}
+    if (score === null || perfectScore === null || perfectScore <= 0) {return 0;}
 
     const relativeScore = Math.max(0, Math.min(100, (score / perfectScore) * 100));
     // A contiguous term is an intentional match even when it appears in a longer field.
     return normalizedCandidate.includes(normalizedQuery) ? Math.max(MIN_FZF_ACCURACY, relativeScore) : relativeScore;
 };
 
-const getNoteSearchFields = (note: NoteSearchable): NoteSearchField[] => [
+const getNoteSearchFields = (note: NoteSearchable): Array<NoteSearchField> => [
     { value: note.title, weight: 30 },
     { value: note.description, weight: 20 },
     { value: note.tags.join(" "), weight: 20 },
@@ -124,30 +124,30 @@ const getNoteSearchFields = (note: NoteSearchable): NoteSearchField[] => [
 
 const getNoteSearchScore = (note: NoteSearchable, query: string): number | null => {
     const normalizedQuery = normalizeSearchText(query).trim();
-    if (!normalizedQuery) return 0;
+    if (!normalizedQuery) {return 0;}
 
     let bestScore: number | null = null;
     const perfectScore = scoreNormalized(normalizedQuery, normalizedQuery);
 
     for (const field of getNoteSearchFields(note)) {
         const text = normalizeSearchText(field.value);
-        if (!text) continue;
+        if (!text) {continue;}
         // a contiguous term is an intentional match wherever it appears, even past the scored window
         const contiguous = text.includes(normalizedQuery);
         const window = text.length > SEARCH_TEXT_LIMIT ? text.slice(0, SEARCH_TEXT_LIMIT) : text;
         const score = scoreNormalized(normalizedQuery, window);
         let accuracy: number;
         if (score === null) {
-            if (!contiguous) continue;
+            if (!contiguous) {continue;}
             accuracy = MIN_FZF_ACCURACY;
         } else {
             accuracy = fzfAccuracy(normalizedQuery, window, score, perfectScore);
-            if (contiguous) accuracy = Math.max(MIN_FZF_ACCURACY, accuracy);
+            if (contiguous) {accuracy = Math.max(MIN_FZF_ACCURACY, accuracy);}
         }
-        if (accuracy < MIN_FZF_ACCURACY) continue;
+        if (accuracy < MIN_FZF_ACCURACY) {continue;}
 
         const weightedScore = accuracy + field.weight;
-        if (bestScore === null || weightedScore > bestScore) bestScore = weightedScore;
+        if (bestScore === null || weightedScore > bestScore) {bestScore = weightedScore;}
     }
 
     return bestScore;
@@ -157,13 +157,13 @@ export function getNoteSearchSnippet(content: string, query: string, maxLength =
     const lines = (content.length > SEARCH_TEXT_LIMIT ? content.slice(0, SEARCH_TEXT_LIMIT) : content)
         .split(/\r?\n/)
         .map((line) =>
-            markdownLineToPlainText(line.replace(/`/g, ""))
+            markdownLineToPlainText(line.replaceAll('`', ""))
                 .replace(/^\s{0,3}#{1,6}\s+/, "")
                 .replace(/^\s{0,3}>\s?/, "")
                 .trim(),
         )
         .filter(Boolean);
-    if (lines.length === 0) return "No preview available.";
+    if (lines.length === 0) {return "No preview available.";}
 
     const normalizedQuery = normalizeSearchText(query).trim();
     const queryTokens = normalizedQuery.split(/\s+/u).filter(Boolean);
@@ -173,7 +173,7 @@ export function getNoteSearchSnippet(content: string, query: string, maxLength =
         lines[0] ??
         "No preview available.";
     const limit = Math.max(1, Math.floor(maxLength));
-    if (snippet.length <= limit) return snippet;
+    if (snippet.length <= limit) {return snippet;}
 
     let matchIndex = -1;
     if (query.trim()) {
@@ -189,13 +189,13 @@ export function getNoteSearchSnippet(content: string, query: string, maxLength =
     return `${start > 0 ? "…" : ""}${snippet.slice(start, end)}${end < snippet.length ? "…" : ""}`;
 }
 
-export function filterNotesByQuery<T extends NoteSearchable>(notes: readonly T[], query: string): T[] {
-    if (!normalizeSearchText(query).trim()) return [...notes];
+export function filterNotesByQuery<T extends NoteSearchable>(notes: ReadonlyArray<T>, query: string): Array<T> {
+    if (!normalizeSearchText(query).trim()) {return [...notes];}
 
     const matches: Array<{ note: T; score: number; index: number }> = [];
     for (const [index, note] of notes.entries()) {
         const score = getNoteSearchScore(note, query);
-        if (score !== null) matches.push({ note, score, index });
+        if (score !== null) {matches.push({ note, score, index });}
     }
 
     return matches.sort((left, right) => right.score - left.score || left.index - right.index).map(({ note }) => note);

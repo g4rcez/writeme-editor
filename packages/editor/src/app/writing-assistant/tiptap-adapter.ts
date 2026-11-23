@@ -21,14 +21,14 @@ type EditorRange = TiptapWritingSelection;
 type AdapterListener = () => void;
 
 function subscribeListener(listeners: Set<AdapterListener>, listener: AdapterListener, disposed: boolean): () => void {
-    if (!disposed) listeners.add(listener);
+    if (!disposed) {listeners.add(listener);}
     return () => {
         listeners.delete(listener);
     };
 }
 function sameSuggestionIssues(
-    previous: readonly TiptapWritingIssue[],
-    current: readonly TiptapWritingIssue[],
+    previous: ReadonlyArray<TiptapWritingIssue>,
+    current: ReadonlyArray<TiptapWritingIssue>,
 ): boolean {
     return (
         previous.length === current.length &&
@@ -36,23 +36,23 @@ function sameSuggestionIssues(
     );
 }
 
-export function extractTiptapWritingSegments(editor: Editor, selection?: EditorRange): WritingSegment[] {
+export function extractTiptapWritingSegments(editor: Editor, selection?: EditorRange): Array<WritingSegment> {
     return createWritingSegments(getTiptapWritingTextRanges(editor.state.doc, selection));
 }
 function getTiptapWritingScopeRange(editor: Editor, scope: "paragraph" | "line"): EditorRange | null {
     const { $head } = editor.state.selection;
     const parent = $head.parent;
-    if (!["paragraph", "heading"].includes(parent.type.name)) return null;
+    if (!["paragraph", "heading"].includes(parent.type.name)) {return null;}
 
     const blockFrom = $head.start();
-    if (scope === "paragraph") return { from: blockFrom, to: $head.end() };
+    if (scope === "paragraph") {return { from: blockFrom, to: $head.end() };}
 
     let lineFrom = 0;
     let lineTo = parent.content.size;
     parent.forEach((node, offset) => {
-        if (node.type.name !== "hardBreak") return;
-        if (offset < $head.parentOffset) lineFrom = offset + node.nodeSize;
-        else lineTo = Math.min(lineTo, offset);
+        if (node.type.name !== "hardBreak") {return;}
+        if (offset < $head.parentOffset) {lineFrom = offset + node.nodeSize;}
+        else {lineTo = Math.min(lineTo, offset);}
     });
     return { from: blockFrom + lineFrom, to: blockFrom + lineTo };
 }
@@ -65,10 +65,10 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
     const selectionListeners = new Set<AdapterListener>();
 
     const notify = (targets: Set<AdapterListener>): void => {
-        for (const listener of targets) listener();
+        for (const listener of targets) {listener();}
     };
     const onTransaction = ({ transaction }: { transaction: Transaction }): void => {
-        if (disposed || editor.isDestroyed) return;
+        if (disposed || editor.isDestroyed) {return;}
         const current = getTiptapWritingAssistantState(editor.state);
         if (current !== lastPluginState) {
             const previous = lastPluginState;
@@ -83,10 +83,10 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
                 notify(listeners);
             }
         }
-        if (transaction.docChanged) notify(documentListeners);
+        if (transaction.docChanged) {notify(documentListeners);}
     };
     const onSelectionUpdate = (): void => {
-        if (!disposed && !editor.isDestroyed) notify(selectionListeners);
+        if (!disposed && !editor.isDestroyed) {notify(selectionListeners);}
     };
     const detachHandlers = (): void => {
         editor.off("transaction", onTransaction);
@@ -112,7 +112,7 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
 
     return {
         snapshot(scope: WritingScope, selectedRange?: EditorRange): WritingSnapshot {
-            if (disposed || editor.isDestroyed) return { revision: lastPluginState?.revision ?? 0, segments: [] };
+            if (disposed || editor.isDestroyed) {return { revision: lastPluginState?.revision ?? 0, segments: [] };}
             const selection = editor.state.selection;
             const range =
                 scope === "selection"
@@ -131,13 +131,13 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
                 segments,
             };
         },
-        show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void {
-            if (disposed || editor.isDestroyed) return;
+        show(suggestions: Array<WritingSuggestion>, snapshot: WritingSnapshot): void {
+            if (disposed || editor.isDestroyed) {return;}
             const state = getTiptapWritingAssistantState(editor.state);
-            if (!state || snapshot.revision !== state.revision) return;
+            if (!state || snapshot.revision !== state.revision) {return;}
 
             const segments = new Map(snapshot.segments.map((segment) => [segment.id, segment]));
-            const issues: TiptapWritingIssue[] = [];
+            const issues: Array<TiptapWritingIssue> = [];
             for (const suggestion of suggestions) {
                 const segment = segments.get(suggestion.segmentId);
                 if (
@@ -163,29 +163,29 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
             showTiptapWritingIssues(editor, issues, snapshot.revision);
         },
         clear(): void {
-            if (!disposed) clearTiptapWritingIssues(editor);
+            if (!disposed) {clearTiptapWritingIssues(editor);}
         },
         reveal(id: string): void {
-            if (disposed || editor.isDestroyed) return;
+            if (disposed || editor.isDestroyed) {return;}
             const state = getTiptapWritingAssistantState(editor.state);
             const issue = state?.issues.find((candidate) => candidate.suggestion.id === id);
-            if (!issue) return;
+            if (!issue) {return;}
 
             activateTiptapWritingIssue(editor, id);
             for (const element of editor.view.dom.querySelectorAll<HTMLElement>("[data-writing-suggestion-id]")) {
-                if (element.dataset.writingSuggestionId !== id) continue;
-                if (typeof element.scrollIntoView === "function") element.scrollIntoView({ block: "center" });
+                if (element.dataset.writingSuggestionId !== id) {continue;}
+                if (typeof element.scrollIntoView === "function") {element.scrollIntoView({ block: "center" });}
                 break;
             }
         },
         focus(): void {
-            if (!disposed && !editor.isDestroyed && !editor.view.isDestroyed) editor.commands.focus();
+            if (!disposed && !editor.isDestroyed && !editor.view.isDestroyed) {editor.commands.focus();}
         },
         accept(id: string): boolean {
-            if (!isEditable()) return false;
+            if (!isEditable()) {return false;}
             const assistantState = getTiptapWritingAssistantState(editor.state);
             const issue = assistantState?.issues.find((candidate) => candidate.suggestion.id === id);
-            if (!assistantState || !issue) return false;
+            if (!assistantState || !issue) {return false;}
 
             const state = editor.state;
             const source = state.doc.textBetween(issue.from, issue.to, "", "");
@@ -196,17 +196,17 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
                     segment.text.slice(issue.from - segment.from, issue.to - segment.from) ===
                         issue.suggestion.original,
             );
-            let marks: readonly ProseMirrorMark[] | null = null;
+            let marks: ReadonlyArray<ProseMirrorMark> | null = null;
             let safeText = "";
             let matchingMarks = true;
             state.doc.nodesBetween(issue.from, issue.to, (node, position) => {
-                if (!node.isText || !node.text) return;
+                if (!node.isText || !node.text) {return;}
                 const from = Math.max(issue.from, position);
                 const to = Math.min(issue.to, position + node.nodeSize);
-                if (from >= to) return;
+                if (from >= to) {return;}
                 safeText += node.text.slice(from - position, to - position);
-                if (!marks) marks = node.marks;
-                else if (!sameTiptapMarks(marks, node.marks)) matchingMarks = false;
+                if (!marks) {marks = node.marks;}
+                else if (!sameTiptapMarks(marks, node.marks)) {matchingMarks = false;}
             });
 
             if (
@@ -228,22 +228,22 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
                 issue.suggestion.segmentId,
             );
             editor.view.dispatch(transaction);
-            if (!editor.isDestroyed && !editor.view.isDestroyed) editor.view.dispatch(closeHistory(editor.state.tr));
+            if (!editor.isDestroyed && !editor.view.isDestroyed) {editor.view.dispatch(closeHistory(editor.state.tr));}
             return true;
         },
         dismiss(id: string): void {
-            if (!disposed) dismissTiptapWritingIssue(editor, id);
+            if (!disposed) {dismissTiptapWritingIssue(editor, id);}
         },
-        getSuggestions(): readonly WritingSuggestion[] {
-            if (disposed || editor.isDestroyed) return [];
+        getSuggestions(): ReadonlyArray<WritingSuggestion> {
+            if (disposed || editor.isDestroyed) {return [];}
             return getTiptapWritingAssistantState(editor.state)?.issues.map((issue) => issue.suggestion) ?? [];
         },
         getActiveSuggestionId(): string | null {
-            if (disposed || editor.isDestroyed) return null;
+            if (disposed || editor.isDestroyed) {return null;}
             return getTiptapWritingAssistantState(editor.state)?.activeId ?? null;
         },
         getStatusMessage(): string | null {
-            if (disposed || editor.isDestroyed) return null;
+            if (disposed || editor.isDestroyed) {return null;}
             return getTiptapWritingAssistantState(editor.state)?.statusMessage ?? null;
         },
         isEditable,
@@ -257,9 +257,9 @@ export function createTiptapWritingEditorAdapter(editor: Editor): WritingEditorA
             return subscribeListener(selectionListeners, listener, disposed);
         },
         dispose(): void {
-            if (disposed) return;
+            if (disposed) {return;}
             detachHandlers();
-            if (!editor.isDestroyed) clearTiptapWritingIssues(editor);
+            if (!editor.isDestroyed) {clearTiptapWritingIssues(editor);}
             disposed = true;
             listeners.clear();
             documentListeners.clear();

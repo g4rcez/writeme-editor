@@ -12,7 +12,7 @@ import { parse } from "./views/parser";
 import { astToFilterGroup, filterGroupToQueryString } from "./views/query-builder";
 
 const filters = (patch: Partial<NoteSearchFilters>): NoteSearchFilters => ({ ...EMPTY_NOTE_SEARCH_FILTERS, ...patch });
-const ids = (notes: Note[]): string[] => notes.map((note) => note.id);
+const ids = (notes: Array<Note>): Array<string> => notes.map((note) => note.id);
 
 describe("saved search filters", () => {
     it("combines filters using the same predicate as a persisted View", () => {
@@ -57,18 +57,18 @@ describe("saved search filters", () => {
     });
 
     it("round trips Unicode, quotes, backslashes and query-looking text", () => {
-        const tag = "ação ' OR title = 'escaped\\tag";
+        const tag = String.raw`ação ' OR title = 'escaped\tag`;
         const notes = [Note.parse({ id: "match", tags: [tag] }), Note.parse({ id: "other", tags: ["ação"] })];
         expect(ids(filterNotesByStructuredFilters(notes, filters({ tags: [tag] })))).toEqual(["match"]);
     });
 
-    it.each(["ação ' OR title = 'escaped\\tag", "null", "true", "123"])(
+    it.each([String.raw`ação ' OR title = 'escaped\tag`, "null", "true", "123"])(
         "keeps tag %s intact when edited with Visual Filters",
         (tag) => {
-            const selected = filters({ tags: [tag], location: "folder:C:\\vault\\ação's" });
+            const selected = filters({ tags: [tag], location: String.raw`folder:C:\vault\ação's` });
             const group = astToFilterGroup(parse(buildNoteSearchFilterQuery(selected)).where);
-            if (!group) throw new Error("Expected editable filters");
-            const notes = [Note.parse({ id: "match", tags: [tag], filePath: "C:\\vault\\ação's\\a.md" })];
+            if (!group) {throw new Error("Expected editable filters");}
+            const notes = [Note.parse({ id: "match", tags: [tag], filePath: String.raw`C:\vault\ação's\a.md` })];
             expect(
                 executeQuery(parse(filterGroupToQueryString(group)), { notes }).map((row) => row["notes.id"]),
             ).toEqual(["match"]);
@@ -78,7 +78,7 @@ describe("saved search filters", () => {
     it.each(["123", "null", "true"])("preserves an existing unquoted tag literal %s when editing a View", (literal) => {
         const query = parse(`WHERE tags CONTAINS ${literal}`);
         const group = astToFilterGroup(query.where);
-        if (!group) throw new Error("Expected editable filters");
+        if (!group) {throw new Error("Expected editable filters");}
         const notes = [Note.parse({ id: "string-tag", tags: [literal] })];
         expect(executeQuery(query, { notes })).toEqual([]);
         expect(executeQuery(parse(filterGroupToQueryString(group)), { notes })).toEqual([]);
@@ -101,7 +101,7 @@ describe("saved search filters", () => {
             Note.parse({ id: "local" }),
             Note.parse({ id: "unix", filePath: "/vault/ação's/a.md" }),
             Note.parse({ id: "sibling", filePath: "/vault/ação's-other/b.md" }),
-            Note.parse({ id: "windows", filePath: "C:\\vault\\ação's\\nested\\a.md" }),
+            Note.parse({ id: "windows", filePath: String.raw`C:\vault\ação's\nested\a.md` }),
         ];
         expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "local" })))).toEqual(["local"]);
         expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "filesystem" })))).toEqual([
@@ -112,11 +112,11 @@ describe("saved search filters", () => {
         expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "folder:/vault/ação's" })))).toEqual([
             "unix",
         ]);
-        expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "folder:C:\\vault\\ação's" })))).toEqual([
+        expect(ids(filterNotesByStructuredFilters(notes, filters({ location: String.raw`folder:C:\vault\ação's` })))).toEqual([
             "windows",
         ]);
         expect(getNoteSearchFolders(notes.map((note) => note.filePath)).map((folder) => folder.path)).toContain(
-            "C:\\vault\\ação's\\nested",
+            String.raw`C:\vault\ação's\nested`,
         );
         expect(getNoteSearchFolders(notes.map((note) => note.filePath)).map((folder) => folder.path)).toContain("C:\\");
         expect(ids(filterNotesByStructuredFilters(notes, filters({ location: "folder:C:\\" })))).toEqual(["windows"]);
@@ -124,10 +124,10 @@ describe("saved search filters", () => {
             { path: "/vault", label: "/vault" },
             { path: "/vault/project", label: "/vault/project" },
         ]);
-        expect(getNoteSearchFolders(["\\\\server\\share\\a.md"]).map((option) => option.path)).toContain(
-            "\\\\server\\share",
+        expect(getNoteSearchFolders([String.raw`\\server\share\a.md`]).map((option) => option.path)).toContain(
+            String.raw`\\server\share`,
         );
-        const escapedPath = "/vault/my\\folder";
+        const escapedPath = String.raw`/vault/my\folder`;
         const escapedNote = Note.parse({ id: "escaped-path", filePath: `${escapedPath}/a.md` });
         expect(getNoteSearchFolders([escapedNote.filePath]).map((option) => option.path)).toContain(escapedPath);
         expect(
@@ -145,21 +145,21 @@ describe("saved search filters", () => {
         const query = buildNoteSearchFilterQuery(selected);
         expect(ids(filterNotesByStructuredFilters(notes, selected))).toEqual(["upper"]);
         const group = astToFilterGroup(parse(query).where);
-        if (!group) throw new Error("Expected editable folder filter");
+        if (!group) {throw new Error("Expected editable folder filter");}
         for (const savedQuery of [query, filterGroupToQueryString(group), query.replace("filePath", "notes.filePath")])
-            expect(executeQuery(parse(savedQuery), { notes }).map((row) => row["notes.id"])).toEqual(["upper"]);
+            {expect(executeQuery(parse(savedQuery), { notes }).map((row) => row["notes.id"])).toEqual(["upper"]);}
         expect(executeQuery(parse("WHERE title STARTS_WITH 'RESEARCH'"), { notes })).toHaveLength(3);
         expect(executeQuery(parse("WHERE content CONTAINS 'SEE'"), { notes: [{ content: "See this" }] })).toHaveLength(
             1,
         );
     });
 
-    it.each(["folder:C:\\Vault", "folder:c:/vault", "folder:C:\\", "folder:\\\\SERVER\\SHARE"])(
+    it.each([String.raw`folder:C:\Vault`, "folder:c:/vault", "folder:C:\\", String.raw`folder:\\SERVER\SHARE`])(
         "matches Windows folder %s with platform case and separators",
         (location) => {
             const notes = [
                 Note.parse({ id: "drive", filePath: "c:/vault/nested/a.md" }),
-                Note.parse({ id: "unc", filePath: "\\\\server\\share\\nested\\b.md" }),
+                Note.parse({ id: "unc", filePath: String.raw`\\server\share\nested\b.md` }),
             ];
             const expected = location.includes("SERVER") ? ["unc"] : ["drive"];
             const selected = filters({ location });

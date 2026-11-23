@@ -45,10 +45,10 @@ test("keeps pipe IDs in tables and ordinary caret-labelled links through raw, cl
         await editor.press("ControlOrMeta+A");
         await page.keyboard.press("ControlOrMeta+C");
         const copied = await page.evaluate(() => navigator.clipboard.readText());
-        expect(copied).toContain("| A [^a\\|b]. |");
+        expect(copied).toContain(String.raw`| A [^a\|b]. |`);
         expect(copied).toContain("[^a|b]: **Source**");
         await page.getByRole("button", { name: "Markdown", exact: true }).click();
-        await expect(page.locator(".cm-content").first()).toContainText("| A [^a\\|b]. |");
+        await expect(page.locator(".cm-content").first()).toContainText(String.raw`| A [^a\|b]. |`);
         await page.getByRole("button", { name: "Formatted", exact: true }).click();
         expect(await editorDocument(page)).toEqual(original);
         await expect(page.locator('output[aria-label="Note save status"]').first()).toHaveText("Saved", {
@@ -194,7 +194,7 @@ test("pastes portable footnotes and preserves shared definitions through deletio
     });
     const paragraph = editor.locator("p").first();
     const paragraphBounds = await paragraph.boundingBox();
-    if (!paragraphBounds) throw new Error("Footnote paragraph is not visible");
+    if (!paragraphBounds) {throw new Error("Footnote paragraph is not visible");}
     await page.mouse.click(paragraphBounds.x + 2, paragraphBounds.y + paragraphBounds.height / 2);
     await expect(editor).toBeFocused();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowLeft" : "Home");

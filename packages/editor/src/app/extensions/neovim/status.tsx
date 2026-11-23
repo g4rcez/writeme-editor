@@ -24,7 +24,7 @@ export function NeovimStatus({ editor }: { readonly editor: Editor | null }): Re
                 : undefined;
         },
     });
-    if (!vim) return null;
+    if (!vim) {return null;}
     const theme = modeThemes[vim.mode];
     return (
         <output aria-label="Vim mode" aria-live="polite">

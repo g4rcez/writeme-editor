@@ -16,17 +16,17 @@ export type MappingContext = MotionContext & { readonly editor: Editor; readonly
 export type MappingOptions = { readonly description?: string; readonly remap?: boolean; readonly nowait?: boolean };
 export type Mapping = MappingOptions & {
     readonly mode: NeovimMode;
-    readonly keys: readonly string[];
+    readonly keys: ReadonlyArray<string>;
     readonly action: string | ((context: MappingContext) => boolean);
 };
 export type Register = { readonly slice: Slice; readonly shape: RangeShape };
 export type VisualChange = { readonly shape: RangeShape; readonly size: number };
-export type Change = { readonly keys: readonly string[]; readonly inserted?: Slice; readonly visual?: VisualChange };
-export type InsertSession = { readonly doc: Node; readonly keys: readonly string[]; readonly visual?: VisualChange };
+export type Change = { readonly keys: ReadonlyArray<string>; readonly inserted?: Slice; readonly visual?: VisualChange };
+export type InsertSession = { readonly doc: Node; readonly keys: ReadonlyArray<string>; readonly visual?: VisualChange };
 export type NeovimState = {
     readonly enabled: boolean;
     readonly mode: NeovimMode;
-    readonly pending: readonly string[];
+    readonly pending: ReadonlyArray<string>;
     readonly anchor: number | null;
     readonly cursor: number;
     readonly goalColumn: number | null;

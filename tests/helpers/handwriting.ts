@@ -3,16 +3,16 @@ import { expect, type Page } from "@playwright/test";
 export async function writeNotebook(page: Page): Promise<void> {
     await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     const collapse = page.getByRole("button", { name: "Collapse sidebar", exact: true });
-    if (await collapse.isVisible()) await collapse.click();
+    if (await collapse.isVisible()) {await collapse.click();}
     else {
         const closeMenu = page.getByRole("button", { name: "Close workspace menu", exact: true });
-        if (await closeMenu.isVisible()) await closeMenu.click();
+        if (await closeMenu.isVisible()) {await closeMenu.click();}
     }
     await page.getByRole("button", { name: "Handwritten note", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Create handwritten note" });
     await dialog.getByTitle("Note title").fill("Release notebook");
     if (await dialog.getByTitle("Note title").getAttribute("aria-expanded") === "true")
-        await page.keyboard.press("Escape");
+        {await page.keyboard.press("Escape");}
     await dialog.getByRole("button", { name: /^Create/ }).click();
     const canvas = page.getByLabel("Handwriting canvas", { exact: true });
     await expect(canvas).toBeVisible();
@@ -45,7 +45,7 @@ export async function addInk(page: Page, y = 220): Promise<void> {
         )
         .toBe(true);
     const bounds = await canvas.boundingBox();
-    if (!bounds) throw new Error("Canvas is not visible");
+    if (!bounds) {throw new Error("Canvas is not visible");}
     await page.mouse.move(bounds.x + 80, bounds.y + y);
     await page.mouse.down();
     await page.mouse.move(bounds.x + 180, bounds.y + y, { steps: 12 });
@@ -55,7 +55,7 @@ export async function addInk(page: Page, y = 220): Promise<void> {
 
 export async function navigateHome(page: Page): Promise<void> {
     const home = page.getByRole("button", { name: "Go to home", exact: true });
-    if (await home.isVisible()) await home.click();
+    if (await home.isVisible()) {await home.click();}
     else {
         await page.getByRole("button", { name: "Open workspace menu", exact: true }).click();
         await page.getByRole("button", { name: "Local workspace Your notes", exact: true }).click();

@@ -49,7 +49,7 @@ const MARKDOWN_SPELLCHECK_INTERIOR_REFRESH_CHARACTERS = new Set([
 
 function containsSpellcheckRefreshCharacter(value: string, characters: ReadonlySet<string>): boolean {
     for (const character of value) {
-        if (characters.has(character)) return true;
+        if (characters.has(character)) {return true;}
     }
     return false;
 }
@@ -134,15 +134,15 @@ type HtmlTagToken = {
     selfClosing: boolean;
 };
 
-function findInlineHtmlSpans(block: Node, source: string): TextSpan[] {
-    const tokens: HtmlTagToken[] = [];
+function findInlineHtmlSpans(block: Node, source: string): Array<TextSpan> {
+    const tokens: Array<HtmlTagToken> = [];
     visit(block, "html", (node: Html) => {
         const position = getPosition(node, source.length);
-        if (!position || source.slice(position.from, position.to) !== node.value || node.value.includes("\n")) return;
+        if (!position || source.slice(position.from, position.to) !== node.value || node.value.includes("\n")) {return;}
 
         const tagPattern = /<!--[\s\S]*?-->|<\/?([a-z][a-z\d:-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>/giu;
         for (const match of node.value.matchAll(tagPattern)) {
-            if (match.index === undefined || match[1] === undefined) continue;
+            if (match.index === undefined || match[1] === undefined) {continue;}
             const tokenFrom = position.from + match.index;
             tokens.push({
                 name: (match[1] ?? "").toLowerCase(),
@@ -154,13 +154,13 @@ function findInlineHtmlSpans(block: Node, source: string): TextSpan[] {
         }
     });
 
-    const openTags: OpenHtmlTag[] = [];
-    const spans: TextSpan[] = [];
+    const openTags: Array<OpenHtmlTag> = [];
+    const spans: Array<TextSpan> = [];
     for (const token of tokens) {
         if (token.closing) {
             for (let index = openTags.length - 1; index >= 0; index -= 1) {
                 const openTag = openTags[index];
-                if (openTag?.name !== token.name) continue;
+                if (openTag?.name !== token.name) {continue;}
                 openTags.splice(index, 1);
                 spans.push({ from: openTag.from, to: token.to });
                 break;
@@ -173,7 +173,7 @@ function findInlineHtmlSpans(block: Node, source: string): TextSpan[] {
     const blockPosition = getPosition(block, source.length);
     if (blockPosition) {
         for (const openTag of openTags) {
-            if (openTag.from < blockPosition.to) spans.push({ from: openTag.from, to: blockPosition.to });
+            if (openTag.from < blockPosition.to) {spans.push({ from: openTag.from, to: blockPosition.to });}
         }
     }
 
@@ -197,13 +197,13 @@ function trimUrlPunctuation(text: string, from: number, initialTo: number): numb
         trimming = false;
         const last = text[to - 1];
         for (const [opening, closing] of bracketPairs) {
-            if (last !== closing) continue;
+            if (last !== closing) {continue;}
 
             let openingCount = 0;
             let closingCount = 0;
             for (let index = from; index < to; index += 1) {
-                if (text[index] === opening) openingCount += 1;
-                if (text[index] === closing) closingCount += 1;
+                if (text[index] === opening) {openingCount += 1;}
+                if (text[index] === closing) {closingCount += 1;}
             }
             if (closingCount > openingCount) {
                 to -= 1;
@@ -216,12 +216,12 @@ function trimUrlPunctuation(text: string, from: number, initialTo: number): numb
     return to;
 }
 
-function mergeSpans(spans: TextSpan[]): TextSpan[] {
+function mergeSpans(spans: Array<TextSpan>): Array<TextSpan> {
     spans.sort((left, right) => left.from - right.from || left.to - right.to);
 
-    const merged: TextSpan[] = [];
+    const merged: Array<TextSpan> = [];
     for (const span of spans) {
-        const previous = merged[merged.length - 1];
+        const previous = merged.at(-1);
         if (previous && span.from <= previous.to) {
             previous.to = Math.max(previous.to, span.to);
         } else {
@@ -232,14 +232,14 @@ function mergeSpans(spans: TextSpan[]): TextSpan[] {
     return merged;
 }
 
-function findExcludedTextSpans(text: string): TextSpan[] {
-    const spans: TextSpan[] = [];
+function findExcludedTextSpans(text: string): Array<TextSpan> {
+    const spans: Array<TextSpan> = [];
     const urlOrEmailPattern =
         /(?:\b[a-z][a-z\d+.-]*:\/\/[^\s<>"'`]+|\bmailto:[^\s<>"'`]+|\bwww\.[^\s<>"'`]+|\b[a-z\d.!#$%&'*+/=?^_`{|}~-]+@[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)+|\b(?:[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?\.)+[a-z]{2,}(?::\d{1,5})?(?:[/?#][^\s<>"'`]+)?)/giu;
 
     for (const match of text.matchAll(urlOrEmailPattern)) {
         const from = match.index;
-        if (from === undefined) continue;
+        if (from === undefined) {continue;}
 
         const initialTo = from + match[0].length;
         const isEmail =
@@ -247,13 +247,13 @@ function findExcludedTextSpans(text: string): TextSpan[] {
                 match[0],
             );
         const to = isEmail ? initialTo : trimUrlPunctuation(text, from, initialTo);
-        if (from < to) spans.push({ from, to });
+        if (from < to) {spans.push({ from, to });}
     }
 
     const wikiLinkPattern = /!?\[\[[\s\S]*?\]\]/gu;
     for (const match of text.matchAll(wikiLinkPattern)) {
         const from = match.index;
-        if (from !== undefined) spans.push({ from, to: from + match[0].length });
+        if (from !== undefined) {spans.push({ from, to: from + match[0].length });}
     }
 
     return mergeSpans(spans);
@@ -269,24 +269,24 @@ function hasValidSelection(selection: TextSelection, sourceLength: number): bool
     );
 }
 
-function getMarkdownWritingRanges(source: string, selection?: TextSelection): WritingTextRange[] {
-    if (selection && !hasValidSelection(selection, source.length)) return [];
+function getMarkdownWritingRanges(source: string, selection?: TextSelection): Array<WritingTextRange> {
+    if (selection && !hasValidSelection(selection, source.length)) {return [];}
 
     const tree = markdownParser.parse(source) as Root;
-    const nonProseSpans: TextSpan[] = [];
+    const nonProseSpans: Array<TextSpan> = [];
     visit(tree, (node) => {
         if (PROSE_NODE_TYPES[node.type] !== true) {
             const position = getPosition(node, source.length);
-            if (position) nonProseSpans.push(position);
+            if (position) {nonProseSpans.push(position);}
         }
     });
 
     const literalSpans = findExcludedTextSpans(source);
-    const ranges: WritingTextRange[] = [];
+    const ranges: Array<WritingTextRange> = [];
     const appendTextLeaf = (node: Text): void => {
         const position = getPosition(node, source.length);
-        if (!position || source.slice(position.from, position.to) !== node.value) return;
-        if (nonProseSpans.some((span) => span.from <= position.from && span.to >= position.to)) return;
+        if (!position || source.slice(position.from, position.to) !== node.value) {return;}
+        if (nonProseSpans.some((span) => span.from <= position.from && span.to >= position.to)) {return;}
 
         const excludedSpans = literalSpans
             .filter((span) => span.from < position.to && span.to > position.from)
@@ -302,7 +302,7 @@ function getMarkdownWritingRanges(source: string, selection?: TextSelection): Wr
                 clippedFrom = Math.max(clippedFrom, selection.from);
                 clippedTo = Math.min(clippedTo, selection.to);
             }
-            if (clippedFrom >= clippedTo) return;
+            if (clippedFrom >= clippedTo) {return;}
 
             const leafFrom = clippedFrom - position.from;
             const leafTo = clippedTo - position.from;
@@ -328,7 +328,7 @@ function getMarkdownWritingRanges(source: string, selection?: TextSelection): Wr
     return ranges;
 }
 
-export function extractMarkdownWritingSegments(source: string, selection?: TextSelection): WritingSegment[] {
+export function extractMarkdownWritingSegments(source: string, selection?: TextSelection): Array<WritingSegment> {
     return createWritingSegments(getMarkdownWritingRanges(source, selection));
 }
 
@@ -346,22 +346,22 @@ function getMarkdownWritingScopeRange(
     let range: TextSpan | null = null;
     visit(markdownParser.parse(source) as Root, ["paragraph", "heading"], (node) => {
         const candidate = getPosition(node, source.length);
-        if (candidate && candidate.from <= position && position <= candidate.to) range = candidate;
+        if (candidate && candidate.from <= position && position <= candidate.to) {range = candidate;}
     });
     return range;
 }
 
-function getMarkdownSpellcheckExcludedRanges(source: string): TextSpan[] {
+function getMarkdownSpellcheckExcludedRanges(source: string): Array<TextSpan> {
     const ranges = getMarkdownWritingRanges(source);
-    const excluded: TextSpan[] = [];
+    const excluded: Array<TextSpan> = [];
     let cursor = 0;
 
     for (const range of ranges) {
-        if (range.to <= cursor) continue;
-        if (range.from > cursor) excluded.push({ from: cursor, to: range.from });
+        if (range.to <= cursor) {continue;}
+        if (range.from > cursor) {excluded.push({ from: cursor, to: range.from });}
         cursor = Math.max(cursor, range.to);
     }
-    if (cursor < source.length) excluded.push({ from: cursor, to: source.length });
+    if (cursor < source.length) {excluded.push({ from: cursor, to: source.length });}
     return excluded;
 }
 
@@ -374,7 +374,7 @@ type MarkdownWritingIssue = {
 };
 
 type MarkdownWritingState = {
-    issues: MarkdownWritingIssue[];
+    issues: Array<MarkdownWritingIssue>;
     activeId: string | null;
     statusMessage: string | null;
     decorations: DecorationSet;
@@ -391,24 +391,24 @@ function isWritingCategory(value: unknown): value is WritingCategory {
 }
 
 function isCodePointBoundary(text: string, offset: number): boolean {
-    if (offset <= 0 || offset >= text.length) return true;
+    if (offset <= 0 || offset >= text.length) {return true;}
 
     const before = text.charCodeAt(offset - 1);
     const after = text.charCodeAt(offset);
-    return !(before >= 0xd800 && before <= 0xdbff && after >= 0xdc00 && after <= 0xdfff);
+    return !(before >= 0xd8_00 && before <= 0xdb_ff && after >= 0xdc_00 && after <= 0xdf_ff);
 }
 
 function escapeMarkdownReplacement(text: string): string {
     let escaped = "";
     for (const character of text) {
-        if (COMMONMARK_ESCAPABLE_PUNCTUATION.has(character)) escaped += "\\";
+        if (COMMONMARK_ESCAPABLE_PUNCTUATION.has(character)) {escaped += "\\";}
         escaped += character;
     }
     return escaped;
 }
 
 function notifyWritingListeners(listeners: Set<() => void>): void {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {listener();}
 }
 
 /** Create the CodeMirror extension and per-view adapter for one raw editor. */
@@ -421,7 +421,7 @@ export function createMarkdownWritingAssistant(): {
     const documentListeners = new Set<() => void>();
     const selectionListeners = new Set<() => void>();
 
-    const setReviewEffect = StateEffect.define<MarkdownWritingIssue[]>();
+    const setReviewEffect = StateEffect.define<Array<MarkdownWritingIssue>>();
     const clearReviewEffect = StateEffect.define<null>();
     const activateSuggestionEffect = StateEffect.define<string | null>();
     const dismissSuggestionEffect = StateEffect.define<string>();
@@ -451,7 +451,7 @@ export function createMarkdownWritingAssistant(): {
 
             if (queryFrom < queryTo) {
                 decorations.between(queryFrom, queryTo, (rangeFrom, rangeTo) => {
-                    if (fromA > rangeFrom && toA < rangeTo) insideExcludedRange = true;
+                    if (fromA > rangeFrom && toA < rangeTo) {insideExcludedRange = true;}
                     if ((fromA <= rangeFrom && rangeFrom <= toA) || (fromA <= rangeTo && rangeTo <= toA)) {
                         touchesExcludedBoundary = true;
                     }
@@ -484,10 +484,10 @@ export function createMarkdownWritingAssistant(): {
     };
 
     const buildDecorations = (
-        issues: readonly MarkdownWritingIssue[],
+        issues: ReadonlyArray<MarkdownWritingIssue>,
         spellcheckDecorations: DecorationSet,
     ): DecorationSet => {
-        if (issues.length === 0) return spellcheckDecorations;
+        if (issues.length === 0) {return spellcheckDecorations;}
 
         const suggestions = issues.map((issue) =>
             Decoration.mark({
@@ -526,16 +526,16 @@ export function createMarkdownWritingAssistant(): {
 
             let acceptedSegmentId: string | null = null;
             for (const effect of transaction.effects) {
-                if (effect.is(acceptSegmentEffect)) acceptedSegmentId = effect.value;
+                if (effect.is(acceptSegmentEffect)) {acceptedSegmentId = effect.value;}
             }
 
             if (transaction.docChanged && state.issues.length > 0) {
-                const changedRanges: { from: number; to: number }[] = [];
+                const changedRanges: Array<{ from: number; to: number }> = [];
                 transaction.changes.iterChanges((fromA, toA) => {
                     changedRanges.push({ from: fromA, to: toA });
                 });
 
-                const mappedIssues: MarkdownWritingIssue[] = [];
+                const mappedIssues: Array<MarkdownWritingIssue> = [];
                 let removedIssue = false;
                 let removedStaleIssue = false;
                 let movedIssue = false;
@@ -613,7 +613,7 @@ export function createMarkdownWritingAssistant(): {
                     const remainingIssues = issues.filter((issue) => issue.suggestion.id !== effect.value);
                     if (remainingIssues.length !== issues.length) {
                         issues = remainingIssues;
-                        if (activeId === effect.value) activeId = null;
+                        if (activeId === effect.value) {activeId = null;}
                         stateChanged = true;
                     }
                 } else if (effect.is(staleSegmentEffect)) {
@@ -631,7 +631,7 @@ export function createMarkdownWritingAssistant(): {
                     }
                 }
             }
-            if (!stateChanged) return state;
+            if (!stateChanged) {return state;}
             return {
                 issues,
                 activeId,
@@ -646,7 +646,7 @@ export function createMarkdownWritingAssistant(): {
     const extension: Extension = [
         reviewStateField,
         EditorView.updateListener.of((update) => {
-            if (update.docChanged) revision += 1;
+            if (update.docChanged) {revision += 1;}
 
             const previousState = update.startState.field(reviewStateField);
             const nextState = update.state.field(reviewStateField);
@@ -657,12 +657,12 @@ export function createMarkdownWritingAssistant(): {
             ) {
                 notifyWritingListeners(listeners);
             }
-            if (update.docChanged) notifyWritingListeners(documentListeners);
-            if (update.selectionSet) notifyWritingListeners(selectionListeners);
+            if (update.docChanged) {notifyWritingListeners(documentListeners);}
+            if (update.selectionSet) {notifyWritingListeners(selectionListeners);}
         }),
         EditorView.domEventHandlers({
             click(event, view) {
-                if (!(event.target instanceof Element)) return false;
+                if (!(event.target instanceof Element)) {return false;}
                 const markedElement = event.target.closest<HTMLElement>("[data-writing-suggestion-id]");
                 const id = markedElement?.dataset.writingSuggestionId;
                 if (!id || !view.state.field(reviewStateField).issues.some((issue) => issue.suggestion.id === id)) {
@@ -678,7 +678,7 @@ export function createMarkdownWritingAssistant(): {
     const createAdapter = (view: EditorView): WritingEditorAdapter => {
         let adapterDisposed = false;
         const dispatchEffect = (effect: MarkdownWritingEffect): void => {
-            if (adapterDisposed) return;
+            if (adapterDisposed) {return;}
             view.dispatch({ effects: effect });
         };
         const readState = (): MarkdownWritingState => view.state.field(reviewStateField);
@@ -704,17 +704,17 @@ export function createMarkdownWritingAssistant(): {
                           : [];
                 return { revision, segments };
             },
-            show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void {
-                if (adapterDisposed || snapshot.revision !== revision) return;
+            show(suggestions: Array<WritingSuggestion>, snapshot: WritingSnapshot): void {
+                if (adapterDisposed || snapshot.revision !== revision) {return;}
 
                 const source = view.state.doc.toString();
                 const eligibleSegments = extractMarkdownWritingSegments(source);
                 const segmentsById = new Map<string, WritingSegment>();
                 for (const segment of snapshot.segments) {
-                    if (!segmentsById.has(segment.id)) segmentsById.set(segment.id, segment);
+                    if (!segmentsById.has(segment.id)) {segmentsById.set(segment.id, segment);}
                 }
 
-                const candidates: { issue: MarkdownWritingIssue; order: number }[] = [];
+                const candidates: Array<{ issue: MarkdownWritingIssue; order: number }> = [];
                 const usedIds = new Set<string>();
                 for (const [order, suggestion] of suggestions.entries()) {
                     if (
@@ -734,7 +734,7 @@ export function createMarkdownWritingAssistant(): {
                     usedIds.add(suggestion.id);
 
                     const segment = segmentsById.get(suggestion.segmentId);
-                    if (!segment || suggestion.to > segment.text.length) continue;
+                    if (!segment || suggestion.to > segment.text.length) {continue;}
                     if (
                         !isCodePointBoundary(segment.text, suggestion.from) ||
                         !isCodePointBoundary(segment.text, suggestion.to) ||
@@ -751,11 +751,11 @@ export function createMarkdownWritingAssistant(): {
                             segment.to <= eligible.to &&
                             source.slice(segment.from, segment.to) === segment.text,
                     );
-                    if (!isCurrentProse) continue;
+                    if (!isCurrentProse) {continue;}
 
                     const from = segment.from + suggestion.from;
                     const to = segment.from + suggestion.to;
-                    if (source.slice(from, to) !== suggestion.original) continue;
+                    if (source.slice(from, to) !== suggestion.original) {continue;}
 
                     candidates.push({
                         issue: {
@@ -775,10 +775,10 @@ export function createMarkdownWritingAssistant(): {
                         left.issue.to - right.issue.to ||
                         left.order - right.order,
                 );
-                const acceptedIssues: MarkdownWritingIssue[] = [];
+                const acceptedIssues: Array<MarkdownWritingIssue> = [];
                 let previousTo = -1;
                 for (const candidate of candidates) {
-                    if (candidate.issue.from < previousTo) continue;
+                    if (candidate.issue.from < previousTo) {continue;}
                     acceptedIssues.push(candidate.issue);
                     previousTo = candidate.issue.to;
                 }
@@ -788,20 +788,20 @@ export function createMarkdownWritingAssistant(): {
                 dispatchEffect(clearReviewEffect.of(null));
             },
             reveal(id: string): void {
-                if (adapterDisposed) return;
+                if (adapterDisposed) {return;}
                 const issue = readState().issues.find((candidate) => candidate.suggestion.id === id);
-                if (!issue) return;
+                if (!issue) {return;}
                 view.dispatch({
                     effects: [activateSuggestionEffect.of(id), EditorView.scrollIntoView(issue.from, { y: "center" })],
                 });
             },
             focus(): void {
-                if (!adapterDisposed) view.focus();
+                if (!adapterDisposed) {view.focus();}
             },
             accept(id: string): boolean {
-                if (!isEditable()) return false;
+                if (!isEditable()) {return false;}
                 const issue = readState().issues.find((candidate) => candidate.suggestion.id === id);
-                if (!issue) return false;
+                if (!issue) {return false;}
 
                 const source = view.state.doc.toString();
                 const eligibleSegments = extractMarkdownWritingSegments(source);
@@ -830,7 +830,7 @@ export function createMarkdownWritingAssistant(): {
                     dispatchEffect(dismissSuggestionEffect.of(id));
                 }
             },
-            getSuggestions(): readonly WritingSuggestion[] {
+            getSuggestions(): ReadonlyArray<WritingSuggestion> {
                 return readState().issues.map((issue) => issue.suggestion);
             },
             getActiveSuggestionId(): string | null {
@@ -841,22 +841,22 @@ export function createMarkdownWritingAssistant(): {
             },
             isEditable,
             subscribe(listener: () => void): () => void {
-                if (adapterDisposed) return () => {};
+                if (adapterDisposed) {return () => {};}
                 listeners.add(listener);
                 return () => listeners.delete(listener);
             },
             subscribeDocument(listener: () => void): () => void {
-                if (adapterDisposed) return () => {};
+                if (adapterDisposed) {return () => {};}
                 documentListeners.add(listener);
                 return () => documentListeners.delete(listener);
             },
             subscribeSelection(listener: () => void): () => void {
-                if (adapterDisposed) return () => {};
+                if (adapterDisposed) {return () => {};}
                 selectionListeners.add(listener);
                 return () => selectionListeners.delete(listener);
             },
             dispose(): void {
-                if (adapterDisposed) return;
+                if (adapterDisposed) {return;}
                 adapterDisposed = true;
                 view.dispatch({ effects: clearReviewEffect.of(null) });
                 listeners.clear();

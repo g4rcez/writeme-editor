@@ -52,7 +52,7 @@ import { WritingAssistant } from "./writing-assistant/writing-assistant";
 const useCopyEvents = (editor: TipTapEditor | null) => {
     const monitoring = useRef(false);
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {return;}
 
         const controller = new AbortController();
         const opts = { signal: controller.signal };
@@ -61,7 +61,7 @@ const useCopyEvents = (editor: TipTapEditor | null) => {
         window.addEventListener(
             COPY_EVENT_DISPATCHED,
             ((data: CustomEvent) => {
-                if (!monitoring.current) return;
+                if (!monitoring.current) {return;}
                 const text = data.detail;
                 editor
                     .chain()
@@ -85,12 +85,12 @@ const useCopyEvents = (editor: TipTapEditor | null) => {
 const useEditorInitialized = (editor: TipTapEditor | null): boolean => {
     const [initializedEditor, setInitializedEditor] = useState<TipTapEditor | null>(null);
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {return;}
         const markInitialized = (): void => {
-            if (!editor.isDestroyed) setInitializedEditor(editor);
+            if (!editor.isDestroyed) {setInitializedEditor(editor);}
         };
         editor.on("create", markInitialized);
-        if (editor.isInitialized) markInitialized();
+        if (editor.isInitialized) {markInitialized();}
         return () => {
             editor.off("create", markInitialized);
         };
@@ -112,7 +112,7 @@ type WorkerOutMessage =
 function scheduleEditorIdle(callback: () => void): () => void {
     if (typeof requestIdleCallback === "function") {
         const handle = requestIdleCallback(callback);
-        return () => { if (typeof cancelIdleCallback === "function") cancelIdleCallback(handle); };
+        return () => { if (typeof cancelIdleCallback === "function") {cancelIdleCallback(handle);} };
     }
     const handle = setTimeout(callback, 0);
     return () => clearTimeout(handle);
@@ -190,7 +190,7 @@ function createTiptapSearchHandle(editor: TipTapEditor): EditorSearchHandle {
 }
 
 const resolveLinkContextTarget = (target: EventTarget | null): LinkContextTarget | null => {
-    if (!(target instanceof Element)) return null;
+    if (!(target instanceof Element)) {return null;}
 
     const linkNode = target.closest("a");
     if (linkNode) {
@@ -201,7 +201,7 @@ const resolveLinkContextTarget = (target: EventTarget | null): LinkContextTarget
     }
 
     const wrappedLinkNode = target.closest("[data-link-url]");
-    if (!(wrappedLinkNode instanceof HTMLElement)) return null;
+    if (!(wrappedLinkNode instanceof HTMLElement)) {return null;}
 
     return {
         text: wrappedLinkNode.getAttribute("data-link-text")?.trim() || wrappedLinkNode.textContent?.trim() || "",
@@ -295,13 +295,13 @@ const TiptapEditorCore = memo(
                 },
                 handleDOMEvents: {
                     keydown: (view, event) => {
-                        if (event.key !== "Escape" || event.isComposing || view.composing) return false;
+                        if (event.key !== "Escape" || event.isComposing || view.composing) {return false;}
                         // ProseMirror prevents every Escape by default, even when no keymap handles it.
-                        if (view.someProp("handleKeyDown", (handler) => handler(view, event))) event.preventDefault();
+                        if (view.someProp("handleKeyDown", (handler) => handler(view, event))) {event.preventDefault();}
                         return true;
                     },
                     contextmenu: (_, event) => {
-                        if (!isElectron()) return false;
+                        if (!isElectron()) {return false;}
                         const linkTarget = resolveLinkContextTarget(event.target);
                         if (linkTarget && (linkTarget.text || linkTarget.url)) {
                             event.preventDefault();
@@ -357,7 +357,7 @@ const TiptapEditorCore = memo(
                 },
                 handlePaste: (_, event) => {
                     const vim = editor.storage.neovim.getState();
-                    if (vim?.enabled && vim.mode !== "insert" && vim.mode !== "replace") return true;
+                    if (vim?.enabled && vim.mode !== "insert" && vim.mode !== "replace") {return true;}
                     if (isElectron()) {
                         const items = event.clipboardData?.items;
                         if (items) {
@@ -409,17 +409,17 @@ const TiptapEditorCore = memo(
                                             changed = true;
                                         }
                                     }
-                                    if (changed) dispatch.syncNoteState(n);
+                                    if (changed) {dispatch.syncNoteState(n);}
                                 }
-                            } catch (e) {
-                                console.warn("Failed to parse pasted frontmatter:", e);
+                            } catch (error) {
+                                console.warn("Failed to parse pasted frontmatter:", error);
                             }
                         }
                     }
                     return false;
                 },
                 handleKeyDown: (view, event) => {
-                    if ((event.ctrlKey || event.metaKey) && editor.storage.neovim.getState()?.enabled) return false;
+                    if ((event.ctrlKey || event.metaKey) && editor.storage.neovim.getState()?.enabled) {return false;}
                     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "e") {
                         event.preventDefault();
                         return true;
@@ -458,31 +458,31 @@ const TiptapEditorCore = memo(
             }
         }, [editor, editorInitialized, vimMode]);
         useEffect(() => {
-            if (!editorInitialized || !editor) return;
+            if (!editorInitialized || !editor) {return;}
             editor.view.dom.setAttribute("aria-busy", String(vimConfigurationLoading));
-            if (vimConfigurationLoading) return;
+            if (vimConfigurationLoading) {return;}
             const cleanup = applyTiptapVimConfiguration(editor.storage.neovim, vimConfiguration);
             if (
                 vimMode &&
                 vimConfiguration.options.initialMode === "insert" &&
                 editor.storage.neovim.getState()?.mode === "normal"
             )
-                editor.storage.neovim.setMode("insert");
+                {editor.storage.neovim.setMode("insert");}
             return () => {
-                if (!editor.isDestroyed) cleanup();
+                if (!editor.isDestroyed) {cleanup();}
             };
         }, [editor, vimConfiguration, vimMode, vimConfigurationLoading, editorInitialized]);
         const writingAssistantSelectionContext = useMemo(() => {
-            if (!editorInitialized || !editor) return null;
+            if (!editorInitialized || !editor) {return null;}
             return {
                 target: editor.view.dom,
                 readSelection: () => {
-                    if (editor.isDestroyed || editor.view.isDestroyed) return null;
+                    if (editor.isDestroyed || editor.view.isDestroyed) {return null;}
                     const { selection } = editor.state;
                     return selection.empty ? null : { from: selection.from, to: selection.to };
                 },
                 readAnchor: (selection?: { from: number; to: number }) => {
-                    if (editor.isDestroyed || editor.view.isDestroyed) return null;
+                    if (editor.isDestroyed || editor.view.isDestroyed) {return null;}
                     const currentSelection = selection ?? {
                         from: editor.state.selection.from,
                         to: editor.state.selection.to,
@@ -506,13 +506,13 @@ const TiptapEditorCore = memo(
         }, [editor, editorInitialized]);
 
         useEffect(() => {
-            if (!editor) return;
+            if (!editor) {return;}
             const adapter = createTiptapWritingEditorAdapter(editor);
             setWritingAssistantBinding({ editor, adapter });
             return () => adapter.dispose();
         }, [editor]);
         useEffect(() => {
-            if (!editor) return;
+            if (!editor) {return;}
             const searchHandle = createTiptapSearchHandle(editor);
             const actionHandle = {
                 addFrontmatter: () => {
@@ -526,7 +526,7 @@ const TiptapEditorCore = memo(
             };
             const activation = registerEditorActivation(activate);
             activateRef.current = activation.activate;
-            if (initialActiveRef.current || !editorGlobalRef.current) activation.activate();
+            if (initialActiveRef.current || !editorGlobalRef.current) {activation.activate();}
             return () => {
                 activation.unregister();
                 if (activateRef.current === activation.activate) {
@@ -545,19 +545,19 @@ const TiptapEditorCore = memo(
         }, [editor]);
 
         useEffect(() => {
-            if (active) activateRef.current();
+            if (active) {activateRef.current();}
         }, [active]);
 
         useCopyEvents(editor);
 
         triggerWorkerParseRef.current = async (text: string, isNoteContent = false) => {
-            if (!editor || editor.isDestroyed) return;
+            if (!editor || editor.isDestroyed) {return;}
             const myGen = ++generationRef.current;
             cancelParseRef.current();
             setParsingContent(false);
             const current = (): boolean => generationRef.current === myGen && !editor.isDestroyed;
             const failNoteLoad = (message: string): void => {
-                if (!isNoteContent || !current()) return;
+                if (!isNoteContent || !current()) {return;}
                 generationRef.current += 1;
                 cancelParseRef.current();
                 failedNoteContentRef.current = text;
@@ -582,13 +582,13 @@ const TiptapEditorCore = memo(
                         onCancel: () => resolve(false),
                     });
                 });
-                if (!current()) return;
+                if (!current()) {return;}
                 if (!confirmed) {
                     failNoteLoad("Loading was canceled. The saved note is unchanged. Reload to try again.");
                     return;
                 }
             }
-            if (!current()) return;
+            if (!current()) {return;}
             setParsingContent(true);
             setParseProgress(0);
             isSettingContent.current = true;
@@ -600,7 +600,7 @@ const TiptapEditorCore = memo(
             let firstChunk = true;
             let worker: Worker;
             const recover = (message?: string): void => {
-                if (!current()) return;
+                if (!current()) {return;}
                 cancelParseRef.current();
                 if (isNoteContent) {
                     failNoteLoad(message ?? "Could not load the saved note. Its content is unchanged. Reload to try again.");
@@ -613,7 +613,7 @@ const TiptapEditorCore = memo(
                 editor.setEditable(!readonly);
             };
             const finalize = (): void => {
-                if (!current()) return;
+                if (!current()) {return;}
                 cancelParseRef.current();
                 isSettingContent.current = false;
                 failedNoteContentRef.current = null;
@@ -637,22 +637,22 @@ const TiptapEditorCore = memo(
                 recover("Loading timed out. The saved note is unchanged. Reload to try again.");
             }, 120_000);
             const cleanup = (): void => {
-                if (stopped) return;
+                if (stopped) {return;}
                 stopped = true;
                 clearTimeout(watchdog);
                 worker.removeEventListener("message", handler);
                 worker.removeEventListener("error", workerError);
                 worker.terminate();
-                for (const cancel of idleJobs) cancel();
+                for (const cancel of idleJobs) {cancel();}
                 idleJobs.clear();
             };
             cancelParseRef.current = cleanup;
 
             function handler(event: MessageEvent<WorkerOutMessage>): void {
-                if (stopped || !current() || event.data.gen !== myGen) return;
+                if (stopped || !current() || event.data.gen !== myGen) {return;}
                 if (event.data.type === "start") {
                     totalChunks = event.data.totalChunks;
-                    if (totalChunks === 0) finalize();
+                    if (totalChunks === 0) {finalize();}
                     return;
                 }
                 if (event.data.type === "error") {
@@ -663,13 +663,13 @@ const TiptapEditorCore = memo(
                     const { html } = event.data;
                     const cancel = scheduleEditorIdle(() => {
                         idleJobs.delete(cancel);
-                        if (stopped || !current()) return;
+                        if (stopped || !current()) {return;}
                         try {
                             applyMarkdownWorkerChunk(editor, html, firstChunk);
                             firstChunk = false;
                             receivedChunks += 1;
-                            if (totalChunks > 0) setParseProgress(Math.round(receivedChunks / totalChunks * 100));
-                            if (receivedChunks >= totalChunks && totalChunks > 0) finalize();
+                            if (totalChunks > 0) {setParseProgress(Math.round(receivedChunks / totalChunks * 100));}
+                            if (receivedChunks >= totalChunks && totalChunks > 0) {finalize();}
                         } catch {
                             recover("Could not insert parsed content. The saved note is unchanged. Reload to try again.");
                         }
@@ -679,7 +679,7 @@ const TiptapEditorCore = memo(
             }
             function workerError(event: ErrorEvent): void {
                 event.preventDefault();
-                if (stopped || !current()) return;
+                if (stopped || !current()) {return;}
                 recover("The Markdown worker failed. The saved note is unchanged. Reload to try again.");
                 if (!isNoteContent && !editor.isDestroyed) {
                     (editor.commands as any).setContent(text, {
@@ -701,17 +701,17 @@ const TiptapEditorCore = memo(
         const persistedContentRef = useRef<string | null>(null);
 
         useEffect(() => {
-            if (!editor || content === undefined || editor.isDestroyed || !editor.schema) return;
-            if (note && persistedNoteRef.current && +note.updatedAt < +persistedNoteRef.current.updatedAt) return;
-            if (failedNoteContentRef.current === content) return;
+            if (!editor || content === undefined || editor.isDestroyed || !editor.schema) {return;}
+            if (note && persistedNoteRef.current && +note.updatedAt < +persistedNoteRef.current.updatedAt) {return;}
+            if (failedNoteContentRef.current === content) {return;}
             const currentMarkdown = getEditorMarkdown(editor);
             if (dirtyRef.current && content !== currentMarkdown) {
-                if (note && content === persistedNoteRef.current?.content) persistedNoteRef.current = note;
+                if (note && content === persistedNoteRef.current?.content) {persistedNoteRef.current = note;}
                 return;
             }
             dirtyRef.current = false;
             persistedNoteRef.current = note;
-            if (content === persistedContentRef.current) return;
+            if (content === persistedContentRef.current) {return;}
             if (content.length <= LARGE_MARKDOWN_THRESHOLD) {
                 generationRef.current += 1;
                 cancelParseRef.current();
@@ -726,7 +726,7 @@ const TiptapEditorCore = memo(
                 failedNoteContentRef.current = null;
                 setContentLoadError(null);
                 isSettingContent.current = false;
-                if (!readonly) editor.setEditable(true, false);
+                if (!readonly) {editor.setEditable(true, false);}
                 return;
             }
 
@@ -743,11 +743,11 @@ const TiptapEditorCore = memo(
             failedNoteContentRef.current = null;
             setContentLoadError(null);
             isSettingContent.current = false;
-            if (!readonly) editor.setEditable(true, false);
+            if (!readonly) {editor.setEditable(true, false);}
         }, [editor, content, note, readonly]);
 
         useEffect(() => {
-            if (!editor) return;
+            if (!editor) {return;}
             return registerNoteLinkRepairHandler({
                 noteId: () => noteRef.current?.id,
                 getContent: () => getEditorMarkdown(editor),
@@ -757,18 +757,18 @@ const TiptapEditorCore = memo(
         }, [editor]);
 
         useEffect(() => {
-            if (editor) setEditorNote(editor, note);
+            if (editor) {setEditorNote(editor, note);}
             noteRef.current = note;
         }, [editor, note]);
 
         useEffect(() => {
-            if (editor) setEditorAllNotesSource(editor, () => readGlobalState().notes);
+            if (editor) {setEditorAllNotesSource(editor, () => readGlobalState().notes);}
         }, [editor]);
 
         useEditorScrollMemory(id, editor);
 
         useEffect(() => {
-            if (editor === null || readonly) return;
+            if (editor === null || readonly) {return;}
             let saveTimeout: NodeJS.Timeout | undefined;
             const dirty = dirtyRef;
             let saveQueue = Promise.resolve();
@@ -781,7 +781,7 @@ const TiptapEditorCore = memo(
                     isSettingContent.current ||
                     (editor.storage as typeof editor.storage & { commentSourcePending?: boolean }).commentSourcePending
                 )
-                    return null;
+                    {return null;}
                 return getEditorMarkdown(editor);
             };
 
@@ -802,7 +802,7 @@ const TiptapEditorCore = memo(
                             );
                         }
                         persistedContentRef.current = markdown;
-                        if (editor.isDestroyed || getCurrentMarkdown() === markdown) dirty.current = false;
+                        if (editor.isDestroyed || getCurrentMarkdown() === markdown) {dirty.current = false;}
                         uiDispatch.setEditorSaveStatus(dirty.current ? "unsaved" : "saved", noteRef.current?.id ?? id);
                     } catch (error) {
                         setSaveError(error instanceof Error ? error.message : "Could not save this draft.");
@@ -815,41 +815,41 @@ const TiptapEditorCore = memo(
 
             const updateHandler = () => {
                 if (isSettingContent.current) {
-                    if (saveTimeout) clearTimeout(saveTimeout);
+                    if (saveTimeout) {clearTimeout(saveTimeout);}
                     dirty.current = false;
                     return;
                 }
                 dirty.current = true;
                 uiDispatch.setEditorSaveStatus("unsaved", noteRef.current?.id ?? id);
-                if (!settings.autosave) return;
-                if (saveTimeout) clearTimeout(saveTimeout);
+                if (!settings.autosave) {return;}
+                if (saveTimeout) {clearTimeout(saveTimeout);}
                 saveTimeout = setTimeout(
                     () => {
                         const markdown = getCurrentMarkdown();
-                        if (markdown !== null) void saveDocument(markdown);
+                        if (markdown !== null) {void saveDocument(markdown);}
                     },
                     Math.max(0, settings.autosaveDelay),
                 );
             };
             editor.on("update", updateHandler);
-            if (!isSettingContent.current) editor.setEditable(true, false);
+            if (!isSettingContent.current) {editor.setEditable(true, false);}
             const unregisterSaveShortcut = registerNoteSaveShortcut(
                 id,
                 () => {
-                    if (saveTimeout) clearTimeout(saveTimeout);
+                    if (saveTimeout) {clearTimeout(saveTimeout);}
                     const markdown = getCurrentMarkdown();
-                    if (markdown !== null) void saveDocument(markdown);
+                    if (markdown !== null) {void saveDocument(markdown);}
                 },
                 active,
             );
             const flushPendingSave = (): void => {
-                if (!isMobile() || !dirty.current || !settings.autosave) return;
-                if (saveTimeout) clearTimeout(saveTimeout);
+                if (!isMobile() || !dirty.current || !settings.autosave) {return;}
+                if (saveTimeout) {clearTimeout(saveTimeout);}
                 const markdown = getCurrentMarkdown();
-                if (markdown !== null) void saveDocument(markdown);
+                if (markdown !== null) {void saveDocument(markdown);}
             };
             const onVisibilityChange = (): void => {
-                if (document.visibilityState === "hidden") flushPendingSave();
+                if (document.visibilityState === "hidden") {flushPendingSave();}
             };
             window.addEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
             document.addEventListener("visibilitychange", onVisibilityChange);
@@ -858,9 +858,9 @@ const TiptapEditorCore = memo(
                 window.removeEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
                 document.removeEventListener("visibilitychange", onVisibilityChange);
                 editor.off("update", updateHandler);
-                if (saveTimeout) clearTimeout(saveTimeout);
+                if (saveTimeout) {clearTimeout(saveTimeout);}
                 const markdown = getCurrentMarkdown();
-                if (dirty.current && markdown !== null) void saveDocument(markdown);
+                if (dirty.current && markdown !== null) {void saveDocument(markdown);}
             };
         }, [dispatch, editor, readonly, settings, id, active]);
 
@@ -916,19 +916,19 @@ const TiptapEditorCore = memo(
                             onSaveSource={async (markdown, referenceHref) => {
                                 uiDispatch.setEditorSaveStatus("saving", noteRef.current?.id ?? id);
                                 try {
-                                    if (onSaveRef.current) await onSaveRef.current(markdown);
+                                    if (onSaveRef.current) {await onSaveRef.current(markdown);}
                                     else {
                                         const latest = await repositories.notes.getOne(note.id);
                                         if (!latest)
-                                            throw new Error(
+                                            {throw new Error(
                                                 "The source note was deleted. Restore it before commenting.",
-                                            );
-                                        if (latest.content === markdown) dispatch.syncNoteFromRepository(latest);
+                                            );}
+                                        if (latest.content === markdown) {dispatch.syncNoteFromRepository(latest);}
                                         else {
                                             if (latest.content !== note.content || latest.title !== note.title)
-                                                throw new Error(
+                                                {throw new Error(
                                                     "The source note changed in another editor. Reload it before saving its comment link.",
-                                                );
+                                                );}
                                             const saved = await repositories.notes.updateContentIfUnchanged(
                                                 note.id,
                                                 {
@@ -939,18 +939,18 @@ const TiptapEditorCore = memo(
                                                 markdown,
                                             );
                                             if (!saved)
-                                                throw new Error(
+                                                {throw new Error(
                                                     "The source note changed in another editor. Reload it before saving its comment link.",
-                                                );
+                                                );}
                                             dispatch.syncNoteFromRepository(saved);
                                         }
                                     }
                                     if (referenceHref) {
                                         const saved = await repositories.notes.getOne(note.id);
                                         if (!saved)
-                                            throw new Error(
+                                            {throw new Error(
                                                 "The source note was deleted. Restore it before commenting.",
-                                            );
+                                            );}
                                         const existing = saved.metadata.commentReferenceHrefs;
                                         const aliases = Array.isArray(existing)
                                             ? existing.filter((value): value is string => typeof value === "string")
@@ -965,9 +965,9 @@ const TiptapEditorCore = memo(
                                         }
                                     }
                                     uiDispatch.setEditorSaveStatus("saved", noteRef.current?.id ?? id);
-                                } catch (reason) {
+                                } catch (error) {
                                     uiDispatch.setEditorSaveStatus("error", noteRef.current?.id ?? id);
-                                    throw reason;
+                                    throw error;
                                 }
                             }}
                         />
@@ -1061,7 +1061,7 @@ const RawEditorCore = memo(
                                 dispatch,
                             );
                         }
-                        if (latestContentRef.current === content) dirtyRef.current = false;
+                        if (latestContentRef.current === content) {dirtyRef.current = false;}
                         setDraft((current) => (current.content === content ? { ...current, dirty: false } : current));
                         uiDispatch.setEditorSaveStatus(
                             dirtyRef.current ? "unsaved" : "saved",
@@ -1084,10 +1084,10 @@ const RawEditorCore = memo(
 
         useEffect(() => {
             if (props.note && persistedNoteRef.current && +props.note.updatedAt < +persistedNoteRef.current.updatedAt)
-                return;
+                {return;}
             if (dirtyRef.current) {
                 if (props.note && props.content === persistedNoteRef.current?.content)
-                    persistedNoteRef.current = props.note;
+                    {persistedNoteRef.current = props.note;}
                 return;
             }
             persistedNoteRef.current = props.note;
@@ -1095,11 +1095,11 @@ const RawEditorCore = memo(
         }, [props.content, props.note]);
 
         useEffect(() => {
-            if (props.readonly) return;
+            if (props.readonly) {return;}
             return registerNoteSaveShortcut(
                 props.id,
                 () => {
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    if (saveTimeoutRef.current) {clearTimeout(saveTimeoutRef.current);}
                     void saveContent(latestContentRef.current);
                 },
                 props.active,
@@ -1108,19 +1108,19 @@ const RawEditorCore = memo(
 
         useEffect(() => {
             const flushPendingSave = (): void => {
-                if (!isMobile() || props.readonly || !dirtyRef.current || !settings.autosave) return;
-                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                if (!isMobile() || props.readonly || !dirtyRef.current || !settings.autosave) {return;}
+                if (saveTimeoutRef.current) {clearTimeout(saveTimeoutRef.current);}
                 void saveContent(latestContentRef.current);
             };
             const onVisibilityChange = (): void => {
-                if (document.visibilityState === "hidden") flushPendingSave();
+                if (document.visibilityState === "hidden") {flushPendingSave();}
             };
             window.addEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
             document.addEventListener("visibilitychange", onVisibilityChange);
             return () => {
                 window.removeEventListener(MOBILE_PAUSE_EVENT, flushPendingSave);
                 document.removeEventListener("visibilitychange", onVisibilityChange);
-                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                if (saveTimeoutRef.current) {clearTimeout(saveTimeoutRef.current);}
                 if (!props.readonly && dirtyRef.current) {
                     void saveContent(latestContentRef.current);
                 }
@@ -1129,12 +1129,12 @@ const RawEditorCore = memo(
 
         const handleChange = (nextContent: string): void => {
             latestContentRef.current = nextContent;
-            if (props.readonly) return;
+            if (props.readonly) {return;}
             dirtyRef.current = true;
             setDraft((current) => ({ ...current, content: nextContent, dirty: true }));
             uiDispatch.setEditorSaveStatus("unsaved", noteRef.current?.id ?? props.id);
-            if (!settings.autosave) return;
-            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+            if (!settings.autosave) {return;}
+            if (saveTimeoutRef.current) {clearTimeout(saveTimeoutRef.current);}
             saveTimeoutRef.current = setTimeout(
                 () => {
                     void saveContent(nextContent);

@@ -29,7 +29,7 @@ class FileWatcherClass {
 
         this.watcher.on("change", (filePath) => {
             const lastWrite = this.lastWrittenByApp.get(filePath);
-            if (lastWrite && Date.now() - lastWrite < SUPPRESS_WINDOW_MS) return;
+            if (lastWrite && Date.now() - lastWrite < SUPPRESS_WINDOW_MS) {return;}
             this.win?.webContents.send("fs:file-changed", { filePath });
         });
 
@@ -40,7 +40,7 @@ class FileWatcherClass {
 
         const sendUnlessOwnWrite = (filePath: string) => {
             const lastWrite = this.lastWrittenByApp.get(filePath);
-            if (lastWrite && Date.now() - lastWrite < SUPPRESS_WINDOW_MS) return;
+            if (lastWrite && Date.now() - lastWrite < SUPPRESS_WINDOW_MS) {return;}
             sendDirChanged(filePath, directory);
         };
         this.watcher.on("add", sendUnlessOwnWrite);
@@ -56,21 +56,21 @@ class FileWatcherClass {
         this.win = null;
         this.directory = null;
         this.lastWrittenByApp.clear();
-        for (const timer of this.dirChangeTimers.values()) clearTimeout(timer);
+        for (const timer of this.dirChangeTimers.values()) {clearTimeout(timer);}
         this.dirChangeTimers.clear();
     }
 
     suppressNext(filePath: string) {
         const now = Date.now();
         for (const [key, time] of this.lastWrittenByApp) {
-            if (now - time >= SUPPRESS_WINDOW_MS) this.lastWrittenByApp.delete(key);
+            if (now - time >= SUPPRESS_WINDOW_MS) {this.lastWrittenByApp.delete(key);}
         }
         this.lastWrittenByApp.set(filePath, now);
     }
 
     private scheduleDirChanged(dirPath: string) {
         const existing = this.dirChangeTimers.get(dirPath);
-        if (existing) clearTimeout(existing);
+        if (existing) {clearTimeout(existing);}
         const timer = setTimeout(() => {
             this.dirChangeTimers.delete(dirPath);
             this.win?.webContents.send("fs:dir-changed", { dirPath });

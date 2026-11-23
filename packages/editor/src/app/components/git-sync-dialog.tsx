@@ -42,14 +42,14 @@ const reducer = (state: State, action: Action): State => {
             return { status: "loading" };
         case "loaded": {
             const r = action.result;
-            if (r.kind === "git-missing") return { status: "git-missing" };
-            if (r.kind === "not-a-repo") return { status: "not-a-repo" };
+            if (r.kind === "git-missing") {return { status: "git-missing" };}
+            if (r.kind === "not-a-repo") {return { status: "not-a-repo" };}
             if (r.kind === "error")
-                return {
+                {return {
                     status: "error",
                     message: "Failed to read repository status",
                     details: r.stderr,
-                };
+                };}
             return {
                 status: "ready",
                 branch: r.branch,
@@ -59,13 +59,13 @@ const reducer = (state: State, action: Action): State => {
             };
         }
         case "submit":
-            if (state.status !== "ready") return state;
+            if (state.status !== "ready") {return state;}
             return { ...state, status: "pushing" };
         case "pushed": {
             const r = action.result;
-            if (r.kind === "success" || r.kind === "nothing-to-commit") return state;
-            if (r.kind === "git-missing") return { status: "git-missing" };
-            if (r.kind === "not-a-repo") return { status: "not-a-repo" };
+            if (r.kind === "success" || r.kind === "nothing-to-commit") {return state;}
+            if (r.kind === "git-missing") {return { status: "git-missing" };}
+            if (r.kind === "not-a-repo") {return { status: "not-a-repo" };}
             return {
                 status: "error",
                 message: `Git ${r.stage} failed`,
@@ -78,24 +78,24 @@ const reducer = (state: State, action: Action): State => {
 };
 
 const countsLabel = (c: GitCounts): string => {
-    const parts: string[] = [];
-    if (c.modified) parts.push(`M ${c.modified}`);
-    if (c.added) parts.push(`A ${c.added}`);
-    if (c.deleted) parts.push(`D ${c.deleted}`);
-    if (c.renamed) parts.push(`R ${c.renamed}`);
-    if (c.untracked) parts.push(`?? ${c.untracked}`);
-    if (c.conflicted) parts.push(`UU ${c.conflicted}`);
+    const parts: Array<string> = [];
+    if (c.modified) {parts.push(`M ${c.modified}`);}
+    if (c.added) {parts.push(`A ${c.added}`);}
+    if (c.deleted) {parts.push(`D ${c.deleted}`);}
+    if (c.renamed) {parts.push(`R ${c.renamed}`);}
+    if (c.untracked) {parts.push(`?? ${c.untracked}`);}
+    if (c.conflicted) {parts.push(`UU ${c.conflicted}`);}
     return parts.length ? parts.join(" · ") : "Working tree clean";
 };
 
 const countsAriaLabel = (c: GitCounts): string => {
-    const segs: string[] = [];
-    if (c.modified) segs.push(`${c.modified} modified`);
-    if (c.added) segs.push(`${c.added} added`);
-    if (c.deleted) segs.push(`${c.deleted} deleted`);
-    if (c.renamed) segs.push(`${c.renamed} renamed`);
-    if (c.untracked) segs.push(`${c.untracked} untracked`);
-    if (c.conflicted) segs.push(`${c.conflicted} conflicted`);
+    const segs: Array<string> = [];
+    if (c.modified) {segs.push(`${c.modified} modified`);}
+    if (c.added) {segs.push(`${c.added} added`);}
+    if (c.deleted) {segs.push(`${c.deleted} deleted`);}
+    if (c.renamed) {segs.push(`${c.renamed} renamed`);}
+    if (c.untracked) {segs.push(`${c.untracked} untracked`);}
+    if (c.conflicted) {segs.push(`${c.conflicted} conflicted`);}
     return segs.length ? segs.join(", ") : "no changes";
 };
 
@@ -116,26 +116,26 @@ export const GitSyncDialog = () => {
     }, [uiActions]);
 
     useEffect(() => {
-        if (!open) return;
-        if (!isElectron()) return;
+        if (!open) {return;}
+        if (!isElectron()) {return;}
         const dir = SettingsService.load().directory;
-        if (!dir) return;
+        if (!dir) {return;}
         dispatch({ type: "load" });
         const myGen = ++genRef.current;
         window.electronAPI.git
             .status(dir)
             .then((result) => {
-                if (genRef.current === myGen) dispatch({ type: "loaded", result });
+                if (genRef.current === myGen) {dispatch({ type: "loaded", result });}
             })
-            .catch((err: unknown) => {
+            .catch((error: unknown) => {
                 if (genRef.current === myGen)
-                    dispatch({
+                    {dispatch({
                         type: "loaded",
                         result: {
                             kind: "error",
-                            stderr: err instanceof Error ? err.message : String(err),
+                            stderr: error instanceof Error ? error.message : String(error),
                         },
-                    });
+                    });}
             });
         return () => {
             genRef.current++;
@@ -143,21 +143,21 @@ export const GitSyncDialog = () => {
     }, [open]);
 
     const submit = useCallback(async () => {
-        if (state.status !== "ready") return;
+        if (state.status !== "ready") {return;}
         const dir = SettingsService.load().directory;
-        if (!dir) return;
+        if (!dir) {return;}
         const trimmed = message.trim();
-        if (!trimmed) return;
+        if (!trimmed) {return;}
 
         dispatch({ type: "submit" });
         let result: GitPushResult;
         try {
             result = await window.electronAPI.git.commitAndPush(dir, trimmed);
-        } catch (err) {
+        } catch (error) {
             result = {
                 kind: "error",
                 stage: "push",
-                stderr: err instanceof Error ? err.message : String(err),
+                stderr: error instanceof Error ? error.message : String(error),
             };
         }
         dispatch({ type: "pushed", result });
@@ -183,17 +183,17 @@ export const GitSyncDialog = () => {
     }, [handleClose, message, state.status]);
 
     const generateMessage = useCallback(async () => {
-        if (state.status !== "ready" || !state.hasChanges) return;
-        if (!isElectron()) return;
+        if (state.status !== "ready" || !state.hasChanges) {return;}
+        if (!isElectron()) {return;}
         const dir = SettingsService.load().directory;
-        if (!dir) return;
+        if (!dir) {return;}
 
         const configs = await repositories.ai.getConfigs();
         const config = configs.find((c) => c.isDefault) ?? configs[0];
-        if (!config) return;
+        if (!config) {return;}
 
         const diff = await window.electronAPI.git.diff(dir);
-        if (!diff) return;
+        if (!diff) {return;}
 
         const context = [
             "Generate a concise git commit message.",
@@ -216,15 +216,15 @@ export const GitSyncDialog = () => {
     }, [state]);
 
     useEffect(() => {
-        if (!generating) return;
-        if (!isElectron()) return;
+        if (!generating) {return;}
+        if (!isElectron()) {return;}
         let buf = "";
         const unChunk = window.electronAPI.ai.onChunk(({ chunk }) => {
             buf += chunk;
             setMessage(buf);
         });
         const unDone = window.electronAPI.ai.onDone(() => {
-            setMessage(buf.trim().replace(/^["'\n]+|["'\n]+$/g, ""));
+            setMessage(buf.trim().replaceAll(/^["'\n]+|["'\n]+$/g, ""));
             setGenerating(false);
         });
         const unError = window.electronAPI.ai.onError(() => {
@@ -238,25 +238,25 @@ export const GitSyncDialog = () => {
     }, [generating]);
 
     const retry = useCallback(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         const dir = SettingsService.load().directory;
-        if (!dir) return;
+        if (!dir) {return;}
         dispatch({ type: "load" });
         const myGen = ++genRef.current;
         window.electronAPI.git
             .status(dir)
             .then((result) => {
-                if (genRef.current === myGen) dispatch({ type: "loaded", result });
+                if (genRef.current === myGen) {dispatch({ type: "loaded", result });}
             })
-            .catch((err: unknown) => {
+            .catch((error: unknown) => {
                 if (genRef.current === myGen)
-                    dispatch({
+                    {dispatch({
                         type: "loaded",
                         result: {
                             kind: "error",
-                            stderr: err instanceof Error ? err.message : String(err),
+                            stderr: error instanceof Error ? error.message : String(error),
                         },
-                    });
+                    });}
             });
     }, []);
 

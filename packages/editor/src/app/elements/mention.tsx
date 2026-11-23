@@ -1,5 +1,5 @@
 import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { type ComponentType, type ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { getEditorAllNotes } from "@/lib/editor-storage";
 import { innerUrl } from "@/lib/encoding";
 import { createNoteLinkPreview, LinkPreview, NoteMentionPreview } from "./link-preview";

@@ -21,8 +21,8 @@ export const ANTHROPIC_OAUTH_SCOPES =
 const ANTHROPIC_BETA_HEADERS = "oauth-2025-04-20,interleaved-thinking-2025-05-14";
 const ANTHROPIC_USER_AGENT = "claude-cli/2.1.2 (external, cli)";
 
-export async function mapAnthropicMessages(messages: AIConversationMessage[]) {
-  const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+export async function mapAnthropicMessages(messages: Array<AIConversationMessage>) {
+  const mapped: Array<{ role: "user" | "assistant"; content: string | Array<any> }> = [];
   for (const message of messages) {
     if (message.role === "system") {
       mapped.push({ role: "user", content: message.content.text });
@@ -32,7 +32,7 @@ export async function mapAnthropicMessages(messages: AIConversationMessage[]) {
       mapped.push({ role: message.role, content: message.content.text });
       continue;
     }
-    const parts: any[] = [];
+    const parts: Array<any> = [];
     for (const file of message.content.files) {
       if (getAIFileKind({ name: file.name, type: file.mimeType }) === "text") {
         const text = new TextDecoder("utf-8", { fatal: true }).decode(file.data);
@@ -49,7 +49,7 @@ export async function mapAnthropicMessages(messages: AIConversationMessage[]) {
         });
       }
     }
-    if (message.content.text.trim()) parts.push({ type: "text", text: message.content.text });
+    if (message.content.text.trim()) {parts.push({ type: "text", text: message.content.text });}
     mapped.push({ role: message.role, content: parts });
   }
   return mapped;
@@ -75,17 +75,17 @@ export class AnthropicAdapter implements AIAdapter {
   }
 
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
-    if (!credentials.refreshToken) return credentials;
+    if (!credentials.refreshToken) {return credentials;}
     const { authManager } = await import("@/app/ai/auth/auth-manager");
     return authManager.refreshAnthropicToken(credentials);
   }
 
   isExpired(credentials: AuthCredentials): boolean {
-    if (credentials.apiKey) return false;
+    if (credentials.apiKey) {return false;}
     return credentials.expiresAt != null && Date.now() > credentials.expiresAt;
   }
 
-  async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
+  async listModels(credentials: AuthCredentials): Promise<Array<AIModel>> {
     try {
       const headers: Record<string, string> = {
         "anthropic-version": "2023-06-01",
@@ -100,9 +100,9 @@ export class AnthropicAdapter implements AIAdapter {
       const resp = await proxyFetch("https://api.anthropic.com/v1/models", {
         headers,
       });
-      if (!resp.ok) return [];
+      if (!resp.ok) {return [];}
       const data = (await resp.json()) as {
-        data: { id: string; display_name?: string }[];
+        data: Array<{ id: string; display_name?: string }>;
       };
       return (data.data ?? []).map((m) => ({
         id: m.id,
@@ -118,7 +118,7 @@ export class AnthropicAdapter implements AIAdapter {
   }
 
   async *sendMessage(
-    messages: AIConversationMessage[],
+    messages: Array<AIConversationMessage>,
     options: SendOptions,
     signal?: AbortSignal,
   ): AsyncIterable<AIStreamEvent> {
@@ -163,7 +163,7 @@ export class AnthropicAdapter implements AIAdapter {
 
       for await (const event of eventChannel.consume(result)) {
         yield event;
-        if (event.type === "error") return;
+        if (event.type === "error") {return;}
       }
     } catch (error: unknown) {
       if (isAIStreamAbortError(error)) {

@@ -49,7 +49,7 @@ type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> & {
     loading?: boolean;
     placeholder?: string;
     onChange?: ChangeEventHandler<HTMLSelectElement>;
-    options: SelectOption[];
+    options: Array<SelectOption>;
     title: string;
 };
 
@@ -719,7 +719,7 @@ describe("AISettings secure setup", () => {
         expect(code).toHaveValue("ABCD-1234");
         expect(code).toHaveAttribute("readonly");
         fireEvent.focus(code);
-        if (!(code instanceof HTMLInputElement)) throw new Error("Expected a code input");
+        if (!(code instanceof HTMLInputElement)) {throw new Error("Expected a code input");}
         expect(code.selectionStart).toBe(0);
         expect(code.selectionEnd).toBe("ABCD-1234".length);
         expect(screen.getByRole("status")).toHaveTextContent("Automatic copy was unavailable");
@@ -759,7 +759,7 @@ describe("AISettings secure setup", () => {
     });
 
     it("prevents sign-in while API-key verification is pending", async () => {
-        const models = deferred<{ id: string; name: string }[]>();
+        const models = deferred<Array<{ id: string; name: string }>>();
         mocks.listAnthropicModels.mockReturnValue(models.promise);
         render(<AISettings />);
         fireEvent.click(await screen.findByRole("button", { name: /Anthropic \(Claude\)/ }));

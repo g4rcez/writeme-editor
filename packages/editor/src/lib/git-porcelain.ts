@@ -11,9 +11,9 @@ const emptyCounts = (): GitCounts => ({
 
 const parseHeader = (line: string): { branch: string; upstream: string | null } => {
     const body = line.replace(/^## /, "").replace(/\s*\[[^\]]+\]\s*$/, "");
-    if (body.startsWith("HEAD (no branch)")) return { branch: "HEAD", upstream: null };
+    if (body.startsWith("HEAD (no branch)")) {return { branch: "HEAD", upstream: null };}
     const sep = body.indexOf("...");
-    if (sep === -1) return { branch: body.trim(), upstream: null };
+    if (sep === -1) {return { branch: body.trim(), upstream: null };}
     return {
         branch: body.slice(0, sep).trim(),
         upstream: body.slice(sep + 3).trim() || null,
@@ -27,7 +27,7 @@ export const parsePorcelain = (stdout: string): ParsedStatus => {
     let upstream: string | null = null;
 
     for (const raw of lines) {
-        if (raw === "") continue;
+        if (raw === "") {continue;}
         if (raw.startsWith("## ")) {
             ({ branch, upstream } = parseHeader(raw));
             continue;

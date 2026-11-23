@@ -32,8 +32,8 @@ export function isNoteTabForNoteId(tab: Pick<TabTargetCandidate, "noteId" | "typ
 }
 
 function getTabTargetType(tab: { type?: string | null }): TabTargetType {
-    if (isAiChatTab(tab)) return "ai-chat";
-    if (isTerminalTab(tab)) return "terminal";
+    if (isAiChatTab(tab)) {return "ai-chat";}
+    if (isTerminalTab(tab)) {return "terminal";}
     return "note";
 }
 
@@ -88,7 +88,7 @@ export function getCurrentRouteTabTarget(pathname: string, search: string): TabT
     return null;
 }
 
-export function findTabByTarget<T extends TabTargetCandidate>(tabs: T[], target: TabTarget | null): T | null {
-    if (!target) return null;
+export function findTabByTarget<T extends TabTargetCandidate>(tabs: Array<T>, target: TabTarget | null): T | null {
+    if (!target) {return null;}
     return tabs.find((tab) => isSameTabTarget(getTabTarget(tab), target)) ?? null;
 }

@@ -102,7 +102,7 @@ test("completes headings, tags, words and real workspace files in compiled Elect
             await page.keyboard.press("Enter");
             await expect(editor).toContainText("Asset");
             if (mode === "Formatted")
-                await expect(editor.locator('[data-type="mention"]')).toHaveAttribute("data-path", assetPath);
+                {await expect(editor.locator('[data-type="mention"]')).toHaveAttribute("data-path", assetPath);}
             await page.keyboard.press("Enter");
             await page.keyboard.type("Word pla");
             await page.keyboard.press("Control+Space");

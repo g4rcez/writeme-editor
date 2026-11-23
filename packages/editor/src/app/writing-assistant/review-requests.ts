@@ -13,7 +13,7 @@ const handlers = new WeakMap<Editor, WritingReviewHandler>();
 export function registerWritingReviewHandler(editor: Editor, handler: WritingReviewHandler): () => void {
     handlers.set(editor, handler);
     return () => {
-        if (handlers.get(editor) === handler) handlers.delete(editor);
+        if (handlers.get(editor) === handler) {handlers.delete(editor);}
     };
 }
 
@@ -23,7 +23,7 @@ export function hasWritingReviewHandler(editor: Editor): boolean {
 
 export function requestWritingReview(editor: Editor, request: WritingReviewRequest): boolean {
     const handler = handlers.get(editor);
-    if (!handler) return false;
+    if (!handler) {return false;}
     handler(request);
     return true;
 }

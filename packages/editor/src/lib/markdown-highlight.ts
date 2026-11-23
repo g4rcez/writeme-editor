@@ -7,7 +7,7 @@ export function configureHighlightMarkdown(markdown: Marked): void {
         start: (source) => source.indexOf("=="),
         tokenizer(source) {
             const match = /^==(?=\S)([^\n]+?\S|\S)==/.exec(source);
-            if (!match?.[1]) return undefined;
+            if (!match?.[1]) {return undefined;}
             return { type: "highlight", raw: match[0], tokens: this.lexer.inlineTokens(match[1]) };
         },
     };

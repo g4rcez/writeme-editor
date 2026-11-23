@@ -59,7 +59,7 @@ function ActionCard({ title, description, icon: Icon, onClick, shortcut }: Actio
 }
 
 function getNotePreview(content: string): string {
-    return content.slice(0, 160).replace(/[#*`]/g, "").replace(/\s+/g, " ").trim() || "No content yet";
+    return content.slice(0, 160).replaceAll(/[#*`]/g, "").replaceAll(/\s+/g, " ").trim() || "No content yet";
 }
 
 function RecentNoteRow({ note }: { note: Note }) {
@@ -115,11 +115,11 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const hour = new Date().getHours();
-        if (hour < 12) setGreeting("Good morning");
-        else if (hour < 18) setGreeting("Good afternoon");
-        else setGreeting("Good evening");
+        if (hour < 12) {setGreeting("Good morning");}
+        else if (hour < 18) {setGreeting("Good afternoon");}
+        else {setGreeting("Good evening");}
 
-        if (!window.electronAPI) return;
+        if (!window.electronAPI) {return;}
         if (state.directory) {
             window.electronAPI.env.getHome().then((home) => {
                 setCwd(tildaDir(home, state.directory ?? home));

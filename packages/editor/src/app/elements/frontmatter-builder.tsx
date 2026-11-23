@@ -27,31 +27,31 @@ const TYPE_OPTIONS = [
 ];
 
 function inferType(value: unknown): PropertyType {
-    if (typeof value === "boolean") return "boolean";
-    if (typeof value === "number") return "number";
+    if (typeof value === "boolean") {return "boolean";}
+    if (typeof value === "number") {return "number";}
     if (Array.isArray(value)) {
         return value.every((item) => ["boolean", "number", "string"].includes(typeof item)) ? "list" : "object";
     }
-    if (value && typeof value === "object") return "object";
+    if (value && typeof value === "object") {return "object";}
     if (typeof value === "string") {
-        if (/^\d{4}-\d{2}-\d{2}/.test(value)) return "date";
-        if (value.includes("\n")) return "multiline";
+        if (/^\d{4}-\d{2}-\d{2}/.test(value)) {return "date";}
+        if (value.includes("\n")) {return "multiline";}
     }
     return "text";
 }
 
 function valueToString(value: unknown, type: PropertyType): string {
-    if (type === "list" && Array.isArray(value)) return value.join(", ");
-    if (type === "object") return YAML.stringify(value).trimEnd();
-    if (type === "boolean") return String(value);
-    if (value === null || value === undefined) return "";
+    if (type === "list" && Array.isArray(value)) {return value.join(", ");}
+    if (type === "object") {return YAML.stringify(value).trimEnd();}
+    if (type === "boolean") {return String(value);}
+    if (value === null || value === undefined) {return "";}
     return String(value);
 }
 
-const parseFrontMatter = (content: string): FrontmatterProperty[] => {
+const parseFrontMatter = (content: string): Array<FrontmatterProperty> => {
     try {
         const parsed = YAML.parse(content);
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {return [];}
         return Object.entries(parsed).map(([key, val]) => {
             const type = inferType(val);
             return { id: uuid(), key, value: valueToString(val, type), type };
@@ -61,13 +61,13 @@ const parseFrontMatter = (content: string): FrontmatterProperty[] => {
     }
 };
 
-function propertiesToYaml(properties: FrontmatterProperty[]): string {
+function propertiesToYaml(properties: Array<FrontmatterProperty>): string {
     const obj: Record<string, unknown> = {};
     for (const p of properties) {
-        if (!p.key.trim()) continue;
+        if (!p.key.trim()) {continue;}
         switch (p.type) {
             case "number":
-                obj[p.key] = parseFloat(p.value) || 0;
+                obj[p.key] = Number.parseFloat(p.value) || 0;
                 break;
             case "boolean":
                 obj[p.key] = p.value === "true";
@@ -154,9 +154,9 @@ const ValueInput = ({ property, onChange }: { property: FrontmatterProperty; onC
 };
 
 export const FrontmatterBuilder = ({ open, content, onClose, onSave }: FrontmatterBuilderProps) => {
-    const [properties, setProperties] = useState<FrontmatterProperty[]>([]);
+    const [properties, setProperties] = useState<Array<FrontmatterProperty>>([]);
     useEffect(() => {
-        if (open) setProperties(parseFrontMatter(content));
+        if (open) {setProperties(parseFrontMatter(content));}
     }, [open]);
 
     const updateProperty = (id: string, patch: Partial<FrontmatterProperty>) => {

@@ -38,7 +38,7 @@ function setMatchMedia(narrow = false): void {
 
 function renderContext(
     currentNote: Note = note,
-    notes: Note[] = [currentNote, target],
+    notes: Array<Note> = [currentNote, target],
     workspaceDirectory: string | null = null,
     narrowViewport = false,
 ): void {
@@ -90,7 +90,7 @@ describe("ContextPane", () => {
             </MemoryRouter>
         );
         const { rerender } = render(view(false, note));
-        for (const scan of scans) expect(scan).not.toHaveBeenCalled();
+        for (const scan of scans) {expect(scan).not.toHaveBeenCalled();}
         rerender(view(true, note));
         for (const scan of scans) {
             expect(scan).toHaveBeenCalled();
@@ -98,10 +98,10 @@ describe("ContextPane", () => {
         }
         const updated = Note.parse({ ...note, content: "Updated without links." });
         rerender(view(false, updated));
-        for (const scan of scans) expect(scan).not.toHaveBeenCalled();
+        for (const scan of scans) {expect(scan).not.toHaveBeenCalled();}
         rerender(view(true, updated));
         expect(screen.getByRole("complementary", { name: "Context" })).toBeInTheDocument();
-        for (const scan of scans) expect(scan).toHaveBeenCalled();
+        for (const scan of scans) {expect(scan).toHaveBeenCalled();}
     });
 
     it("preserves a pending link preview across closing and reopening", () => {

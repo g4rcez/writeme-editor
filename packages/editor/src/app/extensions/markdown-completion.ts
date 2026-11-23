@@ -19,10 +19,10 @@ import { createCompletionMenu } from "./editor-completion-menu";
 function context(view: EditorView, active?: CompletionContext): CompletionContext | null {
     const { state } = view;
     const selection = state.selection.main;
-    if (state.readOnly || !selection.empty) return null;
+    if (state.readOnly || !selection.empty) {return null;}
     let node = syntaxTree(state).resolveInner(selection.head, -1);
     while (node.parent) {
-        if (["FencedCode", "CodeBlock", "InlineCode", "Link", "URL", "HTMLBlock"].includes(node.name)) return null;
+        if (["FencedCode", "CodeBlock", "InlineCode", "Link", "URL", "HTMLBlock"].includes(node.name)) {return null;}
         node = node.parent;
     }
     const line = state.doc.lineAt(selection.head);
@@ -34,11 +34,11 @@ function context(view: EditorView, active?: CompletionContext): CompletionContex
     );
 }
 
-function headings(view: EditorView): CompletionItem[] {
-    const titles: string[] = [];
+function headings(view: EditorView): Array<CompletionItem> {
+    const titles: Array<string> = [];
     (ensureSyntaxTree(view.state, view.state.doc.length, 100) ?? syntaxTree(view.state)).iterate({
         enter: (node) => {
-            if (!/^(?:ATX|Setext)Heading[1-6]$/.test(node.name)) return;
+            if (!/^(?:ATX|Setext)Heading[1-6]$/.test(node.name)) {return;}
             const text = view.state.sliceDoc(node.from, node.to);
             titles.push(
                 markdownHeadingText(
@@ -60,7 +60,7 @@ export function markdownCompletion(noteId?: string): CodeMirrorExtension {
             let updateQueued = false;
             let documentChanged = false;
             let destroyed = false;
-            let tags: { doc: typeof view.state.doc; items: CompletionItem[] } | undefined;
+            let tags: { doc: typeof view.state.doc; items: Array<CompletionItem> } | undefined;
             const menu = createCompletionMenu({
                 noteId: () => noteId,
                 target: view.contentDOM,
@@ -68,7 +68,7 @@ export function markdownCompletion(noteId?: string): CodeMirrorExtension {
                 headings: () => headings(view),
                 tags: (range) => {
                     const doc = view.state.doc;
-                    if (tags?.doc !== doc) tags = { doc, items: createTagItems(extractCompletionTags(doc.toString())) };
+                    if (tags?.doc !== doc) {tags = { doc, items: createTagItems(extractCompletionTags(doc.toString())) };}
                     return withoutActiveTag(tags.items, range);
                 },
                 words: (range) =>
@@ -92,13 +92,13 @@ export function markdownCompletion(noteId?: string): CodeMirrorExtension {
             return {
                 update: (update) => {
                     documentChanged ||= update.docChanged;
-                    if (updateQueued) return;
+                    if (updateQueued) {return;}
                     updateQueued = true;
                     queueMicrotask(() => {
                         updateQueued = false;
                         const changed = documentChanged;
                         documentChanged = false;
-                        if (!destroyed) menu.update(changed);
+                        if (!destroyed) {menu.update(changed);}
                     });
                 },
                 destroy: () => {

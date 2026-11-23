@@ -8,8 +8,8 @@ import { createExtensions } from "../extensions";
 import { WritingAssistant } from "../extensions/writing-assistant";
 import { createTiptapWritingEditorAdapter, extractTiptapWritingSegments } from "./tiptap-adapter";
 
-const editors: Editor[] = [];
-const adapters: WritingEditorAdapter[] = [];
+const editors: Array<Editor> = [];
+const adapters: Array<WritingEditorAdapter> = [];
 
 function createEditor(content: JSONContent): Editor {
     const editor = new Editor({
@@ -36,7 +36,7 @@ function createSuggestion(
     id: string,
 ): WritingSuggestion {
     const segment = snapshot.segments[segmentIndex];
-    if (!segment) throw new Error("Expected an eligible prose segment.");
+    if (!segment) {throw new Error("Expected an eligible prose segment.");}
     return {
         id,
         segmentId: segment.id,
@@ -201,7 +201,7 @@ describe("formatted writing review extraction", () => {
         const adapter = attachAdapter(editor);
         let secondLinePosition = 0;
         editor.state.doc.descendants((node, position) => {
-            if (node.isText && node.text === "Second line") secondLinePosition = position + 3;
+            if (node.isText && node.text === "Second line") {secondLinePosition = position + 3;}
         });
         editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, secondLinePosition)));
 
@@ -235,7 +235,7 @@ describe("formatted writing review adapter", () => {
         adapter.show([createSuggestion(snapshot, 0, 4, 6, "go", "goes!", "issue-1")], snapshot);
 
         const decoration = editor.view.dom.querySelector('[data-writing-suggestion-id="issue-1"]');
-        if (!decoration) throw new Error("Expected an inline suggestion decoration.");
+        if (!decoration) {throw new Error("Expected an inline suggestion decoration.");}
         fireEvent.click(decoration);
         expect(adapter.getActiveSuggestionId()).toBe("issue-1");
 
@@ -280,7 +280,7 @@ describe("formatted writing review adapter", () => {
         let snapshot = adapter.snapshot("note");
         adapter.show([createSuggestion(snapshot, 0, 4, 6, "go", "goes", "issue-3")], snapshot);
         const segment = snapshot.segments[0];
-        if (!segment) throw new Error("Expected an eligible prose segment.");
+        if (!segment) {throw new Error("Expected an eligible prose segment.");}
 
         editor.view.dispatch(editor.state.tr.insertText("x", segment.from + 4));
         expect(adapter.getSuggestions()).toEqual([]);
@@ -297,7 +297,7 @@ describe("formatted writing review adapter", () => {
 
         snapshot = adapter.snapshot("note");
         const boundarySegment = snapshot.segments[0];
-        if (!boundarySegment) throw new Error("Expected an eligible prose segment.");
+        if (!boundarySegment) {throw new Error("Expected an eligible prose segment.");}
         adapter.show([createSuggestion(snapshot, 0, 0, 3, "She", "They", "issue-5")], snapshot);
         editor.view.dispatch(editor.state.tr.insertText("x", boundarySegment.from));
         expect(adapter.getSuggestions()).toEqual([]);

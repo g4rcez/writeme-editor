@@ -31,7 +31,7 @@ const MentionList = (props: any) => {
 
     const selectItem = (index: number) => {
         const item = itemsRef.current[index];
-        if (!item) return;
+        if (!item) {return;}
         const { from, to } = rangeRef.current;
         editorRef.current
             .chain()
@@ -69,7 +69,7 @@ const MentionList = (props: any) => {
 
     const createNoteFromQuery = () => {
         const initialTitle = String(queryRef.current ?? "").trim();
-        if (!initialTitle) return false;
+        if (!initialTitle) {return false;}
 
         closeSuggestionBeforeDialog();
         globalDispatch.setCreateNoteDialog({
@@ -92,7 +92,7 @@ const MentionList = (props: any) => {
         const handler = ({ event }: { event: KeyboardEvent }) => {
             if (itemsRef.current.length === 0) {
                 if (event.key === "Tab" || event.key === "Enter") {
-                    if (!createNoteFromQuery()) return false;
+                    if (!createNoteFromQuery()) {return false;}
                     event.preventDefault();
                     return true;
                 }
@@ -194,7 +194,7 @@ export const getMentionReplacementFrom = (state: EditorState, from: number): num
     return from > 1 && state.doc.textBetween(from - 1, from) === "@" ? from - 1 : from;
 };
 
-function getMentionSuggestionItems(query: string, editor: Editor): EditorMentionItem[] {
+function getMentionSuggestionItems(query: string, editor: Editor): Array<EditorMentionItem> {
     try {
         const items =
             getEditorMentionItems(editor) ??
@@ -215,7 +215,7 @@ const MENTION_SUGGESTION_REFRESH_KEY = "mentionSuggestionRefresh";
 
 export const refreshMentionSuggestions = (editor: Editor): boolean => {
     const refresh = Reflect.get(editor.storage, MENTION_SUGGESTION_REFRESH_KEY);
-    if (typeof refresh !== "function") return false;
+    if (typeof refresh !== "function") {return false;}
     refresh();
     return true;
 };
@@ -234,15 +234,15 @@ export const suggestion = {
             registerKeyDown,
         });
         const refreshActiveSuggestion = () => {
-            if (!activeProps || !reactRenderer) return;
+            if (!activeProps || !reactRenderer) {return;}
             reactRenderer.updateProps(getRendererProps(activeProps));
         };
         const closeSuggestion = () => {
             keyDownHandler = null;
-            if (activeEditor) Reflect.deleteProperty(activeEditor.storage, MENTION_SUGGESTION_REFRESH_KEY);
+            if (activeEditor) {Reflect.deleteProperty(activeEditor.storage, MENTION_SUGGESTION_REFRESH_KEY);}
             activeEditor = undefined;
             activeProps = undefined;
-            if (!reactRenderer) return;
+            if (!reactRenderer) {return;}
 
             const element = reactRenderer.element;
             reactRenderer.destroy();
@@ -254,7 +254,7 @@ export const suggestion = {
         };
         return {
             onStart: (props: any) => {
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 activeEditor = props.editor;
                 activeProps = props;
                 Reflect.set(props.editor.storage, MENTION_SUGGESTION_REFRESH_KEY, refreshActiveSuggestion);
@@ -267,10 +267,10 @@ export const suggestion = {
                 updatePosition(props.editor, reactRenderer.element);
             },
             onUpdate(props: any) {
-                if (!reactRenderer) return;
+                if (!reactRenderer) {return;}
                 activeProps = props;
                 reactRenderer.updateProps(getRendererProps(props));
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 updatePosition(props.editor, reactRenderer.element);
             },
             onKeyDown(props: { event: KeyboardEvent }) {

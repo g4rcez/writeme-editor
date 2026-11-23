@@ -22,17 +22,17 @@ const createEmptySnapshot = (id: string): ScrollMemorySnapshot => ({
 const getScrollContainer = (): HTMLElement | null => document.getElementById(SCROLL_CONTAINER_ID);
 
 const normalizeScrollY = (y: number): number => {
-    if (!Number.isFinite(y)) return 0;
+    if (!Number.isFinite(y)) {return 0;}
     return Math.max(0, Math.round(y));
 };
 
 const getSafeAnchor = (editor: Editor, anchor: number): number => {
-    if (!Number.isFinite(anchor)) return 0;
+    if (!Number.isFinite(anchor)) {return 0;}
     return Math.max(0, Math.min(Math.round(anchor), editor.state.doc.content.size));
 };
 
 const getCurrentAnchor = (editor: Editor): number => {
-    if (editor.isDestroyed) return 0;
+    if (editor.isDestroyed) {return 0;}
     return getSafeAnchor(editor, editor.state.selection.$anchor.pos);
 };
 
@@ -45,10 +45,10 @@ const readSnapshot = (id: string, editor: Editor, scroller: HTMLElement): Omit<S
 });
 
 const restoreSelection = (editor: Editor, anchor: number): void => {
-    if (editor.isDestroyed) return;
+    if (editor.isDestroyed) {return;}
 
     const safeAnchor = getSafeAnchor(editor, anchor);
-    if (safeAnchor <= 0) return;
+    if (safeAnchor <= 0) {return;}
 
     try {
         const selection = TextSelection.create(editor.state.doc, safeAnchor);
@@ -146,7 +146,7 @@ export const useEditorScrollMemory = (id: string, editor: Editor | null): void =
 
         void CursorPositionStore.get(id)
             .then((memory) => {
-                if (controller.signal.aborted || editor.isDestroyed) return;
+                if (controller.signal.aborted || editor.isDestroyed) {return;}
                 if (!interactionTracker.hasInteracted() && memory) {
                     restoreSelection(editor, memory.anchor);
                     restoreScrollY(scroller, memory.y);

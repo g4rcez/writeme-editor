@@ -24,7 +24,7 @@ export default defineConfig({
                 handler: (html) =>
                     html
                         .replace("/packages/editor/src/renderer.ts", "/packages/mobile/renderer.ts")
-                        .replace(
+                        .replaceAll(
                             /\s*<link[^>]*(?:rel="manifest"|href="https:\/\/fonts\.(?:googleapis|gstatic)\.com[^"]*")[^>]*>/g,
                             "",
                         ),

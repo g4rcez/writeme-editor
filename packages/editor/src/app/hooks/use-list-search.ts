@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 
 interface UseListSearchOptions<T> {
-    items: T[];
+    items: Array<T>;
     onSelect: (item: T) => void;
     isOpen?: boolean;
 }
@@ -19,7 +19,7 @@ export function useListSearch<T>({ items, onSelect, isOpen = true }: UseListSear
 
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
-            if (!isOpen || items.length === 0) return;
+            if (!isOpen || items.length === 0) {return;}
 
             if (e.key === "ArrowDown") {
                 e.preventDefault();

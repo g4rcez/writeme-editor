@@ -49,7 +49,7 @@ function createTestAdapter(refresh: (credentials: AuthCredentials) => Promise<Au
             data: await file.arrayBuffer(),
             size: file.size,
         }),
-        sendMessage: async function* (): AsyncGenerator<AIStreamEvent> {
+        async *sendMessage (): AsyncGenerator<AIStreamEvent> {
             yield { type: "done" };
         },
     };
@@ -237,7 +237,7 @@ describe("OAuth flow concurrency", () => {
                 await oldSaveRelease.promise;
             }
             storedCredentials = credentials;
-            if (credentials.adapterId === "gemini") newSaveFinished.resolve();
+            if (credentials.adapterId === "gemini") {newSaveFinished.resolve();}
         });
         mocks.clearCredentials.mockImplementation(async () => {
             storedCredentials = null;

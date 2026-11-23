@@ -1,4 +1,4 @@
-import { type StorageAdapter } from "../adapters/types";
+import type { StorageAdapter } from "../adapters/types";
 import { BaseRepository } from "../base.repository";
 import { type IScriptRepository, Script } from "../entities/script";
 
@@ -12,7 +12,7 @@ export class ScriptsRepository extends BaseRepository<Script> implements IScript
         return data ? Script.parse(data) : null;
     }
 
-    override async getAll(query?: { limit?: number }): Promise<Script[]> {
+    override async getAll(query?: { limit?: number }): Promise<Array<Script>> {
         const items = await super.getAll(query);
         return items.map((item) => Script.parse(item));
     }

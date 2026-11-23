@@ -29,10 +29,10 @@ const proposal = (overrides: Partial<AINoteEditProposal> = {}): AINoteEditPropos
     ...overrides,
 });
 
-const data = (...proposals: AINoteEditProposal[]): AIWorkspaceData => ({ activities: [], sources: [], proposals });
+const data = (...proposals: Array<AINoteEditProposal>): AIWorkspaceData => ({ activities: [], sources: [], proposals });
 
 function renderReview(
-    proposals: AINoteEditProposal[],
+    proposals: Array<AINoteEditProposal>,
     callbacks: {
         onApprove?: (proposal: AINoteEditProposal) => Promise<void>;
         onReject?: (proposal: AINoteEditProposal) => Promise<void>;

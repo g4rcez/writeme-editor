@@ -5,7 +5,7 @@ import { useSidebarNotes } from "./use-sidebar-notes";
 import { notifyHashtagsChanged } from "@/lib/hashtag-events";
 
 const mocks = vi.hoisted(() => ({
-    state: { notes: [] as Note[], directory: null },
+    state: { notes: [] as Array<Note>, directory: null },
     layout: { activeActivity: "explorer", activeView: { type: "all" }, searchQuery: "" },
     getHashtags: vi.fn(),
 }));

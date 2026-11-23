@@ -4,7 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Neovim } from "./index";
 
-const editors: Editor[] = [];
+const editors: Array<Editor> = [];
 
 function create(content = "<p>one two three four five six seven</p>"): Editor {
     const editor = new Editor({

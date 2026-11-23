@@ -35,11 +35,11 @@ function base64urlEncode(bytes: Uint8Array): string {
     for (let i = 0; i < bytes.byteLength; i++) {
         str += String.fromCharCode(bytes[i]!);
     }
-    return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    return btoa(str).replaceAll('+', "-").replaceAll('/', "_").replaceAll('=', "");
 }
 
 function generateState(): string {
-    return crypto.randomUUID().replace(/-/g, "");
+    return crypto.randomUUID().replaceAll('-', "");
 }
 
 function sleep(ms: number): Promise<void> {
@@ -99,7 +99,7 @@ type OpenAIPlatformClaims = {
         completed_platform_onboarding?: boolean;
         is_org_owner?: boolean;
         chatgpt_plan_type?: string;
-        organizations?: OpenAIOrganization[];
+        organizations?: Array<OpenAIOrganization>;
     };
 };
 
@@ -107,7 +107,7 @@ function getOpenAIAuthClaims(idToken: string | undefined) {
     return decodeJwtPayload<OpenAIPlatformClaims>(idToken)?.[OPENAI_AUTH_CLAIMS_KEY];
 }
 
-function getDefaultOpenAIOrganizationId(organizations: OpenAIOrganization[] | undefined): string | undefined {
+function getDefaultOpenAIOrganizationId(organizations: Array<OpenAIOrganization> | undefined): string | undefined {
     return (
         organizations?.find((organization) => organization.is_default)?.id ??
         organizations?.find((organization) => organization.id)?.id
@@ -146,14 +146,14 @@ export function createOpenAIPlatformSetupUrl(idToken: string): string {
     setupUrl.searchParams.set("t", idToken);
 
     const planType = authClaims?.chatgpt_plan_type;
-    if (planType) setupUrl.searchParams.set("p", planType);
+    if (planType) {setupUrl.searchParams.set("p", planType);}
 
     const organizationId =
         parseOpenAIPlatformOrganizationId(idToken) ?? getDefaultOpenAIOrganizationId(authClaims?.organizations);
-    if (organizationId) setupUrl.searchParams.set("with_org", organizationId);
+    if (organizationId) {setupUrl.searchParams.set("with_org", organizationId);}
 
     const projectId = parseOpenAIPlatformProjectId(idToken);
-    if (projectId) setupUrl.searchParams.set("project_id", projectId);
+    if (projectId) {setupUrl.searchParams.set("project_id", projectId);}
 
     return setupUrl.toString();
 }
@@ -202,7 +202,7 @@ function parseCallbackInput(input: string): { code: string; state: string | null
         const url = new URL(trimmed);
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
-        if (code) return { code, state };
+        if (code) {return { code, state };}
     } catch {
         // not a URL
     }
@@ -218,13 +218,13 @@ function parseCallbackInput(input: string): { code: string; state: string | null
         const params = new URLSearchParams(trimmed);
         const code = params.get("code");
         const state = params.get("state");
-        if (code) return { code, state };
+        if (code) {return { code, state };}
     } catch {
         // not URL params
     }
 
     // Treat as bare authorization code
-    if (trimmed) return { code: trimmed, state: null };
+    if (trimmed) {return { code: trimmed, state: null };}
     return null;
 }
 
@@ -321,7 +321,7 @@ class AuthManager {
     ): Promise<boolean> {
         const version = this._nextCredentialWriteVersion(adapterId);
         return this._enqueueCredentialWrite(adapterId, async () => {
-            if (!this._isCurrentCredentialGeneration(adapterId, credentialGeneration)) return false;
+            if (!this._isCurrentCredentialGeneration(adapterId, credentialGeneration)) {return false;}
             await repositories.ai.saveCredentials({ adapterId, ...creds });
             this._markCredentialWriteCommitted(adapterId, version);
             return true;
@@ -364,7 +364,7 @@ class AuthManager {
 
     private _queueOAuthCredentialCleanup(write: OAuthCredentialWrite): void {
         const cleanup = this._enqueueCredentialWrite(write.adapterId, async () => {
-            if (!write.wrote || !this._isLatestCredentialWrite(write.adapterId, write.version)) return;
+            if (!write.wrote || !this._isLatestCredentialWrite(write.adapterId, write.version)) {return;}
             const version = this._nextCredentialWriteVersion(write.adapterId);
             await repositories.ai.clearCredentials(write.adapterId);
             this._markCredentialWriteCommitted(write.adapterId, version);
@@ -445,7 +445,7 @@ class AuthManager {
             }
             this._assertCurrentOAuthFlow(generation);
         } catch (error: unknown) {
-            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            if (this._isCurrentOAuthFlow(generation)) {this._clearPendingOAuth();}
             throw error;
         }
 
@@ -510,7 +510,7 @@ class AuthManager {
                 },
             };
         } catch (error: unknown) {
-            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            if (this._isCurrentOAuthFlow(generation)) {this._clearPendingOAuth();}
             throw error;
         }
     }
@@ -550,7 +550,7 @@ class AuthManager {
             }
             this._assertCurrentOAuthFlow(generation);
         } catch (error: unknown) {
-            if (this._isCurrentOAuthFlow(generation)) this._clearPendingOAuth();
+            if (this._isCurrentOAuthFlow(generation)) {this._clearPendingOAuth();}
             throw error;
         }
 
@@ -567,7 +567,7 @@ class AuthManager {
             this._assertCurrentOAuthFlow(generation);
             const saved = await this._saveOAuthCredentials(adapterId, creds, generation);
             this._assertCurrentOAuthFlow(generation);
-            if (!saved) throw new Error("OAuth credentials were not saved.");
+            if (!saved) {throw new Error("OAuth credentials were not saved.");}
             return creds;
         }
 
@@ -581,7 +581,7 @@ class AuthManager {
         let creds: AuthCredentials;
         if (adapterId === "anthropic") {
             const parsed = parseCallbackInput(rawInput);
-            if (!parsed) throw new Error("Invalid authorization code.");
+            if (!parsed) {throw new Error("Invalid authorization code.");}
             if (pendingState && parsed.state && parsed.state !== pendingState) {
                 throw new Error("State mismatch. Please restart the sign-in flow.");
             }
@@ -595,7 +595,7 @@ class AuthManager {
         this._assertCurrentOAuthFlow(generation);
         const saved = await this._saveOAuthCredentials(adapterId, creds, generation);
         this._assertCurrentOAuthFlow(generation);
-        if (!saved) throw new Error("OAuth credentials were not saved.");
+        if (!saved) {throw new Error("OAuth credentials were not saved.");}
         return creds;
     }
 
@@ -715,7 +715,7 @@ class AuthManager {
     }
 
     async refreshOpenAIToken(credentials: AuthCredentials): Promise<AuthCredentials> {
-        if (!credentials.refreshToken) return credentials;
+        if (!credentials.refreshToken) {return credentials;}
         try {
             const resp = await proxyFetch(`${OPENAI_ISSUER}/oauth/token`, {
                 method: "POST",
@@ -726,7 +726,7 @@ class AuthManager {
                     client_id: OPENAI_CLIENT_ID,
                 }),
             });
-            if (!resp.ok) return credentials;
+            if (!resp.ok) {return credentials;}
             const data = (await resp.json()) as {
                 id_token?: string;
                 access_token?: string;
@@ -781,7 +781,7 @@ class AuthManager {
     }
 
     async refreshAnthropicToken(credentials: AuthCredentials): Promise<AuthCredentials> {
-        if (!credentials.refreshToken) return credentials;
+        if (!credentials.refreshToken) {return credentials;}
         try {
             const resp = await proxyFetch(ANTHROPIC_TOKEN_URL, {
                 method: "POST",
@@ -792,7 +792,7 @@ class AuthManager {
                     client_id: ANTHROPIC_OAUTH_CLIENT_ID,
                 }),
             });
-            if (!resp.ok) return credentials;
+            if (!resp.ok) {return credentials;}
             const data = (await resp.json()) as {
                 access_token: string;
                 expires_in: number;
@@ -848,7 +848,7 @@ class AuthManager {
         const credentialGeneration = this._getCredentialGeneration(adapterId);
         const creds = await this.loadCredentials(adapterId);
         if (!creds) {
-            if (adapterId === "ollama") return {};
+            if (adapterId === "ollama") {return {};}
             throw new Error("Not authenticated. Connect in Settings.");
         }
         if (adapter.isExpired(creds)) {
@@ -870,7 +870,7 @@ class AuthManager {
 
     async loadCredentials(adapterId: string): Promise<AuthCredentials | null> {
         const result = await repositories.ai.loadCredentials(adapterId);
-        if (!result) return null;
+        if (!result) {return null;}
         const { adapterId: _id, ...creds } = result;
         return creds;
     }

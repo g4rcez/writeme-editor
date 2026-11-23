@@ -12,8 +12,8 @@ test.describe("editor workbench", () => {
             const { repositories } = (await import(
                 String("/packages/editor/src/store/repositories/index.ts")
             )) as typeof import("../../packages/editor/src/store/repositories");
-            const first = Note.new("First large document", `# FIRST_ONLY\n\n${"Alpha ".repeat(10000)}`);
-            const second = Note.new("Second large document", `# SECOND_ONLY\n\n${"Beta ".repeat(12000)}`);
+            const first = Note.new("First large document", `# FIRST_ONLY\n\n${"Alpha ".repeat(10_000)}`);
+            const second = Note.new("Second large document", `# SECOND_ONLY\n\n${"Beta ".repeat(12_000)}`);
             await repositories.notes.save(first);
             await repositories.notes.save(second);
             return { first: first.id, second: second.id };
@@ -100,7 +100,7 @@ test.describe("editor workbench", () => {
 
         const equalWidth = await first.evaluate((element) => element.getBoundingClientRect().width);
         const divider = await separator.boundingBox();
-        if (!divider) throw new Error("Expected a visible editor divider");
+        if (!divider) {throw new Error("Expected a visible editor divider");}
         await page.mouse.move(divider.x + divider.width / 2, divider.y + divider.height / 2);
         await page.mouse.down();
         await page.mouse.move(divider.x + 48, divider.y + divider.height / 2);
@@ -130,7 +130,7 @@ test.describe("editor workbench", () => {
                 .poll(async () => {
                     const a = await first.boundingBox();
                     const b = await second.boundingBox();
-                    if (!a || !b) return false;
+                    if (!a || !b) {return false;}
                     return width < 640 ? b.y > a.y && Math.abs(b.x - a.x) <= 1 : b.x > a.x;
                 })
                 .toBe(true);
@@ -186,7 +186,7 @@ test.describe("editor workbench", () => {
                         page.evaluate(() => {
                             const selection = window.getSelection();
                             const footer = document.querySelector(".writeme-editor-status-bar");
-                            if (!selection?.rangeCount || !footer) return -1;
+                            if (!selection?.rangeCount || !footer) {return -1;}
                             const range = selection.getRangeAt(0).cloneRange();
                             if (range.startContainer.nodeType === Node.TEXT_NODE && range.startOffset > 0) {
                                 range.setStart(range.startContainer, range.startOffset - 1);

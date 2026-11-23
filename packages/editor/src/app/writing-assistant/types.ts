@@ -13,7 +13,7 @@ export type WritingSegment = {
 
 export type WritingSnapshot = {
     revision: number;
-    segments: WritingSegment[];
+    segments: Array<WritingSegment>;
 };
 
 export type WritingSuggestion = {
@@ -29,13 +29,13 @@ export type WritingSuggestion = {
 
 export type WritingEditorAdapter = {
     snapshot(scope: WritingScope, selection?: WritingSelectionRange): WritingSnapshot;
-    show(suggestions: WritingSuggestion[], snapshot: WritingSnapshot): void;
+    show(suggestions: Array<WritingSuggestion>, snapshot: WritingSnapshot): void;
     clear(): void;
     reveal(id: string): void;
     focus(): void;
     accept(id: string): boolean;
     dismiss(id: string): void;
-    getSuggestions(): readonly WritingSuggestion[];
+    getSuggestions(): ReadonlyArray<WritingSuggestion>;
     getActiveSuggestionId(): string | null;
     getStatusMessage(): string | null;
     isEditable(): boolean;

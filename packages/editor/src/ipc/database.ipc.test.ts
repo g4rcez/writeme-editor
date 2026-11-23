@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { handlers, db } = vi.hoisted(() => ({
-    handlers: new Map<string, (...args: unknown[]) => unknown>(),
+    handlers: new Map<string, (...args: Array<unknown>) => unknown>(),
     db: new Proxy(
         {},
         {
@@ -15,7 +15,7 @@ const { handlers, db } = vi.hoisted(() => ({
 
 vi.mock("electron", () => ({
     ipcMain: {
-        handle: vi.fn((channel: string, handler: (...args: unknown[]) => unknown) => {
+        handle: vi.fn((channel: string, handler: (...args: Array<unknown>) => unknown) => {
             handlers.set(channel, handler);
         }),
     },
@@ -30,7 +30,7 @@ beforeEach(() => {
     databaseIpcHandler();
 });
 
-const invoke = (channel: string, ...args: unknown[]) => handlers.get(channel)?.({}, ...args);
+const invoke = (channel: string, ...args: Array<unknown>) => handlers.get(channel)?.({}, ...args);
 
 describe("specialized database IPC validation", () => {
     it("omits destructive bulk-trash channels while retaining per-note hard delete", () => {

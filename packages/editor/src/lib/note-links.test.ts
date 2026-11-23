@@ -174,7 +174,7 @@ describe("note link resolution", () => {
         );
         const mentions = findUnlinkedNoteMentions(target, [target, source]);
         expect(mentions.map(({ text }) => text)).toEqual(["Cafe\u0301", "Café", "東京"]);
-        for (const mention of mentions) expect(source.content.slice(mention.from, mention.to)).toBe(mention.text);
+        for (const mention of mentions) {expect(source.content.slice(mention.from, mention.to)).toBe(mention.text);}
         expect(mentions[0]?.source.id).toBe("source");
         expect(mentions[0]?.excerpt).toContain("Cafe\u0301");
     });

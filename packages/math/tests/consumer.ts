@@ -13,7 +13,7 @@ import { createMathInstance, reconfigureEm, type MathInstance } from "@writeme.d
 
 const rates: ExchangeRateData = { base: "EUR", date: "2026-01-01", timestamp: 1, rates: { USD: 2 } };
 const line: MathLine = classifyLine("price: 10");
-const block: EvaluatedLine[] = evaluateCode("price: 10\nsum", rates);
+const block: Array<EvaluatedLine> = evaluateCode("price: 10\nsum", rates);
 const result: EvaluatedResult = evaluateInlineMath("1 EUR to USD", rates);
 if (result.ok) {
     const value: string = result.value;

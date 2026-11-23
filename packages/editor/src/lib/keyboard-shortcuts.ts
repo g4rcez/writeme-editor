@@ -23,13 +23,13 @@ export function isNewNoteShortcut(event: KeyboardShortcutEvent): boolean {
 }
 
 export function getTabNavigationShortcut(event: KeyboardShortcutEvent): TabNavigationShortcut | null {
-    if (!hasPrimaryModifier(event) || event.shiftKey || event.altKey) return null;
+    if (!hasPrimaryModifier(event) || event.shiftKey || event.altKey) {return null;}
 
     const tabNumber = Number(event.key);
     if (!Number.isInteger(tabNumber) || tabNumber < 1 || tabNumber > 9) {
         return null;
     }
 
-    if (tabNumber === 9) return { type: "last" };
+    if (tabNumber === 9) {return { type: "last" };}
     return { type: "index", index: tabNumber - 1 };
 }

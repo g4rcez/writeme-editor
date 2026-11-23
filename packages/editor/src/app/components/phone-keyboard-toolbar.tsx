@@ -32,9 +32,9 @@ const HEADING_LEVELS = [1, 2, 3] as const;
 export function cycleHeading(editor: Editor): void {
     const level = HEADING_LEVELS.find((value) => editor.isActive("heading", { level: value }));
     const chain = editor.chain().focus();
-    if (level === undefined) chain.setHeading({ level: 1 }).run();
-    else if (level < 3) chain.setHeading({ level: (level + 1) as 2 | 3 }).run();
-    else chain.setParagraph().run();
+    if (level === undefined) {chain.setHeading({ level: 1 }).run();}
+    else if (level < 3) {chain.setHeading({ level: (level + 1) as 2 | 3 }).run();}
+    else {chain.setParagraph().run();}
 }
 
 function editLink(editor: Editor): void {
@@ -47,21 +47,21 @@ function editLink(editor: Editor): void {
         onConfirm: (value) => {
             const href = value.trim();
             const chain = editor.chain().focus();
-            if (!href) chain.extendMarkRange("link").unsetMark("link").run();
+            if (!href) {chain.extendMarkRange("link").unsetMark("link").run();}
             else if (editor.state.selection.empty && !editor.isActive("link"))
-                chain.insertContent({ type: "text", text: href, marks: [{ type: "link", attrs: { href } }] }).run();
-            else chain.extendMarkRange("link").setMark("link", { href }).run();
+                {chain.insertContent({ type: "text", text: href, marks: [{ type: "link", attrs: { href } }] }).run();}
+            else {chain.extendMarkRange("link").setMark("link", { href }).run();}
         },
     });
 }
 
-export function buildPhoneToolbarActions(editor: Editor): PhoneToolbarAction[] {
+export function buildPhoneToolbarActions(editor: Editor): Array<PhoneToolbarAction> {
     const has = (command: string): boolean => command in editor.commands;
     const toggle = (name: string, run: () => void): Pick<PhoneToolbarAction, "active" | "run"> => ({
         active: editor.isActive(name),
         run,
     });
-    const actions: PhoneToolbarAction[] = [
+    const actions: Array<PhoneToolbarAction> = [
         {
             id: "bold",
             label: "Bold",
@@ -164,7 +164,7 @@ export function PhoneKeyboardToolbar() {
     useEffect(() => {
         const frame = requestAnimationFrame(() => {
             const active = editorGlobalRef.current;
-            if (active && !active.isDestroyed) active.commands.scrollIntoView();
+            if (active && !active.isDestroyed) {active.commands.scrollIntoView();}
         });
         return () => cancelAnimationFrame(frame);
     }, []);
@@ -197,7 +197,7 @@ export function PhoneKeyboardToolbar() {
                 className="writeme-phone-keytool writeme-phone-keytool-done"
                 aria-label="Hide keyboard"
                 onClick={() => {
-                    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+                    if (document.activeElement instanceof HTMLElement) {document.activeElement.blur();}
                 }}
             >
                 <KeyboardIcon size={22} aria-hidden />

@@ -7,7 +7,7 @@ afterEach(() => vi.restoreAllMocks());
 describe("meeting settings persistence", () => {
     it("serializes concurrent shared Vim preference saves", async () => {
         vi.spyOn(SettingsRepository.prototype, "getAll").mockResolvedValue([]);
-        const values: string[] = [];
+        const values: Array<string> = [];
         vi.spyOn(SettingsRepository.prototype, "save").mockImplementation(async (value) => {
             values.push(value.value);
             return value;

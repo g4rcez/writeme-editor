@@ -6,7 +6,7 @@ import {
     QueryTagsArgsSchema,
 } from "../schemas/query.ts";
 
-function printTable<T extends Record<string, unknown>>(rows: T[], columns: (keyof T)[]): void {
+function printTable<T extends Record<string, unknown>>(rows: Array<T>, columns: Array<keyof T>): void {
     if (rows.length === 0) {
         console.log("No results.");
         return;
@@ -37,7 +37,7 @@ export async function handleQuery(subcommand: string, rawArgs: Record<string, un
             if (args.json) {
                 console.log(JSON.stringify(rows, null, 2));
             } else {
-                printTable(rows as Record<string, unknown>[], [
+                printTable(rows as Array<Record<string, unknown>>, [
                     "id",
                     "title",
                     "noteType",
@@ -54,7 +54,7 @@ export async function handleQuery(subcommand: string, rawArgs: Record<string, un
             if (args.json) {
                 console.log(JSON.stringify(rows, null, 2));
             } else {
-                printTable(rows as Record<string, unknown>[], ["hashtag", "filename"]);
+                printTable(rows as Array<Record<string, unknown>>, ["hashtag", "filename"]);
             }
             break;
         }
@@ -74,7 +74,7 @@ export async function handleQuery(subcommand: string, rawArgs: Record<string, un
             if (args.json) {
                 console.log(JSON.stringify(rows, null, 2));
             } else {
-                printTable(rows as Record<string, unknown>[], ["id", "title", "folderPath"]);
+                printTable(rows as Array<Record<string, unknown>>, ["id", "title", "folderPath"]);
             }
             break;
         }

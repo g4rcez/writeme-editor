@@ -47,7 +47,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     const pendingCommitRef = useRef(false);
 
     const handleContextMenu = useCallback((e: MouseEvent, node: TreeNode) => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         e.preventDefault();
         e.stopPropagation();
         window.electronAPI.contextMenu.showExplorer(node.path, node.type === "directory");
@@ -55,7 +55,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
 
     const handleRootContextMenu = useCallback(
         (e: MouseEvent) => {
-            if (!isElectron()) return;
+            if (!isElectron()) {return;}
             e.preventDefault();
             e.stopPropagation();
             window.electronAPI.contextMenu.showExplorer(rootPath, true);
@@ -79,10 +79,10 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     );
 
     const insertionIndex = useMemo(() => {
-        if (!pendingCreate) return -1;
-        if (pendingCreate.parentPath === null) return flattenedNodes.length;
+        if (!pendingCreate) {return -1;}
+        if (pendingCreate.parentPath === null) {return flattenedNodes.length;}
         const parentIdx = flattenedNodes.findIndex((n) => n.node.path === pendingCreate.parentPath);
-        if (parentIdx === -1) return flattenedNodes.length;
+        if (parentIdx === -1) {return flattenedNodes.length;}
         let lastChildIdx = parentIdx;
         const parentDepth = flattenedNodes[parentIdx]!.depth;
         for (let i = parentIdx + 1; i < flattenedNodes.length && (flattenedNodes[i]?.depth ?? 0) > parentDepth; i++) {
@@ -92,7 +92,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     }, [pendingCreate, flattenedNodes]);
 
     const pendingCreateDepth = useMemo(() => {
-        if (!pendingCreate) return 0;
+        if (!pendingCreate) {return 0;}
         if (pendingCreate.parentPath === rootPath || pendingCreate.parentPath === null) {
             return pendingCreate.depth;
         }
@@ -102,7 +102,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     }, [pendingCreate, flattenedNodes, rootPath]);
 
     const handlePendingCommit = useCallback(async () => {
-        if (pendingCommitRef.current) return;
+        if (pendingCommitRef.current) {return;}
         if (!pendingCreate || !pendingName.trim()) {
             setPendingCreate(null);
             setPendingName("");
@@ -175,12 +175,12 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     );
 
     useEffect(() => {
-        if (!createRequest) return;
+        if (!createRequest) {return;}
         startPendingCreate(createRequest.kind, createRequest.parentPath ?? rootPath, true);
     }, [createRequest, rootPath, startPendingCreate]);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         return window.electronAPI.onContextMenuAction(({ action, filePath, isDirectory }) => {
             if (action === "copy-relative-path") {
                 const rel = filePath.startsWith(rootPath + "/") ? filePath.slice(rootPath.length + 1) : filePath;
@@ -190,13 +190,13 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
 
             const flatNode = flattenedNodesRef.current.find((n) => n.node.path === filePath);
             const isRoot = filePath === rootPath;
-            if (!flatNode && !isRoot) return;
+            if (!flatNode && !isRoot) {return;}
 
             if (action === "delete") {
-                if (!flatNode) return;
+                if (!flatNode) {return;}
                 setConfirmingPath(filePath);
             } else if (action === "rename") {
-                if (!flatNode) return;
+                if (!flatNode) {return;}
                 setRenamingPath(filePath);
             } else if (action === "new-file" || action === "new-folder") {
                 const kind = action === "new-file" ? "file" : "directory";
@@ -220,7 +220,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     const findNodeByPath = useCallback(
         (path: string): TreeNode | null => {
             for (const flatNode of flattenedNodesRef.current) {
-                if (flatNode.node.path === path) return flatNode.node;
+                if (flatNode.node.path === path) {return flatNode.node;}
             }
             return null;
         },
@@ -229,16 +229,16 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
 
     const getMoveTargetDirectory = useCallback(
         (targetNode: TreeNode | null): string => {
-            if (!targetNode) return rootPath;
+            if (!targetNode) {return rootPath;}
             return targetNode.type === "directory" ? targetNode.path : getPathDirName(targetNode.path);
         },
         [rootPath],
     );
 
     const canMoveNode = useCallback((sourceNode: TreeNode, targetDirectoryPath: string): boolean => {
-        if (sourceNode.path === targetDirectoryPath) return false;
+        if (sourceNode.path === targetDirectoryPath) {return false;}
         const sourceParent = getPathDirName(sourceNode.path);
-        if (sourceParent === targetDirectoryPath) return false;
+        if (sourceParent === targetDirectoryPath) {return false;}
         if (sourceNode.type === "directory" && targetDirectoryPath.startsWith(sourceNode.path + "/")) {
             return false;
         }
@@ -248,7 +248,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     const moveNodeToTarget = useCallback(
         async (sourceNode: TreeNode, targetNode: TreeNode | null) => {
             const targetDirectoryPath = getMoveTargetDirectory(targetNode);
-            if (!canMoveNode(sourceNode, targetDirectoryPath)) return;
+            if (!canMoveNode(sourceNode, targetDirectoryPath)) {return;}
 
             const destinationPath = joinPath(targetDirectoryPath, getPathBaseName(sourceNode.path));
             const existing = await window.electronAPI.fs.statFile(destinationPath);
@@ -264,7 +264,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
             const success = onMove
                 ? await onMove(sourceNode, targetDirectoryPath, destinationPath)
                 : Boolean((await window.electronAPI.fs.moveFile(sourceNode.path, destinationPath))?.success);
-            if (!success) return;
+            if (!success) {return;}
 
             await refreshDirectory(getPathDirName(sourceNode.path) || rootPath);
             await refreshDirectory(targetDirectoryPath);
@@ -290,11 +290,11 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     const handleDragOverMove = useCallback(
         (e: DragEvent, targetNode: TreeNode | null) => {
             const sourcePath = draggedPathRef.current || draggedPath || e.dataTransfer.getData(TREE_NODE_DRAG_TYPE);
-            if (!sourcePath) return;
+            if (!sourcePath) {return;}
             const sourceNode = findNodeByPath(sourcePath);
-            if (!sourceNode) return;
+            if (!sourceNode) {return;}
             const targetDirectoryPath = getMoveTargetDirectory(targetNode);
-            if (!canMoveNode(sourceNode, targetDirectoryPath)) return;
+            if (!canMoveNode(sourceNode, targetDirectoryPath)) {return;}
             e.preventDefault();
             e.stopPropagation();
             e.dataTransfer.dropEffect = "move";
@@ -306,14 +306,14 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
     const handleDropMove = useCallback(
         async (e: DragEvent, targetNode: TreeNode | null) => {
             const sourcePath = e.dataTransfer.getData(TREE_NODE_DRAG_TYPE);
-            if (!sourcePath) return;
+            if (!sourcePath) {return;}
             e.preventDefault();
             e.stopPropagation();
             draggedPathRef.current = null;
             setDropTargetPath(null);
             setDraggedPath(null);
             const sourceNode = findNodeByPath(sourcePath);
-            if (!sourceNode) return;
+            if (!sourceNode) {return;}
             await moveNodeToTarget(sourceNode, targetNode);
         },
         [findNodeByPath, moveNodeToTarget],
@@ -327,7 +327,7 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
 
     const handleNodeDelete = useCallback(
         async (node: TreeNode) => {
-            if (!onDelete) return;
+            if (!onDelete) {return;}
 
             const success = await onDelete(node);
             if (success) {
@@ -358,13 +358,13 @@ export const useTreeViewActions = (props: TreeViewProps, data: TreeViewData) => 
 
     useEffect(() => {
         const handleKeyDown = async (e: KeyboardEvent) => {
-            if (isEditableTarget(e.target)) return;
+            if (isEditableTarget(e.target)) {return;}
 
             const nodes = flattenedNodesRef.current;
-            if (nodes.length === 0) return;
+            if (nodes.length === 0) {return;}
 
             const currentNode = nodes[focusedIndex];
-            if (!currentNode) return;
+            if (!currentNode) {return;}
 
             switch (e.key) {
                 case "ArrowDown":

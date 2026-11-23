@@ -15,6 +15,6 @@ export class Tab implements EntityBase {
 
 export interface ITabRepository extends Repository<Tab> {
     clear: () => Promise<void>;
-    updateOrder: (tabs: Tab[]) => Promise<void>;
+    updateOrder: (tabs: Array<Tab>) => Promise<void>;
     deleteByNoteId: (noteId: string) => Promise<void>;
 }

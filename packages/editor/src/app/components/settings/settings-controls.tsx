@@ -52,9 +52,9 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
 }
 
 function parseRetention(value: string): AppSettings["trashRetentionDays"] {
-    if (value === "never") return "never";
-    if (value === "7") return 7;
-    if (value === "30") return 30;
+    if (value === "never") {return "never";}
+    if (value === "7") {return 7;}
+    if (value === "30") {return 30;}
     return 10;
 }
 
@@ -78,7 +78,7 @@ export function AppearanceSettingsControls({ settings, onPatch }: SettingsContro
 }
 
 export function TrashSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element | null {
-    if (!isElectron()) return null;
+    if (!isElectron()) {return null;}
     return (
         <SettingsField label="Auto-purge after" description="Permanently delete trashed notes after this period.">
             <Select
@@ -98,7 +98,7 @@ export function TrashSettingsControls({ settings, onPatch }: SettingsControlsPro
 }
 
 export function ShortcutSettingsControls({ settings, onPatch }: SettingsControlsProps): JSX.Element | null {
-    if (!isElectron()) return null;
+    if (!isElectron()) {return null;}
     return (
         <>
             <SettingsField label="Quick Note" description="Open a new quick note from anywhere.">
@@ -157,7 +157,7 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
                         right={<span className="text-xs text-muted-foreground">px</span>}
                         value={settings.editorFontSize.toString()}
                         onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            onPatch({ editorFontSize: parseInt(event.target.value, 10) || 16 })
+                            onPatch({ editorFontSize: Number.parseInt(event.target.value, 10) || 16 })
                         }
                     />
                 </SettingsField>
@@ -194,7 +194,7 @@ export function EditorSettingsControls({ settings, onPatch }: SettingsControlsPr
                             right={<span className="text-xs text-muted-foreground">ms</span>}
                             value={settings.autosaveDelay.toString()}
                             onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                                onPatch({ autosaveDelay: parseInt(event.target.value, 10) || 1000 })
+                                onPatch({ autosaveDelay: Number.parseInt(event.target.value, 10) || 1000 })
                             }
                         />
                     </SettingsField>

@@ -37,7 +37,7 @@ function SortableMemberRow({ member, note, onRemove, onOrderChange }: SortableMe
             style={style}
             className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-card group"
         >
-            <button
+            <button type="button"
                 {...attributes}
                 {...listeners}
                 className="cursor-grab text-foreground/30 hover:text-foreground/60 shrink-0"
@@ -49,17 +49,17 @@ function SortableMemberRow({ member, note, onRemove, onOrderChange }: SortableMe
                 type="number"
                 step="0.5"
                 value={member.order}
-                onChange={(e) => onOrderChange(member, parseFloat(e.target.value))}
+                onChange={(e) => onOrderChange(member, Number.parseFloat(e.target.value))}
                 className="w-16 px-1.5 py-0.5 text-xs border rounded border-border bg-background text-foreground"
                 title="Order"
             />
-            <button
+            <button type="button"
                 onClick={() => navigate(`/note/${member.noteId}`)}
                 className="flex-1 text-left text-sm truncate hover:underline text-primary"
             >
                 {note?.title || "Untitled"}
             </button>
-            <button
+            <button type="button"
                 onClick={() => onRemove(member)}
                 className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-[color,background-color,opacity] hover:text-danger hover:bg-danger/10"
                 title="Remove from group"
@@ -76,7 +76,7 @@ export default function GroupDetailPage() {
     const navigate = useNavigate();
     const [editingTitle, setEditingTitle] = useState<string | null>(null);
     const [editingDesc, setEditingDesc] = useState<string | null>(null);
-    const [localMembers, setLocalMembers] = useState<NoteGroupMember[]>([]);
+    const [localMembers, setLocalMembers] = useState<Array<NoteGroupMember>>([]);
     const [merging, setMerging] = useState(false);
     const [addNoteOpen, setAddNoteOpen] = useState(false);
     const [addNoteQuery, setAddNoteQuery] = useState("");
@@ -112,7 +112,7 @@ export default function GroupDetailPage() {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
-        if (!over || active.id === over.id) return;
+        if (!over || active.id === over.id) {return;}
 
         const oldIndex = localMembers.findIndex((m) => m.id === active.id);
         const newIndex = localMembers.findIndex((m) => m.id === over.id);
@@ -152,13 +152,13 @@ export default function GroupDetailPage() {
     };
 
     const handleMerge = async () => {
-        if (localMembers.length === 0) return;
+        if (localMembers.length === 0) {return;}
         setMerging(true);
         try {
-            const parts: string[] = [];
+            const parts: Array<string> = [];
             for (const member of localMembers) {
                 const note = noteMap.get(member.noteId) || (await repositories.notes.getOne(member.noteId));
-                if (!note) continue;
+                if (!note) {continue;}
                 parts.push(`## ${note.title || "Untitled"}\n\n${note.content || ""}`);
             }
             const content = parts.join("\n\n---\n\n");
@@ -199,7 +199,7 @@ export default function GroupDetailPage() {
 
     return (
         <div className="relative flex-col py-6 mx-auto min-h-full max-w-safe">
-            <button
+            <button type="button"
                 onClick={() => navigate("/groups")}
                 className="flex items-center gap-1.5 mb-4 text-sm text-foreground/60 hover:text-foreground transition-colors"
             >
@@ -217,8 +217,8 @@ export default function GroupDetailPage() {
                         onChange={(e) => setEditingTitle(e.target.value)}
                         onBlur={handleTitleSave}
                         onKeyDown={(e) => {
-                            if (e.key === "Enter") handleTitleSave();
-                            if (e.key === "Escape") setEditingTitle(null);
+                            if (e.key === "Enter") {handleTitleSave();}
+                            if (e.key === "Escape") {setEditingTitle(null);}
                         }}
                     />
                 ) : (
@@ -237,7 +237,7 @@ export default function GroupDetailPage() {
                         onChange={(e) => setEditingDesc(e.target.value)}
                         onBlur={handleDescSave}
                         onKeyDown={(e) => {
-                            if (e.key === "Escape") setEditingDesc(null);
+                            if (e.key === "Escape") {setEditingDesc(null);}
                         }}
                         rows={2}
                         placeholder="Add a description..."

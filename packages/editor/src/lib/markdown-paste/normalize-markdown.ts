@@ -63,10 +63,10 @@ function normalizeFenceLine(parsed: FenceLine): string {
     return `${parsed.indent}${parsed.marker}${parsed.rest}`;
 }
 
-function protectFencedCode(text: string): { text: string; fences: string[] } {
+function protectFencedCode(text: string): { text: string; fences: Array<string> } {
     const lines = text.split("\n");
-    const output: string[] = [];
-    const fences: string[] = [];
+    const output: Array<string> = [];
+    const fences: Array<string> = [];
 
     for (let index = 0; index < lines.length;) {
         const opening = parseFenceLine(lines[index] ?? "");
@@ -124,9 +124,9 @@ function normalizeMathSegment(segment: string): string {
     return normalized;
 }
 
-function protectMath(text: string): { text: string; math: string[] } {
-    const math: string[] = [];
-    const protectedText = text.replace(/\$\$[\s\S]*?\$\$|\$(?:\\.|[^$\\\n])*\$/g, (segment) => {
+function protectMath(text: string): { text: string; math: Array<string> } {
+    const math: Array<string> = [];
+    const protectedText = text.replaceAll(/\$\$[\s\S]*?\$\$|\$(?:\\.|[^$\\\n])*\$/g, (segment) => {
         const mathIndex = math.push(normalizeMathSegment(segment)) - 1;
         return `${MATH_TOKEN_PREFIX}${mathIndex}${MATH_TOKEN_SUFFIX}`;
     });
@@ -135,7 +135,7 @@ function protectMath(text: string): { text: string; math: string[] } {
 }
 
 function decodeBlockquoteEntities(text: string): string {
-    return text.replace(/&gt;/gi, ">");
+    return text.replaceAll(/&gt;/gi, ">");
 }
 
 function unescapeMarkdown(text: string): string {
@@ -156,9 +156,9 @@ function unescapeMarkdown(text: string): string {
 }
 
 function addMissingMarkdownBoundaries(text: string): string {
-    const withBlockquoteBoundaries = text.replace(/([^\s])(?=(?:&gt;|\\>)\s|(?:&gt;|\\>){2})/g, "$1\n");
+    const withBlockquoteBoundaries = text.replaceAll(/([^\s])(?=(?:&gt;|\\>)\s|(?:&gt;|\\>){2})/g, "$1\n");
 
-    return withBlockquoteBoundaries.replace(/([.!?])(?=(?:\\#{1,6}\s|\\?[-+*]\s|\d+\\?\.\s))/g, "$1\n");
+    return withBlockquoteBoundaries.replaceAll(/([.!?])(?=(?:\\#{1,6}\s|\\?[-+*]\s|\d+\\?\.\s))/g, "$1\n");
 }
 
 function removeEscapedSeparatorLines(text: string): string {
@@ -168,7 +168,7 @@ function removeEscapedSeparatorLines(text: string): string {
         .join("\n");
 }
 
-function restoreTokens(text: string, tokens: string[], prefix: string, suffix: string): string {
+function restoreTokens(text: string, tokens: Array<string>, prefix: string, suffix: string): string {
     return tokens.reduce((current, token, index) => current.split(`${prefix}${index}${suffix}`).join(token), text);
 }
 
@@ -180,7 +180,7 @@ function restoreTokens(text: string, tokens: string[], prefix: string, suffix: s
  * code, while fenced code remains literal.
  */
 export function normalizeMarkdownPaste(text: string): string {
-    const normalizedLineEndings = text.replace(/\r\n?/g, "\n");
+    const normalizedLineEndings = text.replaceAll(/\r\n?/g, "\n");
     if (!hasEscapedMarkdownSyntax(normalizedLineEndings)) {
         return normalizedLineEndings;
     }

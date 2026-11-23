@@ -4,7 +4,7 @@ import { Note } from "@/store/note";
 import { useNoteList } from "./use-note-list";
 
 const mocks = vi.hoisted(() => ({
-    state: { notes: [] as Note[] },
+    state: { notes: [] as Array<Note> },
     deleteNote: vi.fn(),
     confirm: vi.fn(),
     getHashtags: vi.fn(),
@@ -30,7 +30,7 @@ describe("useNoteList Trash confirmation", () => {
         const { result } = renderHook(() => useNoteList());
         await waitFor(() => expect(result.current.loading).toBe(false));
         act(() => {
-            for (const note of mocks.state.notes.slice(0, count)) result.current.toggleSelection(note.id);
+            for (const note of mocks.state.notes.slice(0, count)) {result.current.toggleSelection(note.id);}
         });
         await act(async () => { await result.current.handleBatchDelete(); });
 

@@ -43,16 +43,16 @@ function RouteTransitionOutlet() {
 }
 
 const getRouteLabel = (pathname: string): string => {
-    if (pathname === "/") return "Home";
-    if (pathname.startsWith("/note/")) return "Note";
-    if (pathname.startsWith("/notes")) return "All notes";
-    if (pathname.startsWith("/chat")) return "Workspace AI";
-    if (pathname.startsWith("/settings")) return "Settings";
-    if (pathname.startsWith("/calendar")) return "Calendar";
-    if (pathname.startsWith("/today")) return "Today";
-    if (pathname.startsWith("/tasks")) return "Open tasks";
-    if (pathname.startsWith("/views")) return "Views";
-    if (pathname.startsWith("/groups")) return "Groups";
+    if (pathname === "/") {return "Home";}
+    if (pathname.startsWith("/note/")) {return "Note";}
+    if (pathname.startsWith("/notes")) {return "All notes";}
+    if (pathname.startsWith("/chat")) {return "Workspace AI";}
+    if (pathname.startsWith("/settings")) {return "Settings";}
+    if (pathname.startsWith("/calendar")) {return "Calendar";}
+    if (pathname.startsWith("/today")) {return "Today";}
+    if (pathname.startsWith("/tasks")) {return "Open tasks";}
+    if (pathname.startsWith("/views")) {return "Views";}
+    if (pathname.startsWith("/groups")) {return "Groups";}
     return "Workspace";
 };
 
@@ -74,12 +74,12 @@ export const MainLayout = () => {
     const routeLabel = getRouteLabel(location.pathname);
 
     useEffect(() => {
-        if (!isNoteRoute) setContextOpen(false);
+        if (!isNoteRoute) {setContextOpen(false);}
     }, [isNoteRoute]);
 
     useEffect(() => {
-        if (!contextOpen || !uiState.sidebarOpen) return;
-        if (window.matchMedia("(max-width: 959px)").matches) setContextOpen(false);
+        if (!contextOpen || !uiState.sidebarOpen) {return;}
+        if (window.matchMedia("(max-width: 959px)").matches) {setContextOpen(false);}
     }, [contextOpen, uiState.sidebarOpen]);
 
     const currentTarget = useMemo(

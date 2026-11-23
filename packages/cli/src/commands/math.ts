@@ -18,7 +18,7 @@ export async function appendMathHistory(expression: string, historyPath = getMat
     await appendFile(historyPath, `${expression}\n`, "utf8");
 }
 
-async function readMathHistory(historyPath: string): Promise<string[]> {
+async function readMathHistory(historyPath: string): Promise<Array<string>> {
     try {
         const content = await readFile(historyPath, "utf8");
         return content
@@ -57,7 +57,7 @@ function renderLine(line: EvaluatedLine): string | null {
 async function fetchExchangeRates(base: string): Promise<ExchangeRateData | null> {
     try {
         const response = await fetch(`https://api.frankfurter.dev/v1/latest?from=${base}`);
-        if (!response.ok) return null;
+        if (!response.ok) {return null;}
         const data = (await response.json()) as {
             base: string;
             date: string;
@@ -75,7 +75,7 @@ async function fetchExchangeRates(base: string): Promise<ExchangeRateData | null
 }
 
 async function loadRatesIfNeeded(code: string): Promise<ExchangeRateData | null> {
-    if (!CURRENCY_HINT_RE.test(code)) return null;
+    if (!CURRENCY_HINT_RE.test(code)) {return null;}
     return fetchExchangeRates("EUR");
 }
 
@@ -84,7 +84,7 @@ type ExprCommandArgs = {
 };
 
 export async function handleExpr(args: ExprCommandArgs): Promise<void> {
-    const code = args.code.trim().replace(/\\n/g, "\n");
+    const code = args.code.trim().replaceAll(String.raw`\n`, "\n");
     if (!code) {
         console.log("Usage: writeme expr <expression>");
         process.exitCode = 1;
@@ -108,7 +108,7 @@ type MathReplArgs = {
 export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
     const historyPath = args.historyPath ?? getMathHistoryPath();
     const history = await readMathHistory(historyPath);
-    const sessionLines: string[] = [];
+    const sessionLines: Array<string> = [];
 
     const rl = createInterface({
         input: process.stdin,
@@ -121,7 +121,7 @@ export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
         closed = true;
     });
     const prompt = (): void => {
-        if (!closed) rl.prompt();
+        if (!closed) {rl.prompt();}
     };
 
     console.log("Writeme math REPL. Type .exit to quit.");
@@ -147,7 +147,7 @@ export async function handleMathRepl(args: MathReplArgs = {}): Promise<void> {
         const output = evaluated.at(-1);
         if (output) {
             const rendered = renderLine(output);
-            if (rendered) console.log(rendered);
+            if (rendered) {console.log(rendered);}
         }
 
         prompt();

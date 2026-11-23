@@ -18,7 +18,7 @@ export function pdfAssets(): Plugin {
             server.middlewares.use(async (request, response, next) => {
                 const key = request.url?.split("?")[0]?.replace(/^\//, "") ?? "";
                 const file = files.get(key);
-                if (!file) return next();
+                if (!file) {return next();}
                 try {
                     const data = await readFile(file);
                     response.setHeader(
@@ -26,8 +26,8 @@ export function pdfAssets(): Plugin {
                         file.endsWith(".wasm") ? "application/wasm" : "application/octet-stream",
                     );
                     response.end(data);
-                } catch (reason) {
-                    next(reason);
+                } catch (error) {
+                    next(error);
                 }
             });
         },

@@ -25,7 +25,7 @@ export class ViewsRepository extends BaseRepository<View> implements IViewReposi
         return view ? hydrateView(view) : null;
     }
 
-    override async getAll(query?: { limit?: number }): Promise<View[]> {
+    override async getAll(query?: { limit?: number }): Promise<Array<View>> {
         const views = await this.adapter.getAll<StoredView>(this.collection, query);
         return views.map(hydrateView);
     }

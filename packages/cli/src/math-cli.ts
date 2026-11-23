@@ -3,7 +3,7 @@ import { handleMathRepl } from "./commands/math.ts";
 
 try {
     await handleMathRepl();
-} catch (err: unknown) {
-    console.error(err instanceof Error ? err.message : String(err));
+} catch (error: unknown) {
+    console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
 }

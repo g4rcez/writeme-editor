@@ -4,7 +4,7 @@ for (const mode of ["formatted", "markdown"] as const) {
     test(`keeps edits made while ${mode} saving is in progress`, async ({ cleanPage: page }) => {
         await goHome(page);
         await createNote(page, "Slow save");
-        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        if (mode === "markdown") {await page.getByRole("button", { name: "Markdown", exact: true }).click();}
         await page.evaluate(async () => {
             const path = "/packages/editor/src/store/repositories/index.ts";
             const { repositories } = await import(path);
@@ -44,7 +44,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.getByRole("button", { name: "Go to home", exact: true }).click();
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         await createNote(page, "Save shortcut");
-        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        if (mode === "markdown") {await page.getByRole("button", { name: "Markdown", exact: true }).click();}
         const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
         const status = page.locator(".writeme-editor-status-bar output").first();
         for (const modifier of ["Control", "Meta"]) {
@@ -70,7 +70,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         });
         const url = await createNote(page, "Metadata save");
         const id = url.split("/").pop()!;
-        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        if (mode === "markdown") {await page.getByRole("button", { name: "Markdown", exact: true }).click();}
         const editor = page.locator(mode === "formatted" ? ".ProseMirror" : ".cm-content").first();
         for (const marker of ["before typing", "while dirty"]) {
             await page.evaluate(
@@ -119,7 +119,7 @@ for (const mode of ["formatted", "markdown"] as const) {
             });
             const url = await createNote(page, "Conditional save");
             const id = url.split("/").pop()!;
-            if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+            if (mode === "markdown") {await page.getByRole("button", { name: "Markdown", exact: true }).click();}
             const editor = page.locator(`#editor-container-${id}`).getByRole("textbox", {
                 name: mode === "formatted" ? "Note editor" : "Markdown note editor",
                 exact: true,
@@ -147,8 +147,8 @@ for (const mode of ["formatted", "markdown"] as const) {
             await other.evaluate(
                 async ({ id, mutation }) => {
                     const { repositories } = await import(String("/packages/editor/src/store/repositories/index.ts"));
-                    if (mutation === "delete") await repositories.notes.delete(id);
-                    else await repositories.notes.updateContent(id, "Other page's persisted writing.");
+                    if (mutation === "delete") {await repositories.notes.delete(id);}
+                    else {await repositories.notes.updateContent(id, "Other page's persisted writing.");}
                 },
                 { id, mutation },
             );

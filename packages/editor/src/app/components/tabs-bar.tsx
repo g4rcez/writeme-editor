@@ -28,11 +28,11 @@ import { useNoteTabs } from "../hooks/use-note-tabs";
 import { MotionEditorTab } from "./motion-editor-tab";
 
 type Props = {
-    tabs: Tab[];
-    notes: Note[];
+    tabs: Array<Tab>;
+    notes: Array<Note>;
     directory: string | null;
     activeTabId: string | null;
-    terminalSessions: TerminalSession[];
+    terminalSessions: Array<TerminalSession>;
     dispatch: GlobalDispatchers;
 };
 
@@ -60,8 +60,8 @@ export const TabsBar = memo(function TabsBar(props: Props) {
     const listDropRef = useMotionTabDrop({
         drop: ({ tab }) => {
             const source = props.tabs.find((item) => item.id === tab.tabId);
-            if (!source || props.tabs[props.tabs.length - 1]?.id === source.id) return;
-            void dispatch.reorderTabs([...props.tabs.filter((item) => item.id !== source.id), source]);
+            if (!source || props.tabs.at(-1)?.id === source.id) {return;}
+             dispatch.reorderTabs([...props.tabs.filter((item) => item.id !== source.id), source]);
         },
     });
     const [renamingTarget, setRenamingTarget] = useState<RenamingTarget | null>(null);
@@ -70,7 +70,7 @@ export const TabsBar = memo(function TabsBar(props: Props) {
     useEffect(() => {
         const update = (event: Event): void => {
             if (event instanceof CustomEvent)
-                setActiveGroupNoteId(typeof event.detail === "string" ? event.detail : null);
+                {setActiveGroupNoteId(typeof event.detail === "string" ? event.detail : null);}
         };
         window.addEventListener(ACTIVE_EDITOR_NOTE_EVENT, update);
         return () => window.removeEventListener(ACTIVE_EDITOR_NOTE_EVENT, update);
@@ -101,7 +101,7 @@ export const TabsBar = memo(function TabsBar(props: Props) {
     };
 
     const isCurrentTab = (tab: Tab): boolean => {
-        if (activeGroupNoteId) return getTabTarget(tab).type === "note" && tab.noteId === activeGroupNoteId;
+        if (activeGroupNoteId) {return getTabTarget(tab).type === "note" && tab.noteId === activeGroupNoteId;}
         if (currentTarget) {
             return isSameTabTarget(getTabTarget(tab), currentTarget);
         }
@@ -178,7 +178,7 @@ export const TabsBar = memo(function TabsBar(props: Props) {
             setRenamingTarget(null);
             return;
         }
-        if (renameCommittedRef.current) return;
+        if (renameCommittedRef.current) {return;}
         renameCommittedRef.current = true;
         const trimmed = renamingValue.trim();
 
@@ -255,13 +255,13 @@ export const TabsBar = memo(function TabsBar(props: Props) {
                                         disabled={isRenaming}
                                         className="relative flex h-full shrink-0"
                                         onDropTab={({ tab: dragged, x }, rect) => {
-                                            if (!dragged?.tabId || dragged.tabId === tab.id) return;
+                                            if (!dragged?.tabId || dragged.tabId === tab.id) {return;}
                                             const source = props.tabs.find((item) => item.id === dragged.tabId);
-                                            if (!source) return;
+                                            if (!source) {return;}
                                             const tabs = props.tabs.filter((item) => item.id !== source.id);
                                             const index = tabs.findIndex((item) => item.id === tab.id);
                                             tabs.splice(index + (x > rect.left + rect.width / 2 ? 1 : 0), 0, source);
-                                            void dispatch.reorderTabs(tabs);
+                                             dispatch.reorderTabs(tabs);
                                         }}
                                     >
                                         <Link
@@ -280,7 +280,7 @@ export const TabsBar = memo(function TabsBar(props: Props) {
                                                         cancelable: true,
                                                     });
                                                     window.dispatchEvent(event);
-                                                    if (event.defaultPrevented) e.preventDefault();
+                                                    if (event.defaultPrevented) {e.preventDefault();}
                                                 }
                                             }}
                                             aria-current={isActive ? "page" : undefined}
@@ -325,14 +325,14 @@ export const TabsBar = memo(function TabsBar(props: Props) {
                                                     className="flex-1 text-xs truncate"
                                                     tabIndex={renameTarget ? 0 : undefined}
                                                     onDoubleClick={(e) => {
-                                                        if (!renameTarget) return;
+                                                        if (!renameTarget) {return;}
                                                         e.preventDefault();
                                                         renameCommittedRef.current = false;
                                                         setRenamingTarget(renameTarget);
                                                         setRenamingValue(title);
                                                     }}
                                                     onKeyDown={(e) => {
-                                                        if (!renameTarget) return;
+                                                        if (!renameTarget) {return;}
                                                         if (e.key === "Enter" || e.key === "F2") {
                                                             e.preventDefault();
                                                             renameCommittedRef.current = false;

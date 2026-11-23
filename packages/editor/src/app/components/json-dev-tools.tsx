@@ -3,15 +3,15 @@ import { CaretDownIcon } from "@phosphor-icons/react/dist/csr/CaretDown";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
 import { useMemo, useState } from "react";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue = string | number | boolean | null | Array<JsonValue> | { [key: string]: JsonValue };
 
 type Props = { value: string; className?: string };
 
 const primitivePreview = (v: JsonValue): string => {
-    if (v === null) return "null";
-    if (typeof v === "string") return `"${v}"`;
-    if (typeof v === "boolean" || typeof v === "number") return String(v);
-    if (Array.isArray(v)) return "[…]";
+    if (v === null) {return "null";}
+    if (typeof v === "string") {return `"${v}"`;}
+    if (typeof v === "boolean" || typeof v === "number") {return String(v);}
+    if (Array.isArray(v)) {return "[…]";}
     return "{…}";
 };
 
@@ -30,7 +30,7 @@ const previewObject = (obj: Record<string, JsonValue>, maxLen = 50): string => {
     return result + "}";
 };
 
-const previewArray = (arr: JsonValue[], maxLen = 50): string => {
+const previewArray = (arr: Array<JsonValue>, maxLen = 50): string => {
     let result = "[";
     for (const v of arr) {
         const part = `${primitivePreview(v)}, `;
@@ -50,16 +50,16 @@ export const JsonDevTools = ({ value, className }: Props) => {
     const { parsed, parseError } = useMemo(() => {
         try {
             return { parsed: JSON.parse(value) as JsonValue, parseError: null };
-        } catch (e: any) {
-            return { parsed: null, parseError: e.message as string };
+        } catch (error: any) {
+            return { parsed: null, parseError: error.message as string };
         }
     }, [value]);
 
     const toggle = (path: string) => {
         setExpandedPaths((prev) => {
             const next = new Set(prev);
-            if (next.has(path)) next.delete(path);
-            else next.add(path);
+            if (next.has(path)) {next.delete(path);}
+            else {next.add(path);}
             return next;
         });
     };
@@ -113,8 +113,8 @@ export const JsonDevTools = ({ value, className }: Props) => {
         const isExpanded = expandedPaths.has(path);
         const open = isArray ? "[" : "{";
         const close = isArray ? "]" : "}";
-        const preview = isArray ? previewArray(val as JsonValue[]) : previewObject(val as Record<string, JsonValue>);
-        const count = isArray ? (val as JsonValue[]).length : Object.keys(val as object).length;
+        const preview = isArray ? previewArray(val as Array<JsonValue>) : previewObject(val as Record<string, JsonValue>);
+        const count = isArray ? (val as Array<JsonValue>).length : Object.keys(val as object).length;
 
         if (!isExpanded) {
             return (
@@ -133,7 +133,7 @@ export const JsonDevTools = ({ value, className }: Props) => {
         }
 
         const children = isArray
-            ? (val as JsonValue[]).map((item, i) => renderNode(item, `${path}[${i}]`, i, depth + 1))
+            ? (val as Array<JsonValue>).map((item, i) => renderNode(item, `${path}[${i}]`, i, depth + 1))
             : Object.entries(val as Record<string, JsonValue>).map(([k, v]) =>
                   renderNode(v, `${path}.${k}`, k, depth + 1),
               );

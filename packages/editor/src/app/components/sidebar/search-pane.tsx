@@ -26,7 +26,7 @@ import { SettingsService } from "@/store/settings";
 import { uiDispatch } from "@/store/ui.store";
 
 function getSearchResultLocation(filePath: string | null | undefined, workspaceDirectory: string): string {
-    if (!filePath) return "Local note";
+    if (!filePath) {return "Local note";}
     const path = workspaceDirectory ? getRelativePath(workspaceDirectory, filePath) : filePath;
     return formatSimplifiedPath(path) || path;
 }
@@ -98,7 +98,7 @@ export const SearchPane = () => {
     }, [filters, textMatches]);
     const hasTextSearch = searchQuery.trim().length > 0;
     const closeSaveForm = (): void => {
-        if (saving) return;
+        if (saving) {return;}
         setShowSaveForm(false);
         saveButton.current?.focus();
     };
@@ -119,19 +119,19 @@ export const SearchPane = () => {
             if (key.startsWith("tag:")) {
                 return { ...current, tags: current.tags.filter((tag) => `tag:${tag}` !== key) };
             }
-            if (key === "type") return { ...current, noteType: "" };
-            if (key === "location") return { ...current, location: "" };
-            if (key === "after") return { ...current, updatedAfter: "" };
+            if (key === "type") {return { ...current, noteType: "" };}
+            if (key === "location") {return { ...current, location: "" };}
+            if (key === "after") {return { ...current, updatedAfter: "" };}
             return { ...current, updatedBefore: "" };
         });
-        if (activeFilterCount === 1) setShowSaveForm(false);
+        if (activeFilterCount === 1) {setShowSaveForm(false);}
         searchInput.current?.focus();
     };
 
     const saveAsView = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const title = saveTitle.trim();
-        if (!title || activeFilterCount === 0 || hasTextSearch || filterError || saving) return;
+        if (!title || activeFilterCount === 0 || hasTextSearch || filterError || saving) {return;}
         setSaving(true);
         setSaveError(null);
         try {
@@ -152,7 +152,7 @@ export const SearchPane = () => {
             setSaveTitle("");
             setShowSaveForm(false);
             navigate(`/views/${view.id}`);
-            if (window.matchMedia("(max-width: 767px)").matches) uiDispatch.setSidebarOpen(false);
+            if (window.matchMedia("(max-width: 767px)").matches) {uiDispatch.setSidebarOpen(false);}
         } catch {
             setSaveError("Could not save this View. Check storage and try again.");
         } finally {
@@ -198,7 +198,7 @@ export const SearchPane = () => {
                             onChange={(event) => {
                                 const tag = event.target.value;
                                 if (tag && !filters.tags.includes(tag))
-                                    setFilters((current) => ({ ...current, tags: [...current.tags, tag] }));
+                                    {setFilters((current) => ({ ...current, tags: [...current.tags, tag] }));}
                             }}
                             className="min-h-9 w-full rounded-md border border-border bg-background px-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >

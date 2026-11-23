@@ -10,13 +10,13 @@ export default function SettingsAppearancePage() {
     const [saving, setSaving] = useState(false);
 
     const onSave = () => {
-        if (!settings) return;
+        if (!settings) {return;}
         setSaving(true);
         globalDispatch.theme(settings.theme);
         setSaving(false);
     };
 
-    if (!settings) return <div className="p-8">Loading settings...</div>;
+    if (!settings) {return <div className="p-8">Loading settings...</div>;}
 
     return (
         <SettingsPageShell

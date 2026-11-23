@@ -31,14 +31,14 @@ function selectText(editor: Editor, text: string): void {
         }
         return undefined;
     });
-    if (position === null) throw new Error(`Text ${text} was not found in the editor.`);
+    if (position === null) {throw new Error(`Text ${text} was not found in the editor.`);}
     editor.commands.setTextSelection(position);
 }
 
-function tableRows(editor: Editor): string[] {
-    const rows: string[] = [];
+function tableRows(editor: Editor): Array<string> {
+    const rows: Array<string> = [];
     editor.state.doc.descendants((node) => {
-        if (node.type.name === "tableRow") rows.push(node.textContent);
+        if (node.type.name === "tableRow") {rows.push(node.textContent);}
     });
     return rows;
 }
@@ -47,7 +47,7 @@ function selectedCellText(editor: Editor): string | null {
     const { $from } = editor.state.selection;
     for (let depth = $from.depth; depth > 0; depth--) {
         const node = $from.node(depth);
-        if (node.type.name === "tableCell" || node.type.name === "tableHeader") return node.textContent;
+        if (node.type.name === "tableCell" || node.type.name === "tableHeader") {return node.textContent;}
     }
     return null;
 }

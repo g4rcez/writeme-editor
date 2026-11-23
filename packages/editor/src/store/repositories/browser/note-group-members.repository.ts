@@ -8,12 +8,12 @@ export class NoteGroupMembersRepository extends BaseRepository<NoteGroupMember> 
         super(new DexieStorageAdapter(), "noteGroupMembers", (a, b) => a.order - b.order);
     }
 
-    async getByGroupId(groupId: string): Promise<NoteGroupMember[]> {
+    async getByGroupId(groupId: string): Promise<Array<NoteGroupMember>> {
         const items = await db.noteGroupMembers.where("groupId").equals(groupId).toArray();
         return items.sort((a, b) => a.order - b.order);
     }
 
-    async reorder(_groupId: string, members: NoteGroupMember[]): Promise<void> {
+    async reorder(_groupId: string, members: Array<NoteGroupMember>): Promise<void> {
         await db.transaction("rw", db.noteGroupMembers, async () => {
             for (const member of members) {
                 await db.noteGroupMembers.update(member.id, { order: member.order });

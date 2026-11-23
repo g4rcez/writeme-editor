@@ -38,17 +38,17 @@ export const FindReplaceBar = () => {
     );
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
         editorSearchGlobalRef.current?.setSearchTerm(searchTerm);
     }, [searchTerm, isOpen, searchHandleVersion]);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
         editorSearchGlobalRef.current?.setCaseSensitive(caseSensitive);
     }, [caseSensitive, isOpen, searchHandleVersion]);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
         editorSearchGlobalRef.current?.setReplaceTerm(replaceTerm);
     }, [replaceTerm, isOpen, searchHandleVersion]);
 
@@ -60,7 +60,7 @@ export const FindReplaceBar = () => {
 
     useEscapeLayer(EscapeLevel.panel, isOpen, close);
 
-    if (!isOpen) return null;
+    if (!isOpen) {return null;}
 
     const search = editorSearchGlobalRef.current;
     const searchState = search?.getState();
@@ -94,7 +94,7 @@ export const FindReplaceBar = () => {
             aria-label="Find and replace"
             className="fixed top-12 right-4 z-50 m-0 flex w-80 flex-col gap-1 rounded-lg border border-border bg-background p-2 text-sm shadow-lg"
             onKeyDown={(e) => {
-                if (e.key !== "Escape") e.stopPropagation();
+                if (e.key !== "Escape") {e.stopPropagation();}
             }}
         >
             <div className="flex items-center gap-1">
@@ -123,8 +123,8 @@ export const FindReplaceBar = () => {
                     className="min-w-0 flex-1 rounded bg-muted px-2 py-1 text-sm text-foreground placeholder:text-foreground/40"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                            if (e.shiftKey) onPrev();
-                            else onNext();
+                            if (e.shiftKey) {onPrev();}
+                            else {onNext();}
                         }
                     }}
                 />

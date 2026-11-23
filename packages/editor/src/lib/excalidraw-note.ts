@@ -1,5 +1,5 @@
 export type ExcalidrawNotePayload = {
-    elements: unknown[];
+    elements: Array<unknown>;
     appState: Record<string, unknown>;
     files: Record<string, unknown>;
 };
@@ -21,7 +21,7 @@ export const EMPTY_EXCALIDRAW_PAYLOAD: ExcalidrawNotePayload = {
 const NON_PORTABLE_APP_STATE_KEYS = new Set(["collaborators"]);
 
 function sanitizeExcalidrawAppState(appState: unknown): Record<string, unknown> {
-    if (!appState || typeof appState !== "object") return {};
+    if (!appState || typeof appState !== "object") {return {};}
 
     return Object.fromEntries(
         Object.entries(appState as Record<string, unknown>).filter(
@@ -43,7 +43,7 @@ export function normalizeExcalidrawPayload(value: unknown): ExcalidrawNotePayloa
         };
     }
 
-    if (!value || typeof value !== "object") return EMPTY_EXCALIDRAW_PAYLOAD;
+    if (!value || typeof value !== "object") {return EMPTY_EXCALIDRAW_PAYLOAD;}
 
     const record = value as Record<string, unknown>;
     return {
@@ -85,6 +85,6 @@ export function replaceExcalidrawNotePayload(content: string, payload: Excalidra
     }
 
     const trimmedContent = content.trimEnd();
-    if (trimmedContent.length === 0) return buildExcalidrawNoteContent(payload);
+    if (trimmedContent.length === 0) {return buildExcalidrawNoteContent(payload);}
     return `${trimmedContent}\n\n${nextFence}\n`;
 }

@@ -6,7 +6,7 @@ import { adapterRegistry } from "@/app/ai/adapters/registry";
 import { authManager } from "@/app/ai/auth/auth-manager";
 import type { WritingCategory, WritingSegment, WritingSuggestion } from "./types";
 
-const MAX_BATCH_SOURCE_LENGTH = 8_000;
+const MAX_BATCH_SOURCE_LENGTH = 8000;
 const SAFE_RESPONSE_ERROR = "The provider returned suggestions that could not be safely applied. Try reviewing again.";
 const CLI_ERROR = "Writing review requires an HTTP AI provider. Choose another configuration in AI settings.";
 
@@ -51,7 +51,7 @@ type ReviewBatchSegment = {
     sourceOffset: number;
 };
 
-type ReviewBatch = ReviewBatchSegment[];
+type ReviewBatch = Array<ReviewBatchSegment>;
 
 type ValidatedSuggestion = {
     segmentId: string;
@@ -67,19 +67,19 @@ type ValidatedSuggestion = {
 };
 
 function throwIfAborted(signal: AbortSignal): void {
-    if (signal.aborted) throw new DOMException("The operation was aborted.", "AbortError");
+    if (signal.aborted) {throw new DOMException("The operation was aborted.", "AbortError");}
 }
 
 function isCodePointBoundary(text: string, offset: number): boolean {
-    if (offset <= 0 || offset >= text.length) return true;
+    if (offset <= 0 || offset >= text.length) {return true;}
     const previous = text.charCodeAt(offset - 1);
     const next = text.charCodeAt(offset);
-    return !(previous >= 0xd800 && previous <= 0xdbff && next >= 0xdc00 && next <= 0xdfff);
+    return !(previous >= 0xd8_00 && previous <= 0xdb_ff && next >= 0xdc_00 && next <= 0xdf_ff);
 }
 
 function getSafeFragmentEnd(text: string, start: number): number {
     let end = Math.min(start + MAX_BATCH_SOURCE_LENGTH, text.length);
-    if (!isCodePointBoundary(text, end)) end--;
+    if (!isCodePointBoundary(text, end)) {end--;}
 
     if (end < text.length) {
         const searchStart = Math.max(start, end - MAX_BATCH_SOURCE_LENGTH / 2);
@@ -94,10 +94,10 @@ function getSafeFragmentEnd(text: string, start: number): number {
     return end;
 }
 
-function createBatches(segments: readonly WritingSegment[]): ReviewBatch[] {
+function createBatches(segments: ReadonlyArray<WritingSegment>): Array<ReviewBatch> {
     const sourceIds = new Set<string>();
     for (const segment of segments) {
-        if (sourceIds.has(segment.id)) throw new Error("Writing segment IDs must be unique.");
+        if (sourceIds.has(segment.id)) {throw new Error("Writing segment IDs must be unique.");}
         sourceIds.add(segment.id);
     }
 
@@ -105,14 +105,14 @@ function createBatches(segments: readonly WritingSegment[]): ReviewBatch[] {
     let nextGeneratedId = 0;
     const nextFragmentId = (): string => {
         let id = String(nextGeneratedId++);
-        while (usedIds.has(id)) id = String(nextGeneratedId++);
+        while (usedIds.has(id)) {id = String(nextGeneratedId++);}
         usedIds.add(id);
         return id;
     };
 
-    const fragments: ReviewBatchSegment[] = [];
+    const fragments: Array<ReviewBatchSegment> = [];
     segments.forEach((sourceSegment, sourceSegmentIndex) => {
-        if (sourceSegment.text.length === 0) return;
+        if (sourceSegment.text.length === 0) {return;}
         if (sourceSegment.text.length <= MAX_BATCH_SOURCE_LENGTH) {
             fragments.push({
                 id: sourceSegment.id,
@@ -139,7 +139,7 @@ function createBatches(segments: readonly WritingSegment[]): ReviewBatch[] {
         }
     });
 
-    const batches: ReviewBatch[] = [];
+    const batches: Array<ReviewBatch> = [];
     let batch: ReviewBatch = [];
     let batchLength = 0;
     for (const fragment of fragments) {
@@ -151,7 +151,7 @@ function createBatches(segments: readonly WritingSegment[]): ReviewBatch[] {
         batch.push(fragment);
         batchLength += fragment.text.length;
     }
-    if (batch.length > 0) batches.push(batch);
+    if (batch.length > 0) {batches.push(batch);}
     return batches;
 }
 
@@ -159,7 +159,7 @@ function invalidProviderResponse(): Error {
     return new Error(SAFE_RESPONSE_ERROR);
 }
 
-function parseBatchSuggestions(responseText: string, batch: ReviewBatch): ValidatedSuggestion[] {
+function parseBatchSuggestions(responseText: string, batch: ReviewBatch): Array<ValidatedSuggestion> {
     let output: unknown;
     try {
         output = JSON.parse(responseText) as unknown;
@@ -168,13 +168,13 @@ function parseBatchSuggestions(responseText: string, batch: ReviewBatch): Valida
     }
 
     const parsed = providerResponseSchema.safeParse(output);
-    if (!parsed.success) throw invalidProviderResponse();
+    if (!parsed.success) {throw invalidProviderResponse();}
 
     const batchSegments = new Map(batch.map((segment) => [segment.id, segment]));
-    const validated: ValidatedSuggestion[] = [];
+    const validated: Array<ValidatedSuggestion> = [];
     for (const [responseOrder, suggestion] of parsed.data.suggestions.entries()) {
         const segment = batchSegments.get(suggestion.segmentId);
-        if (!segment) throw invalidProviderResponse();
+        if (!segment) {throw invalidProviderResponse();}
 
         if (
             suggestion.from < 0 ||
@@ -192,7 +192,7 @@ function parseBatchSuggestions(responseText: string, batch: ReviewBatch): Valida
 
         const from = segment.sourceOffset + suggestion.from;
         const to = segment.sourceOffset + suggestion.to;
-        if (segment.sourceSegment.text.slice(from, to) !== suggestion.original) throw invalidProviderResponse();
+        if (segment.sourceSegment.text.slice(from, to) !== suggestion.original) {throw invalidProviderResponse();}
 
         validated.push({
             segmentId: segment.sourceSegment.id,
@@ -210,8 +210,8 @@ function parseBatchSuggestions(responseText: string, batch: ReviewBatch): Valida
     return validated;
 }
 
-function finalizeSuggestions(suggestions: readonly ValidatedSuggestion[]): WritingSuggestion[] {
-    const unique: ValidatedSuggestion[] = [];
+function finalizeSuggestions(suggestions: ReadonlyArray<ValidatedSuggestion>): Array<WritingSuggestion> {
+    const unique: Array<ValidatedSuggestion> = [];
     const seen = new Set<string>();
     for (const suggestion of suggestions) {
         const key = JSON.stringify([
@@ -223,7 +223,7 @@ function finalizeSuggestions(suggestions: readonly ValidatedSuggestion[]): Writi
             suggestion.category,
             suggestion.explanation,
         ]);
-        if (seen.has(key)) continue;
+        if (seen.has(key)) {continue;}
         seen.add(key);
         unique.push(suggestion);
     }
@@ -237,10 +237,10 @@ function finalizeSuggestions(suggestions: readonly ValidatedSuggestion[]): Writi
     );
 
     const lastAcceptedEndBySegment = new Map<string, number>();
-    const result: WritingSuggestion[] = [];
+    const result: Array<WritingSuggestion> = [];
     for (const suggestion of unique) {
         const lastAcceptedEnd = lastAcceptedEndBySegment.get(suggestion.segmentId);
-        if (lastAcceptedEnd !== undefined && suggestion.from < lastAcceptedEnd) continue;
+        if (lastAcceptedEnd !== undefined && suggestion.from < lastAcceptedEnd) {continue;}
         lastAcceptedEndBySegment.set(suggestion.segmentId, suggestion.to);
         result.push({
             id: uuid(),
@@ -258,15 +258,15 @@ function finalizeSuggestions(suggestions: readonly ValidatedSuggestion[]): Writi
 
 export async function reviewWriting(
     config: AIConfig,
-    segments: readonly WritingSegment[],
+    segments: ReadonlyArray<WritingSegment>,
     signal: AbortSignal,
     onBatchProgress?: (current: number, total: number) => void,
-): Promise<WritingSuggestion[]> {
+): Promise<Array<WritingSuggestion>> {
     throwIfAborted(signal);
-    if (config.adapterId === "cli") throw new Error(CLI_ERROR);
+    if (config.adapterId === "cli") {throw new Error(CLI_ERROR);}
 
     const batches = createBatches(segments);
-    if (batches.length === 0) return [];
+    if (batches.length === 0) {return [];}
 
     const adapter: AIAdapter | undefined = adapterRegistry.get(config.adapterId);
     if (!adapter) {
@@ -282,13 +282,13 @@ export async function reviewWriting(
     }
     throwIfAborted(signal);
 
-    const suggestions: ValidatedSuggestion[] = [];
+    const suggestions: Array<ValidatedSuggestion> = [];
     for (const [batchIndex, batch] of batches.entries()) {
         throwIfAborted(signal);
         onBatchProgress?.(batchIndex + 1, batches.length);
         throwIfAborted(signal);
 
-        const messages: AIConversationMessage[] = [
+        const messages: Array<AIConversationMessage> = [
             {
                 role: "user",
                 content: {
@@ -318,7 +318,7 @@ export async function reviewWriting(
             }
         }
         throwIfAborted(signal);
-        if (!receivedDone) throw new Error("The provider did not complete the writing review request.");
+        if (!receivedDone) {throw new Error("The provider did not complete the writing review request.");}
         suggestions.push(...parseBatchSuggestions(responseText, batch));
     }
 

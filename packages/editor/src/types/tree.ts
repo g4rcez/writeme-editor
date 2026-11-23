@@ -2,13 +2,13 @@ export interface TreeNode {
     name: string;
     path: string;
     type: "file" | "directory";
-    children?: TreeNode[]; // undefined = not loaded yet, [] = empty
+    children?: Array<TreeNode>; // undefined = not loaded yet, [] = empty
     extension?: string;
     relativePath?: string;
 }
 
 export interface ReadDirResult {
-    entries: TreeNode[];
+    entries: Array<TreeNode>;
     error?: string;
     errorCode?: string;
 }
@@ -25,7 +25,7 @@ export type FileSearchEntry = {
 };
 
 export type FileSearchEvent =
-    | { requestId: string; type: "batch"; entries: FileSearchEntry[] }
+    | { requestId: string; type: "batch"; entries: Array<FileSearchEntry> }
     | { requestId: string; type: "complete"; truncated: boolean }
     | { requestId: string; type: "error"; error: string };
 

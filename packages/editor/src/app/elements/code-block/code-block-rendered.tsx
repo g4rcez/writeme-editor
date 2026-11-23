@@ -100,7 +100,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     const copyFeedbackTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (codeRef.current === codeFromNode) return;
+        if (codeRef.current === codeFromNode) {return;}
         codeRef.current = codeFromNode;
         setCode(codeFromNode);
     }, [codeFromNode]);
@@ -114,7 +114,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     }, []);
 
     useEffect(() => {
-        if (!FEATURES.codeExecution || !isElectron()) return;
+        if (!FEATURES.codeExecution || !isElectron()) {return;}
         const checkExecutable = async () => {
             const config = EXECUTION_CONFIG[language as BundledLanguage];
             if (config && config.command !== "browser") {
@@ -129,14 +129,14 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
 
     useEffect(() => {
         const pos = props.getPos();
-        if (typeof pos !== "number") return;
+        if (typeof pos !== "number") {return;}
         const dom = props.editor.view.nodeDOM(pos);
-        if (!(dom instanceof Element)) return;
+        if (!(dom instanceof Element)) {return;}
         const observer = new IntersectionObserver(
             (entries) => {
-                if (!entries[0]?.isIntersecting) return;
+                if (!entries[0]?.isIntersecting) {return;}
                 const currentPos = props.getPos();
-                if (typeof currentPos !== "number") return;
+                if (typeof currentPos !== "number") {return;}
                 props.editor.view.dispatch(props.editor.state.tr.setMeta("shikiHighlightPos", currentPos));
             },
             { rootMargin: "200px" },
@@ -148,7 +148,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     const handleLanguageChange = (newLanguage: string) => {
         const { view, getPos } = props;
         const pos = getPos();
-        if (typeof pos !== "number") return;
+        if (typeof pos !== "number") {return;}
         view.dispatch(
             view.state.tr.setNodeMarkup(pos, undefined, {
                 ...props.node.attrs,
@@ -159,13 +159,13 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     };
 
     const handleFormat = async () => {
-        if (!canFormat(language)) return;
+        if (!canFormat(language)) {return;}
         setIsFormatting(true);
         try {
             const formatted = await formatCode(code, language);
-            if (formatted === code) return;
+            if (formatted === code) {return;}
             const pos = props.getPos();
-            if (typeof pos !== "number") return;
+            if (typeof pos !== "number") {return;}
             const targetNode = props.editor.state.doc.nodeAt(pos);
             updateNodeContent(props.editor, targetNode, formatted);
             codeRef.current = formatted;
@@ -191,7 +191,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
     };
 
     const handleRun = async () => {
-        if (!FEATURES.codeExecution || !config) return;
+        if (!FEATURES.codeExecution || !config) {return;}
         setIsRunning(true);
         setOutput(null);
         try {
@@ -202,8 +202,8 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
                 const result = await window.electronAPI.execution.run(config.command, config.args, code);
                 setOutput({ stdout: result.stdout, stderr: result.stderr });
             }
-        } catch (e) {
-            setOutput({ stdout: "", stderr: `Error: ${e}` });
+        } catch (error) {
+            setOutput({ stdout: "", stderr: `Error: ${error}` });
         } finally {
             setIsRunning(false);
         }
@@ -211,7 +211,7 @@ export const CodeBlockRenderer = (props: ReactNodeViewProps) => {
 
     const onChangeDraw = useCallback((nextState: any) => {
         const pos = props.getPos();
-        if (typeof pos !== "number") return;
+        if (typeof pos !== "number") {return;}
         const targetNode = props.editor.state.doc.nodeAt(pos);
         updateNodeContent(props.editor, targetNode, nextState, { addToHistory: false });
     }, []);

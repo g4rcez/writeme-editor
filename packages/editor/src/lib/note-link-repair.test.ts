@@ -119,7 +119,7 @@ describe("rich text connection repair", () => {
         const write = vi.fn();
         const cleanEditor = (event: Event): void => {
             const request = (event as CustomEvent<NoteLinkRepairRequest & { checkOnly?: boolean }>).detail;
-            if (request.checkOnly) request.result ??= "applied";
+            if (request.checkOnly) {request.result ??= "applied";}
             else {
                 write();
                 request.result = "applied";

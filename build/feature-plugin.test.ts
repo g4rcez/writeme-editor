@@ -19,9 +19,9 @@ describe("compiled capability removal", () => {
                 },
             });
             const output = Array.isArray(result) ? result[0] : result;
-            if (!output || !("output" in output)) throw new Error("Compiled output is missing");
+            if (!output || !("output" in output)) {throw new Error("Compiled output is missing");}
             const chunk = output.output.find((value) => value.type === "chunk");
-            if (!chunk || chunk.type !== "chunk") throw new Error("Compiled module is missing");
+            if (!chunk || chunk.type !== "chunk") {throw new Error("Compiled module is missing");}
             expect(chunk.code).not.toMatch(/new Function\s*\(/);
             expect(chunk.moduleIds.some((id) => id.includes("node_modules/sucrase"))).toBe(false);
             const module = await import(`data:text/javascript;base64,${Buffer.from(chunk.code).toString("base64")}`);
@@ -43,9 +43,9 @@ describe("compiled capability removal", () => {
                 },
             });
             const output = Array.isArray(result) ? result[0] : result;
-            if (!output || !("output" in output)) throw new Error("Compiled output is missing.");
+            if (!output || !("output" in output)) {throw new Error("Compiled output is missing.");}
             const chunk = output.output.find((output) => output.type === "chunk");
-            if (!chunk || chunk.type !== "chunk") throw new Error("Compiled module is missing.");
+            if (!chunk || chunk.type !== "chunk") {throw new Error("Compiled module is missing.");}
             expect(chunk.code).not.toMatch(/\beval\s*\(/);
             const module = await import(`data:text/javascript;base64,${Buffer.from(chunk.code).toString("base64")}`);
             expect(() => module.runJavascript("globalThis.storeBypass = true")).toThrow("unavailable");
@@ -65,9 +65,9 @@ describe("compiled capability removal", () => {
             },
         });
         const output = Array.isArray(result) ? result[0] : result;
-        if (!output || !("output" in output)) throw new Error("Compiled output is missing.");
+        if (!output || !("output" in output)) {throw new Error("Compiled output is missing.");}
         const chunk = output.output.find((output) => output.type === "chunk");
-        if (!chunk || chunk.type !== "chunk") throw new Error("Compiled module is missing.");
+        if (!chunk || chunk.type !== "chunk") {throw new Error("Compiled module is missing.");}
         const module = await import(`data:text/javascript;base64,${Buffer.from(chunk.code).toString("base64")}`);
         expect(module.runJavascript("1 + 2")).toBe(3);
     });

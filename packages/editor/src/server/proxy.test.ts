@@ -64,8 +64,8 @@ function createProxyRequest({
         authorization: "Bearer provider-test-token",
         "content-type": "application/json",
     });
-    if (origin !== null) headers.set("origin", origin);
-    if (token !== null) headers.set("x-writeme-proxy-token", token);
+    if (origin !== null) {headers.set("origin", origin);}
+    if (token !== null) {headers.set("x-writeme-proxy-token", token);}
     return new Request("http://localhost:4079/proxy", { method: "POST", headers, body: "{}" });
 }
 

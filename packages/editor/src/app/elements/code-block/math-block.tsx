@@ -56,7 +56,7 @@ const TotalLine = ({ kind, result }: { kind: "sum" | "avg"; result: EvaluatedRes
 
 async function loadExchangeRates(base: string): Promise<ExchangeRateData> {
     const cached = getCachedRates(base);
-    if (cached) return cached.data;
+    if (cached) {return cached.data;}
     const data = await fetchExchangeRates(base);
     setCachedRates(base, data);
     return data;
@@ -68,7 +68,7 @@ export const MathBlock = (props: { code: string }) => {
     useEffect(() => {
         loadExchangeRates("EUR")
             .then(setRatesData)
-            .catch((e) => console.error("Failed to fetch rates for MathBlock", e));
+            .catch((error) => console.error("Failed to fetch rates for MathBlock", error));
     }, []);
 
     const evaluated = useMemo(() => evaluateCode(props.code, ratesData), [props.code, ratesData]);

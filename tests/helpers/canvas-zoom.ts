@@ -42,7 +42,7 @@ export async function expectCanvasZoomWheel(page: Page, input: "native" | "dom" 
                 deltaY,
             );
             expect(prevented).toBe(true);
-        } else await page.mouse.wheel(0, deltaY);
+        } else {await page.mouse.wheel(0, deltaY);}
         await expect(footer).toHaveText(`${percentage}%`);
     }
     await scroll(footer, -100, 115);
@@ -60,10 +60,10 @@ export async function expectCanvasZoomWheel(page: Page, input: "native" | "dom" 
     await page.getByRole("button", { name: "Notebook options", exact: true }).click();
     await scroll(zoomGroup, -100, 115);
     await page.getByRole("button", { name: "Close options", exact: true }).click();
-    for (let value = 130; value < 300; value += 15) await scroll(footer, -100, value);
+    for (let value = 130; value < 300; value += 15) {await scroll(footer, -100, value);}
     await scroll(footer, -100, 300);
     await scroll(footer, -100, 300);
-    for (let value = 285; value >= 50; value -= 15) await scroll(footer, 100, value);
+    for (let value = 285; value >= 50; value -= 15) {await scroll(footer, 100, value);}
     await scroll(footer, 100, 50);
     await scroll(footer, 100, 50);
     expect(await viewport.evaluate((element) => ({ x: element.scrollLeft, y: element.scrollTop }))).toEqual(before);

@@ -14,8 +14,8 @@ const mocks = vi.hoisted(() => {
         note: null as Note | null,
         directory: null as string | null,
         noteGroups: [],
-        notes: [] as Note[],
-        tabs: [] as Tab[],
+        notes: [] as Array<Note>,
+        tabs: [] as Array<Tab>,
         terminalSessions: [],
         theme: "dark",
     };
@@ -59,7 +59,7 @@ const mocks = vi.hoisted(() => {
 type CommandItem = {
     title?: string;
     shortcut?: string;
-    items?: CommandItem[];
+    items?: Array<CommandItem>;
     action?: (args: { setOpen: (value: boolean) => void }) => void | Promise<void>;
 };
 
@@ -182,9 +182,9 @@ vi.mock("@/store/ui.store", () => ({
     },
 }));
 
-function getFlattenedCommands(): CommandItem[] {
-    const calls = mocks.commandPalette.mock.calls as unknown[][];
-    const props = calls.at(-1)?.[0] as { commands: CommandItem[] } | undefined;
+function getFlattenedCommands(): Array<CommandItem> {
+    const calls = mocks.commandPalette.mock.calls as Array<Array<unknown>>;
+    const props = calls.at(-1)?.[0] as { commands: Array<CommandItem> } | undefined;
 
     return (props?.commands ?? []).flatMap((item) => item.items ?? [item]);
 }
@@ -197,7 +197,7 @@ function commanderView() {
 
 function findCommand(title: string) {
     const command = getFlattenedCommands().find((command) => command.title === title);
-    if (!command?.action) throw new Error(`Missing command: ${title}`);
+    if (!command?.action) {throw new Error(`Missing command: ${title}`);}
     return command.action;
 }
 
@@ -216,7 +216,7 @@ describe("Commander", () => {
         const old = Note.parse({ id: "note-1", title: "Stable title", content: "Old content" });
         mocks.state.notes = [old];
         mocks.state.tabs = [createTab({ id: "note-tab", noteId: old.id })];
-        if (title.startsWith("Tab:")) mocks.state.commander = { enabled: true, type: "OpenTabs" };
+        if (title.startsWith("Tab:")) {mocks.state.commander = { enabled: true, type: "OpenTabs" };}
         const { rerender } = render(commanderView());
         const open = findCommand(title);
         const latest = Note.parse({ ...old, content: "Latest saved content" });
@@ -373,7 +373,7 @@ describe("Commander", () => {
                 note={{
                     id: "note-1",
                     title: "Paper",
-                    content: "\\documentclass{article}",
+                    content: String.raw`\documentclass{article}`,
                     filePath: "/workspace/paper.tex",
                 } as never}
                 tabs={mocks.state.tabs}

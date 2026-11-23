@@ -83,7 +83,7 @@ const BlockMath = TiptapBlockMath.extend({
         return renderBlockMathText(node);
     },
     extendNodeSchema(extension) {
-        if (extension.name !== "blockMath") return {};
+        if (extension.name !== "blockMath") {return {};}
         return {
             leafText: renderBlockMathText,
         };
@@ -95,7 +95,7 @@ const InlineMath = TiptapInlineMath.extend({
         return renderInlineMathText(node);
     },
     extendNodeSchema(extension) {
-        if (extension.name !== "inlineMath") return {};
+        if (extension.name !== "inlineMath") {return {};}
         return {
             leafText: renderInlineMathText,
         };
@@ -104,15 +104,15 @@ const InlineMath = TiptapInlineMath.extend({
 
 function promptForMath(node: { attrs: { latex?: unknown } }, pos: number, block: boolean): void {
     const editor = editorGlobalRef.current;
-    if (!editor) return;
+    if (!editor) {return;}
     uiDispatch.setPrompt({
         open: true,
         title: block ? "Edit block math" : "Edit inline math",
         initialValue: String(node.attrs.latex ?? ""),
-        placeholder: "\\frac{1}{2}",
+        placeholder: String.raw`\frac{1}{2}`,
         onConfirm: (latex: string) => {
             const value = latex.trim();
-            if (!value || editor.isDestroyed) return;
+            if (!value || editor.isDestroyed) {return;}
             if (block) {
                 editor.chain().focus().updateBlockMath({ latex: value, pos }).run();
             } else {
@@ -123,10 +123,10 @@ function promptForMath(node: { attrs: { latex?: unknown } }, pos: number, block:
 }
 
 export const handlePasteImage = async (currentEditor: TipTapEditor, position?: number): Promise<boolean> => {
-    if (!isElectron() || !currentEditor) return false;
+    if (!isElectron() || !currentEditor) {return false;}
     const insertPos = position ?? currentEditor.state.selection.anchor;
     const imageData = await window.electronAPI.notes.clipboardImage();
-    if (!imageData || currentEditor.isDestroyed) return false;
+    if (!imageData || currentEditor.isDestroyed) {return false;}
 
     const state = globalState();
     const projectDir = state.directory;
@@ -154,8 +154,8 @@ export const handlePasteImage = async (currentEditor: TipTapEditor, position?: n
             currentEditor.chain().insertContentAt(insertionPosition, { type: "image", attrs: { src } }).focus().run();
             return true;
         }
-    } catch (e) {
-        console.error("Failed to save pasted image", e);
+    } catch (error) {
+        console.error("Failed to save pasted image", error);
     }
 
     if (!currentEditor.isDestroyed) {
@@ -173,8 +173,8 @@ function readFileAsDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
         fileReader.onload = () => {
-            if (typeof fileReader.result === "string") resolve(fileReader.result);
-            else reject(new Error("Failed to read media file"));
+            if (typeof fileReader.result === "string") {resolve(fileReader.result);}
+            else {reject(new Error("Failed to read media file"));}
         };
         fileReader.onerror = () => reject(fileReader.error ?? new Error("Failed to read media file"));
         fileReader.readAsDataURL(file);
@@ -215,14 +215,14 @@ const handleMediaFile = async (
                 const filename = `${Date.now()}_${index}.${ext}`;
                 const absolutePath = `${targetDir}/${filename}`;
                 const result = await window.electronAPI.fs.writeImage(absolutePath, src);
-                if (result.success) src = createAttachmentRelativePath(noteTitle, filename);
+                if (result.success) {src = createAttachmentRelativePath(noteTitle, filename);}
             } catch (error) {
                 console.error("Failed to save media to filesystem", error);
             }
         }
     }
 
-    if (currentEditor.isDestroyed) return;
+    if (currentEditor.isDestroyed) {return;}
     const insertionPosition = Math.min(insertPos, currentEditor.state.doc.content.size);
     const type = file.type.startsWith("video/") ? "video" : file.type === "application/pdf" ? "pdf" : "image";
     currentEditor
@@ -232,7 +232,7 @@ const handleMediaFile = async (
         .run();
 };
 
-export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): AnyExtension[] => {
+export const createExtensions = (getCurrentTheme: () => BundledTheme, manualCompletion = false): Array<AnyExtension> => {
     return [
         FootnoteReference,
         FootnoteDefinition,
@@ -297,7 +297,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
                 });
             },
             onPaste: (currentEditor, files, htmlContent) => {
-                if (htmlContent) return;
+                if (htmlContent) {return;}
                 files.forEach((file, index) => {
                     void handleMediaFile(currentEditor, file, null, index);
                 });
@@ -518,7 +518,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
             ...({
                 markdown: {
                     serialize(state: any, node: any) {
-                        if (node && node.attrs) {
+                        if (node?.attrs) {
                             if (node.attrs.obsidianTarget || node.attrs.obsidianSubpath) {
                                 state.write(
                                     formatObsidianLink({
@@ -535,7 +535,7 @@ export const createExtensions = (getCurrentTheme: () => BundledTheme, manualComp
                             const id = String(node.attrs.id);
                             const target = normalizeMentionPath(path);
                             const destination = id.startsWith("file:") ? encodeMarkdownFilePath(target) : target;
-                            const titleId = id.replace(/[\\"]/g, "\\$&");
+                            const titleId = id.replaceAll(/[\\"]/g, String.raw`\$&`);
                             state.write(`[${label}](${destination} "writeme-mention:${titleId}")`);
                         }
                     },

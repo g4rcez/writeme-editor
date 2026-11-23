@@ -43,7 +43,7 @@ function attachContextMenu(contents: TestWebContents): void {
     const registerWebContents = mocks.appOn.mock.calls.find(([name]) => name === "web-contents-created")?.[1] as
         | ((event: unknown, contents: TestWebContents) => void)
         | undefined;
-    if (!registerWebContents) throw new Error("Spelling context menu listener was not registered.");
+    if (!registerWebContents) {throw new Error("Spelling context menu listener was not registered.");}
     registerWebContents({}, contents);
 }
 
@@ -71,7 +71,7 @@ describe("native spelling context menus", () => {
 
         expect(event.preventDefault).toHaveBeenCalledOnce();
         expect(mocks.popup).toHaveBeenCalledWith({ window: owner, x: 12, y: 18 });
-        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as MenuItem[];
+        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as Array<MenuItem>;
         template.find((item) => item.label === "misspelling")?.click?.();
         template.find((item) => item.label === "Add to dictionary")?.click?.();
 
@@ -96,7 +96,7 @@ describe("native spelling context menus", () => {
 
         contents.emit("context-menu", { preventDefault: vi.fn() }, { isEditable: true, dictionarySuggestions: [] });
 
-        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as MenuItem[];
+        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as Array<MenuItem>;
         expect(template[0]?.role).toBe("undo");
         expect(template.some((item) => item.role === "selectAll")).toBe(true);
         expect(template.some((item) => item.label === "Add to dictionary")).toBe(false);
@@ -114,7 +114,7 @@ describe("native spelling context menus", () => {
             { isEditable: true, selectionText: "Selected prose", dictionarySuggestions: [] },
         );
 
-        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as MenuItem[];
+        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as Array<MenuItem>;
         template.find((item) => item.label === "Improve selected text")?.click?.();
 
         expect(contents.send).toHaveBeenCalledWith("writing-assistant:improve-selection");
@@ -137,7 +137,7 @@ describe("native spelling context menus", () => {
 
         contents.emit("context-menu", { preventDefault: vi.fn() }, { isEditable: true, selectionText: "   " });
 
-        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as MenuItem[];
+        const template = mocks.buildFromTemplate.mock.calls[0]?.[0] as Array<MenuItem>;
         expect(template.some((item) => item.label === "Improve selected text")).toBe(false);
     });
 

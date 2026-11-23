@@ -3,7 +3,7 @@ import { Dates as SolverDates } from "@writeme.dev/math/dates";
 const EDITOR_DAYS_UNTIL_PATTERN = /^days?\s+(?:until|till|before|since|after)\s+(.+)$/i;
 
 function evaluateDaysUntil(expression: string): string | null {
-    if (!EDITOR_DAYS_UNTIL_PATTERN.test(expression.trim())) return null;
+    if (!EDITOR_DAYS_UNTIL_PATTERN.test(expression.trim())) {return null;}
     return SolverDates.evaluateDaysUntil(expression);
 }
 

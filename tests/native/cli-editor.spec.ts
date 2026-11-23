@@ -25,12 +25,12 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
     let application: ElectronApplication | undefined;
     let cliProcess: ChildProcess | undefined;
     let cliExit: Promise<{ code: number | null; signal: NodeJS.Signals | null }> | undefined;
-    const rendererErrors: string[] = [];
+    const rendererErrors: Array<string> = [];
 
     try {
         await mkdir(userData, { recursive: true });
         await mkdir(videoDirectory, { recursive: true });
-        if (process.platform !== "win32") await symlink("writeme-dev", path.join(appData, "writeme"));
+        if (process.platform !== "win32") {await symlink("writeme-dev", path.join(appData, "writeme"));}
         await writeFile(promptFile, "Original prompt text.\n", "utf8");
         await writeFile(
             bootstrap,
@@ -54,7 +54,7 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
         const mainWindow = await application.browserWindow(page);
         await mainWindow.evaluate((window) => window.setSize(1280, 900));
         page.on("console", (message) => {
-            if (message.type() === "error") rendererErrors.push(message.text());
+            if (message.type() === "error") {rendererErrors.push(message.text());}
         });
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
         expect(await application.evaluate(({ app }) => app.getPath("userData"))).toBe(userData);
@@ -90,7 +90,7 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
             timeout: 15_000,
         });
         await expect.poll(() => readFile(promptFile, "utf8")).toContain("Updated prompt from Writeme.");
-        await page.waitForTimeout(5_500);
+        await page.waitForTimeout(5500);
         expect(cliProcess.exitCode).toBeNull();
 
         const screenshot = testInfo.outputPath("cli-editor-prompt.png");
@@ -102,7 +102,7 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
 
         await page.getByRole("button", { name: "Close claude-prompt", exact: true }).click();
         await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
-        if (!cliExit) throw new Error("The CLI wait process was not started.");
+        if (cliExit === undefined) {throw new Error("The CLI wait process was not started.");}
         await expect.poll(() => cliExit).toEqual({ code: 0, signal: null });
         await expect
             .poll(() => page.evaluate((filePath) => window.electronAPI.app.isCliEditorFile(filePath), promptFile))
@@ -115,7 +115,7 @@ test("CLI wait mode saves prompt edits to the source file and releases on tab cl
         expect(unauthorizedWrite.success).toBe(false);
         expect(await readFile(promptFile, "utf8")).toBe("Updated prompt from Writeme.");
     } finally {
-        if (cliProcess && cliProcess.exitCode === null) cliProcess.kill();
+        if (cliProcess && cliProcess.exitCode === null) {cliProcess.kill();}
         await application?.close();
         for (const filename of await readdir(videoDirectory)) {
             if (filename.endsWith(".webm")) {

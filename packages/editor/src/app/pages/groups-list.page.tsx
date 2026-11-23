@@ -19,7 +19,7 @@ export default function GroupsListPage() {
 
     const handleCreate = async () => {
         const title = newTitle.trim();
-        if (!title) return;
+        if (!title) {return;}
         await dispatch.createGroup(title, newDescription.trim() || undefined);
         setNewTitle("");
         setNewDescription("");
@@ -28,7 +28,7 @@ export default function GroupsListPage() {
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm("Delete this group? Notes will not be deleted.")) return;
+        if (!confirm("Delete this group? Notes will not be deleted.")) {return;}
         await dispatch.deleteGroup(id);
     };
 
@@ -58,8 +58,8 @@ export default function GroupsListPage() {
                             autoFocus
                             onChange={(e) => setNewTitle(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter") handleCreate();
-                                if (e.key === "Escape") setShowCreate(false);
+                                if (e.key === "Enter") {handleCreate();}
+                                if (e.key === "Escape") {setShowCreate(false);}
                             }}
                         />
                         <Input
@@ -96,7 +96,7 @@ export default function GroupsListPage() {
                     >
                         <div className="flex items-start justify-between gap-2">
                             <h2 className="font-semibold truncate">{group.title}</h2>
-                            <button
+                            <button type="button"
                                 onClick={(e) => handleDelete(e, group.id)}
                                 className="shrink-0 p-1.5 rounded text-foreground/40 opacity-0 group-hover:opacity-100 transition-[color,background-color,opacity] hover:text-danger hover:bg-danger/10"
                                 title="Delete group"

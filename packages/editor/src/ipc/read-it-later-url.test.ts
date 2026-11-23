@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createCachedLookup, isPublicHttpUrl } from "./read-it-later-url";
 
-const publicLookup = async (): Promise<string[]> => ["93.184.216.34"];
-const loopbackLookup = async (): Promise<string[]> => ["127.0.0.1"];
-const mixedLookup = async (): Promise<string[]> => ["93.184.216.34", "10.0.0.5"];
+const publicLookup = async (): Promise<Array<string>> => ["93.184.216.34"];
+const loopbackLookup = async (): Promise<Array<string>> => ["127.0.0.1"];
+const mixedLookup = async (): Promise<Array<string>> => ["93.184.216.34", "10.0.0.5"];
 
 describe("isPublicHttpUrl", () => {
     it("accepts a public http(s) host", async () => {
@@ -61,7 +61,7 @@ describe("isPublicHttpUrl", () => {
     });
 
     it("rejects a hostname that does not resolve", async () => {
-        const failing = async (): Promise<string[]> => {
+        const failing = async (): Promise<Array<string>> => {
             throw new Error("ENOTFOUND");
         };
         expect(await isPublicHttpUrl("http://nope.example/", failing)).toBe(false);

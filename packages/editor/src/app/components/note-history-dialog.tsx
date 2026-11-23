@@ -41,7 +41,7 @@ export function formatSnapshotDate(snapshot: NoteSnapshot): string {
 }
 
 export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHistoryDialogProps) {
-    const [snapshots, setSnapshots] = useState<NoteSnapshot[]>([]);
+    const [snapshots, setSnapshots] = useState<Array<NoteSnapshot>>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [restoring, setRestoring] = useState(false);
@@ -55,17 +55,17 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
         setError(null);
         try {
             const loaded = await repositories.notes.getHistory(note.id);
-            if (generation !== loadGeneration.current) return;
+            if (generation !== loadGeneration.current) {return;}
             const ordered = [...loaded].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
             setSnapshots(ordered);
             setSelectedId(ordered[0]?.id ?? null);
-        } catch (reason) {
-            if (generation !== loadGeneration.current) return;
+        } catch (error_) {
+            if (generation !== loadGeneration.current) {return;}
             setSnapshots([]);
             setSelectedId(null);
-            setError(reason instanceof Error ? reason.message : "Failed to load note history");
+            setError(error_ instanceof Error ? error_.message : "Failed to load note history");
         } finally {
-            if (generation === loadGeneration.current) setLoading(false);
+            if (generation === loadGeneration.current) {setLoading(false);}
         }
     }, [note.id]);
 
@@ -94,19 +94,19 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
     const currentContent = liveEditorContent ?? note.content;
 
     const requestRestore = (snapshot: NoteSnapshot): void => {
-        if (restoring) return;
+        if (restoring) {return;}
         setConfirmSnapshot(snapshot);
     };
 
     const restore = async (): Promise<void> => {
-        if (!confirmSnapshot || restoring) return;
+        if (!confirmSnapshot || restoring) {return;}
         const snapshot = confirmSnapshot;
         setConfirmSnapshot(null);
         setRestoring(true);
         setError(null);
         try {
             const restored = await repositories.notes.restoreSnapshot(note.id, snapshot.id);
-            if (!restored) throw new Error("Failed to restore note history");
+            if (!restored) {throw new Error("Failed to restore note history");}
             onRestored(restored);
             await loadHistory();
             notificationRef.current?.(<span>Note restored from history.</span>, {
@@ -114,8 +114,8 @@ export function NoteHistoryDialog({ note, open, onClose, onRestored }: NoteHisto
                 closable: true,
                 timeout: 4000,
             });
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : "Failed to restore note history");
+        } catch (error_) {
+            setError(error_ instanceof Error ? error_.message : "Failed to restore note history");
         } finally {
             setRestoring(false);
         }

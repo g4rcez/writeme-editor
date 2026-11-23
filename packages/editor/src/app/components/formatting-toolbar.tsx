@@ -22,10 +22,10 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
     const toolbarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {return;}
         const update = () => forceUpdate((value) => value + 1);
         const transactionUpdate = ({ transaction }: { transaction: Transaction }): void => {
-            if (transaction.docChanged || transaction.storedMarksSet) update();
+            if (transaction.docChanged || transaction.storedMarksSet) {update();}
         };
         const selectionUpdate = () => {
             setDismissedEditor(null);
@@ -71,7 +71,7 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
         }
 
         const position = (): void => {
-            if (activeEditor.isDestroyed) return;
+            if (activeEditor.isDestroyed) {return;}
             try {
                 const start = activeEditor.view.coordsAtPos(selectionFrom);
                 const end = activeEditor.view.coordsAtPos(selectionTo);
@@ -113,9 +113,9 @@ export function FormattingToolbar({ editor, onComment }: FormattingToolbarProps)
         };
     }, [activeEditor, showToolbar, selectionFrom, selectionTo, selectedText, editorDocument]);
 
-    if (!activeEditor || !showToolbar) return null;
+    if (!activeEditor || !showToolbar) {return null;}
 
-    const actions: ToolbarAction[] = [
+    const actions: Array<ToolbarAction> = [
         {
             label: "B",
             title: "Bold (⌘/Ctrl+B)",

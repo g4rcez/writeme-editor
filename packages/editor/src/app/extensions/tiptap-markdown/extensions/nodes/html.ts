@@ -52,7 +52,7 @@ function formatBlock(html: string): string {
     const dom = elementFromString(html);
     const element = dom.firstElementChild;
 
-    if (!element) return html;
+    if (!element) {return html;}
 
     const inner = element.innerHTML.trim();
     // biome-ignore lint/security/noDangerouslySetInnerHtml: controlled prosemirror schema HTML

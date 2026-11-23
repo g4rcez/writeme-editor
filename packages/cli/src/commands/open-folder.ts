@@ -16,8 +16,8 @@ export async function openFolder(rawFolderPath: string): Promise<void> {
             folderPath: args.folderPath,
             requestId: randomUUID(),
         });
-    } catch (err) {
-        const e = err as NodeJS.ErrnoException;
+    } catch (error) {
+        const e = error as NodeJS.ErrnoException;
         if (e.code === "ECONNREFUSED" || e.code === "ENOENT") {
             await ensureAppRunning(socketPath, ["--workspace", args.folderPath], {
                 WRITEME_WORKSPACE: args.folderPath,
@@ -28,7 +28,7 @@ export async function openFolder(rawFolderPath: string): Promise<void> {
                 requestId: randomUUID(),
             });
         } else {
-            throw err;
+            throw error;
         }
     }
 }

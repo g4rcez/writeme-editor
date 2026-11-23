@@ -7,12 +7,12 @@ function isUnicodeWhitespace(code: number): boolean {
         code === 0x0d ||
         code === 0x20 ||
         code === 0xa0 ||
-        code === 0x1680 ||
-        (code >= 0x2000 && code <= 0x200a) ||
-        code === 0x202f ||
-        code === 0x205f ||
-        code === 0x3000 ||
-        code === 0xfeff
+        code === 0x16_80 ||
+        (code >= 0x20_00 && code <= 0x20_0a) ||
+        code === 0x20_2f ||
+        code === 0x20_5f ||
+        code === 0x30_00 ||
+        code === 0xfe_ff
     );
 }
 
@@ -30,7 +30,7 @@ function scanDelims(text: string, pos: number): { can_open: boolean; can_close: 
     const max = text.length;
 
     let p = pos;
-    while (p < max && text.charCodeAt(p) === marker) p++;
+    while (p < max && text.charCodeAt(p) === marker) {p++;}
 
     const nextCode = p < max ? text.charCodeAt(p) : -1;
     const prevCode = pos > 0 ? text.charCodeAt(pos - 1) : -1;

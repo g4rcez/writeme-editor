@@ -4,20 +4,20 @@ import { normalizeMarkdownPaste } from "./normalize-markdown";
 describe("normalizeMarkdownPaste", () => {
     it("restores escaped Markdown syntax and decodes escaped HTML entities", () => {
         const input = [
-            "\\## Heading",
+            String.raw`\## Heading`,
             "",
-            "This is \\*\\*bold\\*\\* text.",
+            String.raw`This is \*\*bold\*\* text.`,
             "",
-            "\\- first",
-            "2\\. second",
+            String.raw`\- first`,
+            String.raw`2\. second`,
             "",
             "&gt; quote",
             "&gt; **quoted**&gt;&gt; - item",
             "",
-            "\\---",
+            String.raw`\---`,
             "",
-            "\\\\",
-            "\\### Next heading",
+            String.raw`\\`,
+            String.raw`\### Next heading`,
         ].join("\n");
 
         expect(normalizeMarkdownPaste(input)).toBe(
@@ -49,15 +49,15 @@ describe("normalizeMarkdownPaste", () => {
     });
 
     it("keeps the contents of fenced code literal", () => {
-        const input = ["\\```ts", "\\# not a heading", "\\*\\*not bold\\*\\*", "\\```"].join("\n");
+        const input = ["\\```ts", String.raw`\# not a heading`, String.raw`\*\*not bold\*\*`, "\\```"].join("\n");
 
         expect(normalizeMarkdownPaste(input)).toBe(
-            ["```ts", "\\# not a heading", "\\*\\*not bold\\*\\*", "```"].join("\n"),
+            ["```ts", String.raw`\# not a heading`, String.raw`\*\*not bold\*\*`, "```"].join("\n"),
         );
     });
 
     it("keeps ordinary Markdown escapes unchanged", () => {
-        const input = "Literal \\*asterisks\\* and \\# a hash";
+        const input = String.raw`Literal \*asterisks\* and \# a hash`;
 
         expect(normalizeMarkdownPaste(input)).toBe(input);
     });

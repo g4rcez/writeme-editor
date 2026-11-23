@@ -45,7 +45,7 @@ export const RecentNotesDialog = () => {
     const filteredNotes = useMemo(
         () =>
             state.recentNotes.filter((note: Note) => {
-                if (!query) return true;
+                if (!query) {return true;}
                 const lowerQuery = query.toLowerCase();
                 const titleMatch = note.title.toLowerCase().includes(lowerQuery);
                 const pathMatch = note.filePath ? note.filePath.toLowerCase().includes(lowerQuery) : false;

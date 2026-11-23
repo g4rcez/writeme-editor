@@ -12,13 +12,13 @@ import { NoteType, type Note } from "@/store/note";
 export type EditorPane = Readonly<{
     id: string;
     noteId: string;
-    noteIds?: readonly string[];
+    noteIds?: ReadonlyArray<string>;
 }>;
 
 export type EditorPaneState = Readonly<{
     rootNoteId: string;
     activePaneId: string;
-    panes: readonly EditorPane[];
+    panes: ReadonlyArray<EditorPane>;
     layout?: EditorLayout;
 }>;
 
@@ -41,7 +41,7 @@ function createPane(noteId: string): EditorPane {
     return { id: uuid(), noteId };
 }
 
-function getInitialState(noteId: string, notes: readonly Note[]): EditorPaneState {
+function getInitialState(noteId: string, notes: ReadonlyArray<Note>): EditorPaneState {
     const eligibleNotes = notes.filter(isPaneNote);
     const secondNote = eligibleNotes.find((note) => note.id !== noteId)?.id ?? noteId;
     const firstPane = createPane(noteId);
@@ -53,7 +53,7 @@ function getInitialState(noteId: string, notes: readonly Note[]): EditorPaneStat
     };
 }
 
-export function useEditorPanes(noteId: string | null, notes: readonly Note[], openNoteIds: readonly string[] = []) {
+export function useEditorPanes(noteId: string | null, notes: ReadonlyArray<Note>, openNoteIds: ReadonlyArray<string> = []) {
     const [state, setState] = useState<EditorPaneState | null>(() =>
         noteId ? (paneStates.get(noteId) ?? null) : null,
     );
@@ -62,16 +62,16 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
 
     const commit = useCallback(
         (next: EditorPaneState | null): void => {
-            if (!noteId) return;
-            if (next) paneStates.set(noteId, next);
-            else paneStates.delete(noteId);
+            if (!noteId) {return;}
+            if (next) {paneStates.set(noteId, next);}
+            else {paneStates.delete(noteId);}
             setState(next);
         },
         [noteId],
     );
 
     const enter = useCallback((): void => {
-        if (!noteId || stateForNote) return;
+        if (!noteId || stateForNote) {return;}
         commit(getInitialState(noteId, notes));
     }, [commit, noteId, notes, stateForNote]);
 
@@ -86,7 +86,7 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
                 !stateForNote.panes.some((pane) => pane.id === paneId) ||
                 stateForNote.activePaneId === paneId
             )
-                return;
+                {return;}
             commit({ ...stateForNote, activePaneId: paneId });
         },
         [commit, stateForNote],
@@ -94,7 +94,7 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
 
     const selectNote = useCallback(
         (paneId: string, selectedNoteId: string): void => {
-            if (!stateForNote) return;
+            if (!stateForNote) {return;}
             const panes = stateForNote.panes.map((pane) =>
                 pane.id === paneId
                     ? {
@@ -104,14 +104,14 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
                       }
                     : pane,
             );
-            if (panes.every((pane, index) => pane.noteId === stateForNote.panes[index]?.noteId)) return;
+            if (panes.every((pane, index) => pane.noteId === stateForNote.panes[index]?.noteId)) {return;}
             commit({ ...stateForNote, panes, activePaneId: paneId });
         },
         [commit, stateForNote],
     );
 
     const add = useCallback((): void => {
-        if (!stateForNote || stateForNote.panes.length >= MAX_EDITOR_PANES) return;
+        if (!stateForNote || stateForNote.panes.length >= MAX_EDITOR_PANES) {return;}
         const usedNoteIds = new Set(stateForNote.panes.map((pane) => pane.noteId));
         const nextNoteId =
             notes.find((note) => isPaneNote(note) && !usedNoteIds.has(note.id))?.id ?? stateForNote.rootNoteId;
@@ -127,12 +127,12 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
 
     const remove = useCallback(
         (paneId: string): void => {
-            if (!stateForNote || stateForNote.panes.length <= 1) return;
+            if (!stateForNote || stateForNote.panes.length <= 1) {return;}
             const index = stateForNote.panes.findIndex((pane) => pane.id === paneId);
-            if (index < 0) return;
+            if (index < 0) {return;}
             const panes = stateForNote.panes.filter((pane) => pane.id !== paneId);
             const replacementPane = panes[Math.min(index, panes.length - 1)];
-            if (!replacementPane) return;
+            if (!replacementPane) {return;}
             const activePaneId = stateForNote.activePaneId === paneId ? replacementPane.id : stateForNote.activePaneId;
             commit({
                 ...stateForNote,
@@ -153,7 +153,7 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
         targetPaneId?: string,
         beforeNoteId?: string,
     ): void => {
-        if (!noteId || !notes.some((note) => note.id === tab.noteId && isPaneNote(note))) return;
+        if (!noteId || !notes.some((note) => note.id === tab.noteId && isPaneNote(note))) {return;}
         const initialIds = [...new Set([noteId, ...openNoteIds])].filter(
             (id) =>
                 notes.some((note) => note.id === id && isPaneNote(note)) &&
@@ -163,20 +163,20 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
         const current: EditorPaneState = stateForNote ?? { rootNoteId: noteId, activePaneId: first.id, panes: [first] };
         const targetId = targetPaneId ?? current.activePaneId;
         const target = current.panes.find((pane) => pane.id === targetId);
-        if (!target) return;
+        if (!target) {return;}
         const source = current.panes.find((pane) =>
             tab.paneId ? pane.id === tab.paneId : (pane.noteIds ?? [pane.noteId]).includes(tab.noteId),
         );
         const removesSource =
             source && source.id !== targetId && !copy && (source.noteIds ?? [source.noteId]).length === 1;
-        if (side !== "center" && current.panes.length >= MAX_EDITOR_PANES && !removesSource) return;
-        if (side === "center" && source?.id === targetId && beforeNoteId === tab.noteId) return;
+        if (side !== "center" && current.panes.length >= MAX_EDITOR_PANES && !removesSource) {return;}
+        if (side === "center" && source?.id === targetId && beforeNoteId === tab.noteId) {return;}
         if (side !== "center" && source?.id === targetId && (source.noteIds ?? [source.noteId]).length === 1 && !copy)
-            return;
+            {return;}
         let panes = current.panes.map((pane) => ({ ...pane, noteIds: [...(pane.noteIds ?? [pane.noteId])] }));
         if (source && !copy) {
             panes = panes.map((pane) => {
-                if (pane.id !== source.id) return pane;
+                if (pane.id !== source.id) {return pane;}
                 const noteIds = pane.noteIds.filter((id) => id !== tab.noteId);
                 return {
                     ...pane,
@@ -194,7 +194,7 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
         let activePaneId = targetId;
         if (side === "center") {
             panes = panes.map((pane) => {
-                if (pane.id !== targetId) return pane;
+                if (pane.id !== targetId) {return pane;}
                 const noteIds = pane.noteIds.filter((id) => id !== tab.noteId);
                 const index = beforeNoteId ? noteIds.indexOf(beforeNoteId) : -1;
                 noteIds.splice(index < 0 ? noteIds.length : index, 0, tab.noteId);
@@ -212,13 +212,13 @@ export function useEditorPanes(noteId: string | null, notes: readonly Note[], op
     };
 
     const closeTab = (paneId: string, selectedNoteId: string): void => {
-        if (!stateForNote) return;
+        if (!stateForNote) {return;}
         const pane = stateForNote.panes.find((item) => item.id === paneId);
-        if (!pane) return;
+        if (!pane) {return;}
         const noteIds = (pane.noteIds ?? [pane.noteId]).filter((id) => id !== selectedNoteId);
         if (!noteIds.length) {
-            if (stateForNote.panes.length === 1) exit();
-            else remove(paneId);
+            if (stateForNote.panes.length === 1) {exit();}
+            else {remove(paneId);}
             return;
         }
         commit({

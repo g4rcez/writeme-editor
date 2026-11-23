@@ -10,7 +10,7 @@ type ElectronCursorPosition = CursorPosition & { id: string };
 const toCursorPosition = (
     position: CursorPosition | ElectronCursorPosition | null | undefined,
 ): CursorPosition | null => {
-    if (!position) return null;
+    if (!position) {return null;}
 
     return {
         y: position.y,
@@ -22,7 +22,7 @@ const toCursorPosition = (
 
 async function evictBrowserLRU(): Promise<void> {
     const excess = (await db.cursorPositions.count()) - MAX_ENTRIES;
-    if (excess <= 0) return;
+    if (excess <= 0) {return;}
     const staleRows = (await db.cursorPositions.toArray())
         .sort((a, b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0))
         .slice(0, excess);
@@ -31,7 +31,7 @@ async function evictBrowserLRU(): Promise<void> {
 
 async function evictElectronLRU(): Promise<void> {
     const excess = (await window.electronAPI.db.count(COLLECTION)) - MAX_ENTRIES;
-    if (excess <= 0) return;
+    if (excess <= 0) {return;}
     const staleRows = (await window.electronAPI.db.getAll<ElectronCursorPosition>(COLLECTION))
         .sort((a, b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0))
         .slice(0, excess);

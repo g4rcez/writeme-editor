@@ -22,7 +22,7 @@ export function requestNoteLinkRepair(
 ): NoteLinkRepairResult | null {
     const detail: NoteLinkRepairRequest = { ...request, result: null, checkOnly: true };
     window.dispatchEvent(new CustomEvent<NoteLinkRepairRequest>(NOTE_LINK_REPAIR_EVENT, { detail }));
-    if (detail.result !== "applied") return detail.result;
+    if (detail.result !== "applied") {return detail.result;}
     detail.result = null;
     detail.checkOnly = false;
     window.dispatchEvent(new CustomEvent<NoteLinkRepairRequest>(NOTE_LINK_REPAIR_EVENT, { detail }));
@@ -37,9 +37,9 @@ export function registerNoteLinkRepairHandler(handler: {
 }): () => void {
     const listener = (event: Event): void => {
         const request = (event as CustomEvent<NoteLinkRepairRequest>).detail;
-        if (request.noteId !== handler.noteId()) return;
+        if (request.noteId !== handler.noteId()) {return;}
         if (request.checkOnly) {
-            if (request.result === "conflict" || request.result === "unavailable") return;
+            if (request.result === "conflict" || request.result === "unavailable") {return;}
             request.result = !handler.isEditable()
                 ? "unavailable"
                 : repairedMarkdown(handler.getContent(), request) === null
@@ -63,16 +63,16 @@ export function repairedMarkdown(
         request.to <= request.from ||
         request.to > content.length
     )
-        return null;
+        {return null;}
     return content.slice(0, request.from) + request.replacement + content.slice(request.to);
 }
 
 function sameDocumentShape(left: ProseMirrorNode, right: ProseMirrorNode): boolean {
-    if (left.type !== right.type || left.text !== right.text || left.childCount < right.childCount) return false;
+    if (left.type !== right.type || left.text !== right.text || left.childCount < right.childCount) {return false;}
     for (let index = 0; index < left.childCount; index++) {
         const child = left.child(index);
         if (index < right.childCount) {
-            if (!sameDocumentShape(child, right.child(index))) return false;
+            if (!sameDocumentShape(child, right.child(index))) {return false;}
             // The trailing-node extension may append empty paragraphs that Markdown does not serialize.
         } else if (left.type.name !== "doc" || child.type.name !== "paragraph" || child.content.size !== 0) {
             return false;
@@ -82,11 +82,11 @@ function sameDocumentShape(left: ProseMirrorNode, right: ProseMirrorNode): boole
 }
 
 export function repairTiptapLink(editor: Editor, request: NoteLinkRepairRequest): NoteLinkRepairResult {
-    if (!editor.isEditable || editor.isDestroyed) return "unavailable";
+    if (!editor.isEditable || editor.isDestroyed) {return "unavailable";}
     const updated = repairedMarkdown(getEditorMarkdown(editor), request);
-    if (updated === null) return "conflict";
+    if (updated === null) {return "conflict";}
     const parser = editor.storage.markdown.parser;
-    if (!parser) return "unavailable";
+    if (!parser) {return "unavailable";}
     const parse = (content: string): ProseMirrorNode => {
         const container = document.createElement("div");
         container.innerHTML = parser.parse(content);
@@ -95,11 +95,11 @@ export function repairTiptapLink(editor: Editor, request: NoteLinkRepairRequest)
     const previous = editor.state.doc;
     const baseline = parse(request.expectedContent);
     const nextDoc = parse(updated);
-    if (!sameDocumentShape(previous, baseline)) return "unavailable";
+    if (!sameDocumentShape(previous, baseline)) {return "unavailable";}
     // Compare equivalent serializations so unrelated live node attributes are not roundtripped.
     const start = baseline.content.findDiffStart(nextDoc.content);
     const end = baseline.content.findDiffEnd(nextDoc.content);
-    if (start === null || end === null) return "unavailable";
+    if (start === null || end === null) {return "unavailable";}
     const overlap = Math.max(0, start - Math.min(end.a, end.b));
     const transaction = closeHistory(editor.state.tr).replace(
         start,

@@ -31,7 +31,7 @@ const externalHttpUrlRegex = /^https?:\/\/[^\s<>"')]+$/i;
 const externalHttpPasteRegex = /https?:\/\/[^\s<>"')]+/gi;
 const externalHttpInputRegex = /(?:^|\s)(https?:\/\/[^\s<>"')]+)\s$/i;
 
-const DOMAIN_CONFIGS: DomainConfig[] = [
+const DOMAIN_CONFIGS: Array<DomainConfig> = [
     {
         regex: /^https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s]+)/,
         icon: () => <InstagramLogoIcon aria-hidden="true" />,
@@ -81,14 +81,14 @@ type DomainConfigMatch = {
 const getDomainConfigMatch = (url: string): DomainConfigMatch | null => {
     for (const config of DOMAIN_CONFIGS) {
         const match = url.match(config.regex);
-        if (match) return { config, match };
+        if (match) {return { config, match };}
     }
     return null;
 };
 
 export const getLinkTitleDomain = (url: string): string => {
     const matched = getDomainConfigMatch(url);
-    if (matched) return matched.config.title(matched.match);
+    if (matched) {return matched.config.title(matched.match);}
     return getGenericUrlLabel(url);
 };
 
@@ -157,9 +157,9 @@ export const DomainLink = Node.create({
                 tag: "a[href]",
                 priority: 60,
                 getAttrs: (element: HTMLElement | string) => {
-                    if (typeof element === "string") return false;
+                    if (typeof element === "string") {return false;}
                     const href = element.getAttribute("href");
-                    if (!href || !shouldRenderAsDomainLink(element, href)) return false;
+                    if (!href || !shouldRenderAsDomainLink(element, href)) {return false;}
                     for (const config of DOMAIN_CONFIGS) {
                         if (config.regex.test(href)) {
                             return { href, text: element.textContent || href };

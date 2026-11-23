@@ -8,7 +8,7 @@ type MockAutocompleteProps = {
     title: string;
     value?: string;
     placeholder?: string;
-    options: { value: string; label?: string }[];
+    options: Array<{ value: string; label?: string }>;
     loading?: boolean;
     error?: string;
     emptyMessage?: ReactNode;
@@ -65,7 +65,7 @@ vi.mock("@g4rcez/components", async () => {
                                         type="button"
                                         role="option"
                                         onClick={() => {
-                                            if (inputRef.current) inputRef.current.value = option.label ?? option.value;
+                                            if (inputRef.current) {inputRef.current.value = option.label ?? option.value;}
                                             setIsOpen(false);
                                             onChange?.({ target: { value: option.value } });
                                         }}

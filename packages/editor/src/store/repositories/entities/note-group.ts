@@ -1,4 +1,4 @@
-import { type EntityBase, type Repository } from "../../repository";
+import type { EntityBase, Repository } from "../../repository";
 
 export class NoteGroup implements EntityBase {
     public readonly type = "noteGroup";
@@ -13,5 +13,5 @@ export class NoteGroup implements EntityBase {
 }
 
 export interface INoteGroupRepository extends Repository<NoteGroup> {
-    getByNoteId(noteId: string): Promise<NoteGroup[]>;
+    getByNoteId(noteId: string): Promise<Array<NoteGroup>>;
 }

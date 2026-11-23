@@ -110,7 +110,7 @@ export const Flowchart = ({ code }: { code: string }) => {
 
     const render = useCallback(() => {
         const container = containerRef.current;
-        if (!container || !code) return;
+        if (!container || !code) {return;}
 
         container.replaceChildren();
         setError(null);
@@ -130,9 +130,9 @@ export const Flowchart = ({ code }: { code: string }) => {
                 svg.removeAttribute("width");
                 svg.removeAttribute("height");
             }
-        } catch (err) {
-            console.error("Flowchart rendering error:", err);
-            setError(err instanceof Error ? err.message : String(err));
+        } catch (error_) {
+            console.error("Flowchart rendering error:", error_);
+            setError(error_ instanceof Error ? error_.message : String(error_));
         }
     }, [code]);
 
@@ -156,14 +156,14 @@ export const Flowchart = ({ code }: { code: string }) => {
     }, []);
 
     const handleWheel = (event: React.WheelEvent) => {
-        if (!isZoomEnabled) return;
+        if (!isZoomEnabled) {return;}
         event.preventDefault();
         event.stopPropagation();
         setScale((current) => clampScale(current * (event.deltaY > 0 ? 0.9 : 1.1)));
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-        if (!isZoomEnabled) return;
+        if (!isZoomEnabled) {return;}
 
         const key = event.key.toLowerCase();
         const panBy = (x: number, y: number) => {
@@ -230,7 +230,7 @@ export const Flowchart = ({ code }: { code: string }) => {
                             onClick={() => {
                                 const nextValue = !isZoomEnabled;
                                 setIsZoomEnabled(nextValue);
-                                if (isZoomEnabled) resetZoom();
+                                if (isZoomEnabled) {resetZoom();}
                             }}
                         >
                             {isZoomEnabled ? (

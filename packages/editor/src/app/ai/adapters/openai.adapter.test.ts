@@ -68,7 +68,7 @@ function mockStreamTextOnce(stream: AsyncIterable<unknown>): void {
 }
 
 function createJwt(payload: object): string {
-    const encodedPayload = btoa(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    const encodedPayload = btoa(JSON.stringify(payload)).replaceAll('+', "-").replaceAll('/', "_").replaceAll('=', "");
     return `header.${encodedPayload}.signature`;
 }
 
@@ -90,8 +90,8 @@ async function captureError(promise: Promise<unknown>): Promise<Error> {
     try {
         await promise;
     } catch (error: unknown) {
-        if (error instanceof Error) return error;
-        throw new Error("Expected an Error instance.");
+        if (error instanceof Error) {return error;}
+        throw new Error("Expected an Error instance.", { cause: error });
     }
     throw new Error("Expected the promise to reject.");
 }

@@ -1,7 +1,7 @@
 import { ipcMain, type IpcMainEvent } from "electron";
 import { app } from "electron";
 import * as pty from "node-pty";
-import * as os from "os";
+import * as os from "node:os";
 
 // Store active pty sessions by ID
 const activeSessions = new Map<string, pty.IPty>();
@@ -25,38 +25,38 @@ export const terminalIpcHandler = () => {
                 name: "xterm-color",
                 cols: 80,
                 rows: 24,
-                cwd: cwd,
+                cwd,
                 env: process.env as any,
                 useConpty: false, // Needed for older node-pty versions on some macs, but false is fine
             });
 
             ptyProcess.onData((data) => {
-                if (!event.sender.isDestroyed()) event.sender.send("terminal:data", { id, data });
+                if (!event.sender.isDestroyed()) {event.sender.send("terminal:data", { id, data });}
             });
 
             event.sender.once("destroyed", () => {
-                if (activeSessions.get(id) !== ptyProcess) return;
+                if (activeSessions.get(id) !== ptyProcess) {return;}
                 activeSessions.delete(id);
                 ptyProcess.kill();
             });
 
             ptyProcess.onExit(({ exitCode, signal }) => {
-                if (activeSessions.get(id) !== ptyProcess) return;
+                if (activeSessions.get(id) !== ptyProcess) {return;}
                 activeSessions.delete(id);
-                if (event.sender.isDestroyed()) return;
+                if (event.sender.isDestroyed()) {return;}
                 event.sender.send("terminal:data", {
                     id,
-                    data: "\r\n\x1b[31m[Process exited]\x1b[0m\r\n",
+                    data: "\r\n\u001b[31m[Process exited]\u001b[0m\r\n",
                 });
                 event.sender.send("terminal:exit", { id, exitCode, signal });
             });
 
             activeSessions.set(id, ptyProcess);
-        } catch (e: any) {
-            console.error("Failed to spawn terminal:", e);
+        } catch (error: any) {
+            console.error("Failed to spawn terminal:", error);
             event.sender.send("terminal:data", {
                 id,
-                data: `\r\n\x1b[31mError spawning terminal: ${e.message}\x1b[0m\r\n`,
+                data: `\r\n\u001b[31mError spawning terminal: ${error.message}\u001b[0m\r\n`,
             });
         }
     });
@@ -66,8 +66,8 @@ export const terminalIpcHandler = () => {
         if (session) {
             try {
                 session.write(data);
-            } catch (e) {
-                console.error("Failed to write to terminal:", e);
+            } catch (error) {
+                console.error("Failed to write to terminal:", error);
             }
         }
     });
@@ -77,8 +77,8 @@ export const terminalIpcHandler = () => {
         if (session) {
             try {
                 session.resize(cols, rows);
-            } catch (e) {
-                console.error("Failed to resize terminal:", e);
+            } catch (error) {
+                console.error("Failed to resize terminal:", error);
             }
         }
     });
@@ -89,8 +89,8 @@ export const terminalIpcHandler = () => {
             try {
                 session.kill();
                 activeSessions.delete(id);
-            } catch (e) {
-                console.error("Failed to kill terminal:", e);
+            } catch (error) {
+                console.error("Failed to kill terminal:", error);
             }
         }
     });

@@ -1,13 +1,13 @@
 import type { Page } from "@playwright/test";
 import { expect, goHome, test } from "./fixtures";
 
-const escapedTag = "ação ' OR title = 'escaped\\tag";
+const escapedTag = String.raw`ação ' OR title = 'escaped\tag`;
 const folder = "/vault/ação's";
 
 type SeedNote = {
     id: string;
     title: string;
-    tags?: string[];
+    tags?: Array<string>;
     noteType?: string;
     filePath?: string;
     updatedAt?: string;
@@ -16,27 +16,27 @@ type SeedNote = {
 
 // Browser-evaluated imports exercise Vite's renderer modules; runner imports cannot share browser storage.
 
-async function seedNotes(page: Page, notes: SeedNote[]): Promise<void> {
+async function seedNotes(page: Page, notes: Array<SeedNote>): Promise<void> {
     await page.evaluate(async (items) => {
         const storePath = "/packages/editor/src/store/global.store.ts";
         const notePath = "/packages/editor/src/store/note.ts";
         const { globalDispatch, repositories } = await import(storePath);
         const { Note } = await import(notePath);
         for (const item of items)
-            await repositories.notes.save(
+            {await repositories.notes.save(
                 Note.parse({
                     ...item,
                     content: item.fileSize === undefined ? "Seeded note content" : "x".repeat(item.fileSize),
                     updatedAt: new Date(item.updatedAt ?? "2026-10-14T15:00:00Z"),
                 }),
-            );
+            );}
         globalDispatch.notes(await repositories.notes.getAll());
     }, notes);
 }
 
 async function openSearch(page: Page): Promise<void> {
     const menu = page.getByRole("button", { name: "Open workspace menu", exact: true });
-    if (await menu.isVisible()) await menu.click();
+    if (await menu.isVisible()) {await menu.click();}
     await page.getByRole("button", { name: "Search", exact: true }).click();
     await expect(page.getByRole("region", { name: "Search notes", exact: true })).toBeVisible();
 }
@@ -145,7 +145,7 @@ test.describe("Search into saved Views", () => {
     test("repairs and removes intermediate numeric filters without losing sort or limit", async ({
         cleanPage: page,
     }) => {
-        const errors: string[] = [];
+        const errors: Array<string> = [];
         page.on("pageerror", (error) => errors.push(error.message));
         await goHome(page);
         await seedNotes(page, [
@@ -215,7 +215,7 @@ test.describe("Search into saved Views", () => {
     test("saves a Windows drive-root folder with the same filesystem results", async ({ cleanPage: page }) => {
         await goHome(page);
         await seedNotes(page, [
-            { id: "windows", title: "Windows article", filePath: "C:\\vault\\ação's\\a.md" },
+            { id: "windows", title: "Windows article", filePath: String.raw`C:\vault\ação's\a.md` },
             { id: "database", title: "Database article" },
         ]);
         await openSearch(page);
@@ -276,7 +276,7 @@ test.describe("Search into saved Views", () => {
         await page.getByRole("button", { name: "Save as View", exact: true }).click();
         const title = page.getByTitle("View title", { exact: true });
         await expect(title).toBeFocused();
-        await title.fill("Leitura d'ação \\ 2026");
+        await title.fill(String.raw`Leitura d'ação \ 2026`);
         await expect(page.getByRole("button", { name: "Create View", exact: true })).toBeDisabled();
         await page.getByRole("button", { name: "Clear text search and keep filters", exact: true }).click();
         await page.getByRole("button", { name: "Create View", exact: true }).click();
@@ -286,7 +286,7 @@ test.describe("Search into saved Views", () => {
         await expect(main.getByRole("link", { name: "Matching article", exact: true })).toBeVisible();
         await expect(main.getByRole("link", { name: "Old article", exact: true })).toHaveCount(0);
         await page.reload();
-        await expect(page.getByTitle("View title", { exact: true })).toHaveValue("Leitura d'ação \\ 2026");
+        await expect(page.getByTitle("View title", { exact: true })).toHaveValue(String.raw`Leitura d'ação \ 2026`);
         await expect(main.getByRole("link", { name: "Matching article", exact: true })).toBeVisible();
         await seedNotes(page, [
             {
@@ -300,7 +300,7 @@ test.describe("Search into saved Views", () => {
         await expect(main.getByRole("link", { name: "New matching article", exact: true })).toBeVisible();
         await expect(main.getByRole("link")).toHaveCount(2);
         await page.getByRole("button", { name: "All Views", exact: true }).click();
-        await page.getByRole("button", { name: "Leitura d'ação \\ 2026", exact: true }).click();
+        await page.getByRole("button", { name: String.raw`Leitura d'ação \ 2026`, exact: true }).click();
         await expect(page).toHaveURL(url);
         await expect(main.getByRole("link", { name: "New matching article", exact: true })).toBeVisible();
         await page.getByRole("button", { name: "Visual Filters", exact: true }).click();
@@ -327,7 +327,7 @@ test.describe("Search into saved Views", () => {
                     return (await repositories.views.getOne(location.pathname.split("/").at(-1)))?.query;
                 }),
             )
-            .toContain("escaped\\\\tag");
+            .toContain(String.raw`escaped\\tag`);
         await page.reload();
         await expect(main.getByRole("link", { name: "Matching article", exact: true })).toBeVisible();
         await expect(main.getByRole("link", { name: "New matching article", exact: true })).toBeVisible();
@@ -518,7 +518,7 @@ test.describe("Search into saved Views", () => {
         await expect(page.getByRole("button", { name: "Open workspace menu", exact: true })).toBeVisible();
     });
     test("records two Search-to-View examples", async ({ cleanPage: page }) => {
-        await page.setViewportSize({ width: 1440, height: 1_100 });
+        await page.setViewportSize({ width: 1440, height: 1100 });
         await goHome(page);
         await seedNotes(page, [
             {
@@ -556,14 +556,14 @@ test.describe("Search into saved Views", () => {
         const results = page.getByRole("list", { name: "Search results" });
         await expect(results.getByRole("button")).toHaveCount(1);
         await expect(results).toContainText("Coastal field study");
-        await page.waitForTimeout(1_200);
+        await page.waitForTimeout(1200);
         await page.getByRole("button", { name: "Save as View", exact: true }).click();
         await page.getByTitle("View title", { exact: true }).fill("Reading queue");
         await page.getByRole("button", { name: "Create View", exact: true }).click();
         const main = page.getByRole("main");
         await expect(main.getByRole("link", { name: "Coastal field study", exact: true })).toBeVisible();
         await expect(main.getByRole("link", { name: "Reading notes", exact: true })).toHaveCount(0);
-        await page.waitForTimeout(1_200);
+        await page.waitForTimeout(1200);
         await page.getByRole("button", { name: "All Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toBeVisible();
 
@@ -577,13 +577,13 @@ test.describe("Search into saved Views", () => {
         await expect(results.getByRole("button")).toHaveCount(1);
         await expect(results).toContainText("Research field notes");
         await expect(results).not.toContainText("Archived research");
-        await page.waitForTimeout(1_500);
+        await page.waitForTimeout(1500);
         await page.getByRole("button", { name: "Save as View", exact: true }).click();
         await page.getByTitle("View title", { exact: true }).fill("Research notes");
         await page.getByRole("button", { name: "Create View", exact: true }).click();
         await expect(main.getByRole("link", { name: "Research field notes", exact: true })).toBeVisible();
         await expect(main.getByRole("link", { name: "Archived research", exact: true })).toHaveCount(0);
-        await page.waitForTimeout(1_500);
+        await page.waitForTimeout(1500);
         await page.getByRole("button", { name: "All Views", exact: true }).click();
         await expect(page.getByRole("button", { name: "Reading queue", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Research notes", exact: true })).toBeVisible();

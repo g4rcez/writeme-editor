@@ -10,7 +10,7 @@ import type {
 } from "./ast";
 
 export type Row = Record<string, unknown>;
-export type DataSources = Record<string, object[]>;
+export type DataSources = Record<string, Array<object>>;
 
 const DEFAULT_TABLE = "notes";
 
@@ -25,7 +25,7 @@ function prefixRow(tableName: string, obj: object): Row {
 function resolveField(row: Row, column: ColumnRef, fromTable: string, queryTables: Set<string>): unknown {
     const path = column.path;
     let tableName: string;
-    let fieldPath: string[];
+    let fieldPath: Array<string>;
 
     if (path.length > 1 && queryTables.has(path[0]!)) {
         tableName = path[0]!;
@@ -39,7 +39,7 @@ function resolveField(row: Row, column: ColumnRef, fromTable: string, queryTable
     let value: unknown = row[key];
 
     for (let i = 1; i < fieldPath.length; i++) {
-        if (value == null || typeof value !== "object") return undefined;
+        if (value == null || typeof value !== "object") {return undefined;}
         value = (value as Record<string, unknown>)[fieldPath[i]!];
     }
 
@@ -60,10 +60,10 @@ function literalToValue(literal: LiteralValue): string | number | boolean | null
 }
 
 function coerceDate(value: unknown): Date | null {
-    if (value instanceof Date) return value;
+    if (value instanceof Date) {return value;}
     if (typeof value === "string") {
         const d = new Date(value);
-        return isNaN(d.getTime()) ? null : d;
+        return Number.isNaN(d.getTime()) ? null : d;
     }
     return null;
 }
@@ -77,9 +77,9 @@ function compareValues(
     const rhs = literalToValue(literalValue);
 
     if (op === "CONTAINS") {
-        if (Array.isArray(fieldValue)) return fieldValue.includes(rhs);
+        if (Array.isArray(fieldValue)) {return fieldValue.includes(rhs);}
         if (typeof fieldValue === "string" && typeof rhs === "string")
-            return fieldValue.toLowerCase().includes(rhs.toLowerCase());
+            {return fieldValue.toLowerCase().includes(rhs.toLowerCase());}
         return false;
     }
 
@@ -99,16 +99,16 @@ function compareValues(
     if (op === "LIKE") {
         if (typeof fieldValue === "string" && typeof rhs === "string") {
             const pattern = rhs
-                .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-                .replace(/%/g, ".*")
-                .replace(/_/g, ".");
+                .replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`)
+                .replaceAll('%', ".*")
+                .replaceAll('_', ".");
             return new RegExp(`^${pattern}$`, "i").test(fieldValue);
         }
         return false;
     }
 
-    if (rhs === null) return op === "=" ? fieldValue == null : fieldValue != null;
-    if (fieldValue == null) return op === "!=" ? true : false;
+    if (rhs === null) {return op === "=" ? fieldValue == null : fieldValue != null;}
+    if (fieldValue == null) {return op === "!=" ? true : false;}
 
     const fieldDate = coerceDate(fieldValue);
     if (fieldDate && literalValue.type === "String") {
@@ -132,14 +132,14 @@ function compareValues(
     }
 
     if (typeof fieldValue === "boolean") {
-        if (op === "=") return fieldValue === Boolean(rhs);
-        if (op === "!=") return fieldValue !== Boolean(rhs);
+        if (op === "=") {return fieldValue === Boolean(rhs);}
+        if (op === "!=") {return fieldValue !== Boolean(rhs);}
         return false;
     }
 
     const lhsNum = typeof fieldValue === "number" ? fieldValue : Number(fieldValue);
     const rhsNum = typeof rhs === "number" ? rhs : Number(rhs);
-    if (!isNaN(lhsNum) && !isNaN(rhsNum)) {
+    if (!Number.isNaN(lhsNum) && !Number.isNaN(rhsNum)) {
         switch (op) {
             case "=":
                 return lhsNum === rhsNum;
@@ -178,8 +178,8 @@ function evaluateExpression(expr: Expression, row: Row, fromTable: string, query
     switch (expr.type) {
         case "BinaryLogical": {
             const left = evaluateExpression(expr.left, row, fromTable, queryTables);
-            if (expr.op === "AND") return left && evaluateExpression(expr.right, row, fromTable, queryTables);
-            if (expr.op === "OR") return left || evaluateExpression(expr.right, row, fromTable, queryTables);
+            if (expr.op === "AND") {return left && evaluateExpression(expr.right, row, fromTable, queryTables);}
+            if (expr.op === "OR") {return left || evaluateExpression(expr.right, row, fromTable, queryTables);}
             return false;
         }
         case "UnaryLogical":
@@ -201,26 +201,26 @@ function evaluateExpression(expr: Expression, row: Row, fromTable: string, query
 }
 
 function compareFieldValues(a: unknown, b: unknown): number {
-    if (a == null && b == null) return 0;
-    if (a == null) return 1;
-    if (b == null) return -1;
+    if (a == null && b == null) {return 0;}
+    if (a == null) {return 1;}
+    if (b == null) {return -1;}
     const aDate = coerceDate(a);
     const bDate = coerceDate(b);
-    if (aDate && bDate) return aDate.getTime() - bDate.getTime();
-    if (typeof a === "number" && typeof b === "number") return a - b;
+    if (aDate && bDate) {return aDate.getTime() - bDate.getTime();}
+    if (typeof a === "number" && typeof b === "number") {return a - b;}
     return String(a).localeCompare(String(b));
 }
 
 function innerJoin(
-    leftRows: Row[],
+    leftRows: Array<Row>,
     join: JoinClause,
     dataSources: DataSources,
     fromTable: string,
     queryTables: Set<string>,
-): Row[] {
+): Array<Row> {
     const rightData = dataSources[join.table] ?? [];
     const rightRows = rightData.map((obj) => prefixRow(join.table, obj));
-    const result: Row[] = [];
+    const result: Array<Row> = [];
     for (const left of leftRows) {
         for (const right of rightRows) {
             const merged = { ...left, ...right };
@@ -249,20 +249,20 @@ function selectItemKey(item: SelectItem, fromTable: string, queryTables: Set<str
 function computeAggregate(
     fn: AggregateFn,
     column: ColumnRef | null,
-    groupRows: Row[],
+    groupRows: Array<Row>,
     fromTable: string,
     queryTables: Set<string>,
 ): unknown {
     if (fn === "COUNT") {
-        if (!column) return groupRows.length;
+        if (!column) {return groupRows.length;}
         return groupRows.filter((r) => resolveField(r, column, fromTable, queryTables) != null).length;
     }
     const values = groupRows
         .map((r) => resolveField(r, column!, fromTable, queryTables))
         .filter((v) => v != null)
         .map(Number)
-        .filter((n) => !isNaN(n));
-    if (values.length === 0) return null;
+        .filter((n) => !Number.isNaN(n));
+    if (values.length === 0) {return null;}
     switch (fn) {
         case "SUM":
             return values.reduce((a, b) => a + b, 0);
@@ -275,25 +275,25 @@ function computeAggregate(
     }
 }
 
-function hasAggregates(items: SelectItem[]): boolean {
+function hasAggregates(items: Array<SelectItem>): boolean {
     return items.some((i) => i.type === "Aggregate");
 }
 
-function applyGroupBy(rows: Row[], query: Query, fromTable: string, queryTables: Set<string>): Row[] {
+function applyGroupBy(rows: Array<Row>, query: Query, fromTable: string, queryTables: Set<string>): Array<Row> {
     const groupByCols = query.groupBy ?? [];
     const selectItems = query.select?.columns ?? [];
     const needsGrouping = query.groupBy || hasAggregates(selectItems);
-    if (!needsGrouping) return rows;
+    if (!needsGrouping) {return rows;}
 
     // Group rows
-    const groups = new Map<string, Row[]>();
+    const groups = new Map<string, Array<Row>>();
     for (const row of rows) {
         const key = groupByCols
             .map((col) => String(resolveField(row, col, fromTable, queryTables) ?? "NULL"))
             .join("|||");
         const list = groups.get(key);
-        if (list) list.push(row);
-        else groups.set(key, [row]);
+        if (list) {list.push(row);}
+        else {groups.set(key, [row]);}
     }
 
     return Array.from(groups.values()).map((groupRows) => {
@@ -309,7 +309,7 @@ function applyGroupBy(rows: Row[], query: Query, fromTable: string, queryTables:
                 }
                 // Also store under alias for ORDER BY resolution
                 const alias = item.alias;
-                if (alias) resultRow[alias] = resultRow[key];
+                if (alias) {resultRow[alias] = resultRow[key];}
             }
         } else {
             // No SELECT: include GROUP BY columns + COUNT(*)
@@ -326,18 +326,18 @@ function applyGroupBy(rows: Row[], query: Query, fromTable: string, queryTables:
 
 function resolveOrderByValue(row: Row, column: ColumnRef, fromTable: string, queryTables: Set<string>): unknown {
     const value = resolveField(row, column, fromTable, queryTables);
-    if (value !== undefined) return value;
+    if (value !== undefined) {return value;}
     // Fallback: direct key lookup (for aliases and aggregate keys)
     const directKey = column.path.join(".");
-    if (directKey in row) return row[directKey];
+    if (directKey in row) {return row[directKey];}
     return undefined;
 }
 
-export function executeQuery(query: Query, dataSources: DataSources): Row[] {
+export function executeQuery(query: Query, dataSources: DataSources): Array<Row> {
     const fromTable = query.from ?? DEFAULT_TABLE;
     const queryTables = new Set([fromTable, ...query.joins.map((j) => j.table)]);
     const primaryData = dataSources[fromTable] ?? [];
-    let rows: Row[] = primaryData.map((obj) => prefixRow(fromTable, obj));
+    let rows: Array<Row> = primaryData.map((obj) => prefixRow(fromTable, obj));
 
     for (const join of query.joins) {
         rows = innerJoin(rows, join, dataSources, fromTable, queryTables);

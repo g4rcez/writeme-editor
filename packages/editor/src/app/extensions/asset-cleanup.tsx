@@ -28,14 +28,14 @@ function collectMediaSrcs(node: Node): Set<string> {
 
 function cancelDeletion(src: string) {
     const entry = pendingDeletions.get(src);
-    if (!entry) return;
+    if (!entry) {return;}
     clearTimeout(entry.timer);
     entry.close();
     pendingDeletions.delete(src);
 }
 
 function scheduleAssetDeletion(src: string) {
-    if (!isElectron()) return;
+    if (!isElectron()) {return;}
     const notify = notificationRef.current;
     const description = (
         <div className="flex items-center gap-2">
@@ -63,12 +63,12 @@ function scheduleAssetDeletion(src: string) {
     const timer = setTimeout(async () => {
         pendingDeletions.delete(src);
         const projectDir = globalState().directory;
-        if (!projectDir) return;
+        if (!projectDir) {return;}
         const fullPath = `${projectDir.replace(/\/$/, "")}/${src}`;
         try {
             await window.electronAPI.fs.deleteFile(fullPath);
-        } catch (e) {
-            console.error("Failed to delete asset file", fullPath, e);
+        } catch (error) {
+            console.error("Failed to delete asset file", fullPath, error);
         }
     }, DELETION_DELAY_MS);
     pendingDeletions.set(src, { timer, close });
@@ -85,14 +85,14 @@ export const AssetCleanup = Extension.create({
                         return collectMediaSrcs(doc);
                     },
                     apply(tr, oldSrcs, _, newState) {
-                        if (!tr.docChanged) return oldSrcs;
+                        if (!tr.docChanged) {return oldSrcs;}
                         const newSrcs = collectMediaSrcs(newState.doc);
                         for (const src of newSrcs) {
                             if (pendingDeletions.has(src)) {
                                 cancelDeletion(src);
                             }
                         }
-                        if (tr.getMeta("preventUpdate")) return newSrcs;
+                        if (tr.getMeta("preventUpdate")) {return newSrcs;}
                         for (const src of oldSrcs) {
                             if (!newSrcs.has(src)) {
                                 scheduleAssetDeletion(src);

@@ -15,25 +15,25 @@ describe("Obsidian import paths", () => {
     });
 
     it("normalizes platform separators and rejects traversal", () => {
-        expect(normalizeImportRelativePath("Projects\\Idea.md")).toBe("Projects/Idea.md");
+        expect(normalizeImportRelativePath(String.raw`Projects\Idea.md`)).toBe("Projects/Idea.md");
         expect(normalizeImportRelativePath("../outside.md")).toBeNull();
         expect(normalizeImportRelativePath("Projects//Idea.md")).toBeNull();
     });
 
     it("joins safe relative paths using the destination platform separator", () => {
         expect(joinImportPath("/workspace", "Projects/Idea.md")).toBe("/workspace/Projects/Idea.md");
-        expect(joinImportPath("C:\\workspace", "Projects/Idea.md")).toBe("C:\\workspace\\Projects\\Idea.md");
+        expect(joinImportPath(String.raw`C:\workspace`, "Projects/Idea.md")).toBe(String.raw`C:\workspace\Projects\Idea.md`);
         expect(joinImportPath("/workspace", "../Idea.md")).toBeNull();
     });
 
     it("returns the final file name from either path style", () => {
-        expect(importFileName("Projects\\Idea.md")).toBe("Idea.md");
+        expect(importFileName(String.raw`Projects\Idea.md`)).toBe("Idea.md");
     });
 
     it("detects destinations inside the source vault without confusing prefixes", () => {
         expect(isPathWithinImportRoot("/workspace/vault", "/workspace/vault/imported")).toBe(true);
         expect(isPathWithinImportRoot("/workspace/vault", "/workspace/vault-backup")).toBe(false);
-        expect(isPathWithinImportRoot("C:\\Vault", "c:\\vault\\imported")).toBe(true);
+        expect(isPathWithinImportRoot(String.raw`C:\Vault`, String.raw`c:\vault\imported`)).toBe(true);
         expect(isPathWithinImportRoot("/workspace/vault", "/workspace/vault/../outside")).toBe(false);
     });
 });

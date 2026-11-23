@@ -20,22 +20,22 @@ export const EditorCompletion = Extension.create({
     addProseMirrorPlugins() {
         const editor = this.editor;
         let menu: ReturnType<typeof createCompletionMenu> | undefined;
-        let tags: { doc: typeof editor.state.doc; items: CompletionItem[] } | undefined;
-        const headings = (): CompletionItem[] => {
-            const titles: string[] = [];
+        let tags: { doc: typeof editor.state.doc; items: Array<CompletionItem> } | undefined;
+        const headings = (): Array<CompletionItem> => {
+            const titles: Array<string> = [];
             editor.state.doc.descendants((node) => {
-                if (node.type.name === "heading") titles.push(node.textContent);
+                if (node.type.name === "heading") {titles.push(node.textContent);}
             });
             return createHeadingItems(titles);
         };
         const context = (active?: CompletionContext): CompletionContext | null => {
             const { selection } = editor.state;
             const { $from } = selection;
-            if (!editor.isEditable || !selection.empty || !$from.parent.isTextblock) return null;
+            if (!editor.isEditable || !selection.empty || !$from.parent.isTextblock) {return null;}
             for (let depth = $from.depth; depth > 0; depth--) {
-                if (["codeBlock", "frontmatter"].includes($from.node(depth).type.name)) return null;
+                if (["codeBlock", "frontmatter"].includes($from.node(depth).type.name)) {return null;}
             }
-            if ($from.marks().some((mark) => ["code", "link"].includes(mark.type.name))) return null;
+            if ($from.marks().some((mark) => ["code", "link"].includes(mark.type.name))) {return null;}
             return findCompletionContext(
                 $from.parent.textBetween(0, $from.parentOffset, "\n", "\ufffc"),
                 $from.parent.textBetween($from.parentOffset, $from.parent.content.size, "\n", "\ufffc"),
@@ -48,10 +48,10 @@ export const EditorCompletion = Extension.create({
                 key: new PluginKey("editorCompletion"),
                 props: {
                     handleKeyDown: (view, event) => {
-                        if (event.isComposing) return false;
+                        if (event.isComposing) {return false;}
                         if (event.ctrlKey && event.code === "Space") {
                             const selection = view.dom.ownerDocument.getSelection();
-                            if (selection && !selection.isCollapsed) return false;
+                            if (selection && !selection.isCollapsed) {return false;}
                             if (
                                 selection?.isCollapsed &&
                                 selection.anchorNode &&
@@ -59,9 +59,9 @@ export const EditorCompletion = Extension.create({
                             ) {
                                 const pos = view.posAtDOM(selection.anchorNode, selection.anchorOffset);
                                 if (pos !== view.state.selection.from)
-                                    view.dispatch(
+                                    {view.dispatch(
                                         view.state.tr.setSelection(TextSelection.create(view.state.doc, pos)),
-                                    );
+                                    );}
                             }
                         }
                         return menu?.handleKeyDown(event) ?? false;
@@ -70,13 +70,13 @@ export const EditorCompletion = Extension.create({
                         const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
                         const href = anchor?.getAttribute("href");
                         const index = headings().findIndex((item) => item.path === href);
-                        if (index < 0) return false;
-                        const positions: number[] = [];
+                        if (index < 0) {return false;}
+                        const positions: Array<number> = [];
                         view.state.doc.descendants((node, pos) => {
-                            if (node.type.name === "heading" && node.textContent.trim()) positions.push(pos);
+                            if (node.type.name === "heading" && node.textContent.trim()) {positions.push(pos);}
                         });
                         const pos = positions[index];
-                        if (pos === undefined) return false;
+                        if (pos === undefined) {return false;}
                         event.preventDefault();
                         view.dispatch(
                             view.state.tr.setSelection(TextSelection.create(view.state.doc, pos + 1)).scrollIntoView(),
@@ -94,7 +94,7 @@ export const EditorCompletion = Extension.create({
                         tags: (range) => {
                             const doc = editor.state.doc;
                             if (tags?.doc !== doc)
-                                tags = { doc, items: createTagItems(extractCompletionTags(editor.getMarkdown())) };
+                                {tags = { doc, items: createTagItems(extractCompletionTags(editor.getMarkdown())) };}
                             return withoutActiveTag(tags.items, range);
                         },
                         words: (range) =>
@@ -120,7 +120,7 @@ export const EditorCompletion = Extension.create({
                                               ? [schema.marks.link.create({ href: item.path, title: item.label })]
                                               : wordMarks,
                                       );
-                            if (!node) return;
+                            if (!node) {return;}
                             const content = item.kind === "heading" ? [node, schema.text(" ")] : [node];
                             const tr = view.state.tr.replaceWith(range.from, range.to, content);
                             tr.setSelection(

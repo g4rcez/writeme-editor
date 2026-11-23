@@ -15,7 +15,7 @@ const PdfView = (props: any) => {
     const { displaySrc } = useLocalAsset(src, "application/pdf");
 
     const handleOpenPreview = () => {
-        if (!displaySrc) return;
+        if (!displaySrc) {return;}
         uiDispatch.openMediaPreview([{ src: displaySrc, type: "pdf", title }]);
     };
 

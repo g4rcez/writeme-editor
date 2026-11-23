@@ -9,8 +9,8 @@ import { createTerminalBackend } from "@/lib/terminal/factory";
 import "./terminal-panel.css";
 
 const RESTART_NOTICE =
-    "\r\n\x1b[33m[Terminal session restarted; previous process state could not be restored]\x1b[0m\r\n";
-const PROCESS_RESTARTED_NOTICE = "\r\n\x1b[33m[Process restarted]\x1b[0m\r\n";
+    "\r\n\u001b[33m[Terminal session restarted; previous process state could not be restored]\u001b[0m\r\n";
+const PROCESS_RESTARTED_NOTICE = "\r\n\u001b[33m[Process restarted]\u001b[0m\r\n";
 const MAX_BUFFERED_INPUT = 64 * 1024;
 
 type TerminalPanelProps = {
@@ -33,12 +33,12 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
     const cwdRef = useRef<string | null>(cwd);
     const activeRef = useRef(active);
     const terminalReadyRef = useRef(false);
-    const pendingInputRef = useRef<string[]>([]);
+    const pendingInputRef = useRef<Array<string>>([]);
     const pendingInputSizeRef = useRef(0);
     const inputOverflowReportedRef = useRef(false);
     const exitedRef = useRef(false);
     const restartNoticeWrittenRef = useRef(false);
-    const subscriptionsRef = useRef<{ dispose: () => void }[]>([]);
+    const subscriptionsRef = useRef<Array<{ dispose: () => void }>>([]);
 
     useEffect(() => {
         cwdRef.current = cwd;
@@ -49,7 +49,7 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
     }, [active]);
 
     useEffect(() => {
-        if (!desktop || !terminalMounted) return;
+        if (!desktop || !terminalMounted) {return;}
 
         let cancelled = false;
         let loadedCore: GhosttyCore | null = null;
@@ -80,30 +80,30 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
     const startBackend = useCallback(async (notice?: string): Promise<void> => {
         const terminal = terminalRef.current;
         const backend = backendRef.current;
-        if (!terminal || !backend) return;
+        if (!terminal || !backend) {return;}
 
         exitedRef.current = false;
-        if (notice) terminal.write(notice);
+        if (notice) {terminal.write(notice);}
 
         await backend.start(cwdRef.current);
         const pendingInput = pendingInputRef.current.splice(0);
         pendingInputSizeRef.current = 0;
         inputOverflowReportedRef.current = false;
-        for (const input of pendingInput) backend.write(input);
+        for (const input of pendingInput) {backend.write(input);}
 
         const instance = terminalRef.current?.instance;
-        if (instance) backend.resize(instance.cols, instance.rows);
-        if (activeRef.current) terminalRef.current?.focus();
+        if (instance) {backend.resize(instance.cols, instance.rows);}
+        if (activeRef.current) {terminalRef.current?.focus();}
     }, []);
 
     const handleBackendStartError = useCallback((error: unknown): void => {
         exitedRef.current = true;
-        terminalRef.current?.write("\r\n\x1b[31mTerminal failed to start. Press Enter to retry.\x1b[0m\r\n");
+        terminalRef.current?.write("\r\n\u001b[31mTerminal failed to start. Press Enter to retry.\u001b[0m\r\n");
         console.error("Failed to start the terminal backend", error);
     }, []);
 
     const startBackendIfReady = useCallback(() => {
-        if (!active || !terminalReadyRef.current || backendRef.current || !terminalRef.current?.instance) return;
+        if (!active || !terminalReadyRef.current || backendRef.current || !terminalRef.current?.instance) {return;}
 
         const backend = createTerminalBackend(sessionId);
         backendRef.current = backend;
@@ -124,12 +124,12 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
     }, [startBackendIfReady]);
 
     useEffect(() => {
-        if (active && terminalReady) terminalRef.current?.focus();
+        if (active && terminalReady) {terminalRef.current?.focus();}
     }, [active, terminalReady]);
 
     useEffect(
         () => () => {
-            for (const subscription of subscriptionsRef.current) subscription.dispose();
+            for (const subscription of subscriptionsRef.current) {subscription.dispose();}
             subscriptionsRef.current = [];
             pendingInputRef.current = [];
             pendingInputSizeRef.current = 0;
@@ -152,7 +152,7 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
     const handleData = useCallback(
         (data: string) => {
             if (exitedRef.current) {
-                if (data === "\r") void startBackend(PROCESS_RESTARTED_NOTICE).catch(handleBackendStartError);
+                if (data === "\r") {void startBackend(PROCESS_RESTARTED_NOTICE).catch(handleBackendStartError);}
                 return;
             }
 
@@ -165,7 +165,7 @@ export const TerminalPanel = ({ sessionId, active, cwd, showRestartNotice }: Ter
             if (pendingInputSizeRef.current + data.length > MAX_BUFFERED_INPUT) {
                 if (!inputOverflowReportedRef.current) {
                     terminalRef.current?.write(
-                        "\r\n\x1b[31mInput was not accepted while the terminal was starting.\x1b[0m\r\n",
+                        "\r\n\u001b[31mInput was not accepted while the terminal was starting.\u001b[0m\r\n",
                     );
                     inputOverflowReportedRef.current = true;
                 }

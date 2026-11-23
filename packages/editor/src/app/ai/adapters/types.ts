@@ -29,7 +29,7 @@ export const AI_ATTACHMENT_LIMITS = {
 export type AIFileKind = "image" | "pdf" | "text" | "audio" | "video";
 
 export type AIFileCapabilities = {
-    kinds: readonly AIFileKind[];
+    kinds: ReadonlyArray<AIFileKind>;
     accept: string;
 };
 
@@ -62,17 +62,17 @@ function fileExtension(name: string): string | undefined {
 }
 
 function getAttachmentMimeType(file: Pick<File, "name" | "type">): string {
-    if (TEXT_FILE_EXTENSIONS.has(fileExtension(file.name) ?? "")) return "text/plain";
+    if (TEXT_FILE_EXTENSIONS.has(fileExtension(file.name) ?? "")) {return "text/plain";}
     const declaredType = file.type.trim().toLowerCase();
     return declaredType || "application/octet-stream";
 }
 
 function getAIFileKindFromMimeType(mimeType: string): AIFileKind | null {
-    if (RASTER_IMAGE_TYPES.has(mimeType)) return "image";
-    if (mimeType === "application/pdf") return "pdf";
-    if (mimeType.startsWith("text/") || TEXT_APPLICATION_TYPES.has(mimeType)) return "text";
-    if (GEMINI_AUDIO_TYPES.has(mimeType)) return "audio";
-    if (GEMINI_VIDEO_TYPES.has(mimeType)) return "video";
+    if (RASTER_IMAGE_TYPES.has(mimeType)) {return "image";}
+    if (mimeType === "application/pdf") {return "pdf";}
+    if (mimeType.startsWith("text/") || TEXT_APPLICATION_TYPES.has(mimeType)) {return "text";}
+    if (GEMINI_AUDIO_TYPES.has(mimeType)) {return "audio";}
+    if (GEMINI_VIDEO_TYPES.has(mimeType)) {return "video";}
     return null;
 }
 
@@ -80,33 +80,33 @@ export function getAIFileKind(file: Pick<File, "name" | "type">): AIFileKind | n
     return getAIFileKindFromMimeType(getAttachmentMimeType(file));
 }
 
-function startsWithBytes(bytes: Uint8Array, signature: readonly number[], offset = 0): boolean {
+function startsWithBytes(bytes: Uint8Array, signature: ReadonlyArray<number>, offset = 0): boolean {
     return signature.every((byte, index) => bytes[offset + index] === byte);
 }
 
 function detectedBinaryMimeType(data: ArrayBuffer): string | null {
     const bytes = new Uint8Array(data);
-    if (startsWithBytes(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg";
-    if (startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "image/png";
+    if (startsWithBytes(bytes, [0xff, 0xd8, 0xff])) {return "image/jpeg";}
+    if (startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {return "image/png";}
     if (
         startsWithBytes(bytes, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
         startsWithBytes(bytes, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61])
     )
-        return "image/gif";
+        {return "image/gif";}
     if (startsWithBytes(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWithBytes(bytes, [0x57, 0x45, 0x42, 0x50], 8))
-        return "image/webp";
-    if (startsWithBytes(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) return "application/pdf";
+        {return "image/webp";}
+    if (startsWithBytes(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) {return "application/pdf";}
     return null;
 }
 
 function decodeUtf8(data: ArrayBuffer): string {
     try {
         const text = new TextDecoder("utf-8", { fatal: true }).decode(data);
-        if (text.includes("\0")) throw new Error("Text attachments cannot contain binary data.");
+        if (text.includes("\0")) {throw new Error("Text attachments cannot contain binary data.");}
         return text;
     } catch (error: unknown) {
-        if (error instanceof Error && error.message.includes("binary data")) throw error;
-        throw new Error("Text attachments must contain valid UTF-8 text.");
+        if (error instanceof Error && error.message.includes("binary data")) {throw error;}
+        throw new Error("Text attachments must contain valid UTF-8 text.", { cause: error });
     }
 }
 
@@ -115,18 +115,18 @@ function isAsciiWhitespace(byte: number | undefined): boolean {
 }
 
 function startsWithAscii(bytes: Uint8Array, value: string, offset: number): boolean {
-    if (offset + value.length > bytes.length) return false;
+    if (offset + value.length > bytes.length) {return false;}
     for (let index = 0; index < value.length; index += 1) {
         const byte = bytes[offset + index];
         const lowerByte = byte != null && byte >= 0x41 && byte <= 0x5a ? byte + 0x20 : byte;
-        if (lowerByte !== value.charCodeAt(index)) return false;
+        if (lowerByte !== value.charCodeAt(index)) {return false;}
     }
     return true;
 }
 
 function findAscii(bytes: Uint8Array, value: string, offset: number): number {
     for (let index = offset; index <= bytes.length - value.length; index += 1) {
-        if (startsWithAscii(bytes, value, index)) return index;
+        if (startsWithAscii(bytes, value, index)) {return index;}
     }
     return -1;
 }
@@ -140,24 +140,24 @@ function hasActiveMarkupSignature(data: ArrayBuffer): boolean {
     let offset = startsWithBytes(bytes, [0xef, 0xbb, 0xbf]) ? 3 : 0;
 
     while (offset < bytes.length) {
-        while (isAsciiWhitespace(bytes[offset])) offset += 1;
+        while (isAsciiWhitespace(bytes[offset])) {offset += 1;}
         if (startsWithAscii(bytes, "<!--", offset)) {
             const commentEnd = findAscii(bytes, "-->", offset + 4);
-            if (commentEnd < 0) return false;
+            if (commentEnd < 0) {return false;}
             offset = commentEnd + 3;
             continue;
         }
         if (startsWithAscii(bytes, "<?", offset)) {
-            if (startsWithAscii(bytes, "<?xml", offset) && hasMarkupNameBoundary(bytes[offset + 5])) return true;
+            if (startsWithAscii(bytes, "<?xml", offset) && hasMarkupNameBoundary(bytes[offset + 5])) {return true;}
             const instructionEnd = findAscii(bytes, "?>", offset + 2);
-            if (instructionEnd < 0) return false;
+            if (instructionEnd < 0) {return false;}
             offset = instructionEnd + 2;
             continue;
         }
         break;
     }
 
-    if (startsWithAscii(bytes, "<!doctype", offset) && hasMarkupNameBoundary(bytes[offset + 9])) return true;
+    if (startsWithAscii(bytes, "<!doctype", offset) && hasMarkupNameBoundary(bytes[offset + 9])) {return true;}
     const activeRoots = ["html", "head", "body", "script", "svg", "iframe", "object", "embed"];
     return activeRoots.some(
         (root) => startsWithAscii(bytes, `<${root}`, offset) && hasMarkupNameBoundary(bytes[offset + root.length + 1]),
@@ -177,7 +177,7 @@ function readUint32(bytes: Uint8Array, offset: number): number {
 }
 
 function hasMpegFrameSignature(bytes: Uint8Array): boolean {
-    if (bytes.length < 4 || bytes[0] !== 0xff || ((bytes[1] ?? 0) & 0xe0) !== 0xe0) return false;
+    if (bytes.length < 4 || bytes[0] !== 0xff || ((bytes[1] ?? 0) & 0xe0) !== 0xe0) {return false;}
     const version = ((bytes[1] ?? 0) >> 3) & 0x03;
     const layer = ((bytes[1] ?? 0) >> 1) & 0x03;
     const bitrate = ((bytes[2] ?? 0) >> 4) & 0x0f;
@@ -190,14 +190,14 @@ function hasId3Signature(bytes: Uint8Array): boolean {
         return false;
     }
     const sizeBytes = bytes.subarray(6, 10);
-    if (sizeBytes.some((byte) => (byte & 0x80) !== 0)) return false;
+    if (sizeBytes.some((byte) => (byte & 0x80) !== 0)) {return false;}
     const tagSize = sizeBytes.reduce((size, byte) => (size << 7) | byte, 0);
     return tagSize + 10 <= bytes.length;
 }
 
 function detectedMediaContainer(data: ArrayBuffer): MediaContainer | null {
     const bytes = new Uint8Array(data);
-    if (hasId3Signature(bytes) || hasMpegFrameSignature(bytes)) return "mpeg";
+    if (hasId3Signature(bytes) || hasMpegFrameSignature(bytes)) {return "mpeg";}
     if (
         bytes.length >= 12 &&
         startsWithBytes(bytes, [0x52, 0x49, 0x46, 0x46]) &&
@@ -205,10 +205,10 @@ function detectedMediaContainer(data: ArrayBuffer): MediaContainer | null {
     ) {
         return "wav";
     }
-    if (bytes.length >= 27 && startsWithBytes(bytes, [0x4f, 0x67, 0x67, 0x53, 0x00])) return "ogg";
+    if (bytes.length >= 27 && startsWithBytes(bytes, [0x4f, 0x67, 0x67, 0x53, 0x00])) {return "ogg";}
     if (bytes.length >= 12 && startsWithBytes(bytes, [0x66, 0x74, 0x79, 0x70], 4)) {
         const boxSize = readUint32(bytes, 0);
-        if (boxSize >= 12 && boxSize <= bytes.length) return "mp4";
+        if (boxSize >= 12 && boxSize <= bytes.length) {return "mp4";}
     }
     if (
         startsWithBytes(bytes, [0x1a, 0x45, 0xdf, 0xa3]) &&
@@ -220,14 +220,14 @@ function detectedMediaContainer(data: ArrayBuffer): MediaContainer | null {
 }
 
 function canonicalMediaMimeType(container: MediaContainer, kind: "audio" | "video"): string | null {
-    if (container === "mpeg") return kind === "audio" ? "audio/mpeg" : null;
-    if (container === "wav") return kind === "audio" ? "audio/wav" : null;
-    if (container === "ogg") return kind === "audio" ? "audio/ogg" : null;
+    if (container === "mpeg") {return kind === "audio" ? "audio/mpeg" : null;}
+    if (container === "wav") {return kind === "audio" ? "audio/wav" : null;}
+    if (container === "ogg") {return kind === "audio" ? "audio/ogg" : null;}
     return `${kind}/${container}`;
 }
 
 function canonicalizeMimeType(name: string, mimeType: string, data: ArrayBuffer): string {
-    if (hasActiveMarkupSignature(data)) throw new Error("SVG, XML, and HTML attachments are not supported.");
+    if (hasActiveMarkupSignature(data)) {throw new Error("SVG, XML, and HTML attachments are not supported.");}
 
     const detected = detectedBinaryMimeType(data);
     const kind = getAIFileKindFromMimeType(mimeType);
@@ -244,20 +244,20 @@ function canonicalizeMimeType(name: string, mimeType: string, data: ArrayBuffer)
     if (kind === "audio" || kind === "video") {
         const container = detectedMediaContainer(data);
         const canonical = container ? canonicalMediaMimeType(container, kind) : null;
-        if (!canonical) throw new Error(`The contents of ${name || "this file"} do not match its file type.`);
+        if (!canonical) {throw new Error(`The contents of ${name || "this file"} do not match its file type.`);}
         return canonical;
     }
     return mimeType;
 }
 
 export function validateFileForCapabilities(file: File, capabilities: AIFileCapabilities): string | null {
-    if (file.size === 0) return "The file is empty.";
-    if (file.size > AI_ATTACHMENT_LIMITS.maxFileSize) return "The file exceeds the 10 MiB limit.";
+    if (file.size === 0) {return "The file is empty.";}
+    if (file.size > AI_ATTACHMENT_LIMITS.maxFileSize) {return "The file exceeds the 10 MiB limit.";}
     if (file.type.toLowerCase() === "image/svg+xml" || fileExtension(file.name) === "svg") {
         return "SVG images are not supported.";
     }
     const kind = getAIFileKind(file);
-    if (!kind || !capabilities.kinds.includes(kind)) return "This provider does not support this file type.";
+    if (!kind || !capabilities.kinds.includes(kind)) {return "This provider does not support this file type.";}
     return null;
 }
 
@@ -267,26 +267,26 @@ export async function prepareFileForCapabilities(
     createId: () => string,
 ): Promise<AIFile> {
     const error = validateFileForCapabilities(file, capabilities);
-    if (error) throw new Error(error);
+    if (error) {throw new Error(error);}
     const data = await file.arrayBuffer();
-    if (data.byteLength !== file.size) throw new Error("The file changed while it was being read.");
+    if (data.byteLength !== file.size) {throw new Error("The file changed while it was being read.");}
     const mimeType = canonicalizeMimeType(file.name, getAttachmentMimeType(file), data);
     return { id: createId(), name: file.name, mimeType, data, size: data.byteLength };
 }
 
-export function validateAIFileBatch(files: readonly AIFile[], capabilities: AIFileCapabilities): string | null {
-    if (files.length > AI_ATTACHMENT_LIMITS.maxCount) return "Only 5 attachments can be sent at once.";
+export function validateAIFileBatch(files: ReadonlyArray<AIFile>, capabilities: AIFileCapabilities): string | null {
+    if (files.length > AI_ATTACHMENT_LIMITS.maxCount) {return "Only 5 attachments can be sent at once.";}
     let totalSize = 0;
     for (const file of files) {
-        if (file.size <= 0 || file.data.byteLength <= 0) return `${file.name}: The file is empty.`;
-        if (file.size !== file.data.byteLength) return `${file.name}: The attachment size is invalid.`;
+        if (file.size <= 0 || file.data.byteLength <= 0) {return `${file.name}: The file is empty.`;}
+        if (file.size !== file.data.byteLength) {return `${file.name}: The attachment size is invalid.`;}
         if (file.data.byteLength > AI_ATTACHMENT_LIMITS.maxFileSize)
-            return `${file.name}: The file exceeds the 10 MiB limit.`;
+            {return `${file.name}: The file exceeds the 10 MiB limit.`;}
         totalSize += file.data.byteLength;
-        if (totalSize > AI_ATTACHMENT_LIMITS.maxTotalSize) return "Attachments cannot exceed 20 MiB in total.";
+        if (totalSize > AI_ATTACHMENT_LIMITS.maxTotalSize) {return "Attachments cannot exceed 20 MiB in total.";}
         const kind = getAIFileKindFromMimeType(file.mimeType);
         if (!kind || !capabilities.kinds.includes(kind))
-            return `${file.name}: This provider does not support this file type.`;
+            {return `${file.name}: This provider does not support this file type.`;}
         try {
             if (canonicalizeMimeType(file.name, file.mimeType, file.data) !== file.mimeType) {
                 return `${file.name}: The attachment MIME type is not canonical.`;
@@ -321,7 +321,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
     });
 }
 
-type AIMessageContent = { text: string; files?: AIFile[] };
+type AIMessageContent = { text: string; files?: Array<AIFile> };
 export type AIStreamEvent = { type: "text"; delta: string } | { type: "done" } | { type: "error"; message: string };
 // Prevent browser tracing from leaving failed or aborted stream completions unhandled.
 export const DISABLED_AI_TELEMETRY = { isEnabled: false } as const;
@@ -345,7 +345,7 @@ export function createTextStreamEventChannel() {
     let closed = false;
 
     async function enqueue(event: AIStreamEvent): Promise<void> {
-        if (closed) return;
+        if (closed) {return;}
         try {
             await writer.write(event);
         } catch {
@@ -354,13 +354,13 @@ export function createTextStreamEventChannel() {
     }
 
     async function queueError(error: unknown): Promise<void> {
-        if (errorQueued || isAIStreamAbortError(error)) return;
+        if (errorQueued || isAIStreamAbortError(error)) {return;}
         errorQueued = true;
         await enqueue({ type: "error", message: getAIStreamErrorMessage(error) });
     }
 
     async function onChunk({ chunk }: { chunk: unknown }): Promise<void> {
-        if (typeof chunk !== "object" || chunk === null || !("type" in chunk)) return;
+        if (typeof chunk !== "object" || chunk === null || !("type" in chunk)) {return;}
         if (chunk.type === "text-delta" && "text" in chunk && typeof chunk.text === "string" && !errorQueued) {
             await enqueue({ type: "text", delta: chunk.text });
         } else if (chunk.type === "error" && "error" in chunk) {
@@ -369,7 +369,7 @@ export function createTextStreamEventChannel() {
     }
 
     async function close(): Promise<void> {
-        if (closed) return;
+        if (closed) {return;}
         closed = true;
         try {
             await writer.close();
@@ -387,7 +387,7 @@ export function createTextStreamEventChannel() {
         try {
             for await (const event of channel.readable) {
                 yield event;
-                if (event.type === "error") return;
+                if (event.type === "error") {return;}
             }
             await consuming;
             yield { type: "done" };
@@ -429,10 +429,10 @@ export interface AIAdapter {
     auth(method: "oauth" | "api-key", apiKey?: string): Promise<AuthCredentials>;
     refresh(credentials: AuthCredentials): Promise<AuthCredentials>;
     isExpired(credentials: AuthCredentials): boolean;
-    listModels(credentials: AuthCredentials): Promise<AIModel[]>;
+    listModels(credentials: AuthCredentials): Promise<Array<AIModel>>;
     prepareFile(file: File): Promise<AIFile>;
     sendMessage(
-        messages: AIConversationMessage[],
+        messages: Array<AIConversationMessage>,
         options: SendOptions,
         signal?: AbortSignal,
     ): AsyncIterable<AIStreamEvent>;

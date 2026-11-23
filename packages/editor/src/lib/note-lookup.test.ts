@@ -25,7 +25,7 @@ describe("findCompatibleNote", () => {
     it("normalizes vault-root and Windows separators without losing qualified-path precedence", () => {
         const root = createNote("Note", "/vault/Note.md");
         const folder = createNote("Note", "/vault/Folder/Note.md");
-        expect(findCompatibleNotes([root, folder], "Folder\\Note.md")).toEqual([folder]);
+        expect(findCompatibleNotes([root, folder], String.raw`Folder\Note.md`)).toEqual([folder]);
         expect(findCompatibleNotes([createNote("Folder/New", "")], "/Folder/New.md")).toHaveLength(1);
     });
     it("prefers folder-qualified paths before basename fallbacks", () => {

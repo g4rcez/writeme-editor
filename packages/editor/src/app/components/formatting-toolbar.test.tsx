@@ -46,14 +46,14 @@ describe("FormattingToolbar", () => {
         expect(selectedText).toHaveBeenCalledTimes(previousRenders);
         expect(coords).not.toHaveBeenCalled();
         expect(frames.size).toBe(1);
-        act(() => { const callbacks = [...frames.values()]; frames.clear(); for (const callback of callbacks) callback(0); });
+        act(() => { const callbacks = [...frames.values()]; frames.clear(); for (const callback of callbacks) {callback(0);} });
         expect(coords).toHaveBeenCalledTimes(2);
         act(() => {
             Object.assign(editor.state, { doc: { textBetween: selectedText } });
             listeners.get("transaction")?.({ transaction: { docChanged: true, storedMarksSet: false } });
         });
         expect(frames.size).toBe(1);
-        act(() => { const callbacks = [...frames.values()]; frames.clear(); for (const callback of callbacks) callback(0); });
+        act(() => { const callbacks = [...frames.values()]; frames.clear(); for (const callback of callbacks) {callback(0);} });
         expect(coords).toHaveBeenCalledTimes(4);
         fireEvent.resize(window);
         unmount();

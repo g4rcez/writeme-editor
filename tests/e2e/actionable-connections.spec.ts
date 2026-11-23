@@ -35,7 +35,7 @@ async function createNote(
         exact: true,
     });
     await expect(editor).toBeVisible({ timeout: 30_000 });
-    if (mode === "Formatted") await expect(editor).toHaveAttribute("contenteditable", "true");
+    if (mode === "Formatted") {await expect(editor).toHaveAttribute("contenteditable", "true");}
     if (content) {
         await editor.focus();
         await editor.pressSequentially(content);
@@ -58,7 +58,7 @@ type StoredNote = {
     deletedAt?: Date;
 };
 
-async function storedNotes(page: Page): Promise<StoredNote[]> {
+async function storedNotes(page: Page): Promise<Array<StoredNote>> {
     return page.evaluate(async () => {
         const request = indexedDB.open("writeme");
         const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -67,7 +67,7 @@ async function storedNotes(page: Page): Promise<StoredNote[]> {
         });
         try {
             const read = db.transaction("notes").objectStore("notes").getAll();
-            return await new Promise<StoredNote[]>((resolve, reject) => {
+            return await new Promise<Array<StoredNote>>((resolve, reject) => {
                 read.onsuccess = () => resolve(read.result);
                 read.onerror = () => reject(read.error);
             });
@@ -113,14 +113,14 @@ async function openContext(page: Page): Promise<Locator> {
 async function closeContext(page: Page): Promise<void> {
     const surface = contextSurface(page);
     for (let attempt = 0; attempt < 2; attempt++) {
-        if ((await surface.count()) === 0) return;
+        if ((await surface.count()) === 0) {return;}
         await page.keyboard.press("Escape");
     }
     await expect(surface).toHaveCount(0);
 }
 
-function captureDuplicateKeyWarnings(page: Page): string[] {
-    const warnings: string[] = [];
+function captureDuplicateKeyWarnings(page: Page): Array<string> {
+    const warnings: Array<string> = [];
     page.on("console", function collectDuplicateKeyWarnings(message) {
         if (message.type() === "error" && message.text().includes("Encountered two children with the same key")) {
             warnings.push(message.text());
@@ -491,8 +491,8 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(saved.content);
         await draft.focus();
         await page.keyboard.press("ControlOrMeta+z");
-        if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
-        else await expect(draft).toContainText("See Undo target.");
+        if (mode === "Markdown") {await expect(draft).toHaveText(saved.content);}
+        else {await expect(draft).toContainText("See Undo target.");}
         context = await openContext(page);
         await context.getByRole("button", { name: "Undo link", exact: true }).click();
         await expect(context.getByRole("button", { name: "Undo link", exact: true })).toHaveCount(0);
@@ -502,8 +502,8 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         for (let iteration = 0; iteration < 2; iteration++) {
             await draft.focus();
             await page.keyboard.press("ControlOrMeta+z");
-            if (mode === "Markdown") await expect(draft).toHaveText(saved.content);
-            else await expect(draft.locator('[data-type="mention"]')).toHaveCount(1);
+            if (mode === "Markdown") {await expect(draft).toHaveText(saved.content);}
+            else {await expect(draft.locator('[data-type="mention"]')).toHaveCount(1);}
             await page.keyboard.press(redoShortcut);
             await expect(draft).toHaveText(source.content);
         }
@@ -557,9 +557,9 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await page.keyboard.press("ControlOrMeta+s");
         await expect(page.getByRole("status", { name: "Note save status", exact: true })).toHaveText("Saved");
         if (mode === "Formatted")
-            await expect
+            {await expect
                 .poll(async () => (await storedNotes(page)).find((note) => note.id === source.id)?.content)
-                .not.toContain("[ref]:");
+                .not.toContain("[ref]:");}
         const context = await openContext(page);
         await context.getByText("Unresolved references", { exact: true }).click();
         const choose = context.getByRole("button", { name: "Choose existing note", exact: true });
@@ -610,7 +610,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         const after = (await storedNotes(page)).find((note) => note.id === source.id)!.content;
         await page.reload();
         await expect(editor).toContainText(mode === "Markdown" ? "API" : "API_v2");
-        if (mode === "Formatted") await expect(editor).toContainText("bracket [one] and *star*");
+        if (mode === "Formatted") {await expect(editor).toContainText("bracket [one] and *star*");}
         expect((await storedNotes(page)).find((note) => note.id === source.id)?.content).toBe(after);
         expect(duplicateKeyWarnings).toEqual([]);
     });

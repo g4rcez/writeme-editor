@@ -15,8 +15,8 @@ export default function MigratePage() {
 
         sendMigrationData()
             .then(() => setStatus("done"))
-            .catch((err) => {
-                setError(err instanceof Error ? err.message : "Unknown error");
+            .catch((error_) => {
+                setError(error_ instanceof Error ? error_.message : "Unknown error");
                 setStatus("error");
             });
     }, []);

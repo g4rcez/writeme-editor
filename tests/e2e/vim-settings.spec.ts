@@ -46,7 +46,7 @@ vim.keymap.set("insert", "jk", "<Esc>");`;
         await expect(source).toHaveText(init, { useInnerText: true });
         let navigatedWhileSaving = false;
         const handleFrameNavigation = (frame: Frame): void => {
-            if (frame === page.mainFrame()) navigatedWhileSaving = true;
+            if (frame === page.mainFrame()) {navigatedWhileSaving = true;}
         };
         page.on("framenavigated", handleFrameNavigation);
         await page.getByRole("button", { name: "Save Vim", exact: true }).click();

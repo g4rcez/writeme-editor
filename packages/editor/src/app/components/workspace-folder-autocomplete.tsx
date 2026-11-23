@@ -12,14 +12,14 @@ type WorkspaceFolderAutocompleteProps = {
     onSelectionChange: (folderPath: string | null, isPending: boolean) => void;
 };
 
-const normalizeRelativePath = (value: string): string => value.replace(/\\/g, "/");
+const normalizeRelativePath = (value: string): string => value.replaceAll('\\', "/");
 
 export const WorkspaceFolderAutocomplete = ({
     workspaceDirectory,
     onSelectionChange,
 }: WorkspaceFolderAutocompleteProps) => {
     const [query, setQuery] = useState("");
-    const [entries, setEntries] = useState<FileSearchEntry[]>([]);
+    const [entries, setEntries] = useState<Array<FileSearchEntry>>([]);
     const [status, setStatus] = useState<SearchStatus>("idle");
     const [error, setError] = useState<string | null>(null);
     const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export const WorkspaceFolderAutocomplete = ({
         return entries
             .filter((entry) => entry.type === "directory")
             .filter((entry) => {
-                if (seen.has(entry.path)) return false;
+                if (seen.has(entry.path)) {return false;}
                 seen.add(entry.path);
                 return true;
             })
@@ -53,7 +53,7 @@ export const WorkspaceFolderAutocomplete = ({
     useEffect(() => {
         const normalizedQuery = query.trim();
         if (!normalizedQuery || selectedFolderPath) {
-            if (!selectedFolderPath) setEntries([]);
+            if (!selectedFolderPath) {setEntries([]);}
             setStatus("idle");
             setError(null);
             return;
@@ -69,7 +69,7 @@ export const WorkspaceFolderAutocomplete = ({
         setError(null);
 
         const unsubscribe = fsApi.onFileSearchEvent((event: FileSearchEvent) => {
-            if (!isCurrentRequest || event.requestId !== requestId) return;
+            if (!isCurrentRequest || event.requestId !== requestId) {return;}
 
             if (event.type === "batch") {
                 setEntries((previous) => [...previous, ...event.entries]);
@@ -89,14 +89,14 @@ export const WorkspaceFolderAutocomplete = ({
             void fsApi
                 .startFileSearch(workspaceDirectory, normalizedQuery, requestId)
                 .then((result) => {
-                    if (!isCurrentRequest || result.success) return;
+                    if (!isCurrentRequest || result.success) {return;}
                     setStatus("error");
                     setError(result.error);
                 })
-                .catch((reason: unknown) => {
-                    if (!isCurrentRequest) return;
+                .catch((error_: unknown) => {
+                    if (!isCurrentRequest) {return;}
                     setStatus("error");
-                    setError(reason instanceof Error ? reason.message : "Failed to search folders");
+                    setError(error_ instanceof Error ? error_.message : "Failed to search folders");
                 });
         }, 180);
 
@@ -130,10 +130,10 @@ export const WorkspaceFolderAutocomplete = ({
 
     const handleInputCapture = (event: SyntheticEvent<HTMLDivElement>): void => {
         const input = event.target;
-        if (!(input instanceof HTMLInputElement)) return;
+        if (!(input instanceof HTMLInputElement)) {return;}
 
         if (input === autocompleteRef.current) {
-            if (!input.value) clearSelection();
+            if (!input.value) {clearSelection();}
             return;
         }
 
@@ -145,11 +145,11 @@ export const WorkspaceFolderAutocomplete = ({
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const folder = folders.find((entry) => entry.path === event.target.value);
-        if (folder) selectFolder(folder);
+        if (folder) {selectFolder(folder);}
     };
 
     useEffect(() => {
-        if (!refocusAfterClear.current) return;
+        if (!refocusAfterClear.current) {return;}
         refocusAfterClear.current = false;
         containerRef.current?.querySelector<HTMLInputElement>('input[data-shadow="true"]')?.focus();
     }, [autocompleteKey]);

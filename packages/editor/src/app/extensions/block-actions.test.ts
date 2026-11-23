@@ -20,7 +20,7 @@ import {
 } from "./block-actions";
 import { Neovim } from "./neovim";
 
-const editors: Editor[] = [];
+const editors: Array<Editor> = [];
 const Media = Node.create({
     name: "image",
     group: "block",
@@ -59,10 +59,10 @@ function create(content: string): Editor {
 function target(editor: Editor, text: string): BlockTarget {
     let position = -1;
     editor.state.doc.descendants((node, pos) => {
-        if (node.isText && node.text === text) position = pos;
+        if (node.isText && node.text === text) {position = pos;}
     });
     const block = targetAt(editor.view, position);
-    if (!block) throw new Error(`No block for ${text}`);
+    if (!block) {throw new Error(`No block for ${text}`);}
     return block;
 }
 

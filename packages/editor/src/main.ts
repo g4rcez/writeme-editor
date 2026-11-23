@@ -51,10 +51,8 @@ import { launchWorkspaceProcess } from "./main-process/workspace-instance";
 import { startProxyServer } from "./server/proxy";
 
 function registerAIHandlers() {
-    if (!FEATURES.ai) return;
-    console.log("Registering AI IPC handlers...");
+    if (!FEATURES.ai) {return;}
     ipcMain.on("ai:query", async (event, { commandTemplate, prompt, selection, context, systemPrompt }) => {
-        console.log("AI Query received", { prompt });
         AIRunner.run(commandTemplate, { prompt, selection, context, systemPrompt }, event.sender);
     });
 
@@ -63,8 +61,8 @@ function registerAIHandlers() {
     ipcMain.handle("ai:get-configs", () => {
         try {
             return dbManager().getAll("aiConfigs");
-        } catch (e) {
-            console.error("Error in ai:get-configs handler:", e);
+        } catch (error) {
+            console.error("Error in ai:get-configs handler:", error);
             return [];
         }
     });
@@ -80,9 +78,9 @@ function registerAIHandlers() {
                 type: "aiConfig",
             });
             return { success: true };
-        } catch (e: any) {
-            console.error("Error in ai:save-config:", e);
-            throw e;
+        } catch (error: any) {
+            console.error("Error in ai:save-config:", error);
+            throw error;
         }
     });
 
@@ -90,9 +88,9 @@ function registerAIHandlers() {
         try {
             dbManager().delete("aiConfigs", id);
             return { success: true };
-        } catch (e: any) {
-            console.error("Error in ai:delete-config:", e);
-            throw e;
+        } catch (error: any) {
+            console.error("Error in ai:delete-config:", error);
+            throw error;
         }
     });
 
@@ -104,8 +102,8 @@ function registerAIHandlers() {
                 : db.db.prepare("SELECT * FROM aiChats ORDER BY createdAt DESC");
             const results = noteId ? stmt.all(noteId) : stmt.all();
             return results.map((r) => db.normalizeRow(r));
-        } catch (e: any) {
-            console.error("Error in ai:get-chats:", e);
+        } catch (error: any) {
+            console.error("Error in ai:get-chats:", error);
             return [];
         }
     });
@@ -117,9 +115,9 @@ function registerAIHandlers() {
                 type: "aiChat",
             });
             return { success: true };
-        } catch (e: any) {
-            console.error("Error in ai:save-chat:", e);
-            throw e;
+        } catch (error: any) {
+            console.error("Error in ai:save-chat:", error);
+            throw error;
         }
     });
 
@@ -129,8 +127,8 @@ function registerAIHandlers() {
             const stmt = db.db.prepare("SELECT * FROM aiMessages WHERE chatId = ? ORDER BY createdAt ASC");
             const results = stmt.all(chatId);
             return results.map((r) => db.normalizeRow(r));
-        } catch (e: any) {
-            console.error("Error in ai:get-messages:", e);
+        } catch (error: any) {
+            console.error("Error in ai:get-messages:", error);
             return [];
         }
     });
@@ -142,9 +140,9 @@ function registerAIHandlers() {
                 type: "aiMessage",
             });
             return { success: true };
-        } catch (e: any) {
-            console.error("Error in ai:save-message:", e);
-            throw e;
+        } catch (error: any) {
+            console.error("Error in ai:save-message:", error);
+            throw error;
         }
     });
 
@@ -152,9 +150,9 @@ function registerAIHandlers() {
         try {
             dbManager().db.prepare("DELETE FROM aiMessages WHERE chatId = ?").run(chatId);
             return { success: true };
-        } catch (e: any) {
-            console.error("Error in ai:clear-messages:", e);
-            throw e;
+        } catch (error: any) {
+            console.error("Error in ai:clear-messages:", error);
+            throw error;
         }
     });
 
@@ -189,19 +187,19 @@ function getTrayIconPath(): string {
 
 function createNativeAppIcon(size?: number): NativeImage {
     const resize = (icon: NativeImage): NativeImage => {
-        if (!size) return icon;
+        if (!size) {return icon;}
         return icon.resize({ width: size, height: size });
     };
 
     if (process.platform === "darwin") {
         const icon = nativeImage.createFromPath(getMacOsAppIconPath());
-        if (!icon.isEmpty()) return resize(icon);
+        if (!icon.isEmpty()) {return resize(icon);}
     }
 
     try {
-        const svg = fs.readFileSync(getLogoSvgPath(), "utf8").replace(/var\(--var-color-foreground\)/g, "#000000");
+        const svg = fs.readFileSync(getLogoSvgPath(), "utf8").replaceAll('var(--var-color-foreground)', "#000000");
         const icon = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`);
-        if (!icon.isEmpty()) return resize(icon);
+        if (!icon.isEmpty()) {return resize(icon);}
     } catch (error) {
         console.warn("Failed to load logo.svg for native app icon:", error);
     }
@@ -214,7 +212,7 @@ function getPreloadPath(): string {
 }
 
 function getMainWindowNativeOptions(): BrowserWindowConstructorOptions {
-    if (process.platform !== "darwin") return {};
+    if (process.platform !== "darwin") {return {};}
 
     return {
         backgroundColor: "#00000000",
@@ -231,7 +229,7 @@ function showMainWindow(): void {
 }
 
 function sendNavigate(pathname: string): void {
-    if (!mainWindow) return;
+    if (!mainWindow) {return;}
     const navigate = () => mainWindow?.webContents.send("app:navigate", pathname);
     if (mainWindow.webContents.isLoading()) {
         mainWindow.webContents.once("did-finish-load", navigate);
@@ -246,7 +244,7 @@ function openSettings(pathname: string = "/settings/quick"): void {
 }
 
 async function installCliFromMenu(): Promise<void> {
-    if (!FEATURES.cli) return;
+    if (!FEATURES.cli) {return;}
     try {
         const result = await installBundledCli({ appPath: app.getAppPath() });
         await dialog.showMessageBox({
@@ -262,10 +260,10 @@ async function installCliFromMenu(): Promise<void> {
     }
 }
 
-function parseAppCommand(argv: string[]): AppCommand | null {
-    if (argv.includes("--quick-note")) return "quick-note";
-    if (argv.includes("--math-note")) return "math-note";
-    if (argv.includes("--settings")) return "settings";
+function parseAppCommand(argv: Array<string>): AppCommand | null {
+    if (argv.includes("--quick-note")) {return "quick-note";}
+    if (argv.includes("--math-note")) {return "math-note";}
+    if (argv.includes("--settings")) {return "settings";}
     return null;
 }
 
@@ -281,7 +279,7 @@ function runAppCommand(command: AppCommand, preloadPath: string): void {
     openSettings();
 }
 
-function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[] {
+function createOsMenuTemplate(preloadPath: string): Array<MenuItemConstructorOptions> {
     return [
         {
             label: "Show Writeme",
@@ -336,7 +334,7 @@ function createOsMenuTemplate(preloadPath: string): MenuItemConstructorOptions[]
 }
 
 function registerOsTasks(): void {
-    if (process.platform !== "win32") return;
+    if (process.platform !== "win32") {return;}
     const iconPath = getWindowsTaskIconPath();
     app.setUserTasks([
         {
@@ -380,7 +378,7 @@ function resolveArgPath(rawPath: string, workingDir?: string): string {
     return workingDir ? path.resolve(workingDir, rawPath) : path.resolve(rawPath);
 }
 
-function getUserArgs(argv: string[]): string[] {
+function getUserArgs(argv: Array<string>): Array<string> {
     const startIdx = app.isPackaged ? 1 : 2;
     return argv.slice(startIdx);
 }
@@ -393,16 +391,16 @@ function isDirectoryPath(filePath: string): boolean {
     }
 }
 
-function parseWorkspaceArg(argv: string[], workingDir?: string): string | null {
+function parseWorkspaceArg(argv: Array<string>, workingDir?: string): string | null {
     const args = getUserArgs(argv);
     for (let index = 0; index < args.length; index++) {
         const arg = args[index];
-        if (!arg) continue;
+        if (!arg) {continue;}
         if (arg === WORKSPACE_ARG) {
             const workspacePath = args[index + 1];
             return workspacePath ? resolveArgPath(workspacePath, workingDir) : null;
         }
-        if (arg === WORKSPACE_INSTANCE_FLAG) continue;
+        if (arg === WORKSPACE_INSTANCE_FLAG) {continue;}
         if (!arg.startsWith("-")) {
             const resolved = resolveArgPath(arg, workingDir);
             return isDirectoryPath(resolved) ? resolved : null;
@@ -411,16 +409,16 @@ function parseWorkspaceArg(argv: string[], workingDir?: string): string | null {
     return null;
 }
 
-function parseCliArgs(argv: string[], workingDir?: string): { filePath: string | null } {
+function parseCliArgs(argv: Array<string>, workingDir?: string): { filePath: string | null } {
     const args = getUserArgs(argv);
     for (let index = 0; index < args.length; index++) {
         const arg = args[index];
-        if (!arg) continue;
+        if (!arg) {continue;}
         if (arg === WORKSPACE_ARG) {
             index++;
             continue;
         }
-        if (arg === WORKSPACE_INSTANCE_FLAG) continue;
+        if (arg === WORKSPACE_INSTANCE_FLAG) {continue;}
         if (!arg.startsWith("-")) {
             return { filePath: resolveArgPath(arg, workingDir) };
         }
@@ -428,17 +426,17 @@ function parseCliArgs(argv: string[], workingDir?: string): { filePath: string |
     return { filePath: null };
 }
 
-function getAppRelaunchArgs(args: string[]): string[] {
+function getAppRelaunchArgs(args: Array<string>): Array<string> {
     return app.isPackaged ? args : [app.getAppPath(), ...args];
 }
 
-function getInitialWorkspacePath(argv: string[]): string | null {
+function getInitialWorkspacePath(argv: Array<string>): string | null {
     const envWorkspace = process.env[WORKSPACE_ENV];
     return envWorkspace ? path.resolve(envWorkspace) : parseWorkspaceArg(argv);
 }
 
 function configureWorkspaceSessionData(workspacePath: string | null, isWorkspaceInstance: boolean): void {
-    if (!workspacePath || !isWorkspaceInstance) return;
+    if (!workspacePath || !isWorkspaceInstance) {return;}
 
     const workspaceHash = createHash("sha256").update(path.resolve(workspacePath)).digest("hex").slice(0, 16);
     const sessionDataPath = path.join(app.getPath("userData"), "workspace-sessions", workspaceHash);
@@ -468,7 +466,7 @@ function sendOpenFile(filePath: string, wait: boolean, requestId: string): void 
 }
 
 function configureDevelopmentUserData(): void {
-    if (app.isPackaged) return;
+    if (app.isPackaged) {return;}
 
     app.setPath("userData", path.join(app.getPath("appData"), DEVELOPMENT_USER_DATA_DIR));
 }
@@ -541,13 +539,12 @@ async function main() {
 
     app.on("before-quit", () => {
         isQuitting = true;
-        if (FEATURES.cli) stopCliServer();
+        if (FEATURES.cli) {stopCliServer();}
     });
     app.on("will-quit", () => globalShortcut.unregisterAll());
     registerSpellingContextMenus();
     app.on("ready", async () => {
         const preload = getPreloadPath();
-        console.log("Main process starting, registering AI handlers...");
         registerAIHandlers();
         const rendererUrl =
             MAIN_WINDOW_VITE_DEV_SERVER_URL ||
@@ -556,7 +553,7 @@ async function main() {
             registerAIProxyHandlers(aiProxyToken, rendererUrl);
             registerAISetupHandlers(rendererUrl);
         }
-        if (FEATURES.meetingNotes) registerMeetingCapture(session.defaultSession, rendererUrl);
+        if (FEATURES.meetingNotes) {registerMeetingCapture(session.defaultSession, rendererUrl);}
         await notesIpcHandler();
         databaseIpcHandler();
         appIpcHandler(
@@ -566,15 +563,15 @@ async function main() {
                 launchWorkspacePath = workspacePath;
             },
         );
-        if (FEATURES.codeExecution) executionIpcHandler();
-        if (FEATURES.terminal) terminalIpcHandler();
+        if (FEATURES.codeExecution) {executionIpcHandler();}
+        if (FEATURES.terminal) {terminalIpcHandler();}
         readItLaterIpcHandler();
-        if (FEATURES.git) gitIpcHandler();
+        if (FEATURES.git) {gitIpcHandler();}
         ipcMain.handle("fs:watcher:start", (_, directory: string) => {
-            if (mainWindow) FileWatcher.start(directory, mainWindow);
+            if (mainWindow) {FileWatcher.start(directory, mainWindow);}
         });
         ipcMain.handle("app:file-closed", (_, requestId: string) => {
-            if (FEATURES.cli) notifyFileClosed(requestId);
+            if (FEATURES.cli) {notifyFileClosed(requestId);}
             return true;
         });
         ipcMain.handle("app:open-folder", (_, { folderPath }: { folderPath: string }) => {
@@ -636,7 +633,7 @@ async function main() {
                     defaultFontSize: 16,
                     nodeIntegration: false,
                     contextIsolation: true,
-                    defaultEncoding: "utf-8",
+                    defaultEncoding: "utf8",
                     accessibleTitle: "Writeme",
                 },
             });
@@ -652,7 +649,7 @@ async function main() {
                 win.webContents.openDevTools();
             }
             win.webContents.on("console-message", (_, level, message, line, sourceId) => {
-                if (level >= 2) console.error(`[renderer] ${sourceId}:${line} ${message}`);
+                if (level >= 2) {console.error(`[renderer] ${sourceId}:${line} ${message}`);}
             });
             win.webContents.on("render-process-gone", (_, details) => {
                 console.error("[renderer] process gone:", details.reason, details.exitCode);
@@ -685,7 +682,7 @@ async function main() {
 
         const createTray = () => {
             const icon = nativeImage.createFromPath(getTrayIconPath()).resize({ width: 16, height: 16 });
-            if (process.platform === "darwin") icon.setTemplateImage(true);
+            if (process.platform === "darwin") {icon.setTemplateImage(true);}
             tray = new Tray(icon);
             tray.setToolTip("Writeme");
             tray.setContextMenu(Menu.buildFromTemplate(createOsMenuTemplate(preload)));
@@ -717,7 +714,7 @@ async function main() {
         if (!isWorkspaceInstance) {
             createTray();
         }
-        if (FEATURES.ai && mainWindow) registerAIOAuthHandlers(mainWindow);
+        if (FEATURES.ai && mainWindow) {registerAIOAuthHandlers(mainWindow);}
         if (FEATURES.cli && mainWindow && !isWorkspaceInstance) {
             startCliServer(mainWindow, {
                 getCurrentWorkspacePath: () => launchWorkspacePath,
@@ -727,7 +724,7 @@ async function main() {
 
         if (mainWindow) {
             const command = parseAppCommand(process.argv);
-            if (command) runAppCommand(command, preload);
+            if (command) {runAppCommand(command, preload);}
 
             const { filePath } = launchWorkspacePath ? { filePath: null } : parseCliArgs(process.argv);
             const fileToOpen = filePath ?? pendingFileOpen;
@@ -739,7 +736,7 @@ async function main() {
             }
         }
 
-        if (FEATURES.autoUpdate && !isWorkspaceInstance && app.isPackaged) void startAppUpdater();
+        if (FEATURES.autoUpdate && !isWorkspaceInstance && app.isPackaged) {void startAppUpdater();}
 
         if (mainWindow && !isWorkspaceInstance) {
             try {
@@ -760,8 +757,8 @@ async function main() {
                 globalShortcut.register(activeQuickNoteShortcut, () => createQuickNoteWindow(preload));
                 globalShortcut.register(activeMathNoteShortcut, () => createMathNoteWindow(preload));
                 globalShortcut.register(activeFloatingEditorShortcut, () => createFloatingEditorWindow(preload));
-            } catch (e) {
-                console.error("Failed to start file watcher on ready:", e);
+            } catch (error) {
+                console.error("Failed to start file watcher on ready:", error);
                 globalShortcut.register("CommandOrControl+Alt+N", () => createQuickNoteWindow(preload));
                 globalShortcut.register("CommandOrControl+Alt+M", () => createMathNoteWindow(preload));
                 globalShortcut.register("CommandOrControl+Alt+P", () => createFloatingEditorWindow(preload));
@@ -783,7 +780,7 @@ async function main() {
         });
     });
     app.on("window-all-closed", () => {
-        if (isWorkspaceInstance) app.quit();
+        if (isWorkspaceInstance) {app.quit();}
     });
 }
 

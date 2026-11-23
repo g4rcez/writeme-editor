@@ -23,7 +23,7 @@ describe("FrontmatterCommand", () => {
 });
 
 describe("text commands in paragraphs", () => {
-    const editors: Editor[] = [];
+    const editors: Array<Editor> = [];
 
     beforeEach(() => {
         vi.useFakeTimers();
@@ -60,7 +60,7 @@ describe("text commands in paragraphs", () => {
             const handled = editor.view.someProp("handleTextInput", (handler) =>
                 handler(editor.view, from, to, text, () => editor.state.tr.insertText(text, from, to)),
             );
-            if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+            if (!handled) {editor.view.dispatch(editor.state.tr.insertText(text, from, to));}
         }
     };
 

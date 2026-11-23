@@ -9,7 +9,7 @@ import { repositories } from "@/store/repositories";
 import { Confirm } from "../confirm";
 
 export const TrashPane = () => {
-    const [trashed, setTrashed] = useState<Note[]>([]);
+    const [trashed, setTrashed] = useState<Array<Note>>([]);
     const [loading, setLoading] = useState(true);
     const [confirmEmpty, setConfirmEmpty] = useState(false);
 

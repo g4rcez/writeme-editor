@@ -11,7 +11,7 @@ const blockers = requiredChecks.filter((name) => !reported.has(name)).map((name)
 
 for (const [name, check] of checks) {
     const result = check && typeof check === "object" && "result" in check ? check.result : undefined;
-    if (result !== "success") blockers.push(`${name}=${typeof result === "string" ? result : "missing"}`);
+    if (result !== "success") {blockers.push(`${name}=${typeof result === "string" ? result : "missing"}`);}
 }
 
 if (blockers.length > 0) {

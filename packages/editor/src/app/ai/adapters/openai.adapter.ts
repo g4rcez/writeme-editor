@@ -95,22 +95,22 @@ function getModelString(model: Record<string, unknown>, key: string): string | u
 
 const CODEX_MODEL_SLUG_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
-function parseCodexModels(payload: unknown): AIModel[] {
-  if (!isRecord(payload)) return [];
+function parseCodexModels(payload: unknown): Array<AIModel> {
+  if (!isRecord(payload)) {return [];}
 
-  let source: unknown[] = [];
+  let source: Array<unknown> = [];
   if (Array.isArray(payload.models)) {
     source = payload.models;
   } else if (Array.isArray(payload.data)) {
     source = payload.data;
   }
 
-  const parsed: PrioritizedModel[] = [];
+  const parsed: Array<PrioritizedModel> = [];
   source.forEach((entry, sourceIndex) => {
-    if (!isRecord(entry) || entry.visibility !== "list" || entry.supported_in_api !== true) return;
+    if (!isRecord(entry) || entry.visibility !== "list" || entry.supported_in_api !== true) {return;}
 
     const id = getModelString(entry, "slug");
-    if (!id || !CODEX_MODEL_SLUG_PATTERN.test(id)) return;
+    if (!id || !CODEX_MODEL_SLUG_PATTERN.test(id)) {return;}
 
     parsed.push({
       id,
@@ -124,18 +124,18 @@ function parseCodexModels(payload: unknown): AIModel[] {
   });
 
   parsed.sort((left, right) => {
-    if (left.priority === right.priority) return left.sourceIndex - right.sourceIndex;
+    if (left.priority === right.priority) {return left.sourceIndex - right.sourceIndex;}
     return left.priority < right.priority ? -1 : 1;
   });
   return parsed.map(({ id, name }) => ({ id, name }));
 }
 
 function extractContentText(content: unknown): string | null {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return null;
+  if (typeof content === "string") {return content;}
+  if (!Array.isArray(content)) {return null;}
   const text = content
     .map((part) => {
-      if (!isRecord(part)) return null;
+      if (!isRecord(part)) {return null;}
       return typeof part.text === "string" ? part.text : null;
     })
     .filter((part): part is string => Boolean(part?.trim()))
@@ -149,10 +149,10 @@ function isInstructionInput(item: CodexInputItem): boolean {
 
 export function createCodexRequestBody(rawBody: string, fallbackInstructions?: string): string {
   const parsed = JSON.parse(rawBody) as unknown;
-  if (!isRecord(parsed)) return rawBody;
+  if (!isRecord(parsed)) {return rawBody;}
 
   const body = parsed as CodexRequestBody;
-  const input = Array.isArray(body.input) ? (body.input as CodexInputItem[]) : [];
+  const input = Array.isArray(body.input) ? (body.input as Array<CodexInputItem>) : [];
   const instructionText =
     typeof body.instructions === "string" && body.instructions.trim()
       ? body.instructions
@@ -201,7 +201,7 @@ export class OpenAIAdapter implements AIAdapter {
   }
 
   async refresh(credentials: AuthCredentials): Promise<AuthCredentials> {
-    if (!credentials.refreshToken) return credentials;
+    if (!credentials.refreshToken) {return credentials;}
     const { authManager } = await import("@/app/ai/auth/auth-manager");
     return authManager.refreshOpenAIToken(credentials);
   }
@@ -210,10 +210,10 @@ export class OpenAIAdapter implements AIAdapter {
     return credentials.expiresAt != null && Date.now() > credentials.expiresAt;
   }
 
-  async listModels(credentials: AuthCredentials): Promise<AIModel[]> {
+  async listModels(credentials: AuthCredentials): Promise<Array<AIModel>> {
     if (isCodexOAuthCredentials(credentials)) {
       const accountId = getCodexAccountId(credentials);
-      if (!accountId) throw new Error("OpenAI OAuth credentials are missing a ChatGPT account ID.");
+      if (!accountId) {throw new Error("OpenAI OAuth credentials are missing a ChatGPT account ID.");}
 
       const resp = await proxyFetch(`${CODEX_BASE_URL}/models?client_version=${CODEX_CLIENT_VERSION}`, {
         headers: {
@@ -221,7 +221,7 @@ export class OpenAIAdapter implements AIAdapter {
           Authorization: `Bearer ${credentials.accessToken}`,
         },
       });
-      if (!resp.ok) throw createOpenAIModelRequestError(resp);
+      if (!resp.ok) {throw createOpenAIModelRequestError(resp);}
       return parseCodexModels(await resp.json());
     }
 
@@ -230,8 +230,8 @@ export class OpenAIAdapter implements AIAdapter {
         Authorization: `Bearer ${credentials.apiKey ?? credentials.accessToken ?? ""}`,
       },
     });
-    if (!resp.ok) throw createOpenAIModelRequestError(resp);
-    const data = (await resp.json()) as { data: { id: string }[] };
+    if (!resp.ok) {throw createOpenAIModelRequestError(resp);}
+    const data = (await resp.json()) as { data: Array<{ id: string }> };
     return (data.data ?? []).filter((m) => /gpt|o1|o3/.test(m.id)).map((m) => ({ id: m.id, name: m.id }));
   }
 
@@ -240,7 +240,7 @@ export class OpenAIAdapter implements AIAdapter {
   }
 
   async *sendMessage(
-    messages: AIConversationMessage[],
+    messages: Array<AIConversationMessage>,
     options: SendOptions,
     signal?: AbortSignal,
   ): AsyncIterable<AIStreamEvent> {
@@ -257,7 +257,7 @@ export class OpenAIAdapter implements AIAdapter {
 
     const model = options.model ?? (usesCodexBackend ? CODEX_DEFAULT_MODEL : this.defaultModel);
 
-    const mapped: Array<{ role: "user" | "assistant"; content: string | any[] }> = [];
+    const mapped: Array<{ role: "user" | "assistant"; content: string | Array<any> }> = [];
     for (const msg of messages) {
       if (msg.role === "system") {
         mapped.push({ role: "user", content: msg.content.text });
@@ -267,9 +267,9 @@ export class OpenAIAdapter implements AIAdapter {
         mapped.push({ role: msg.role, content: msg.content.text });
         continue;
       }
-      const parts: any[] = [];
+      const parts: Array<any> = [];
       for (const file of msg.content.files) {
-        if (!file.mimeType.startsWith("image/")) continue;
+        if (!file.mimeType.startsWith("image/")) {continue;}
         const base64 = await arrayBufferToBase64(file.data);
         parts.push({
           type: "image_url",
@@ -278,7 +278,7 @@ export class OpenAIAdapter implements AIAdapter {
           },
         });
       }
-      if (msg.content.text.trim()) parts.push({ type: "text", text: msg.content.text });
+      if (msg.content.text.trim()) {parts.push({ type: "text", text: msg.content.text });}
       mapped.push({ role: msg.role, content: parts });
     }
 
@@ -307,7 +307,7 @@ export class OpenAIAdapter implements AIAdapter {
 
       for await (const event of eventChannel.consume(result)) {
         yield event;
-        if (event.type === "error") return;
+        if (event.type === "error") {return;}
       }
     } catch (error: unknown) {
       if (isAIStreamAbortError(error)) {

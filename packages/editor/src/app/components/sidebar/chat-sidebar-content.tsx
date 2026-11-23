@@ -27,7 +27,7 @@ export function ChatSidebarContent() {
     const [state, dispatch] = useGlobalStore();
     const location = useLocation();
     const navigate = useNavigate();
-    const [chats, setChats] = useState<AIChat[]>([]);
+    const [chats, setChats] = useState<Array<AIChat>>([]);
     const [loading, setLoading] = useState(true);
 
     const chatScopeId = useMemo(() => getWorkspaceChatScope(state.directory), [state.directory]);

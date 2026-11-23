@@ -213,7 +213,7 @@ export function WorkspaceProposalReview({
     }, []);
 
     const handleDecision = async (proposal: AINoteEditProposal, action: ReviewAction) => {
-        if (isBusy || proposal.status !== "pending") return;
+        if (isBusy || proposal.status !== "pending") {return;}
 
         setPendingAction({ proposalId: proposal.id, action });
         setActionError(null);

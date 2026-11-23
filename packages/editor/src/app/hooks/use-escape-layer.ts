@@ -9,7 +9,7 @@ const overlaySelector =
     'dialog[open], [role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-escape-layer]';
 
 function captureEscape(event: KeyboardEvent): void {
-    if (event.key !== "Escape" || event.repeat || event.isComposing) return;
+    if (event.key !== "Escape" || event.repeat || event.isComposing) {return;}
     if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
         const windowLayer = Array.from(layers).find((layer) => layer.level === EscapeLevel.window);
         if (windowLayer) {
@@ -29,21 +29,21 @@ function captureEscape(event: KeyboardEvent): void {
                 element.getClientRects().length > 0,
         )
     )
-        return;
+        {return;}
     let candidate: EscapeLayer | undefined;
     for (const layer of layers) {
-        if (!candidate || layer.level >= candidate.level) candidate = layer;
+        if (!candidate || layer.level >= candidate.level) {candidate = layer;}
     }
-    if (candidate) candidates.set(event, candidate);
+    if (candidate) {candidates.set(event, candidate);}
 }
 
 function dismissEscape(event: KeyboardEvent): void {
     const candidate = candidates.get(event);
-    if (!candidate) return;
+    if (!candidate) {return;}
     candidates.delete(event);
     // Let editor keymaps and other window listeners consume Escape first.
     setTimeout(() => {
-        if (event.defaultPrevented || !layers.has(candidate)) return;
+        if (event.defaultPrevented || !layers.has(candidate)) {return;}
         candidate.close();
     }, 0);
 }
@@ -51,7 +51,7 @@ function dismissEscape(event: KeyboardEvent): void {
 export function useEscapeLayer(level: number, enabled: boolean, onClose: () => void): void {
     const close = useEffectEvent(onClose);
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled) {return;}
         const layer = { level, close: () => close() };
         if (layers.size === 0) {
             window.addEventListener("keydown", captureEscape, true);

@@ -92,7 +92,7 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                     if (dispatch) {
                         this.storage.destroy();
                         const vim = this.storage.getState();
-                        if (vim?.mode === "insert" && vim.pending.length) tr.insertText(vim.pending.join(""));
+                        if (vim?.mode === "insert" && vim.pending.length) {tr.insertText(vim.pending.join(""));}
                         tr.setMeta(neovimKey, {
                             enabled,
                             mode: "normal",
@@ -119,7 +119,7 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                     }),
                     apply: (tr, value) => {
                         const patch: Partial<NeovimState> | undefined = tr.getMeta(neovimKey);
-                        if (!value.enabled && !patch?.enabled) return { ...value, ...patch, cursor: tr.selection.head };
+                        if (!value.enabled && !patch?.enabled) {return { ...value, ...patch, cursor: tr.selection.head };}
                         const visual = value.mode === "visual" || value.mode === "visual-line";
                         const cursor =
                             tr.selectionSet && !visual
@@ -151,17 +151,17 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                         };
                     },
                     handleKeyDown: (view, event) => {
-                        if (event.isComposing || view.composing) return false;
+                        if (event.isComposing || view.composing) {return false;}
                         const vim = neovimKey.getState(view.state);
-                        if (!vim?.enabled) return false;
+                        if (!vim?.enabled) {return false;}
                         const key = eventKey(event);
-                        if (!key) return false;
+                        if (!key) {return false;}
                         if ((vim.mode === "insert" || vim.mode === "replace") && event.key.startsWith("Arrow"))
-                            return false;
+                            {return false;}
                         const handled = controller.feed(key);
                         const modifier = event.ctrlKey;
                         const vimOwnsMode = !["insert", "replace"].includes(vim.mode);
-                        if (modifier && (handled || vimOwnsMode)) event.stopPropagation();
+                        if (modifier && (handled || vimOwnsMode)) {event.stopPropagation();}
                         return handled || (modifier && vimOwnsMode);
                     },
                     handleTextInput: (view) => {
@@ -176,7 +176,7 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                         beforeinput: (view, event) => {
                             const vim = neovimKey.getState(view.state);
                             if (!vim?.enabled || vim.mode === "insert" || vim.mode === "replace" || !event.cancelable)
-                                return false;
+                                {return false;}
                             event.preventDefault();
                             return true;
                         },
@@ -187,7 +187,7 @@ export const Neovim = Extension.create<NeovimOptions, NeovimApi>({
                     },
                     decorations: (state) => {
                         const vim = neovimKey.getState(state);
-                        if (!vim?.enabled || ["insert", "replace"].includes(vim.mode)) return null;
+                        if (!vim?.enabled || ["insert", "replace"].includes(vim.mode)) {return null;}
                         const from = vim.cursor;
                         const to = nextCharacter(state.doc, from);
                         return DecorationSet.create(

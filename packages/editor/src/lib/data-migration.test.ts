@@ -70,7 +70,7 @@ beforeEach(() => {
         table.add.mockResolvedValue(undefined);
         table.toArray.mockResolvedValue([]);
     }
-    mocks.db.transaction.mockImplementation(async (...args: unknown[]) => {
+    mocks.db.transaction.mockImplementation(async (...args: Array<unknown>) => {
         const work = args.at(-1) as () => Promise<unknown>;
         return work();
     });
@@ -193,8 +193,8 @@ describe("data migration", () => {
         await exportToFile();
 
         const blob = createObjectURL.mock.calls[0]?.[0];
-        if (!(blob instanceof Blob)) throw new Error("Expected exportToFile to create a Blob backup");
-        const payload = JSON.parse(await blob.text()) as { noteHistory: unknown[] };
+        if (!(blob instanceof Blob)) {throw new Error("Expected exportToFile to create a Blob backup");}
+        const payload = JSON.parse(await blob.text()) as { noteHistory: Array<unknown> };
         expect(payload.noteHistory).toHaveLength(1);
         expect(click).toHaveBeenCalled();
         expect(revokeObjectURL).toHaveBeenCalledWith("blob:writeme-backup");

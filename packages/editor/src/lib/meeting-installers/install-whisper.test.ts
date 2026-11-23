@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 const script = path.resolve("packages/editor/src/lib/meeting-installers/install-whisper.sh");
 const revision = "d1be6fde11ac6e0407606b4e42fe72d34add8037";
 
@@ -54,7 +54,7 @@ if (command === 'sha256sum') {
     }
     for (const name of ["bash", "mkdir", "touch", "mv", "chmod"]) {
         const executable = ["/bin", "/usr/bin"].map((directory) => path.join(directory, name)).find(existsSync);
-        if (!executable) throw new Error(`Missing test tool: ${name}`);
+        if (!executable) {throw new Error(`Missing test tool: ${name}`);}
         symlinkSync(executable, path.join(root, name));
     }
     writeFileSync(path.join(root, "calls"), "");
@@ -76,7 +76,7 @@ if (command === 'sha256sum') {
 }
 
 afterEach(() => {
-    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+    for (const root of roots.splice(0)) {rmSync(root, { recursive: true, force: true });}
 });
 
 it.skipIf(process.platform !== "win32")("parses the Windows installer with PowerShell", () => {

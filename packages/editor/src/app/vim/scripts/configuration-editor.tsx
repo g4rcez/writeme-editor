@@ -42,7 +42,7 @@ export function VimConfigurationEditor({
         latest.current = { value, onChange };
     }, [value, onChange]);
     useEffect(() => {
-        if (!host.current) return;
+        if (!host.current) {return;}
         const language = javascript({ typescript: true });
         const editor = new EditorView({
             parent: host.current,
@@ -61,7 +61,7 @@ export function VimConfigurationEditor({
                     attributes.current.of([]),
                     layout,
                     EditorView.updateListener.of((update) => {
-                        if (update.docChanged && !syncing.current) latest.current.onChange(update.state.doc.toString());
+                        if (update.docChanged && !syncing.current) {latest.current.onChange(update.state.doc.toString());}
                     }),
                 ],
             }),
@@ -99,7 +99,7 @@ export function VimConfigurationEditor({
     }, [disabled, invalid]);
     useEffect(() => {
         const editor = view.current;
-        if (!editor || editor.state.doc.toString() === value) return;
+        if (!editor || editor.state.doc.toString() === value) {return;}
         syncing.current = true;
         try {
             editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } });

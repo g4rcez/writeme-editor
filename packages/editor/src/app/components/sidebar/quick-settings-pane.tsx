@@ -21,7 +21,7 @@ export function QuickSettingsPane(): JSX.Element {
                     ))}
                 {SETTINGS_GROUPS.map((group) => {
                     const items = sections.filter((section) => section.group === group);
-                    if (items.length === 0) return null;
+                    if (items.length === 0) {return null;}
                     return (
                         <section key={group} className="mt-5" aria-label={group}>
                             <h3 className="mb-1 px-3 text-xs font-medium text-muted-foreground">{group}</h3>

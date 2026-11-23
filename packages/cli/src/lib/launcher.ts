@@ -17,14 +17,14 @@ async function waitForSocket(socketPath: string, retries: number, delayMs: numbe
             });
             c.on("error", () => resolve(false));
         });
-        if (connected) return;
+        if (connected) {return;}
     }
     throw new Error("Timed out waiting for writeme to start");
 }
 
 export async function ensureAppRunning(
     socketPath: string,
-    args: string[] = [],
+    args: Array<string> = [],
     env: NodeJS.ProcessEnv = {},
 ): Promise<void> {
     const binary = getAppBinary();

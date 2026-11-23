@@ -75,7 +75,7 @@ export const SidebarShell = () => {
 
     const workspace = useMemo(() => {
         const source = state.explorerRoot ?? state.directory;
-        if (!source) return { title: "Local workspace", directory: "Your notes" };
+        if (!source) {return { title: "Local workspace", directory: "Your notes" };}
         const parts = source.split(/[\\/]/).filter(Boolean);
         return { title: parts.at(-1) ?? "Workspace", directory: source || "~" };
     }, [state.directory, state.explorerRoot]);

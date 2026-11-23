@@ -9,8 +9,8 @@ import { getStroke } from "perfect-freehand";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Point = [number, number, number];
-type Stroke = { points: Point[]; color: string; size: number };
-type FreehandData = { strokes: Stroke[] };
+type Stroke = { points: Array<Point>; color: string; size: number };
+type FreehandData = { strokes: Array<Stroke> };
 
 const COLORS = [
     { value: "#000000", label: "Black" },
@@ -26,8 +26,8 @@ const SIZES = [
     { label: "Thick", size: 16, thinning: 0.5 },
 ];
 
-function getSvgPathFromStroke(stroke: number[][]): string {
-    if (!stroke.length) return "";
+function getSvgPathFromStroke(stroke: Array<Array<number>>): string {
+    if (!stroke.length) {return "";}
     const first = stroke[0]!;
     const d = stroke.reduce(
         (acc, [x0, y0], i, arr) => {
@@ -36,7 +36,7 @@ function getSvgPathFromStroke(stroke: number[][]): string {
             acc.push(x0!, y0!, (x0! + x1!) / 2, (y0! + y1!) / 2);
             return acc;
         },
-        ["M", first[0]!, first[1]!, "Q"] as (string | number)[],
+        ["M", first[0]!, first[1]!, "Q"] as Array<string | number>,
     );
     d.push("Z");
     return d.join(" ");
@@ -46,8 +46,8 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
     const ref = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [strokes, setStrokes] = useState<Stroke[]>([]);
-    const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+    const [strokes, setStrokes] = useState<Array<Stroke>>([]);
+    const [currentPoints, setCurrentPoints] = useState<Array<Point>>([]);
     const [isDrawing, setIsDrawing] = useState(false);
     const [tool, setTool] = useState<"pen" | "eraser">("pen");
     const [color, setColor] = useState("#000000");
@@ -65,7 +65,7 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
     }, []);
 
     const persist = useCallback(
-        (nextStrokes: Stroke[]) => {
+        (nextStrokes: Array<Stroke>) => {
             props.onChange?.(JSON.stringify({ strokes: nextStrokes }));
         },
         [props.onChange],
@@ -83,7 +83,7 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
 
     const onPointerMove = useCallback(
         (e: React.PointerEvent<SVGSVGElement>) => {
-            if (!isDrawing) return;
+            if (!isDrawing) {return;}
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -94,7 +94,7 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
     );
 
     const onPointerUp = useCallback(() => {
-        if (!isDrawing || currentPoints.length === 0) return;
+        if (!isDrawing || currentPoints.length === 0) {return;}
         const sizeConfig = SIZES[sizeIndex] ?? SIZES[1]!;
         const strokeColor = tool === "eraser" ? "#ffffff" : color;
         const newStroke: Stroke = {
@@ -122,7 +122,7 @@ export const FreehandCode = (props: { code: string; autoDelete: () => void; onCh
 
     const onRequestFullScreen = async () => {
         const div = ref.current;
-        if (!div) return;
+        if (!div) {return;}
         if (isFullScreen) {
             await document.exitFullscreen();
             return setIsFullScreen(false);

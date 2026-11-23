@@ -1,4 +1,4 @@
-import { type Options } from "prettier";
+import type { Options } from "prettier";
 
 export type SupportedLanguage =
     | "markdown"
@@ -29,7 +29,7 @@ const PluginLoaders = {
 
 type PluginName = keyof typeof PluginLoaders;
 
-const PrettierOptionsByLang: Record<SupportedLanguage, { parser: string; plugins: PluginName[] }> = {
+const PrettierOptionsByLang: Record<SupportedLanguage, { parser: string; plugins: Array<PluginName> }> = {
     markdown: {
         parser: "markdown",
         plugins: ["markdown"],

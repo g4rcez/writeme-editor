@@ -1,6 +1,6 @@
 import type { MenuItemConstructorOptions } from "electron";
 
-export function createApplicationMenuTemplate(appItems: MenuItemConstructorOptions[]): MenuItemConstructorOptions[] {
+export function createApplicationMenuTemplate(appItems: Array<MenuItemConstructorOptions>): Array<MenuItemConstructorOptions> {
     return [
         { label: "Writeme", submenu: appItems },
         { role: "editMenu" },

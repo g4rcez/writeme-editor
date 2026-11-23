@@ -20,9 +20,9 @@ const KEY_DISPLAY_MAP: Record<string, string> = {
 const MODIFIER_KEYS = new Set(["Meta", "Control", "Alt", "Shift", "OS", "Command"]);
 
 function buildAccelerator(e: KeyboardEvent): string | null {
-    if (MODIFIER_KEYS.has(e.key)) return null;
+    if (MODIFIER_KEYS.has(e.key)) {return null;}
 
-    const modifiers: string[] = [];
+    const modifiers: Array<string> = [];
     if (e.metaKey && e.ctrlKey) {
         modifiers.push("CommandOrControl");
     } else if (e.metaKey) {
@@ -30,10 +30,10 @@ function buildAccelerator(e: KeyboardEvent): string | null {
     } else if (e.ctrlKey) {
         modifiers.push("Control");
     }
-    if (e.altKey) modifiers.push("Alt");
-    if (e.shiftKey) modifiers.push("Shift");
+    if (e.altKey) {modifiers.push("Alt");}
+    if (e.shiftKey) {modifiers.push("Shift");}
 
-    if (modifiers.length === 0) return null;
+    if (modifiers.length === 0) {return null;}
 
     const key = KEY_DISPLAY_MAP[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
     return [...modifiers, key].join("+");
@@ -73,7 +73,7 @@ export function ShortcutRecorder({ value, label, onChange }: Props): JSX.Element
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
-        if (!recording) return;
+        if (!recording) {return;}
 
         const onKeyDown = (e: KeyboardEvent) => {
             e.preventDefault();
@@ -93,7 +93,7 @@ export function ShortcutRecorder({ value, label, onChange }: Props): JSX.Element
     }, [recording, onChange]);
 
     useEffect(() => {
-        if (recording) buttonRef.current?.focus();
+        if (recording) {buttonRef.current?.focus();}
     }, [recording]);
 
     return (

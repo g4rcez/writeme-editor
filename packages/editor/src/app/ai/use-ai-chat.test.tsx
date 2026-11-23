@@ -55,9 +55,9 @@ vi.mock("./auth/auth-manager", () => ({
     },
 }));
 
-function createStream(events: AIStreamEvent[]): AsyncIterable<AIStreamEvent> {
+function createStream(events: Array<AIStreamEvent>): AsyncIterable<AIStreamEvent> {
     return (async function* streamEvents() {
-        for (const event of events) yield event;
+        for (const event of events) {yield event;}
     })();
 }
 
@@ -253,7 +253,7 @@ describe("useAIChat", () => {
 
         const followUpHistory = mocks.adapter.sendMessage.mock.calls[1]?.[0] as Array<{
             role: string;
-            content: { text: string; files?: AIFile[] };
+            content: { text: string; files?: Array<AIFile> };
         }>;
         expect(followUpHistory).toEqual(
             expect.arrayContaining([
@@ -285,7 +285,7 @@ describe("useAIChat", () => {
         });
 
         const history = mocks.adapter.sendMessage.mock.calls[0]?.[0] as Array<{
-            content: { text: string; files?: AIFile[] };
+            content: { text: string; files?: Array<AIFile> };
         }>;
         expect(history[0]?.content.text).toContain("Attachment metadata only: research.pdf");
         expect(history[0]?.content.files).toBeUndefined();
@@ -293,8 +293,8 @@ describe("useAIChat", () => {
 
     it("ignores a deferred message load after the selected chat changes", async () => {
         const otherChat = { ...chat, id: "chat-2", title: "Other chat" };
-        let resolveOldMessages!: (messages: AIMessage[]) => void;
-        const oldMessages = new Promise<AIMessage[]>((resolve) => {
+        let resolveOldMessages!: (messages: Array<AIMessage>) => void;
+        const oldMessages = new Promise<Array<AIMessage>>((resolve) => {
             resolveOldMessages = resolve;
         });
         const currentMessage = {
@@ -438,7 +438,7 @@ describe("useAIChat", () => {
             await result.current.send("Follow up", { selection: "", context: "" });
         });
 
-        const history = mocks.adapter.sendMessage.mock.calls.at(-1)?.[0] as AIConversationMessage[];
+        const history = mocks.adapter.sendMessage.mock.calls.at(-1)?.[0] as Array<AIConversationMessage>;
         const firstTurn = history.find((message) => message.content.text.includes("Turn 0"));
         const secondTurn = history.find((message) => message.content.text === "Turn 1");
         expect(firstTurn?.content.text).toContain("Attachment metadata only: turn-0.pdf");

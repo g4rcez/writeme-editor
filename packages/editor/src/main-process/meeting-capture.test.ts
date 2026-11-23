@@ -15,7 +15,7 @@ beforeEach(() => {
 async function requestCapture(overrides: Partial<DisplayMediaRequestHandlerHandlerRequest> = {}): Promise<unknown> {
     registerMeetingCapture(session.defaultSession, "http://localhost:5173/");
     const handler = vi.mocked(session.defaultSession.setDisplayMediaRequestHandler).mock.calls[0]?.[0];
-    if (!handler) throw new Error("Capture handler was not registered.");
+    if (!handler) {throw new Error("Capture handler was not registered.");}
     const request = {
         userGesture: true,
         audioRequested: true,

@@ -25,7 +25,7 @@ function createDataTransfer() {
 
 describe("TreeView", () => {
     let contextMenuAction: ((action: ContextMenuAction) => void) | null = null;
-    let directoryEntries: Record<string, TreeNode[]>;
+    let directoryEntries: Record<string, Array<TreeNode>>;
     let readDir: ReturnType<typeof vi.fn>;
     let requestDirectoryAccess: ReturnType<typeof vi.fn>;
     let statFile: ReturnType<typeof vi.fn>;
@@ -59,7 +59,7 @@ describe("TreeView", () => {
             const oldParent = oldPath.substring(0, oldPath.lastIndexOf("/"));
             const newParent = newPath.substring(0, newPath.lastIndexOf("/"));
             const moved = directoryEntries[oldParent]?.find((entry) => entry.path === oldPath);
-            if (!moved) return { success: false, error: "missing source" };
+            if (!moved) {return { success: false, error: "missing source" };}
             directoryEntries[oldParent] = directoryEntries[oldParent]!.filter((entry) => entry.path !== oldPath);
             directoryEntries[newParent] = [
                 ...(directoryEntries[newParent] ?? []),

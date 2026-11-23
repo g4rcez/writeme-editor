@@ -53,17 +53,17 @@ const createEditor = ({
         setSelection: vi.fn((selection: unknown) => ({ selection })),
     };
 
-    const listeners = new Map<string, Set<(...args: any[]) => void>>();
-    const on = vi.fn((event: string, cb: (...args: any[]) => void) => {
+    const listeners = new Map<string, Set<(...args: Array<any>) => void>>();
+    const on = vi.fn((event: string, cb: (...args: Array<any>) => void) => {
         const set = listeners.get(event) ?? new Set();
         set.add(cb);
         listeners.set(event, set);
     });
-    const off = vi.fn((event: string, cb: (...args: any[]) => void) => {
+    const off = vi.fn((event: string, cb: (...args: Array<any>) => void) => {
         const set = listeners.get(event);
-        if (!set) return;
+        if (!set) {return;}
         set.delete(cb);
-        if (set.size === 0) listeners.delete(event);
+        if (set.size === 0) {listeners.delete(event);}
     });
     const viewDom = document.createElement("div");
     const editor: EditorDouble = {
@@ -82,7 +82,7 @@ const createEditor = ({
         off,
         emit: (event: string): void => {
             const set = listeners.get(event);
-            if (!set) return;
+            if (!set) {return;}
             for (const cb of set) {
                 cb(editor);
             }

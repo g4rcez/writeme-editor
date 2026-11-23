@@ -30,20 +30,20 @@ type Props = {
     onSourcePersisted: (note: Note) => void;
 };
 
-const anchorCache = new WeakMap<ProseMirrorNode, { context: string; anchors: Anchor[] }>();
+const anchorCache = new WeakMap<ProseMirrorNode, { context: string; anchors: Array<Anchor> }>();
 
-export function getCommentAnchors(editor: { state: { doc: ProseMirrorNode } }, note: Note): Anchor[] {
+export function getCommentAnchors(editor: { state: { doc: ProseMirrorNode } }, note: Note): Array<Anchor> {
     const aliases = note.metadata.commentReferenceHrefs;
     const context = JSON.stringify([getCommentCompanion(note).href,
         Array.isArray(aliases) ? aliases.filter((value): value is string => typeof value === "string") : []]);
     const cached = anchorCache.get(editor.state.doc);
-    if (cached?.context === context) return cached.anchors;
-    const anchors: Anchor[] = [];
+    if (cached?.context === context) {return cached.anchors;}
+    const anchors: Array<Anchor> = [];
     editor.state.doc.descendants((node, position) => {
-        if (!node.isText) return;
+        if (!node.isText) {return;}
         const link = node.marks.find((mark) => mark.type.name === "link");
         const id = getCommentId(link?.attrs.href, note);
-        if (!id || !node.marks.some((mark) => mark.type.name === "highlight")) return;
+        if (!id || !node.marks.some((mark) => mark.type.name === "highlight")) {return;}
         const last = anchors.at(-1);
         const between = last ? editor.state.doc.textBetween(last.to, position, "\n", "\n") : "";
         if (
@@ -53,7 +53,7 @@ export function getCommentAnchors(editor: { state: { doc: ProseMirrorNode } }, n
         ) {
             last.to = position + node.nodeSize;
             last.text += between + (node.text ?? "");
-        } else anchors.push({ id, from: position, to: position + node.nodeSize, text: node.text ?? "" });
+        } else {anchors.push({ id, from: position, to: position + node.nodeSize, text: node.text ?? "" });}
     });
     anchorCache.set(editor.state.doc, { context, anchors });
     return anchors;
@@ -96,7 +96,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     const anchor = anchors.find((entry) => entry.id === activeId);
 
     const close = useCallback((): void => {
-        if (busyRef.current || draftRef.current?.saved) return;
+        if (busyRef.current || draftRef.current?.saved) {return;}
         setOpen(false);
         setComposing(false);
         setBody("");
@@ -114,21 +114,21 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             editor.isActive("codeBlock") ||
             editor.isActive("code")
         )
-            return;
+            {return;}
         const selection = editor.state.selection;
-        if (selection.empty) return;
+        if (selection.empty) {return;}
         if (!selection.$from.sameParent(selection.$to)) {
             setError("Select text within one paragraph to add a comment.");
             setOpen(true);
             return;
         }
         const quote = editor.state.doc.textBetween(selection.from, selection.to, "\n", "\n");
-        if (!quote.trim()) return;
+        if (!quote.trim()) {return;}
         const currentAnchors = getCommentAnchors(editor, note);
         const containing = currentAnchors.find((entry) => selection.from >= entry.from && selection.to <= entry.to);
         let unsupported = false;
         editor.state.doc.nodesBetween(selection.from, selection.to, (node) => {
-            if (node.isInline && !node.isText && node.type.name !== "hardBreak") unsupported = true;
+            if (node.isInline && !node.isText && node.type.name !== "hardBreak") {unsupported = true;}
             if (
                 node.marks.some(
                     (mark) =>
@@ -136,7 +136,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                         (mark.type.name === "link" && !getCommentId(mark.attrs.href, note)),
                 )
             )
-                unsupported = true;
+                {unsupported = true;}
         });
         if (unsupported) {
             setError("Select text without an existing link, code, or embedded content to add a comment.");
@@ -167,17 +167,17 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         let cancelled = false;
         let unsubscribe: (() => void) | undefined;
         const loaded = (reference: Note | null): void => {
-            if (cancelled) return;
+            if (cancelled) {return;}
             const loadError = loadErrorRef.current;
-            if (loadError) setError((current) => (current === loadError ? "" : current));
+            if (loadError) {setError((current) => (current === loadError ? "" : current));}
             loadErrorRef.current = null;
             setCompanion(reference);
             setLoadFailed(false);
             setLoading(false);
-            if (reference) dispatch.syncNoteFromRepository(reference);
+            if (reference) {dispatch.syncNoteFromRepository(reference);}
         };
         const failed = (reason: unknown): void => {
-            if (cancelled) return;
+            if (cancelled) {return;}
             const message = reason instanceof Error ? reason.message : "Could not load comments.";
             loadErrorRef.current = message;
             setError(message);
@@ -185,11 +185,11 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             setLoading(false);
         };
         const source = noteRef.current;
-        if (isElectron()) void loadCommentNote(source).then(loaded, failed);
+        if (isElectron()) {void loadCommentNote(source).then(loaded, failed);}
         else
-            void Promise.all([import("dexie"), import("@/store/repositories/browser/comments.repository")]).then(
+            {void Promise.all([import("dexie"), import("@/store/repositories/browser/comments.repository")]).then(
                 ([{ liveQuery }, { loadBrowserCommentNote }]) => {
-                    if (cancelled) return;
+                    if (cancelled) {return;}
                     const subscription = liveQuery(() => loadBrowserCommentNote(source, true)).subscribe({
                         next: loaded,
                         error: failed,
@@ -197,7 +197,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     unsubscribe = () => subscription.unsubscribe();
                 },
                 failed,
-            );
+            );}
         return () => {
             cancelled = true;
             unsubscribe?.();
@@ -206,14 +206,14 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
 
     useEffect(() => {
         const update = ({ transaction }: { transaction: Transaction }): void => {
-            if (draftRef.current) draftRef.current.bookmark = draftRef.current.bookmark.map(transaction.mapping);
+            if (draftRef.current) {draftRef.current.bookmark = draftRef.current.bookmark.map(transaction.mapping);}
             if (transaction.docChanged) {
                 setEditorDocument(editor.state.doc);
                 setRevision((value) => value + 1);
             }
         };
         const selection = (): void => {
-            if (draftRef.current || busyRef.current) return;
+            if (draftRef.current || busyRef.current) {return;}
             const position = editor.state.selection.from;
             const selected = getCommentAnchors(editor, note).find(
                 (entry) => entry.from <= position && entry.to >= position,
@@ -230,7 +230,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                 busyRef.current ||
                 draftRef.current
             )
-                return;
+                {return;}
             draftRef.current = null;
             setComposing(false);
             setBody("");
@@ -247,7 +247,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         };
         let detachViewListeners: (() => void) | null = null;
         const attachViewListeners = (): void => {
-            if (!editor.isInitialized || editor.isDestroyed || detachViewListeners) return;
+            if (!editor.isInitialized || editor.isDestroyed || detachViewListeners) {return;}
             editor.on("transaction", update);
             editor.on("selectionUpdate", selection);
             const view = editor.view;
@@ -289,11 +289,11 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
 
     useLayoutEffect(() => {
         const panel = panelRef.current;
-        if (!open || !panel) return;
+        if (!open || !panel) {return;}
         const container = editor.view.dom.closest<HTMLElement>(".writeme-editor");
-        if (!container) return;
+        if (!container) {return;}
         const positionPanel = (): void => {
-            if (editor.isDestroyed) return;
+            if (editor.isDestroyed) {return;}
             const position =
                 draftRef.current?.bookmark.resolve(editor.state.doc).from ??
                 anchor?.from ??
@@ -319,12 +319,12 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
     }, [open, editor, anchor?.from, composing, activeId, revision, busy, loading, body]);
 
     useEffect(() => {
-        if (composing) inputRef.current?.focus();
+        if (composing) {inputRef.current?.focus();}
     }, [composing]);
 
     async function save(): Promise<void> {
         const draft = draftRef.current;
-        if (!draft || busyRef.current || !body.trim()) return;
+        if (!draft || busyRef.current || !body.trim()) {return;}
         busyRef.current = true;
         setBusy(true);
         setError("");
@@ -333,11 +333,11 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
         editor.setEditable(false, false);
         try {
             const selection = draft.bookmark.resolve(editor.state.doc);
-            if (!draft.id && selection.empty) throw new Error("The selected text was removed. Select text again.");
+            if (!draft.id && selection.empty) {throw new Error("The selected text was removed. Select text again.");}
             if (!draft.saved) {
                 let planned: Transaction | undefined;
                 const prepareSource = (id: string, href: string): string => {
-                    if (editor.isDestroyed) throw new Error("The editor was closed before the comment could be saved.");
+                    if (editor.isDestroyed) {throw new Error("The editor was closed before the comment could be saved.");}
                     planned = editor.state.tr;
                     if (!draft.id) {
                         const current = draft.bookmark.resolve(editor.state.doc);
@@ -349,7 +349,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                         planned.addMark(current.from, current.to, editor.schema.marks.highlight!.create());
                     }
                     const serializer = editor.storage.markdown.serializer;
-                    if (!serializer) throw new Error("The Markdown editor is not ready.");
+                    if (!serializer) {throw new Error("The Markdown editor is not ready.");}
                     return serializer.serialize(planned.doc);
                 };
                 const result = await saveNoteComment(
@@ -361,7 +361,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     prepareSource,
                     draft.operationId,
                 );
-                if (editor.isDestroyed) return;
+                if (editor.isDestroyed) {return;}
                 draft.href = result.href ?? getCommentCompanion(note).href;
                 setCompanion(result.note);
                 dispatch.syncNoteFromRepository(result.note);
@@ -371,15 +371,15 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                     draft.id = result.id;
                 } else if (!draft.id) {
                     prepareSource(result.id, result.href ?? getCommentCompanion(note).href);
-                    if (planned) editor.view.dispatch(planned.setMeta("preventUpdate", true));
+                    if (planned) {editor.view.dispatch(planned.setMeta("preventUpdate", true));}
                     draft.id = result.id;
                 }
                 if (!result.source) {
                     draft.saved = true;
                     setSourceSavePending(true);
-                } else draft.saved = false;
+                } else {draft.saved = false;}
             }
-            if (isElectron()) await onSaveSource(getEditorMarkdown(editor), draft.href);
+            if (isElectron()) {await onSaveSource(getEditorMarkdown(editor), draft.href);}
             setActiveId(draft.id);
             setBody("");
             setComposing(false);
@@ -387,8 +387,8 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
             setSourceSavePending(false);
             draftRef.current = null;
             panelRef.current?.focus();
-        } catch (reason) {
-            setError(reason instanceof Error ? reason.message : "Could not save comment.");
+        } catch (error_) {
+            setError(error_ instanceof Error ? error_.message : "Could not save comment.");
         } finally {
             if (!editor.isDestroyed) {
                 Reflect.set(editor.storage, "commentSourcePending", Boolean(draftRef.current?.saved));
@@ -411,7 +411,7 @@ export function NoteComments({ editor, note, readonly, onSaveSource, onSourcePer
                         aria-expanded={open}
                         aria-controls={panelId}
                         onClick={() => {
-                            if (open) close();
+                            if (open) {close();}
                             else {
                                 setOpen(true);
                                 setActiveId(null);

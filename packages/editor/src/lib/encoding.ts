@@ -51,8 +51,8 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
         const b4 = i + 3 < len ? (B64_LOOKUP[str.charCodeAt(i + 3)] ?? 0) : 0;
         const triplet = (b1 << 18) | (b2 << 12) | (b3 << 6) | b4;
         bytes[p++] = (triplet >> 16) & 0xff;
-        if (i + 2 < len) bytes[p++] = (triplet >> 8) & 0xff;
-        if (i + 3 < len) bytes[p++] = triplet & 0xff;
+        if (i + 2 < len) {bytes[p++] = (triplet >> 8) & 0xff;}
+        if (i + 3 < len) {bytes[p++] = triplet & 0xff;}
     }
     return bytes;
 }
@@ -66,7 +66,7 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
  */
 export function utf8ToBase64(str: string): string {
     if (typeof Buffer !== "undefined") {
-        return Buffer.from(str, "utf-8").toString("base64");
+        return Buffer.from(str, "utf8").toString("base64");
     }
     const bytes = new TextEncoder().encode(str);
     return encodeBytesToBase64(bytes);
@@ -81,7 +81,7 @@ export function utf8ToBase64(str: string): string {
  */
 export function base64ToUtf8(str: string): string {
     if (typeof Buffer !== "undefined") {
-        return Buffer.from(str, "base64").toString("utf-8");
+        return Buffer.from(str, "base64").toString("utf8");
     }
     const bytes = decodeBase64ToBytes(str);
     return new TextDecoder().decode(bytes);
@@ -95,7 +95,7 @@ const regex = { init: /^\/+/, end: /\/+$/ };
 
 const trailingPath = (str: string) => (str === "/" ? str : str.replace(regex.init, "/").replace(regex.end, ""));
 
-const join = (baseURL: string, ...urls: string[]) =>
+const join = (baseURL: string, ...urls: Array<string>) =>
     trailingPath(urls.reduce((acc, el) => acc.replace(regex.end, "") + "/" + el.replace(regex.init, ""), baseURL));
 
 export const getUrlNamespace = (namespace: string) => join(window.location.origin, `@${namespace}`);
@@ -104,6 +104,6 @@ export const innerUrl = (path: string, namespace: string) => join(getUrlNamespac
 
 export const sanitizeAnsi = (text: string) =>
     text
-        .replace(/\x1B\].*?(\x07|\x1B\\)/g, "")
-        .replace(/\x1B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+        .replaceAll(/\u001B\].*?(\u0007|\u001B\\)/g, "")
+        .replaceAll(/\u001B\[[0-9;]*[A-GJKSTfhpqrsu]/g, "")
+        .replaceAll(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");

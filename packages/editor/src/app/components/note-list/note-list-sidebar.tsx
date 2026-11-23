@@ -71,7 +71,7 @@ const NoteItem = ({
                         {note.title || "Untitled"}
                     </h3>
                     <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                        {note.description || note.content.substring(0, 150).replace(/[#*`]/g, "") || "No content"}
+                        {note.description || note.content.slice(0, 150).replaceAll(/[#*`]/g, "") || "No content"}
                     </p>
                     {note.tags.length > 0 && (
                         <div className="mb-1.5 flex flex-wrap gap-1">
@@ -127,7 +127,7 @@ const NoteItem = ({
 };
 
 const NoteListItems = (props: {
-    notes: NoteWithTags[];
+    notes: Array<NoteWithTags>;
     onCreateNewNote: () => void;
     activeNoteId: string | undefined;
 }) => {
@@ -135,7 +135,7 @@ const NoteListItems = (props: {
     const [pendingFavoriteIds, setPendingFavoriteIds] = useState<Set<string>>(() => new Set());
     const toggleFavorite = async (e: React.MouseEvent, note: NoteWithTags) => {
         e.stopPropagation();
-        if (pendingFavoriteIds.has(note.id)) return;
+        if (pendingFavoriteIds.has(note.id)) {return;}
         setPendingFavoriteIds((ids) => new Set(ids).add(note.id));
         const originalNote = Note.parse(note);
         const updatedNote = Note.parse(note);
@@ -143,10 +143,10 @@ const NoteListItems = (props: {
         globalDispatch.syncNoteState(updatedNote);
         try {
             await repositories.notes.update(note.id, updatedNote);
-        } catch (reason) {
+        } catch (error) {
             globalDispatch.syncNoteState(originalNote);
             notificationRef.current?.(
-                <span>{reason instanceof Error ? reason.message : "Failed to update favorites"}</span>,
+                <span>{error instanceof Error ? error.message : "Failed to update favorites"}</span>,
                 { theme: "danger", closable: true, timeout: 4000 },
             );
         } finally {
@@ -269,8 +269,8 @@ export const NoteListSidebar = () => {
     const query = state.searchQuery.trim();
     const isFavoritesView = state.activeActivity === "favorites";
     const hasNotes = globalState.notes.some((note) => {
-        if (state.activeActivity === "read-it-later") return !note.deletedAt && isReadItLaterNote(note);
-        if (state.activeActivity === "favorites") return note.favorite;
+        if (state.activeActivity === "read-it-later") {return !note.deletedAt && isReadItLaterNote(note);}
+        if (state.activeActivity === "favorites") {return note.favorite;}
         if (state.activeActivity === "tags" && state.activeView.type === "tag") {
             return note.tags.includes(state.activeView.id);
         }

@@ -12,11 +12,11 @@ const VIDEO_EXTENSIONS = new Set(["mp4", "ogg", "webm"]);
 
 export function parseObsidianLink(raw: string): ObsidianLink | null {
     const match = raw.match(/^(!)?\[\[([^\]\n]+)\]\]$/);
-    if (!match) return null;
+    if (!match) {return null;}
 
     const embed = Boolean(match[1]);
     const rawBody = match[2]?.trim();
-    if (!rawBody) return null;
+    if (!rawBody) {return null;}
 
     const [targetPart, aliasPart] = splitOnce(rawBody, "|");
     const targetWithSubpath = targetPart.trim();
@@ -83,6 +83,6 @@ function getExtension(target: string): string {
 
 function splitOnce(value: string, delimiter: string): [string, string?] {
     const index = value.indexOf(delimiter);
-    if (index < 0) return [value];
+    if (index < 0) {return [value];}
     return [value.slice(0, index), value.slice(index + delimiter.length)];
 }

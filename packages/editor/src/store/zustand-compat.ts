@@ -9,7 +9,7 @@ type ReducerContext<State> = {
     previousState: () => State;
 };
 
-type ReducerFactories = Record<string, (...args: any[]) => any>;
+type ReducerFactories = Record<string, (...args: Array<any>) => any>;
 
 type ReducerDispatchers<T extends ReducerFactories> = {
     [K in keyof T]: T[K] extends (...args: infer A) => infer R
@@ -72,11 +72,11 @@ export function createZustandCompatStore<State extends object, Factories extends
     }
 
     const dispatchers = {} as ReducerDispatchers<Factories>;
-    for (const [method, dispatch] of Object.entries(rawFactories) as [
+    for (const [method, dispatch] of Object.entries(rawFactories) as Array<[
         keyof Factories & string,
-        (...args: any[]) => any,
-    ][]) {
-        dispatchers[method as keyof Factories] = ((...args: any[]): any => {
+        (...args: Array<any>) => any,
+    ]>) {
+        dispatchers[method as keyof Factories] = ((...args: Array<any>): any => {
             const result = dispatch(...args);
             if (result && typeof (result as PromiseLike<unknown>).then === "function") {
                 return (result as Promise<unknown>).then((nextState) => {

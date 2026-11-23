@@ -12,7 +12,7 @@ const manualChunks = async (file: string) => {
     );
     const output = loaded?.config.build?.rollupOptions?.output;
     const chunks = (Array.isArray(output) ? output[0] : output)?.manualChunks;
-    if (typeof chunks !== "function") throw new Error(`${file} has no manualChunks function`);
+    if (typeof chunks !== "function") {throw new Error(`${file} has no manualChunks function`);}
     return (id: string) => (chunks as (id: string, meta: never) => string | undefined)(id, undefined as never);
 };
 

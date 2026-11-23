@@ -93,7 +93,7 @@ describe("queryNotes", () => {
     });
 
     test("clamps limit at 1000", () => {
-        const rows = queryNotes({ limit: 99999 }, TEST_DB);
+        const rows = queryNotes({ limit: 99_999 }, TEST_DB);
         expect(rows.length).toBeLessThanOrEqual(1000);
     });
 });

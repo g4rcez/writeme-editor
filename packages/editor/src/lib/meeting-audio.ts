@@ -32,17 +32,17 @@ export function isSameMeetingEndpointOrigin(before: string, after: string): bool
 async function acquireStream(request: Promise<MediaStream>, signal?: AbortSignal): Promise<MediaStream> {
     const granted = request.then((stream) => {
         if (signal?.aborted) {
-            for (const track of stream.getTracks()) track.stop();
+            for (const track of stream.getTracks()) {track.stop();}
             signal.throwIfAborted();
         }
         return stream;
     });
-    if (!signal) return granted;
+    if (!signal) {return granted;}
     let cancel: () => void = () => {};
     const aborted = new Promise<never>((_, reject) => {
         cancel = () => reject(signal.reason);
         signal.addEventListener("abort", cancel, { once: true });
-        if (signal.aborted) cancel();
+        if (signal.aborted) {cancel();}
     });
     try {
         return await Promise.race([granted, aborted]);
@@ -52,7 +52,7 @@ async function acquireStream(request: Promise<MediaStream>, signal?: AbortSignal
 }
 
 export type MeetingRecording = {
-    stop: () => Promise<RecordedAudio[]>;
+    stop: () => Promise<Array<RecordedAudio>>;
     dispose: () => void;
 };
 
@@ -70,38 +70,38 @@ export async function startMeetingRecording(options: {
         throw new Error("System audio capture is unavailable. Use microphone only or a supported desktop browser.");
     }
 
-    const streams: MediaStream[] = [];
-    const recorders: CapturedRecorder[] = [];
-    const listeners: { track: MediaStreamTrack; listener: () => void }[] = [];
+    const streams: Array<MediaStream> = [];
+    const recorders: Array<CapturedRecorder> = [];
+    const listeners: Array<{ track: MediaStreamTrack; listener: () => void }> = [];
     let ended = false;
     let disposed = false;
     let recordingError: Error | undefined;
     let durationTimer: ReturnType<typeof setTimeout> | undefined;
-    let stopped: Promise<RecordedAudio[]> | undefined;
+    let stopped: Promise<Array<RecordedAudio>> | undefined;
 
     const release = (): void => {
         clearTimeout(durationTimer);
         options.signal?.removeEventListener("abort", cancel);
-        for (const { track, listener } of listeners) track.removeEventListener("ended", listener);
-        for (const stream of streams) for (const track of stream.getTracks()) track.stop();
+        for (const { track, listener } of listeners) {track.removeEventListener("ended", listener);}
+        for (const stream of streams) {for (const track of stream.getTracks()) {track.stop();}}
     };
     const finish = (): void => {
-        if (ended) return;
+        if (ended) {return;}
         ended = true;
         for (const { recorder } of recorders) {
-            if (recorder.state !== "inactive") recorder.stop();
+            if (recorder.state !== "inactive") {recorder.stop();}
         }
         release();
     };
     const endAutomatically = (): void => {
-        if (ended) return;
+        if (ended) {return;}
         finish();
         options.onEnded?.();
     };
     const cancel = (): void => {
         disposed = true;
         finish();
-        for (const { clear } of recorders) clear();
+        for (const { clear } of recorders) {clear();}
     };
     options.signal?.addEventListener("abort", cancel, { once: true });
     const capture = (stream: MediaStream, source: AudioSource): void => {
@@ -110,14 +110,14 @@ export async function startMeetingRecording(options: {
             ...(mimeType ? { mimeType } : {}),
             audioBitsPerSecond: 48_000,
         });
-        const chunks: Blob[] = [];
+        const chunks: Array<Blob> = [];
         let bytes = 0;
         const completed = new Promise<RecordedAudio>((resolve) => {
             recorder.addEventListener("dataavailable", (event) => {
-                if (disposed || !event.data.size) return;
+                if (disposed || !event.data.size) {return;}
                 chunks.push(event.data);
                 bytes += event.data.size;
-                if (bytes >= MAX_RECORDING_BYTES) endAutomatically();
+                if (bytes >= MAX_RECORDING_BYTES) {endAutomatically();}
             });
             recorder.addEventListener("error", () => {
                 recordingError = new Error(`The ${source} recording failed. Start a new recording.`);
@@ -170,7 +170,7 @@ export async function startMeetingRecording(options: {
             throw new Error("Audio sharing ended before recording could start. Try again.");
         }
         capture(microphoneStream, "microphone");
-        if (systemStream) capture(systemStream, "system");
+        if (systemStream) {capture(systemStream, "system");}
         for (const stream of streams) {
             for (const track of stream.getTracks()) {
                 track.addEventListener("ended", endAutomatically);
@@ -179,12 +179,12 @@ export async function startMeetingRecording(options: {
         }
         durationTimer = setTimeout(endAutomatically, MAX_RECORDING_DURATION);
         return {
-            stop: (): Promise<RecordedAudio[]> => {
-                stopped ??= (async (): Promise<RecordedAudio[]> => {
+            stop: (): Promise<Array<RecordedAudio>> => {
+                stopped ??= (async (): Promise<Array<RecordedAudio>> => {
                     finish();
                     const audio = await Promise.all(recorders.map(({ completed }) => completed));
-                    if (disposed) throw new Error("The recording was discarded.");
-                    if (recordingError) throw recordingError;
+                    if (disposed) {throw new Error("The recording was discarded.");}
+                    if (recordingError) {throw recordingError;}
                     return audio;
                 })();
                 return stopped;
@@ -192,14 +192,14 @@ export async function startMeetingRecording(options: {
             dispose: (): void => {
                 disposed = true;
                 finish();
-                for (const { clear } of recorders) clear();
+                for (const { clear } of recorders) {clear();}
             },
         };
     } catch (error) {
         disposed = true;
         finish();
         release();
-        for (const { clear } of recorders) clear();
+        for (const { clear } of recorders) {clear();}
         throw error;
     }
 }
@@ -249,11 +249,11 @@ export async function transcribeMeetingAudio(
         localSpeaker: string;
         signal?: AbortSignal;
     },
-): Promise<MeetingSegment[]> {
+): Promise<Array<MeetingSegment>> {
     const settings = TranscriptionOptionsSchema.parse(options);
     options.signal?.throwIfAborted();
-    if (!audio.size) throw new Error("The recording contains no audio. Record again before transcribing.");
-    if (audio.size > MAX_UPLOAD_BYTES) throw new Error("The recording exceeds the 25 MB transcription upload limit.");
+    if (!audio.size) {throw new Error("The recording contains no audio. Record again before transcribing.");}
+    if (audio.size > MAX_UPLOAD_BYTES) {throw new Error("The recording exceeds the 25 MB transcription upload limit.");}
     const url = new URL(settings.endpoint);
     if (url.hostname === "api.openai.com" && !settings.apiKey) {
         throw new Error("An OpenAI API key is required for this transcription endpoint.");
@@ -265,10 +265,10 @@ export async function transcribeMeetingAudio(
     const diarized = settings.model === "gpt-4o-transcribe-diarize";
     const whisper = settings.model === "whisper-1" || WHISPER_MODELS.some(({ value }) => value === settings.model);
     body.set("response_format", diarized ? "diarized_json" : whisper ? "verbose_json" : "json");
-    if (whisper) body.set("timestamp_granularities[]", "segment");
-    if (diarized) body.set("chunking_strategy", "auto");
+    if (whisper) {body.set("timestamp_granularities[]", "segment");}
+    if (diarized) {body.set("chunking_strategy", "auto");}
     const headers = new Headers();
-    if (settings.apiKey) headers.set("authorization", `Bearer ${settings.apiKey}`);
+    if (settings.apiKey) {headers.set("authorization", `Bearer ${settings.apiKey}`);}
     const request = url.origin === "https://api.openai.com" && isElectron() ? proxyFetch : fetch;
     const controller = new AbortController();
     const cancel = (): void => controller.abort(options.signal?.reason);
@@ -304,7 +304,7 @@ export async function transcribeMeetingAudio(
             throw new Error("The transcription endpoint returned invalid JSON.");
         }
         const parsed = TranscriptionResponseSchema.safeParse(value);
-        if (!parsed.success) throw new Error("The transcription endpoint returned an invalid transcript.");
+        if (!parsed.success) {throw new Error("The transcription endpoint returned an invalid transcript.");}
         const segments: NonNullable<z.infer<typeof TranscriptionResponseSchema>["segments"]> = parsed.data.segments
             ?.length
             ? parsed.data.segments

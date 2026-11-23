@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Dates } from "@/lib/dates";
 import { createExtensions } from "../extensions";
 
-const editors: Editor[] = [];
+const editors: Array<Editor> = [];
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-01-02T12:00:00Z"));
@@ -19,7 +19,7 @@ const typeText = (editor: Editor, input: string): void => {
         const handled = editor.view.someProp("handleTextInput", (handler) =>
             handler(editor.view, from, to, text, () => editor.state.tr.insertText(text, from, to)),
         );
-        if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+        if (!handled) {editor.view.dispatch(editor.state.tr.insertText(text, from, to));}
     }
 };
 

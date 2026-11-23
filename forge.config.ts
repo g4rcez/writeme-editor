@@ -39,7 +39,7 @@ const osxSign = hasAppleNotarizeCredentials
           identityValidation: false,
           preAutoEntitlements: false,
           continueOnError: false,
-          optionsForFile: (): { entitlements: string[]; hardenedRuntime: boolean; timestamp: string } => ({
+          optionsForFile: (): { entitlements: Array<string>; hardenedRuntime: boolean; timestamp: string } => ({
               entitlements: [],
               // Ad-hoc signatures have no team ID for library validation.
               hardenedRuntime: false,
@@ -67,7 +67,7 @@ const asarUnpack = [
 ];
 
 async function makeSpawnHelpersExecutable(buildPath: string): Promise<void> {
-    if (process.platform === "win32") return;
+    if (process.platform === "win32") {return;}
     const root = path.join(buildPath, "node_modules/node-pty");
     const entries = await fs.readdir(root, { recursive: true, withFileTypes: true }).catch(() => []);
     await Promise.all(
@@ -127,16 +127,16 @@ const config: ForgeConfig = {
         },
         preMake: async () => {
             if (storeBuild)
-                throw new Error("Store profiles require store packaging; direct installer makers are disabled.");
+                {throw new Error("Store profiles require store packaging; direct installer makers are disabled.");}
         },
         packageAfterCopy: async (_config, buildPath) => {
             await assertCompiledProfiles(buildProfile, buildPath);
             if (!buildProfile.features.cli)
-                await fs.rm(path.join(buildPath, "packages/cli"), { recursive: true, force: true });
+                {await fs.rm(path.join(buildPath, "packages/cli"), { recursive: true, force: true });}
             if (!buildProfile.features.terminal)
-                await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });
+                {await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });}
             await copyRuntimePaths(buildPath);
-            if (buildProfile.features.terminal) await makeSpawnHelpersExecutable(buildPath);
+            if (buildProfile.features.terminal) {await makeSpawnHelpersExecutable(buildPath);}
             await fs.writeFile(path.join(buildPath, "writeme-build.json"), JSON.stringify(buildProfile, null, 2));
         },
     },

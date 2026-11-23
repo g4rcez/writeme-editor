@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { type NoteWithTags } from "./use-note-list";
+import type { NoteWithTags } from "./use-note-list";
 
 export function useKeyboardNavigation(
-    notes: NoteWithTags[],
+    notes: Array<NoteWithTags>,
     selectedNoteId: string | undefined,
     containerRef: React.RefObject<HTMLElement>,
 ) {

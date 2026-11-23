@@ -23,10 +23,10 @@ export const gitIpcHandler = () => {
     ipcMain.handle("git:status", async (_, dir: unknown): Promise<GitStatusResult> => {
         const parsed = DirSchema.safeParse(dir);
         if (!parsed.success)
-            return {
+            {return {
                 kind: "error",
                 stderr: parsed.error.issues[0]?.message ?? "invalid dir",
-            };
+            };}
         return getStatus(parsed.data);
     });
 
@@ -52,7 +52,7 @@ export const gitIpcHandler = () => {
 
     ipcMain.handle("git:diff", async (_, dir: unknown): Promise<string> => {
         const parsed = DirSchema.safeParse(dir);
-        if (!parsed.success) return "";
+        if (!parsed.success) {return "";}
         return getDiff(parsed.data);
     });
 };
