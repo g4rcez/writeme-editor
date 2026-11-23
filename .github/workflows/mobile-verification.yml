@@ -113,6 +113,7 @@ jobs:
                   name: platform-build-${{ matrix.platform }}
                   path: release-artifacts/
                   if-no-files-found: error
+                  retention-days: 1
             - name: Upload mobile evidence
               if: always()
               uses: actions/upload-artifact@v4
@@ -120,4 +121,4 @@ jobs:
                   name: mobile-verification-${{ matrix.platform }}
                   path: artifacts/playwright/${{ matrix.platform }}/
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3

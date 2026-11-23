@@ -86,6 +86,7 @@ jobs:
                   name: platform-build-${{ matrix.platform }}
                   path: out/make/**
                   if-no-files-found: error
+                  retention-days: 1
             - name: Upload runtime evidence
               if: always()
               uses: actions/upload-artifact@v4
@@ -97,4 +98,4 @@ jobs:
                       .omo/evidence/mcp-integration/native/
                   include-hidden-files: true
                   if-no-files-found: warn
-                  retention-days: 14
+                  retention-days: 3
