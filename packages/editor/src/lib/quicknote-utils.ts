@@ -1,7 +1,7 @@
 import { Dates } from "@/lib/dates";
 
-function joinPath(...segments: string[]): string {
-    return segments.join("/").replace(/\/+/g, "/").replace(/\/$/, "");
+function joinPath(...segments: Array<string>): string {
+    return segments.join("/").replaceAll(/\/+/g, "/").replace(/\/$/, "");
 }
 
 export function getDailyQuickNoteName(date: Date): string {

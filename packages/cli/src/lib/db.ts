@@ -21,20 +21,20 @@ export type QueryTagsOptions = {
     note?: string;
 };
 
-export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[] {
+export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Array<Note> {
     const db = openDatabase(dbPath);
     try {
         const limit = Math.min(opts.limit, 1000);
-        const conditions: string[] = [];
-        const bindParams: (string | number)[] = [];
+        const conditions: Array<string> = [];
+        const bindParams: Array<string | number> = [];
 
         if (opts.type) {
             conditions.push("noteType = ?");
             bindParams.push(opts.type);
         }
         if (opts.search) {
-            conditions.push("(title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')");
-            const pattern = `%${opts.search.replace(/[\\%_]/g, "\\$&")}%`;
+            conditions.push(String.raw`(title LIKE ? ESCAPE '\' OR content LIKE ? ESCAPE '\')`);
+            const pattern = `%${opts.search.replaceAll(/[\\%_]/g, String.raw`\$&`)}%`;
             bindParams.push(pattern, pattern);
         }
 
@@ -49,7 +49,7 @@ export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[
         ORDER BY n.updatedAt DESC
         LIMIT ?
       `;
-            return db.prepare(sql).all(opts.tag, ...bindParams, limit) as Note[];
+            return db.prepare(sql).all(opts.tag, ...bindParams, limit) as Array<Note>;
         }
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -61,13 +61,13 @@ export function queryNotes(opts: QueryNotesOptions, dbPath = getDbPath()): Note[
       ORDER BY updatedAt DESC
       LIMIT ?
     `;
-        return db.prepare(sql).all(...bindParams, limit) as Note[];
+        return db.prepare(sql).all(...bindParams, limit) as Array<Note>;
     } finally {
         db.close();
     }
 }
 
-export function queryTags(opts: QueryTagsOptions, dbPath = getDbPath()): Hashtag[] {
+export function queryTags(opts: QueryTagsOptions, dbPath = getDbPath()): Array<Hashtag> {
     const db = openDatabase(dbPath);
     try {
         if (opts.note) {
@@ -75,30 +75,30 @@ export function queryTags(opts: QueryTagsOptions, dbPath = getDbPath()): Hashtag
                 filePath: string | null;
             } | null;
             const filePath = noteRow?.filePath ?? null;
-            if (!filePath) return [];
+            if (!filePath) {return [];}
             return db
                 .prepare("SELECT * FROM hashtags WHERE filename = ? ORDER BY hashtag ASC")
-                .all(filePath) as Hashtag[];
+                .all(filePath) as Array<Hashtag>;
         }
-        return db.prepare("SELECT * FROM hashtags ORDER BY hashtag ASC").all() as Hashtag[];
+        return db.prepare("SELECT * FROM hashtags ORDER BY hashtag ASC").all() as Array<Hashtag>;
     } finally {
         db.close();
     }
 }
 
-export function querySettings(dbPath = getDbPath()): Setting[] {
+export function querySettings(dbPath = getDbPath()): Array<Setting> {
     const db = openDatabase(dbPath);
     try {
-        return db.prepare("SELECT * FROM settings ORDER BY name ASC").all() as Setting[];
+        return db.prepare("SELECT * FROM settings ORDER BY name ASC").all() as Array<Setting>;
     } finally {
         db.close();
     }
 }
 
-export function queryProjects(dbPath = getDbPath()): Project[] {
+export function queryProjects(dbPath = getDbPath()): Array<Project> {
     const db = openDatabase(dbPath);
     try {
-        return db.prepare("SELECT * FROM projects ORDER BY title ASC").all() as Project[];
+        return db.prepare("SELECT * FROM projects ORDER BY title ASC").all() as Array<Project>;
     } finally {
         db.close();
     }

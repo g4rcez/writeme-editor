@@ -23,8 +23,8 @@ export type WorkspaceStats = WorkspaceOptions & { directories: number; totalChar
 export const DEFAULT_WORKSPACE: WorkspaceOptions = {
     notes: 1500,
     folders: 30,
-    noteChars: 8_000,
-    dotFiles: 4_000,
+    noteChars: 8000,
+    dotFiles: 4000,
     bigNotes: 5,
     bigNoteChars: 300_000,
 };
@@ -37,8 +37,8 @@ const WORDS =
 const random = (seed: number) => {
     let state = seed >>> 0;
     return () => {
-        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-        return state / 0x100000000;
+        state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+        return state / 0x1_00_00_00_00;
     };
 };
 
@@ -141,12 +141,12 @@ require(${JSON.stringify(buildEntry(build))});
 }
 
 export const ipcCounts = (app: ElectronApplication): Promise<Record<string, number>> =>
-    app.evaluate(() => ({ ...((globalThis as unknown as { __ipc: Record<string, number> }).__ipc ?? {}) }));
+    app.evaluate(() => ({ ...(globalThis as unknown as { __ipc: Record<string, number> }).__ipc }));
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Resolves once no `fs:*` / `db:*` IPC has happened for `idleMs`, i.e. the app finished loading its data. */
-export async function waitForQuiescence(app: ElectronApplication, idleMs = 3_000, maxMs = 180_000): Promise<number> {
+export async function waitForQuiescence(app: ElectronApplication, idleMs = 3000, maxMs = 180_000): Promise<number> {
     const started = Date.now();
     const total = (counts: Record<string, number>) =>
         Object.entries(counts)
@@ -160,7 +160,7 @@ export async function waitForQuiescence(app: ElectronApplication, idleMs = 3_000
         if (current !== last) {
             last = current;
             lastChange = Date.now();
-        } else if (Date.now() - lastChange >= idleMs) return lastChange - started;
+        } else if (Date.now() - lastChange >= idleMs) {return lastChange - started;}
     }
     throw new Error(`Application never became idle within ${maxMs}ms`);
 }
@@ -186,19 +186,19 @@ export type Snapshot = {
     ipc: Record<string, number>;
 };
 
-const psTable = (pids: number[]): Map<number, number> => {
+const psTable = (pids: Array<number>): Map<number, number> => {
     const output = execFileSync("ps", ["-o", "pid=,rss=", "-p", pids.join(",")], { encoding: "utf8" });
     const table = new Map<number, number>();
     for (const line of output.split("\n")) {
         const [pid, rss] = line.trim().split(/\s+/).map(Number);
-        if (pid !== undefined && rss !== undefined && Number.isFinite(pid) && Number.isFinite(rss)) table.set(pid, rss);
+        if (pid !== undefined && rss !== undefined && Number.isFinite(pid) && Number.isFinite(rss)) {table.set(pid, rss);}
     }
     return table;
 };
 
 const UNIT_MB: Record<string, number> = { B: 1 / 1024 / 1024, KB: 1 / 1024, MB: 1, GB: 1024 };
 
-const footprintTable = (pids: number[]): Map<number, number> => {
+const footprintTable = (pids: Array<number>): Map<number, number> => {
     const table = new Map<number, number>();
     try {
         const output = execFileSync("footprint", pids.flatMap((pid) => ["-p", String(pid)]), {
@@ -239,7 +239,7 @@ const openDescriptors = (pid: number): number => {
 };
 
 export async function snapshot(app: ElectronApplication, options: { gc?: boolean } = {}): Promise<Snapshot> {
-    if (options.gc) await collectGarbage(app);
+    if (options.gc) {await collectGarbage(app);}
     const { mainPid, mainHeapBytes, processes } = await app.evaluate(({ app: electron }) => {
         const usage = process.memoryUsage();
         return {
@@ -279,14 +279,14 @@ export async function snapshot(app: ElectronApplication, options: { gc?: boolean
 }
 
 /** Median of several snapshots taken `gapMs` apart, which smooths allocator and GC noise. */
-export async function steadySnapshot(app: ElectronApplication, samples = 5, gapMs = 2_000): Promise<Snapshot> {
-    const taken: Snapshot[] = [];
+export async function steadySnapshot(app: ElectronApplication, samples = 5, gapMs = 2000): Promise<Snapshot> {
+    const taken: Array<Snapshot> = [];
     for (let index = 0; index < samples; index++) {
         taken.push(await snapshot(app, { gc: true }));
-        if (index < samples - 1) await sleep(gapMs);
+        if (index < samples - 1) {await sleep(gapMs);}
     }
-    const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
-    const last = taken[taken.length - 1]!;
+    const median = (values: Array<number>) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]!;
+    const last = taken.at(-1)!;
     return {
         ...last,
         footprintMB: median(taken.map((item) => item.footprintMB)),
@@ -302,7 +302,7 @@ const HEAVY_CHUNK = /(?:^|\/)(shiki|excalidraw|mermaid|graphviz|mathjs)-[\w-]+\.
 
 export type StartupBundle = {
     /** Heavy libraries the renderer entry loads (statically or via modulepreload) before any note is opened. */
-    heavyChunksAtStartup: string[];
+    heavyChunksAtStartup: Array<string>;
     /** Total bytes of the JS that the HTML preloads plus the entry chunk. */
     startupJsKB: number;
     /** Files shipped in the renderer bundle. */
@@ -314,11 +314,11 @@ export function inspectStartupBundle(build: Build): StartupBundle {
     const archive = buildAsar(build);
     const files = asar.listPackage(archive, { isPack: false }).map((file) => file.replaceAll("\\", "/").replace(/^\//, ""));
     const htmlPath = files.find((file) => /\.vite\/renderer\/[^/]+\/index\.html$/.test(file));
-    if (!htmlPath) throw new Error("Renderer index.html not found inside app.asar");
+    if (!htmlPath) {throw new Error("Renderer index.html not found inside app.asar");}
     const html = asar.extractFile(archive, htmlPath).toString("utf8");
     const base = path.posix.dirname(htmlPath);
     const eager = new Set<string>();
-    const queue: string[] = [];
+    const queue: Array<string> = [];
     const add = (reference: string) => {
         const resolved = path.posix.normalize(path.posix.join(base, reference.replace(/^\.?\//, "")));
         if (!eager.has(resolved) && files.includes(resolved)) {
@@ -326,7 +326,7 @@ export function inspectStartupBundle(build: Build): StartupBundle {
             queue.push(resolved);
         }
     };
-    for (const match of html.matchAll(/(?:src|href)="([^"]+\.js)"/g)) add(match[1]!);
+    for (const match of html.matchAll(/(?:src|href)="([^"]+\.js)"/g)) {add(match[1]!);}
     // static `import ... from "./x.js"` edges of every eagerly loaded chunk (dynamic `import()` is lazy and skipped)
     while (queue.length) {
         const current = queue.pop()!;
@@ -367,10 +367,10 @@ export async function closeSecondaryWindows(app: ElectronApplication, timeoutMs 
             const floating = BrowserWindow.getAllWindows().filter(
                 (window) => !window.isDestroyed() && /quicknote|mathnote|floating-editor/.test(window.webContents.getURL()),
             );
-            for (const window of floating) window.destroy();
+            for (const window of floating) {window.destroy();}
             return floating.length;
         });
-        if (remaining === 0 && app.windows().length <= 1) return;
+        if (remaining === 0 && app.windows().length <= 1) {return;}
         await sleep(500);
     }
     throw new Error("Floating windows did not close");

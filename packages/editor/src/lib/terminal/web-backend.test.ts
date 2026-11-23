@@ -4,14 +4,14 @@ import { CommandRegistry, WebTerminalBackend, type CommandHandler } from "./web-
 const mockShell = vi.hoisted(() => ({
     options: null as Record<string, unknown> | null,
     registerCommand: vi.fn(),
-    inputs: [] as string[],
+    inputs: [] as Array<string>,
     attachGate: null as Promise<void> | null,
     attachError: null as Error | null,
     inputError: null as Error | null,
 }));
 
 const mockDefineCommand = vi.hoisted(() =>
-    vi.fn((name: string, handler: (args: string[]) => Promise<unknown>, options: { trusted: boolean }) => ({
+    vi.fn((name: string, handler: (args: Array<string>) => Promise<unknown>, options: { trusted: boolean }) => ({
         name,
         handler,
         options,
@@ -27,14 +27,14 @@ vi.mock("@wterm/just-bash", () => ({
         }
 
         async attach(write: (data: string) => void): Promise<void> {
-            if (mockShell.attachGate) await mockShell.attachGate;
-            if (mockShell.attachError) throw mockShell.attachError;
+            if (mockShell.attachGate) {await mockShell.attachGate;}
+            if (mockShell.attachError) {throw mockShell.attachError;}
             write("shell-prompt");
         }
 
         async handleInput(data: string): Promise<void> {
             mockShell.inputs.push(data);
-            if (mockShell.inputError) throw mockShell.inputError;
+            if (mockShell.inputError) {throw mockShell.inputError;}
         }
     },
 }));
@@ -43,13 +43,13 @@ vi.mock("just-bash", () => ({ defineCommand: mockDefineCommand }));
 
 type RegisteredCommand = {
     name: string;
-    handler: (args: string[]) => Promise<unknown>;
+    handler: (args: Array<string>) => Promise<unknown>;
     options: { trusted: boolean };
 };
 
 function getRegisteredCommand(): RegisteredCommand {
     const command = mockShell.registerCommand.mock.calls[0]?.[0];
-    if (!command) throw new Error("Expected a command to be registered");
+    if (!command) {throw new Error("Expected a command to be registered");}
     return command as RegisteredCommand;
 }
 

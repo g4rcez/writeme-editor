@@ -11,7 +11,7 @@ import { getEditorMarkdown } from "./editor-storage";
 import { buildTaskNoteContent, taskNoteExtensions } from "./task-note";
 import { isTaskNoteMarkdown } from "./task-note-markdown";
 
-const editors: Editor[] = [];
+const editors: Array<Editor> = [];
 function createEditor(content = buildTaskNoteContent()): Editor {
     const editor = new Editor({ extensions: taskNoteExtensions(), content });
     editors.push(editor);

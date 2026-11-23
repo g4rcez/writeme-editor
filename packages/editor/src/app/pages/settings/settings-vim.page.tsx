@@ -29,34 +29,34 @@ export default function SettingsVimPage(): React.JSX.Element {
     const [message, setMessage] = useState("");
 
     const validate = async (save: boolean): Promise<void> => {
-        if (!settings) return;
+        if (!settings) {return;}
         setBusy(true);
         setError("");
         setMessage(FEATURES.vimScripts ? "Validating init.ts..." : "Saving Vim settings...");
         try {
-            if (FEATURES.vimScripts) await loadVimConfiguration(settings.vimConfig);
+            if (FEATURES.vimScripts) {await loadVimConfiguration(settings.vimConfig);}
             if (save)
-                await saveSettingsPatch({
+                {await saveSettingsPatch({
                     vimMode: settings.vimMode,
                     ...(FEATURES.vimScripts ? { vimConfig: settings.vimConfig } : {}),
-                });
+                });}
             setMessage(save ? "Vim settings saved for all editors." : "init.ts is valid.");
-        } catch (reason) {
+        } catch (error_) {
             setMessage("");
-            setError(reason instanceof Error ? reason.message : String(reason));
+            setError(error_ instanceof Error ? error_.message : String(error_));
         } finally {
             setBusy(false);
         }
     };
 
-    if (!settings) return <output className="p-8">Loading Vim settings...</output>;
+    if (!settings) {return <output className="p-8">Loading Vim settings...</output>;}
     return (
         <div
             onKeyDownCapture={(event) => {
-                if (!event.ctrlKey || event.altKey || event.shiftKey || event.key.toLowerCase() !== "s") return;
+                if (!event.ctrlKey || event.altKey || event.shiftKey || event.key.toLowerCase() !== "s") {return;}
                 event.preventDefault();
                 event.stopPropagation();
-                if (!busy && !event.repeat) void validate(true);
+                if (!busy && !event.repeat) {void validate(true);}
             }}
         >
             <SettingsPageShell
@@ -68,7 +68,7 @@ export default function SettingsVimPage(): React.JSX.Element {
                         size="small"
                         disabled={busy}
                         onClick={() => {
-                            if (!busy) void validate(true);
+                            if (!busy) {void validate(true);}
                         }}
                     >
                         {busy ? "Saving..." : "Save Vim"}

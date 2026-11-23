@@ -40,17 +40,17 @@ export function useKeyboard(): KeyboardState {
                     if (disposed) {
                         void show.remove();
                         void hide.remove();
-                    } else handles.push(show, hide);
+                    } else {handles.push(show, hide);}
                 })
                 .catch((error: unknown) => console.error("Could not observe the keyboard:", error));
             return () => {
                 disposed = true;
-                for (const handle of handles) void handle.remove();
+                for (const handle of handles) {void handle.remove();}
             };
         }
 
         const viewport = typeof window === "undefined" ? null : window.visualViewport;
-        if (!viewport) return;
+        if (!viewport) {return;}
         const update = (): void => setState(keyboardFromViewport(window.innerHeight, viewport));
         viewport.addEventListener("resize", update);
         viewport.addEventListener("scroll", update);

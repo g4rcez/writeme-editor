@@ -39,7 +39,7 @@ describe("connection actions", () => {
         expect(mocks.update).not.toHaveBeenCalled();
         expect(mocks.repair).not.toHaveBeenCalled();
     });
-    it.each(["../Outside", "%2e%2e/Outside", "Folder/../../Outside", "C:\\Outside"])(
+    it.each(["../Outside", "%2e%2e/Outside", "Folder/../../Outside", String.raw`C:\Outside`])(
         "rejects an escaping creation target %s before saving",
         async (title) => {
             mocks.getAll.mockResolvedValue([]);
@@ -89,11 +89,11 @@ describe("connection actions", () => {
         async (race) => {
             mocks.getOne.mockImplementation(async (id: string) => {
                 if (id === source.id)
-                    return race === "source-delete"
+                    {return race === "source-delete"
                         ? null
                         : race === "source-edit"
                           ? Note.parse({ ...source, content: "My newer draft" })
-                          : source;
+                          : source;}
                 return race === "target-delete"
                     ? null
                     : race === "target-rename"

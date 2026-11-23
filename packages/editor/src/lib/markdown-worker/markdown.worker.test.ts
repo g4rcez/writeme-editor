@@ -54,7 +54,7 @@ describe("processMarkdown", () => {
         expect(html).toContain('data-type="inline-math"');
         expect(html).toContain('data-type="block-math"');
         expect(html).toContain('data-latex="x^2"');
-        expect(html).toContain('data-latex="\\int_0^1 x\\,dx"');
+        expect(html).toContain(String.raw`data-latex="\int_0^1 x\,dx"`);
     });
 
     it("returns a non-empty string for empty input", () => {

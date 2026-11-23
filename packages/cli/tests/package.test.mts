@@ -100,7 +100,7 @@ test("CLI tarball installs writeme and math-cli executables and excludes standal
 });
 
 for (const runtime of runtimes) {
-    const runCli = (args: string[], environment = env, input?: string): SpawnSyncReturns<string> => {
+    const runCli = (args: Array<string>, environment = env, input?: string): SpawnSyncReturns<string> => {
         const entry =
             runtime.name === "deno"
                 ? "npm:@writeme.dev/cli"

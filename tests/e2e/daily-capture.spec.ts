@@ -31,7 +31,7 @@ test.describe("daily quick capture", () => {
 
         const quickNoteUrl = page.url();
         const noteId = quickNoteUrl.match(/\/quicknote\/([^/]+)$/)?.[1];
-        if (!noteId) throw new Error("Daily note route did not include a note ID.");
+        if (!noteId) {throw new Error("Daily note route did not include a note ID.");}
         const editor = page.locator(`#editor-container-${noteId} .ProseMirror`);
         await expect(editor).toBeVisible({ timeout: 30_000 });
         await expect(editor).toHaveAttribute("contenteditable", "true");

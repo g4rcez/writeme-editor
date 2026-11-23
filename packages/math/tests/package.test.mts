@@ -32,7 +32,7 @@ test("math tarball ships all declared entry points without source files or works
     const directory = join(project.directory, "node_modules", "@writeme.dev", "math");
     assert.equal(lstatSync(directory).isSymbolicLink(), false);
     const manifest = JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
-    for (const entry of Object.values(manifest.exports) as { types: string; import: string }[]) {
+    for (const entry of Object.values(manifest.exports) as Array<{ types: string; import: string }>) {
         assert.ok(readFileSync(join(directory, entry.types)).length > 0);
         assert.ok(readFileSync(join(directory, entry.import)).length > 0);
     }

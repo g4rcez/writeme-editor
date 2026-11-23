@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => {
     const emptyWorkspaceData = (): AIWorkspaceData => ({ activities: [], sources: [], proposals: [] });
     let workspaceData = emptyWorkspaceData();
     return {
-        send: vi.fn<(...args: unknown[]) => Promise<boolean>>(),
+        send: vi.fn<(...args: Array<unknown>) => Promise<boolean>>(),
         reset: vi.fn(() => {
             workspaceData = emptyWorkspaceData();
         }),
@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
         setWorkspaceData: (next: AIWorkspaceData) => {
             workspaceData = next;
         },
-        turnSnapshots: [] as AIWorkspaceData[],
+        turnSnapshots: [] as Array<AIWorkspaceData>,
     };
 });
 
@@ -125,8 +125,8 @@ describe("ChatPage workspace tool sessions", () => {
         mocks.turnSnapshots.length = 0;
         mocks.send.mockImplementation(async (...args) => {
             const getWorkspaceData = args[5] as (() => AIWorkspaceData) | undefined;
-            if (getWorkspaceData) mocks.turnSnapshots.push(structuredClone(getWorkspaceData()));
-            if (mocks.turnSnapshots.length === 1) mocks.setWorkspaceData(CURRENT_TURN_DATA);
+            if (getWorkspaceData) {mocks.turnSnapshots.push(structuredClone(getWorkspaceData()));}
+            if (mocks.turnSnapshots.length === 1) {mocks.setWorkspaceData(CURRENT_TURN_DATA);}
             return true;
         });
     });

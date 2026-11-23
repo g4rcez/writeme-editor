@@ -14,7 +14,7 @@ export async function startAppUpdater(): Promise<void> {
         const response = await net.fetch("https://api.github.com/repos/g4rcez/writeme-editor/releases/latest");
         const release = (await response.json()) as { tag_name: string; html_url: string };
         const latest = release.tag_name.replace(/^v/, "");
-        if (latest === app.getVersion()) return;
+        if (latest === app.getVersion()) {return;}
         const { response: button } = await dialog.showMessageBox({
             type: "info",
             title: "Update available",
@@ -23,8 +23,7 @@ export async function startAppUpdater(): Promise<void> {
             defaultId: 0,
             cancelId: 1,
         });
-        if (button === 0) await shell.openExternal(release.html_url);
+        if (button === 0) {await shell.openExternal(release.html_url);}
     } catch (error) {
-        console.debug("Update check unavailable:", error);
     }
 }

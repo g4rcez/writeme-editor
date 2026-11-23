@@ -14,7 +14,7 @@ export type DomainIdentification = {
 export function identifyDomain(url: string): DomainIdentification | null {
     try {
         const trimmedUrl = url.trim();
-        if (!trimmedUrl) return null;
+        if (!trimmedUrl) {return null;}
 
         const parsed = new URL(trimmedUrl);
         const host = parsed.hostname.replace(/^www\./, "");

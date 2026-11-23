@@ -5,7 +5,7 @@ export type EditorTabDrag = { tabId?: string; noteId: string; paneId?: string };
 export type EditorDropSide = "left" | "right" | "top" | "bottom" | "center";
 export type EditorLayout =
     | { type: "pane"; id: string }
-    | { type: "split"; id: string; orientation: "horizontal" | "vertical"; children: EditorLayout[] };
+    | { type: "split"; id: string; orientation: "horizontal" | "vertical"; children: Array<EditorLayout> };
 
 export function getEditorDropSide(rect: DOMRect, x: number, y: number): EditorDropSide {
     const distances = [
@@ -20,7 +20,7 @@ export function getEditorDropSide(rect: DOMRect, x: number, y: number): EditorDr
 }
 
 export function pruneEditorLayout(layout: EditorLayout, ids: Set<string>): EditorLayout | null {
-    if (layout.type === "pane") return ids.has(layout.id) ? layout : null;
+    if (layout.type === "pane") {return ids.has(layout.id) ? layout : null;}
     const children = layout.children.flatMap((child) => {
         const next = pruneEditorLayout(child, ids);
         return next ? [next] : [];
@@ -35,11 +35,11 @@ export function splitEditorLayout(
     side: EditorDropSide,
 ): EditorLayout {
     if (layout.type === "split")
-        return {
+        {return {
             ...layout,
             children: layout.children.map((child) => splitEditorLayout(child, targetId, paneId, side)),
-        };
-    if (layout.id !== targetId) return layout;
+        };}
+    if (layout.id !== targetId) {return layout;}
     const added: EditorLayout = { type: "pane", id: paneId };
     return {
         type: "split",

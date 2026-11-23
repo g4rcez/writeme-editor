@@ -19,10 +19,10 @@ type ThemeName = "default" | "dark" | "catppuccin-mocha" | "tokyonight-night" | 
 const isTree = (value: string | LegacyColorTree | undefined): value is LegacyColorTree =>
     typeof value === "object" && value !== null;
 
-const get = (tree: LegacyColorTree | undefined, path: string[], fallback = "transparent"): string => {
+const get = (tree: LegacyColorTree | undefined, path: Array<string>, fallback = "transparent"): string => {
     let value: string | LegacyColorTree | undefined = tree;
     for (const key of path) {
-        if (!isTree(value) || !Object.hasOwn(value, key)) return fallback;
+        if (!isTree(value) || !Object.hasOwn(value, key)) {return fallback;}
         value = value[key];
     }
     return typeof value === "string" ? value : fallback;
@@ -279,7 +279,7 @@ const mergeComponentOverrides = (
 
 const createCustomCss = (name: ThemeName, theme: WritemeThemeTokens): string => {
     const customLines = Object.entries(theme.custom ?? {}).map(([key, value]) => `    --${key}: ${value};`);
-    if (customLines.length === 0) return "";
+    if (customLines.length === 0) {return "";}
 
     const selector = name === "default" ? ":root" : `html.${name}`;
     return `${selector} {\n${customLines.join("\n")}\n}`;

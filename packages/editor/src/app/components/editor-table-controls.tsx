@@ -25,12 +25,12 @@ const controlButtonClassName =
     "size-8 min-h-8 shrink-0 p-0 max-sm:size-11 max-sm:min-h-11 pointer-coarse:size-11 pointer-coarse:min-h-11";
 
 function getControlWidth(): number {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return 164;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {return 164;}
     return window.matchMedia("(pointer: coarse), (max-width: 640px)").matches ? 208 : 164;
 }
 
 function findTableCell(target: EventTarget | null): HTMLTableCellElement | null {
-    if (!(target instanceof Element)) return null;
+    if (!(target instanceof Element)) {return null;}
     const cell = target.closest("td, th");
     return cell instanceof HTMLTableCellElement ? cell : null;
 }
@@ -47,7 +47,7 @@ function findSelectedCell(editor: Editor): HTMLTableCellElement | null {
 
 function measureCell(editor: Editor, cell: HTMLTableCellElement): ControlPosition | null {
     const container = editor.view.dom.closest<HTMLElement>(".writeme-editor");
-    if (!container || !cell.isConnected) return null;
+    if (!container || !cell.isConnected) {return null;}
 
     const containerRect = container.getBoundingClientRect();
     const cellRect = cell.getBoundingClientRect();
@@ -98,28 +98,28 @@ export function EditorTableControls({ editor, disabled = false }: EditorTableCon
     }, [disabled, editor, updateCell]);
 
     useEffect(() => {
-        if (!editor || editor.isDestroyed) return;
+        if (!editor || editor.isDestroyed) {return;}
         const container = editor.view.dom.closest<HTMLElement>(".writeme-editor");
-        if (!container) return;
+        if (!container) {return;}
 
         let target: HTMLTableCellElement | null | "selection" = "selection";
         const frame = createFrameTask(() => {
-            if (target === "selection") updateFromSelection();
-            else updateCell(target);
+            if (target === "selection") {updateFromSelection();}
+            else {updateCell(target);}
         });
         const schedule = (next: typeof target): void => {
             target = next;
             frame.schedule();
         };
         const handlePointerOver = (event: PointerEvent): void => {
-            if (event.target instanceof Element && event.target.closest("[data-table-controls]")) return;
+            if (event.target instanceof Element && event.target.closest("[data-table-controls]")) {return;}
             schedule(findTableCell(event.target));
         };
         const handlePointerLeave = (): void => schedule(null);
         const handleLayoutChange = (): void => frame.schedule();
         const handleSelection = (): void => schedule("selection");
         const handleTransaction = ({ transaction }: { transaction: Transaction }): void => {
-            if (transaction.docChanged) handleSelection();
+            if (transaction.docChanged) {handleSelection();}
         };
 
         container.addEventListener("pointerover", handlePointerOver);
@@ -141,9 +141,9 @@ export function EditorTableControls({ editor, disabled = false }: EditorTableCon
     }, [editor, updateCell, updateFromSelection]);
 
     const runAction = (action: TableInsertionAction): void => {
-        if (!editor || editor.isDestroyed || disabled || !editor.isEditable) return;
+        if (!editor || editor.isDestroyed || disabled || !editor.isEditable) {return;}
         const cell = currentCellRef.current;
-        if (!cell) return;
+        if (!cell) {return;}
 
         insertTableAction(editor, action, cell);
     };
@@ -153,7 +153,7 @@ export function EditorTableControls({ editor, disabled = false }: EditorTableCon
     const handleInsertColumnLeft = (): void => runAction("addColumnBefore");
     const handleInsertColumnRight = (): void => runAction("addColumnAfter");
 
-    if (!editor || !position || disabled || !editor.isEditable) return null;
+    if (!editor || !position || disabled || !editor.isEditable) {return null;}
 
     const keepEditorFocus = (event: MouseEvent<HTMLButtonElement>): void => event.preventDefault();
 

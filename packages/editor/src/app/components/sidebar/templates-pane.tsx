@@ -54,7 +54,7 @@ export const TemplatesPane = () => {
     };
 
     const onDeleteTemplate = async () => {
-        if (!deletingTemplate) return;
+        if (!deletingTemplate) {return;}
         await dispatch.deleteNote(deletingTemplate.id);
         setDeletingTemplate(null);
         refresh();
@@ -71,14 +71,14 @@ export const TemplatesPane = () => {
             "text/html",
         );
         const codeBlock = dom.querySelector("code");
-        return codeBlock ? codeBlock.innerText.trim().replace(/\n$/g, "") : content;
+        return codeBlock ? codeBlock.innerText.trim().replaceAll(/\n$/g, "") : content;
     };
 
     const handleUpdateVariable = async () => {
-        if (!inspectingVariable?.id || !editName) return;
+        if (!inspectingVariable?.id || !editName) {return;}
         const script = await repositories.scripts.getOne(inspectingVariable.id);
-        if (!script) return;
-        script.name = editName.toUpperCase().replace(/\s+/g, "_");
+        if (!script) {return;}
+        script.name = editName.toUpperCase().replaceAll(/\s+/g, "_");
         script.content = unwrapExpression(editContent);
         script.updatedAt = new Date();
         await repositories.scripts.update(script.id, script);
@@ -92,7 +92,7 @@ export const TemplatesPane = () => {
     };
 
     const onDeleteVariable = async () => {
-        if (!inspectingVariable?.id) return;
+        if (!inspectingVariable?.id) {return;}
         const confirmed = await Modal.confirm({
             title: "Delete variable",
             description: `Are you sure you want to delete variable {{${inspectingVariable.name}}}?`,
@@ -111,7 +111,7 @@ export const TemplatesPane = () => {
                 <div className="flex justify-between items-center py-2 px-4 border-b border-border/20">
                     <span className="text-xs tracking-wider text-muted-foreground">Variables</span>
                     <div className="flex gap-1">
-                        <button
+                        <button type="button"
                             onClick={onCreateVariable}
                             title="New from Expression"
                             className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
@@ -170,21 +170,21 @@ export const TemplatesPane = () => {
             <div className="flex border-t justify-between items-center py-2 px-4 border-b border-border/20">
                 <span className="text-xs text-muted-foreground">Templates</span>
                 <div className="flex gap-1">
-                    <button
+                    <button type="button"
                         onClick={refresh}
                         className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
                         title="Refresh templates"
                     >
                         <ArrowsCounterClockwiseIcon className="size-3" />
                     </button>
-                    <button
+                    <button type="button"
                         title="New template"
                         onClick={onCreateTemplate}
                         className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
                     >
                         <PlusIcon className="size-3" />
                     </button>
-                    <button
+                    <button type="button"
                         onClick={onCreateVariable}
                         className="p-1 rounded-md transition-colors text-muted-foreground hover:bg-muted/50"
                         title="New from Expression"
@@ -202,7 +202,7 @@ export const TemplatesPane = () => {
                     <div className="flex flex-col gap-2 justify-center items-center h-40 text-center">
                         <LayoutIcon className="opacity-20 size-8" />
                         <p className="text-xs text-muted-foreground">No templates found</p>
-                        <button onClick={onCreateTemplate} className="hover:underline text-[10px] text-primary">
+                        <button type="button" onClick={onCreateTemplate} className="hover:underline text-[10px] text-primary">
                             Create your first template
                         </button>
                     </div>

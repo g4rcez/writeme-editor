@@ -33,7 +33,7 @@ export const GroupsPane = () => {
                     <ul className="space-y-0.5">
                         {state.noteGroups.map((group) => (
                             <li key={group.id}>
-                                <button
+                                <button type="button"
                                     onClick={() => navigate(`/groups/${group.id}`)}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors text-foreground/70 hover:bg-muted/30 hover:text-foreground"
                                 >

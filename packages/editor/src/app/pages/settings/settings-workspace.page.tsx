@@ -10,9 +10,9 @@ export default function SettingsWorkspacePage() {
     const [saving, setSaving] = useState(false);
 
     const chooseTemplatesDirectory = async () => {
-        if (!settings) return;
+        if (!settings) {return;}
         const templatesDirectory = await window.electronAPI.fs.chooseDirectory();
-        if (!templatesDirectory) return;
+        if (!templatesDirectory) {return;}
         setSaving(true);
         try {
             await saveSettingsPatch({ templatesDirectory });
@@ -23,9 +23,9 @@ export default function SettingsWorkspacePage() {
     };
 
     const chooseQuicknotesDirectory = async () => {
-        if (!settings) return;
+        if (!settings) {return;}
         const quicknotesDirectory = await window.electronAPI.fs.chooseDirectory();
-        if (!quicknotesDirectory) return;
+        if (!quicknotesDirectory) {return;}
         setSaving(true);
         try {
             await saveSettingsPatch({ quicknotesDirectory });
@@ -36,11 +36,11 @@ export default function SettingsWorkspacePage() {
     };
 
     if (!settings)
-        return (
+        {return (
             <p role="status" className="text-sm text-muted-foreground">
                 Loading settings...
             </p>
-        );
+        );}
 
     return (
         <SettingsPageShell

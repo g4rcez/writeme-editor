@@ -13,12 +13,12 @@ type RenderCodeMirrorOptions = {
 };
 
 function normalizeText(value: string | null): string {
-    return value?.replace(/\s+/g, " ").trim() ?? "";
+    return value?.replaceAll(/\s+/g, " ").trim() ?? "";
 }
 
 function getEditorContent(container: HTMLElement): HTMLElement {
     const content = container.querySelector<HTMLElement>('.cm-content[contenteditable="true"]');
-    if (!content) throw new Error("CodeMirror content element was not rendered");
+    if (!content) {throw new Error("CodeMirror content element was not rendered");}
     return content;
 }
 
@@ -34,7 +34,7 @@ function renderCodeMirrorEditor(options: RenderCodeMirrorOptions = {}) {
 
     const result = render(<CodeMirrorNodeCodeEditor {...props} />);
     const editorRoot = result.container.querySelector<HTMLElement>('[data-code-mirror-editor="true"]');
-    if (!editorRoot) throw new Error("CodeMirror editor root was not rendered");
+    if (!editorRoot) {throw new Error("CodeMirror editor root was not rendered");}
 
     return {
         ...result,

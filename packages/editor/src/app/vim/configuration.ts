@@ -25,12 +25,12 @@ export type VimConfigApi = {
     readonly opt: VimConfiguration["options"];
     readonly keymap: {
         readonly set: (
-            modes: VimMapping["mode"] | readonly VimMapping["mode"][],
+            modes: VimMapping["mode"] | ReadonlyArray<VimMapping["mode"]>,
             lhs: string,
             rhs: string,
             options?: VimMapping["options"],
         ) => void;
-        readonly del: (modes: VimMapping["mode"] | readonly VimMapping["mode"][], lhs: string) => void;
+        readonly del: (modes: VimMapping["mode"] | ReadonlyArray<VimMapping["mode"]>, lhs: string) => void;
     };
 };
 

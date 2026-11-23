@@ -30,7 +30,7 @@ export function usePdfPageGestures({
     const pointers = useRef(new Map<number, Point>());
     const gesture = useRef<Gesture | null>(null);
     const [drag, setDrag] = useState({ enabled, pageIndex, offset: 0 });
-    if (drag.enabled !== enabled || drag.pageIndex !== pageIndex) setDrag({ enabled, pageIndex, offset: 0 });
+    if (drag.enabled !== enabled || drag.pageIndex !== pageIndex) {setDrag({ enabled, pageIndex, offset: 0 });}
 
     function setOffset(offset: number): void {
         setDrag({ enabled, pageIndex, offset });
@@ -42,11 +42,11 @@ export function usePdfPageGestures({
     }, [enabled, pageIndex]);
 
     function onPointerDown(event: PointerEvent<HTMLDivElement>): void {
-        if (!enabled || event.button !== 0 || event.pointerType === "pen") return;
+        if (!enabled || event.button !== 0 || event.pointerType === "pen") {return;}
         const target = event.target;
-        if (!(target instanceof Element)) return;
-        if (target.closest(".wm-sticky-link, .wm-pdf-loading, button, a, input")) return;
-        if (target.closest(".wm-pdf-text-layer span")) return;
+        if (!(target instanceof Element)) {return;}
+        if (target.closest(".wm-sticky-link, .wm-pdf-loading, button, a, input")) {return;}
+        if (target.closest(".wm-pdf-text-layer span")) {return;}
         const point = { x: event.clientX, y: event.clientY };
         pointers.current.set(event.pointerId, point);
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -59,21 +59,21 @@ export function usePdfPageGestures({
     }
 
     function onPointerMove(event: PointerEvent<HTMLDivElement>): void {
-        if (!enabled || !pointers.current.has(event.pointerId)) return;
+        if (!enabled || !pointers.current.has(event.pointerId)) {return;}
         const before = [...pointers.current.values()];
         const point = { x: event.clientX, y: event.clientY };
         pointers.current.set(event.pointerId, point);
         const after = [...pointers.current.values()];
         if (before.length === 2 && after.length === 2) {
-            const distance = (points: Point[]): number =>
+            const distance = (points: Array<Point>): number =>
                 Math.hypot(points[0]!.x - points[1]!.x, points[0]!.y - points[1]!.y);
             const previous = distance(before);
-            if (previous > 0) onZoom((zoom * distance(after)) / previous);
+            if (previous > 0) {onZoom((zoom * distance(after)) / previous);}
             event.preventDefault();
             return;
         }
         const active = gesture.current;
-        if (!active || active.pointerId !== event.pointerId) return;
+        if (!active || active.pointerId !== event.pointerId) {return;}
         const dx = point.x - active.start.x;
         const dy = point.y - active.start.y;
         if (active.canTurn) {
@@ -82,7 +82,7 @@ export function usePdfPageGestures({
                 window.getSelection()?.removeAllRanges();
                 const limit = event.currentTarget.clientWidth * 0.35;
                 setOffset(Math.max(-limit, Math.min(limit, dx)));
-            } else setOffset(0);
+            } else {setOffset(0);}
         } else {
             event.preventDefault();
             event.currentTarget.scrollLeft -= point.x - active.last.x;
@@ -94,14 +94,14 @@ export function usePdfPageGestures({
     function finish(event: PointerEvent<HTMLDivElement>, cancelled: boolean): void {
         pointers.current.delete(event.pointerId);
         const active = gesture.current;
-        if (!active || active.pointerId !== event.pointerId) return;
+        if (!active || active.pointerId !== event.pointerId) {return;}
         gesture.current = null;
         setOffset(0);
-        if (!enabled || cancelled || !active.canTurn) return;
+        if (!enabled || cancelled || !active.canTurn) {return;}
         const dx = event.clientX - active.start.x;
         const dy = event.clientY - active.start.y;
         const threshold = Math.min(80, event.currentTarget.clientWidth * 0.2);
-        if (Math.abs(dx) >= threshold && Math.abs(dx) > Math.abs(dy) * 1.5) onTurn(dx < 0 ? 1 : -1);
+        if (Math.abs(dx) >= threshold && Math.abs(dx) > Math.abs(dy) * 1.5) {onTurn(dx < 0 ? 1 : -1);}
     }
 
     return {

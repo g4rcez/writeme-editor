@@ -1,9 +1,9 @@
 /** `Promise.all(items.map(fn))` that keeps at most `limit` calls in flight, so large workspaces do not flood IPC. */
 export async function mapConcurrent<T, R>(
-    items: readonly T[],
+    items: ReadonlyArray<T>,
     limit: number,
     fn: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
+): Promise<Array<R>> {
     const results = new Array<R>(items.length);
     let next = 0;
     const worker = async (): Promise<void> => {

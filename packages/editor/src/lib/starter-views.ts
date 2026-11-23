@@ -13,7 +13,7 @@ const STARTER_VIEWS = [
     },
 ] as const;
 
-export function getMissingStarterViews(existing: readonly View[], now: Date): View[] {
+export function getMissingStarterViews(existing: ReadonlyArray<View>, now: Date): Array<View> {
     return STARTER_VIEWS.filter(
         (starter) =>
             !existing.some(

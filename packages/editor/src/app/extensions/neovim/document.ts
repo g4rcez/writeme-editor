@@ -10,14 +10,14 @@ export type VimLine = {
     readonly text: string;
 };
 const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-const lineCache = new WeakMap<Node, readonly VimLine[]>();
+const lineCache = new WeakMap<Node, ReadonlyArray<VimLine>>();
 
-export function lines(doc: Node): readonly VimLine[] {
+export function lines(doc: Node): ReadonlyArray<VimLine> {
     const cached = lineCache.get(doc);
-    if (cached) return cached;
-    const result: VimLine[] = [];
+    if (cached) {return cached;}
+    const result: Array<VimLine> = [];
     doc.descendants((node, pos) => {
-        if (!node.isTextblock) return;
+        if (!node.isTextblock) {return;}
         let text = "";
         node.forEach((child) => {
             text += child.isText
@@ -47,19 +47,19 @@ export function currentLine(doc: Node, pos: number): VimLine | undefined {
     return lines(doc).find((line) => pos >= line.from && pos <= line.to);
 }
 
-export function boundaries(text: string): readonly number[] {
+export function boundaries(text: string): ReadonlyArray<number> {
     return [...segmenter.segment(text)].map((part) => part.index).concat(text.length);
 }
 
 export function nextCharacter(doc: Node, pos: number): number {
     const line = currentLine(doc, pos);
-    if (!line) return pos;
+    if (!line) {return pos;}
     return line.from + (boundaries(line.text).find((offset) => offset > pos - line.from) ?? line.text.length);
 }
 
 export function previousCharacter(doc: Node, pos: number): number {
     const line = currentLine(doc, pos);
-    if (!line) return pos;
+    if (!line) {return pos;}
     return (
         line.from +
         (boundaries(line.text)
@@ -71,8 +71,8 @@ export function previousCharacter(doc: Node, pos: number): number {
 export function normalPosition(doc: Node, pos: number): number {
     const all = lines(doc);
     const line = currentLine(doc, pos) ?? all.find((entry) => entry.from >= pos) ?? all.at(-1);
-    if (!line) return pos;
-    if (line.from === line.to) return line.from;
+    if (!line) {return pos;}
+    if (line.from === line.to) {return line.from;}
     const offset = Math.max(0, Math.min(pos - line.from, line.text.length));
     return (
         line.from +
@@ -86,7 +86,7 @@ export function lineRange(doc: Node, start: number, end: number): VimRange | nul
     const all = lines(doc);
     const first = all.find((line) => Math.min(start, end) >= line.from && Math.min(start, end) <= line.to);
     const last = all.find((line) => Math.max(start, end) >= line.from && Math.max(start, end) <= line.to);
-    if (!first || !last) return null;
+    if (!first || !last) {return null;}
     const fullBlocks = first.from === first.blockFrom + 1 && last.to === last.blockTo - 1;
     return {
         from: fullBlocks ? first.blockFrom : first.from,
@@ -99,12 +99,12 @@ export function rangeAllowed(state: EditorState, range: VimRange): boolean {
     const $from = state.doc.resolve(Math.min(range.from + 1, state.doc.content.size));
     const $to = state.doc.resolve(Math.max(range.from, range.to - 1));
     for (let depth = 1; depth <= $from.depth; depth++) {
-        if (!$from.node(depth).type.spec.isolating) continue;
-        if ($to.depth < depth || $to.start(depth) !== $from.start(depth)) return false;
+        if (!$from.node(depth).type.spec.isolating) {continue;}
+        if ($to.depth < depth || $to.start(depth) !== $from.start(depth)) {return false;}
     }
     for (let depth = 1; depth <= $to.depth; depth++) {
-        if (!$to.node(depth).type.spec.isolating) continue;
-        if ($from.depth < depth || $from.start(depth) !== $to.start(depth)) return false;
+        if (!$to.node(depth).type.spec.isolating) {continue;}
+        if ($from.depth < depth || $from.start(depth) !== $to.start(depth)) {return false;}
     }
     return true;
 }

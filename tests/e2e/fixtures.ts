@@ -2,6 +2,8 @@ import { test as base, expect, type Page } from "@playwright/test";
 
 export const test = base.extend<{ cleanPage: Page }>({
     cleanPage: async ({ page }, use) => {
+        // Playwright's `use` fixture callback is not a React hook.
+        // oxlint-disable-next-line react-hooks/rules-of-hooks
         await use(page);
     },
 });

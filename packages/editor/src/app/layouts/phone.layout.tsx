@@ -40,22 +40,22 @@ const MORE_LINKS: ReadonlyArray<{ to: string; label: string; Icon: IconType }> =
 export const isPhoneTabRoot = (pathname: string): boolean => TAB_ROOTS.includes(pathname.replace(/\/+$/, "") || "/");
 
 const activeTab = (pathname: string): TabId => {
-    if (pathname.startsWith("/notes") || pathname.startsWith("/note/")) return "notes";
-    if (pathname.startsWith("/today")) return "today";
+    if (pathname.startsWith("/notes") || pathname.startsWith("/note/")) {return "notes";}
+    if (pathname.startsWith("/today")) {return "today";}
     return "more";
 };
 
 const phoneTitle = (pathname: string): string => {
-    if (pathname.startsWith("/notes")) return "Notes";
-    if (pathname.startsWith("/note/")) return "Note";
-    if (pathname.startsWith("/today")) return "Today";
-    if (pathname.startsWith("/tasks")) return "Open tasks";
-    if (pathname.startsWith("/tags")) return "Tags";
-    if (pathname.startsWith("/groups")) return "Groups";
-    if (pathname.startsWith("/views")) return "Views";
-    if (pathname.startsWith("/calendar")) return "Calendar";
-    if (pathname.startsWith("/read-it-later")) return "Read it later";
-    if (pathname.startsWith("/settings")) return "Settings";
+    if (pathname.startsWith("/notes")) {return "Notes";}
+    if (pathname.startsWith("/note/")) {return "Note";}
+    if (pathname.startsWith("/today")) {return "Today";}
+    if (pathname.startsWith("/tasks")) {return "Open tasks";}
+    if (pathname.startsWith("/tags")) {return "Tags";}
+    if (pathname.startsWith("/groups")) {return "Groups";}
+    if (pathname.startsWith("/views")) {return "Views";}
+    if (pathname.startsWith("/calendar")) {return "Calendar";}
+    if (pathname.startsWith("/read-it-later")) {return "Read it later";}
+    if (pathname.startsWith("/settings")) {return "Settings";}
     return "Writeme";
 };
 

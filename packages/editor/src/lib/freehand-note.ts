@@ -63,9 +63,9 @@ export function emptyFreehandNotebook(): FreehandNotebook {
 const JSON_FENCE = /```(?:json|freehand)[^\n]*\n([\s\S]*?)\n```/i;
 
 export function parseFreehandNote(content: string): FreehandNotebook {
-    if (!content.trim()) return emptyFreehandNotebook();
+    if (!content.trim()) {return emptyFreehandNotebook();}
     const raw: unknown = JSON.parse(content.match(JSON_FENCE)?.[1] ?? content);
-    if (typeof raw === "object" && raw !== null && "version" in raw) return notebookSchema.parse(raw);
+    if (typeof raw === "object" && raw !== null && "version" in raw) {return notebookSchema.parse(raw);}
     const legacy = z.looseObject({ strokes: z.array(strokeSchema) }).parse(raw);
     return { version: 1, paper: "blank", pages: [legacy] };
 }
@@ -94,12 +94,12 @@ function distanceToSegment(point: InkPoint, from: InkPoint, to: InkPoint): numbe
 
 export function strokeIntersects(stroke: InkStroke, from: InkPoint, to: InkPoint, radius: number): boolean {
     const threshold = radius + stroke.size / 2;
-    if (stroke.points.some((point) => distanceToSegment(point, from, to) <= threshold)) return true;
+    if (stroke.points.some((point) => distanceToSegment(point, from, to) <= threshold)) {return true;}
     return stroke.points.some((point, index) => {
         const next = stroke.points[index + 1];
-        if (!next) return false;
+        if (!next) {return false;}
         if (distanceToSegment(from, point, next) <= threshold || distanceToSegment(to, point, next) <= threshold)
-            return true;
+            {return true;}
         const inkX = next[0] - point[0];
         const inkY = next[1] - point[1];
         const eraserX = to[0] - from[0];
@@ -110,15 +110,15 @@ export function strokeIntersects(stroke: InkStroke, from: InkPoint, to: InkPoint
             const offsetY = from[1] - point[1];
             const inkT = (offsetX * eraserY - offsetY * eraserX) / determinant;
             const eraserT = (offsetX * inkY - offsetY * inkX) / determinant;
-            if (inkT >= 0 && inkT <= 1 && eraserT >= 0 && eraserT <= 1) return true;
+            if (inkT >= 0 && inkT <= 1 && eraserT >= 0 && eraserT <= 1) {return true;}
         }
         return false;
     });
 }
 
-export function inkPath(outline: number[][]): string {
+export function inkPath(outline: Array<Array<number>>): string {
     const first = outline[0];
-    if (!first) return "";
+    if (!first) {return "";}
     return `M ${first[0]} ${first[1]} Q ${outline
         .map((point, index) => {
             const next = outline[(index + 1) % outline.length]!;

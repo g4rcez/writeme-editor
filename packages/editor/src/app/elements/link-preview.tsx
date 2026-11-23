@@ -68,7 +68,7 @@ export function NoteMentionPreview({ preview }: { preview: NoteLinkPreview }) {
     );
 }
 
-export function findMentionNote(notes: Note[], target: MentionLookupTarget | string): Note | undefined {
+export function findMentionNote(notes: Array<Note>, target: MentionLookupTarget | string): Note | undefined {
     return findCompatibleNote(notes, target);
 }
 
@@ -85,7 +85,7 @@ export function createPlainTextExcerpt(content: string, maxLength: number = 180)
 }
 
 export function createNoteLinkPreview(
-    notes: Note[],
+    notes: Array<Note>,
     target: MentionLookupTarget,
     fallbackTitle: string,
 ): NoteLinkPreview {
@@ -106,13 +106,13 @@ export function createNoteLinkPreview(
 
 const contentToPlainText = (content: string): string =>
     content
-        .replace(/```[\s\S]*?```/g, " ")
-        .replace(/`([^`]+)`/g, "$1")
-        .replace(/^---[\s\S]*?---/g, " ")
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-        .replace(/^#{1,6}\s+/gm, "")
-        .replace(/[*_~>#-]+/g, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
+        .replaceAll(/```[\s\S]*?```/g, " ")
+        .replaceAll(/`([^`]+)`/g, "$1")
+        .replaceAll(/^---[\s\S]*?---/g, " ")
+        .replaceAll(/!\[[^\]]*\]\([^)]*\)/g, " ")
+        .replaceAll(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replaceAll(/^#{1,6}\s+/gm, "")
+        .replaceAll(/[*_~>#-]+/g, " ")
+        .replaceAll(/<[^>]+>/g, " ")
+        .replaceAll(/\s+/g, " ")
         .trim();

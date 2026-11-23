@@ -9,7 +9,7 @@ import {
 } from "./auth-manager";
 
 function createJwt(payload: object): string {
-    const encodedPayload = btoa(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    const encodedPayload = btoa(JSON.stringify(payload)).replaceAll('+', "-").replaceAll('/', "_").replaceAll('=', "");
     return `header.${encodedPayload}.signature`;
 }
 

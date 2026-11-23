@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 export function sanitizeFilename(filename: string): string {
     return (
         filename
-            .replace(/[\\/:*?"<>|]/g, "-")
+            .replaceAll(/[\\/:*?"<>|]/g, "-")
             .split("")
             .map((character) => (character.charCodeAt(0) < 32 ? "-" : character))
             .join("")

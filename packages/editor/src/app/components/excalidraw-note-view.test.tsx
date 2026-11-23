@@ -14,7 +14,7 @@ vi.mock("@/store/global.store", () => ({
 
 vi.mock("@excalidraw/excalidraw", () => ({
     restore: (data: unknown) => data,
-    serializeAsJSON: (elements: unknown[], appState: { viewBackgroundColor: string }, files: unknown) =>
+    serializeAsJSON: (elements: Array<unknown>, appState: { viewBackgroundColor: string }, files: unknown) =>
         JSON.stringify({ elements, appState: { viewBackgroundColor: appState.viewBackgroundColor }, files }),
     Excalidraw: ({ initialData, onChange }: ComponentProps<typeof Excalidraw>) => {
         const data = initialData as { appState: { scrollX: number; scrollY: number; zoom: { value: number } } };
@@ -27,7 +27,7 @@ vi.mock("@excalidraw/excalidraw", () => ({
                         zoom: data.appState.zoom,
                     })}
                 </output>
-                <button
+                <button type="button"
                     onClick={() =>
                         onChange?.(
                             [],

@@ -42,14 +42,14 @@ export default TaskList.extend({
                             .reverse()
                             .forEach((ul) => {
                                 const items = Array.from(ul.querySelectorAll(":scope > li"));
-                                if (!items.some(isTaskListItem)) return;
-                                const groups: HTMLUListElement[] = [];
+                                if (!items.some(isTaskListItem)) {return;}
+                                const groups: Array<HTMLUListElement> = [];
                                 let previousIsTask: boolean | null = null;
                                 for (const item of items) {
                                     const isTask = isTaskListItem(item);
                                     if (isTask !== previousIsTask) {
                                         const group = ul.cloneNode(false) as HTMLUListElement;
-                                        if (isTask) group.setAttribute("data-type", "taskList");
+                                        if (isTask) {group.setAttribute("data-type", "taskList");}
                                         else {
                                             group.removeAttribute("data-type");
                                             group.classList.remove("contains-task-list");

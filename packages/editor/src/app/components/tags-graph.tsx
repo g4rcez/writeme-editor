@@ -18,8 +18,8 @@ interface GraphLink {
 }
 
 interface TagsGraphProps {
-    nodes: GraphNode[];
-    links: GraphLink[];
+    nodes: Array<GraphNode>;
+    links: Array<GraphLink>;
     onNodeClick: (node: GraphNode) => void;
 }
 
@@ -61,7 +61,7 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
 
     useEffect(() => {
         const el = containerRef.current;
-        if (!el) return;
+        if (!el) {return;}
         const observer = new ResizeObserver((entries) => {
             const entry = entries[0];
             if (entry) {
@@ -99,7 +99,7 @@ export const TagsGraph = ({ nodes, links, onNodeClick }: TagsGraphProps) => {
                     width={dimensions.width}
                     height={dimensions.height}
                     backgroundColor={bgColor}
-                    linkHoverPrecision={10000}
+                    linkHoverPrecision={10_000}
                     linkColor={(link: any) => (link.type === "mention" ? mentionLinkColor : linkColor)}
                     linkWidth={(link: any) => (link.type === "mention" ? 1 : 2)}
                     linkLineDash={(link: any) => (link.type === "mention" ? [4, 2] : [])}

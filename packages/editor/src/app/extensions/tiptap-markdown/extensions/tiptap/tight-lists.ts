@@ -24,8 +24,8 @@ export const MarkdownTightLists = Extension.create({
                         default: this.options.tight,
                         parseHTML: (element) => {
                             const dataTight = element.getAttribute("data-tight");
-                            if (dataTight === "true") return true;
-                            if (dataTight === "false") return false;
+                            if (dataTight === "true") {return true;}
+                            if (dataTight === "false") {return false;}
                             return this.options.tight;
                         },
                         renderHTML: (attributes) => ({

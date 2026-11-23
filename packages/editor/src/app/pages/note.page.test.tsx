@@ -137,7 +137,7 @@ function renderNoteRoute() {
     );
 }
 
-type RouteState = { note: Note | null; notes: Note[]; tabs: Array<{ id: string; noteId: string; type: string }> };
+type RouteState = { note: Note | null; notes: Array<Note>; tabs: Array<{ id: string; noteId: string; type: string }> };
 
 function createRouteNoteTab(): RouteState["tabs"][number] {
     return { id: "tab-1", noteId: "note-1", type: "tab" };

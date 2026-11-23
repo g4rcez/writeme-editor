@@ -1,6 +1,6 @@
 import { Button } from "@g4rcez/components";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
-import { type Editor } from "@tiptap/core";
+import type { Editor } from "@tiptap/core";
 import { type KeyboardEvent, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -72,7 +72,7 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
     );
 
     useEffect(() => {
-        if (!editor || disabled || !adapter.isEditable()) return;
+        if (!editor || disabled || !adapter.isEditable()) {return;}
         return registerWritingReviewHandler(editor, ({ scope, selection }) => {
             requestReview(scope, selection);
         });
@@ -80,7 +80,7 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
 
     useEffect(() => {
         const target = selectionContext?.target;
-        if (!target || disabled || !adapter.isEditable() || typeof window.electronAPI === "undefined") return;
+        if (!target || disabled || !adapter.isEditable() || window.electronAPI === undefined) {return;}
 
         const captureNativeSelection = (event: globalThis.MouseEvent): void => {
             const eventTarget = event.target;
@@ -94,7 +94,7 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
         const unsubscribe = window.electronAPI.writingAssistant.onImproveSelectedText(() => {
             const selection = pendingNativeSelectionRef.current;
             pendingNativeSelectionRef.current = null;
-            if (!selection || disabled || !adapter.isEditable()) return;
+            if (!selection || disabled || !adapter.isEditable()) {return;}
             adapter.focus();
             requestReview("selection", selection);
         });
@@ -107,14 +107,14 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
     }, [adapter, disabled, requestReview, selectionContext]);
 
     useLayoutEffect(() => {
-        if (!assistant.isOpen) return;
+        if (!assistant.isOpen) {return;}
 
         const dialog = dialogRef.current;
-        if (!dialog) return;
+        if (!dialog) {return;}
 
         const updatePosition = (): void => {
             const anchor = selectionContext?.readAnchor(reviewSelectionRef.current) ?? panelAnchorRef.current;
-            if (!anchor) return;
+            if (!anchor) {return;}
             panelAnchorRef.current = anchor;
 
             const { width, height } = dialog.getBoundingClientRect();
@@ -144,16 +144,16 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
     }, [assistant.isOpen, panelAnchorRevision, selectionContext]);
 
     useEffect(() => {
-        if (!assistant.isOpen || !activeSuggestionId) return;
+        if (!assistant.isOpen || !activeSuggestionId) {return;}
         cardRefs.current.get(activeSuggestionId)?.focus();
     }, [activeSuggestionId, assistant.isOpen]);
 
     useEffect(() => {
-        if (pendingFocusAfterRemovalRef.current === undefined) return;
+        if (pendingFocusAfterRemovalRef.current === undefined) {return;}
         const targetId = pendingFocusAfterRemovalRef.current;
         pendingFocusAfterRemovalRef.current = undefined;
-        if (targetId) cardRefs.current.get(targetId)?.focus();
-        else statusRef.current?.focus();
+        if (targetId) {cardRefs.current.get(targetId)?.focus();}
+        else {statusRef.current?.focus();}
     }, [suggestions]);
 
     const focusTargetAfterRemoval = (suggestionId: string, remove: () => boolean): void => {
@@ -167,7 +167,7 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
     };
 
     const handleEscape = (event: KeyboardEvent<HTMLElement>): void => {
-        if (event.key !== "Escape") return;
+        if (event.key !== "Escape") {return;}
         event.preventDefault();
         event.stopPropagation();
         assistant.close(true);
@@ -360,8 +360,8 @@ export function WritingAssistant({ adapter, editor, selectionContext, disabled =
                                         <li key={suggestion.id} className="min-w-0 py-3 first:pt-1 last:pb-1">
                                             <article
                                                 ref={(element) => {
-                                                    if (element) cardRefs.current.set(suggestion.id, element);
-                                                    else cardRefs.current.delete(suggestion.id);
+                                                    if (element) {cardRefs.current.set(suggestion.id, element);}
+                                                    else {cardRefs.current.delete(suggestion.id);}
                                                 }}
                                                 tabIndex={0}
                                                 aria-current={activeSuggestionId === suggestion.id ? "true" : undefined}

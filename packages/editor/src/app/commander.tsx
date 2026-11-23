@@ -45,10 +45,10 @@ const GithubProjectLink = () => (
 
 type Props = {
     note: Note | null;
-    tabs: Tab[];
-    notes: Note[];
-    noteGroups: NoteGroup[];
-    terminalSessions: TerminalSession[];
+    tabs: Array<Tab>;
+    notes: Array<Note>;
+    noteGroups: Array<NoteGroup>;
+    terminalSessions: Array<TerminalSession>;
     commander: CommanderState;
     dispatch: GlobalDispatchers;
 };
@@ -84,7 +84,7 @@ export const Commander = (props: Props) => {
             try {
                 const loaded = cached ?? await repositories.notes.getOne(noteId);
                 const current = globalState();
-                if (version !== openNoteVersion.current || current.directory !== state.directory) return;
+                if (version !== openNoteVersion.current || current.directory !== state.directory) {return;}
                 const note = current.note?.id === noteId ? current.note : current.notes.find((note) => note.id === noteId) ?? loaded;
                 if (!note || note.deletedAt) {
                     uiDispatch.setError("This note is no longer available.");
@@ -109,7 +109,7 @@ export const Commander = (props: Props) => {
     }, []);
 
     const noteGroup = useMemo(
-        (): CommandItemTypes[] => [
+        (): Array<CommandItemTypes> => [
             {
                 type: "shortcut",
                 title: "Open today's note",
@@ -122,8 +122,8 @@ export const Commander = (props: Props) => {
                         } else {
                             dispatch.setCreateNoteDialog({ isOpen: true, type: "quick" });
                         }
-                    } catch (reason) {
-                        uiDispatch.setError(reason instanceof Error ? reason.message : "Failed to open today's note.");
+                    } catch (error) {
+                        uiDispatch.setError(error instanceof Error ? error.message : "Failed to open today's note.");
                     }
                 },
             },
@@ -166,7 +166,7 @@ export const Commander = (props: Props) => {
     );
 
     const openedTabsGroup = useMemo(
-        (): CommandItemTypes[] =>
+        (): Array<CommandItemTypes> =>
             [...props.tabs]
                 .sort((a, b) => a.order - b.order)
                 .map((tab): CommandItemTypes => {
@@ -205,7 +205,7 @@ export const Commander = (props: Props) => {
                         title: `${typeLabel}: ${title}`,
                         action: async (args) => {
                             args.setOpen(false);
-                            if (isTerminal || isChatTab) openNoteVersion.current += 1;
+                            if (isTerminal || isChatTab) {openNoteVersion.current += 1;}
                             if (isTerminal) {
                                 await dispatch.addTerminalTab(tab.noteId);
                             } else if (isChatTab) {
@@ -233,7 +233,7 @@ export const Commander = (props: Props) => {
     );
 
     const closeTabsSequentially = useCallback(
-        (tabsToClose: Tab[]): void => {
+        (tabsToClose: Array<Tab>): void => {
             for (const tab of tabsToClose) {
                 if (!isAiChatTab(tab) && !isTerminalTab(tab)) {
                     suppressNoteRouteTabOpen(tab.noteId);
@@ -526,7 +526,7 @@ export const Commander = (props: Props) => {
                     x.action();
                 },
             }));
-        const otherStuff: CommandItemTypes[] = [
+        const otherStuff: Array<CommandItemTypes> = [
             {
                 title: "Actions",
                 type: "group",

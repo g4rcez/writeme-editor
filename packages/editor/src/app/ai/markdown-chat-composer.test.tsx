@@ -34,7 +34,7 @@ vi.mock("@tiptap/react", async () => {
                     setContent: (content: string) => {
                         mocks.setContent(content);
                         mocks.html = content;
-                        mocks.markdown = content.replace(/<\/?[^>]+>/g, "").trim();
+                        mocks.markdown = content.replaceAll(/<\/?[^>]+>/g, "").trim();
                     },
                 },
             };
@@ -102,7 +102,7 @@ function renderComposer(
     return { onSend, onContentChange };
 }
 
-function pasteEvent(files: File[], items: Array<{ kind: string; getAsFile(): File | null }> = []): ClipboardEvent {
+function pasteEvent(files: Array<File>, items: Array<{ kind: string; getAsFile(): File | null }> = []): ClipboardEvent {
     const event = new Event("paste");
     Object.defineProperty(event, "clipboardData", { value: { files, items } });
     return event as ClipboardEvent;

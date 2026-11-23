@@ -1,7 +1,7 @@
 import { __resetMathInstanceCache, classifyLine, evaluateMathBlock, getMathInstance, type MathLine } from "../src/index.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const lines = (...raws: string[]): MathLine[] => raws.map(classifyLine);
+const lines = (...raws: Array<string>): Array<MathLine> => raws.map(classifyLine);
 
 beforeEach(() => {
     __resetMathInstanceCache();
@@ -357,7 +357,7 @@ describe("evaluateMathBlock", () => {
             base: "EUR",
             date: "2023-01-01",
             rates: { USD: 1.1 },
-            timestamp: 1234567890,
+            timestamp: 1_234_567_890,
         };
         const a = getMathInstance(16, rates);
         const b = getMathInstance(16, rates);

@@ -57,7 +57,7 @@ async function ensureExecutable(sourcePath: string, platform: NodeJS.Platform): 
 async function removeExistingSymlink(targetPath: string): Promise<boolean> {
     try {
         const stat = await lstat(targetPath);
-        if (!stat.isSymbolicLink()) return false;
+        if (!stat.isSymbolicLink()) {return false;}
         await readlink(targetPath);
         await unlink(targetPath);
         return true;

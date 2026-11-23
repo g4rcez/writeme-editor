@@ -397,7 +397,7 @@ describe("Electron NotesRepository", () => {
 
 describe("Electron NotesRepository workspace loading", () => {
     const file = (name: string) => ({ name, path: `/notes/${name}`, relativePath: name });
-    const onDisk = (...names: string[]) => readDirRecursive.mockResolvedValue({ success: true, files: names.map(file) });
+    const onDisk = (...names: Array<string>) => readDirRecursive.mockResolvedValue({ success: true, files: names.map(file) });
     const content = (text: string) => ({ success: true, content: text, lastModified: "2026-01-01T00:00:00Z", fileSize: text.length });
     const indexed = (name: string) => {
         const note = Note.new(name.replace(/\.md$/, ""), "");

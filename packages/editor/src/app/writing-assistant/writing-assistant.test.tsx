@@ -50,12 +50,12 @@ const grammarSuggestion: WritingSuggestion = {
     explanation: "Use the third-person singular form.",
 };
 
-const views: EditorView[] = [];
-const adapters: WritingEditorAdapter[] = [];
+const views: Array<EditorView> = [];
+const adapters: Array<WritingEditorAdapter> = [];
 const nativeReviewHandlers = new Set<() => void>();
 
 function emitNativeReviewAction(): void {
-    for (const handler of nativeReviewHandlers) handler();
+    for (const handler of nativeReviewHandlers) {handler();}
 }
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
@@ -77,7 +77,7 @@ function createMarkdownEditor(source: string, selection?: { from: number; to: nu
             extensions: [integration.extension, history()],
         }),
     });
-    if (selection) view.dispatch({ selection: EditorSelection.range(selection.from, selection.to) });
+    if (selection) {view.dispatch({ selection: EditorSelection.range(selection.from, selection.to) });}
     const adapter = integration.createAdapter(view);
     views.push(view);
     adapters.push(adapter);
@@ -175,14 +175,14 @@ describe("WritingAssistant", () => {
         await reviewSelectedText(view);
 
         await waitFor(() => expect(mocks.reviewWriting).toHaveBeenCalledTimes(1));
-        const [, selectedSegments] = mocks.reviewWriting.mock.calls[0] as [AIConfig, { text: string }[]];
+        const [, selectedSegments] = mocks.reviewWriting.mock.calls[0] as [AIConfig, Array<{ text: string }>];
         expect(selectedSegments.map((segment) => segment.text)).toEqual(["First"]);
         expect(await screen.findByRole("heading", { name: "Looks good" })).toBeInTheDocument();
         expect(screen.getByRole("status")).toHaveTextContent("No meaningful changes suggested.");
 
         fireEvent.click(screen.getByRole("button", { name: "Review entire note" }));
         await waitFor(() => expect(mocks.reviewWriting).toHaveBeenCalledTimes(2));
-        const [, fullNoteSegments] = mocks.reviewWriting.mock.calls[1] as [AIConfig, { text: string }[]];
+        const [, fullNoteSegments] = mocks.reviewWriting.mock.calls[1] as [AIConfig, Array<{ text: string }>];
         const fullNote = fullNoteSegments.map((segment) => segment.text).join(" ");
         expect(fullNote).toContain("First sentence.");
         expect(fullNote).toContain("Second sentence.");
@@ -212,7 +212,7 @@ describe("WritingAssistant", () => {
 
     it("aborts a pending review on Stop and ignores its late result", async () => {
         const { view, adapter } = createMarkdownEditor("She go to school.");
-        const request = deferred<WritingSuggestion[]>();
+        const request = deferred<Array<WritingSuggestion>>();
         mocks.reviewWriting.mockReturnValue(request.promise);
         renderAssistant(adapter, view);
         await reviewSelectedText(view);
@@ -230,7 +230,7 @@ describe("WritingAssistant", () => {
 
     it("aborts immediately when the document changes during review", async () => {
         const { view, adapter } = createMarkdownEditor("She go to school.");
-        const request = deferred<WritingSuggestion[]>();
+        const request = deferred<Array<WritingSuggestion>>();
         mocks.reviewWriting.mockReturnValue(request.promise);
         renderAssistant(adapter, view);
         await reviewSelectedText(view);
@@ -249,7 +249,7 @@ describe("WritingAssistant", () => {
 
     it("aborts on provider change and does not publish the prior provider's response", async () => {
         const { view, adapter } = createMarkdownEditor("She go to school.");
-        const request = deferred<WritingSuggestion[]>();
+        const request = deferred<Array<WritingSuggestion>>();
         mocks.reviewWriting.mockReturnValue(request.promise);
         renderAssistant(adapter, view);
         await reviewSelectedText(view);

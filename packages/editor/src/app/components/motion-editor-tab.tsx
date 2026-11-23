@@ -34,7 +34,7 @@ export function MotionEditorTab({ tab, title, disabled, className, onDropTab, ch
         preview: (drop, rect) => setInsertion(drop ? (drop.x < rect.left + rect.width / 2 ? "left" : "right") : null),
     });
     useEffect(() => {
-        if (!dragging) return;
+        if (!dragging) {return;}
         window.addEventListener("blur", cancelMotionTabDrag);
         return () => {
             window.removeEventListener("blur", cancelMotionTabDrag);
@@ -67,7 +67,7 @@ export function MotionEditorTab({ tab, title, disabled, className, onDropTab, ch
                         (event.target instanceof Element &&
                             event.target.closest('button:not([role="tab"]), input, textarea'))
                     )
-                        return;
+                        {return;}
                     controls.start(event);
                     source.current = event.currentTarget;
                 }}
@@ -103,13 +103,13 @@ export function MotionEditorTab({ tab, title, disabled, className, onDropTab, ch
                     );
                 }}
                 onDragEnd={(event, info) => {
-                    if (event.type === "pointercancel" || event.type === "touchcancel") cancelMotionTabDrag();
+                    if (event.type === "pointercancel" || event.type === "touchcancel") {cancelMotionTabDrag();}
                     else
-                        finishMotionTabDrag(
+                        {finishMotionTabDrag(
                             info.point.x,
                             info.point.y,
                             "altKey" in event && (event.altKey || event.ctrlKey),
-                        );
+                        );}
                     setDragging(false);
                 }}
             >

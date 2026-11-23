@@ -14,10 +14,10 @@ import {
 const root = path.resolve(import.meta.dirname, "../../..");
 const checkOnly = process.argv.includes("--check");
 
-function run(command: string, args: string[]): void {
+function run(command: string, args: Array<string>): void {
     const result = spawnSync(command, args, { stdio: "inherit" });
-    if (result.error) throw result.error;
-    if (result.status !== 0) throw new Error(`${command} ${args[0] ?? ""} failed with exit code ${result.status}.`);
+    if (result.error) {throw result.error;}
+    if (result.status !== 0) {throw new Error(`${command} ${args[0] ?? ""} failed with exit code ${result.status}.`);}
 }
 
 function connectedDevices(): ReturnType<typeof listPhysicalDevices> {
@@ -27,8 +27,8 @@ function connectedDevices(): ReturnType<typeof listPhysicalDevices> {
         const result = spawnSync("xcrun", ["devicectl", "list", "devices", "--json-output", file], {
             encoding: "utf8",
         });
-        if (result.error) throw result.error;
-        if (!existsSync(file)) throw new Error(`devicectl could not list devices: ${result.stderr || result.stdout}`);
+        if (result.error) {throw result.error;}
+        if (!existsSync(file)) {throw new Error(`devicectl could not list devices: ${result.stderr || result.stdout}`);}
         return listPhysicalDevices(JSON.parse(readFileSync(file, "utf8")));
     } finally {
         rmSync(dir, { recursive: true, force: true });
@@ -60,7 +60,7 @@ try {
         }),
     );
     const app = deviceAppPath(derivedData);
-    if (!existsSync(app)) throw new Error(`Build finished but ${app} is missing.`);
+    if (!existsSync(app)) {throw new Error(`Build finished but ${app} is missing.`);}
     run("xcrun", ["devicectl", "device", "install", "app", "--device", device.id, app]);
     const launch = spawnSync(
         "xcrun",

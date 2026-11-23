@@ -16,8 +16,8 @@ let vizInstance: Viz | null = null;
 let vizPromise: Promise<Viz> | null = null;
 
 const getViz = (): Promise<Viz> => {
-    if (vizInstance) return Promise.resolve(vizInstance);
-    if (vizPromise) return vizPromise;
+    if (vizInstance) {return Promise.resolve(vizInstance);}
+    if (vizPromise) {return vizPromise;}
     vizPromise = instance().then((viz) => {
         vizInstance = viz;
         return viz;
@@ -83,7 +83,7 @@ export const Graphviz = ({ dot }: { dot: string }) => {
     const render = useCallback(
         async (code: string) => {
             const container = containerRef.current;
-            if (!container || !code) return;
+            if (!container || !code) {return;}
             setLoading(true);
             setError(null);
             try {
@@ -96,8 +96,8 @@ export const Graphviz = ({ dot }: { dot: string }) => {
                     }),
                 );
                 container.replaceChildren(svg);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : String(err));
+            } catch (error_) {
+                setError(error_ instanceof Error ? error_.message : String(error_));
             } finally {
                 setLoading(false);
             }
@@ -112,7 +112,7 @@ export const Graphviz = ({ dot }: { dot: string }) => {
     useThemeChange(() => render(dot));
 
     const handleWheel = (e: React.WheelEvent) => {
-        if (!isZoomEnabled) return;
+        if (!isZoomEnabled) {return;}
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         setScale((s) => Math.min(Math.max(s * delta, 0.1), 10));
     };
@@ -148,7 +148,7 @@ export const Graphviz = ({ dot }: { dot: string }) => {
                                     onClick={() => {
                                         const nextValue = !isZoomEnabled;
                                         setIsZoomEnabled(nextValue);
-                                        if (isZoomEnabled) resetZoom();
+                                        if (isZoomEnabled) {resetZoom();}
                                     }}
                                 >
                                     {isZoomEnabled ? (

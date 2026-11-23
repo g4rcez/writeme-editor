@@ -7,7 +7,7 @@ function route(page: Page, pathname: string): Promise<unknown> {
 test("keeps Vim editing in both editors and ignores stored init.ts in restricted builds", async ({ page, request }) => {
     const response = await request.get("/writeme-build-renderer.json");
     const manifest = await response.json();
-    const workers: string[] = [];
+    const workers: Array<string> = [];
     page.on("worker", (worker) => workers.push(worker.url()));
     await route(page, "/settings/vim");
     await page.getByRole("checkbox", { name: "Enable Vim mode in all editors" }).check();
@@ -72,7 +72,7 @@ test("keeps Vim editing in both editors and ignores stored init.ts in restricted
     if (!manifest.features.vimScripts) {
         expect(workers.some((url) => url.includes("configuration.worker"))).toBe(false);
         await expect(page.getByRole("alert")).toHaveCount(0);
-    } else await expect(page.getByRole("alert")).toContainText("VIM_SCRIPT_STORE_SENTINEL");
+    } else {await expect(page.getByRole("alert")).toContainText("VIM_SCRIPT_STORE_SENTINEL");}
 });
 
 test("distribution controls routes, commands and runnable code while preserving ordinary notes", async ({
@@ -80,8 +80,8 @@ test("distribution controls routes, commands and runnable code while preserving 
     request,
 }) => {
     const store = test.info().project.name !== "macos-homebrew";
-    const errors: string[] = [];
-    const aiRequests: string[] = [];
+    const errors: Array<string> = [];
+    const aiRequests: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("request", (request) => {
         if (
@@ -89,7 +89,7 @@ test("distribution controls routes, commands and runnable code while preserving 
                 request.url(),
             )
         )
-            aiRequests.push(request.url());
+            {aiRequests.push(request.url());}
     });
     const response = await request.get("/writeme-build-renderer.json");
     expect(response.ok()).toBe(true);
@@ -100,13 +100,13 @@ test("distribution controls routes, commands and runnable code while preserving 
     expect(manifest.features.codeExecution).toBe(!store);
     expect(manifest.features.vimScripts).toBe(!store);
     expect(manifest.features.ai).toBe(!store);
-    if (store) expect(manifest.excludedModules).toContain("packages/editor/src/lib/run-javascript.ts");
+    if (store) {expect(manifest.excludedModules).toContain("packages/editor/src/lib/run-javascript.ts");}
 
     await route(page, "/");
     await expect(page.getByRole("heading", { name: "Your notes, ready when you are." })).toBeVisible();
     await route(page, "/settings/ai");
-    if (store) await expect(page.getByRole("heading", { name: "Not found", exact: true })).toBeVisible();
-    else await expect(page.getByRole("heading", { name: "AI", exact: true })).toBeVisible();
+    if (store) {await expect(page.getByRole("heading", { name: "Not found", exact: true })).toBeVisible();}
+    else {await expect(page.getByRole("heading", { name: "AI", exact: true })).toBeVisible();}
     await route(page, "/settings/variables");
     await expect(page.getByRole("heading", { name: store ? "Not found" : "Variables", exact: true })).toBeVisible();
     await route(page, "/settings/vim");
@@ -116,7 +116,7 @@ test("distribution controls routes, commands and runnable code while preserving 
         await expect(page.getByRole("textbox", { name: "Global init.ts" })).toHaveCount(0);
         await expect(page.getByRole("button", { name: "Validate", exact: true })).toHaveCount(0);
         await expect(page.getByText("TypeScript customization is unavailable", { exact: false })).toBeVisible();
-    } else await expect(page.getByRole("textbox", { name: "Global init.ts" })).toBeVisible();
+    } else {await expect(page.getByRole("textbox", { name: "Global init.ts" })).toBeVisible();}
 
     if (store) {
         for (const pathname of ["/chat", "/oauth/callback", "/terminal/saved-session"]) {
@@ -137,8 +137,8 @@ test("distribution controls routes, commands and runnable code while preserving 
     await expect(page.getByRole("link", { name: /^>>math/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /Code Runner/ })).toHaveCount(store ? 0 : 1);
     await route(page, "/examples/code-run");
-    if (store) await expect(page.getByRole("button", { name: "Run", exact: true })).toHaveCount(0);
-    else await expect(page.getByRole("button", { name: "Run", exact: true }).first()).toBeVisible();
+    if (store) {await expect(page.getByRole("button", { name: "Run", exact: true })).toHaveCount(0);}
+    else {await expect(page.getByRole("button", { name: "Run", exact: true }).first()).toBeVisible();}
 
     await route(page, "/");
     await page.keyboard.press("Control+Shift+P");

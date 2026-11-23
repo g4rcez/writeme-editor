@@ -19,14 +19,14 @@ export function PdfPage({
 
     useEffect(() => {
         const element = container.current;
-        if (!element) return;
+        if (!element) {return;}
         const observer = new ResizeObserver(() => setWidth(Math.round(element.getBoundingClientRect().width)));
         observer.observe(element);
         return () => observer.disconnect();
     }, []);
 
     useEffect(() => {
-        if (!width || !canvasHost.current || !textHost.current) return;
+        if (!width || !canvasHost.current || !textHost.current) {return;}
         let cancelled = false;
         let render: RenderTask | undefined;
         let textLayer: TextLayer | undefined;
@@ -39,14 +39,14 @@ export function PdfPage({
         async function paint(): Promise<void> {
             try {
                 const page = await document.getPage(pageNumber);
-                if (cancelled) return;
+                if (cancelled) {return;}
                 const original = page.getViewport({ scale: 1 });
                 const viewport = page.getViewport({ scale: width / original.width });
                 const outputScale = Math.min(2, window.devicePixelRatio || 1);
                 canvas.width = Math.ceil(viewport.width * outputScale);
                 canvas.height = Math.ceil(viewport.height * outputScale);
                 const context = canvas.getContext("2d");
-                if (!context) throw new Error("Could not render this PDF page");
+                if (!context) {throw new Error("Could not render this PDF page");}
                 render = page.render({
                     canvas,
                     canvasContext: context,
@@ -54,7 +54,7 @@ export function PdfPage({
                     transform: [outputScale, 0, 0, outputScale, 0, 0],
                 });
                 await render.promise;
-                if (cancelled) return;
+                if (cancelled) {return;}
                 text.style.setProperty("--scale-factor", String(viewport.scale));
                 text.style.setProperty("--total-scale-factor", String(viewport.scale));
                 textLayer = new TextLayer({
@@ -62,14 +62,14 @@ export function PdfPage({
                     container: text,
                     viewport,
                 });
-                if (cancelled) return;
+                if (cancelled) {return;}
                 await textLayer.render();
                 if (!cancelled) {
                     setError(null);
                     setRenderedWidth(width);
                 }
-            } catch (reason) {
-                if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not render this PDF page");
+            } catch (error_) {
+                if (!cancelled) {setError(error_ instanceof Error ? error_.message : "Could not render this PDF page");}
             }
         }
         void paint();

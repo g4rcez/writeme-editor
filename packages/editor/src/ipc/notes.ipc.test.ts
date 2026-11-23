@@ -6,9 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const runtime = vi.hoisted(() => ({
     userData: "",
     workspace: "",
-    dialogResult: { canceled: true, filePaths: [] as string[] },
+    dialogResult: { canceled: true, filePaths: [] as Array<string> },
 }));
-const handlers = vi.hoisted(() => new Map<string, (...args: any[]) => unknown>());
+const handlers = vi.hoisted(() => new Map<string, (...args: Array<any>) => unknown>());
 
 vi.mock("electron", () => {
     class MockMenu {
@@ -26,7 +26,7 @@ vi.mock("electron", () => {
         clipboard: { readText: vi.fn(), read: vi.fn(), writeText: vi.fn() },
         dialog: { showOpenDialog: vi.fn(async () => runtime.dialogResult) },
         ipcMain: {
-            handle: vi.fn((channel: string, handler: (...args: any[]) => unknown) => {
+            handle: vi.fn((channel: string, handler: (...args: Array<any>) => unknown) => {
                 handlers.set(channel, handler);
             }),
         },
@@ -45,9 +45,9 @@ vi.mock("../main-process/file-watcher", () => ({ FileWatcher: { suppressNext: vi
 import { createWorkspaceCompletionFileCache } from "../app/extensions/workspace-completion-files";
 import { notesIpcHandler } from "./notes.ipc";
 
-const invoke = async (channel: string, ...args: unknown[]) => {
+const invoke = async (channel: string, ...args: Array<unknown>) => {
     const handler = handlers.get(channel);
-    if (!handler) throw new Error(`Missing IPC handler: ${channel}`);
+    if (!handler) {throw new Error(`Missing IPC handler: ${channel}`);}
     return handler({}, ...args);
 };
 
@@ -86,14 +86,14 @@ describe("Obsidian filesystem IPC", () => {
         await expect(readFile(filename, "utf8")).resolves.toBe(winner);
     });
     it("loads a large autocomplete workspace from disk and reuses the scan", async () => {
-        const paths: string[] = [];
+        const paths: Array<string> = [];
         for (let folder = 0; folder < 40; folder++) {
             const directory = path.join(workspace, "documents", `folder-${folder}`);
             await mkdir(directory, { recursive: true });
-            for (let file = 0; file < 125; file++) paths.push(path.join(directory, `document-${file}.md`));
+            for (let file = 0; file < 125; file++) {paths.push(path.join(directory, `document-${file}.md`));}
         }
         for (let offset = 0; offset < paths.length; offset += 100)
-            await Promise.all(paths.slice(offset, offset + 100).map((file) => writeFile(file, "# Document")));
+            {await Promise.all(paths.slice(offset, offset + 100).map((file) => writeFile(file, "# Document")));}
         const cache = createWorkspaceCompletionFileCache();
         const api = {
             readDirRecursive: vi.fn(

@@ -23,13 +23,13 @@ function isErrorMessage(message: AIMessage): boolean {
 }
 
 function formatFileSize(size: number): string {
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KiB`;
+    if (size < 1024) {return `${size} B`;}
+    if (size < 1024 * 1024) {return `${Math.ceil(size / 1024)} KiB`;}
     return `${(size / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
 function MessageAttachments({ message }: { message: AIMessage }) {
-    if (!message.files?.length) return null;
+    if (!message.files?.length) {return null;}
     return (
         <ul aria-label="Attached files" className="mt-2 flex max-w-full flex-wrap gap-1.5">
             {message.files.map((file) => (
@@ -79,7 +79,7 @@ function AssistantRenderedBody({
     if (isStreaming) {
         return <p className="text-sm text-muted-foreground italic">{getLoadingMessage(loadingIndex)}</p>;
     }
-    if (hasWorkspaceData) return null;
+    if (hasWorkspaceData) {return null;}
     return <p className="text-sm text-muted-foreground italic">No assistant response was returned.</p>;
 }
 
@@ -168,7 +168,7 @@ export function AIChatMessageList({
     renderActions,
     maxWidthClass = "max-w-3xl",
 }: {
-    messages: AIMessage[];
+    messages: Array<AIMessage>;
     isStreaming: boolean;
     loadingMessageIndex: number;
     renderActions?: (message: AIMessage) => ReactNode;
@@ -204,7 +204,7 @@ export function AIChatMessageList({
                     </div>
                 );
             })}
-            {isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === "user" ? (
+            {isStreaming && messages.length > 0 && messages.at(-1)?.role === "user" ? (
                 <div className="flex justify-start">
                     <div
                         className={css(

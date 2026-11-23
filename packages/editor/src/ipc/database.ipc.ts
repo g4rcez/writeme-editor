@@ -2,7 +2,7 @@ import { ipcMain } from "electron";
 import { z } from "zod";
 import { dbManager } from "../main-process/database";
 
-const idSchema = z.string().min(1).max(1_024);
+const idSchema = z.string().min(1).max(1024);
 const pathSchema = z.string().min(1).max(32_768);
 const dateSchema = z.iso.datetime();
 const contentSchema = z.string().max(50_000_000);
@@ -10,7 +10,7 @@ const limitSchema = z.number().int().min(1).max(10_000);
 const recordsSchema = z.array(z.unknown()).max(500);
 const tabsSchema = z.array(z.object({ id: idSchema, order: z.number().int().safe() })).max(10_000);
 const membersSchema = z.array(z.object({ id: idSchema, order: z.number().int().safe() })).max(10_000);
-const tagsSchema = z.array(z.string().min(1).max(1_024)).max(10_000);
+const tagsSchema = z.array(z.string().min(1).max(1024)).max(10_000);
 
 export const databaseIpcHandler = () => {
     const db = dbManager();
@@ -27,11 +27,11 @@ export const databaseIpcHandler = () => {
         return db.save(table, item);
     });
 
-    ipcMain.handle("db:migrateCollection", (_, table: string, records: unknown[]) =>
+    ipcMain.handle("db:migrateCollection", (_, table: string, records: Array<unknown>) =>
         db.migrateCollection(table, recordsSchema.parse(records)),
     );
 
-    ipcMain.handle("db:verifyCollection", (_, table: string, records: unknown[]) =>
+    ipcMain.handle("db:verifyCollection", (_, table: string, records: Array<unknown>) =>
         db.verifyCollection(table, recordsSchema.parse(records)),
     );
 
@@ -74,7 +74,7 @@ export const databaseIpcHandler = () => {
                 contentSchema.parse(content),
                 z.number().int().nonnegative().safe().parse(fileSize),
                 dateSchema.parse(updatedAt),
-                z.string().max(1_024).parse(updatedBy),
+                z.string().max(1024).parse(updatedBy),
             );
             return true;
         },
@@ -101,7 +101,7 @@ export const databaseIpcHandler = () => {
                 contentSchema.parse(content),
                 content.length,
                 dateSchema.parse(updatedAt),
-                z.string().max(1_024).parse(updatedBy),
+                z.string().max(1024).parse(updatedBy),
             );
         },
     );

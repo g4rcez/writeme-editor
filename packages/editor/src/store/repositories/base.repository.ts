@@ -1,5 +1,5 @@
-import { type EntityBase, type Repository } from "../repository";
-import { type StorageAdapter } from "./adapters/types";
+import type { EntityBase, Repository } from "../repository";
+import type { StorageAdapter } from "./adapters/types";
 
 export abstract class BaseRepository<T extends EntityBase> implements Repository<T> {
     constructor(
@@ -16,7 +16,7 @@ export abstract class BaseRepository<T extends EntityBase> implements Repository
         return await this.adapter.get<T>(this.collection, id);
     }
 
-    async getAll(query?: { limit?: number }): Promise<T[]> {
+    async getAll(query?: { limit?: number }): Promise<Array<T>> {
         const items = await this.adapter.getAll<T>(this.collection, query);
         if (this.defaultSort) {
             return items.sort(this.defaultSort);

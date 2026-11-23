@@ -11,18 +11,18 @@ function createWebTerminalBackend(): WebTerminalBackend {
     registry.register("list-notes", async (_, term) => {
         try {
             const notes = await repositories.notes.getRecentNotes(50);
-            term.writeln(`\x1b[1;36mFound ${notes.length} notes:\x1b[0m`);
+            term.writeln(`\u001b[1;36mFound ${notes.length} notes:\u001b[0m`);
             for (const note of notes) {
-                term.writeln(`  \x1b[32m${note.id}\x1b[0m: ${note.title}`);
+                term.writeln(`  \u001b[32m${note.id}\u001b[0m: ${note.title}`);
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            term.writeln(`\x1b[31mFailed to load notes: ${message}\x1b[0m`);
+            term.writeln(`\u001b[31mFailed to load notes: ${message}\u001b[0m`);
         }
     });
 
     registry.register("list-templates", (_, term) => {
-        term.writeln("\x1b[33mTemplates listing not fully implemented yet in mock.\x1b[0m");
+        term.writeln("\u001b[33mTemplates listing not fully implemented yet in mock.\u001b[0m");
     });
 
     return backend;

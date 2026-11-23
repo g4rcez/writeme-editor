@@ -1,4 +1,4 @@
-import { type EntityBase, type Repository } from "@/store/repository";
+import type { EntityBase, Repository } from "@/store/repository";
 
 export class Project implements EntityBase {
     public constructor(

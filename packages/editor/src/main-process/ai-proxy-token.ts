@@ -6,7 +6,7 @@ const TOKEN_DIRECTORY = "ai-proxy";
 const TOKEN_FILE = "workspace-token";
 
 export function getOrCreateAiProxyToken(userDataDirectory: string, candidateToken: string): string {
-    if (!candidateToken.trim()) throw new Error("AI proxy token cannot be empty.");
+    if (!candidateToken.trim()) {throw new Error("AI proxy token cannot be empty.");}
 
     const tokenDirectory = path.join(userDataDirectory, TOKEN_DIRECTORY);
     fs.mkdirSync(tokenDirectory, { recursive: true, mode: 0o700 });
@@ -22,9 +22,9 @@ export function getOrCreateAiProxyToken(userDataDirectory: string, candidateToke
         }
         fs.chmodSync(tokenPath, 0o600);
         const savedToken = fs.readFileSync(tokenPath, "utf8").trim();
-        if (savedToken) return savedToken;
+        if (savedToken) {return savedToken;}
     } catch (error) {
-        if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+        if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {throw error;}
     }
 
     const temporaryPath = path.join(tokenDirectory, `.${TOKEN_FILE}-${randomUUID()}.tmp`);

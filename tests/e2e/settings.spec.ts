@@ -185,7 +185,7 @@ test.describe("Settings", () => {
                 const main = page.getByRole("main", { name: "Settings" });
                 const navigation = page.getByRole("navigation", { name: "Settings sections", exact: true });
                 const narrow = viewport.width < 768;
-                if (narrow) await expect(navigation).toBeHidden();
+                if (narrow) {await expect(navigation).toBeHidden();}
 
                 for (const destination of webDestinations) {
                     await test.step(`Navigate to ${destination.title}`, async () => {

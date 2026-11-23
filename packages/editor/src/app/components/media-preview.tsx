@@ -22,12 +22,12 @@ type LightboxRender = NonNullable<ComponentProps<typeof Lightbox>["render"]>;
 type ThumbnailRenderProps = Parameters<NonNullable<LightboxRender["thumbnail"]>>[0];
 
 function renderPdfSlide({ slide }: RenderSlideProps): JSX.Element | null {
-    if (slide.type !== "pdf") return null;
+    if (slide.type !== "pdf") {return null;}
     return <PdfMediaSlide key={slide.src} src={slide.src} title={slide.alt ?? "PDF document"} />;
 }
 
 function renderPdfThumbnail({ slide }: ThumbnailRenderProps): JSX.Element | null {
-    if (slide.type !== "pdf") return null;
+    if (slide.type !== "pdf") {return null;}
     return (
         <span className="flex size-full items-center justify-center bg-secondary-background text-foreground">
             <FilePdfIcon aria-hidden="true" size={24} />
@@ -39,7 +39,7 @@ const PDF_RENDER = { slide: renderPdfSlide, thumbnail: renderPdfThumbnail };
 
 export const MediaPreview = () => {
     const [ui] = useUIStore();
-    if (!ui.mediaPreview.open) return null;
+    if (!ui.mediaPreview.open) {return null;}
     const currentSource = ui.mediaPreview.sources[ui.mediaPreview.index];
     const slides = ui.mediaPreview.sources.map((source) => {
         if (source.type === "video") {

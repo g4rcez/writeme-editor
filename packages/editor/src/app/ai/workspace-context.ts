@@ -15,7 +15,7 @@ export function getWorkspaceChatScope(directory: string | null): string {
 
 export function buildWorkspaceContextSummary(
     directory: string | null,
-    notes: Note[],
+    notes: Array<Note>,
     workspaceToolsAvailable = true,
 ): string {
     const workspaceLabel = directory ? directory : "local workspace";
@@ -38,7 +38,7 @@ export function buildWorkspaceContextSummary(
         }
     }
 
-    const topTags: WorkspaceTagCount[] = Array.from(tagCounts.entries())
+    const topTags: Array<WorkspaceTagCount> = Array.from(tagCounts.entries())
         .map(([tag, count]) => ({ tag, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 8);

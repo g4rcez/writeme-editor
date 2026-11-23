@@ -124,7 +124,7 @@ const electronAPI = {
             includeAllFiles?: boolean,
         ): Promise<{
             success: boolean;
-            files: { name: string; path: string; relativePath: string }[];
+            files: Array<{ name: string; path: string; relativePath: string }>;
             error?: string;
         }> => {
             return ipcRenderer.invoke("fs:readDirRecursive", dirPath, maxDepth, includeAllFiles);
@@ -151,9 +151,9 @@ const electronAPI = {
         get: (table: DatabaseCollection, id: string) => ipcRenderer.invoke("db:get", table, id),
         getAll: (table: DatabaseCollection) => ipcRenderer.invoke("db:getAll", table),
         save: (table: DatabaseCollection, item: unknown) => ipcRenderer.invoke("db:save", table, item),
-        migrateCollection: (table: DatabaseCollection, records: unknown[]) =>
+        migrateCollection: (table: DatabaseCollection, records: Array<unknown>) =>
             ipcRenderer.invoke("db:migrateCollection", table, records),
-        verifyCollection: (table: DatabaseCollection, records: unknown[]) =>
+        verifyCollection: (table: DatabaseCollection, records: Array<unknown>) =>
             ipcRenderer.invoke("db:verifyCollection", table, records),
         delete: (table: DatabaseCollection, id: string) => ipcRenderer.invoke("db:delete", table, id),
         count: (table: DatabaseCollection) => ipcRenderer.invoke("db:count", table),
@@ -188,11 +188,11 @@ const electronAPI = {
                 ipcRenderer.invoke("db:notes:saveSnapshot", noteId, content, createdAt),
         },
         tabs: {
-            updateOrder: (tabs: any[]) => ipcRenderer.invoke("db:tabs:updateOrder", tabs),
+            updateOrder: (tabs: Array<any>) => ipcRenderer.invoke("db:tabs:updateOrder", tabs),
             deleteByNoteId: (noteId: string) => ipcRenderer.invoke("db:tabs:deleteByNoteId", noteId),
         },
         hashtags: {
-            sync: (filename: string, tags: string[]) => ipcRenderer.invoke("db:hashtags:sync", filename, tags),
+            sync: (filename: string, tags: Array<string>) => ipcRenderer.invoke("db:hashtags:sync", filename, tags),
         },
         noteGroups: {
             getByNoteId: (noteId: string) => ipcRenderer.invoke("db:noteGroups:getByNoteId", noteId),
@@ -200,7 +200,7 @@ const electronAPI = {
         },
         noteGroupMembers: {
             getByGroupId: (groupId: string) => ipcRenderer.invoke("db:noteGroupMembers:getByGroupId", groupId),
-            reorder: (members: { id: string; order: number }[]) =>
+            reorder: (members: Array<{ id: string; order: number }>) =>
                 ipcRenderer.invoke("db:noteGroupMembers:reorder", members),
             deleteByNoteId: (noteId: string) => ipcRenderer.invoke("db:noteGroupMembers:deleteByNoteId", noteId),
             deleteByGroupId: (groupId: string) => ipcRenderer.invoke("db:noteGroupMembers:deleteByGroupId", groupId),
@@ -208,7 +208,7 @@ const electronAPI = {
     },
     execution: {
         resolve: (command: string) => ipcRenderer.invoke("execution:resolve", command),
-        run: (command: string, args: string[] = [], code: string) =>
+        run: (command: string, args: Array<string> = [], code: string) =>
             ipcRenderer.invoke("execution:run", command, args, code),
     },
     git: {
@@ -299,11 +299,11 @@ const electronAPI = {
     },
 };
 
-if (!FEATURES.ai) Reflect.deleteProperty(electronAPI, "ai");
-if (!FEATURES.terminal) Reflect.deleteProperty(electronAPI, "terminal");
-if (!FEATURES.codeExecution) Reflect.deleteProperty(electronAPI, "execution");
-if (!FEATURES.git) Reflect.deleteProperty(electronAPI, "git");
-if (!FEATURES.cli) Reflect.deleteProperty(electronAPI.app, "installCli");
+if (!FEATURES.ai) {Reflect.deleteProperty(electronAPI, "ai");}
+if (!FEATURES.terminal) {Reflect.deleteProperty(electronAPI, "terminal");}
+if (!FEATURES.codeExecution) {Reflect.deleteProperty(electronAPI, "execution");}
+if (!FEATURES.git) {Reflect.deleteProperty(electronAPI, "git");}
+if (!FEATURES.cli) {Reflect.deleteProperty(electronAPI.app, "installCli");}
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
 
 declare global {
@@ -394,7 +394,7 @@ declare global {
                     includeAllFiles?: boolean,
                 ): Promise<{
                     success: boolean;
-                    files: { name: string; path: string; relativePath: string }[];
+                    files: Array<{ name: string; path: string; relativePath: string }>;
                     error?: string;
                 }>;
                 openFileOrDirectory(): Promise<{
@@ -407,11 +407,11 @@ declare global {
             };
             db: {
                 get<T>(table: DatabaseCollection, id: string): Promise<T | undefined>;
-                getAll<T>(table: DatabaseCollection): Promise<T[]>;
+                getAll<T>(table: DatabaseCollection): Promise<Array<T>>;
                 save<C extends DatabaseCollection>(table: C, item: unknown): Promise<DatabaseRecord<C>>;
                 migrateCollection(
                     table: DatabaseCollection,
-                    records: unknown[],
+                    records: Array<unknown>,
                 ): Promise<{
                     found: number;
                     imported: number;
@@ -421,7 +421,7 @@ declare global {
                 }>;
                 verifyCollection(
                     table: DatabaseCollection,
-                    records: unknown[],
+                    records: Array<unknown>,
                 ): Promise<{
                     sourceCount: number;
                     destinationCount: number;
@@ -432,13 +432,13 @@ declare global {
                 notes: {
                     getLatestQuicknote(): Promise<any>;
                     getQuicknoteByDate(start: string, end: string): Promise<any>;
-                    getRecentNotes(limit: number, workspacePath: string | null): Promise<Note[]>;
-                    getTemplates(): Promise<any[]>;
+                    getRecentNotes(limit: number, workspacePath: string | null): Promise<Array<Note>>;
+                    getTemplates(): Promise<Array<any>>;
                     getByFilePath(filePath: string): Promise<Note | null>;
                     softDelete(id: string, deletedAt: string): Promise<void>;
                     hardDelete(id: string): Promise<void>;
                     restore(id: string): Promise<void>;
-                    getTrashed(): Promise<any[]>;
+                    getTrashed(): Promise<Array<any>>;
                     moveToTrash(
                         id: string,
                         trashPath: string,
@@ -461,23 +461,23 @@ declare global {
                         updatedAt: string,
                         updatedBy: string,
                     ): Promise<Record<string, unknown> | null>;
-                    getHistory(noteId: string): Promise<unknown[]>;
+                    getHistory(noteId: string): Promise<Array<unknown>>;
                     saveSnapshot(noteId: string, content: string, createdAt: string): Promise<void>;
                 };
                 tabs: {
-                    updateOrder(tabs: any[]): Promise<void>;
+                    updateOrder(tabs: Array<any>): Promise<void>;
                     deleteByNoteId(noteId: string): Promise<void>;
                 };
                 hashtags: {
-                    sync(filename: string, tags: string[]): Promise<void>;
+                    sync(filename: string, tags: Array<string>): Promise<void>;
                 };
                 noteGroups: {
-                    getByNoteId(noteId: string): Promise<any[]>;
+                    getByNoteId(noteId: string): Promise<Array<any>>;
                     delete(id: string): Promise<void>;
                 };
                 noteGroupMembers: {
-                    getByGroupId(groupId: string): Promise<any[]>;
-                    reorder(members: { id: string; order: number }[]): Promise<void>;
+                    getByGroupId(groupId: string): Promise<Array<any>>;
+                    reorder(members: Array<{ id: string; order: number }>): Promise<void>;
                     deleteByNoteId(noteId: string): Promise<void>;
                     deleteByGroupId(groupId: string): Promise<void>;
                 };
@@ -486,7 +486,7 @@ declare global {
                 resolve(command: string): Promise<string | null>;
                 run(
                     command: string,
-                    args: string[] | undefined,
+                    args: Array<string> | undefined,
                     code: string,
                 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
             };
@@ -507,12 +507,12 @@ declare global {
                 onChunk(callback: (data: { chunk: string }) => void): () => void;
                 onDone(callback: (data: { code: number | null }) => void): () => void;
                 onError(callback: (data: { error: string }) => void): () => void;
-                getConfigs(): Promise<any[]>;
+                getConfigs(): Promise<Array<any>>;
                 saveConfig(config: any): Promise<void>;
                 deleteConfig(id: string): Promise<void>;
-                getChats(noteId?: string): Promise<any[]>;
+                getChats(noteId?: string): Promise<Array<any>>;
                 saveChat(chat: any): Promise<void>;
-                getMessages(chatId: string): Promise<any[]>;
+                getMessages(chatId: string): Promise<Array<any>>;
                 saveMessage(message: any): Promise<void>;
                 clearMessages(chatId: string): Promise<void>;
                 saveCredentials(creds: any): Promise<void>;

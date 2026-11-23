@@ -18,7 +18,7 @@ const desktopToken = "desktop-proxy-test-token";
 
 function requestToken(url: string | null, mainFrame = true): string {
     const handler = handle.mock.calls[0]?.[1];
-    if (!handler) throw new Error("AI proxy handler not registered.");
+    if (!handler) {throw new Error("AI proxy handler not registered.");}
     const frame = url === null ? null : { url };
     return handler({
         senderFrame: frame,

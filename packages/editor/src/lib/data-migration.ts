@@ -110,12 +110,12 @@ type MigrationRecord = z.infer<typeof MigrationRecordSchema>;
 type MigrationPayload = {
     type: "writeme-migration";
     version: 2;
-    notes: MigrationRecord[];
-    tabs: MigrationRecord[];
-    hashtags: MigrationRecord[];
-    settings: MigrationRecord[];
-    scripts: MigrationRecord[];
-    noteHistory: MigrationRecord[];
+    notes: Array<MigrationRecord>;
+    tabs: Array<MigrationRecord>;
+    hashtags: Array<MigrationRecord>;
+    settings: Array<MigrationRecord>;
+    scripts: Array<MigrationRecord>;
+    noteHistory: Array<MigrationRecord>;
 };
 type MigrationTable = {
     get(id: string): Promise<unknown>;
@@ -125,8 +125,8 @@ type PendingWrite = () => Promise<unknown>;
 
 const DATE_FIELDS = new Set(["createdAt", "updatedAt", "deletedAt", "lastSynced"]);
 
-function recordsForCollection(collection: string, values: MigrationRecord[]): MigrationRecord[] {
-    const records: MigrationRecord[] = [];
+function recordsForCollection(collection: string, values: Array<MigrationRecord>): Array<MigrationRecord> {
+    const records: Array<MigrationRecord> = [];
     const seen = new Map<string, MigrationRecord>();
     for (const record of values) {
         const duplicate = seen.get(record.id);
@@ -143,7 +143,7 @@ function recordsForCollection(collection: string, values: MigrationRecord[]): Mi
 }
 
 function areEqual(left: unknown, right: unknown): boolean {
-    if (left === right) return true;
+    if (left === right) {return true;}
     if (left instanceof Date || right instanceof Date) {
         return left instanceof Date && right instanceof Date && left.getTime() === right.getTime();
     }
@@ -155,7 +155,7 @@ function areEqual(left: unknown, right: unknown): boolean {
             left.every((value, index) => areEqual(value, right[index]))
         );
     }
-    if (left === null || right === null || typeof left !== "object" || typeof right !== "object") return false;
+    if (left === null || right === null || typeof left !== "object" || typeof right !== "object") {return false;}
     const leftRecord = left as Record<string, unknown>;
     const rightRecord = right as Record<string, unknown>;
     const leftKeys = Object.keys(leftRecord);
@@ -168,7 +168,7 @@ function areEqual(left: unknown, right: unknown): boolean {
 
 function parseMigrationPayload(value: unknown): MigrationPayload {
     const parsed = MigrationPayloadSchema.safeParse(value);
-    if (!parsed.success) throw new Error("Invalid backup file format.");
+    if (!parsed.success) {throw new Error("Invalid backup file format.");}
     const payload = parsed.data;
     return {
         type: "writeme-migration",
@@ -185,13 +185,13 @@ function parseMigrationPayload(value: unknown): MigrationPayload {
 async function collectNewRows(
     table: MigrationTable,
     collection: string,
-    rows: MigrationRecord[],
-    pendingWrites: PendingWrite[],
+    rows: Array<MigrationRecord>,
+    pendingWrites: Array<PendingWrite>,
 ): Promise<void> {
     for (const row of rows) {
         const existing = await table.get(row.id);
         if (existing !== undefined) {
-            if (areEqual(existing, row)) continue;
+            if (areEqual(existing, row)) {continue;}
             throw new Error(
                 `Migration stopped: "${collection}" record "${row.id}" already exists with different data. Nothing was changed; the source data is still available.`,
             );
@@ -206,14 +206,14 @@ async function importAllData(value: unknown): Promise<MigrationCounts> {
         "rw",
         [db.notes, db.tabs, db.hashtags, db.settings, db.scripts, db.noteHistory],
         async () => {
-            const pendingWrites: PendingWrite[] = [];
+            const pendingWrites: Array<PendingWrite> = [];
             await collectNewRows(db.notes, "notes", payload.notes, pendingWrites);
             await collectNewRows(db.tabs, "tabs", payload.tabs, pendingWrites);
             await collectNewRows(db.hashtags, "hashtags", payload.hashtags, pendingWrites);
             await collectNewRows(db.settings, "settings", payload.settings, pendingWrites);
             await collectNewRows(db.scripts, "scripts", payload.scripts, pendingWrites);
             await collectNewRows(db.noteHistory, "noteHistory", payload.noteHistory, pendingWrites);
-            for (const write of pendingWrites) await write();
+            for (const write of pendingWrites) {await write();}
         },
     );
 
@@ -240,12 +240,12 @@ async function readMigrationPayload(): Promise<MigrationPayload> {
     return {
         type: "writeme-migration",
         version: 2,
-        notes: notes as unknown as MigrationRecord[],
-        tabs: tabs.filter((tab) => tab.type !== TERMINAL_TAB_TYPE) as unknown as MigrationRecord[],
-        hashtags: hashtags as unknown as MigrationRecord[],
-        settings: settings as unknown as MigrationRecord[],
-        scripts: scripts as unknown as MigrationRecord[],
-        noteHistory: noteHistory as unknown as MigrationRecord[],
+        notes: notes as unknown as Array<MigrationRecord>,
+        tabs: tabs.filter((tab) => tab.type !== TERMINAL_TAB_TYPE) as unknown as Array<MigrationRecord>,
+        hashtags: hashtags as unknown as Array<MigrationRecord>,
+        settings: settings as unknown as Array<MigrationRecord>,
+        scripts: scripts as unknown as Array<MigrationRecord>,
+        noteHistory: noteHistory as unknown as Array<MigrationRecord>,
     };
 }
 
@@ -267,7 +267,7 @@ export function startMigration(): Promise<MigrationCounts> {
         popup.postMessage({ type: "writeme-migration-ack", status, error }, WWW_ORIGIN);
     };
     const onMessage = (event: MessageEvent<unknown>) => {
-        if (event.origin !== WWW_ORIGIN || event.source !== popup || processing) return;
+        if (event.origin !== WWW_ORIGIN || event.source !== popup || processing) {return;}
         processing = true;
 
         void importAllData(event.data).then(
@@ -317,7 +317,7 @@ export async function exportToFile(): Promise<void> {
 export async function importFromFile(file: File): Promise<MigrationCounts> {
     const text = await file.text();
     const data = JSON.parse(text, (key: string, value: unknown) => {
-        if (!DATE_FIELDS.has(key) || typeof value !== "string") return value;
+        if (!DATE_FIELDS.has(key) || typeof value !== "string") {return value;}
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? value : date;
     }) as unknown;
@@ -326,7 +326,7 @@ export async function importFromFile(file: File): Promise<MigrationCounts> {
 
 export async function sendMigrationData(): Promise<void> {
     const opener = window.opener;
-    if (!opener) throw new Error("This page must be opened from the Writeme migration button.");
+    if (!opener) {throw new Error("This page must be opened from the Writeme migration button.");}
     const payload = await readMigrationPayload();
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     let timeoutId: number;
@@ -335,9 +335,9 @@ export async function sendMigrationData(): Promise<void> {
         window.removeEventListener("message", onAcknowledgement);
     };
     const onAcknowledgement = (event: MessageEvent<unknown>) => {
-        if (event.origin !== APP_ORIGIN || event.source !== opener) return;
+        if (event.origin !== APP_ORIGIN || event.source !== opener) {return;}
         const parsed = MigrationAcknowledgementSchema.safeParse(event.data);
-        if (!parsed.success) return;
+        if (!parsed.success) {return;}
         cleanup();
         if (parsed.data.status === "success") {
             resolve();

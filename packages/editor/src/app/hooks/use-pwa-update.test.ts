@@ -20,7 +20,7 @@ import { usePwaUpdate } from "./use-pwa-update";
 const getRegisterOptions = (): RegisterSWOptions => {
     const options = useRegisterSWMock.mock.calls.at(-1)?.[0] as RegisterSWOptions | undefined;
 
-    if (!options) throw new Error("useRegisterSW was not called with options");
+    if (!options) {throw new Error("useRegisterSW was not called with options");}
 
     return options;
 };

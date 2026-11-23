@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { db } from "./dexie-db";
 import { NotesRepository } from "./notes.repository";
 const conditionalUpdateMocks = vi.hoisted(() => ({
-    transaction: vi.fn(async (...args: unknown[]) => {
+    transaction: vi.fn(async (...args: Array<unknown>) => {
         const operation = args.at(-1);
-        if (typeof operation !== "function") throw new Error("Missing transaction operation.");
+        if (typeof operation !== "function") {throw new Error("Missing transaction operation.");}
         return operation();
     }),
     noteGet: vi.fn(),
@@ -49,7 +49,7 @@ describe("NotesRepository", () => {
     let repository: NotesRepository;
 
     beforeEach(() => {
-        // @ts-ignore
+        // @ts-expect-error Intentionally invalid input for this test.
         repository = new NotesRepository({});
         vi.clearAllMocks();
         (db.notes.where as any).mockReturnValue({

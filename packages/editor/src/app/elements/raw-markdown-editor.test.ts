@@ -3,7 +3,7 @@ import { EditorView } from "@codemirror/view";
 import { afterEach, describe, expect, it } from "vitest";
 import { createMarkdownSearchController } from "./raw-markdown-editor";
 
-const views: EditorView[] = [];
+const views: Array<EditorView> = [];
 
 afterEach(() => {
     views.splice(0).forEach((view) => view.destroy());

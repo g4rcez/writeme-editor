@@ -12,10 +12,10 @@ const EMOJI_GRID_COLUMNS = 4;
 type EmojiItem = {
     emoji: string;
     name: string;
-    keywords: string[];
+    keywords: Array<string>;
 };
 
-const EMOJIS: EmojiItem[] = [
+const EMOJIS: Array<EmojiItem> = [
     // Smileys
     { emoji: "😀", name: "grinning", keywords: ["smile", "happy", "grin"] },
     { emoji: "😃", name: "smiley", keywords: ["smile", "happy", "joy"] },
@@ -405,7 +405,7 @@ const EmojiList = (props: any) => {
 
     const selectItem = (index: number) => {
         const item: EmojiItem = itemsRef.current[index];
-        if (!item) return;
+        if (!item) {return;}
         editorRef.current
             .chain()
             .focus()
@@ -423,7 +423,7 @@ const EmojiList = (props: any) => {
     useLayoutEffect(() => {
         const handler = ({ event }: { event: KeyboardEvent }) => {
             const len = itemsRef.current.length;
-            if (len === 0) return false;
+            if (len === 0) {return false;}
             const cols = EMOJI_GRID_COLUMNS;
             if (event.key === "ArrowRight") {
                 setSelectedIndex((prev) => (prev + 1) % len);
@@ -450,9 +450,9 @@ const EmojiList = (props: any) => {
         props.registerKeyDown(handler);
     }, []);
 
-    if (!props.items.length) return null;
+    if (!props.items.length) {return null;}
 
-    const selectedName = (props.items as EmojiItem[])[selectedIndex]?.name ?? "";
+    const selectedName = (props.items as Array<EmojiItem>)[selectedIndex]?.name ?? "";
 
     return (
         <div
@@ -469,7 +469,7 @@ const EmojiList = (props: any) => {
                         gridTemplateColumns: `repeat(${EMOJI_GRID_COLUMNS}, minmax(0, 1fr))`,
                     }}
                 >
-                    {(props.items as EmojiItem[]).map((item, index) => (
+                    {(props.items as Array<EmojiItem>).map((item, index) => (
                         <button
                             key={`${item.emoji}-${index}`}
                             type="button"
@@ -511,7 +511,7 @@ const emojiSuggestion = {
     startOfLine: false,
     items: ({ query }: { query: string }) => {
         try {
-            if (!query || !/^[a-zA-Z0-9]/.test(query)) return [];
+            if (!query || !/^[a-zA-Z0-9]/.test(query)) {return [];}
             const q = query.toLowerCase();
             return EMOJIS.filter(
                 (item) => item.name.toLowerCase().includes(q) || item.keywords.some((k) => k.toLowerCase().includes(q)),
@@ -525,7 +525,7 @@ const emojiSuggestion = {
         let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null = null;
         let currentEditor: any = null;
         let currentRange: any = null;
-        let currentItems: any[] = [];
+        let currentItems: Array<any> = [];
         const registerKeyDown = (fn: (props: { event: KeyboardEvent }) => boolean) => {
             keyDownHandler = fn;
         };
@@ -534,7 +534,7 @@ const emojiSuggestion = {
                 currentEditor = props.editor;
                 currentRange = props.range;
                 currentItems = props.items ?? [];
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 reactRenderer = new ReactRenderer(EmojiList, {
                     props: { ...props, registerKeyDown },
                     editor: props.editor,
@@ -549,7 +549,7 @@ const emojiSuggestion = {
                 currentRange = props.range;
                 currentItems = props.items ?? [];
                 reactRenderer?.updateProps({ ...props, registerKeyDown });
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 updatePosition(props.editor, reactRenderer!.element);
             },
             onKeyDown(props: { event: KeyboardEvent }) {

@@ -47,7 +47,6 @@ type Result = {
 
 const getRepositories = (): Result => {
     if (isElectron()) {
-        console.log("Using Electron (SQLite) repositories");
         const adapter = new ElectronStorageAdapter();
         const tabs = new ElectronTabsRepository();
         return {
@@ -64,7 +63,6 @@ const getRepositories = (): Result => {
             terminalSessions: new TerminalSessionsRepository(adapter),
         };
     } else {
-        console.log("Using Browser (Dexie) repositories");
         const adapter = new DexieStorageAdapter();
         const tabs = new BrowserTabsRepository();
         return {

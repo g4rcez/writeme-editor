@@ -46,7 +46,7 @@ async function withFileWriteLock<T>(filePath: string, operation: () => Promise<T
         return await operation();
     } finally {
         release();
-        if (fileWriteLocks.get(key) === current) fileWriteLocks.delete(key);
+        if (fileWriteLocks.get(key) === current) {fileWriteLocks.delete(key);}
     }
 }
 
@@ -94,7 +94,7 @@ async function isRealPathUnderRoot(candidatePath: string, roots: Iterable<string
         } catch {
             realRoot = normalizePath(root);
         }
-        if (isPathWithinRoot(realCandidate, realRoot)) return true;
+        if (isPathWithinRoot(realCandidate, realRoot)) {return true;}
     }
     return false;
 }
@@ -109,9 +109,9 @@ async function resolveExistingPath(inputPath: string): Promise<string> {
                 error && typeof error === "object" && "code" in error && typeof error.code === "string"
                     ? error.code
                     : null;
-            if (code !== "ENOENT") throw error;
+            if (code !== "ENOENT") {throw error;}
             const parentPath = path.dirname(currentPath);
-            if (parentPath === currentPath) throw error;
+            if (parentPath === currentPath) {throw error;}
             currentPath = parentPath;
         }
     }
@@ -149,12 +149,12 @@ async function validateWritablePath(
 }
 
 function getRevealLabel(): string {
-    if (process.platform === "darwin") return "Reveal in Finder";
-    if (process.platform === "win32") return "Show in Explorer";
+    if (process.platform === "darwin") {return "Reveal in Finder";}
+    if (process.platform === "win32") {return "Show in Explorer";}
     return "Open in File Manager";
 }
 
-function validatePaths(...inputPaths: string[]) {
+function validatePaths(...inputPaths: Array<string>) {
     for (const inputPath of inputPaths) {
         const candidate = normalizePath(inputPath);
         if (!isPathUnderRoot(candidate) && !isCliEditorFilePath(candidate)) {
@@ -175,10 +175,10 @@ export const notesIpcHandler = async () => {
             const items = await clipboard.read();
             for (const item of items) {
                 const imageType = item.types.find((type) => type.startsWith("image/"));
-                if (!imageType) continue;
+                if (!imageType) {continue;}
 
                 const image = await item.getType(imageType);
-                if (!("arrayBuffer" in image)) continue;
+                if (!("arrayBuffer" in image)) {continue;}
 
                 const imageBuffer = Buffer.from(await image.arrayBuffer());
                 return `data:${imageType};base64,${imageBuffer.toString("base64")}`;
@@ -191,7 +191,7 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle("context-menu:link", async (event, text: string, url: string, x?: number, y?: number) => {
         const win = BrowserWindow.fromWebContents(event.sender);
-        if (!win) return;
+        if (!win) {return;}
 
         const menu = new Menu();
         menu.append(
@@ -229,7 +229,7 @@ export const notesIpcHandler = async () => {
             message: "Select the Obsidian vault to import",
         });
         const vaultPath = result.canceled ? null : result.filePaths[0];
-        if (vaultPath) explicitlyGrantedFilesystemRoots.add(normalizePath(vaultPath));
+        if (vaultPath) {explicitlyGrantedFilesystemRoots.add(normalizePath(vaultPath));}
         return vaultPath ?? null;
     });
 
@@ -289,7 +289,7 @@ export const notesIpcHandler = async () => {
             ],
             title: "Open",
         });
-        if (result.canceled || !result.filePaths[0]) return null;
+        if (result.canceled || !result.filePaths[0]) {return null;}
         const selectedPath = result.filePaths[0];
         const stats = await fs.stat(selectedPath);
         return { path: selectedPath, isDirectory: stats.isDirectory() };
@@ -297,7 +297,7 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle("fs:copyFile", async (_, sourcePath: string, targetPath: string) => {
         const access = validatePaths(sourcePath, targetPath, path.dirname(targetPath));
-        if (!access.success) return access;
+        if (!access.success) {return access;}
 
         try {
             const sourceStats = await fs.lstat(sourcePath);
@@ -313,10 +313,10 @@ export const notesIpcHandler = async () => {
                 };
             }
             const targetSafety = await validateWritablePath(targetPath);
-            if (!targetSafety.success) return targetSafety;
+            if (!targetSafety.success) {return targetSafety;}
             await fs.mkdir(path.dirname(targetPath), { recursive: true });
             const finalTargetSafety = await validateWritablePath(targetPath);
-            if (!finalTargetSafety.success) return finalTargetSafety;
+            if (!finalTargetSafety.success) {return finalTargetSafety;}
             await fs.copyFile(sourcePath, targetPath);
             return { success: true, filePath: targetPath };
         } catch (error: any) {
@@ -327,22 +327,22 @@ export const notesIpcHandler = async () => {
     ipcMain.handle("fs:createFile", async (_, filePath: string, content: string) =>
         withFileWriteLock(filePath, async () => {
             if (typeof content !== "string" || content.length > 50_000_000)
-                return { success: false, error: "Note content exceeds the supported size limit." };
+                {return { success: false, error: "Note content exceeds the supported size limit." };}
             const access = validatePaths(filePath, path.dirname(filePath));
-            if (!access.success) return access;
+            if (!access.success) {return access;}
             try {
                 const safety = await validateWritablePath(filePath);
-                if (!safety.success) return safety;
+                if (!safety.success) {return safety;}
                 await fs.mkdir(path.dirname(filePath), { recursive: true });
                 const finalSafety = await validateWritablePath(filePath);
-                if (!finalSafety.success) return finalSafety;
+                if (!finalSafety.success) {return finalSafety;}
                 FileWatcher.suppressNext(filePath);
-                await fs.writeFile(filePath, content, { encoding: "utf-8", flag: "wx" });
+                await fs.writeFile(filePath, content, { encoding: "utf8", flag: "wx" });
                 try {
                     const stats = await fs.stat(filePath);
                     return { success: true, fileSize: stats.size, lastModified: stats.mtime };
                 } catch {
-                    return { success: true, fileSize: Buffer.byteLength(content, "utf-8"), lastModified: new Date() };
+                    return { success: true, fileSize: Buffer.byteLength(content, "utf8"), lastModified: new Date() };
                 }
             } catch (error: unknown) {
                 const exists =
@@ -361,15 +361,15 @@ export const notesIpcHandler = async () => {
             const access = isCliEditorFilePath(filePath)
                 ? validatePaths(filePath)
                 : validatePaths(filePath, path.dirname(filePath));
-            if (!access.success) return access;
+            if (!access.success) {return access;}
             try {
                 const pathSafety = await validateWritablePath(filePath);
-                if (!pathSafety.success) return pathSafety;
+                if (!pathSafety.success) {return pathSafety;}
                 await fs.mkdir(path.dirname(filePath), { recursive: true });
                 const finalPathSafety = await validateWritablePath(filePath);
-                if (!finalPathSafety.success) return finalPathSafety;
+                if (!finalPathSafety.success) {return finalPathSafety;}
                 FileWatcher.suppressNext(filePath);
-                await fs.writeFile(filePath, content, "utf-8");
+                await fs.writeFile(filePath, content, "utf8");
                 try {
                     const stats = await fs.stat(filePath);
                     return { success: true, filePath, fileSize: stats.size, lastModified: stats.mtime };
@@ -395,14 +395,14 @@ export const notesIpcHandler = async () => {
             const access = isCliEditorFilePath(filePath)
                 ? validatePaths(filePath)
                 : validatePaths(filePath, path.dirname(filePath));
-            if (!access.success) return access;
+            if (!access.success) {return access;}
             try {
                 const pathSafety = await validateWritablePath(filePath);
-                if (!pathSafety.success) return pathSafety;
+                if (!pathSafety.success) {return pathSafety;}
                 const handle = await fs.open(filePath, "r+");
                 try {
                     const initialStats = await handle.stat();
-                    const currentContent = await handle.readFile("utf-8");
+                    const currentContent = await handle.readFile("utf8");
                     const readStats = await handle.stat();
                     const currentPathStats = await fs.stat(filePath);
                     if (
@@ -417,7 +417,7 @@ export const notesIpcHandler = async () => {
                         return { success: false, stale: true, error: "Note content changed since review." };
                     }
                     const finalPathSafety = await validateWritablePath(filePath);
-                    if (!finalPathSafety.success) return finalPathSafety;
+                    if (!finalPathSafety.success) {return finalPathSafety;}
                     const finalStats = await handle.stat();
                     const finalPathStats = await fs.stat(filePath);
                     if (
@@ -431,12 +431,12 @@ export const notesIpcHandler = async () => {
                         return { success: false, stale: true, error: "Note content changed since review." };
                     }
                     FileWatcher.suppressNext(filePath);
-                    const buffer = Buffer.from(content, "utf-8");
+                    const buffer = Buffer.from(content, "utf8");
                     await handle.truncate(0);
                     let written = 0;
                     while (written < buffer.length) {
                         const result = await handle.write(buffer, written, buffer.length - written, written);
-                        if (result.bytesWritten === 0) throw new Error("Filesystem write made no progress.");
+                        if (result.bytesWritten === 0) {throw new Error("Filesystem write made no progress.");}
                         written += result.bytesWritten;
                     }
                     await handle.sync();
@@ -470,10 +470,10 @@ export const notesIpcHandler = async () => {
 
         try {
             const pathSafety = await validateWritablePath(filePath);
-            if (!pathSafety.success) return pathSafety;
+            if (!pathSafety.success) {return pathSafety;}
             await fs.mkdir(path.dirname(filePath), { recursive: true });
             const finalPathSafety = await validateWritablePath(filePath);
-            if (!finalPathSafety.success) return finalPathSafety;
+            if (!finalPathSafety.success) {return finalPathSafety;}
             const base64Content = base64Data.split(",")[1];
             if (!base64Content) {
                 throw new Error("Invalid base64 data");
@@ -492,7 +492,7 @@ export const notesIpcHandler = async () => {
         }
 
         try {
-            const content = await fs.readFile(filePath, "utf-8");
+            const content = await fs.readFile(filePath, "utf8");
             const stats = await fs.stat(filePath);
             return {
                 success: true,
@@ -510,16 +510,16 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle("fs:writeBinaryFile", async (_, filePath: string, data: Uint8Array) => {
         const pathAccess = validatePaths(filePath);
-        if (!pathAccess.success) return pathAccess;
+        if (!pathAccess.success) {return pathAccess;}
         if (!ArrayBuffer.isView(data) || Object.prototype.toString.call(data) !== "[object Uint8Array]") {
             return { success: false, error: "Invalid binary file data" };
         }
         try {
             const access = await validateWritablePath(filePath);
-            if (!access.success) return access;
+            if (!access.success) {return access;}
             await fs.mkdir(path.dirname(filePath), { recursive: true });
             const finalAccess = await validateWritablePath(filePath);
-            if (!finalAccess.success) return finalAccess;
+            if (!finalAccess.success) {return finalAccess;}
             await fs.writeFile(filePath, Buffer.from(data), { flag: "wx" });
             return { success: true };
         } catch (error) {
@@ -647,13 +647,13 @@ export const notesIpcHandler = async () => {
                 }
             })
             .catch((error: unknown) => {
-                if (controller.signal.aborted || !isCurrentJob()) return;
+                if (controller.signal.aborted || !isCurrentJob()) {return;}
                 const message = error instanceof Error ? error.message : "Failed to search workspace files";
                 sendEvent({ requestId: request.requestId, type: "error", error: message });
             })
             .finally(() => {
                 event.sender.removeListener("destroyed", onDestroyed);
-                if (isCurrentJob()) fileSearchJobs.delete(jobKey);
+                if (isCurrentJob()) {fileSearchJobs.delete(jobKey);}
             });
 
         return { success: true };
@@ -679,20 +679,20 @@ export const notesIpcHandler = async () => {
             const depthLimit =
                 Number.isInteger(maxDepth) && maxDepth >= 0 ? maxDepth : DEFAULT_RECURSIVE_DIRECTORY_DEPTH;
             type FileEntry = { name: string; path: string; relativePath: string };
-            const results: FileEntry[] = [];
+            const results: Array<FileEntry> = [];
             const walk = async (currentDir: string, depth: number) => {
-                if (depth > depthLimit) return;
-                let entries: Dirent[];
+                if (depth > depthLimit) {return;}
+                let entries: Array<Dirent>;
                 try {
                     entries = await fs.readdir(currentDir, { withFileTypes: true });
                 } catch {
                     return;
                 }
                 for (const entry of entries) {
-                    if (entry.name.startsWith(".") || entry.isSymbolicLink()) continue;
+                    if (entry.name.startsWith(".") || entry.isSymbolicLink()) {continue;}
                     const fullPath = path.join(currentDir, entry.name);
                     if (entry.isDirectory()) {
-                        if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) continue;
+                        if (["node_modules", ".git", "dist", "build", ".next", ".vite"].includes(entry.name)) {continue;}
                         await walk(fullPath, depth + 1);
                     } else if (includeAllFiles || isWorkspaceDocumentFile(entry.name)) {
                         results.push({
@@ -727,7 +727,7 @@ export const notesIpcHandler = async () => {
         }
         try {
             const entries = (await fs.readdir(dirPath, { withFileTypes: true })).slice(0, 200);
-            const nodes: TreeNode[] = entries
+            const nodes: Array<TreeNode> = entries
                 .filter((entry) => !entry.name.startsWith("."))
                 .map((entry): TreeNode => {
                     const fullPath = path.join(dirPath, entry.name);
@@ -758,7 +758,7 @@ export const notesIpcHandler = async () => {
 
     ipcMain.handle("context-menu:explorer", async (event, filePath: string, isDirectory: boolean) => {
         const win = BrowserWindow.fromWebContents(event.sender);
-        if (!win) return;
+        if (!win) {return;}
 
         const revealLabel = getRevealLabel();
 

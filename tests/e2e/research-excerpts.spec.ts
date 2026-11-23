@@ -72,7 +72,7 @@ test("captures real PDF text, creates writing, appends another excerpt and retur
     expect(notebookFooterBounds!.height).toBeLessThanOrEqual(44);
     await page.getByRole("button", { name: "Pen", exact: true }).click();
     const canvas = await page.getByLabel("Handwriting canvas", { exact: true }).boundingBox();
-    if (!canvas) throw new Error("PDF annotation canvas missing");
+    if (!canvas) {throw new Error("PDF annotation canvas missing");}
     await page.mouse.move(canvas.x + canvas.width * 0.3, canvas.y + canvas.height * 0.45);
     await page.mouse.down();
     await page.mouse.move(canvas.x + canvas.width * 0.6, canvas.y + canvas.height * 0.48, { steps: 8 });
@@ -253,7 +253,7 @@ test("recovers from a conditional-write race and an uncertain success without du
                 return null;
             }
             const updated = await original(id, expected, content);
-            if (attempts === 2) throw new Error("Simulated response interruption; retry.");
+            if (attempts === 2) {throw new Error("Simulated response interruption; retry.");}
             return updated;
         };
     });
@@ -280,7 +280,7 @@ test("reports missing and replaced PDF assets, allows retry, and reports a remov
             String("/packages/editor/src/store/repositories/browser/dexie-db.ts")
         )) as typeof import("../../packages/editor/src/store/repositories/browser/dexie-db");
         const asset = await db.pdfAssets.get(noteId);
-        if (!asset) throw new Error("PDF asset missing");
+        if (!asset) {throw new Error("PDF asset missing");}
         const bytes = asset.data instanceof Uint8Array ? asset.data : new Uint8Array(await asset.data.arrayBuffer());
         await db.pdfAssets.delete(noteId);
         return Array.from(bytes);
@@ -343,7 +343,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         await page.getByRole("checkbox").first().uncheck();
         await page.getByRole("button", { name: "Save Editor", exact: true }).click();
         await page.goto(`/note/${ids.destination}`);
-        if (mode === "markdown") await page.getByRole("button", { name: "Markdown", exact: true }).click();
+        if (mode === "markdown") {await page.getByRole("button", { name: "Markdown", exact: true }).click();}
         const editor = mode === "formatted" ? noteEditor(page) : page.locator(".cm-content").first();
         await expect(editor).toContainText("My original writing.");
         await editor.click();
@@ -355,7 +355,7 @@ for (const mode of ["formatted", "markdown"] as const) {
         await expect(sender).toHaveURL(`/note/${ids.article}`);
         const articleEditorRoot = sender.locator(`#editor-container-${ids.article}`);
         await expect(articleEditorRoot).toBeVisible({ timeout: 30_000 });
-        if (mode === "markdown") await sender.getByRole("button", { name: "Formatted", exact: true }).click();
+        if (mode === "markdown") {await sender.getByRole("button", { name: "Formatted", exact: true }).click();}
         await expect(articleEditorRoot.getByRole("textbox", { name: "Note editor", exact: true })).toContainText(
             "A saved article phrase.",
             { timeout: 30_000 },

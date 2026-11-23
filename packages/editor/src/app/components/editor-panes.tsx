@@ -12,7 +12,7 @@ import {
     type PanelImperativeHandle,
     Separator,
 } from "react-resizable-panels";
-import { type EditorLayout, type EditorTabDrag, type EditorDropSide } from "@/lib/editor-tab-drag";
+import type { EditorLayout, EditorTabDrag, EditorDropSide } from "@/lib/editor-tab-drag";
 import { type Note, NoteType } from "@/store/note";
 import type { EditorMode } from "../editor";
 import type { EditorPane, EditorPaneState } from "../hooks/use-editor-panes";
@@ -24,7 +24,7 @@ import { MotionEditorTab } from "./motion-editor-tab";
 const editorGroupActionClassName =
     "writeme-editor-group-action flex size-8 shrink-0 items-center justify-center rounded text-foreground hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:opacity-50 [@media(max-width:40rem)]:size-11";
 
-const paneNoteOptions = (notes: readonly Note[]): Array<{ label: string; value: string }> =>
+const paneNoteOptions = (notes: ReadonlyArray<Note>): Array<{ label: string; value: string }> =>
     notes
         .filter(
             (note) =>
@@ -43,7 +43,7 @@ const paneNoteOptions = (notes: readonly Note[]): Array<{ label: string; value: 
 
 type EditorPanesProps = {
     state: EditorPaneState;
-    notes: readonly Note[];
+    notes: ReadonlyArray<Note>;
     currentNote: Note;
     editorMode: EditorMode;
     vimMode: boolean;
@@ -63,8 +63,8 @@ type EditorPanesProps = {
     onCloseTab?: (paneId: string, noteId: string) => void;
 };
 
-function getPaneNote(pane: EditorPane, notes: readonly Note[], currentNote: Note): Note {
-    if (pane.noteId === currentNote.id) return currentNote;
+function getPaneNote(pane: EditorPane, notes: ReadonlyArray<Note>, currentNote: Note): Note {
+    if (pane.noteId === currentNote.id) {return currentNote;}
     return notes.find((note) => note.id === pane.noteId) ?? currentNote;
 }
 
@@ -90,7 +90,7 @@ export function EditorPanes({
 
     useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
+        if (!container) {return;}
         const updateOrientation = (): void => {
             setOrientation(
                 container.getBoundingClientRect().width < state.panes.length * 320 ? "vertical" : "horizontal",
@@ -143,8 +143,8 @@ export function EditorPanes({
             <Group
                 key={layout.id}
                 groupRef={(handle) => {
-                    if (handle) groupRefs.current.set(layout.id, handle);
-                    else groupRefs.current.delete(layout.id);
+                    if (handle) {groupRefs.current.set(layout.id, handle);}
+                    else {groupRefs.current.delete(layout.id);}
                 }}
                 orientation={layout.orientation}
                 className="h-full min-h-0 min-w-0 flex-1 overflow-hidden"
@@ -208,7 +208,7 @@ type PaneContentProps = {
     vimMode: boolean;
     paneCount: number;
     siblingCount: number;
-    notes: readonly Note[];
+    notes: ReadonlyArray<Note>;
     onDropTab: EditorPanesProps["onDropTab"];
     onCloseTab: EditorPanesProps["onCloseTab"];
     canAdd: boolean;
@@ -246,7 +246,7 @@ function PaneContent({
     const tabListRef = useMotionTabDrop({ drop: ({ tab, copy }) => onDropTab?.(tab, "center", copy, pane.id) });
     const resizeGroup = (change: number): void => {
         const panel = panelRef.current;
-        if (panel) panel.resize(`${panel.getSize().asPercentage + change}%`);
+        if (panel) {panel.resize(`${panel.getSize().asPercentage + change}%`);}
         setMenuOpen(false);
     };
 
@@ -277,7 +277,7 @@ function PaneContent({
                     >
                         {(pane.noteIds ?? [pane.noteId]).map((id) => {
                             const tabNote = id === note.id ? note : notes.find((item) => item.id === id);
-                            if (!tabNote) return null;
+                            if (!tabNote) {return null;}
                             return (
                                 <MotionEditorTab
                                     key={id}
@@ -310,9 +310,9 @@ function PaneContent({
                                                       : event.key === "Home"
                                                         ? ids[0]
                                                         : event.key === "End"
-                                                          ? ids[ids.length - 1]
+                                                          ? ids.at(-1)
                                                           : undefined;
-                                            if (!next) return;
+                                            if (!next) {return;}
                                             event.preventDefault();
                                             onSelectNote(pane.id, next);
                                             const buttons = event.currentTarget

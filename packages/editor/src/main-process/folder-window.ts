@@ -14,7 +14,7 @@ export function createFolderWindow(preloadPath: string, folderPath: string): Bro
             preload: preloadPath,
             nodeIntegration: FEATURES.codeExecution,
             contextIsolation: true,
-            defaultEncoding: "utf-8",
+            defaultEncoding: "utf8",
         },
     });
 

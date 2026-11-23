@@ -4,7 +4,7 @@ import { expect, goHome, test } from "./fixtures";
 async function createBoard(page: Page): Promise<void> {
     await goHome(page);
     const close = page.getByRole("button", { name: "Close workspace menu", exact: true });
-    if (await close.isVisible()) await close.click();
+    if (await close.isVisible()) {await close.click();}
     await page.getByRole("button", { name: "Task board", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Create task note" });
     await dialog.getByTitle("Note title").fill("Project tasks");
@@ -26,7 +26,7 @@ async function addTask(page: Page, title = "Ship task board"): Promise<void> {
         .locator("span")
         .first()
         .boundingBox();
-    if (!handle || !titleBounds) throw new Error("Missing task title or drag handle");
+    if (!handle || !titleBounds) {throw new Error("Missing task title or drag handle");}
     expect(titleBounds.x).toBeGreaterThanOrEqual(handle.x + handle.width);
     expect(titleBounds.y).toBeLessThan(handle.y + handle.height);
     expect(titleBounds.y + titleBounds.height).toBeGreaterThan(handle.y);
@@ -121,7 +121,7 @@ test("supports keyboard and pointer movement between columns", async ({ cleanPag
     const from = await handle.boundingBox();
     const card = await page.locator(".wm-task-card").filter({ has: handle }).boundingBox();
     const target = await destination.locator(".wm-task-column-cards").boundingBox();
-    if (!from || !card || !target) throw new Error("Missing drag target");
+    if (!from || !card || !target) {throw new Error("Missing drag target");}
     const grab = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
     await page.mouse.move(grab.x, grab.y);
     await page.mouse.down();

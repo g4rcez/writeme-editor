@@ -6,14 +6,14 @@ export const LatexBlock = ({ code }: { code: string }) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
         try {
             katex.render(code, containerRef.current, {
                 displayMode: true,
                 throwOnError: false,
             });
-        } catch (err) {
-            console.error("KaTeX render error:", err);
+        } catch (error) {
+            console.error("KaTeX render error:", error);
         }
     }, [code]);
 

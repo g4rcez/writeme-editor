@@ -26,8 +26,8 @@ const KEYWORDS: Record<string, TokenType> = {
     group: TokenType.Group,
 };
 
-export function tokenize(input: string): Token[] {
-    const tokens: Token[] = [];
+export function tokenize(input: string): Array<Token> {
+    const tokens: Array<Token> = [];
     let i = 0;
 
     while (i < input.length) {

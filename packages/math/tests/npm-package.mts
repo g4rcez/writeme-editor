@@ -8,12 +8,12 @@ import { fileURLToPath } from "node:url";
 export type PackedPackage = {
     name: string;
     filename: string;
-    files: { path: string; mode: number }[];
+    files: Array<{ path: string; mode: number }>;
 };
 
 export type PackedProject = {
     directory: string;
-    packages: PackedPackage[];
+    packages: Array<PackedPackage>;
     cleanup: () => void;
 };
 
@@ -28,7 +28,7 @@ const packageName = (JSON.parse(readFileSync(join(packageDirectory, "package.jso
 
 export function runCommand(
     command: string,
-    args: readonly string[],
+    args: ReadonlyArray<string>,
     directory: string,
     env: NodeJS.ProcessEnv = process.env,
     input?: string,
@@ -48,7 +48,7 @@ export function assertSuccess(result: SpawnSyncReturns<string>): void {
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 }
 
-export function installPackedPackages(names: readonly string[]): PackedProject {
+export function installPackedPackages(names: ReadonlyArray<string>): PackedProject {
     const directory = mkdtempSync(join(tmpdir(), "writeme-npm-"));
     const cleanup = (): void => rmSync(directory, { recursive: true, force: true });
     try {
@@ -71,7 +71,7 @@ export function installPackedPackages(names: readonly string[]): PackedProject {
                 source,
             );
             assertSuccess(result);
-            const [packed] = JSON.parse(result.stdout) as PackedPackage[];
+            const [packed] = JSON.parse(result.stdout) as Array<PackedPackage>;
             assert.ok(packed);
             assert.equal(packed.name, name);
             return packed;

@@ -24,7 +24,7 @@ type LegacyTemplate = {
 };
 
 function areEqualValues(left: unknown, right: unknown): boolean {
-    if (left === right) return true;
+    if (left === right) {return true;}
     if (left instanceof Date || right instanceof Date) {
         return left instanceof Date && right instanceof Date && left.getTime() === right.getTime();
     }
@@ -32,7 +32,7 @@ function areEqualValues(left: unknown, right: unknown): boolean {
         return Array.isArray(left) && Array.isArray(right) && left.length === right.length &&
             left.every((value, index) => areEqualValues(value, right[index]));
     }
-    if (left === null || right === null || typeof left !== "object" || typeof right !== "object") return false;
+    if (left === null || right === null || typeof left !== "object" || typeof right !== "object") {return false;}
     const leftRecord = left as Record<string, unknown>;
     const rightRecord = right as Record<string, unknown>;
     const leftKeys = Object.keys(leftRecord);
@@ -43,10 +43,10 @@ function areEqualValues(left: unknown, right: unknown): boolean {
 
 
 async function migrateLegacyProjects(tx: Transaction): Promise<void> {
-    if (!tx.idbtrans.objectStoreNames.contains("project")) return;
+    if (!tx.idbtrans.objectStoreNames.contains("project")) {return;}
 
     const request = tx.idbtrans.objectStore("project").getAll();
-    const { promise, resolve, reject } = Promise.withResolvers<unknown[]>();
+    const { promise, resolve, reject } = Promise.withResolvers<Array<unknown>>();
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Failed to read legacy projects."));
     const projects = await promise;
@@ -65,7 +65,7 @@ async function migrateLegacyProjects(tx: Transaction): Promise<void> {
         };
         const existing = await tx.table("projects").get(project.id);
         if (existing) {
-            if (areEqualValues(migratedProject, existing)) continue;
+            if (areEqualValues(migratedProject, existing)) {continue;}
             throw new Error(`Legacy project "${project.id}" conflicts with an existing project ID; source data was retained.`);
         }
 
@@ -74,10 +74,10 @@ async function migrateLegacyProjects(tx: Transaction): Promise<void> {
 }
 
 async function migrateLegacyTemplates(tx: Transaction): Promise<void> {
-    if (!tx.idbtrans.objectStoreNames.contains("templates")) return;
+    if (!tx.idbtrans.objectStoreNames.contains("templates")) {return;}
 
     const request = tx.idbtrans.objectStore("templates").getAll();
-    const { promise, resolve, reject } = Promise.withResolvers<unknown[]>();
+    const { promise, resolve, reject } = Promise.withResolvers<Array<unknown>>();
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Failed to read legacy templates."));
     const templates = await promise;
@@ -168,7 +168,6 @@ db.version(2)
     })
     .upgrade(async (tx) => {
         const notes = await tx.table("notes").toArray();
-        console.log(`Migrating ${notes.length} notes to schema v2...`);
         for (const note of notes) {
             await tx.table("notes").update(note.id, {
                 filePath: null,
@@ -180,7 +179,6 @@ db.version(2)
             });
         }
         await migrateLegacyProjects(tx);
-        console.log("Schema migration to v2 complete");
     });
 
 db.version(3)
@@ -191,13 +189,11 @@ db.version(3)
     })
     .upgrade(async (tx) => {
         const projects = await tx.table("projects").toArray();
-        console.log(`Migrating ${projects.length} projects to schema v3...`);
         for (const project of projects) {
             await tx.table("projects").update(project.id, {
                 folderPath: project.folderPath || "",
             });
         }
-        console.log("Schema migration to v3 complete");
     });
 
 // Version 4 (IndexedDB content support for web mode)
@@ -208,7 +204,6 @@ db.version(4)
         projects: "&id, title, folderPath, description, createdAt, updatedAt",
     })
     .upgrade(async () => {
-        console.log("Schema migration to v4 complete (IndexedDB content support)");
     });
 
 // Version 5 (Tabs support)
@@ -237,12 +232,10 @@ db.version(7)
         tabs: "&id, noteId, order, createdAt",
     })
     .upgrade(async (tx) => {
-        console.log("Migrating to v7: adding noteType field...");
         const notes = await tx.table("notes").toArray();
         for (const note of notes) {
             await tx.table("notes").update(note.id, { noteType: "note" });
         }
-        console.log("Schema migration to v7 complete");
     });
 
 // Version 8 (Hashtags support)
@@ -294,12 +287,10 @@ db.version(11)
         settings: "&id, &name, value",
     })
     .upgrade(async (tx) => {
-        console.log("Migrating to v11: adding favorite field to notes...");
         const notes = await tx.table("notes").toArray();
         for (const note of notes) {
             await tx.table("notes").update(note.id, { favorite: false });
         }
-        console.log("Schema migration to v11 complete");
     });
 
 // Version 15 (Copy legacy templates into notes; keep the source store)
@@ -520,7 +511,7 @@ db.version(26).stores({
 }).upgrade(async (tx) => {
     const notes = await tx.table<Note>("notes").toArray();
     const threads = notes.flatMap(noteCommentThreads);
-    if (threads.length) await tx.table("comments").bulkPut(threads);
+    if (threads.length) {await tx.table("comments").bulkPut(threads);}
 });
 
 db.version(27).stores({}).upgrade(async (tx) => {
@@ -528,9 +519,9 @@ db.version(27).stores({}).upgrade(async (tx) => {
     const sources = new Map(notes.map((note) => [note.id, note]));
     for (const reference of notes) {
         const sourceId = reference.metadata?.commentSourceId;
-        if (typeof sourceId !== "string") continue;
+        if (typeof sourceId !== "string") {continue;}
         const source = sources.get(sourceId);
-        if (!source) continue;
+        if (!source) {continue;}
         const aliases = source.metadata?.commentReferenceHrefs;
         source.metadata = {
             ...source.metadata,
@@ -542,7 +533,7 @@ db.version(27).stores({}).upgrade(async (tx) => {
         await tx.table("notes").update(sourceId, { metadata: source.metadata });
         await tx.table("comments").where("referenceNoteId").equals(reference.id).delete();
         const threads = noteCommentThreads(reference);
-        if (threads.length) await tx.table("comments").bulkPut(threads);
+        if (threads.length) {await tx.table("comments").bulkPut(threads);}
     }
 });
 

@@ -19,14 +19,14 @@ export const ReadItLaterDialog = () => {
     const handleCreate = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         const sourceUrl = url.trim();
-        if (!sourceUrl) return;
+        if (!sourceUrl) {return;}
         setLoading(true);
         try {
-            if (!isSafeHttpUrl(sourceUrl)) throw new Error("Use a valid HTTP or HTTPS URL.");
+            if (!isSafeHttpUrl(sourceUrl)) {throw new Error("Use a valid HTTP or HTTPS URL.");}
             const video = identifyDomain(sourceUrl);
             let note: Note;
             if (video) {
-                const videoUrl = video.url.replace(/[()]/g, (character) => encodeURIComponent(character));
+                const videoUrl = video.url.replaceAll(/[()]/g, (character) => encodeURIComponent(character));
                 const content = ensureReadItLaterFrontmatter(`![youtube](${videoUrl})\n`);
                 note = Note.new(
                     "YouTube video",

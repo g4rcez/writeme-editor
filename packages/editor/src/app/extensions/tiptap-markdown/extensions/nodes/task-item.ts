@@ -11,14 +11,14 @@ const TASK_MARKER_PREFIX_PATTERN = /^\s*\[[ xX]\]\s*/;
 
 const removeTaskMarkerText = (item: Element): void => {
     let child = item.firstChild;
-    while (child && child.nodeType === 3 && !(child.textContent ?? "").trim()) {
+    while (child?.nodeType === 3 && !(child.textContent ?? "").trim()) {
         const next = child.nextSibling;
         child.remove();
         child = next;
     }
 
     let textNode = child;
-    if (textNode && textNode.nodeName.toUpperCase() === "P") {
+    if (textNode?.nodeName.toUpperCase() === "P") {
         textNode = textNode.firstChild;
     }
 
@@ -53,17 +53,16 @@ export default TaskItem.extend({
                                 removeTaskMarkerText(item);
                             }
                             while (
-                                item.firstChild &&
-                                item.firstChild.nodeType === 3 &&
+                                item.firstChild?.nodeType === 3 &&
                                 !(item.firstChild.textContent ?? "").trim()
                             ) {
                                 item.firstChild.remove();
                             }
                             let textNode = item.firstChild;
-                            if (textNode && textNode.nodeName.toUpperCase() === "P") {
+                            if (textNode?.nodeName.toUpperCase() === "P") {
                                 textNode = textNode.firstChild;
                             }
-                            if (textNode && textNode.nodeType === 3) {
+                            if (textNode?.nodeType === 3) {
                                 textNode.textContent = (textNode.textContent ?? "").replace(/^\s+/, "");
                             }
                         });

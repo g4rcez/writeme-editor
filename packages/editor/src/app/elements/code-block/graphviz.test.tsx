@@ -5,7 +5,7 @@ import { Graphviz } from "./graphviz";
 const NS = "http://www.w3.org/2000/svg";
 
 const mockRenderSVGElement = vi.fn((dot: string) => {
-    if (dot.includes("invalid")) throw new Error("syntax error in DOT source");
+    if (dot.includes("invalid")) {throw new Error("syntax error in DOT source");}
     const svg = document.createElementNS(NS, "svg");
     const title = document.createElementNS(NS, "title");
     title.textContent = "test title";

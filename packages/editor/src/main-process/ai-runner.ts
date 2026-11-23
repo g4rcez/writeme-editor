@@ -16,8 +16,8 @@ const ALLOWED_BASENAMES = new Set([
     "bun",
 ]);
 
-function splitCommand(command: string): string[] {
-    const tokens: string[] = [];
+function splitCommand(command: string): Array<string> {
+    const tokens: Array<string> = [];
     let current = "";
     let quote: "'" | '"' | null = null;
 
@@ -47,7 +47,7 @@ function splitCommand(command: string): string[] {
         current += char;
     }
 
-    if (current) tokens.push(current);
+    if (current) {tokens.push(current);}
     return tokens;
 }
 
@@ -61,7 +61,7 @@ function replaceVariables(
     },
 ) {
     return {
-        command: command.replace(/{{prompt}}/g, variables.prompt).replace(/{{system_prompt}}/g, variables.systemPrompt),
+        command: command.replaceAll('{{prompt}}', variables.prompt).replaceAll('{{system_prompt}}', variables.systemPrompt),
         hasSelectionPipe: command.includes("{{selection}}"),
         hasContextPipe: command.includes("{{context}}"),
     };
@@ -70,7 +70,7 @@ function replaceVariables(
 export class AIRunner {
     private static activeProcess: ChildProcess | null = null;
 
-    private static validateCommandTokens(tokens: string[]): {
+    private static validateCommandTokens(tokens: Array<string>): {
         ok: boolean;
         error?: string;
     } {
@@ -130,7 +130,6 @@ export class AIRunner {
             return;
         }
 
-        console.log("AI Runner executing:", cleanCommand.join(" "));
 
         try {
             const [executable, ...args] = cleanCommand;
@@ -155,7 +154,7 @@ export class AIRunner {
             process.stdin?.end();
 
             process.stdout?.on("data", (data: Buffer) => {
-                if (sender.isDestroyed() || (AIRunner.activeProcess && AIRunner.activeProcess !== process)) return;
+                if (sender.isDestroyed() || (AIRunner.activeProcess && AIRunner.activeProcess !== process)) {return;}
                 const chunk = data.toString();
                 sender.send("ai:chunk", { chunk });
             });
@@ -166,15 +165,15 @@ export class AIRunner {
 
             process.on("close", (code: number | null) => {
                 // a newer run replaced this process: its events belong to the new stream
-                if (AIRunner.activeProcess && AIRunner.activeProcess !== process) return;
+                if (AIRunner.activeProcess && AIRunner.activeProcess !== process) {return;}
                 AIRunner.activeProcess = null;
-                if (!sender.isDestroyed()) sender.send("ai:done", { code });
+                if (!sender.isDestroyed()) {sender.send("ai:done", { code });}
             });
 
             process.on("error", (err: NodeJS.ErrnoException) => {
                 console.error("Failed to start AI process:", err);
-                if (!sender.isDestroyed()) sender.send("ai:error", { error: err.message });
-                if (AIRunner.activeProcess === process) AIRunner.activeProcess = null;
+                if (!sender.isDestroyed()) {sender.send("ai:error", { error: err.message });}
+                if (AIRunner.activeProcess === process) {AIRunner.activeProcess = null;}
             });
         } catch (error: any) {
             console.error("AI Runner Exception:", error);
@@ -184,7 +183,6 @@ export class AIRunner {
 
     public static stop(): void {
         if (AIRunner.activeProcess) {
-            console.log("Stopping active AI process");
             AIRunner.activeProcess.kill("SIGTERM");
             AIRunner.activeProcess = null;
         }

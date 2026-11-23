@@ -2,9 +2,9 @@ import { Node, PasteRule, mergeAttributes, nodeInputRule } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import React from "react";
 
-const HEX_SOURCE = "#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\\b";
-const RGB_SOURCE = "rgba?\\(\\s*\\d{1,3}\\s*,\\s*\\d{1,3}\\s*,\\s*\\d{1,3}(?:\\s*,\\s*(?:0|1|0?\\.\\d+))?\\s*\\)";
-const HSL_SOURCE = "hsla?\\(\\s*\\d{1,3}\\s*,\\s*[\\d.]+%?\\s*,\\s*[\\d.]+%?(?:\\s*,\\s*(?:0|1|0?\\.\\d+))?\\s*\\)";
+const HEX_SOURCE = String.raw`#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b`;
+const RGB_SOURCE = String.raw`rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)`;
+const HSL_SOURCE = String.raw`hsla?\(\s*\d{1,3}\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)`;
 
 const COLOR_PATTERN = new RegExp(`^(?:${HEX_SOURCE}|${RGB_SOURCE}|${HSL_SOURCE})$`, "i");
 
@@ -44,8 +44,8 @@ export const ColorCode = Node.create({
                 tag: "code",
                 priority: 60,
                 getAttrs: (element: HTMLElement | string) => {
-                    if (typeof element === "string") return false;
-                    if (element.closest("pre")) return false;
+                    if (typeof element === "string") {return false;}
+                    if (element.closest("pre")) {return false;}
                     const text = element.textContent?.trim() ?? "";
                     return isColorValue(text) ? { value: text } : false;
                 },

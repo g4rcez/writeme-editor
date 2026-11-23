@@ -108,7 +108,7 @@ async function main(): Promise<void> {
     await openFile(target.filePath, target.wait);
 }
 
-main().catch((err: unknown) => {
-    console.error(err instanceof Error ? err.message : String(err));
+main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
 });

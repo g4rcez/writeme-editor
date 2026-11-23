@@ -29,13 +29,13 @@ export type ScenarioResult = {
     startup: { quiescentMs: number; fsReadFile: number; fsReadDirRecursive: number; snapshot: Snapshot };
     idle: Snapshot;
     /** `fs:readFile` IPC calls caused by saving one note, in a workspace of `workspace.notes` notes. */
-    saves: { createReads: number; readsPerAutosave: number[]; after: Snapshot };
+    saves: { createReads: number; readsPerAutosave: Array<number>; after: Snapshot };
     /** Files changed behind the app's back (another editor, git): reads they cause and whether the new note was indexed. */
     external: { modifyReads: number; addReads: number; addedIndexed: boolean };
     floating: { opened: number; readsPerWindow: number; whileOpen: Snapshot; afterClose: Snapshot } | { skipped: string };
     terminal: { shellsBeforeKill: number; orphanShells: number } | { skipped: string };
     execution: { stdoutChars: number } | { skipped: string };
-    errors: string[];
+    errors: Array<string>;
 };
 
 const createNote = async (page: Page, title: string): Promise<void> => {
@@ -67,12 +67,12 @@ export async function runScenarios(
 ): Promise<ScenarioResult> {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), "writeme-memory-workspace-"));
     const workspace = await generateWorkspace(workspaceRoot, options);
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     // The notes repository only reads the workspace from disk once the `directory` setting is saved, so seed it
     // in a throw-away first run and start the measured process cold, as a normal launch would.
     const seed = await launchMeasured(build, workspaceRoot);
     await expect(seed.page).toHaveURL(/^file:/);
-    await waitForQuiescence(seed.app, 1_500, 60_000);
+    await waitForQuiescence(seed.app, 1500, 60_000);
     await seed.page.evaluate(async (directory) => {
         await window.electronAPI.db.save("settings", {
             id: "directory",
@@ -102,21 +102,21 @@ export async function runScenarios(
         log("note + autosave");
         const beforeCreate = readFileCalls(await ipcCounts(app));
         await createNote(page, "Memory probe");
-        await waitForQuiescence(app, 2_000, 60_000);
+        await waitForQuiescence(app, 2000, 60_000);
         const createReads = readFileCalls(await ipcCounts(app)) - beforeCreate;
-        const readsPerAutosave: number[] = [];
+        const readsPerAutosave: Array<number> = [];
         for (let index = 0; index < 5; index++) {
             const before = readFileCalls(await ipcCounts(app));
             await saveEdit(page, ` edit-${index}`);
-            await waitForQuiescence(app, 2_000, 60_000);
+            await waitForQuiescence(app, 2000, 60_000);
             readsPerAutosave.push(readFileCalls(await ipcCounts(app)) - before);
         }
         const afterSaves = await steadySnapshot(app, 3);
 
         log("external changes");
         const settleExternal = async () => {
-            await sleepMs(1_500);
-            await waitForQuiescence(app, 2_000, 60_000);
+            await sleepMs(1500);
+            await waitForQuiescence(app, 2000, 60_000);
         };
         const beforeModify = readFileCalls(await ipcCounts(app));
         await writeFile(path.join(workspaceRoot, "folder-0", "note-0.md"), "# Edited elsewhere\n\nchanged on disk\n");
@@ -141,13 +141,13 @@ export async function runScenarios(
         const opened = 3;
         for (let index = 0; index < opened; index++) {
             await page.evaluate(() => window.electronAPI.app.openQuickNote());
-            await sleepMs(1_500);
+            await sleepMs(1500);
         }
-        await waitForQuiescence(app, 3_000, 120_000);
+        await waitForQuiescence(app, 3000, 120_000);
         const floatingReads = readFileCalls(await ipcCounts(app)) - beforeFloating;
         const whileOpen = await steadySnapshot(app, 3);
         await closeSecondaryWindows(app);
-        await sleepMs(3_000);
+        await sleepMs(3000);
         floating = {
             opened,
             readsPerWindow: Math.round(floatingReads / opened),
@@ -173,12 +173,12 @@ export async function runScenarios(
             await page.evaluate(() => {
                 window.electronAPI.terminal.kill("memory-probe");
             });
-            await sleepMs(1_500);
+            await sleepMs(1500);
             terminal =
                 shellsBeforeKill > 0
                     ? { shellsBeforeKill, orphanShells: childShells(mainPid) - before }
                     : { skipped: "no shell could be started in this build (node-pty spawn-helper missing from the package)" };
-        } else terminal = { skipped: "terminal feature disabled in this build" };
+        } else {terminal = { skipped: "terminal feature disabled in this build" };}
 
         log("execution");
         let execution: ScenarioResult["execution"];
@@ -187,7 +187,7 @@ export async function runScenarios(
                 window.electronAPI.execution.run("/usr/bin/head", ["-c", "5000000", "/dev/zero"], ""),
             );
             execution = { stdoutChars: result.stdout.length };
-        } else execution = { skipped: "code execution disabled in this build" };
+        } else {execution = { skipped: "code execution disabled in this build" };}
 
         return {
             label: build.label,

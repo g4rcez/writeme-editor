@@ -1,5 +1,5 @@
 import { Button } from "@g4rcez/components";
-import { type PDFDocumentLoadingTask, type PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useState, type JSX, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import type { ResearchExcerptSource } from "@/lib/research-excerpt";
@@ -38,17 +38,17 @@ export function PdfNoteView({ note, actions }: { note: Note; actions?: ReactNode
                 const identity = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(
                     "",
                 );
-                if (cancelled) return;
+                if (cancelled) {return;}
                 loading = loadPdfDocument(data);
                 const pdf = await loading.promise;
                 if (pdf.numPages !== notebook.pages.length)
-                    throw new Error("The PDF no longer matches its saved annotation pages");
+                    {throw new Error("The PDF no longer matches its saved annotation pages");}
                 if (!cancelled) {
                     setFingerprint(identity);
                     setDocument(pdf);
                 }
-            } catch (reason) {
-                if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not open PDF");
+            } catch (error_) {
+                if (!cancelled) {setError(error_ instanceof Error ? error_.message : "Could not open PDF");}
             }
         }
         void open();
@@ -59,13 +59,13 @@ export function PdfNoteView({ note, actions }: { note: Note; actions?: ReactNode
     }, [sourceNote, attempt]);
 
     if (error)
-        return (
+        {return (
             <div className="flex flex-col items-center gap-4 p-6 text-foreground" role="alert">
                 <p>{error}</p>
                 <Button onClick={retryLoading}>Retry</Button>
             </div>
-        );
-    if (!document) return <output className="block p-6 text-foreground">Opening PDF…</output>;
+        );}
+    if (!document) {return <output className="block p-6 text-foreground">Opening PDF…</output>;}
     const loadedDocument = document;
     const params = new URLSearchParams(location.search);
     const requestedPage = Number(params.get("page") ?? 1);

@@ -27,7 +27,7 @@ function gate() {
 function retryFailedWrites(): void {
     const calls = vi.mocked(uiDispatch.setConfirm).mock.calls;
     const confirm = calls.at(-1)?.[0];
-    if (!confirm) throw new Error("Missing persistence retry prompt.");
+    if (!confirm) {throw new Error("Missing persistence retry prompt.");}
     confirm.onConfirm();
 }
 
@@ -42,11 +42,11 @@ describe("background tab persistence", () => {
         });
         vi.mocked(repositories.tabs.delete).mockImplementation(async (id) => saved.delete(id));
         vi.mocked(repositories.tabs.updateOrder).mockImplementation(async (tabs) => {
-            for (const tab of tabs) if (saved.has(tab.id)) saved.set(tab.id, tab);
+            for (const tab of tabs) {if (saved.has(tab.id)) {saved.set(tab.id, tab);}}
         });
         vi.mocked(repositories.tabs.deleteByNoteId).mockImplementation(async (noteId) => {
             for (const tab of saved.values()) {
-                if (tab.noteId === noteId && tab.type === "tab") saved.delete(tab.id);
+                if (tab.noteId === noteId && tab.type === "tab") {saved.delete(tab.id);}
             }
         });
         vi.mocked(repositories.notes.getOne).mockResolvedValue(null);
@@ -59,7 +59,7 @@ describe("background tab persistence", () => {
     });
 
     afterEach(async () => {
-        for (const release of releaseGates.splice(0)) release();
+        for (const release of releaseGates.splice(0)) {release();}
         try {
             await flushTabPersistence();
         } catch {
@@ -79,7 +79,7 @@ describe("background tab persistence", () => {
         });
         globalDispatch.addTab("first");
         const tab = globalState().tabs[0];
-        if (!tab) throw new Error("Tab was not opened synchronously.");
+        if (!tab) {throw new Error("Tab was not opened synchronously.");}
         expect(globalState().activeTabId).toBe(tab.id);
         await started.promise;
         globalDispatch.removeTab(tab.id);
@@ -139,7 +139,7 @@ describe("background tab persistence", () => {
     it("does not restore a terminal session when renaming and closing in the same turn", async () => {
         await globalDispatch.addTerminalTab("terminal");
         const tab = globalState().tabs[0];
-        if (!tab) throw new Error("Missing terminal tab.");
+        if (!tab) {throw new Error("Missing terminal tab.");}
         const renaming = globalDispatch.renameTerminalSession("terminal", "New title");
         globalDispatch.removeTab(tab.id);
         await renaming;
@@ -164,7 +164,7 @@ describe("background tab persistence", () => {
         const deleting = globalDispatch.deleteNote(note.id);
         await started.promise;
         const tab = globalState().tabs[0];
-        if (!tab) throw new Error("Missing tab.");
+        if (!tab) {throw new Error("Missing tab.");}
         globalDispatch.removeTab(tab.id);
         globalDispatch.addTab(note.id);
         pending.resolve();
@@ -179,7 +179,7 @@ describe("background tab persistence", () => {
         globalDispatch.addTab("second");
         const original = globalState().tabs;
         const second = original.find((tab) => tab.noteId === "second");
-        if (!second) throw new Error("Missing second tab.");
+        if (!second) {throw new Error("Missing second tab.");}
         globalDispatch.reorderTabs([...original].reverse());
         globalDispatch.removeTab(second.id);
         globalDispatch.addTab("third");
@@ -242,7 +242,7 @@ describe("background tab persistence", () => {
         });
         await globalDispatch.addTerminalTab("terminal");
         const tab = globalState().tabs[0];
-        if (!tab) throw new Error("Missing terminal tab.");
+        if (!tab) {throw new Error("Missing terminal tab.");}
         globalDispatch.removeTab(tab.id);
         expect(globalState().terminalSessions).toEqual([]);
         expect(repositories.terminalSessions.delete).not.toHaveBeenCalled();

@@ -10,7 +10,7 @@ async function storedNoteDigest(page: Page, id: string): Promise<string> {
     return page.evaluate(async (noteId) => {
         const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
         const note = await repositories.notes.getOne(noteId);
-        if (!note) throw new Error(`Note ${noteId} was not found.`);
+        if (!note) {throw new Error(`Note ${noteId} was not found.`);}
         const bytes = new TextEncoder().encode(note.content);
         const digest = await crypto.subtle.digest("SHA-256", bytes);
         return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -23,7 +23,7 @@ async function focusedTableCell(editor: Locator): Promise<{ rowIndex: number; ce
         const focusElement = focusNode instanceof Element ? focusNode : focusNode?.parentElement;
         const cell = focusElement?.closest("td, th");
         const row = cell?.closest("tr");
-        if (!(cell instanceof HTMLTableCellElement) || !row) return null;
+        if (!(cell instanceof HTMLTableCellElement) || !row) {return null;}
         return { rowIndex: row.rowIndex, cellIndex: cell.cellIndex };
     });
 }
@@ -88,7 +88,7 @@ for (const [tableCase, tableMarkdown] of tableCases) {
         test(`preserves ${size} ${tableCase} markdown table cells and formatting when ${action} and reopening a note`, async ({
             cleanPage: page,
         }, testInfo) => {
-            if (size === "large") test.setTimeout(120_000);
+            if (size === "large") {test.setTimeout(120_000);}
             await page.setViewportSize({ width: 1440, height: 1000 });
             const title = `Table ${tableCase} ${size} ${action}`;
             // One long paragraph crosses the 50,000-character worker threshold without exercising line chunking.
@@ -284,6 +284,8 @@ test("keeps saved large note content after Markdown worker failure", async ({ cl
                     return;
                 }
             }
+            // Reflect.apply keeps the overloaded postMessage signature type-checked.
+            // oxlint-disable-next-line quality/no-reflect-apply
             return Reflect.apply(originalPostMessage, this, transfer === undefined ? [message] : [message, transfer]);
         };
     });
@@ -293,7 +295,7 @@ test("keeps saved large note content after Markdown worker failure", async ({ cl
     const noteId = await page.evaluate(async () => {
         const { repositories } = await import("/packages/editor/src/store/repositories/index.ts");
         const { Note } = await import("/packages/editor/src/store/note.ts");
-        const content = `Keep the original note content intact. ${"Existing content must survive worker failure. ".repeat(2_000)}`;
+        const content = `Keep the original note content intact. ${"Existing content must survive worker failure. ".repeat(2000)}`;
         const note = Note.new("Failed large note", content);
         await repositories.notes.save(note);
         return note.id;

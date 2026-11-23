@@ -9,7 +9,7 @@ export const getDefaultExpandedPaths = (data: unknown, maxDepth = 2): Set<string
     const paths = new Set<string>([ROOT_NAME]);
 
     const visit = (value: unknown, path: string, depth: number) => {
-        if (depth >= maxDepth) return;
+        if (depth >= maxDepth) {return;}
         if (Array.isArray(value)) {
             value.forEach((item, index) => {
                 const childPath = `${path}[${index}]`;
@@ -35,7 +35,7 @@ export const getDefaultExpandedPaths = (data: unknown, maxDepth = 2): Set<string
     return paths;
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => {
+const getLayoutedElements = (nodes: Array<Node>, edges: Array<Edge>, direction = "LR") => {
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -73,9 +73,9 @@ export const transformJsonToGraph = (
     searchQuery = "",
     direction = "LR",
     highlightColor = "#0284c7",
-): { nodes: Node[]; edges: Edge[] } => {
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
+): { nodes: Array<Node>; edges: Array<Edge> } => {
+    const nodes: Array<Node> = [];
+    const edges: Array<Edge> = [];
     const matchPaths = new Set<string>();
 
     // Helper to find all paths that match
@@ -91,11 +91,11 @@ export const transformJsonToGraph = (
         let childMatched = false;
         if (type === "object") {
             Object.entries(data).forEach(([key, value]) => {
-                if (findMatches(value, `${id}.${key}`, key)) childMatched = true;
+                if (findMatches(value, `${id}.${key}`, key)) {childMatched = true;}
             });
         } else if (type === "array") {
-            (data as any[]).forEach((value, index) => {
-                if (findMatches(value, `${id}[${index}]`, `[${index}]`)) childMatched = true;
+            (data as Array<any>).forEach((value, index) => {
+                if (findMatches(value, `${id}[${index}]`, `[${index}]`)) {childMatched = true;}
             });
         }
 
@@ -167,7 +167,7 @@ export const transformJsonToGraph = (
                     traverse(value, `${id}.${key}`, key, depth + 1, id);
                 });
             } else {
-                (data as any[]).forEach((value, index) => {
+                (data as Array<any>).forEach((value, index) => {
                     traverse(value, `${id}[${index}]`, `[${index}]`, depth + 1, id);
                 });
             }

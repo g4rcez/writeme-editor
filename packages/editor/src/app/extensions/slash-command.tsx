@@ -44,7 +44,7 @@ type SlashCommandItem = {
     command: (editor: Editor, range: SlashCommandRange) => void;
 };
 
-const SLASH_COMMANDS: SlashCommandItem[] = [
+const SLASH_COMMANDS: Array<SlashCommandItem> = [
     {
         label: "Heading 1",
         description: "Large section heading",
@@ -235,8 +235,8 @@ const TableInsertModal = ({ editor, onClose }: { editor: Editor; onClose: () => 
             .focus()
             .insertTable({
                 withHeaderRow: true,
-                rows: parseInt(rows) || 3,
-                cols: parseInt(cols) || 3,
+                rows: Number.parseInt(rows) || 3,
+                cols: Number.parseInt(cols) || 3,
             })
             .run();
         onClose();
@@ -278,7 +278,7 @@ const MathInsertModal = ({
     const confirm = (e: React.FormEvent) => {
         e.preventDefault();
         const latex = mathExpr.trim();
-        if (!latex) return;
+        if (!latex) {return;}
         if (mode === "block") {
             editor.chain().focus().insertBlockMath({ latex }).run();
         } else {
@@ -393,7 +393,7 @@ const SlashList = (props: any) => {
 
     const selectItem = (index: number) => {
         const item: SlashCommandItem = itemsRef.current[index];
-        if (!item) return;
+        if (!item) {return;}
         if (item.needsModal) {
             editorRef.current.chain().focus().deleteRange(rangeRef.current).run();
             openSlashModal(item.needsModal, editorRef.current);
@@ -428,15 +428,15 @@ const SlashList = (props: any) => {
     }, []);
 
     const grouped = props.items.reduce(
-        (acc: Record<string, { item: SlashCommandItem; index: number }[]>, item: SlashCommandItem, index: number) => {
-            if (!acc[item.group]) acc[item.group] = [];
+        (acc: Record<string, Array<{ item: SlashCommandItem; index: number }>>, item: SlashCommandItem, index: number) => {
+            if (!acc[item.group]) {acc[item.group] = [];}
             acc[item.group]!.push({ item, index });
             return acc;
         },
-        {} as Record<string, { item: SlashCommandItem; index: number }[]>,
+        {} as Record<string, Array<{ item: SlashCommandItem; index: number }>>,
     );
 
-    if (!props.items.length) return null;
+    if (!props.items.length) {return null;}
 
     return (
         <ul
@@ -454,7 +454,7 @@ const SlashList = (props: any) => {
                     >
                         {groupName}
                     </li>
-                    {(entries as { item: SlashCommandItem; index: number }[]).map(({ item, index }) => {
+                    {(entries as Array<{ item: SlashCommandItem; index: number }>).map(({ item, index }) => {
                         const Icon = item.icon;
                         const isSelected = index === selectedIndex;
                         return (
@@ -511,7 +511,7 @@ const slashSuggestion = {
         let keyDownHandler: ((props: { event: KeyboardEvent }) => boolean) | null = null;
         let currentEditor: any = null;
         let currentRange: any = null;
-        let currentItems: any[] = [];
+        let currentItems: Array<any> = [];
         const registerKeyDown = (fn: (props: { event: KeyboardEvent }) => boolean) => {
             keyDownHandler = fn;
         };
@@ -520,7 +520,7 @@ const slashSuggestion = {
                 currentEditor = props.editor;
                 currentRange = props.range;
                 currentItems = props.items ?? [];
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 reactRenderer = new ReactRenderer(SlashList, {
                     props: { ...props, registerKeyDown },
                     editor: props.editor,
@@ -535,7 +535,7 @@ const slashSuggestion = {
                 currentRange = props.range;
                 currentItems = props.items ?? [];
                 reactRenderer?.updateProps({ ...props, registerKeyDown });
-                if (!props.clientRect) return;
+                if (!props.clientRect) {return;}
                 updatePosition(props.editor, reactRenderer!.element);
             },
             onKeyDown(props: { event: KeyboardEvent }) {

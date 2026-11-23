@@ -8,7 +8,7 @@ import { useUIStore } from "@/store/ui.store";
 export function useMobileNavigation(): void {
     const navigate = useNavigate();
     useEffect(() => {
-        if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") return;
+        if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") {return;}
         let disposed = false;
         let removeListener: (() => Promise<void>) | undefined;
         void import("@capacitor/app")
@@ -22,16 +22,16 @@ export function useMobileNavigation(): void {
                     } else if (ui.prompt) {
                         ui.prompt.onCancel?.();
                         useUIStore.dispatchers.clearPrompt();
-                    } else if (ui.alert) useUIStore.dispatchers.clearAlert();
+                    } else if (ui.alert) {useUIStore.dispatchers.clearAlert();}
                     else if (state.createNoteDialog.isOpen)
-                        globalDispatch.setCreateNoteDialog({ isOpen: false, type: state.createNoteDialog.type });
-                    else if (state.commander.enabled) globalDispatch.commander(false);
-                    else if (ui.sidebarOpen) useUIStore.dispatchers.setSidebarOpen(false);
-                    else if (canGoBack()) navigate(-1);
-                    else void App.minimizeApp();
+                        {globalDispatch.setCreateNoteDialog({ isOpen: false, type: state.createNoteDialog.type });}
+                    else if (state.commander.enabled) {globalDispatch.commander(false);}
+                    else if (ui.sidebarOpen) {useUIStore.dispatchers.setSidebarOpen(false);}
+                    else if (canGoBack()) {navigate(-1);}
+                    else {void App.minimizeApp();}
                 });
-                if (disposed) await listener.remove();
-                else removeListener = () => listener.remove();
+                if (disposed) {await listener.remove();}
+                else {removeListener = () => listener.remove();}
             })
             .catch((error: unknown) => console.error("Could not register Android back navigation:", error));
         return () => {

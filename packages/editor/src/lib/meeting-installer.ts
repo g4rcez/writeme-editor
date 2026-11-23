@@ -14,13 +14,13 @@ export function detectMeetingInstallerOS(
     platform: string,
     maxTouchPoints = 0,
 ): MeetingInstallerOS | "" {
-    if (/Android|iPhone|iPad|iPod/i.test(userAgent) || (/Mac/i.test(platform) && maxTouchPoints > 1)) return "";
-    if (/Win/i.test(platform)) return "windows";
-    if (/Mac/i.test(platform)) return "macos";
-    if (/Linux/i.test(platform)) return "linux";
-    if (/Windows/i.test(userAgent)) return "windows";
-    if (/Macintosh/i.test(userAgent)) return "macos";
-    if (/Linux/i.test(userAgent)) return "linux";
+    if (/Android|iPhone|iPad|iPod/i.test(userAgent) || (/Mac/i.test(platform) && maxTouchPoints > 1)) {return "";}
+    if (/Win/i.test(platform)) {return "windows";}
+    if (/Mac/i.test(platform)) {return "macos";}
+    if (/Linux/i.test(platform)) {return "linux";}
+    if (/Windows/i.test(userAgent)) {return "windows";}
+    if (/Macintosh/i.test(userAgent)) {return "macos";}
+    if (/Linux/i.test(userAgent)) {return "linux";}
     return "";
 }
 
@@ -28,7 +28,7 @@ export function meetingInstaller(os: MeetingInstallerOS): { filename: string; co
     const filename = `writeme-install-whisper-${os}.${os === "windows" ? "ps1" : "sh"}`;
     return {
         filename,
-        content: os === "windows" ? windowsScript.replace(/\r?\n/g, "\r\n") : shellScript,
+        content: os === "windows" ? windowsScript.replaceAll(/\r?\n/g, "\r\n") : shellScript,
         command:
             os === "windows"
                 ? `powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\\Downloads\\${filename}"`

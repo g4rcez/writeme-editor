@@ -3,7 +3,7 @@ import type { IAIRepository, AICredentials } from "../entities/ai";
 import { db } from "./dexie-db";
 
 export class BrowserAIRepository implements IAIRepository {
-    async getConfigs(): Promise<AIConfig[]> {
+    async getConfigs(): Promise<Array<AIConfig>> {
         return db.aiConfigs.toArray();
     }
 
@@ -15,7 +15,7 @@ export class BrowserAIRepository implements IAIRepository {
         await db.aiConfigs.delete(id);
     }
 
-    async getChats(noteId?: string): Promise<AIChat[]> {
+    async getChats(noteId?: string): Promise<Array<AIChat>> {
         if (noteId) {
             return db.aiChats.where("noteId").equals(noteId).reverse().sortBy("createdAt");
         }
@@ -26,7 +26,7 @@ export class BrowserAIRepository implements IAIRepository {
         await db.aiChats.put(chat);
     }
 
-    async getMessages(chatId: string): Promise<AIMessage[]> {
+    async getMessages(chatId: string): Promise<Array<AIMessage>> {
         return db.aiMessages.where("chatId").equals(chatId).sortBy("createdAt");
     }
 

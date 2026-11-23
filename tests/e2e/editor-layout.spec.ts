@@ -151,7 +151,7 @@ test.describe("note context layout", () => {
                     expect(toolbarBounds.y + toolbarBounds.height).toBeLessThanOrEqual(headerBounds.y);
                     expect(toolbarBounds.x).toBeCloseTo(editorBounds.x, 0);
                     expect(toolbarBounds.width).toBeCloseTo(editorBounds.width, 0);
-                    if (toolbarBounds.width > 672) expect(toolbarBounds.height).toBeLessThanOrEqual(40);
+                    if (toolbarBounds.width > 672) {expect(toolbarBounds.height).toBeLessThanOrEqual(40);}
                     expect(
                         Math.abs(
                             filenameBounds.x + filenameBounds.width / 2 - (toolbarBounds.x + toolbarBounds.width / 2),
@@ -171,7 +171,7 @@ test.describe("note context layout", () => {
                         await expect(button).toHaveAttribute("data-component", "button");
                         await expect(button).toHaveClass(/__button--theme-ghost-muted/);
                         const bounds = await button.boundingBox();
-                        if (!bounds) throw new Error("Expected visible utility button bounds");
+                        if (!bounds) {throw new Error("Expected visible utility button bounds");}
                         expect(bounds.width).toBeGreaterThanOrEqual(width <= 640 ? 44 : 32);
                         expect(bounds.height).toBeGreaterThanOrEqual(width <= 640 ? 44 : 32);
                         expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
@@ -189,7 +189,7 @@ test.describe("note context layout", () => {
                         const contents = page.getByRole("dialog", { name: "Table of contents" });
                         await expect(contents).toBeVisible();
                         const bounds = await contents.boundingBox();
-                        if (!bounds) throw new Error("Expected visible table-of-contents bounds");
+                        if (!bounds) {throw new Error("Expected visible table-of-contents bounds");}
                         expect(bounds.x).toBeGreaterThanOrEqual(0);
                         expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
                         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

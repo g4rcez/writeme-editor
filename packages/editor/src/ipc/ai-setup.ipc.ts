@@ -18,7 +18,7 @@ async function getCredentialStorageStatus(): Promise<AICredentialStorageStatus> 
         synchronousEncryptionAvailable: false,
         asynchronousEncryptionAvailable: false,
     };
-    if (!status.ready) return status;
+    if (!status.ready) {return status;}
     try {
         status.asynchronousEncryptionAvailable = await safeStorage.isAsyncEncryptionAvailable();
     } catch {

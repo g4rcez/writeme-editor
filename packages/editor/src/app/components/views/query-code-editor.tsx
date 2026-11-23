@@ -22,7 +22,7 @@ type QueryCodeEditorProps = {
     timing: number;
 };
 
-const ENTITY_SCHEMA: Record<string, string[]> = {
+const ENTITY_SCHEMA: Record<string, Array<string>> = {
     notes: [
         "title",
         "content",
@@ -71,25 +71,25 @@ const JOIN_KEYWORDS = ["JOIN", "INNER", "ON", "AS", "GROUP"];
 const AGGREGATE_FNS = ["COUNT", "SUM", "AVG", "MIN", "MAX"];
 
 /** Returns all table names referenced in the query (FROM + JOINs). */
-function resolveQueryTables(fullText: string): string[] {
-    const tables: string[] = [];
+function resolveQueryTables(fullText: string): Array<string> {
+    const tables: Array<string> = [];
     const fromMatch = /\bFROM\s+(\w+)/i.exec(fullText);
     if (fromMatch) {
         const t = fromMatch[1]!.toLowerCase();
-        if (ENTITY_SCHEMA[t]) tables.push(t);
+        if (ENTITY_SCHEMA[t]) {tables.push(t);}
     }
     const joinRe = /\bJOIN\s+(\w+)/gi;
     let m: RegExpExecArray | null;
     while ((m = joinRe.exec(fullText)) !== null) {
         const t = m[1]!.toLowerCase();
-        if (ENTITY_SCHEMA[t]) tables.push(t);
+        if (ENTITY_SCHEMA[t]) {tables.push(t);}
     }
     return tables.length > 0 ? tables : ["notes"];
 }
 
 /** Returns prefixed field suggestions for all query tables. */
-function resolvePrefixedFields(tables: string[]): string[] {
-    const fields: string[] = [];
+function resolvePrefixedFields(tables: Array<string>): Array<string> {
+    const fields: Array<string> = [];
     for (const table of tables) {
         for (const field of ENTITY_SCHEMA[table] ?? []) {
             fields.push(`${table}.${field}`);
@@ -101,7 +101,7 @@ function resolvePrefixedFields(tables: string[]): string[] {
 function entityQuerySource(context: CompletionContext): CompletionResult | null {
     // Match word chars plus dots (for prefixed fields like notes.title)
     const word = context.matchBefore(/[\w.]*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null;
+    if (!word || (word.from === word.to && !context.explicit)) {return null;}
 
     const textBefore = context.state.doc.sliceString(0, word.from).trimEnd();
     const textBeforeUpper = textBefore.toUpperCase();
@@ -207,7 +207,7 @@ export function QueryCodeEditor({ value, onChange, error, resultCount, timing }:
     const isDark = state.theme === "dark";
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
 
         const view = new EditorView({
             state: EditorState.create({
@@ -241,7 +241,7 @@ export function QueryCodeEditor({ value, onChange, error, resultCount, timing }:
     // Sync external value changes (e.g. visual filter → SQL)
     useEffect(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         const current = view.state.doc.toString();
         if (current !== value) {
             view.dispatch({

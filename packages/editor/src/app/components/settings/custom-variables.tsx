@@ -11,7 +11,7 @@ import { Confirm } from "../confirm";
 
 export const CustomVariables = () => {
     const { scripts, refresh } = useScripts();
-    const [localScripts, setLocalScripts] = useState<Script[]>([]);
+    const [localScripts, setLocalScripts] = useState<Array<Script>>([]);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -28,7 +28,7 @@ export const CustomVariables = () => {
     };
 
     const handleDelete = async () => {
-        if (!deletingId) return;
+        if (!deletingId) {return;}
         await repositories.scripts.delete(deletingId);
         setLocalScripts(localScripts.filter((s) => s.id !== deletingId));
         setDeletingId(null);

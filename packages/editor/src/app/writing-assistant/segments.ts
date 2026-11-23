@@ -1,6 +1,6 @@
 import type { WritingSegment } from "./types";
 
-const MAX_WRITING_SEGMENT_LENGTH = 4_000;
+const MAX_WRITING_SEGMENT_LENGTH = 4000;
 
 export type WritingTextRange = {
     text: string;
@@ -8,8 +8,8 @@ export type WritingTextRange = {
     to: number;
 };
 
-export function createWritingSegments(ranges: readonly WritingTextRange[]): WritingSegment[] {
-    const segments: WritingSegment[] = [];
+export function createWritingSegments(ranges: ReadonlyArray<WritingTextRange>): Array<WritingSegment> {
+    const segments: Array<WritingSegment> = [];
 
     for (const range of ranges) {
         let start = 0;
@@ -28,7 +28,7 @@ export function createWritingSegments(ranges: readonly WritingTextRange[]): Writ
                 } else {
                     const previous = range.text.charCodeAt(end - 1);
                     const next = range.text.charCodeAt(end);
-                    if (previous >= 0xd800 && previous <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) {
+                    if (previous >= 0xd8_00 && previous <= 0xdb_ff && next >= 0xdc_00 && next <= 0xdf_ff) {
                         end -= 1;
                     }
                 }

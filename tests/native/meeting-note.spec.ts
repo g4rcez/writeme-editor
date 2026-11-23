@@ -26,9 +26,9 @@ async function launchMeetingApp(): Promise<{ application: ElectronApplication; d
             timeout: 30_000,
         });
         return { application, directory };
-    } catch (reason) {
+    } catch (error) {
         await rm(directory, { recursive: true, force: true });
-        throw reason;
+        throw error;
     }
 }
 
@@ -44,7 +44,7 @@ async function createMeetingPage(application: ElectronApplication, directory: st
     const create = page.getByRole("dialog", { name: "Create meeting note" });
     await create.getByTitle("Note title").fill("Native meeting");
     if (await create.getByTitle("Note title").getAttribute("aria-expanded") === "true")
-        await page.keyboard.press("Escape");
+        {await page.keyboard.press("Escape");}
     await create.getByRole("button", { name: /^Create/ }).click();
     const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
     await expect(setup).toBeVisible();
@@ -84,8 +84,8 @@ test("records native microphone audio, transcribes it and persists the result in
             response.writeHead(204).end();
             return;
         }
-        const chunks: Buffer[] = [];
-        for await (const chunk of request) chunks.push(Buffer.from(chunk));
+        const chunks: Array<Buffer> = [];
+        for await (const chunk of request) {chunks.push(Buffer.from(chunk));}
         const body = Buffer.concat(chunks);
         uploadedAudio = body.includes(Buffer.from('filename="microphone.webm"')) && body.length > 1000;
         uploads++;
@@ -95,7 +95,7 @@ test("records native microphone audio, transcribes it and persists the result in
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     try {
         const address = server.address();
-        if (!address || typeof address === "string") throw new Error("Transcription server did not start.");
+        if (!address || typeof address === "string") {throw new Error("Transcription server did not start.");}
         const { application, directory } = await launchMeetingApp();
         try {
             const page = await createMeetingPage(application, directory);
@@ -104,7 +104,7 @@ test("records native microphone audio, transcribes it and persists the result in
                 Reflect.set(window, "nativeMeetingAudioReady", false);
                 MediaRecorder.prototype.start = function (timeslice?: number): void {
                     this.addEventListener("dataavailable", (event) => {
-                        if (event.data.size) Reflect.set(window, "nativeMeetingAudioReady", true);
+                        if (event.data.size) {Reflect.set(window, "nativeMeetingAudioReady", true);}
                     });
                     start.call(this, timeslice);
                 };

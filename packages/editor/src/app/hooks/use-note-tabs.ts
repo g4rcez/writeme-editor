@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Note } from "@/store/note";
 
-export const useNoteTabs = (notes: Note[]) => {
+export const useNoteTabs = (notes: Array<Note>) => {
     const notesById = useMemo(() => {
         const map = new Map<string, Note>();
         for (const note of notes) {

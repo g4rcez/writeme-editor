@@ -82,7 +82,7 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
                             return false;
                         }
                         const storage = (this as any).storage || editor.storage.markdown;
-                        if (!storage || !storage.parser) {
+                        if (!storage?.parser) {
                             return false;
                         }
                         try {
@@ -101,8 +101,8 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
                                 }
                             }
                             return true;
-                        } catch (e) {
-                            console.error("Markdown setContent error:", e);
+                        } catch (error) {
+                            console.error("Markdown setContent error:", error);
                             return false;
                         }
                     },
@@ -135,13 +135,13 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
                                     tr.replaceWith(from, to, node);
                                 }
                                 return true;
-                            } catch (e) {
-                                console.error("Markdown insertContentAt error:", e);
+                            } catch (error) {
+                                console.error("Markdown insertContentAt error:", error);
                                 return false;
                             }
                         }
                         const storage = (this as any).storage || editor.storage.markdown;
-                        if (!storage || !storage.parser) {
+                        if (!storage?.parser) {
                             return false;
                         }
                         try {
@@ -156,8 +156,8 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
                                 tr.replaceWith(from, to, doc);
                             }
                             return true;
-                        } catch (e) {
-                            console.error("Markdown insertContentAt error:", e);
+                        } catch (error) {
+                            console.error("Markdown insertContentAt error:", error);
                             return false;
                         }
                     },
@@ -176,13 +176,13 @@ export const Markdown = Extension.create<MarkdownOptions, MarkdownStorage>({
         let previousMarkdown = "";
         const getMarkdown = (): string => {
             const serializer = this.storage.serializer;
-            if (!serializer || !this.editor.schema || !this.editor.extensionManager || !this.editor.state?.doc) return "";
+            if (!serializer || !this.editor.schema || !this.editor.extensionManager || !this.editor.state?.doc) {return "";}
             const document = this.editor.state.doc;
             const options = JSON.stringify(this.storage.options);
             const { note } = this.editor.storage as { note?: unknown };
             const notes = getEditorAllNotes(this.editor);
             if (document === previousDocument && serializer === previousSerializer &&
-                options === previousOptions && note === previousNote && notes === previousNotes?.deref()) return previousMarkdown;
+                options === previousOptions && note === previousNote && notes === previousNotes?.deref()) {return previousMarkdown;}
             const markdown = serializer.serialize(document);
             previousDocument = document;
             previousSerializer = serializer;

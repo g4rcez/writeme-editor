@@ -26,7 +26,7 @@ export default function ViewDetailPage() {
     const [loadAttempt, setLoadAttempt] = useState(0);
     const [title, setTitle] = useState<string | null>(null);
     const [query, setQuery] = useState("");
-    const [columns, setColumns] = useState<ViewColumn[]>(viewColumns);
+    const [columns, setColumns] = useState<Array<ViewColumn>>(viewColumns);
     const [activeTab, setActiveTab] = useState<Tab>("sql");
     const [filterGroup, setFilterGroup] = useState<FilterGroup>({
         filters: [],
@@ -43,17 +43,17 @@ export default function ViewDetailPage() {
 
     const joinedTables = useMemo(() => {
         try {
-            if (!parsedQuery) return [];
-            const tables: string[] = [];
-            if (parsedQuery.from) tables.push(parsedQuery.from);
-            for (const j of parsedQuery.joins) tables.push(j.table);
+            if (!parsedQuery) {return [];}
+            const tables: Array<string> = [];
+            if (parsedQuery.from) {tables.push(parsedQuery.from);}
+            for (const j of parsedQuery.joins) {tables.push(j.table);}
             return tables.length > 1 ? tables : [];
         } catch {
             return [];
         }
     }, [parsedQuery]);
 
-    const displayColumns = useMemo<ViewColumn[]>(() => {
+    const displayColumns = useMemo<Array<ViewColumn>>(() => {
         if (parsedQuery?.select && parsedQuery.select.columns.length > 0) {
             return parsedQuery.select.columns.map((item) => {
                 if (item.type === "Column") {
@@ -78,12 +78,12 @@ export default function ViewDetailPage() {
     }, [parsedQuery, results, columns]);
 
     useEffect(() => {
-        if (!viewId) return;
+        if (!viewId) {return;}
         let active = true;
         repositories.views
             .getOne(viewId)
             .then((v) => {
-                if (!active) return;
+                if (!active) {return;}
                 setLoadResult({ id: viewId, error: v ? null : "This View no longer exists." });
                 if (!v) {
                     return;
@@ -96,7 +96,7 @@ export default function ViewDetailPage() {
             })
             .catch(() => {
                 if (active)
-                    setLoadResult({ id: viewId, error: "Could not load this View. Check storage and try again." });
+                    {setLoadResult({ id: viewId, error: "Could not load this View. Check storage and try again." });}
             });
         return () => {
             active = false;
@@ -130,7 +130,7 @@ export default function ViewDetailPage() {
         (patch: Partial<View>) => {
             clearTimeout(timer.current);
             timer.current = setTimeout(async () => {
-                if (!view) return;
+                if (!view) {return;}
                 const updated = { ...view, ...patch, updatedAt: new Date() };
                 await repositories.views.update(view.id, updated);
                 setView(updated as View);
@@ -140,7 +140,7 @@ export default function ViewDetailPage() {
     );
 
     const onChange = () => {
-        if (title === null) return;
+        if (title === null) {return;}
         const trimmed = title.trim();
         setTitle(trimmed);
         scheduleSave({ title: trimmed });
@@ -151,7 +151,7 @@ export default function ViewDetailPage() {
         scheduleSave({ query: newQuery });
     };
 
-    const handleColumnsChange = (newColumns: ViewColumn[]) => {
+    const handleColumnsChange = (newColumns: Array<ViewColumn>) => {
         setColumns(newColumns);
         scheduleSave({ columns: newColumns });
     };
@@ -173,7 +173,7 @@ export default function ViewDetailPage() {
         const keys = new Set<string>();
         for (const note of state.notes) {
             if (note.metadata) {
-                for (const k of Object.keys(note.metadata)) keys.add(k);
+                for (const k of Object.keys(note.metadata)) {keys.add(k);}
             }
         }
         return Array.from(keys);
@@ -209,7 +209,7 @@ export default function ViewDetailPage() {
 
     return (
         <div className="relative flex-col py-6 gap-6 mx-auto max-w-safe">
-            <button
+            <button type="button"
                 onClick={() => navigate("/views")}
                 className="flex items-center gap-1.5 mb-4 text-sm text-muted hover:underline"
             >
@@ -226,14 +226,14 @@ export default function ViewDetailPage() {
                     value={title ?? ""}
                     onChange={(e) => setTitle(e.target.value)}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter") onChange();
-                        if (e.key === "Escape") setTitle(null);
+                        if (e.key === "Enter") {onChange();}
+                        if (e.key === "Escape") {setTitle(null);}
                     }}
                 />
             </div>
             <div>
                 <div className="flex items-center gap-0 border-b border-border">
-                    <button
+                    <button type="button"
                         onClick={() => setActiveTab("sql")}
                         className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors border-b-2 ${
                             activeTab === "sql"
@@ -244,7 +244,7 @@ export default function ViewDetailPage() {
                         <CodeIcon size={13} />
                         SQL Query
                     </button>
-                    <button
+                    <button type="button"
                         onClick={showVisualFilters}
                         className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors border-b-2 ${
                             activeTab === "filters"

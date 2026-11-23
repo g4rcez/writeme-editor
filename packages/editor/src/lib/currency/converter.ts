@@ -74,7 +74,6 @@ async function getExchangeRate(
     if (cached) {
         const rate = cached.data.rates[to];
         if (rate !== undefined) {
-            console.log(`Using cached rate for ${from} to ${to}: ${rate}`);
             return { rate, source: "cache" };
         }
     }
@@ -91,7 +90,6 @@ async function getExchangeRate(
             throw new Error(`Rate not found for ${to} in API response`);
         }
 
-        console.log(`Fetched fresh rate for ${from} to ${to}: ${rate}`);
         return { rate, source: "api" };
     } catch (apiError) {
         console.warn("API fetch failed, trying stale cache:", apiError);
@@ -101,7 +99,6 @@ async function getExchangeRate(
         if (staleCache) {
             const rate = staleCache.data.rates[to];
             if (rate !== undefined) {
-                console.log(`Using stale cached rate for ${from} to ${to}: ${rate}`);
                 return { rate, source: "stale-cache" };
             }
         }

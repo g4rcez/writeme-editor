@@ -2,7 +2,7 @@ import { Checkbox, Dropdown } from "@g4rcez/components";
 import { ColumnsIcon } from "@phosphor-icons/react";
 import type { ViewColumn } from "@/store/repositories/entities/view";
 
-const NOTE_COLUMNS: ViewColumn[] = [
+const NOTE_COLUMNS: Array<ViewColumn> = [
     { field: "title", label: "Title" },
     { field: "noteType", label: "Type" },
     { field: "tags", label: "Tags" },
@@ -15,7 +15,7 @@ const NOTE_COLUMNS: ViewColumn[] = [
     { field: "content", label: "Content" },
 ];
 
-const ENTITY_FIELDS: Record<string, ViewColumn[]> = {
+const ENTITY_FIELDS: Record<string, Array<ViewColumn>> = {
     notes: [
         { field: "notes.title", label: "notes.title" },
         { field: "notes.noteType", label: "notes.noteType" },
@@ -97,14 +97,14 @@ const ENTITY_FIELDS: Record<string, ViewColumn[]> = {
 };
 
 type ColumnPickerProps = {
-    columns: ViewColumn[];
-    onChange: (columns: ViewColumn[]) => void;
-    metadataKeys?: string[];
-    joinedTables?: string[];
+    columns: Array<ViewColumn>;
+    onChange: (columns: Array<ViewColumn>) => void;
+    metadataKeys?: Array<string>;
+    joinedTables?: Array<string>;
 };
 
 export function ColumnPicker({ columns, onChange, metadataKeys = [], joinedTables = [] }: ColumnPickerProps) {
-    const allCols: ViewColumn[] =
+    const allCols: Array<ViewColumn> =
         joinedTables.length > 1
             ? joinedTables.flatMap((t) => ENTITY_FIELDS[t] ?? [])
             : [

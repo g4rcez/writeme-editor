@@ -8,26 +8,26 @@ type TabCycleCandidate = Pick<Tab, "id" | "noteId" | "order"> & {
 };
 
 type GetCycledTabTargetOptions = {
-    tabs: TabCycleCandidate[];
+    tabs: Array<TabCycleCandidate>;
     currentTarget: TabTarget | null;
     activeTabId: string | null;
     direction: TabCycleDirection;
 };
 
 type GetCycledTabNoteIdOptions = {
-    tabs: TabCycleCandidate[];
+    tabs: Array<TabCycleCandidate>;
     currentNoteId: string | null;
     activeTabId: string | null;
     direction: TabCycleDirection;
 };
 
 type GetTabTargetAtIndexOptions = {
-    tabs: TabCycleCandidate[];
+    tabs: Array<TabCycleCandidate>;
     index: number | "last";
 };
 
 function getCurrentTabIndex(
-    orderedTabs: TabCycleCandidate[],
+    orderedTabs: Array<TabCycleCandidate>,
     currentTarget: TabTarget | null,
     activeTabId: string | null,
 ): number {
@@ -35,9 +35,9 @@ function getCurrentTabIndex(
     const routeIndex = currentTargetKey
         ? orderedTabs.findIndex((tab) => getTabTargetKey(getTabTarget(tab)) === currentTargetKey)
         : -1;
-    if (routeIndex !== -1) return routeIndex;
+    if (routeIndex !== -1) {return routeIndex;}
 
-    if (!activeTabId) return -1;
+    if (!activeTabId) {return -1;}
     return orderedTabs.findIndex((tab) => tab.id === activeTabId || (isNoteTab(tab) && tab.noteId === activeTabId));
 }
 
@@ -47,10 +47,10 @@ export function getCycledTabTarget({
     activeTabId,
     direction,
 }: GetCycledTabTargetOptions): TabTarget | null {
-    if (tabs.length < 2) return null;
+    if (tabs.length < 2) {return null;}
     const orderedTabs = tabs.toSorted((a, b) => a.order - b.order);
     const currentIndex = getCurrentTabIndex(orderedTabs, currentTarget, activeTabId);
-    if (currentIndex === -1) return null;
+    if (currentIndex === -1) {return null;}
 
     const step = direction === "forward" ? 1 : -1;
     const nextIndex = (currentIndex + step + orderedTabs.length) % orderedTabs.length;
@@ -75,11 +75,11 @@ export function getCycledTabNoteId({
 }
 
 export function getTabTargetAtIndex({ tabs, index }: GetTabTargetAtIndexOptions): TabTarget | null {
-    if (tabs.length === 0) return null;
+    if (tabs.length === 0) {return null;}
 
     const orderedTabs = tabs.toSorted((a, b) => a.order - b.order);
     const tabIndex = index === "last" ? orderedTabs.length - 1 : index;
-    if (tabIndex < 0 || tabIndex >= orderedTabs.length) return null;
+    if (tabIndex < 0 || tabIndex >= orderedTabs.length) {return null;}
 
     const tab = orderedTabs[tabIndex];
     return tab ? getTabTarget(tab) : null;

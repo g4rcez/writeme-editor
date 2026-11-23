@@ -12,7 +12,7 @@ let active: { tab: EditorTabDrag; source: HTMLElement | null; cancel: () => void
 let hovered: HTMLElement | null = null;
 
 function clearPreview(): void {
-    if (hovered) targets.get(hovered)?.preview?.(null, hovered.getBoundingClientRect());
+    if (hovered) {targets.get(hovered)?.preview?.(null, hovered.getBoundingClientRect());}
     hovered = null;
 }
 
@@ -29,31 +29,31 @@ export function cancelMotionTabDrag(): void {
 }
 
 export function updateMotionTabDrag(x: number, y: number, copy: boolean): void {
-    if (!active) return;
+    if (!active) {return;}
     const hit = document.elementFromPoint(x, y);
     const sourceRect = active.source?.getBoundingClientRect();
     const overSource =
         sourceRect && x >= sourceRect.left && x <= sourceRect.right && y >= sourceRect.top && y <= sourceRect.bottom;
     const element = overSource ? active.source : (hit?.closest<HTMLElement>("[data-editor-tab-drop-target]") ?? null);
-    if (element !== hovered) clearPreview();
+    if (element !== hovered) {clearPreview();}
     hovered = element;
-    if (element) targets.get(element)?.preview?.({ tab: active.tab, x, y, copy }, element.getBoundingClientRect());
+    if (element) {targets.get(element)?.preview?.({ tab: active.tab, x, y, copy }, element.getBoundingClientRect());}
     const list = hit?.closest<HTMLElement>(".writeme-tabs-bar-list, .writeme-editor-group-tabs");
     if (list) {
         const rect = list.getBoundingClientRect();
-        if (x < rect.left + 24) list.scrollLeft -= 16;
-        else if (x > rect.right - 24) list.scrollLeft += 16;
+        if (x < rect.left + 24) {list.scrollLeft -= 16;}
+        else if (x > rect.right - 24) {list.scrollLeft += 16;}
     }
 }
 
 export function finishMotionTabDrag(x: number, y: number, copy: boolean): void {
-    if (!active) return;
+    if (!active) {return;}
     updateMotionTabDrag(x, y, copy);
     const tab = active.tab;
     const element = hovered;
     active = null;
     clearPreview();
-    if (element) targets.get(element)?.drop({ tab, x, y, copy }, element.getBoundingClientRect());
+    if (element) {targets.get(element)?.drop({ tab, x, y, copy }, element.getBoundingClientRect());}
 }
 
 export function useMotionTabDrop(target: DropTarget): (element: HTMLDivElement | null) => void {
@@ -63,12 +63,12 @@ export function useMotionTabDrop(target: DropTarget): (element: HTMLDivElement |
     }, [target]);
     const previous = useRef<HTMLDivElement | null>(null);
     return useCallback((element: HTMLDivElement | null): void => {
-        if (previous.current) targets.delete(previous.current);
+        if (previous.current) {targets.delete(previous.current);}
         previous.current = element;
         if (element)
-            targets.set(element, {
+            {targets.set(element, {
                 drop: (drop, rect) => latest.current.drop(drop, rect),
                 preview: (drop, rect) => latest.current.preview?.(drop, rect),
-            });
+            });}
     }, []);
 }

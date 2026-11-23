@@ -46,7 +46,7 @@ type CompletionLanguage =
     | "typescript"
     | "yaml";
 
-const LANGUAGE_COMPLETIONS: Record<CompletionLanguage, readonly string[]> = {
+const LANGUAGE_COMPLETIONS: Record<CompletionLanguage, ReadonlyArray<string>> = {
     bash: ["case", "done", "elif", "else", "export", "fi", "for", "function", "if", "then", "while"],
     c: ["#define", "#include", "const", "enum", "printf", "return", "size_t", "static", "struct", "typedef"],
     cpp: [
@@ -164,7 +164,7 @@ const MATH_CODE_MIRROR_LANGUAGE = StreamLanguage.define<{
             return "comment";
         }
 
-        if (stream.eatSpace()) return null;
+        if (stream.eatSpace()) {return null;}
         if (stream.match("//")) {
             stream.skipToEnd();
             return "comment";
@@ -179,13 +179,13 @@ const MATH_CODE_MIRROR_LANGUAGE = StreamLanguage.define<{
         if (stream.match(/(?:0b[01]+|0o[0-7]+|0x[\da-fA-F]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?[ij]?)/)) {
             return "number";
         }
-        if (stream.match(MATH_FUNCTIONS)) return "builtin";
-        if (stream.match(MATH_CONSTANTS)) return "atom";
-        if (stream.match(MATH_WORD_OPERATORS)) return "keyword";
+        if (stream.match(MATH_FUNCTIONS)) {return "builtin";}
+        if (stream.match(MATH_CONSTANTS)) {return "atom";}
+        if (stream.match(MATH_WORD_OPERATORS)) {return "keyword";}
         if (stream.match(/[+\-*/%^=<>!&|?:]+|[≤≥≠≈±×÷∧∨¬⊕⇒→⇔↔∀∃∄∈∉∪∩⊂⊃⊆⊇]/)) {
             return "operator";
         }
-        if (stream.match(/[()[\]{},;]/)) return "bracket";
+        if (stream.match(/[()[\]{},;]/)) {return "bracket";}
         if (stream.match(/[αβγδεζηθικλμνξοπρσςτυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ]|[a-zA-Z]\w*(?:_\w+)?/)) {
             return "variable";
         }
@@ -205,7 +205,7 @@ function getCompletionLanguage(language: string): CompletionLanguage | null {
 
 const browserLanguages = ["tsx", "javascript", "typescript"];
 
-async function toCodeMirrorLanguage(language: string): Promise<Extension[]> {
+async function toCodeMirrorLanguage(language: string): Promise<Array<Extension>> {
     switch (getCompletionLanguage(language)) {
         case "c":
         case "cpp": {
@@ -292,7 +292,7 @@ function createKeywordCompletionSource(language: string): CompletionSource {
     const options = [...new Set([...COMMON_COMPLETIONS, ...languageCompletions])];
     return (context: CompletionContext): CompletionResult | null => {
         const word = context.matchBefore(/[\w.#>*-]*/);
-        if (!word || (word.from === word.to && !context.explicit)) return null;
+        if (!word || (word.from === word.to && !context.explicit)) {return null;}
         const query = word.text.toLowerCase();
         const matches = options.filter((option) => option.toLowerCase().startsWith(query));
         if (!matches.length) {
@@ -310,13 +310,13 @@ function createKeywordCompletionSource(language: string): CompletionSource {
 
 function isCodeMirrorSelectionAtFirstLine(view: EditorView): boolean {
     const selection = view.state.selection.main;
-    if (!selection.empty) return false;
+    if (!selection.empty) {return false;}
     return view.state.doc.lineAt(selection.head).number === 1;
 }
 
 function isCodeMirrorSelectionAtLastLine(view: EditorView): boolean {
     const selection = view.state.selection.main;
-    if (!selection.empty) return false;
+    if (!selection.empty) {return false;}
     return view.state.doc.lineAt(selection.head).number === view.state.doc.lines;
 }
 
@@ -393,7 +393,7 @@ export const CodeMirrorNodeCodeEditor = ({
     }, [value]);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
         const theme = isDark ? appDarkCodeMirrorTheme() : appLightCodeMirrorTheme();
         const autocompleteExtensions = [createKeywordCompletionSource(language)];
         if (browserLanguages.includes(language)) {
@@ -460,7 +460,7 @@ export const CodeMirrorNodeCodeEditor = ({
                     theme,
                     CODE_MIRROR_EDITOR_THEME,
                     EditorView.updateListener.of((update) => {
-                        if (!update.docChanged) return;
+                        if (!update.docChanged) {return;}
                         if (isSyncingExternalValueRef.current) {
                             isSyncingExternalValueRef.current = false;
                             return;
@@ -475,7 +475,7 @@ export const CodeMirrorNodeCodeEditor = ({
         let isCancelled = false;
 
         void toCodeMirrorLanguage(language).then((languageExtensions) => {
-            if (isCancelled) return;
+            if (isCancelled) {return;}
             view.dispatch({
                 effects: languageCompartmentRef.current.reconfigure(languageExtensions),
             });
@@ -490,11 +490,11 @@ export const CodeMirrorNodeCodeEditor = ({
 
     useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
+        if (!container) {return;}
 
         const focusEditor = () => {
             const view = viewRef.current;
-            if (!view) return;
+            if (!view) {return;}
             requestAnimationFrame(() => view.focus());
         };
 
@@ -504,9 +504,9 @@ export const CodeMirrorNodeCodeEditor = ({
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         const currentValue = view.state.doc.toString();
-        if (currentValue === valueRef.current) return;
+        if (currentValue === valueRef.current) {return;}
         isSyncingExternalValueRef.current = true;
         view.dispatch({
             changes: { from: 0, to: currentValue.length, insert: valueRef.current },

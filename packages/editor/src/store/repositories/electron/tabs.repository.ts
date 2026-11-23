@@ -1,6 +1,6 @@
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 import { BaseRepository } from "../base.repository";
-import { type ITabRepository, type Tab } from "../entities/tab";
+import type { ITabRepository, Tab } from "../entities/tab";
 
 export class TabsRepository extends BaseRepository<Tab> implements ITabRepository {
     constructor() {
@@ -14,7 +14,7 @@ export class TabsRepository extends BaseRepository<Tab> implements ITabRepositor
         }
     }
 
-    async updateOrder(tabs: Tab[]): Promise<void> {
+    async updateOrder(tabs: Array<Tab>): Promise<void> {
         await window.electronAPI.db.tabs.updateOrder(tabs.map((t) => ({ id: t.id, order: t.order })));
     }
 

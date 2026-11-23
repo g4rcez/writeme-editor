@@ -3,7 +3,7 @@ import { createConnection, createServer, type Socket } from "node:net";
 import { addInk, expectSavedNotebook, navigateHome, writeNotebook } from "../helpers/handwriting";
 
 test("persists ink and paper in the production bundle", async ({ page }, testInfo) => {
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
     await writeNotebook(page);
@@ -37,7 +37,7 @@ test("reloads and saves ink when the app is unreachable", async ({ page, context
             ? "App server stopped; WebKit offline emulation is affected by https://github.com/microsoft/playwright/issues/42775"
             : "Browser context offline",
     });
-    if (useServerOutage) await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", resolve));
+    if (useServerOutage) {await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", resolve));}
     const address = proxy.address();
     const origin =
         useServerOutage && address && typeof address !== "string" ? `http://127.0.0.1:${address.port}` : baseURL!;
@@ -48,9 +48,9 @@ test("reloads and saves ink when the app is unreachable", async ({ page, context
             .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), { timeout: 20_000 })
             .toBe(true);
         if (useServerOutage) {
-            for (const socket of sockets) socket.destroy();
+            for (const socket of sockets) {socket.destroy();}
             await new Promise<void>((resolve) => proxy.close(() => resolve()));
-        } else await context.setOffline(true);
+        } else {await context.setOffline(true);}
         await page.reload();
         await expectSavedNotebook(page);
         await addInk(page, 280);
@@ -58,7 +58,7 @@ test("reloads and saves ink when the app is unreachable", async ({ page, context
         await expectSavedNotebook(page, 2);
     } finally {
         await context.setOffline(false);
-        for (const socket of sockets) socket.destroy();
-        if (proxy.listening) await new Promise<void>((resolve) => proxy.close(() => resolve()));
+        for (const socket of sockets) {socket.destroy();}
+        if (proxy.listening) {await new Promise<void>((resolve) => proxy.close(() => resolve()));}
     }
 });

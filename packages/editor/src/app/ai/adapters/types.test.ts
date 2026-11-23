@@ -111,7 +111,7 @@ describe("AI attachment capabilities", () => {
         "<!DOCTYPE html><html></html>",
         "<!-- leading comment -->\n<script>alert(1)</script>",
         "<?xml-stylesheet href='bad'?>\n<object data='bad'></object>",
-        `${" ".repeat(2_048)}<!-- comment -->\n<svg></svg>`,
+        `${" ".repeat(2048)}<!-- comment -->\n<svg></svg>`,
     ])("rejects active markup when the first effective content is %s", async (content) => {
         const { file } = fileWithBytes("notes.txt", new TextEncoder().encode(content), "text/plain");
         await expect(

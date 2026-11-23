@@ -31,12 +31,12 @@ export function processMarkdown(text: string): string {
 
 const CHUNK_LINES = 200;
 
-export function splitIntoChunks(text: string): string[] {
+export function splitIntoChunks(text: string): Array<string> {
   const lines = text.split("\n");
-  if (lines.length <= CHUNK_LINES) return [text];
+  if (lines.length <= CHUNK_LINES) {return [text];}
 
-  const chunks: string[] = [];
-  let currentLines: string[] = [];
+  const chunks: Array<string> = [];
+  let currentLines: Array<string> = [];
   let inFence = false;
   let inFootnote = false;
 
@@ -44,8 +44,8 @@ export function splitIntoChunks(text: string): string[] {
     const trimmed = line.trimStart();
 
     if (!inFence) {
-      if (footnoteDefinitionStart.test(line)) inFootnote = true;
-      else if (trimmed && !/^(?: {4}|\t)/.test(line)) inFootnote = false;
+      if (footnoteDefinitionStart.test(line)) {inFootnote = true;}
+      else if (trimmed && !/^(?: {4}|\t)/.test(line)) {inFootnote = false;}
     }
 
     if (!inFence) {
@@ -116,11 +116,11 @@ if (typeof DedicatedWorkerGlobalScope !== "undefined" && self instanceof Dedicat
           totalChunks,
         } satisfies WorkerOutMessage);
       }
-    } catch (err) {
+    } catch (error) {
       self.postMessage({
         type: "error",
         gen,
-        error: String(err),
+        error: String(error),
       } satisfies WorkerOutMessage);
     }
   };

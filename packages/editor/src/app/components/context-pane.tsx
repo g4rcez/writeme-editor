@@ -34,7 +34,7 @@ type OutlineHeading = {
 
 type ContextPaneProps = {
   note: Note;
-  notes: Note[];
+  notes: Array<Note>;
   workspaceDirectory: string | null;
   open: boolean;
   onClose: () => void;
@@ -65,7 +65,7 @@ function getWorkspaceFileStatus(result: unknown): WorkspaceFileStatus {
   return "unavailable";
 }
 
-function readOutline(): OutlineHeading[] {
+function readOutline(): Array<OutlineHeading> {
   const container = document.getElementById("main-scroll-container") ?? document.body;
   return Array.from(
     container.querySelectorAll<HTMLHeadingElement>(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3"),
@@ -133,15 +133,15 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
   }, []);
 
   useEffect(() => {
-    if (!open || isNarrowViewport) return;
+    if (!open || isNarrowViewport) {return;}
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {onClose();}
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [isNarrowViewport, onClose, open]);
 
-  const [headings, setHeadings] = useState<OutlineHeading[]>([]);
+  const [headings, setHeadings] = useState<Array<OutlineHeading>>([]);
   const [repairError, setRepairError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ConnectionRepair | null>(null);
   const [busy, setBusy] = useState(false);
@@ -158,13 +158,13 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
   const [fileStatuses, setFileStatuses] = useState<Record<string, WorkspaceFileStatus>>({});
 
   useEffect(() => {
-    if (preview) previewElement.current?.focus();
+    if (preview) {previewElement.current?.focus();}
   }, [preview]);
   useEffect(() => {
-    if (!busy && repairError) feedbackElement.current?.focus();
+    if (!busy && repairError) {feedbackElement.current?.focus();}
   }, [busy, repairError]);
   useEffect(() => {
-    if (choosingReference !== null) searchElement.current?.focus();
+    if (choosingReference !== null) {searchElement.current?.focus();}
   }, [choosingReference]);
   useEffect(() => {
     const escape = (event: KeyboardEvent): void => {
@@ -174,7 +174,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
         (!preview && choosingReference === null) ||
         !connectionControls.current?.contains(document.activeElement)
       )
-        return;
+        {return;}
       event.preventDefault();
       event.stopImmediatePropagation();
       if (preview) {
@@ -194,9 +194,9 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     const container = document.getElementById("main-scroll-container");
-    if (!container) return;
+    if (!container) {return;}
 
     const update = () => setHeadings(readOutline());
     update();
@@ -210,13 +210,13 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     [note.content, note.tags, open],
   );
   useEffect(() => {
-    if (!open || fileReferences.length === 0 || !isElectron()) return;
+    if (!open || fileReferences.length === 0 || !isElectron()) {return;}
     let current = true;
     void Promise.all(
       [...new Set(fileReferences.map(({ path }) => path))].map(async (path) => {
         const key = workspaceFileStatusKey(workspaceDirectory, path);
         const filePath = workspaceDirectory ? joinImportPath(workspaceDirectory, path) : null;
-        if (!filePath) return [key, workspaceDirectory ? "outside-workspace" : "unavailable"] as const;
+        if (!filePath) {return [key, workspaceDirectory ? "outside-workspace" : "unavailable"] as const;}
         try {
           const result: unknown = await window.electronAPI.fs.statFile(filePath);
           return [key, getWorkspaceFileStatus(result)] as const;
@@ -225,7 +225,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
         }
       }),
     ).then((entries) => {
-      if (current) setFileStatuses((statuses) => ({ ...statuses, ...Object.fromEntries(entries) }));
+      if (current) {setFileStatuses((statuses) => ({ ...statuses, ...Object.fromEntries(entries) }));}
     });
     return () => {
       current = false;
@@ -272,7 +272,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
   const unresolvedCount = unresolvedLinks.length + unresolvedFileReferences.length;
 
   const runAction = async (action: () => Promise<void>): Promise<void> => {
-    if (actionPending.current) return;
+    if (actionPending.current) {return;}
     actionPending.current = true;
     setBusy(true);
     setRepairError(null);
@@ -299,7 +299,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     const replacement =
       reference.kind === "id"
         ? reference.markdown
-          ? `[${reference.markdown.label}](${formatNoteHref(target.id, reference.subpath)}${reference.markdown.title ? ` "${reference.markdown.title.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"` : ""})`
+          ? `[${reference.markdown.label}](${formatNoteHref(target.id, reference.subpath)}${reference.markdown.title ? ` "${reference.markdown.title.replaceAll("\\", String.raw`\\`).replaceAll('"', String.raw`\"`)}"` : ""})`
           : formatNoteMention(target.id, reference.label, reference.subpath)
         : formatObsidianLink({
           target: target.id,
@@ -331,8 +331,8 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
                         const target = await createConnectionTarget(
                           reference.kind === "wiki" ? reference.target : reference.label,
                         );
-                        if (reference.kind === "id") await repairReference(reference, target);
-                        else setRepairError("Note ready. References have been refreshed.");
+                        if (reference.kind === "id") {await repairReference(reference, target);}
+                        else {setRepairError("Note ready. References have been refreshed.");}
                       })
                     }
                   >
@@ -681,7 +681,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     </>
   );
 
-  if (!open) return null;
+  if (!open) {return null;}
 
   if (!isNarrowViewport) {
     return (
@@ -699,7 +699,7 @@ export function ContextPane({ note, notes, workspaceDirectory, open, onClose }: 
     <Modal
       open={open}
       onChange={(nextOpen) => {
-        if (!nextOpen) onClose();
+        if (!nextOpen) {onClose();}
       }}
       type="drawer"
       position="right"

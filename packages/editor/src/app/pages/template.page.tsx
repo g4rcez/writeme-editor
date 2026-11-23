@@ -27,7 +27,7 @@ export default function TemplatePage() {
 
     useEffect(() => {
         const loadTemplate = async () => {
-            if (!templateId) return;
+            if (!templateId) {return;}
             setLoading(true);
             const data = await repositories.notes.getOne(templateId);
             if (data) {
@@ -41,7 +41,7 @@ export default function TemplatePage() {
 
     const onSave = useCallback(async (content: string) => {
         const currentTemplate = templateRef.current;
-        if (!currentTemplate) return;
+        if (!currentTemplate) {return;}
 
         setSaving(true);
         try {
@@ -68,7 +68,7 @@ export default function TemplatePage() {
     const updateTitle = async (newTitle: string) => {
         setTitle(newTitle);
         const currentTemplate = templateRef.current;
-        if (!currentTemplate) return;
+        if (!currentTemplate) {return;}
 
         const updated = Note.parse({
             ...currentTemplate,
@@ -80,8 +80,8 @@ export default function TemplatePage() {
         templateRef.current = updated;
     };
 
-    if (loading) return <div className="p-8">Loading template...</div>;
-    if (!template) return <div className="p-8 mt-20 text-center">Template not found</div>;
+    if (loading) {return <div className="p-8">Loading template...</div>;}
+    if (!template) {return <div className="p-8 mt-20 text-center">Template not found</div>;}
 
     return (
         <div className="flex flex-col h-full duration-300 bg-background animate-in fade-in">

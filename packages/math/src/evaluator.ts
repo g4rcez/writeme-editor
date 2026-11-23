@@ -15,7 +15,7 @@ import {
 import { preprocessRule3 } from "./rule-of-three.js";
 
 function toNumericValue(result: unknown): number | null {
-    if (typeof result === "number" && Number.isFinite(result)) return result;
+    if (typeof result === "number" && Number.isFinite(result)) {return result;}
     const n = Number(result);
     return Number.isFinite(n) && !Number.isNaN(n) ? n : null;
 }
@@ -88,27 +88,27 @@ function isWordCharacter(character: string | undefined): boolean {
 }
 
 function conversionMarkerAt(expr: string, index: number): UnitConversionMarker | null {
-    if (isWordCharacter(expr[index - 1])) return null;
+    if (isWordCharacter(expr[index - 1])) {return null;}
 
     const match = /^(in|to)\b/i.exec(expr.slice(index));
-    if (!match) return null;
+    if (!match) {return null;}
 
     let targetStart = index + match[0].length;
-    if (!/\s/.test(expr[targetStart] ?? "")) return null;
-    while (/\s/.test(expr[targetStart] ?? "")) targetStart++;
-    if (targetStart >= expr.length) return null;
+    if (!/\s/.test(expr[targetStart] ?? "")) {return null;}
+    while (/\s/.test(expr[targetStart] ?? "")) {targetStart++;}
+    if (targetStart >= expr.length) {return null;}
 
     return { start: index, keyword: match[0], targetStart };
 }
 
 function isArithmeticOperatorAt(expr: string, index: number): boolean {
     const operator = expr[index];
-    if (operator !== "+" && operator !== "-") return false;
+    if (operator !== "+" && operator !== "-") {return false;}
 
     let previous = index - 1;
-    while (previous >= 0 && /\s/.test(expr[previous] ?? "")) previous--;
+    while (previous >= 0 && /\s/.test(expr[previous] ?? "")) {previous--;}
     let next = index + 1;
-    while (next < expr.length && /\s/.test(expr[next] ?? "")) next++;
+    while (next < expr.length && /\s/.test(expr[next] ?? "")) {next++;}
 
     return previous >= 0 && next < expr.length &&
         /[A-Za-z0-9_)\]}%]/.test(expr[previous] ?? "") &&
@@ -116,8 +116,8 @@ function isArithmeticOperatorAt(expr: string, index: number): boolean {
 }
 
 type TopLevelUnitSyntax = {
-    markers: UnitConversionMarker[];
-    arithmeticOperators: number[];
+    markers: Array<UnitConversionMarker>;
+    arithmeticOperators: Array<number>;
 };
 
 type ExpressionScanState = {
@@ -128,14 +128,14 @@ type ExpressionScanState = {
 
 function consumeQuotedCharacter(character: string, state: ExpressionScanState): boolean {
     if (state.quote === null) {
-        if (character !== "\"" && character !== "'") return false;
+        if (character !== "\"" && character !== "'") {return false;}
         state.quote = character;
         return true;
     }
 
-    if (state.escaped) state.escaped = false;
-    else if (character === "\\") state.escaped = true;
-    else if (character === state.quote) state.quote = null;
+    if (state.escaped) {state.escaped = false;}
+    else if (character === "\\") {state.escaped = true;}
+    else if (character === state.quote) {state.quote = null;}
     return true;
 }
 
@@ -152,25 +152,25 @@ function consumeGroupingCharacter(character: string, state: ExpressionScanState)
 }
 
 function scanTopLevelUnitSyntax(expr: string): TopLevelUnitSyntax {
-    const markers: UnitConversionMarker[] = [];
-    const arithmeticOperators: number[] = [];
+    const markers: Array<UnitConversionMarker> = [];
+    const arithmeticOperators: Array<number> = [];
     const state: ExpressionScanState = { depth: 0, quote: null, escaped: false };
 
     for (let index = 0; index < expr.length; index++) {
         const character = expr[index];
-        if (character === undefined) continue;
-        if (consumeQuotedCharacter(character, state) || consumeGroupingCharacter(character, state)) continue;
-        if (state.depth !== 0) continue;
+        if (character === undefined) {continue;}
+        if (consumeQuotedCharacter(character, state) || consumeGroupingCharacter(character, state)) {continue;}
+        if (state.depth !== 0) {continue;}
 
         const marker = conversionMarkerAt(expr, index);
-        if (marker) markers.push(marker);
-        if (isArithmeticOperatorAt(expr, index)) arithmeticOperators.push(index);
+        if (marker) {markers.push(marker);}
+        if (isArithmeticOperatorAt(expr, index)) {arithmeticOperators.push(index);}
     }
 
     return { markers, arithmeticOperators };
 }
 
-function findUnitConversionClauses(expr: string): UnitConversionClause[] {
+function findUnitConversionClauses(expr: string): Array<UnitConversionClause> {
     const { markers, arithmeticOperators } = scanTopLevelUnitSyntax(expr);
     return markers.flatMap((marker, markerIndex) => {
         const nextMarker = markers[markerIndex + 1];
@@ -182,17 +182,17 @@ function findUnitConversionClauses(expr: string): UnitConversionClause[] {
 }
 
 function followsArithmeticOperator(expr: string, index: number): boolean {
-    while (index < expr.length && /\s/.test(expr[index] ?? "")) index++;
+    while (index < expr.length && /\s/.test(expr[index] ?? "")) {index++;}
     return isArithmeticOperatorAt(expr, index);
 }
 
 function normalizeUnitConversionTarget(expr: string): string {
     // Hoist conversions only from top-level +/- terms; nested and compound units stay intact.
     const clauses = findUnitConversionClauses(expr);
-    if (!clauses.some((clause) => followsArithmeticOperator(expr, clause.end))) return expr;
+    if (!clauses.some((clause) => followsArithmeticOperator(expr, clause.end))) {return expr;}
 
-    const target = clauses[clauses.length - 1];
-    if (!target) return expr;
+    const target = clauses.at(-1);
+    if (!target) {return expr;}
 
     let stripped = "";
     let cursor = 0;
@@ -210,7 +210,7 @@ type MathExpressionResult = ReturnType<MathNode["evaluate"]>;
 type ParsedOperatorNode = MathNode & {
     type: "OperatorNode";
     op: string;
-    args: MathNode[];
+    args: Array<MathNode>;
 };
 
 type ParsedParenthesisNode = MathNode & { type: "ParenthesisNode"; content: MathNode };
@@ -251,16 +251,16 @@ function unitNameFromExpression(
     }
 
     const operator = asOperatorNode(node);
-    if (!operator || operator.args.length !== 2) return null;
+    if (operator?.args.length !== 2) {return null;}
 
     if (operator.op === "+" || operator.op === "-") {
         const [left, right] = operator.args;
-        if (!left || !right) return null;
+        if (!left || !right) {return null;}
         return unitNameFromExpression(left, math, scalarVariables) ??
             unitNameFromExpression(right, math, scalarVariables);
     }
 
-    if (operator.op !== "*") return null;
+    if (operator.op !== "*") {return null;}
 
     const [magnitude, unitNode] = operator.args;
     if (!magnitude || !unitNode || !isScalarExpression(magnitude, scalarVariables) || unitNode.type !== "SymbolNode") {
@@ -283,7 +283,7 @@ export function evaluateMathExpression(
 ): MathExpressionResult {
     const scalarVariables = new Set<string>();
     for (const [name, value] of Object.entries(scope.vars)) {
-        if (typeof value === "number") scalarVariables.add(name);
+        if (typeof value === "number") {scalarVariables.add(name);}
     }
     const prepared = normalizeUnitConversionTarget(applyBasePreprocessors(expr));
     const parsed = math.parse(prepared);
@@ -294,13 +294,13 @@ export function evaluateMathExpression(
         }
 
         const operandIndex = operator.args.indexOf(node);
-        if (operandIndex < 0 || !isScalarExpression(node, scalarVariables)) return node;
+        if (operandIndex < 0 || !isScalarExpression(node, scalarVariables)) {return node;}
 
         const peer = operator.args[operandIndex === 0 ? 1 : 0];
-        if (!peer) return node;
+        if (!peer) {return node;}
 
         const unitName = unitNameFromExpression(peer, math, scalarVariables);
-        if (!unitName) return node;
+        if (!unitName) {return node;}
 
         return new math.OperatorNode(
             "*",
@@ -330,15 +330,15 @@ function evaluateLine(line: MathLine, scope: BlockScope, math: MathInstance): Ev
                 const value = evaluateMathExpression(line.expr, math, scope);
                 if (line.name === "em") {
                     const emPx = toNumericValue(value);
-                    if (emPx !== null) reconfigureEm(math, emPx);
+                    if (emPx !== null) {reconfigureEm(math, emPx);}
                 } else {
                     scope.vars[line.name] = value;
                     const numVal = toNumericValue(value);
-                    if (numVal !== null) scope.labeledResults.push(numVal);
+                    if (numVal !== null) {scope.labeledResults.push(numVal);}
                 }
                 result = { ok: true, value: formatResult(value) };
-            } catch (e) {
-                result = { ok: false, message: errorMessage(e) };
+            } catch (error) {
+                result = { ok: false, message: errorMessage(error) };
             }
             return { kind: "variable", name: line.name, result };
         }
@@ -348,11 +348,11 @@ function evaluateLine(line: MathLine, scope: BlockScope, math: MathInstance): Ev
             try {
                 const value = evaluateMathExpression(line.expr, math, scope);
                 const numVal = toNumericValue(value);
-                if (numVal !== null) scope.labeledResults.push(numVal);
-                if (/^[A-Za-z_]\w*$/.test(line.label)) scope.vars[line.label] = value;
+                if (numVal !== null) {scope.labeledResults.push(numVal);}
+                if (/^[A-Za-z_]\w*$/.test(line.label)) {scope.vars[line.label] = value;}
                 result = { ok: true, value: formatResult(value) };
-            } catch (e) {
-                result = { ok: false, message: errorMessage(e) };
+            } catch (error) {
+                result = { ok: false, message: errorMessage(error) };
             }
             return { kind: "label", label: line.label, result };
         }
@@ -382,10 +382,10 @@ function evaluateLine(line: MathLine, scope: BlockScope, math: MathInstance): Ev
                 const expr = prevSubstitution(line.expr, scope.lastBareResult);
                 const value = evaluateMathExpression(expr, math, scope);
                 const numVal = toNumericValue(value);
-                if (numVal !== null) scope.lastBareResult = numVal;
+                if (numVal !== null) {scope.lastBareResult = numVal;}
                 result = { ok: true, value: formatResult(value, line.base) };
-            } catch (e) {
-                result = { ok: false, message: errorMessage(e) };
+            } catch (error) {
+                result = { ok: false, message: errorMessage(error) };
             }
             return { kind: "bare", raw: line.raw, result };
         }
@@ -393,10 +393,10 @@ function evaluateLine(line: MathLine, scope: BlockScope, math: MathInstance): Ev
 }
 
 export function evaluateMathBlock(
-    lines: MathLine[],
+    lines: Array<MathLine>,
     ratesData?: ExchangeRateData | null,
     initialEmPx = 16,
-): EvaluatedLine[] {
+): Array<EvaluatedLine> {
     const math = getMathInstance(initialEmPx, ratesData ?? null);
 
     const scope: BlockScope = {
@@ -408,7 +408,7 @@ export function evaluateMathBlock(
     return lines.map((line) => evaluateLine(line, scope, math));
 }
 
-export function evaluateCode(code: string, ratesData?: ExchangeRateData | null): EvaluatedLine[] {
+export function evaluateCode(code: string, ratesData?: ExchangeRateData | null): Array<EvaluatedLine> {
     const lines = code.split("\n").map(classifyLine);
     return evaluateMathBlock(lines, ratesData);
 }

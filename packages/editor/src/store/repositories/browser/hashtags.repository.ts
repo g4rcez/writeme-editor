@@ -2,7 +2,7 @@ import { v7 as uuid } from "uuid";
 import { notifyHashtagsChanged } from "@/lib/hashtag-events";
 import { DexieStorageAdapter } from "../adapters/dexie.adapter";
 import { BaseRepository } from "../base.repository";
-import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
+import type { Hashtag, IHashtagRepository } from "../entities/hashtag";
 import { db } from "./dexie-db";
 
 export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
@@ -10,11 +10,11 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
         super(new DexieStorageAdapter(), "hashtags");
     }
 
-    async findByHashtag(tag: string): Promise<Hashtag[]> {
+    async findByHashtag(tag: string): Promise<Array<Hashtag>> {
         return await db.hashtags.where("hashtag").equals(tag).toArray();
     }
 
-    async sync(filename: string, tags: string[]): Promise<void> {
+    async sync(filename: string, tags: Array<string>): Promise<void> {
         await db.transaction("rw", db.hashtags, async () => {
             const existing = await db.hashtags.where("filename").equals(filename).toArray();
             const existingTags = existing.map((e) => e.hashtag);
@@ -22,7 +22,7 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
             const added = tags.filter((t) => !existingTags.includes(t));
             const removed = existingTags.filter((t) => !tags.includes(t));
 
-            if (added.length === 0 && removed.length === 0) return;
+            if (added.length === 0 && removed.length === 0) {return;}
 
             const idsToRemove = existing.filter((e) => removed.includes(e.hashtag)).map((e) => e.id);
             if (idsToRemove.length > 0) {
@@ -34,7 +34,7 @@ export class HashtagsRepository extends BaseRepository<Hashtag> implements IHash
                     id: uuid(),
                     hashtag: tag,
                     type: "hashtag",
-                    filename: filename,
+                    filename,
                     project: "default",
                     createdAt: new Date(),
                     updatedAt: new Date(),

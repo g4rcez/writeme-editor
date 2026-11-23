@@ -16,12 +16,12 @@ function makeDecoration(start: number, end: number, tag: string): Decoration {
     });
 }
 
-function scanRange(doc: PmNode, from: number, to: number, out: Decoration[], tags: Set<string>) {
+function scanRange(doc: PmNode, from: number, to: number, out: Array<Decoration>, tags: Set<string>) {
     doc.nodesBetween(from, to, (node, pos, parent) => {
-        if (["codeBlock", "frontmatter"].includes(node.type.name)) return false;
-        if (!node.isText) return true;
+        if (["codeBlock", "frontmatter"].includes(node.type.name)) {return false;}
+        if (!node.isText) {return true;}
         if (parent?.type.name === "codeBlock" || node.marks.some((m) => ["code", "link"].includes(m.type.name)))
-            return false;
+            {return false;}
         const text = node.text ?? "";
         for (const { tag, index, length } of findHashtags(text)) {
             const start = pos + index;
@@ -35,9 +35,9 @@ function scanRange(doc: PmNode, from: number, to: number, out: Decoration[], tag
 
 function findAllHashtags(doc: PmNode): {
     decorations: DecorationSet;
-    tags: string[];
+    tags: Array<string>;
 } {
-    const decorations: Decoration[] = [];
+    const decorations: Array<Decoration> = [];
     const tags = new Set<string>();
     scanRange(doc, 0, doc.content.size, decorations, tags);
     return {
@@ -56,20 +56,20 @@ function expandToBlock(doc: PmNode, pos: number): { from: number; to: number } {
 
 const saveTimer: Record<string, NodeJS.Timeout> = {};
 
-function saveHashtags(noteId: string, filename: string, tags: string[]) {
-    if (saveTimer[noteId]) clearTimeout(saveTimer[noteId]);
+function saveHashtags(noteId: string, filename: string, tags: Array<string>) {
+    if (saveTimer[noteId]) {clearTimeout(saveTimer[noteId]);}
     saveTimer[noteId] = setTimeout(async () => {
         try {
             await repositories.hashtags.sync(filename, tags);
-        } catch (e) {
-            console.error("Failed to sync hashtags", e);
+        } catch (error) {
+            console.error("Failed to sync hashtags", error);
         }
     }, 1000);
 }
 
-function collectAllTags(doc: PmNode): string[] {
+function collectAllTags(doc: PmNode): Array<string> {
     const tags = new Set<string>();
-    const dummy: Decoration[] = [];
+    const dummy: Array<Decoration> = [];
     scanRange(doc, 0, doc.content.size, dummy, tags);
     return [...tags];
 }
@@ -78,9 +78,9 @@ const syncTimer: Record<string, NodeJS.Timeout> = {};
 
 function scheduleTagSync(doc: PmNode) {
     const state = globalState();
-    if (!state.note) return;
+    if (!state.note) {return;}
     const { id, filePath, title } = state.note;
-    if (syncTimer[id]) clearTimeout(syncTimer[id]);
+    if (syncTimer[id]) {clearTimeout(syncTimer[id]);}
     syncTimer[id] = setTimeout(() => {
         const tags = collectAllTags(doc);
         saveHashtags(id, filePath || title, tags);
@@ -99,7 +99,7 @@ export const Hashtag = Extension.create({
                         return findAllHashtags(doc).decorations;
                     },
                     apply(tr, old, _oldState, newState) {
-                        if (!tr.docChanged) return old.map(tr.mapping, tr.doc);
+                        if (!tr.docChanged) {return old.map(tr.mapping, tr.doc);}
 
                         const mapped = old.map(tr.mapping, tr.doc);
 
@@ -121,7 +121,7 @@ export const Hashtag = Extension.create({
                         touchedRanges.sort((a, b) => a.from - b.from);
                         const merged: Array<{ from: number; to: number }> = [];
                         for (const r of touchedRanges) {
-                            const last = merged[merged.length - 1];
+                            const last = merged.at(-1);
                             if (last && r.from <= last.to) {
                                 last.to = Math.max(last.to, r.to);
                             } else {
@@ -129,13 +129,13 @@ export const Hashtag = Extension.create({
                             }
                         }
 
-                        const additions: Decoration[] = [];
+                        const additions: Array<Decoration> = [];
                         const tags = new Set<string>();
                         let next = mapped;
 
                         for (const { from, to } of merged) {
                             const stale = next.find(from, to);
-                            if (stale.length > 0) next = next.remove(stale);
+                            if (stale.length > 0) {next = next.remove(stale);}
                             scanRange(newState.doc, from, to, additions, tags);
                         }
 
@@ -152,7 +152,7 @@ export const Hashtag = Extension.create({
                         const anchor = event.target instanceof Element ? event.target.closest("a.hashtag") : null;
                         const href = anchor?.getAttribute("href");
                         const route = href?.startsWith("#/tags/") ? href.slice(1) : href;
-                        if (!route?.startsWith("/tags/")) return false;
+                        if (!route?.startsWith("/tags/")) {return false;}
                         event.preventDefault();
                         void import("../router")
                             .then(({ router }) => router.navigate(route))

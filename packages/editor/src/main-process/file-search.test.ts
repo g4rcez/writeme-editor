@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { FileSearchEntry } from "../types/tree";
 import { searchWorkspaceFiles } from "./file-search";
 
-const temporaryDirectories: string[] = [];
+const temporaryDirectories: Array<string> = [];
 
 afterEach(async () => {
     await Promise.all(
@@ -34,7 +34,7 @@ describe("searchWorkspaceFiles", () => {
         await writeFile(path.join(rootPath, "keep.secret"), "", "utf8");
         await writeFile(path.join(rootPath, "report.1.2.3.4.json"), "", "utf8");
 
-        const entries: FileSearchEntry[] = [];
+        const entries: Array<FileSearchEntry> = [];
         const summary = await searchWorkspaceFiles({
             onBatch: (batch) => {
                 entries.push(...batch);
@@ -47,7 +47,7 @@ describe("searchWorkspaceFiles", () => {
         expect(summary).toEqual({ cancelled: false, truncated: false });
         expect(entries.map((entry) => entry.relativePath)).toEqual(["docs/guide.md"]);
 
-        const reportEntries: FileSearchEntry[] = [];
+        const reportEntries: Array<FileSearchEntry> = [];
         const reportSummary = await searchWorkspaceFiles({
             onBatch: (batch) => {
                 reportEntries.push(...batch);
@@ -67,7 +67,7 @@ describe("searchWorkspaceFiles", () => {
 
         await mkdir(path.join(rootPath, "src", "split-pane"), { recursive: true });
 
-        const entries: FileSearchEntry[] = [];
+        const entries: Array<FileSearchEntry> = [];
         const summary = await searchWorkspaceFiles({
             onBatch: (batch) => {
                 entries.push(...batch);
@@ -96,7 +96,7 @@ describe("searchWorkspaceFiles", () => {
         await writeFile(path.join(rootPath, "root-match.md"), "", "utf8");
         await writeFile(path.join(deepDirectory, "deep-match.md"), "", "utf8");
 
-        const batches: string[][] = [];
+        const batches: Array<Array<string>> = [];
         const summary = await searchWorkspaceFiles({
             onBatch: (batch) => {
                 batches.push(batch.map((entry) => entry.relativePath));

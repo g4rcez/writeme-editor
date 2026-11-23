@@ -1,5 +1,5 @@
 import { InputRule, type Editor, type ExtendedRegExpMatchArray, type InputRuleFinder } from "@tiptap/react";
-import { type ReplacerHandlerParams } from "./types";
+import type { ReplacerHandlerParams } from "./types";
 
 export function replacerRules(
     editor: Editor,

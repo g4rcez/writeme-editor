@@ -4,11 +4,11 @@ import { expect, test } from "./fixtures";
 const DEVICE_CODE = "ABCD-1234";
 const PROXY_URL = "http://localhost:4079/proxy";
 
-async function prepareDeviceFlow(page: Page, denyFirstCopy = false): Promise<{ requests: string[] }> {
-    const requests: string[] = [];
+async function prepareDeviceFlow(page: Page, denyFirstCopy = false): Promise<{ requests: Array<string> }> {
+    const requests: Array<string> = [];
     await page.addInitScript(
         ({ denyFirstCopy }) => {
-            const copies: string[] = [];
+            const copies: Array<string> = [];
             let denied = false;
             Object.defineProperty(window, "__testDeviceCodeCopies", { value: copies });
             Object.defineProperty(navigator, "clipboard", {
@@ -25,7 +25,7 @@ async function prepareDeviceFlow(page: Page, denyFirstCopy = false): Promise<{ r
             });
             const click = HTMLAnchorElement.prototype.click;
             HTMLAnchorElement.prototype.click = function(this: HTMLAnchorElement): void {
-                if (this.href.startsWith("https://auth.openai.com/")) return;
+                if (this.href.startsWith("https://auth.openai.com/")) {return;}
                 click.call(this);
             };
         },
@@ -74,8 +74,8 @@ async function chooseOpenAI(page: Page): Promise<void> {
     }
     await expect(page.getByRole("heading", { name: "Provider", exact: true })).toBeVisible();
     const selector = page.getByRole("combobox", { name: "Provider", exact: true });
-    if (await selector.isVisible()) await selector.selectOption("openai");
-    else await page.getByRole("button", { name: /^OpenAI/ }).click();
+    if (await selector.isVisible()) {await selector.selectOption("openai");}
+    else {await page.getByRole("button", { name: /^OpenAI/ }).click();}
     await expect(page.getByRole("button", { name: "Sign in with OpenAI" })).toBeVisible();
 }
 
@@ -108,7 +108,7 @@ test.describe("AI provider setup", () => {
         await code.focus();
         expect(
             await code.evaluate((element) => {
-                if (!(element instanceof HTMLInputElement)) throw new Error("Expected a code input");
+                if (!(element instanceof HTMLInputElement)) {throw new Error("Expected a code input");}
                 return { start: element.selectionStart, end: element.selectionEnd };
             }),
         ).toEqual({ start: 0, end: DEVICE_CODE.length });
@@ -149,13 +149,13 @@ test.describe("AI provider setup", () => {
             await expect(page.getByRole("heading", { name: "Writing instructions", exact: true })).toBeVisible();
             expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
             const selector = page.getByRole("combobox", { name: "Provider", exact: true });
-            if (width < 1024) await expect(selector).toBeVisible();
-            else await expect(selector).toBeHidden();
+            if (width < 1024) {await expect(selector).toBeVisible();}
+            else {await expect(selector).toBeHidden();}
             await page.getByRole("button", { name: "Sign in with OpenAI" }).click();
             const dialog = page.getByRole("dialog");
             await expect(dialog).toBeVisible();
             const bounds = await dialog.boundingBox();
-            if (!bounds) throw new Error("Storage dialog has no visible bounds.");
+            if (!bounds) {throw new Error("Storage dialog has no visible bounds.");}
             expect(bounds.x).toBeGreaterThanOrEqual(-1);
             expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1);
             await dialog.getByRole("button", { name: "Cancel", exact: true }).click();

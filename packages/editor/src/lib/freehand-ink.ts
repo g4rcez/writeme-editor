@@ -16,7 +16,7 @@ export function inkStrokePath(stroke: InkStroke): string {
         smoothing: 0.5,
         streamline: 0.5,
     };
-    if (stroke.tool === "pen" && stroke.penStyle) Object.assign(options, penOptions[stroke.penStyle]);
+    if (stroke.tool === "pen" && stroke.penStyle) {Object.assign(options, penOptions[stroke.penStyle]);}
     if (stroke.tool === "pen" && stroke.penStyle === "brush") {
         const length = stroke.points.reduce((total, point, index) => {
             const previous = stroke.points[index - 1];
@@ -29,7 +29,7 @@ export function inkStrokePath(stroke: InkStroke): string {
 }
 
 export function pencilOpacity(stroke: InkStroke): number {
-    if (stroke.simulatePressure) return 0.8;
+    if (stroke.simulatePressure) {return 0.8;}
     const pressure = stroke.points.reduce((total, point) => total + point[2], 0) / stroke.points.length;
     return 0.4 + pressure * 0.6;
 }

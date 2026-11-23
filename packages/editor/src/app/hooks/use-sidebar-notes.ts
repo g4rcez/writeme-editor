@@ -20,7 +20,7 @@ export function useSidebarNotes(options?: { sortBy?: SortBy }) {
         const notes = new Map<string, Note>();
         for (const note of state.notes) {
             const existing = notes.get(note.id);
-            if (!existing || note.updatedAt > existing.updatedAt) notes.set(note.id, note);
+            if (!existing || note.updatedAt > existing.updatedAt) {notes.set(note.id, note);}
         }
         return [...notes.values()];
     }, [state.notes]);

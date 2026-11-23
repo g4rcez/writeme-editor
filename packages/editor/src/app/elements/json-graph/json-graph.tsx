@@ -36,9 +36,9 @@ const ROOT_NAME = "$";
 const updateDeep = (obj: any, currentPath: string, targetPath: string, val: any, newValue: any): any => {
     if (currentPath === targetPath || (currentPath === "" && targetPath === ROOT_NAME)) {
         try {
-            if (newValue === "true") return true;
-            if (newValue === "false") return false;
-            if (!isNaN(Number(newValue)) && newValue.trim() !== "") return Number(newValue);
+            if (newValue === "true") {return true;}
+            if (newValue === "false") {return false;}
+            if (!Number.isNaN(Number(newValue)) && newValue.trim() !== "") {return Number(newValue);}
             return JSON.parse(newValue);
         } catch {
             return newValue;
@@ -101,7 +101,7 @@ const JsonGraphInner = ({ json, onChange }: { json: any; onChange?: (newJson: an
 
     const onValueChange = useCallback(
         (path: string, newValue: string) => {
-            if (!onChange) return;
+            if (!onChange) {return;}
             const newJson = updateDeep(json, ROOT_NAME, path, newValue, newValue);
             onChange(newJson);
         },
@@ -126,7 +126,7 @@ const JsonGraphInner = ({ json, onChange }: { json: any; onChange?: (newJson: an
     const onExport = useCallback(
         (format: "png" | "svg") => {
             const element = document.querySelector(".react-flow__viewport") as HTMLElement;
-            if (!element) return;
+            if (!element) {return;}
 
             const fn = format === "png" ? toPng : toSvg;
             fn(element, {
@@ -165,7 +165,7 @@ const JsonGraphInner = ({ json, onChange }: { json: any; onChange?: (newJson: an
     const toggleView = useCallback(() => {
         if (view === "graph") {
             setTextValue(JSON.stringify(json, null, 2));
-            return void setView("text");
+            return  setView("text");
         }
         return setView("graph");
     }, [view, json]);
@@ -177,7 +177,7 @@ const JsonGraphInner = ({ json, onChange }: { json: any; onChange?: (newJson: an
                 const parsed = JSON.parse(v);
                 onChange?.(parsed);
             } catch (error) {
-                if (error instanceof SyntaxError) return;
+                if (error instanceof SyntaxError) {return;}
                 throw error;
             }
         },
@@ -312,8 +312,8 @@ const JsonGraphInner = ({ json, onChange }: { json: any; onChange?: (newJson: an
                             className="!bg-card-background !border-border/20"
                             nodeStrokeColor={colors.primary}
                             nodeColor={(n: any) => {
-                                if (n.data.type === "object") return colors.info;
-                                if (n.data.type === "array") return colors.secondary;
+                                if (n.data.type === "object") {return colors.info;}
+                                if (n.data.type === "array") {return colors.secondary;}
                                 return colors.success;
                             }}
                             maskColor={isDark ? "rgba(0, 0, 0, 0.4)" : "rgba(255, 255, 255, 0.4)"}

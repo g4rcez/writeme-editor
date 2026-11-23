@@ -28,7 +28,7 @@ test("stays inside the memory budget", async () => {
 
     await test.step("autosaving a note does not re-read the workspace", () => {
         expect.soft(result.saves.readsPerAutosave).toHaveLength(5);
-        for (const reads of result.saves.readsPerAutosave) expect.soft(reads).toBeLessThanOrEqual(10);
+        for (const reads of result.saves.readsPerAutosave) {expect.soft(reads).toBeLessThanOrEqual(10);}
     });
 
     await test.step("creating a note or saving it does not re-read the workspace", () => {

@@ -38,10 +38,10 @@ export function useLocalAsset(src: string, mimeMap: Record<string, string> | str
                 let result: Awaited<ReturnType<typeof window.electronAPI.fs.readBinaryFile>> | null = null;
                 for (const candidate of candidates) {
                     result = await window.electronAPI.fs.readBinaryFile(candidate);
-                    if (result?.success && result.data) break;
+                    if (result?.success && result.data) {break;}
                 }
 
-                if (!isMounted) return;
+                if (!isMounted) {return;}
 
                 if (!result || result.success === false || !result.data) {
                     setError(true);
@@ -59,11 +59,11 @@ export function useLocalAsset(src: string, mimeMap: Record<string, string> | str
                 currentUrl = url;
                 setObjectUrl(url);
                 setError(false);
-            } catch (e) {
-                console.error("Failed to load local asset", e);
-                if (isMounted) setError(true);
+            } catch (error_) {
+                console.error("Failed to load local asset", error_);
+                if (isMounted) {setError(true);}
             } finally {
-                if (isMounted) setLoading(false);
+                if (isMounted) {setLoading(false);}
             }
         };
 

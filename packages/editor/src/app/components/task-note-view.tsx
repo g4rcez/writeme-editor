@@ -76,11 +76,11 @@ function taskTitle(card: Card): string {
 }
 
 const boardKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
-    if (event.code !== "ArrowLeft" && event.code !== "ArrowRight") return sortableKeyboardCoordinates(event, args);
+    if (event.code !== "ArrowLeft" && event.code !== "ArrowRight") {return sortableKeyboardCoordinates(event, args);}
     event.preventDefault();
     const { context } = args;
     const currentId = context.over?.id ?? context.active?.id;
-    if (currentId === undefined) return;
+    if (currentId === undefined) {return;}
     const current = context.droppableContainers.get(currentId);
     const containerId: unknown = String(currentId).startsWith("stack-")
         ? currentId
@@ -93,10 +93,10 @@ const boardKeyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
                 (context.droppableRects.get(left.id)?.left ?? 0) - (context.droppableRects.get(right.id)?.left ?? 0),
         );
     const index = columns.findIndex((column) => column.id === containerId);
-    if (index < 0) return;
+    if (index < 0) {return;}
     const destination = columns[index + (event.code === "ArrowRight" ? 1 : -1)];
     const rect = destination ? context.droppableRects.get(destination.id) : null;
-    if (rect) return { x: rect.left, y: rect.top };
+    if (rect) {return { x: rect.left, y: rect.top };}
 };
 
 function TaskCard({ card, onEdit, onToggle }: { card: Card; onEdit: () => void; onToggle: () => void }): JSX.Element {
@@ -157,7 +157,7 @@ function Column({
     children,
 }: {
     stack: Stack;
-    cards: Card[];
+    cards: Array<Card>;
     onAdd: () => void;
     onRename: () => void;
     children: ReactNode;
@@ -263,7 +263,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                     persisted.current = updated;
                     const state = globalState();
                     globalDispatch.notes(state.notes.map((item) => (item.id === note.id ? updated : item)));
-                    if (state.note?.id === note.id) globalDispatch.setNote(updated);
+                    if (state.note?.id === note.id) {globalDispatch.setNote(updated);}
                     if (mounted.current && revision.current === currentRevision) {
                         dispatch.setStatus("Saved");
                         dispatch.setNotice(null);
@@ -295,15 +295,15 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
 
     const stacks = editor ? parseEditorTasks(editor.state.doc) : [];
     useEffect(() => {
-        if (!editor || !sourceLine) return;
+        if (!editor || !sourceLine) {return;}
         const source = parseOpenWorkspaceTasks([note]).find((task) => task.line === sourceLine);
-        if (!source) return;
+        if (!source) {return;}
         let index = 0;
         let position: number | null = null;
         editor.state.doc.descendants((node, pos) => {
-            if (node.type.name === "taskItem" && index++ === source.taskIndex) position = pos;
+            if (node.type.name === "taskItem" && index++ === source.taskIndex) {position = pos;}
         });
-        if (position === null) return;
+        if (position === null) {return;}
         const card = parseEditorTasks(editor.state.doc)
             .flatMap((stack) => stack.cards)
             .find((item) => item.pos === position);
@@ -319,7 +319,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
         return () => cancelAnimationFrame(frame);
     }, [dispatch, editor, note, sourceLine]);
     useEffect(() => {
-        if (!editor || getEditorMarkdown(editor) === markdown) return;
+        if (!editor || getEditorMarkdown(editor) === markdown) {return;}
         editor.commands.setContent(markdown, { emitUpdate: false });
     }, [editor, markdown]);
     useEffect(() => {
@@ -350,10 +350,10 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [dispatch, view]);
     useEffect(() => {
-        if (status === "Saved" && blocker.state === "blocked") blocker.proceed();
+        if (status === "Saved" && blocker.state === "blocked") {blocker.proceed();}
     }, [status, blocker]);
     useEffect(() => {
-        if (status === "Saved") return;
+        if (status === "Saved") {return;}
         const beforeUnload = (event: BeforeUnloadEvent): void => event.preventDefault();
         window.addEventListener("beforeunload", beforeUnload);
         return () => window.removeEventListener("beforeunload", beforeUnload);
@@ -368,7 +368,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
         );
     }
     function toggle(card: Card): void {
-        if (!editor || card.pos === undefined) return;
+        if (!editor || card.pos === undefined) {return;}
         editor
             .chain()
             .command(({ tr }) => {
@@ -377,17 +377,17 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
             .run();
     }
     function move(event: DragEndEvent): void {
-        if (!editor || !event.over || event.active.id === event.over.id) return;
+        if (!editor || !event.over || event.active.id === event.over.id) {return;}
         const current = parseEditorTasks(editor.state.doc);
         const card = current.flatMap((stack) => stack.cards).find((item) => item.id === event.active.id);
         const before = current.flatMap((stack) => stack.cards).find((item) => item.id === event.over?.id);
         const destination = current.find(
             (stack) => `stack-${stack.pos}` === event.over?.id || stack.cards.some((item) => item.id === before?.id),
         );
-        if (card && destination) moveTaskItemBetweenStacks(editor, card, destination, before);
+        if (card && destination) {moveTaskItemBetweenStacks(editor, card, destination, before);}
     }
     function commitTask(): void {
-        if (!editor || !draft?.title.trim()) return;
+        if (!editor || !draft?.title.trim()) {return;}
         const stackIndex = stacks.findIndex((stack) => stack.pos === draft.stack.pos);
         const cardIndex = draft.card ? draft.stack.cards.findIndex((item) => item.id === draft.card?.id) : -1;
         if (draft.card) {
@@ -413,43 +413,43 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                 const current = parseEditorTasks(editor.state.doc);
                 const card = current[stackIndex]?.cards[cardIndex];
                 const destination = current[draft.destination];
-                if (card && destination) moveTaskItemBetweenStacks(editor, card, destination);
+                if (card && destination) {moveTaskItemBetweenStacks(editor, card, destination);}
             }
         } else {
             const destination = stacks[draft.destination];
             if (destination)
-                addTaskToStack(editor, destination, { title: draft.title.trim(), description: draft.description });
+                {addTaskToStack(editor, destination, { title: draft.title.trim(), description: draft.description });}
         }
         dispatch.setDraft(null);
     }
     function deleteTask(): void {
-        if (!editor || !draft?.card || draft.card.pos === undefined) return;
+        if (!editor || !draft?.card || draft.card.pos === undefined) {return;}
         const card = draft.card;
         editor
             .chain()
             .command(({ tr }) => {
                 const list = card.parentTaskListPos === undefined ? null : tr.doc.nodeAt(card.parentTaskListPos);
-                if (list?.childCount === 1) tr.delete(card.parentTaskListPos!, card.parentTaskListPos! + list.nodeSize);
-                else tr.delete(card.pos!, card.pos! + (tr.doc.nodeAt(card.pos!)?.nodeSize ?? 0));
+                if (list?.childCount === 1) {tr.delete(card.parentTaskListPos!, card.parentTaskListPos! + list.nodeSize);}
+                else {tr.delete(card.pos!, card.pos! + (tr.doc.nodeAt(card.pos!)?.nodeSize ?? 0));}
                 return true;
             })
             .run();
         dispatch.setDraft(null);
     }
     function commitColumn(): void {
-        if (!editor || !columnDraft?.title.trim()) return;
+        if (!editor || !columnDraft?.title.trim()) {return;}
         const title = columnDraft.title.trim();
         const stack = columnDraft.stack;
         if (stack?.pos !== undefined) {
             const node = editor.state.doc.nodeAt(stack.pos);
             if (node?.type.name === "heading")
-                editor
+                {editor
                     .chain()
                     .insertContentAt(
                         { from: stack.pos + 1, to: stack.pos + node.nodeSize - 1 },
                         { type: "text", text: title },
                     )
-                    .run();
+                    .run();}
         } else {
             editor
                 .chain()
@@ -464,7 +464,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
     }
     function removeColumn(): void {
         const stack = columnDraft?.stack;
-        if (!editor || !stack || stack.cards.length || stack.pos === undefined) return;
+        if (!editor || !stack || stack.cards.length || stack.pos === undefined) {return;}
         editor
             .chain()
             .deleteRange({ from: stack.pos, to: stack.endPos ?? editor.state.doc.content.size })
@@ -475,8 +475,8 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
         .map((stack) => ({
             stack,
             cards: stack.cards.filter((card) => {
-                if (filter === "active" && (card.checked || stack.title.toLowerCase() === "backlog")) return false;
-                if (filter === "backlog" && stack.title.toLowerCase() !== "backlog") return false;
+                if (filter === "active" && (card.checked || stack.title.toLowerCase() === "backlog")) {return false;}
+                if (filter === "backlog" && stack.title.toLowerCase() !== "backlog") {return false;}
                 return `${card.title} ${card.description}`.toLowerCase().includes(search.toLowerCase());
             }),
         }))
@@ -649,7 +649,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                                         theme="ghost-muted"
                                         onClick={() => {
                                             clearFilters();
-                                            if (!stacks.length) dispatch.setColumnDraft({ title: "" });
+                                            if (!stacks.length) {dispatch.setColumnDraft({ title: "" });}
                                         }}
                                     >
                                         {stacks.length === 0 ? "Add column" : "Show all columns"}
@@ -779,14 +779,14 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                 open={blocker.state === "blocked"}
                 title="Unsaved tasks"
                 onChange={() => {
-                    if (blocker.state === "blocked") blocker.reset();
+                    if (blocker.state === "blocked") {blocker.reset();}
                 }}
             >
                 <p>Your latest tasks are being saved or need a retry. Stay here or download a copy before leaving.</p>
                 <div className="wm-task-form-actions mt-2 flex flex-wrap justify-end gap-2">
                     <Button
                         onClick={() => {
-                            if (blocker.state === "blocked") blocker.reset();
+                            if (blocker.state === "blocked") {blocker.reset();}
                         }}
                     >
                         Stay in board
@@ -798,7 +798,7 @@ export function TaskNoteView({ note, actions }: { note: Note; actions?: ReactNod
                         theme="ghost-muted"
                         disabled={status === "Saving"}
                         onClick={() => {
-                            if (blocker.state === "blocked") blocker.proceed();
+                            if (blocker.state === "blocked") {blocker.proceed();}
                         }}
                     >
                         Leave without saving

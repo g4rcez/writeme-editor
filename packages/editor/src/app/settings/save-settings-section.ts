@@ -9,7 +9,7 @@ export async function saveSettingsPatch(patch: Partial<AppSettings>): Promise<Ap
 type GlobalShortcutSettings = Pick<AppSettings, "quickNoteShortcut" | "mathNoteShortcut" | "floatingEditorShortcut">;
 
 export async function registerGlobalShortcuts(settings: GlobalShortcutSettings): Promise<boolean> {
-    if (!isElectron()) return true;
+    if (!isElectron()) {return true;}
 
     const [quickNoteResult, mathNoteResult, floatingEditorResult] = await Promise.all([
         window.electronAPI.app.updateShortcut(settings.quickNoteShortcut),
@@ -18,7 +18,7 @@ export async function registerGlobalShortcuts(settings: GlobalShortcutSettings):
     ]);
     const failed = [quickNoteResult, mathNoteResult, floatingEditorResult].find((result) => !result.success);
 
-    if (!failed) return true;
+    if (!failed) {return true;}
 
     uiDispatch.setAlert({
         open: true,

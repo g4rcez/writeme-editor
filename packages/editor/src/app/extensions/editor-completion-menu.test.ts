@@ -50,9 +50,9 @@ afterEach(() => {
 
 describe("completion request lifecycle", () => {
     it("keeps dismissed requests closed when their results arrive", async () => {
-        let resolve: ((items: CompletionItem[]) => void) | undefined;
+        let resolve: ((items: Array<CompletionItem>) => void) | undefined;
         mocks.load.mockReturnValue(
-            new Promise<CompletionItem[]>((done) => {
+            new Promise<Array<CompletionItem>>((done) => {
                 resolve = done;
             }),
         );
@@ -78,9 +78,9 @@ describe("completion request lifecycle", () => {
     });
 
     it("discards loaded results after switching workspaces", async () => {
-        let resolve: ((items: CompletionItem[]) => void) | undefined;
+        let resolve: ((items: Array<CompletionItem>) => void) | undefined;
         mocks.load.mockReturnValue(
-            new Promise<CompletionItem[]>((done) => {
+            new Promise<Array<CompletionItem>>((done) => {
                 resolve = done;
             }),
         );
@@ -92,7 +92,7 @@ describe("completion request lifecycle", () => {
     });
 
     it("does not restart a pending scan when the shortcut repeats", () => {
-        mocks.load.mockReturnValue(new Promise<CompletionItem[]>(() => {}));
+        mocks.load.mockReturnValue(new Promise<Array<CompletionItem>>(() => {}));
         open();
         expect(open(true)).toBe(true);
         expect(mocks.load).toHaveBeenCalledTimes(1);

@@ -80,7 +80,7 @@ async function mockWorkspaceFiles(page: Page): Promise<void> {
                 fs: {
                     readDirRecursive: async (root: string, _depth: number, includeAllFiles: boolean) => {
                         if (root !== "/demo-workspace" || !includeAllFiles)
-                            throw new Error("Unexpected workspace scan");
+                            {throw new Error("Unexpected workspace scan");}
                         Reflect.deleteProperty(navigator, "userAgent");
                         Reflect.deleteProperty(window, "electronAPI");
                         await new Promise((resolve) => window.setTimeout(resolve, 600));
@@ -185,7 +185,7 @@ test("human-paced autocomplete walkthrough", async ({ cleanPage: setupPage, cont
         const store = tx.objectStore("notes");
         const read = store.getAll();
         read.onsuccess = () => {
-            for (const note of read.result) store.put({ ...note, project: "/demo-workspace" });
+            for (const note of read.result) {store.put({ ...note, project: "/demo-workspace" });}
         };
         await new Promise<void>((resolve, reject) => {
             tx.oncomplete = () => resolve();
@@ -198,7 +198,7 @@ test("human-paced autocomplete walkthrough", async ({ cleanPage: setupPage, cont
     const page = await context.newPage();
     await page.bringToFront();
     const video = page.video();
-    if (!video) throw new Error("Playwright video recording is disabled");
+    if (!video) {throw new Error("Playwright video recording is disabled");}
     const chapter = "artifacts/playwright/autocomplete-demo";
     const headingMenu = page.getByRole("listbox", { name: "Heading and tag suggestions" });
     const fileMenu = page.getByRole("listbox", { name: "Workspace file suggestions" });

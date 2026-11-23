@@ -34,7 +34,7 @@ const databaseSchemas = {
     }),
     noteHistory: withId({
         type: text,
-        noteId: z.string().min(1).max(1_024),
+        noteId: z.string().min(1).max(1024),
         content: z.string().max(50_000_000),
         createdAt: z.union([z.string(), z.date()]),
     }),

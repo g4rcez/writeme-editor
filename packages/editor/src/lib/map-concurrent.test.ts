@@ -30,7 +30,7 @@ describe("mapConcurrent", () => {
     it("rejects when a call rejects", async () => {
         await expect(
             mapConcurrent([1, 2, 3], 2, async (value) => {
-                if (value === 2) throw new Error("boom");
+                if (value === 2) {throw new Error("boom");}
                 return value;
             }),
         ).rejects.toThrow("boom");

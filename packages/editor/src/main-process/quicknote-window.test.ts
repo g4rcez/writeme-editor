@@ -21,7 +21,7 @@ type FloatingPanelCase = {
     boundsName: string;
 };
 
-const floatingPanelCases: FloatingPanelCase[] = [
+const floatingPanelCases: Array<FloatingPanelCase> = [
     { create: "createQuickNoteWindow", boundsName: "quicknote" },
     { create: "createMathNoteWindow", boundsName: "mathnote" },
     { create: "createFloatingEditorWindow", boundsName: "floating-editor" },
@@ -46,11 +46,11 @@ type BrowserWindowOptions = {
 
 type MockWithCallOrder = {
     mock: {
-        invocationCallOrder: number[];
+        invocationCallOrder: Array<number>;
     };
 };
 
-const createdWindows: MockBrowserWindow[] = [];
+const createdWindows: Array<MockBrowserWindow> = [];
 
 let cursorPoint: Point = { x: 1600, y: 200 };
 let workArea: WorkArea = { x: 1440, y: 25, width: 1920, height: 1055 };

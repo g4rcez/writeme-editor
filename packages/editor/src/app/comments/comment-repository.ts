@@ -33,13 +33,13 @@ export async function loadCommentNote(source: Note): Promise<Note | null> {
                     : note.project === source.project &&
                       (note.metadata.commentSourceId === source.id || note.title === companion.title)),
         );
-    if (existing) return repositories.notes.getOne(existing.id);
+    if (existing) {return repositories.notes.getOne(existing.id);}
     if (companion.filePath && getStorageMode(SettingsService.load().directory) === "filesystem") {
         const stat = await window.electronAPI.fs.statFile(companion.filePath);
-        if (!stat.success) throw new Error(stat.error || "Could not access comments note.");
+        if (!stat.success) {throw new Error(stat.error || "Could not access comments note.");}
         if (stat.exists) {
             const file = await window.electronAPI.fs.readFile(companion.filePath);
-            if (!file.success) throw new Error(file.error || "Could not read comments note.");
+            if (!file.success) {throw new Error(file.error || "Could not read comments note.");}
             const note = Note.parse({
                 ...Note.new(companion.title, file.content),
                 project: source.project,
@@ -58,11 +58,11 @@ export async function saveNoteComment(
     quote: string,
     body: string,
     threadId: string | null,
-    usedIds: string[],
+    usedIds: Array<string>,
     prepareSource?: CommentSourceUpdate,
     operationId?: string,
 ): Promise<CommentSaveResult> {
-    if (!body.trim()) throw new Error("Write a comment before saving.");
+    if (!body.trim()) {throw new Error("Write a comment before saving.");}
     if (!isElectron()) {
         const { saveBrowserNoteComment } = await import("@/store/repositories/browser/comments.repository");
         return saveBrowserNoteComment(source, quote, body, threadId, usedIds, prepareSource);
@@ -76,14 +76,14 @@ export async function saveNoteComment(
             const incomplete = operationId ? incompleteWrites.get(operationId) : undefined;
             if (incomplete?.result.note.filePath) {
                 const file = await window.electronAPI.fs.readFile(incomplete.result.note.filePath);
-                if (!file.success) throw new Error(file.error || "Could not recover the comments note.");
+                if (!file.success) {throw new Error(file.error || "Could not recover the comments note.");}
                 if (file.content === incomplete.result.note.content) {
                     await repositories.notes.save(incomplete.result.note);
                     incompleteWrites.delete(operationId!);
                     return incomplete.result;
                 }
                 if (file.content !== incomplete.previousContent)
-                    throw new Error("The comments note changed after a partial save. Reload it before retrying.");
+                    {throw new Error("The comments note changed after a partial save. Reload it before retrying.");}
                 incompleteWrites.delete(operationId!);
             }
             const existing = await loadCommentNote(source);
@@ -93,15 +93,15 @@ export async function saveNoteComment(
                     ...usedIds,
                     ...parseCommentThreads(existing?.content ?? "").map((thread) => thread.id),
                 ]);
-            const initial = `# ${companion.title}\n\nSource: [${source.title.replace(/[[\]\\]/g, "\\$&")}](${
+            const initial = `# ${companion.title}\n\nSource: [${source.title.replaceAll(/[[\]\\]/g, String.raw`\$&`)}](${
                 source.filePath
                     ? `./${encodeURIComponent(source.filePath.replaceAll("\\", "/").split("/").pop() ?? "")}`
                     : `/note/${source.id}`
             })\n`;
             const content = appendNoteComment(existing?.content ?? initial, id, quote, body);
             const remember = (note: Note): void => {
-                if (!operationId || !note.filePath) return;
-                if (incompleteWrites.size >= 25) incompleteWrites.delete(incompleteWrites.keys().next().value!);
+                if (!operationId || !note.filePath) {return;}
+                if (incompleteWrites.size >= 25) {incompleteWrites.delete(incompleteWrites.keys().next().value!);}
                 incompleteWrites.set(operationId, {
                     result: { note, id, href: getCommentReferenceHref(note) },
                     previousContent: existing?.content ?? null,
@@ -119,10 +119,10 @@ export async function saveNoteComment(
                     content,
                 );
                 if (!updated) {
-                    if (operationId) incompleteWrites.delete(operationId);
+                    if (operationId) {incompleteWrites.delete(operationId);}
                     throw new Error("The comments note changed. Try saving your comment again.");
                 }
-                if (operationId) incompleteWrites.delete(operationId);
+                if (operationId) {incompleteWrites.delete(operationId);}
                 return { note: updated, id, href: getCommentReferenceHref(updated) };
             }
             const note = Note.parse({
@@ -133,22 +133,22 @@ export async function saveNoteComment(
             if (companion.filePath && getStorageMode(SettingsService.load().directory) === "filesystem") {
                 const stat = await window.electronAPI.fs.statFile(companion.filePath);
                 if (!stat.success || stat.exists)
-                    throw new Error("The comments note changed. Try saving your comment again.");
+                    {throw new Error("The comments note changed. Try saving your comment again.");}
                 const written = await window.electronAPI.fs.createFile(companion.filePath, content);
-                if (!written.success) throw new Error(written.error || "Could not save comments note.");
+                if (!written.success) {throw new Error(written.error || "Could not save comments note.");}
                 note.filePath = companion.filePath;
                 note.fileSize = written.fileSize ?? content.length;
                 note.lastSynced = written.lastModified ? new Date(written.lastModified) : new Date();
                 remember(note);
             }
             await repositories.notes.save(note);
-            if (operationId) incompleteWrites.delete(operationId);
+            if (operationId) {incompleteWrites.delete(operationId);}
             return { note, id, href: getCommentReferenceHref(note) };
         });
     pending.set(key, operation);
     try {
         return await operation;
     } finally {
-        if (pending.get(key) === operation) pending.delete(key);
+        if (pending.get(key) === operation) {pending.delete(key);}
     }
 }

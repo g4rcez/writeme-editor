@@ -198,7 +198,7 @@ describe("writing review provider contract", () => {
         await expect(
             reviewWriting(
                 config,
-                [segment("first", "a".repeat(4_000)), segment("second", "b".repeat(4_000)), segment("third", "c".repeat(1))],
+                [segment("first", "a".repeat(4000)), segment("second", "b".repeat(4000)), segment("third", "c".repeat(1))],
                 new AbortController().signal,
                 (current, total) => progress.push([current, total]),
             ),

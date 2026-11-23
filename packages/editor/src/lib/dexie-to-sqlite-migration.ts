@@ -49,7 +49,7 @@ type MigrationState = {
 function readState(): MigrationState {
     try {
         const value = JSON.parse(localStorage.getItem(MIGRATION_KEY) ?? "null") as MigrationState | null;
-        if (value?.stores) return value;
+        if (value?.stores) {return value;}
     } catch {
         // A corrupt marker is safe to rebuild because imports are conflict-aware.
     }
@@ -80,7 +80,7 @@ function recordPrimaryKey(record: unknown, primaryKey: string): CheckpointKey {
         throw new TypeError(`Invalid ${primaryKey} primary key`);
     }
     const value = (record as Record<string, unknown>)[primaryKey];
-    if (!isCheckpointKey(value)) throw new TypeError(`Invalid ${primaryKey} primary key`);
+    if (!isCheckpointKey(value)) {throw new TypeError(`Invalid ${primaryKey} primary key`);}
     return value;
 }
 
@@ -114,9 +114,9 @@ async function migrateStore(
             counts[key] += batchCounts[key];
         }
         processed = Math.min(processed + batch.length, total);
-        if (nextLastKey !== undefined) lastKey = nextLastKey;
+        if (nextLastKey !== undefined) {lastKey = nextLastKey;}
         saveProgress(counts, processed, lastKey);
-        if (!batch.length) break;
+        if (!batch.length) {break;}
     }
     return counts;
 }
@@ -172,12 +172,12 @@ async function removeVerifiedDexie(state: MigrationState): Promise<boolean> {
                 .toArray();
             const nextLastKey = batch.length ? recordPrimaryKey(batch.at(-1), primaryKey) : undefined;
             const result = await window.electronAPI.db.verifyCollection(name, batch);
-            if (result.sourceCount !== batch.length) break;
+            if (result.sourceCount !== batch.length) {break;}
             matched += result.matched;
             destinationCount = result.destinationCount;
             processed += batch.length;
-            if (nextLastKey !== undefined) lastKey = nextLastKey;
-            if (!batch.length) break;
+            if (nextLastKey !== undefined) {lastKey = nextLastKey;}
+            if (!batch.length) {break;}
         }
         if (matched !== total || destinationCount < total) {
             state.status = "running";
@@ -197,15 +197,15 @@ async function removeVerifiedDexie(state: MigrationState): Promise<boolean> {
 }
 
 export async function migrateDexieToSqlite(): Promise<void> {
-    if (!isElectron()) return;
+    if (!isElectron()) {return;}
 
     const state = readState();
     try {
-        if (await removeVerifiedDexie(state)) return;
+        if (await removeVerifiedDexie(state)) {return;}
 
         state.status = "running";
         for (const name of COLLECTIONS) {
-            if (state.stores[name]?.status === "complete") continue;
+            if (state.stores[name]?.status === "complete") {continue;}
             let lastError: unknown;
             const previousAttempts = state.stores[name]?.attempts ?? 0;
             for (let attempt = 1; attempt <= 2; attempt++) {
@@ -256,7 +256,7 @@ export async function migrateDexieToSqlite(): Promise<void> {
                     ...(await migrateCredentials()),
                     attempts: attempt,
                 };
-                if (state.stores.aiCredentials.status === "complete") break;
+                if (state.stores.aiCredentials.status === "complete") {break;}
             } catch (error) {
                 state.stores.aiCredentials = {
                     status: "failed",
@@ -276,7 +276,7 @@ export async function migrateDexieToSqlite(): Promise<void> {
         }
         if (genericComplete) {
             state.status = credentialsComplete ? "verified" : "verified-credentials-retained";
-            if (credentialsComplete) state.verifiedAt = new Date().toISOString();
+            if (credentialsComplete) {state.verifiedAt = new Date().toISOString();}
         }
         writeState(state);
 

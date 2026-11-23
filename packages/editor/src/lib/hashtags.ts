@@ -1,6 +1,6 @@
 export type HashtagMatch = { tag: string; index: number; length: number };
 
-const tagCharacters = "\\p{L}\\p{M}\\p{N}_\\p{Extended_Pictographic}\\u200d\\ufe0f-";
+const tagCharacters = String.raw`\p{L}\p{M}\p{N}_\p{Extended_Pictographic}\u200d\ufe0f-`;
 const tagPattern = `[${tagCharacters}]+(?:/[${tagCharacters}]+)*`;
 const validTag = new RegExp(`^${tagPattern}$`, "u");
 const suffixPattern = new RegExp(`^[/${tagCharacters}]*`, "u");
@@ -18,7 +18,7 @@ export function hashtagKey(value: string): string {
     return value.normalize("NFC").toLocaleLowerCase();
 }
 
-export function findHashtags(text: string): HashtagMatch[] {
+export function findHashtags(text: string): Array<HashtagMatch> {
     const pattern = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_/#\\\\])#(${tagPattern})`, "gu");
     return [...text.matchAll(pattern)].flatMap((match) => {
         const tag = normalizeHashtag(match[1] ?? "");

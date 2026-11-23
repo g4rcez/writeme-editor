@@ -12,7 +12,7 @@ const ShikiBlock = CodeBlock.extend({
             markdown: {
                 serialize(state: MarkdownSerializerState, node: ProseMirrorNode) {
                     const titleSuffix = node.attrs.title
-                        ? ` title="${(node.attrs.title as string).replace(/"/g, '\\"')}"`
+                        ? ` title="${(node.attrs.title as string).replaceAll('"', String.raw`\"`)}"`
                         : "";
                     state.write("```" + (node.attrs.language || "") + titleSuffix + "\n");
                     state.text(node.textContent, false);
@@ -22,7 +22,7 @@ const ShikiBlock = CodeBlock.extend({
                 },
                 parse: {
                     updateDOM(element: HTMLElement) {
-                        element.innerHTML = element.innerHTML.replace(/\n<\/code><\/pre>/g, "</code></pre>");
+                        element.innerHTML = element.innerHTML.replaceAll('\n</code></pre>', "</code></pre>");
                     },
                 },
             },

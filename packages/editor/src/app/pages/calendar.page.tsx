@@ -59,7 +59,7 @@ const NOTE_TYPE_LABELS: Record<NoteType, string> = {
     "meeting-note": "Meeting note",
 };
 
-const CALENDAR_FILTERS: CalendarFilter[] = Object.values(NoteType).map((type) => ({
+const CALENDAR_FILTERS: Array<CalendarFilter> = Object.values(NoteType).map((type) => ({
     id: type,
     label: NOTE_TYPE_LABELS[type],
     theme: NOTE_TYPE_FILTER_THEMES[type],
@@ -73,7 +73,7 @@ export default function CalendarPage() {
     const [searchParams] = useSearchParams();
     const location = useLocation();
 
-    const [filters, setFilters] = useState<CalendarFilter[]>(CALENDAR_FILTERS);
+    const [filters, setFilters] = useState<Array<CalendarFilter>>(CALENDAR_FILTERS);
     const [createEventDate, setCreateEventDate] = useState<Date | null>(null);
     const [newEventTitle, setNewEventTitle] = useState("");
     const [newEventType, setNewEventType] = useState<NoteType>(NoteType.note);
@@ -99,7 +99,7 @@ export default function CalendarPage() {
 
     const activeFilterIds = useMemo(() => filters.filter((f) => f.enabled).map((f) => f.id), [filters]);
 
-    const calendarEvents = useMemo<CalendarEvent[]>(
+    const calendarEvents = useMemo<Array<CalendarEvent>>(
         () =>
             state.notes
                 .filter((n) => !n.deletedAt && activeFilterIds.includes(n.noteType))
@@ -123,7 +123,7 @@ export default function CalendarPage() {
     const onAddEvent = () => dispatch.setCreateNoteDialog({ isOpen: true, type: "note" });
 
     const openDailyNote = async (): Promise<void> => {
-        if (!createEventDate) return;
+        if (!createEventDate) {return;}
         dailyRequest.current?.abort();
         const controller = new AbortController();
         dailyRequest.current = controller;
@@ -134,20 +134,20 @@ export default function CalendarPage() {
         setDailyError("");
         try {
             const note = await getOrCreateDailyQuickNote(createEventDate);
-            if (!isCurrent()) return;
+            if (!isCurrent()) {return;}
             setCreateEventDate(null);
             navigate(`/note/${note.id}`);
         } catch (error) {
-            if (!isCurrent()) return;
+            if (!isCurrent()) {return;}
             setDailyError(error instanceof Error ? error.message : "The daily note could not be opened.");
         } finally {
-            if (isCurrent()) setOpeningDaily(false);
+            if (isCurrent()) {setOpeningDaily(false);}
         }
     };
 
     const createEvent = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newEventTitle.trim()) return;
+        if (!newEventTitle.trim()) {return;}
         const note = Note.new(newEventTitle.trim(), "", newEventType);
         await repositories.notes.save(note);
         dispatch.note(note);

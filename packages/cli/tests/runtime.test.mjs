@@ -16,15 +16,15 @@ for (const [runtime, flags] of [
             [cli, ["expr", "totally bogus &&&"], 1, null],
             [sqlite, [], 0, "CLI SQLite runtime passed"],
         ]) {
-            const result = spawnSync(runtime, [...flags, file, ...args], { encoding: "utf8", timeout: 30000 });
+            const result = spawnSync(runtime, [...flags, file, ...args], { encoding: "utf8", timeout: 30_000 });
             assert.ifError(result.error);
             assert.equal(result.status, status, result.stderr);
-            if (output !== null) assert.equal(result.stdout.trim(), output);
-            else assert.notEqual(result.stderr.trim(), "");
+            if (output !== null) {assert.equal(result.stdout.trim(), output);}
+            else {assert.notEqual(result.stderr.trim(), "");}
         }
     });
     test(`${runtime}: help documents folder opening and external editor setup`, () => {
-        const result = spawnSync(runtime, [...flags, cli, "--help"], { encoding: "utf8", timeout: 30000 });
+        const result = spawnSync(runtime, [...flags, cli, "--help"], { encoding: "utf8", timeout: 30_000 });
         assert.ifError(result.error);
         assert.equal(result.status, 0, result.stderr);
         assert.match(result.stdout, /writeme \[--wait\|-w\] \[path\]/);

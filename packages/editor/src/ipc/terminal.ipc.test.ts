@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { listeners, spawned } = vi.hoisted(() => ({
-    listeners: new Map<string, (...args: any[]) => void>(),
+    listeners: new Map<string, (...args: Array<any>) => void>(),
     spawned: [] as Array<{
         kill: ReturnType<typeof vi.fn>;
         exit: (code?: number) => void;
@@ -13,7 +13,7 @@ const { listeners, spawned } = vi.hoisted(() => ({
 
 vi.mock("electron", () => ({
     app: { getPath: () => "/tmp" },
-    ipcMain: { on: vi.fn((channel: string, listener: (...args: any[]) => void) => void listeners.set(channel, listener)) },
+    ipcMain: { on: vi.fn((channel: string, listener: (...args: Array<any>) => void) => void listeners.set(channel, listener)) },
 }));
 vi.mock("node-pty", () => ({
     spawn: vi.fn(() => {

@@ -20,10 +20,10 @@ type MarkdownChatComposerProps = {
     adapter: AIAdapter | undefined;
     content: string;
     onContentChange: (content: string) => void;
-    allNotes: Note[];
-    mentionItems: EditorMentionItem[];
+    allNotes: Array<Note>;
+    mentionItems: Array<EditorMentionItem>;
     onCancel: () => void;
-    onSend: (markdown: string, files: AIFile[]) => Promise<boolean>;
+    onSend: (markdown: string, files: Array<AIFile>) => Promise<boolean>;
 };
 
 function createChatComposerExtensions(theme: Theme) {
@@ -45,7 +45,7 @@ export function MarkdownChatComposer({
     onSend,
 }: MarkdownChatComposerProps) {
     const [markdown, setMarkdown] = useState("");
-    const [files, setFiles] = useState<AIFile[]>([]);
+    const [files, setFiles] = useState<Array<AIFile>>([]);
     const extensions = useMemo(() => createChatComposerExtensions(theme), [theme]);
     const attachmentController = useAIFileAttachments({
         files,
@@ -81,15 +81,15 @@ export function MarkdownChatComposer({
             },
             handlePaste: (_view, event) => {
                 const pastedFiles = getClipboardFiles(event.clipboardData);
-                if (pastedFiles.length === 0) return false;
-                if (attachmentsEnabledRef.current) attachmentControllerRef.current.addFiles(pastedFiles);
+                if (pastedFiles.length === 0) {return false;}
+                if (attachmentsEnabledRef.current) {attachmentControllerRef.current.addFiles(pastedFiles);}
                 return true;
             },
         },
     });
 
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {return;}
         if (editor.getHTML() !== content) {
             editor.commands.setContent(content, { emitUpdate: false });
         }
@@ -97,7 +97,7 @@ export function MarkdownChatComposer({
     }, [content, editor]);
 
     useEffect(() => {
-        if (!editor) return;
+        if (!editor) {return;}
         setEditorAllNotes(editor, allNotes);
         setEditorMentionItems(editor, mentionItems);
         refreshMentionSuggestions(editor);
@@ -111,9 +111,9 @@ export function MarkdownChatComposer({
         (markdown.length > 0 || files.length > 0) && !disabled && !isStreaming && !attachmentController.isPreparing;
 
     async function submit(): Promise<void> {
-        if (!editor || !canSend) return;
+        if (!editor || !canSend) {return;}
         const content = editor.getMarkdown().trim();
-        if (!content && files.length === 0) return;
+        if (!content && files.length === 0) {return;}
 
         const sent = await onSend(content, files);
         if (sent) {
@@ -146,14 +146,14 @@ export function MarkdownChatComposer({
     }
 
     function handleDragOver(event: DragEvent<HTMLFormElement>): void {
-        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+        if (event.dataTransfer.types.includes("Files")) {event.preventDefault();}
     }
 
     function handleDrop(event: DragEvent<HTMLFormElement>): void {
         const droppedFiles = Array.from(event.dataTransfer.files);
-        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) return;
+        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) {return;}
         event.preventDefault();
-        if (attachmentsEnabled && droppedFiles.length > 0) attachmentController.addFiles(droppedFiles);
+        if (attachmentsEnabled && droppedFiles.length > 0) {attachmentController.addFiles(droppedFiles);}
     }
 
     return (

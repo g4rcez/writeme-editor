@@ -56,16 +56,16 @@ export function getWorkspaceKey(directory: string | null): string {
 const getTabCreatedTime = (tab: Tab): number =>
   tab.createdAt instanceof Date ? tab.createdAt.getTime() : new Date(tab.createdAt).getTime();
 
-export function normalizeWorkspaceTabs(tabs: Tab[], workspaceKey: string): { tabs: Tab[]; duplicateTabs: Tab[] } {
+export function normalizeWorkspaceTabs(tabs: Array<Tab>, workspaceKey: string): { tabs: Array<Tab>; duplicateTabs: Array<Tab> } {
   const sortedTabs = [...tabs].sort((a, b) => {
     const projectDifference = Number(b.project === workspaceKey) - Number(a.project === workspaceKey);
-    if (projectDifference !== 0) return projectDifference;
+    if (projectDifference !== 0) {return projectDifference;}
     const orderDifference = a.order - b.order;
-    if (orderDifference !== 0) return orderDifference;
+    if (orderDifference !== 0) {return orderDifference;}
     return getTabCreatedTime(a) - getTabCreatedTime(b);
   });
   const tabsByTarget = new Map<string, Tab>();
-  const duplicateTabs: Tab[] = [];
+  const duplicateTabs: Array<Tab> = [];
 
   for (const tab of sortedTabs) {
     const normalizedTab = { ...tab, project: workspaceKey };
@@ -105,21 +105,21 @@ export type Theme = "light" | "dark" | "catppuccin-mocha" | "tokyonight-night" |
 const THEME_CLASSES = ["dark", "catppuccin-mocha", "tokyonight-night", "native"] as const;
 
 type State = {
-  tabs: Tab[];
+  tabs: Array<Tab>;
   theme: Theme;
   help: boolean;
-  notes: Note[];
+  notes: Array<Note>;
   note: Note | null;
-  recentNotes: Note[];
+  recentNotes: Array<Note>;
   trashOutcome: { deleted: number; failed: number };
   commander: CommanderState;
   sidebarWidth: number;
   editorFontSize: number;
   homedir: string | null;
-  noteGroups: NoteGroup[];
+  noteGroups: Array<NoteGroup>;
   directory: string | null;
-  terminalSessions: TerminalSession[];
-  restoredTerminalSessionIds: string[];
+  terminalSessions: Array<TerminalSession>;
+  restoredTerminalSessionIds: Array<string>;
   terminalVisible: boolean;
   addToGroupDialog: boolean;
   activeTabId: string | null;
@@ -129,7 +129,7 @@ type State = {
   aiContext: AiContext | null;
   explorerRoot: string | null;
   directoryBrowserDialog: boolean;
-  noteGroupMembers: NoteGroupMember[];
+  noteGroupMembers: Array<NoteGroupMember>;
   inspectJsonInitialContent: string | null;
   createTemplateDialog: { isOpen: boolean };
   createVariableDialog: { isOpen: boolean };
@@ -148,35 +148,35 @@ const initialState: State = {
   aiContext: null,
   directory: null,
   sidebarWidth: 320,
-  tabs: [] as Tab[],
+  tabs: [] as Array<Tab>,
   editorFontSize: 16,
   explorerRoot: null,
-  notes: [] as Note[],
+  notes: [] as Array<Note>,
   terminalVisible: false,
   addToGroupDialog: false,
   inspectJsonDialog: false,
   readItLaterDialog: false,
   recentNotesDialog: false,
   note: null as Note | null,
-  recentNotes: [] as Note[],
+  recentNotes: [] as Array<Note>,
   trashOutcome: { deleted: 0, failed: 0 },
   directoryBrowserDialog: false,
-  noteGroups: [] as NoteGroup[],
-  terminalSessions: [] as TerminalSession[],
-  restoredTerminalSessionIds: [] as string[],
+  noteGroups: [] as Array<NoteGroup>,
+  terminalSessions: [] as Array<TerminalSession>,
+  restoredTerminalSessionIds: [] as Array<string>,
   inspectJsonInitialContent: null,
   theme: "dark" as Theme,
   activeTabId: null as string | null,
   createTemplateDialog: { isOpen: false },
   createVariableDialog: { isOpen: false },
   aiDrawer: { isOpen: false, chatId: null },
-  noteGroupMembers: [] as NoteGroupMember[],
+  noteGroupMembers: [] as Array<NoteGroupMember>,
   commander: { enabled: false, type: CommanderType.All } as CommanderState,
   createNoteDialog: { isOpen: false, type: "note" as NoteCreationType },
 };
 
 export const loadHomedir = async (): Promise<string | null> => {
-  if (!isElectron() || typeof window === "undefined") return null;
+  if (!isElectron() || typeof window === "undefined") {return null;}
   try {
     return (await window.electronAPI?.env?.getHome?.()) ?? null;
   } catch (error) {
@@ -187,7 +187,7 @@ export const loadHomedir = async (): Promise<string | null> => {
 export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
   let tabSelectionVersion = 0;
 
-  const setNotes = (notes: Note[]) => {
+  const setNotes = (notes: Array<Note>) => {
     const existingNotesMap = new Map<string, Note>(get.state().notes.map((note) => [note.id, note]));
     const mergedNotesMap = new Map<string, Note>();
     for (const note of notes) {
@@ -198,8 +198,8 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       // freshly parsed copy (and its content string) be collected
       if (existing && existing.updatedAt >= freshest.updatedAt && existing.content === freshest.content) {
         freshest = existing;
-      } else if (existing && existing.updatedAt > freshest.updatedAt) freshest = existing;
-      if (current && current.updatedAt > freshest.updatedAt) freshest = current;
+      } else if (existing && existing.updatedAt > freshest.updatedAt) {freshest = existing;}
+      if (current && current.updatedAt > freshest.updatedAt) {freshest = current;}
       mergedNotesMap.set(note.id, freshest);
     }
     return { notes: Array.from(mergedNotesMap.values()) };
@@ -230,9 +230,9 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     };
   };
 
-  const getNextTerminalTitle = (sessions: TerminalSession[]): string => {
+  const getNextTerminalTitle = (sessions: Array<TerminalSession>): string => {
     const titles = new Set(sessions.map((session) => session.title.trim()));
-    if (!titles.has("Terminal")) return "Terminal";
+    if (!titles.has("Terminal")) {return "Terminal";}
 
     let suffix = 2;
     while (titles.has(`Terminal ${suffix}`)) {
@@ -261,12 +261,12 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       : state.terminalSessions.concat(session);
     const existingTab = state.tabs.find((tab) => isTerminalTab(tab) && tab.noteId === session.id);
     if (existingTab) {
-      if (persistSession) tabPersistence.enqueue(() => repositories.terminalSessions.save(session));
+      if (persistSession) {tabPersistence.enqueue(() => repositories.terminalSessions.save(session));}
       return { activeTabId: existingTab.id, terminalSessions };
     }
     const newTab = createTab(session.id, TERMINAL_TAB_TYPE);
     tabPersistence.enqueue(async () => {
-      if (persistSession) await repositories.terminalSessions.save(session);
+      if (persistSession) {await repositories.terminalSessions.save(session);}
       await repositories.tabs.save(newTab);
     });
     return { activeTabId: newTab.id, tabs: state.tabs.concat(newTab), terminalSessions };
@@ -276,22 +276,22 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     tabSelectionVersion += 1;
     const state = get.state();
     const existingTab = state.tabs.find((t) => isNoteTabForNoteId(t, note.id));
-    if (state.activeTabId === existingTab?.id && state.note === note) return {};
+    if (state.activeTabId === existingTab?.id && state.note === note) {return {};}
     const updatedNotes = updateNoteInList(note);
     if (existingTab) {
       return {
-        note: note,
+        note,
         notes: updatedNotes,
         activeTabId: existingTab.id,
       };
     }
     if (!createTabIfMissing) {
-      return { note: note, notes: updatedNotes };
+      return { note, notes: updatedNotes };
     }
     const newTab = createTab(note.id);
     tabPersistence.enqueue(() => repositories.tabs.save(newTab));
     return {
-      note: note,
+      note,
       notes: updatedNotes,
       activeTabId: newTab.id,
       tabs: state.tabs.concat(newTab),
@@ -300,10 +300,10 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
 
   return {
     notes: setNotes,
-    tabs: (tabs: Tab[]) => ({ tabs }),
+    tabs: (tabs: Array<Tab>) => ({ tabs }),
     help: (help: boolean) => ({ help }),
     setNote: (note: Note | null) => ({ note }),
-    recentNotes: (recentNotes: Note[]) => ({ recentNotes }),
+    recentNotes: (recentNotes: Array<Note>) => ({ recentNotes }),
     activeTabId: (activeTabId: string | null) => ({ activeTabId }),
     commander: (enabled: boolean, type?: CommanderType) => ({
       commander: { enabled, type: type || CommanderType.All },
@@ -325,18 +325,18 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     },
     init: async (
       theme: Theme,
-      notes: Note[],
-      tabs: Tab[],
+      notes: Array<Note>,
+      tabs: Array<Tab>,
       editorFontSize: number,
       sidebarWidth: number,
       directory: string | null,
       explorerRoot: string | null,
-      terminalSessions: TerminalSession[],
+      terminalSessions: Array<TerminalSession>,
     ) => {
       for (const className of THEME_CLASSES) {
         document.documentElement.classList.remove(className);
       }
-      if (theme !== "light") document.documentElement.classList.add(theme);
+      if (theme !== "light") {document.documentElement.classList.add(theme);}
       const homedir = await loadHomedir();
       return {
         tabs,
@@ -378,7 +378,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       templateId?: string;
       initialTitle?: string;
     }) => {
-      if (createNoteDialog.isOpen && createNoteDialog.type === "meeting-note") requireFeature("meetingNotes");
+      if (createNoteDialog.isOpen && createNoteDialog.type === "meeting-note") {requireFeature("meetingNotes");}
       return { createNoteDialog };
     },
     setCreateTemplateDialog: (isOpen: boolean) => ({
@@ -401,13 +401,13 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const recent = await repositories.notes.getRecentNotes(limit);
       return { recentNotes: recent };
     },
-    reorderTabs: (tabs: Tab[]) => {
+    reorderTabs: (tabs: Array<Tab>) => {
       const current = get.state().tabs;
       const byId = new Map(current.map((tab) => [tab.id, tab]));
-      const ordered: Tab[] = [];
+      const ordered: Array<Tab> = [];
       for (const tab of tabs) {
         const existing = byId.get(tab.id);
-        if (!existing) continue;
+        if (!existing) {continue;}
         ordered.push(existing);
         byId.delete(tab.id);
       }
@@ -421,7 +421,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       tabPersistence.enqueue(async () => {
         for (const tab of state.tabs) {
           await repositories.tabs.delete(tab.id);
-          if (isTerminalTab(tab)) await repositories.terminalSessions.delete(tab.noteId);
+          if (isTerminalTab(tab)) {await repositories.terminalSessions.delete(tab.noteId);}
         }
       });
       return {
@@ -489,14 +489,14 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     ensureTerminalSession: async (sessionId: string): Promise<void> => {
       requireFeature("terminal");
       const state = get.state();
-      if (state.terminalSessions.some((item) => item.id === sessionId)) return;
+      if (state.terminalSessions.some((item) => item.id === sessionId)) {return;}
       const existingSession = await repositories.terminalSessions.getOne(sessionId);
       const current = get.state();
       if (current.directory !== state.directory ||
           !current.tabs.some((tab) => isTerminalTab(tab) && tab.noteId === sessionId) ||
-          current.terminalSessions.some((item) => item.id === sessionId)) return;
+          current.terminalSessions.some((item) => item.id === sessionId)) {return;}
       const session = existingSession ?? createTerminalSession(sessionId);
-      if (!existingSession) tabPersistence.enqueue(() => repositories.terminalSessions.save(session));
+      if (!existingSession) {tabPersistence.enqueue(() => repositories.terminalSessions.save(session));}
       get.patch({ terminalSessions: current.terminalSessions.concat(session) });
     },
     addTerminalTab: (sessionId: string) => {
@@ -504,24 +504,24 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const version = ++tabSelectionVersion;
       const state = get.state();
       const session = state.terminalSessions.find((item) => item.id === sessionId);
-      if (session) return selectTerminalTab(session, false);
+      if (session) {return selectTerminalTab(session, false);}
       return repositories.terminalSessions.getOne(sessionId).then((existing) => {
-        if (version !== tabSelectionVersion || get.state().directory !== state.directory) return;
+        if (version !== tabSelectionVersion || get.state().directory !== state.directory) {return;}
         get.patch(selectTerminalTab(existing ?? createTerminalSession(sessionId), !existing));
       });
     },
     renameTerminalSession: async (sessionId: string, title: string): Promise<void> => {
       const trimmedTitle = title.trim();
-      if (!trimmedTitle) return;
+      if (!trimmedTitle) {return;}
 
       const state = get.state();
       const version = tabSelectionVersion;
       const session =
         state.terminalSessions.find((item) => item.id === sessionId) ??
         (await repositories.terminalSessions.getOne(sessionId));
-      if (!session) return;
+      if (!session) {return;}
       const current = get.state();
-      if (current.directory !== state.directory || version !== tabSelectionVersion) return;
+      if (current.directory !== state.directory || version !== tabSelectionVersion) {return;}
       const latest = current.terminalSessions.find((item) => item.id === sessionId) ?? session;
       const updatedSession = { ...latest, title: trimmedTitle, updatedAt: new Date() };
       tabPersistence.enqueue(() => repositories.terminalSessions.save(updatedSession));
@@ -540,7 +540,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
           await repositories.terminalSessions.delete(closedTab.noteId);
         }
       });
-      if (closedTab) rememberClosedTab(closedTab);
+      if (closedTab) {rememberClosedTab(closedTab);}
       const tabs = state.tabs.filter((tab) => tab.id !== id);
       const terminalSessions = closedTab
         ? state.terminalSessions.filter(
@@ -548,8 +548,8 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
         )
         : state.terminalSessions;
       const isClosingActiveTab = (() => {
-        if (!closedTab) return false;
-        if (state.activeTabId === id) return true;
+        if (!closedTab) {return false;}
+        if (state.activeTabId === id) {return true;}
         if (isAiChatTab(closedTab) || isTerminalTab(closedTab)) {
           return state.activeTabId === closedTab.noteId;
         }
@@ -576,7 +576,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, noteId));
       const activeTabId =
         state.activeTabId &&
-          state.tabs.find((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, noteId))
+          state.tabs.some((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, noteId))
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const note = state.note?.id === noteId ? null : state.note;
@@ -591,7 +591,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
-          state.tabs.find((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id))
+          state.tabs.some((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id))
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);
@@ -600,14 +600,14 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     },
     hardDeleteNote: async (id: string) => {
       await flushTabPersistence();
-      if (!(await repositories.notes.hardDelete(id))) return {};
+      if (!(await repositories.notes.hardDelete(id))) {return {};}
       tabPersistence.enqueue(() => repositories.tabs.deleteByNoteId(id));
       tabSelectionVersion += 1;
       const state = get.state();
       const tabs = state.tabs.filter((tab) => !isNoteTabForNoteId(tab, id));
       const activeTabId =
         state.activeTabId &&
-          state.tabs.find((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id))
+          state.tabs.some((tab) => tab.id === state.activeTabId && isNoteTabForNoteId(tab, id))
           ? (tabs[0]?.id ?? null)
           : state.activeTabId;
       const notes = state.notes.filter((n) => n.id !== id);
@@ -618,7 +618,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     restoreNote: async (id: string) => {
       const state = get.state();
       const restored = await repositories.notes.restore(id);
-      if (!restored) return state;
+      if (!restored) {return state;}
       return { notes: state.notes.concat(restored) };
     },
     emptyTrash: async () => {
@@ -656,7 +656,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       try {
         const state = get.state();
         const existing = state.notes.find((n) => n.id === id) ?? (state.note?.id === id ? state.note : null);
-        if (!existing) return state;
+        if (!existing) {return state;}
         const journalDate = getJournalDate(existing);
 
         const updated = Object.assign(Object.create(Object.getPrototypeOf(existing)), existing, {
@@ -677,18 +677,18 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
       for (const className of THEME_CLASSES) {
         document.documentElement.classList.remove(className);
       }
-      if (result !== "light") document.documentElement.classList.add(result);
+      if (result !== "light") {document.documentElement.classList.add(result);}
       SettingsService.save({ theme: result as Theme });
       return { theme: result as Theme };
     },
     selectNoteById: (noteId: string) => {
       const state = get.state();
       const cached = state.note?.id === noteId ? state.note : state.notes.find((note) => note.id === noteId);
-      if (cached) return selectOrAddTab(cached);
+      if (cached) {return selectOrAddTab(cached);}
       const version = ++tabSelectionVersion;
       const workspace = state.directory;
       return repositories.notes.getOne(noteId).then((note) => {
-        if (version !== tabSelectionVersion || get.state().directory !== workspace) return;
+        if (version !== tabSelectionVersion || get.state().directory !== workspace) {return;}
         if (!note) {
           uiDispatch.setError("Failed to load note");
           return;
@@ -722,7 +722,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     updateGroup: async (id: string, partial: Partial<Pick<NoteGroup, "title" | "description">>) => {
       const state = get.state();
       const existing = state.noteGroups.find((g) => g.id === id);
-      if (!existing) return state;
+      if (!existing) {return state;}
       const updated = {
         ...existing,
         ...partial,
@@ -736,7 +736,7 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     addNoteToGroup: async (groupId: string, noteId: string) => {
       const state = get.state();
       const alreadyMember = state.noteGroupMembers.some((m) => m.groupId === groupId && m.noteId === noteId);
-      if (alreadyMember) return state;
+      if (alreadyMember) {return state;}
       const existing = state.noteGroupMembers.filter((m) => m.groupId === groupId);
       const maxOrder = existing.reduce((max, m) => Math.max(max, m.order), -1);
       const now = new Date();
@@ -747,13 +747,13 @@ export const useGlobalStore = createZustandCompatStore(initialState, (get) => {
     removeNoteFromGroup: async (groupId: string, noteId: string) => {
       const state = get.state();
       const member = state.noteGroupMembers.find((m) => m.groupId === groupId && m.noteId === noteId);
-      if (!member) return state;
+      if (!member) {return state;}
       await repositories.noteGroupMembers.delete(member.id);
       return {
         noteGroupMembers: state.noteGroupMembers.filter((m) => !(m.groupId === groupId && m.noteId === noteId)),
       };
     },
-    reorderGroupMembers: async (groupId: string, members: NoteGroupMember[]) => {
+    reorderGroupMembers: async (groupId: string, members: Array<NoteGroupMember>) => {
       const state = get.state();
       await repositories.noteGroupMembers.reorder(groupId, members);
       return {

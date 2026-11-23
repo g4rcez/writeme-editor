@@ -39,7 +39,7 @@ require(${JSON.stringify(path.join(buildRoot, "build/main.js"))});`,
         await expect.poll(() => exited, { timeout: 5000 }).toBe(true);
         await expect.poll(() => appProcess.exitCode).toBe(0);
     } finally {
-        if (!exited) await application.close();
+        if (!exited) {await application.close();}
         await rm(directory, { recursive: true, force: true });
     }
 });

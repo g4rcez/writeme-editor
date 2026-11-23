@@ -3,7 +3,7 @@ import { expect, goHome, test } from "./fixtures";
 
 declare global {
     interface Window {
-        __writingAssistantUnhandled: string[];
+        __writingAssistantUnhandled: Array<string>;
     }
 }
 
@@ -16,11 +16,11 @@ type ReviewResponseMode =
     | "network-error"
     | "batch-fails-second";
 type PromptSegment = { id: string; text: string };
-type CompletionRequest = { targetUrl: string; segments: PromptSegment[]; body: unknown };
+type CompletionRequest = { targetUrl: string; segments: Array<PromptSegment>; body: unknown };
 type Deferred = { promise: Promise<void>; resolve: () => void };
 type HeldResponse = { started: Deferred; release: Deferred };
 type ProxyState = {
-    completionRequests: CompletionRequest[];
+    completionRequests: Array<CompletionRequest>;
     responseMode: ReviewResponseMode;
     holdNextResponse: HeldResponse | null;
 };
@@ -47,27 +47,27 @@ function createProxyState(): ProxyState {
     return { completionRequests: [], responseMode: "correct-first", holdNextResponse: null };
 }
 
-function extractPromptSegments(body: unknown): PromptSegment[] {
-    if (!body || typeof body !== "object" || !("contents" in body) || !Array.isArray(body.contents)) return [];
-    const contents: unknown[] = body.contents;
+function extractPromptSegments(body: unknown): Array<PromptSegment> {
+    if (!body || typeof body !== "object" || !("contents" in body) || !Array.isArray(body.contents)) {return [];}
+    const contents: Array<unknown> = body.contents;
     const prompt = contents
         .flatMap((content) => {
             if (!content || typeof content !== "object" || !("parts" in content) || !Array.isArray(content.parts)) {
                 return [];
             }
-            const parts: unknown[] = content.parts;
+            const parts: Array<unknown> = content.parts;
             return parts.flatMap((part) => {
-                if (!part || typeof part !== "object" || !("text" in part) || typeof part.text !== "string") return [];
+                if (!part || typeof part !== "object" || !("text" in part) || typeof part.text !== "string") {return [];}
                 return [part.text];
             });
         })
         .find((text) => text.startsWith('{"segments":'));
-    if (!prompt) return [];
+    if (!prompt) {return [];}
 
     const parsed: unknown = JSON.parse(prompt);
-    if (!parsed || typeof parsed !== "object" || !("segments" in parsed) || !Array.isArray(parsed.segments)) return [];
-    const segments: unknown[] = parsed.segments;
-    return segments.flatMap((segment): PromptSegment[] => {
+    if (!parsed || typeof parsed !== "object" || !("segments" in parsed) || !Array.isArray(parsed.segments)) {return [];}
+    const segments: Array<unknown> = parsed.segments;
+    return segments.flatMap((segment): Array<PromptSegment> => {
         if (
             !segment ||
             typeof segment !== "object" ||
@@ -82,10 +82,10 @@ function extractPromptSegments(body: unknown): PromptSegment[] {
     });
 }
 
-function createSuggestion(segments: PromptSegment[], mode: "first" | "second"): string {
+function createSuggestion(segments: Array<PromptSegment>, mode: "first" | "second"): string {
     const matchingSegments = segments.filter((segment) => segment.text.includes("go"));
     const segment = mode === "second" ? matchingSegments.at(-1) : matchingSegments[0];
-    if (!segment) return JSON.stringify({ suggestions: [] });
+    if (!segment) {return JSON.stringify({ suggestions: [] });}
     const from = segment.text.indexOf("go");
     return JSON.stringify({
         suggestions: [
@@ -101,9 +101,9 @@ function createSuggestion(segments: PromptSegment[], mode: "first" | "second"): 
         ],
     });
 }
-function createWordSuggestion(segments: PromptSegment[]): string {
+function createWordSuggestion(segments: Array<PromptSegment>): string {
     const segment = segments.find(({ text }) => text.includes("word"));
-    if (!segment) return JSON.stringify({ suggestions: [] });
+    if (!segment) {return JSON.stringify({ suggestions: [] });}
     const from = segment.text.indexOf("word");
     return JSON.stringify({
         suggestions: [
@@ -255,8 +255,8 @@ async function waitForAutosave(page: Page): Promise<void> {
 }
 
 async function createNote(page: Page, title: string, mode: EditorMode, content: string, nativeReviewBridge = false) {
-    if (page.url() === "about:blank") await goHome(page);
-    if (nativeReviewBridge) await installNativeWritingReviewBridge(page);
+    if (page.url() === "about:blank") {await goHome(page);}
+    if (nativeReviewBridge) {await installNativeWritingReviewBridge(page);}
     await page.locator(".writeme-app-header-actions").getByRole("button", { name: "New note", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: /Create new note/i });
     const titleInput = dialog.getByTitle("Note title");
@@ -269,12 +269,12 @@ async function createNote(page: Page, title: string, mode: EditorMode, content: 
     const modeButton = page
         .getByRole("toolbar", { name: "Note tools" })
         .getByRole("button", { name: mode === "formatted" ? "Formatted" : "Markdown", exact: true });
-    if ((await modeButton.getAttribute("aria-pressed")) !== "true") await modeButton.click();
+    if ((await modeButton.getAttribute("aria-pressed")) !== "true") {await modeButton.click();}
     const editor = page.locator(editorSelector(mode)).first();
     await expect(editor).toBeVisible();
     await editor.fill(content);
     await expect(editor).toContainText(content.split("\n")[0] ?? "");
-    if (content !== "") await waitForAutosave(page);
+    if (content !== "") {await waitForAutosave(page);}
 
     const noteUrl = page.url();
     const noteId = new URL(noteUrl).pathname.split("/").at(-1) ?? "";
@@ -296,7 +296,7 @@ async function runImproveBySlash(
 
     const lineStart = await editor.evaluate((root) => {
         const text = document.createTreeWalker(root, NodeFilter.SHOW_TEXT).nextNode();
-        if (!text) throw new Error("Expected the editor to contain a line to anchor the review panel.");
+        if (!text) {throw new Error("Expected the editor to contain a line to anchor the review panel.");}
         const range = document.createRange();
         range.setStart(text, 0);
         range.collapse(true);
@@ -325,7 +325,7 @@ async function placeCaretAtStart(editor: Locator): Promise<void> {
     await editor.evaluate((root) => {
         root.focus();
         const firstText = document.createTreeWalker(root, NodeFilter.SHOW_TEXT).nextNode();
-        if (!firstText) throw new Error("Expected the formatted editor to contain text.");
+        if (!firstText) {throw new Error("Expected the formatted editor to contain text.");}
         const range = document.createRange();
         range.setStart(firstText, 0);
         range.collapse(true);
@@ -368,7 +368,7 @@ async function improveEntireSelection(page: Page, editor: Locator): Promise<Loca
             root.contains(selection.focusNode),
         );
     });
-    if (!hasSelectedSource) throw new Error("Expected the Markdown editor to select its source.");
+    if (!hasSelectedSource) {throw new Error("Expected the Markdown editor to select its source.");}
     await editor.evaluate((root) => {
         root.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
         window.dispatchEvent(new Event("writeme-test-native-review"));
@@ -387,7 +387,7 @@ async function chooseTheme(page: Page, theme: "light" | "dark"): Promise<void> {
 
 for (const mode of ["formatted", "markdown"] as const) {
     test(`review suggestions stay explicit and undoable in ${mode} mode`, async ({ cleanPage: page }) => {
-        if (mode === "formatted") test.setTimeout(90_000);
+        if (mode === "formatted") {test.setTimeout(90_000);}
         const proxy = createProxyState();
         await installProviderProxy(page, proxy);
         await saveGeminiConfiguration(page);
@@ -561,7 +561,7 @@ test("empty, invalid, failed, and cancelled reviews produce distinct visible sta
         window.addEventListener("unhandledrejection", (event) => {
             const reason = event.reason;
             if (typeof reason !== "object" || reason === null || !("name" in reason) || typeof reason.name !== "string")
-                return;
+                {return;}
             if (reason.name === "AI_NoOutputGeneratedError" || reason.name === "AbortError") {
                 window.__writingAssistantUnhandled.push(reason.name);
             }
@@ -652,7 +652,7 @@ test("a second-batch provider failure does not publish first-batch suggestions",
     const proxy = createProxyState();
     await installProviderProxy(page, proxy);
     await saveGeminiConfiguration(page);
-    const longText = "word ".repeat(1_640).trimEnd();
+    const longText = "word ".repeat(1640).trimEnd();
     const { editor } = await createNote(page, "Writing review batches", "markdown", longText, true);
     proxy.responseMode = "batch-fails-second";
     const panel = await improveEntireSelection(page, editor);
@@ -664,7 +664,7 @@ test("a second-batch provider failure does not publish first-batch suggestions",
     expect(batchLengths).toHaveLength(2);
     const firstBatchLength = batchLengths[0] ?? 0;
     const secondBatchLength = batchLengths[1] ?? 0;
-    expect(firstBatchLength).toBeLessThanOrEqual(8_000);
+    expect(firstBatchLength).toBeLessThanOrEqual(8000);
     expect(secondBatchLength).toBeGreaterThan(0);
     expect(firstBatchLength + secondBatchLength).toBe(longText.length);
     await expect(panel.getByRole("article")).toHaveCount(0);
@@ -688,7 +688,7 @@ for (const theme of ["light", "dark"] as const) {
         await page.keyboard.press("Tab");
         await expect(accept).toBeFocused();
 
-        for (const width of [1_280, 720]) {
+        for (const width of [1280, 720]) {
             await page.setViewportSize({ width, height: 800 });
             await expect
                 .poll(async () => {

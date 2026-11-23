@@ -6,7 +6,7 @@ async function placeCaretAtEnd(block: Locator): Promise<void> {
     await block.click();
     await block.evaluate((element) => {
         const selection = window.getSelection();
-        if (!selection) throw new Error("The editor has no native selection");
+        if (!selection) {throw new Error("The editor has no native selection");}
         const range = document.createRange();
         range.selectNodeContents(element);
         range.collapse(false);

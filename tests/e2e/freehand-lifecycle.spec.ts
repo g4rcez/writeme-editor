@@ -37,7 +37,7 @@ test.describe("production handwriting lifecycle", { tag: ["@production", "@produ
         page,
         context,
     }, testInfo) => {
-        const errors: string[] = [];
+        const errors: Array<string> = [];
         page.on("pageerror", (error) => errors.push(error.message));
         const target = await createLinkedNotebook(page);
         const source = page.url();
@@ -134,10 +134,10 @@ test.describe("production handwriting lifecycle", { tag: ["@production", "@produ
             }
             for (const filename of await readdir(testInfo.outputPath("restart-videos"))) {
                 if (filename.endsWith(".webm"))
-                    await testInfo.attach("Browser restart session", {
+                    {await testInfo.attach("Browser restart session", {
                         path: testInfo.outputPath("restart-videos", filename),
                         contentType: "video/webm",
-                    });
+                    });}
             }
         }
     });
@@ -151,13 +151,13 @@ test.describe("production handwriting lifecycle", { tag: ["@production", "@produ
                 "pointerdown",
                 (event) => {
                     if (event instanceof PointerEvent)
-                        element.setAttribute("data-test-pointer", String(event.pointerId));
+                        {element.setAttribute("data-test-pointer", String(event.pointerId));}
                 },
                 { once: true },
             ),
         );
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Canvas is not visible");
+        if (!bounds) {throw new Error("Canvas is not visible");}
         const session = await context.newCDPSession(page);
         const position = { x: bounds.x + 100, y: bounds.y + 300, pointerType: "pen", button: "left" } satisfies {
             x: number;

@@ -4,7 +4,7 @@ import { parse } from "./views/parser";
 import { quoteQueryString } from "./views/query-builder";
 
 export type NoteSearchFilters = {
-    tags: string[];
+    tags: Array<string>;
     noteType: string;
     location: string;
     updatedAfter: string;
@@ -22,8 +22,8 @@ export const EMPTY_NOTE_SEARCH_FILTERS: NoteSearchFilters = {
 export type NoteSearchFolder = { path: string; label: string };
 
 function localDateBoundary(value: string, nextDay = false): string | null {
-    if (!value) return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) throw new Error("Choose a valid date.");
+    if (!value) {return null;}
+    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) {throw new Error("Choose a valid date.");}
     const [yearText, monthText, dayText] = value.split("-");
     const year = Number(yearText);
     const month = Number(monthText);
@@ -48,13 +48,13 @@ function localDateBoundary(value: string, nextDay = false): string | null {
     return date.toISOString();
 }
 
-export function getNoteSearchFolders(filePaths: readonly (string | null | undefined)[]): NoteSearchFolder[] {
+export function getNoteSearchFolders(filePaths: ReadonlyArray<string | null | undefined>): Array<NoteSearchFolder> {
     const folders = new Set<string>();
     for (const filePath of filePaths) {
-        if (!filePath) continue;
+        if (!filePath) {continue;}
         const separator = !filePath.startsWith("/") && filePath.includes("\\") ? "\\" : "/";
         const parts = (filePath.startsWith("/") ? filePath.split("/") : filePath.split(/[\\/]/)).filter(Boolean);
-        const root = filePath.startsWith("\\\\") ? "\\\\" : filePath.startsWith(separator) ? separator : "";
+        const root = filePath.startsWith(String.raw`\\`) ? String.raw`\\` : filePath.startsWith(separator) ? separator : "";
         let current = root;
         for (const part of parts.slice(0, -1)) {
             current = current
@@ -71,11 +71,11 @@ export function getNoteSearchFolders(filePaths: readonly (string | null | undefi
 }
 
 export function buildNoteSearchFilterQuery(filters: NoteSearchFilters): string {
-    const conditions: string[] = [];
-    for (const tag of filters.tags) conditions.push(`tags CONTAINS ${quoteQueryString(tag)}`);
-    if (filters.noteType) conditions.push(`noteType = ${quoteQueryString(filters.noteType)}`);
-    if (filters.location === "local") conditions.push("filePath = null");
-    if (filters.location === "filesystem") conditions.push("filePath != null");
+    const conditions: Array<string> = [];
+    for (const tag of filters.tags) {conditions.push(`tags CONTAINS ${quoteQueryString(tag)}`);}
+    if (filters.noteType) {conditions.push(`noteType = ${quoteQueryString(filters.noteType)}`);}
+    if (filters.location === "local") {conditions.push("filePath = null");}
+    if (filters.location === "filesystem") {conditions.push("filePath != null");}
     if (filters.location.startsWith("folder:")) {
         const path = filters.location.slice("folder:".length);
         const separator = !path.startsWith("/") && path.includes("\\") ? "\\" : "/";
@@ -86,18 +86,18 @@ export function buildNoteSearchFilterQuery(filters: NoteSearchFilters): string {
     const start = localDateBoundary(filters.updatedAfter);
     const end = localDateBoundary(filters.updatedBefore, true);
     if (start && end && new Date(start) >= new Date(end))
-        throw new Error("The start date must be on or before the end date.");
-    if (start) conditions.push(`updatedAt >= ${quoteQueryString(start)}`);
-    if (end) conditions.push(`updatedAt < ${quoteQueryString(end)}`);
+        {throw new Error("The start date must be on or before the end date.");}
+    if (start) {conditions.push(`updatedAt >= ${quoteQueryString(start)}`);}
+    if (end) {conditions.push(`updatedAt < ${quoteQueryString(end)}`);}
 
     return conditions.length === 0 ? "" : `WHERE ${conditions.join(" AND ")}`;
 }
 
 export function filterNotesByStructuredFilters<
     T extends Pick<Note, "id" | "tags" | "noteType" | "filePath" | "updatedAt">,
->(notes: readonly T[], filters: NoteSearchFilters): T[] {
+>(notes: ReadonlyArray<T>, filters: NoteSearchFilters): Array<T> {
     const query = buildNoteSearchFilterQuery(filters);
-    if (!query) return [...notes];
+    if (!query) {return [...notes];}
     const matchingIds = new Set(
         executeQuery(parse(query), { notes: [...notes] })
             .map((row) => row["notes.id"])

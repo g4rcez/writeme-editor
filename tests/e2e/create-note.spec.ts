@@ -127,13 +127,13 @@ test.describe("Create note flow", () => {
     const formattingToolbar = page.getByRole("toolbar", { name: "Formatting toolbar" });
     await expect(formattingToolbar).toBeVisible();
     const toolbarBounds = await formattingToolbar.boundingBox();
-    if (!toolbarBounds) throw new Error("Formatting toolbar has no visible bounds.");
+    if (!toolbarBounds) {throw new Error("Formatting toolbar has no visible bounds.");}
     expect(toolbarBounds.x).toBeGreaterThanOrEqual(0);
     expect(toolbarBounds.x + toolbarBounds.width).toBeLessThanOrEqual(376);
     expect(toolbarBounds.height).toBeLessThanOrEqual(60);
 
     const boldBounds = await formattingToolbar.getByRole("button", { name: /Bold/ }).boundingBox();
-    if (!boldBounds) throw new Error("Bold control has no visible bounds.");
+    if (!boldBounds) {throw new Error("Bold control has no visible bounds.");}
     expect(boldBounds.width).toBeGreaterThanOrEqual(36);
     expect(boldBounds.height).toBeGreaterThanOrEqual(36);
 

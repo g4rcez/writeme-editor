@@ -17,12 +17,12 @@ export type TaskItemOptions = {
 const inputRegex = /^\s*([-*+])?\s*(\[([( |x])?\])\s$/;
 
 const parseChecked = (a: any): boolean => {
-    if (typeof a === "object") return !a.checked;
-    if (a === undefined) return true;
-    if (a === null) return true;
-    if (a === "true") return false;
-    if (a === "false") return true;
-    if (typeof a === "boolean") return !a;
+    if (typeof a === "object") {return !a.checked;}
+    if (a === undefined) {return true;}
+    if (a === null) {return true;}
+    if (a === "true") {return false;}
+    if (a === "false") {return true;}
+    if (typeof a === "boolean") {return !a;}
     return true;
 };
 
@@ -32,7 +32,7 @@ const formatTaskFinishedAt = (date = new Date()): string => `${Dates.yearMonthDa
 
 const getTaskParagraph = (taskNode: ProseMirrorNode, taskPos: number) => {
     const paragraph = taskNode.firstChild;
-    if (!paragraph?.isTextblock) return null;
+    if (!paragraph?.isTextblock) {return null;}
     const paragraphPos = taskPos + 1;
     return {
         node: paragraph,
@@ -43,30 +43,30 @@ const getTaskParagraph = (taskNode: ProseMirrorNode, taskPos: number) => {
 
 const getFinishedAtRange = (doc: ProseMirrorNode, taskPos: number) => {
     const taskNode = doc.nodeAt(taskPos);
-    if (!taskNode || taskNode.type.name !== "taskItem") return null;
+    if (taskNode?.type.name !== "taskItem") {return null;}
 
     const paragraph = getTaskParagraph(taskNode, taskPos);
-    if (!paragraph) return null;
+    if (!paragraph) {return null;}
 
     let rangeFrom: number | null = null;
     let rangeTo: number | null = null;
     paragraph.node.descendants((node, pos) => {
-        if (!node.isText || !node.text) return;
+        if (!node.isText || !node.text) {return;}
 
         const to = paragraph.contentStart + pos + node.text.length;
-        if (to !== paragraph.contentEnd) return;
+        if (to !== paragraph.contentEnd) {return;}
 
         const match = node.text.match(taskFinishedAtPattern);
-        if (!match || match.index === undefined) return;
+        if (match?.index === undefined) {return;}
 
         const hasSubscriptMark = node.marks.some((mark) => mark.type.name === "subscript");
-        if (!hasSubscriptMark) return;
+        if (!hasSubscriptMark) {return;}
 
         rangeFrom = paragraph.contentStart + pos + match.index;
         rangeTo = to;
     });
 
-    if (rangeFrom === null || rangeTo === null) return null;
+    if (rangeFrom === null || rangeTo === null) {return null;}
 
     if (rangeFrom > paragraph.contentStart) {
         const previousChar = doc.textBetween(rangeFrom - 1, rangeFrom, "", "");
@@ -99,7 +99,7 @@ export function setTaskItemChecked(
     { taskPos, checked, finishedAt = new Date() }: SetTaskItemCheckedOptions,
 ): boolean {
     const taskNode = tr.doc.nodeAt(taskPos);
-    if (!taskNode || taskNode.type.name !== "taskItem") return false;
+    if (taskNode?.type.name !== "taskItem") {return false;}
 
     tr.setNodeMarkup(taskPos, undefined, {
         ...taskNode.attrs,
@@ -111,13 +111,13 @@ export function setTaskItemChecked(
         tr.delete(existingFinishedAt.from, existingFinishedAt.to);
     }
 
-    if (!checked) return true;
+    if (!checked) {return true;}
 
     const updatedTaskNode = tr.doc.nodeAt(taskPos);
-    if (!updatedTaskNode) return true;
+    if (!updatedTaskNode) {return true;}
 
     const paragraph = getTaskParagraph(updatedTaskNode, taskPos);
-    if (!paragraph) return true;
+    if (!paragraph) {return true;}
 
     const timestamp = formatTaskFinishedAt(finishedAt);
     const paragraphText = paragraph.node.textContent;
@@ -219,7 +219,7 @@ export const TaskListItem = Node.create<TaskItemOptions>({
             },
             "Shift-Tab": () => this.editor.commands.liftListItem(this.name),
             Tab: () => {
-                if (this.name === "taskItem") return this.editor.chain().sinkListItem(this.name).run();
+                if (this.name === "taskItem") {return this.editor.chain().sinkListItem(this.name).run();}
                 return false;
             },
         };
@@ -308,14 +308,14 @@ export const TaskListItem = Node.create<TaskItemOptions>({
                 find: inputRegex,
                 type: this.type,
                 getAttributes: (match) => ({
-                    checked: match[match.length - 1] === "x",
+                    checked: match.at(-1) === "x",
                 }),
             }),
             wrappingInputRule({
                 find: /^\s*([-*+])?\s*(\[([( |x])?\])\s/,
                 type: this.type,
                 getAttributes: (match) => ({
-                    checked: match[match.length - 1] === "x",
+                    checked: match.at(-1) === "x",
                 }),
             }),
         ];

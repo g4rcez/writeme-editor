@@ -51,7 +51,7 @@ export type Token = {
 
 export type ColumnRef = {
     type: "Column";
-    path: string[];
+    path: Array<string>;
     alias?: string;
 };
 
@@ -68,7 +68,7 @@ export type SelectItem = ColumnRef | AggregateRef;
 
 export type SelectClause = {
     type: "Select";
-    columns: SelectItem[];
+    columns: Array<SelectItem>;
 };
 
 export type ComparisonOp = "=" | "!=" | ">" | "<" | ">=" | "<=" | "CONTAINS" | "STARTS_WITH" | "LIKE";
@@ -129,9 +129,9 @@ export type Query = {
     type: "Query";
     select: SelectClause | null;
     from: string | null;
-    joins: JoinClause[];
+    joins: Array<JoinClause>;
     where: Expression | null;
-    groupBy: ColumnRef[] | null;
+    groupBy: Array<ColumnRef> | null;
     orderBy: OrderByClause | null;
     limit: number | null;
 };

@@ -19,7 +19,7 @@ type TemplateListItem = {
     template: Note;
     preview: string;
     storageLabel: string;
-    variables: TemplateVariableSummary[];
+    variables: Array<TemplateVariableSummary>;
     searchableText: string;
 };
 
@@ -30,7 +30,7 @@ export default function SettingsTemplatesPage() {
     const [query, setQuery] = useState("");
     const [deletingTemplate, setDeletingTemplate] = useState<Note | null>(null);
 
-    const templateItems = useMemo<TemplateListItem[]>(
+    const templateItems = useMemo<Array<TemplateListItem>>(
         () =>
             templates.map((template) => {
                 const preview = getTemplatePreview(template.content);
@@ -56,7 +56,7 @@ export default function SettingsTemplatesPage() {
 
     const normalizedQuery = query.trim().toLowerCase();
     const filteredItems = useMemo(() => {
-        if (!normalizedQuery) return templateItems;
+        if (!normalizedQuery) {return templateItems;}
         return templateItems.filter((item) => item.searchableText.includes(normalizedQuery));
     }, [normalizedQuery, templateItems]);
 
@@ -73,7 +73,7 @@ export default function SettingsTemplatesPage() {
     };
 
     const onDeleteTemplate = async () => {
-        if (!deletingTemplate) return;
+        if (!deletingTemplate) {return;}
         await dispatch.deleteNote(deletingTemplate.id);
         setDeletingTemplate(null);
         await refresh();
@@ -203,8 +203,8 @@ function TemplateRow({ item, onOpen, onUse, onDelete }: TemplateRowProps) {
     );
 }
 
-function TemplateVariableChips({ variables }: { variables: TemplateVariableSummary[] }) {
-    if (variables.length === 0) return null;
+function TemplateVariableChips({ variables }: { variables: Array<TemplateVariableSummary> }) {
+    if (variables.length === 0) {return null;}
 
     const visibleVariables = variables.slice(0, 4);
     const hiddenCount = variables.length - visibleVariables.length;

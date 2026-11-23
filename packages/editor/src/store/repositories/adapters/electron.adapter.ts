@@ -1,5 +1,5 @@
 import type { DatabaseCollection } from "../../../main-process/database-schema";
-import { type StorageAdapter } from "./types";
+import type { StorageAdapter } from "./types";
 
 export class ElectronStorageAdapter implements StorageAdapter {
     async count(collection: string): Promise<number> {
@@ -10,7 +10,7 @@ export class ElectronStorageAdapter implements StorageAdapter {
         return (await window.electronAPI.db.get<T>(collection as DatabaseCollection, id)) || null;
     }
 
-    async getAll<T>(collection: string, query?: { limit?: number }): Promise<T[]> {
+    async getAll<T>(collection: string, query?: { limit?: number }): Promise<Array<T>> {
         const all = await window.electronAPI.db.getAll<T>(collection as DatabaseCollection);
         if (query?.limit) {
             return all.slice(0, query.limit);
@@ -29,7 +29,7 @@ export class ElectronStorageAdapter implements StorageAdapter {
 
     async delete(collection: string, id: string): Promise<boolean> {
         const existing = await this.get(collection, id);
-        if (!existing) return false;
+        if (!existing) {return false;}
         await window.electronAPI.db.delete(collection as DatabaseCollection, id);
         return true;
     }

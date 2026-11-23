@@ -28,7 +28,7 @@ export function researchPdf(secondPage = "Landscape research phrase"): Buffer {
 
 export async function selectPdfPhrase(page: Page): Promise<void> {
     const text = await page.locator(".wm-pdf-text-layer span").first().boundingBox();
-    if (!text) throw new Error("Selectable PDF text missing");
+    if (!text) {throw new Error("Selectable PDF text missing");}
     await page.mouse.move(text.x + 1, text.y + text.height / 2);
     await page.mouse.down();
     await page.mouse.move(text.x + text.width - 1, text.y + text.height / 2, { steps: 10 });

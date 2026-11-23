@@ -3,8 +3,8 @@ import type { NoteCommentThread } from "../../packages/editor/src/store/note-com
 import { createNote, expect, goHome, test } from "./fixtures";
 
 async function readCommentStorage(page: Page): Promise<{
-    comments: NoteCommentThread[];
-    notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
+    comments: Array<NoteCommentThread>;
+    notes: Array<{ id: string; title: string; content: string; metadata?: Record<string, unknown> }>;
 }> {
     return page.evaluate(async () => {
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -14,7 +14,7 @@ async function readCommentStorage(page: Page): Promise<{
         });
         try {
             const transaction = database.transaction(["comments", "notes"], "readonly");
-            const read = (store: string): Promise<unknown[]> =>
+            const read = (store: string): Promise<Array<unknown>> =>
                 new Promise((resolve, reject) => {
                     const request = transaction.objectStore(store).getAll();
                     request.onsuccess = () => resolve(request.result);
@@ -22,8 +22,8 @@ async function readCommentStorage(page: Page): Promise<{
                 });
             const [comments, notes] = await Promise.all([read("comments"), read("notes")]);
             return { comments, notes } as {
-                comments: NoteCommentThread[];
-                notes: { id: string; title: string; content: string; metadata?: Record<string, unknown> }[];
+                comments: Array<NoteCommentThread>;
+                notes: Array<{ id: string; title: string; content: string; metadata?: Record<string, unknown> }>;
             };
         } finally {
             database.close();
@@ -38,7 +38,7 @@ async function selectWords(page: Page, words: string, occurrence = 0): Promise<v
     await editor.evaluate(
         (element, { words, occurrence }) => {
             const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-            const nodes: Text[] = [];
+            const nodes: Array<Text> = [];
             let text = "";
             while (walker.nextNode()) {
                 const node = walker.currentNode as Text;
@@ -46,12 +46,12 @@ async function selectWords(page: Page, words: string, occurrence = 0): Promise<v
                 text += node.data;
             }
             let start = -1;
-            for (let index = 0; index <= occurrence; index++) start = text.indexOf(words, start + 1);
-            if (start < 0) throw new Error(`Text not found: ${words}`);
+            for (let index = 0; index <= occurrence; index++) {start = text.indexOf(words, start + 1);}
+            if (start < 0) {throw new Error(`Text not found: ${words}`);}
             const range = document.createRange();
             let offset = 0;
             for (const node of nodes) {
-                if (start >= offset && start < offset + node.length) range.setStart(node, start - offset);
+                if (start >= offset && start < offset + node.length) {range.setStart(node, start - offset);}
                 const end = start + words.length;
                 if (end > offset && end <= offset + node.length) {
                     range.setEnd(node, end - offset);
@@ -286,8 +286,8 @@ test("migrates existing web comments when upgrading IndexedDB", async ({ cleanPa
                 (table: {
                     name: string;
                     schema: {
-                        primKey: { keyPath: string | string[]; auto: boolean };
-                        indexes: { name: string; keyPath: string | string[]; unique: boolean; multi: boolean }[];
+                        primKey: { keyPath: string | Array<string>; auto: boolean };
+                        indexes: Array<{ name: string; keyPath: string | Array<string>; unique: boolean; multi: boolean }>;
                     };
                 }) => ({ name: table.name, ...table.schema }),
             );
@@ -310,7 +310,7 @@ test("migrates existing web comments when upgrading IndexedDB", async ({ cleanPa
                         autoIncrement: schema.primKey.auto,
                     });
                     for (const index of schema.indexes)
-                        store.createIndex(index.name, index.keyPath, { unique: index.unique, multiEntry: index.multi });
+                        {store.createIndex(index.name, index.keyPath, { unique: index.unique, multiEntry: index.multi });}
                 }
                 request.transaction!.objectStore("notes").put(source);
                 request.transaction!.objectStore("notes").put(companion);
@@ -526,7 +526,7 @@ test("retains comments through trash and restore and removes their rows on perma
         await repositories.notes.restore(reference);
     }, reference);
     const retry = page.getByRole("button", { name: "Retry loading comments" });
-    if (await retry.isVisible()) await retry.click();
+    if (await retry.isVisible()) {await retry.click();}
     await expect(page.getByRole("complementary", { name: "Sentence comments" })).toContainText("Retained comment");
     await expect(page.getByRole("complementary", { name: "Sentence comments" }).getByRole("alert")).toBeHidden();
     await page.evaluate(

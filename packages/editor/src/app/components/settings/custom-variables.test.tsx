@@ -5,7 +5,7 @@ import { Script } from "@/store/repositories/entities/script";
 import { CustomVariables } from "./custom-variables";
 
 const mocks = vi.hoisted(() => ({
-    scripts: [] as Script[],
+    scripts: [] as Array<Script>,
     refresh: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),

@@ -5,7 +5,7 @@ test("persists sentence comments and offline replies in the production PWA", asy
     cleanPage: page,
     context,
 }, testInfo) => {
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await goHome(page);
     const sourceUrl = await createNote(page, "Production comments", "Review this production sentence.");

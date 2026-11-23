@@ -41,11 +41,11 @@ require(${JSON.stringify(path.join(buildRoot, "build/main.js"))});`,
             cli: "undefined",
         });
         const state = await application.evaluate(({ BrowserWindow, Menu, ipcMain }) => {
-            const labels: string[] = [];
+            const labels: Array<string> = [];
             function visit(menu: Electron.Menu | null): void {
                 for (const item of menu?.items ?? []) {
                     labels.push(item.label);
-                    if (item.submenu) visit(item.submenu);
+                    if (item.submenu) {visit(item.submenu);}
                 }
             }
             visit(Menu.getApplicationMenu());

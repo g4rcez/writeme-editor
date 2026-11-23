@@ -48,9 +48,9 @@ const ImageView = (props: any) => {
     const isError = error || imgError;
 
     useEffect(() => {
-        if (!selected) return;
+        if (!selected) {return;}
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+            if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") {return;}
             e.preventDefault();
             e.stopPropagation();
             const step = e.shiftKey ? 50 : 10;
@@ -63,12 +63,12 @@ const ImageView = (props: any) => {
     }, [selected, width]);
 
     const handleOpenPreview = () => {
-        if (!displaySrc) return;
+        if (!displaySrc) {return;}
         uiDispatch.openMediaPreview([{ src: displaySrc, type: "image", title: alt }]);
     };
 
     const handleOpenPreviewKeyDown: React.KeyboardEventHandler = (e) => {
-        if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.key !== "Enter" && e.key !== " ") {return;}
         e.preventDefault();
         handleOpenPreview();
     };
@@ -80,7 +80,7 @@ const ImageView = (props: any) => {
     };
 
     const makeResizeKeyDownHandler = (): React.KeyboardEventHandler<HTMLButtonElement> => (e) => {
-        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Enter" && e.key !== " ") return;
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Enter" && e.key !== " ") {return;}
         e.preventDefault();
         e.stopPropagation();
         const step = e.shiftKey ? 50 : 10;

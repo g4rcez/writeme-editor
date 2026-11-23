@@ -9,25 +9,25 @@ const stripInlineSyntax = (raw: string): string =>
     raw
         .replace(/>>math/, "")
         .trim()
-        .replace(/\*\*/g, "^")
-        .replace(/=$/g, "")
+        .replaceAll('**', "^")
+        .replaceAll(/=$/g, "")
         .trim();
 
 export function evaluateInlineMath(expr: string, ratesData?: ExchangeRateData | null): EvaluatedResult {
     try {
         const natural = Dates.evaluateNatural(expr);
-        if (natural !== null) return { ok: true, value: natural };
+        if (natural !== null) {return { ok: true, value: natural };}
         const math = getMathInstance(16, ratesData ?? null);
         const value = evaluateMathExpression(expr, math);
         return { ok: true, value: formatResult(value) };
-    } catch (e) {
-        return { ok: false, message: errorMessage(e) };
+    } catch (error) {
+        return { ok: false, message: errorMessage(error) };
     }
 }
 
 export function runInlineMath(captured: string, ratesData?: ExchangeRateData | null): string {
     const expr = stripInlineSyntax(captured.trim());
-    if (expr === "") return "";
+    if (expr === "") {return "";}
     const result = evaluateInlineMath(expr, ratesData);
     return result.ok ? `${expr} = ${result.value}` : `${expr} = ${result.message}`;
 }

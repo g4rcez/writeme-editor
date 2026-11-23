@@ -11,7 +11,7 @@ const { savedRows, cursorPositions } = vi.hoisted(() => {
         get: vi.fn(async (noteId: string) => savedRows.get(noteId) ?? null),
         count: vi.fn(async () => savedRows.size),
         toArray: vi.fn(async () => Array.from(savedRows.values())),
-        bulkDelete: vi.fn(async (noteIds: string[]) => {
+        bulkDelete: vi.fn(async (noteIds: Array<string>) => {
             for (const noteId of noteIds) {
                 savedRows.delete(noteId);
             }

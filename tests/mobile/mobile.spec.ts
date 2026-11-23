@@ -12,11 +12,11 @@ async function importMarkdown(page: Page, title: string, content: string): Promi
 }
 
 test("mobile shell has accessible touch controls and omits AI", async ({ page }) => {
-    const errors: string[] = [];
-    const aiRequests: string[] = [];
+    const errors: Array<string> = [];
+    const aiRequests: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("request", (request) => {
-        if (/localhost:4079|api\.openai\.com|api\.anthropic\.com/.test(request.url())) aiRequests.push(request.url());
+        if (/localhost:4079|api\.openai\.com|api\.anthropic\.com/.test(request.url())) {aiRequests.push(request.url());}
     });
     await page.goto("/");
     await expect(page).toHaveURL(/#\/notes$/);
@@ -113,7 +113,7 @@ test("backup round trip preserves notes and PDF bytes and excludes AI", async ({
     const download = await pendingDownload;
     const filename = await download.path();
     expect(filename).not.toBeNull();
-    if (!filename) throw new Error("Backup download is missing.");
+    if (!filename) {throw new Error("Backup download is missing.");}
     const context = await browser.newContext();
     const restored = await context.newPage();
     await restored.goto("/#/settings/backup");
@@ -126,7 +126,7 @@ test("backup round trip preserves notes and PDF bytes and excludes AI", async ({
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
-        const read = <T>(table: string): Promise<T[]> =>
+        const read = <T>(table: string): Promise<Array<T>> =>
             new Promise((resolve, reject) => {
                 const request = database.transaction(table).objectStore(table).getAll();
                 request.onsuccess = () => resolve(request.result);
@@ -169,7 +169,7 @@ test("exports live Markdown and saves it when backgrounded", async ({ page }) =>
     const pending = page.waitForEvent("download");
     await page.getByRole("button", { name: "Export note", exact: true }).click();
     const filename = await (await pending).path();
-    if (!filename) throw new Error("Exported note is missing.");
+    if (!filename) {throw new Error("Exported note is missing.");}
     expect(await readFile(filename, "utf8")).toBe("# Live Markdown\n\nCurrent edit");
     await page.evaluate(() => window.dispatchEvent(new Event("writeme:mobile-pause")));
     await expect(page.locator(".writeme-editor-status-bar output").first()).toHaveText("Saved");

@@ -18,15 +18,15 @@ const asRecord = (value: unknown): Json => (value && typeof value === "object" ?
 const asString = (value: unknown): string => (typeof value === "string" ? value : "");
 
 /** Physical devices from `xcrun devicectl list devices --json-output`; simulated entries are dropped. */
-export function listPhysicalDevices(json: unknown): DeviceInfo[] {
+export function listPhysicalDevices(json: unknown): Array<DeviceInfo> {
     const devices = asRecord(asRecord(json).result).devices;
-    if (!Array.isArray(devices)) return [];
-    return devices.flatMap((entry): DeviceInfo[] => {
+    if (!Array.isArray(devices)) {return [];}
+    return devices.flatMap((entry): Array<DeviceInfo> => {
         const hardware = asRecord(asRecord(entry).hardwareProperties);
-        if (asString(hardware.reality) === "simulated") return [];
+        if (asString(hardware.reality) === "simulated") {return [];}
         const id = asString(asRecord(entry).identifier);
         const udid = asString(hardware.udid) || id;
-        if (!id) return [];
+        if (!id) {return [];}
         return [
             {
                 id,
@@ -41,12 +41,12 @@ export function listPhysicalDevices(json: unknown): DeviceInfo[] {
     });
 }
 
-const describe = (devices: DeviceInfo[]): string =>
+const describe = (devices: Array<DeviceInfo>): string =>
     devices
         .map((device) => `  - ${device.name} (${device.model || "iOS device"}, ${device.udid}) [${device.state}]`)
         .join("\n");
 
-export function pickDevice(devices: DeviceInfo[], wanted?: string): DeviceInfo {
+export function pickDevice(devices: Array<DeviceInfo>, wanted?: string): DeviceInfo {
     const query = wanted?.trim().toLowerCase();
     const matches = query
         ? devices.filter((device) =>
@@ -109,7 +109,7 @@ export function validateTeam(team: string | undefined): string {
  */
 export function resolveBundleId(requested: string | undefined, allowStore = false): string {
     const bundleId = requested?.trim() || LOCAL_BUNDLE_ID;
-    if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(bundleId)) throw new Error(`Invalid bundle identifier: "${bundleId}".`);
+    if (!/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(bundleId)) {throw new Error(`Invalid bundle identifier: "${bundleId}".`);}
     if (bundleId === STORE_BUNDLE_ID && !allowStore) {
         throw new Error(
             `Refusing to register ${STORE_BUNDLE_ID} from a development team: it may become unavailable for the App Store account.\nUse the default (${LOCAL_BUNDLE_ID}) or set WRITEME_IOS_ALLOW_STORE_BUNDLE_ID=1 if this team will publish the app.`,
@@ -124,7 +124,7 @@ export function deviceBuildArgs(options: {
     udid: string;
     team: string;
     bundleId: string;
-}): string[] {
+}): Array<string> {
     return [
         "-project",
         options.project,

@@ -1,17 +1,17 @@
 import { lexer, type Tokens } from "marked";
 import type { Note } from "@/store/note";
 
-export type CommentThread = { id: string; quote: string; comments: string[] };
+export type CommentThread = { id: string; quote: string; comments: Array<string> };
 export type CommentCompanion = { title: string; filePath: string | null; href: string };
 
 export function commentSlug(text: string): string {
     return (
         text
             .normalize("NFKD")
-            .replace(/\p{M}/gu, "")
+            .replaceAll(/\p{M}/gu, "")
             .toLowerCase()
-            .replace(/[^\p{L}\p{N}]+/gu, "-")
-            .replace(/^-+|-+$/g, "") || "comment"
+            .replaceAll(/[^\p{L}\p{N}]+/gu, "-")
+            .replaceAll(/^-+|-+$/g, "") || "comment"
     );
 }
 
@@ -27,9 +27,9 @@ export function getCommentCompanion(note: Note): CommentCompanion {
 }
 
 export function getCommentId(href: unknown, note: Note): string | null {
-    if (typeof href !== "string") return null;
+    if (typeof href !== "string") {return null;}
     const hash = href.indexOf("#");
-    if (hash < 0) return null;
+    if (hash < 0) {return null;}
     try {
         const aliases = note.metadata?.commentReferenceHrefs;
         const targets = [
@@ -37,7 +37,7 @@ export function getCommentId(href: unknown, note: Note): string | null {
             ...(Array.isArray(aliases) ? aliases.filter((alias): alias is string => typeof alias === "string") : []),
         ];
         if (!targets.some((target) => decodeURIComponent(href.slice(0, hash)) === decodeURIComponent(target)))
-            return null;
+            {return null;}
         return decodeURIComponent(href.slice(hash + 1)) || null;
     } catch {
         return null;
@@ -49,8 +49,8 @@ export function getCommentReferenceHref(reference: Note): string {
     return `./${encodeURIComponent(/\.md$/i.test(filename) ? filename : `${filename}.md`)}`;
 }
 
-export function parseCommentThreads(content: string): CommentThread[] {
-    const threads: CommentThread[] = [];
+export function parseCommentThreads(content: string): Array<CommentThread> {
+    const threads: Array<CommentThread> = [];
     let thread: CommentThread | undefined;
     let sectionQuoteSeen = false;
     for (const token of lexer(content)) {
@@ -66,7 +66,7 @@ export function parseCommentThreads(content: string): CommentThread[] {
             thread = undefined;
         } else if (thread && token.type === "blockquote" && !sectionQuoteSeen) {
             sectionQuoteSeen = true;
-            if (!thread.quote) thread.quote = token.text.trim();
+            if (!thread.quote) {thread.quote = token.text.trim();}
         } else if (thread && token.type === "list") {
             thread.comments.push(...token.items.map((item: Tokens.ListItem) => normalizeCommentText(item.text)));
         } else if (thread && token.type !== "space") {
@@ -84,8 +84,8 @@ function normalizeCommentText(text: string): string {
         .map((line) => {
             const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
             if (marker) {
-                if (!fence) fence = marker;
-                else if (marker[0] === fence[0] && marker.length >= fence.length) fence = undefined;
+                if (!fence) {fence = marker;}
+                else if (marker[0] === fence[0] && marker.length >= fence.length) {fence = undefined;}
                 return line;
             }
             return fence ? line : line.replace(/[ \t]{2,}$/, "");
@@ -98,7 +98,7 @@ export function uniqueCommentId(text: string, used: Iterable<string>): string {
     const base = commentSlug(text);
     let id = base;
     let suffix = 2;
-    while (ids.has(id)) id = `${base}-${suffix++}`;
+    while (ids.has(id)) {id = `${base}-${suffix++}`;}
     return id;
 }
 
@@ -113,7 +113,7 @@ export function appendNoteComment(content: string, id: string, quote: string, bo
                 end = offset;
                 break;
             }
-            if (token.depth === 2 && token.text.trim() === id) start = offset + token.raw.length;
+            if (token.depth === 2 && token.text.trim() === id) {start = offset + token.raw.length;}
         }
         offset += token.raw.length;
     }

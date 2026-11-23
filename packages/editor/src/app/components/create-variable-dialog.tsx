@@ -20,11 +20,11 @@ export const CreateVariableDialog = () => {
     };
 
     const handleCreate = async () => {
-        if (!name) return;
+        if (!name) {return;}
 
         const newScript = new Script(
             uuid(),
-            name.toUpperCase().replace(/\s+/g, "_"),
+            name.toUpperCase().replaceAll(/\s+/g, "_"),
             expression,
             new Date(),
             new Date(),
@@ -74,7 +74,7 @@ ${expression}
                                 "text/html",
                             );
                             const codeBlock = dom.querySelector("code")!.innerText;
-                            setExpression(codeBlock.trim().replace(/\n$/g, ""));
+                            setExpression(codeBlock.trim().replaceAll(/\n$/g, ""));
                         }}
                     />
                     <p className="text-xs text-muted-foreground">

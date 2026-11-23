@@ -7,7 +7,7 @@ export const updatePosition = (editor: any, element: HTMLElement) => {
     };
     element.style.width = "max-content";
     requestAnimationFrame(() => {
-        if (!element.isConnected) return;
+        if (!element.isConnected) {return;}
         void computePosition(virtualElement, element, {
             placement: "bottom-start",
             strategy: "absolute",

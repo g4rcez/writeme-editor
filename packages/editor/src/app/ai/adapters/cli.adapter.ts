@@ -36,7 +36,7 @@ export class CLIAdapter implements AIAdapter {
         return false;
     }
 
-    async listModels(_credentials: AuthCredentials): Promise<AIModel[]> {
+    async listModels(_credentials: AuthCredentials): Promise<Array<AIModel>> {
         return [];
     }
 
@@ -45,7 +45,7 @@ export class CLIAdapter implements AIAdapter {
     }
 
     async *sendMessage(
-        messages: AIConversationMessage[],
+        messages: Array<AIConversationMessage>,
         options: SendOptions,
         signal?: AbortSignal,
     ): AsyncIterable<AIStreamEvent> {
@@ -68,7 +68,7 @@ export class CLIAdapter implements AIAdapter {
     private _streamFromIPC(signal?: AbortSignal): AsyncIterable<AIStreamEvent> {
         return {
             [Symbol.asyncIterator]() {
-                const queue: AIStreamEvent[] = [];
+                const queue: Array<AIStreamEvent> = [];
                 let resolve: (() => void) | null = null;
                 let done = false;
 

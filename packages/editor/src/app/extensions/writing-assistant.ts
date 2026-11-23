@@ -18,7 +18,7 @@ export type TiptapWritingIssue = {
 
 export type TiptapWritingAssistantState = {
     revision: number;
-    issues: TiptapWritingIssue[];
+    issues: Array<TiptapWritingIssue>;
     activeId: string | null;
     statusMessage: string | null;
     decorations: DecorationSet;
@@ -26,7 +26,7 @@ export type TiptapWritingAssistantState = {
 };
 
 type WritingAssistantMeta =
-    | { type: "show"; revision: number; issues: TiptapWritingIssue[] }
+    | { type: "show"; revision: number; issues: Array<TiptapWritingIssue> }
     | { type: "clear" }
     | { type: "activate"; id: string }
     | { type: "dismiss"; id: string }
@@ -39,7 +39,7 @@ const SPELLCHECK_EXCLUDED_NODE_TYPES = new Set(["frontmatter", "codeBlock", "blo
 
 function fragmentHasNonTextNodes(fragment: Fragment): boolean {
     for (let index = 0; index < fragment.childCount; index += 1) {
-        if (!fragment.child(index).isText) return true;
+        if (!fragment.child(index).isText) {return true;}
     }
     return false;
 }
@@ -47,7 +47,7 @@ function fragmentHasNonTextNodes(fragment: Fragment): boolean {
 function fragmentHasExcludedMarks(fragment: Fragment): boolean {
     for (let index = 0; index < fragment.childCount; index += 1) {
         const node = fragment.child(index);
-        if (node.isText && hasExcludedTiptapWritingMark(node)) return true;
+        if (node.isText && hasExcludedTiptapWritingMark(node)) {return true;}
     }
     return false;
 }
@@ -57,9 +57,9 @@ function shouldRebuildSpellcheckDecorations(
     oldDoc: ProseMirrorNode,
     newDoc: ProseMirrorNode,
 ): boolean {
-    if (transaction.steps.length !== 1) return true;
+    if (transaction.steps.length !== 1) {return true;}
     const [step] = transaction.steps;
-    if (!(step instanceof ReplaceStep)) return true;
+    if (!(step instanceof ReplaceStep)) {return true;}
 
     const replacedContent = oldDoc.slice(step.from, step.to).content;
     if (
@@ -77,7 +77,7 @@ function shouldRebuildSpellcheckDecorations(
 }
 
 function buildSpellcheckDecorations(doc: ProseMirrorNode): DecorationSet {
-    const decorations: Decoration[] = [];
+    const decorations: Array<Decoration> = [];
     doc.descendants((node, position, parent) => {
         if (SPELLCHECK_EXCLUDED_NODE_TYPES.has(node.type.name)) {
             decorations.push(Decoration.node(position, position + node.nodeSize, { spellcheck: "false" }));
@@ -93,11 +93,11 @@ function buildSpellcheckDecorations(doc: ProseMirrorNode): DecorationSet {
 
 function buildDecorations(
     doc: ProseMirrorNode,
-    issues: readonly TiptapWritingIssue[],
+    issues: ReadonlyArray<TiptapWritingIssue>,
     activeId: string | null,
     spellcheckDecorations: DecorationSet,
 ): DecorationSet {
-    if (issues.length === 0) return spellcheckDecorations;
+    if (issues.length === 0) {return spellcheckDecorations;}
 
     const suggestions = issues.map((issue) =>
         Decoration.inline(
@@ -121,7 +121,7 @@ function buildDecorations(
 function createState(
     doc: ProseMirrorNode,
     revision: number,
-    issues: TiptapWritingIssue[],
+    issues: Array<TiptapWritingIssue>,
     activeId: string | null,
     statusMessage: string | null,
     spellcheckDecorations: DecorationSet,
@@ -137,7 +137,7 @@ function createState(
 }
 
 function changeTouchesSegment(from: number, to: number, segmentFrom: number, segmentTo: number): boolean {
-    if (from === to) return from >= segmentFrom && from <= segmentTo;
+    if (from === to) {return from >= segmentFrom && from <= segmentTo;}
     return from <= segmentTo && to >= segmentFrom;
 }
 
@@ -147,9 +147,9 @@ function mapIssue(issue: TiptapWritingIssue, transaction: Transaction): TiptapWr
     for (const stepMap of transaction.mapping.maps) {
         let touched = false;
         stepMap.forEach((oldStart, oldEnd) => {
-            if (changeTouchesSegment(oldStart, oldEnd, segmentFrom, segmentTo)) touched = true;
+            if (changeTouchesSegment(oldStart, oldEnd, segmentFrom, segmentTo)) {touched = true;}
         });
-        if (touched) return null;
+        if (touched) {return null;}
 
         from = stepMap.map(from, 1);
         to = stepMap.map(to, -1);
@@ -157,23 +157,23 @@ function mapIssue(issue: TiptapWritingIssue, transaction: Transaction): TiptapWr
         segmentTo = stepMap.map(segmentTo, -1);
     }
 
-    if (from >= to || segmentFrom > from || segmentTo < to) return null;
+    if (from >= to || segmentFrom > from || segmentTo < to) {return null;}
     return { ...issue, from, to, segmentFrom, segmentTo };
 }
 
 function mapIssues(
-    issues: readonly TiptapWritingIssue[],
+    issues: ReadonlyArray<TiptapWritingIssue>,
     transaction: Transaction,
     acceptedSegmentId: string | null,
-): { issues: TiptapWritingIssue[]; stale: boolean } {
-    const mapped: TiptapWritingIssue[] = [];
+): { issues: Array<TiptapWritingIssue>; stale: boolean } {
+    const mapped: Array<TiptapWritingIssue> = [];
     const touchedSegments = new Set<string>();
     let stale = false;
     const candidates = issues.map((issue) => {
         const result = mapIssue(issue, transaction);
         if (!result) {
             touchedSegments.add(issue.suggestion.segmentId);
-            if (issue.suggestion.segmentId !== acceptedSegmentId) stale = true;
+            if (issue.suggestion.segmentId !== acceptedSegmentId) {stale = true;}
         }
         return result;
     });
@@ -181,7 +181,7 @@ function mapIssues(
     for (let index = 0; index < issues.length; index += 1) {
         const issue = issues[index];
         const candidate = candidates[index];
-        if (issue && candidate && !touchedSegments.has(issue.suggestion.segmentId)) mapped.push(candidate);
+        if (issue && candidate && !touchedSegments.has(issue.suggestion.segmentId)) {mapped.push(candidate);}
     }
     return { issues: mapped, stale };
 }
@@ -193,7 +193,7 @@ function applyMeta(
 ): TiptapWritingAssistantState {
     switch (meta.type) {
         case "show":
-            if (meta.revision !== current.revision) return current;
+            if (meta.revision !== current.revision) {return current;}
             return createState(doc, current.revision, meta.issues, null, null, current.spellcheckDecorations);
         case "clear":
             return createState(doc, current.revision, [], null, null, current.spellcheckDecorations);
@@ -211,7 +211,7 @@ function applyMeta(
             );
         case "dismiss": {
             const issues = current.issues.filter((issue) => issue.suggestion.id !== meta.id);
-            if (issues.length === current.issues.length) return current;
+            if (issues.length === current.issues.length) {return current;}
             return createState(
                 doc,
                 current.revision,
@@ -223,7 +223,7 @@ function applyMeta(
         }
         case "stale": {
             const issues = current.issues.filter((issue) => issue.suggestion.id !== meta.id);
-            if (issues.length === current.issues.length) return current;
+            if (issues.length === current.issues.length) {return current;}
             return createState(
                 doc,
                 current.revision,
@@ -242,28 +242,28 @@ export function getTiptapWritingAssistantState(state: EditorState): TiptapWritin
     return writingAssistantKey.getState(state);
 }
 
-export function showTiptapWritingIssues(editor: TiptapEditor, issues: TiptapWritingIssue[], revision: number): void {
-    if (editor.isDestroyed || editor.view.isDestroyed) return;
+export function showTiptapWritingIssues(editor: TiptapEditor, issues: Array<TiptapWritingIssue>, revision: number): void {
+    if (editor.isDestroyed || editor.view.isDestroyed) {return;}
     editor.view.dispatch(editor.state.tr.setMeta(writingAssistantKey, { type: "show", issues, revision } satisfies WritingAssistantMeta));
 }
 
 export function clearTiptapWritingIssues(editor: TiptapEditor): void {
-    if (editor.isDestroyed || editor.view.isDestroyed) return;
+    if (editor.isDestroyed || editor.view.isDestroyed) {return;}
     editor.view.dispatch(editor.state.tr.setMeta(writingAssistantKey, { type: "clear" } satisfies WritingAssistantMeta));
 }
 
 export function activateTiptapWritingIssue(editor: TiptapEditor, id: string): void {
-    if (editor.isDestroyed || editor.view.isDestroyed) return;
+    if (editor.isDestroyed || editor.view.isDestroyed) {return;}
     editor.view.dispatch(editor.state.tr.setMeta(writingAssistantKey, { type: "activate", id } satisfies WritingAssistantMeta));
 }
 
 export function dismissTiptapWritingIssue(editor: TiptapEditor, id: string): void {
-    if (editor.isDestroyed || editor.view.isDestroyed) return;
+    if (editor.isDestroyed || editor.view.isDestroyed) {return;}
     editor.view.dispatch(editor.state.tr.setMeta(writingAssistantKey, { type: "dismiss", id } satisfies WritingAssistantMeta));
 }
 
 export function markTiptapWritingIssueStale(editor: TiptapEditor, id: string): void {
-    if (editor.isDestroyed || editor.view.isDestroyed) return;
+    if (editor.isDestroyed || editor.view.isDestroyed) {return;}
     editor.view.dispatch(editor.state.tr.setMeta(writingAssistantKey, { type: "stale", id } satisfies WritingAssistantMeta));
 }
 export function markTiptapWritingIssueAccepted(transaction: Transaction, segmentId: string): Transaction {
@@ -272,9 +272,9 @@ export function markTiptapWritingIssueAccepted(transaction: Transaction, segment
 
 function findClickedIssue(view: EditorView, event: Event): string | null {
     const target = event.target;
-    if (!(target instanceof Element)) return null;
+    if (!(target instanceof Element)) {return null;}
     const decoration = target.closest<HTMLElement>("[data-writing-suggestion-id]");
-    if (!decoration || !view.dom.contains(decoration)) return null;
+    if (!decoration || !view.dom.contains(decoration)) {return null;}
     return decoration.dataset.writingSuggestionId ?? null;
 }
 
@@ -316,7 +316,7 @@ export const WritingAssistant = Extension.create({
                             );
                         }
 
-                        if (meta) return applyMeta(meta, current, newState.doc);
+                        if (meta) {return applyMeta(meta, current, newState.doc);}
                         return current;
                     },
                 },
@@ -327,9 +327,9 @@ export const WritingAssistant = Extension.create({
                     handleDOMEvents: {
                         click(view, event) {
                             const id = findClickedIssue(view, event);
-                            if (!id) return false;
+                            if (!id) {return false;}
                             const state = writingAssistantKey.getState(view.state);
-                            if (!state?.issues.some((issue) => issue.suggestion.id === id)) return false;
+                            if (!state?.issues.some((issue) => issue.suggestion.id === id)) {return false;}
                             event.preventDefault();
                             view.dispatch(
                                 view.state.tr.setMeta(writingAssistantKey, { type: "activate", id } satisfies WritingAssistantMeta),

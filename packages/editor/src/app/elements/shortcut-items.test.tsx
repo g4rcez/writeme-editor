@@ -131,9 +131,9 @@ describe("shortcut-items", () => {
         expect(restore?.bind).toBe("mod+shift+t");
         await act(async () => restore?.action());
 
-        if (method === "selectNoteById") expect(dispatch.selectNoteById).toHaveBeenCalledWith(noteId);
-        else if (method === "addAiChatTab") expect(dispatch.addAiChatTab).toHaveBeenCalledWith(noteId);
-        else expect(dispatch.addTerminalTab).toHaveBeenCalledWith(noteId);
+        if (method === "selectNoteById") {expect(dispatch.selectNoteById).toHaveBeenCalledWith(noteId);}
+        else if (method === "addAiChatTab") {expect(dispatch.addAiChatTab).toHaveBeenCalledWith(noteId);}
+        else {expect(dispatch.addTerminalTab).toHaveBeenCalledWith(noteId);}
         expect(result.current.location.pathname + result.current.location.search).toBe(expectedPath);
         expect(takeRecentlyClosedTab()).toBeNull();
     });
@@ -216,7 +216,7 @@ describe("shortcut-items", () => {
             wrapper: MemoryRouter,
         });
         const openFolder = result.current.find((shortcut) => shortcut.description === "Open...");
-        if (!openFolder) throw new Error("Open... shortcut not found");
+        if (!openFolder) {throw new Error("Open... shortcut not found");}
         const opening = openFolder.action();
 
         await waitFor(() => expect(mocks.migrateNotes).toHaveBeenCalledWith("/workspace"));

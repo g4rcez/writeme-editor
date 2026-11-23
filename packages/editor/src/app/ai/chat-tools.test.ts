@@ -19,7 +19,7 @@ const note = {
 type ExecutableTool = { execute: (input: Record<string, unknown>) => Promise<unknown> };
 async function execute(session: ReturnType<typeof createWorkspaceTools>, name: keyof typeof session.tools, input: Record<string, unknown>) {
     const candidate = session.tools[name] as unknown as Partial<ExecutableTool>;
-    if (!candidate.execute) throw new Error(`Tool ${String(name)} is unavailable`);
+    if (!candidate.execute) {throw new Error(`Tool ${String(name)} is unavailable`);}
     return candidate.execute(input);
 }
 
@@ -30,7 +30,7 @@ describe("workspace tools", () => {
     });
 
     it("returns full Markdown and records deduplicated source activity", async () => {
-        const snapshots: ReturnType<ReturnType<typeof createWorkspaceTools>["getWorkspaceData"]>[] = [];
+        const snapshots: Array<ReturnType<ReturnType<typeof createWorkspaceTools>["getWorkspaceData"]>> = [];
         const session = createWorkspaceTools((data) => snapshots.push(data));
 
         const first = await execute(session, "readNote", { noteId: "note-1", includeContent: true }) as {
@@ -116,7 +116,7 @@ describe("workspace tools", () => {
         const result = await execute(session, "runNotesQuery", {
             query: "SELECT filePath FROM notes",
             limit: 10,
-        }) as { success: boolean; result: { rows: Record<string, unknown>[] } };
+        }) as { success: boolean; result: { rows: Array<Record<string, unknown>> } };
 
         expect(result.success).toBe(true);
         expect(result.result.rows).toHaveLength(1);

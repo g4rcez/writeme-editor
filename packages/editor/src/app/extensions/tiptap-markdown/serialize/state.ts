@@ -18,7 +18,7 @@ const Base = BaseMarkdownSerializerState as unknown as AnyMarkdownSerializerStat
  * - handle commonmark delimiters (https://spec.commonmark.org/0.29/#left-flanking-delimiter-run)
  */
 export class MarkdownSerializerState extends Base {
-    override inlines: Inline[] = [];
+    override inlines: Array<Inline> = [];
 
     constructor(nodes: Record<string, unknown>, marks: Record<string, unknown>, options?: Record<string, unknown>) {
         super(nodes, marks, options ?? {});
@@ -27,7 +27,7 @@ export class MarkdownSerializerState extends Base {
 
     override render(node: Node, parent: Node, index: number) {
         super.render(node, parent, index);
-        const top = this.inlines[this.inlines.length - 1];
+        const top = this.inlines.at(-1);
         if (top?.start && top?.end) {
             const { delimiter, start, end } = this.normalizeInline(top as Required<Inline>);
             this.out = trimInline(this.out, delimiter, start, end);
@@ -69,22 +69,22 @@ export class MarkdownSerializerState extends Base {
         const lineStart = this.atBlockStart || /(?:^|\n)(?:> ?)*[ \t]*$/.test(this.out);
         const escaped = super
             .esc(text, lineStart)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/[=$]/g, "\\$&")
-            .replace(/:(?=\/\/)/g, "\\:");
+            .replaceAll('&', "&amp;")
+            .replaceAll('<', "&lt;")
+            .replaceAll('>', "&gt;")
+            .replaceAll(/[=$]/g, String.raw`\$&`)
+            .replaceAll(/:(?=\/\/)/g, String.raw`\:`);
         return lineStart
             ? escaped
-                  .replace(/^(\s*\d+)\)(?=\s)/, "$1\\)")
-                  .replace(/^[ \t]+/, (indent) => indent.replace(/ /g, "&#32;").replace(/\t/g, "&#9;"))
+                  .replace(/^(\s*\d+)\)(?=\s)/, String.raw`$1\)`)
+                  .replace(/^[ \t]+/, (indent) => indent.replaceAll(' ', "&#32;").replaceAll('	', "&#9;"))
             : escaped;
     }
 
     override esc(text: string, startOfLine = false): string {
         const escaped = super.esc(text, startOfLine);
         return this.inlines.some((inline) => inline.delimiter === "==" && inline.end === undefined)
-            ? escaped.replaceAll("=", "\\=")
+            ? escaped.replaceAll("=", String.raw`\=`)
             : escaped;
     }
 }

@@ -73,7 +73,7 @@ test.describe("Navigation", () => {
         await expect(resizeHandle).toHaveAttribute("aria-valuemax", "400");
         const currentWidth = Number(await resizeHandle.getAttribute("aria-valuenow"));
         const bounds = await resizeHandle.boundingBox();
-        if (!bounds) throw new Error("Resize handle has no visible bounds.");
+        if (!bounds) {throw new Error("Resize handle has no visible bounds.");}
 
         const startX = bounds.x + bounds.width / 2;
         const pointerY = bounds.y + Math.min(bounds.height / 2, 400);
@@ -110,7 +110,7 @@ test.describe("Navigation", () => {
         const sidebar = page.locator(".writeme-aside-panel--open");
         await expect(sidebar).toBeVisible();
         const bounds = await sidebar.boundingBox();
-        if (!bounds) throw new Error("Mobile sidebar has no visible bounds.");
+        if (!bounds) {throw new Error("Mobile sidebar has no visible bounds.");}
         expect(bounds.x).toBeGreaterThanOrEqual(0);
         expect(bounds.x + bounds.width).toBeLessThanOrEqual(375);
 
@@ -118,7 +118,7 @@ test.describe("Navigation", () => {
         expect(documentWidth).toBeLessThanOrEqual(375);
         await page.setViewportSize({ width: 812, height: 375 });
         const landscapeBounds = await sidebar.boundingBox();
-        if (!landscapeBounds) throw new Error("Landscape sidebar has no visible bounds.");
+        if (!landscapeBounds) {throw new Error("Landscape sidebar has no visible bounds.");}
         expect(landscapeBounds.x).toBeGreaterThanOrEqual(0);
         expect(landscapeBounds.x + landscapeBounds.width).toBeLessThanOrEqual(812);
 

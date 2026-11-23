@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn } from "node:child_process";
 import { ipcMain } from "electron";
 import which from "which";
 
@@ -14,7 +14,7 @@ export const executionIpcHandler = () => {
         }
     });
 
-    ipcMain.handle("execution:run", async (event, command: string, args: string[] = [], code: string) => {
+    ipcMain.handle("execution:run", async (event, command: string, args: Array<string> = [], code: string) => {
         return new Promise<{
             stdout: string;
             stderr: string;
@@ -60,7 +60,7 @@ export const executionIpcHandler = () => {
 
             // The process may exit before it reads stdin. "close" still reports the exit code.
             child.stdin.on("error", (err: NodeJS.ErrnoException) => {
-                if (err.code !== "EPIPE") stderr = append(stderr, Buffer.from(`\nstdin failed: ${err.message}`));
+                if (err.code !== "EPIPE") {stderr = append(stderr, Buffer.from(`\nstdin failed: ${err.message}`));}
             });
             child.stdin.write(code);
             child.stdin.end();

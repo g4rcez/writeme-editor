@@ -9,7 +9,7 @@ function samplePdf(): Buffer {
         "BT /F1 24 Tf 50 600 Td (Mobile PDF) Tj ET",
     ];
     let pdf = "%PDF-1.4\n";
-    const offsets: number[] = [];
+    const offsets: Array<number> = [];
     objects.forEach((content, index) => {
         offsets.push(Buffer.byteLength(pdf));
         const body =
@@ -42,8 +42,8 @@ test("imports a PDF and reloads its on-device attachment", async ({ page }) => {
     const download = await pending;
     expect(download.suggestedFilename()).toBe("Mobile.pdf");
     const stream = await download.createReadStream();
-    const chunks: Buffer[] = [];
-    if (!stream) throw new Error("Exported PDF is missing.");
-    for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+    const chunks: Array<Buffer> = [];
+    if (!stream) {throw new Error("Exported PDF is missing.");}
+    for await (const chunk of stream) {chunks.push(Buffer.from(chunk));}
     expect(Buffer.concat(chunks)).toEqual(samplePdf());
 });

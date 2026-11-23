@@ -20,22 +20,22 @@ function ResearchSourceLink({
     async function open(event: MouseEvent<HTMLAnchorElement>): Promise<void> {
         event.preventDefault();
         event.stopPropagation();
-        if (inFlight.current) return;
+        if (inFlight.current) {return;}
         inFlight.current = true;
         try {
             const id = decodeURIComponent(href.split("?")[0]!.slice("/note/".length));
             const source = await repositories.notes.getOne(id);
             if (!source || source.deletedAt)
-                throw new Error(
+                {throw new Error(
                     "The source note is unavailable. Restore it or open its workspace, then try Open source again.",
-                );
+                );}
             navigate(href);
-        } catch (reason) {
+        } catch (error) {
             uiDispatch.setAlert({
                 open: true,
                 type: "error",
                 title: "Source unavailable",
-                message: reason instanceof Error ? reason.message : "Could not open the source. Try Open source again.",
+                message: error instanceof Error ? error.message : "Could not open the source. Try Open source again.",
             });
         } finally {
             inFlight.current = false;
@@ -62,7 +62,7 @@ const hasCustomLabel = (element: HTMLElement, href: string): boolean => {
 function LinkMarkView({ mark, HTMLAttributes }: MarkViewProps) {
     const href = getStringAttribute(mark.attrs.href);
     const title = getStringAttribute(mark.attrs.title) || href;
-    if (!href) return <MarkViewContent />;
+    if (!href) {return <MarkViewContent />;}
     const linkAttributes = mergeAttributes(HTMLAttributes, {
         href,
         title,
@@ -117,7 +117,7 @@ export const LinkMark = Mark.create<LinkMarkOptions>({
                 default: null,
                 parseHTML: (element) => element.getAttribute("href"),
                 renderHTML: (attributes) => {
-                    if (!attributes.href) return {};
+                    if (!attributes.href) {return {};}
                     return { href: attributes.href };
                 },
             },
@@ -125,7 +125,7 @@ export const LinkMark = Mark.create<LinkMarkOptions>({
                 default: null,
                 parseHTML: (element) => element.getAttribute("title"),
                 renderHTML: (attributes) => {
-                    if (!attributes.title) return {};
+                    if (!attributes.title) {return {};}
                     return { title: attributes.title };
                 },
             },
@@ -137,10 +137,10 @@ export const LinkMark = Mark.create<LinkMarkOptions>({
                 tag: "a[href]",
                 priority: 40,
                 getAttrs: (element) => {
-                    if (!(element instanceof HTMLElement)) return false;
-                    if (element.getAttribute("data-type") === "mention") return false;
+                    if (!(element instanceof HTMLElement)) {return false;}
+                    if (element.getAttribute("data-type") === "mention") {return false;}
                     const href = element.getAttribute("href");
-                    if (!href || !hasCustomLabel(element, href)) return false;
+                    if (!href || !hasCustomLabel(element, href)) {return false;}
                     return null;
                 },
             },

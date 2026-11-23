@@ -29,7 +29,7 @@ function scrollToHeading(element: HTMLElement, reduceMotion: boolean): void {
 }
 
 export const TableOfContents = () => {
-    const [headings, setHeadings] = useState<Heading[]>([]);
+    const [headings, setHeadings] = useState<Array<Heading>>([]);
     const [isOpen, setIsOpen] = useState(false);
     const popoverId = useId();
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ export const TableOfContents = () => {
         const container = document.getElementById("main-scroll-container") || document.body;
         let frame: number | null = null;
 
-        const setHeadingState = (newHeadings: Heading[]) => {
+        const setHeadingState = (newHeadings: Array<Heading>) => {
             setHeadings((current) => {
                 if (
                     current.length === newHeadings.length &&
@@ -81,7 +81,7 @@ export const TableOfContents = () => {
                 let changed = false;
                 const updated = current.map((heading) => {
                     const text = heading.element.isConnected ? heading.element.textContent || "" : heading.text;
-                    if (text !== heading.text) changed = true;
+                    if (text !== heading.text) {changed = true;}
                     return text === heading.text ? heading : { ...heading, text };
                 });
                 return changed ? updated : current;
@@ -89,7 +89,7 @@ export const TableOfContents = () => {
         };
 
         const scheduleStructureUpdate = () => {
-            if (frame !== null) return;
+            if (frame !== null) {return;}
             frame = requestAnimationFrame(() => {
                 frame = null;
                 readHeadings();
@@ -108,12 +108,12 @@ export const TableOfContents = () => {
         return () => {
             observer.disconnect();
             container.removeEventListener("input", updateHeadingText);
-            if (frame !== null) cancelAnimationFrame(frame);
+            if (frame !== null) {cancelAnimationFrame(frame);}
         };
     }, []);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {return;}
 
         const handlePointerDown = (event: PointerEvent) => {
             const target = event.target;
@@ -131,7 +131,7 @@ export const TableOfContents = () => {
 
     useEscapeLayer(EscapeLevel.popover, isOpen, () => setIsOpen(false));
 
-    if (headings.length === 0) return null;
+    if (headings.length === 0) {return null;}
 
     return (
         <div ref={popoverRef} className="relative shrink-0 print:hidden @max-2xl:static">

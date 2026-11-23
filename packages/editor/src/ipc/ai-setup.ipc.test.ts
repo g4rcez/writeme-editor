@@ -32,7 +32,7 @@ const rendererUrl = "file:///Applications/Write%20Me.app/Contents/Resources/app.
 
 function invoke(channel: string, url: string | null, value?: unknown, mainFrame = true): unknown {
     const handler = mocks.handle.mock.calls.find(([name]) => name === channel)?.[1];
-    if (!handler) throw new Error("Setup handler not registered.");
+    if (!handler) {throw new Error("Setup handler not registered.");}
     const frame = url === null ? null : { url };
     return handler(
         { senderFrame: frame, sender: { mainFrame: mainFrame && frame ? frame : { url: rendererUrl } } },

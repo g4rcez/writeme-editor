@@ -30,7 +30,7 @@ const tag: Record<Note["noteType"], { title: string; theme: TagProps["theme"] }>
     "meeting-note": { theme: "info", title: "Meeting note" },
 };
 
-function AddToGroupModal({ noteIds, open, onClose }: { noteIds: string[]; open: boolean; onClose: () => void }) {
+function AddToGroupModal({ noteIds, open, onClose }: { noteIds: Array<string>; open: boolean; onClose: () => void }) {
     const [state, dispatch] = useGlobalStore();
     const [pendingGroupIds, setPendingGroupIds] = useState<Set<string>>(new Set());
 
@@ -39,7 +39,7 @@ function AddToGroupModal({ noteIds, open, onClose }: { noteIds: string[]; open: 
     }, []);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open) {return;}
         const initial = new Set(
             state.noteGroups
                 .filter((group) =>
@@ -55,8 +55,8 @@ function AddToGroupModal({ noteIds, open, onClose }: { noteIds: string[]; open: 
     const toggle = (group: NoteGroup) => {
         setPendingGroupIds((prev) => {
             const next = new Set(prev);
-            if (next.has(group.id)) next.delete(group.id);
-            else next.add(group.id);
+            if (next.has(group.id)) {next.delete(group.id);}
+            else {next.add(group.id);}
             return next;
         });
     };
@@ -70,7 +70,7 @@ function AddToGroupModal({ noteIds, open, onClose }: { noteIds: string[]; open: 
             if (wantsIn && !allCurrentlyIn) {
                 for (const id of noteIds) {
                     const alreadyIn = state.noteGroupMembers.some((m) => m.noteId === id && m.groupId === group.id);
-                    if (!alreadyIn) await dispatch.addNoteToGroup(group.id, id);
+                    if (!alreadyIn) {await dispatch.addNoteToGroup(group.id, id);}
                 }
             } else if (!wantsIn && allCurrentlyIn) {
                 for (const id of noteIds) {
@@ -135,7 +135,7 @@ export default function NotesListPage() {
     } = useNoteList();
 
     const [, dispatch] = useGlobalStore();
-    const [groupPickerNoteIds, setGroupPickerNoteIds] = useState<string[]>([]);
+    const [groupPickerNoteIds, setGroupPickerNoteIds] = useState<Array<string>>([]);
     const [batchGroupOpen, setBatchGroupOpen] = useState(false);
     const [view, setView] = useState<"table" | "cards">("table");
 
@@ -234,7 +234,7 @@ export default function NotesListPage() {
                     reference="id"
                     useControl={false}
                     cols={cols as any}
-                    rows={filteredNotes as any[]}
+                    rows={filteredNotes as Array<any>}
                 />
             </div>
         );

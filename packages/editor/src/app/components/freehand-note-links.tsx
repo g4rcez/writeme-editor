@@ -47,7 +47,7 @@ export function NoteLinkPicker({
     notes,
     onChoose,
 }: {
-    notes: readonly NoteLinkTarget[];
+    notes: ReadonlyArray<NoteLinkTarget>;
     onChoose: (note: NoteLinkTarget) => void;
 }): JSX.Element {
     const [query, setQuery] = useState("");
@@ -135,10 +135,10 @@ export function StickyNoteLink({
     const position = preview ?? link;
 
     function startDrag(event: PointerEvent<HTMLButtonElement>): void {
-        if (event.button !== 0 || !event.isPrimary || event.width > 40 || event.height > 40) return;
+        if (event.button !== 0 || !event.isPrimary || event.width > 40 || event.height > 40) {return;}
         const surface = paper.current?.getBoundingClientRect();
         const card = event.currentTarget.closest(".wm-sticky-link")?.getBoundingClientRect();
-        if (!surface || !card) return;
+        if (!surface || !card) {return;}
         event.preventDefault();
         event.currentTarget.focus({ preventScroll: true });
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -159,8 +159,8 @@ export function StickyNoteLink({
 
     function moveDrag(event: PointerEvent<HTMLButtonElement>): void {
         const active = drag.current;
-        if (!active || active.pointerId !== event.pointerId) return;
-        if (Math.hypot(event.clientX - active.x, event.clientY - active.y) < 3 && !moved.current) return;
+        if (!active || active.pointerId !== event.pointerId) {return;}
+        if (Math.hypot(event.clientX - active.x, event.clientY - active.y) < 3 && !moved.current) {return;}
         moved.current = true;
         active.preview = clampLinkPosition(
             {
@@ -175,12 +175,12 @@ export function StickyNoteLink({
 
     function endDrag(event: PointerEvent<HTMLButtonElement>, cancelled = false): void {
         const active = drag.current;
-        if (!active || active.pointerId !== event.pointerId) return;
+        if (!active || active.pointerId !== event.pointerId) {return;}
         drag.current = null;
         ignoreClick.current = true;
         if (!cancelled) {
-            if (moved.current && active.preview) onMove(active.preview);
-            else if (!moved.current) onPlace();
+            if (moved.current && active.preview) {onMove(active.preview);}
+            else if (!moved.current) {onPlace();}
         }
         setPreview(null);
     }
@@ -190,13 +190,13 @@ export function StickyNoteLink({
     }
 
     function activateLink(event: MouseEvent<HTMLButtonElement>): void {
-        if (event.detail === 0 || !ignoreClick.current) onPlace();
+        if (event.detail === 0 || !ignoreClick.current) {onPlace();}
         ignoreClick.current = false;
     }
 
     function moveLinkWithKeyboard(event: KeyboardEvent<HTMLButtonElement>): void {
         const step = LINK_MOVE_STEPS[event.key];
-        if (!step) return;
+        if (!step) {return;}
         ignoreClick.current = false;
         event.preventDefault();
         event.stopPropagation();

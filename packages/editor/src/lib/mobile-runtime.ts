@@ -3,7 +3,7 @@ import { Capacitor } from "@capacitor/core";
 export const MOBILE_PAUSE_EVENT = "writeme:mobile-pause";
 
 export async function initializeMobileRuntime(): Promise<void> {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform()) {return;}
     const [{ App }, { Browser }, { StatusBar, Style }] = await Promise.all([
         import("@capacitor/app"),
         import("@capacitor/browser"),
@@ -11,7 +11,7 @@ export async function initializeMobileRuntime(): Promise<void> {
     ]);
 
     await App.addListener("appStateChange", ({ isActive }) => {
-        if (!isActive) window.dispatchEvent(new Event(MOBILE_PAUSE_EVENT));
+        if (!isActive) {window.dispatchEvent(new Event(MOBILE_PAUSE_EVENT));}
     });
 
     const applyStatusBar = async (): Promise<void> => {
@@ -32,11 +32,11 @@ export async function initializeMobileRuntime(): Promise<void> {
     });
 
     document.addEventListener("click", (event) => {
-        if (event.defaultPrevented || !(event.target instanceof Element)) return;
+        if (event.defaultPrevented || !(event.target instanceof Element)) {return;}
         const anchor = event.target.closest("a");
-        if (!anchor) return;
+        if (!anchor) {return;}
         const url = new URL(anchor.href, window.location.href);
-        if (!["https:", "http:"].includes(url.protocol) || url.origin === window.location.origin) return;
+        if (!["https:", "http:"].includes(url.protocol) || url.origin === window.location.origin) {return;}
         event.preventDefault();
         void Browser.open({ url: url.href }).catch(reportError);
     });

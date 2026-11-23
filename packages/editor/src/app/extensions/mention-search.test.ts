@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { EditorMentionItem } from "@/lib/editor-storage";
 import { filterMentionItems } from "./mention-search";
 
-const candidates: EditorMentionItem[] = [
+const candidates: Array<EditorMentionItem> = [
     { id: "note-1", label: "Roadmap", path: "/note/note-1", filePath: "/workspace/notes/roadmap.md", kind: "note" },
     { id: "note-2", label: "Release plan", path: "/note/note-2", filePath: "/workspace/notes/release-plan.md", kind: "note" },
     { id: "file-1", label: "Markdown file", path: "docs/roadmap.md", filePath: "/workspace/docs/roadmap.md", kind: "file" },

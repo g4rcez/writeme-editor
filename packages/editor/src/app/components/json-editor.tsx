@@ -48,7 +48,7 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
     const isDark = state.theme !== "light";
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
 
         const view = new EditorView({
             state: EditorState.create({
@@ -101,11 +101,10 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
             view.destroy();
             viewRef.current = null;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
-        if (!viewRef.current) return;
+        if (!viewRef.current) {return;}
         viewRef.current.dispatch({
             effects: themeCompartment.current.reconfigure(isDark ? tokyoNightStorm : jsonLightTheme),
         });
@@ -113,9 +112,9 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
 
     useEffect(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         const current = view.state.doc.toString();
-        if (current === value) return;
+        if (current === value) {return;}
         view.dispatch({
             changes: { from: 0, to: view.state.doc.length, insert: value },
         });
@@ -123,7 +122,7 @@ export const JsonEditor = ({ value, onChange, className }: Props) => {
 
     const handleFormat = useCallback(() => {
         const view = viewRef.current;
-        if (!view) return;
+        if (!view) {return;}
         try {
             const parsed = JSON.parse(view.state.doc.toString());
             const formatted = JSON.stringify(parsed, null, 2);

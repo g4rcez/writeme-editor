@@ -4,7 +4,7 @@ import type { Note } from "@/store/note";
 import { getEditorAllNotes, setEditorAllNotes, setEditorAllNotesSource } from "./editor-storage";
 
 const editor = () => ({ storage: {} }) as unknown as Editor;
-const notes = (...ids: string[]) => ids.map((id) => ({ id }) as Note);
+const notes = (...ids: Array<string>) => ids.map((id) => ({ id }) as Note);
 
 describe("editor notes storage", () => {
     it("reads through the live source, so a pane never keeps an outdated copy", () => {

@@ -11,8 +11,8 @@ const {
     sourceWhereAboveCalls,
     unboundedSourceToArray,
 } = vi.hoisted(() => {
-    const records = new Map<string, unknown[]>();
-    const readLimits: number[] = [];
+    const records = new Map<string, Array<unknown>>();
+    const readLimits: Array<number> = [];
     const orderByCalls: Array<[string, string]> = [];
     const whereAboveCalls: Array<[string, string, string | number]> = [];
     const primaryKeyFor = (name: string): string => (name === "cursorPositions" ? "noteId" : "id");
@@ -21,7 +21,7 @@ const {
             ? (record as Record<string, unknown>)[primaryKey]
             : undefined;
     const compareKeys = (left: unknown, right: unknown): number => {
-        if (left === right) return 0;
+        if (left === right) {return 0;}
         return (left as string | number) < (right as string | number) ? -1 : 1;
     };
     const clone = (record: unknown): unknown =>
@@ -58,13 +58,13 @@ const {
                 schema: { primKey: { name: primaryKey } },
                 count: () => Promise.resolve(records.get(name)?.length ?? 0),
                 orderBy: (index: string) => {
-                    if (index !== primaryKey) throw new Error(`Unknown index: ${index}`);
+                    if (index !== primaryKey) {throw new Error(`Unknown index: ${index}`);}
                     orderByCalls.push([name, index]);
                     return page(name, primaryKey);
                 },
                 where: (index: string) => ({
                     above: (lastKey: string | number) => {
-                        if (index !== primaryKey) throw new Error(`Unknown index: ${index}`);
+                        if (index !== primaryKey) {throw new Error(`Unknown index: ${index}`);}
                         whereAboveCalls.push([name, index, lastKey]);
                         return page(name, primaryKey, lastKey);
                     },
@@ -73,7 +73,7 @@ const {
                 toArray: unboundedToArray,
             };
         }),
-        credentialsToArray: vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([])),
+        credentialsToArray: vi.fn<() => Promise<Array<unknown>>>(() => Promise.resolve([])),
         sourceReadLimits: readLimits,
         sourceOffset: offset,
         sourceOrderByCalls: orderByCalls,
@@ -131,14 +131,14 @@ beforeEach(() => {
         configurable: true,
         value: {
             db: {
-                migrateCollection: vi.fn(async (_name: string, records: unknown[]) => ({
+                migrateCollection: vi.fn(async (_name: string, records: Array<unknown>) => ({
                     found: records.length,
                     imported: records.length,
                     updated: 0,
                     identical: 0,
                     skipped: 0,
                 })),
-                verifyCollection: vi.fn(async (name: string, records: unknown[]) => ({
+                verifyCollection: vi.fn(async (name: string, records: Array<unknown>) => ({
                     sourceCount: records.length,
                     destinationCount: collectionRecords.get(name)?.length ?? 0,
                     matched: records.length,
@@ -200,7 +200,7 @@ describe("Dexie to SQLite migration", () => {
     it("bounds every generic source read during migration and verification", async () => {
         collectionRecords.set(
             "notes",
-            Array.from({ length: 1_001 }, (_, index) => ({ id: `note-${index}` })),
+            Array.from({ length: 1001 }, (_, index) => ({ id: `note-${index}` })),
         );
 
         await migrateDexieToSqlite();
@@ -251,7 +251,7 @@ describe("Dexie to SQLite migration", () => {
         );
         let noteBatch = 0;
         vi.mocked(window.electronAPI.db.migrateCollection).mockImplementation(async (name, records) => {
-            if (name === "notes" && ++noteBatch === 2) throw new Error("batch 2 failed");
+            if (name === "notes" && ++noteBatch === 2) {throw new Error("batch 2 failed");}
             return {
                 found: records.length,
                 imported: records.length,

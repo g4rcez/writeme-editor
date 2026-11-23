@@ -4,7 +4,7 @@ import { isMobile } from "@/lib/platform";
 export const COMPACT_QUERY = "(max-width: 767px)";
 
 const subscribe = (onChange: () => void): (() => void) => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => undefined;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {return () => undefined;}
     const mql = window.matchMedia(COMPACT_QUERY);
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);

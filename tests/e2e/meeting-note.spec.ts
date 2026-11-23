@@ -21,7 +21,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
             MediaRecorder.prototype.start = function (timeslice?: number): void {
                 ready = false;
                 this.addEventListener("dataavailable", (event) => {
-                    if (event.data.size) ready = true;
+                    if (event.data.size) {ready = true;}
                 });
                 start.call(this, timeslice);
             };
@@ -38,7 +38,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
         await expect(page).toHaveURL(/\/note\/[^/]+$/);
         const setup = page.getByRole("dialog", { name: "Set up meeting notes", exact: true });
         await expect(setup).toBeVisible();
-        if (onboarding) return;
+        if (onboarding) {return;}
         await setup.getByRole("button", { name: "Skip for now" }).click();
         await expect(setup).not.toBeVisible();
         await expect(page.getByRole("region", { name: "Meeting transcription" })).toBeVisible();
@@ -87,8 +87,8 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
             const download = await downloading;
             expect(download.suggestedFilename()).toBe(`writeme-install-whisper-${os}.${extension}`);
             const stream = await download.createReadStream();
-            const chunks: Buffer[] = [];
-            for await (const chunk of stream!) chunks.push(chunk);
+            const chunks: Array<Buffer> = [];
+            for await (const chunk of stream!) {chunks.push(chunk);}
             const content = Buffer.concat(chunks).toString("utf8");
             expect(content).toContain(tool);
             expect(content).toContain("--convert --language auto");
@@ -178,8 +178,8 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
             await expect(setup.getByRole("button", { name: "Stop test and transcribe" })).toBeVisible();
             await page.waitForFunction(() => Reflect.get(window, "meetingAudioReady"));
             await setup.getByRole("button", { name: "Stop test and transcribe" }).click();
-            if (attempt === 0) await expect(setup.getByRole("alert")).toContainText("503");
-            else await expect(setup.getByRole("status")).toHaveText("Sample test passed");
+            if (attempt === 0) {await expect(setup.getByRole("alert")).toContainText("503");}
+            else {await expect(setup.getByRole("status")).toHaveText("Sample test passed");}
         }
         await setup.getByRole("button", { name: "Continue", exact: true }).click();
         await expect(setup.getByRole("heading", { name: "Review and finish" })).toBeFocused();
@@ -305,7 +305,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
             let stream: MediaStream | null = null;
             Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
                 value: async (constraints: MediaStreamConstraints) => {
-                    if (++attempts === 1) throw new Error("Microphone access denied");
+                    if (++attempts === 1) {throw new Error("Microphone access denied");}
                     stream = await original(constraints);
                     return stream;
                 },
@@ -352,7 +352,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
     });
 
     test("imports named captions, renames speakers and preserves notes across reload", async ({ cleanPage: page }) => {
-        const errors: string[] = [];
+        const errors: Array<string> = [];
         page.on("pageerror", (error) => errors.push(error.message));
         await createMeeting(page);
         const panel = page.getByRole("region", { name: "Meeting transcription" });
@@ -395,7 +395,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
     }) => {
         let uploads = 0;
         let uploadedAudio = false;
-        const uploadedModels: string[] = [];
+        const uploadedModels: Array<string> = [];
         await page.route("http://localhost:8080/inference", async (route) => {
             if (route.request().method() === "OPTIONS") {
                 await route.fulfill({ status: 204 });
@@ -458,7 +458,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
                 return;
             }
             uploads++;
-            if (uploads === 1) await pending;
+            if (uploads === 1) {await pending;}
             await route
                 .fulfill({
                     status: 200,
@@ -615,7 +615,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
         await setup.getByRole("button", { name: "Test microphone and transcription" }).click();
         await expect(setup.getByRole("button", { name: "Stop test and transcribe" })).toBeVisible();
         await setup.getByRole("button", { name: "Skip for now" }).click();
-        await expect(setup).not.toBeVisible({ timeout: 2_000 });
+        await expect(setup).not.toBeVisible({ timeout: 2000 });
         expect(await page.evaluate(() => Reflect.get(window, "dismissedSampleTracksEnded"))).toBe(true);
         await page.waitForFunction(() => typeof Reflect.get(window, "releaseDismissalStorage") === "function");
         await page.evaluate(() => Reflect.get(window, "releaseDismissalStorage")());
@@ -669,7 +669,7 @@ test.describe("production meeting notes", { tag: ["@production", "@production-on
             test.setTimeout(90_000);
             const endpoint = process.env.MEETING_WHISPER_ENDPOINT;
             if (!endpoint || !process.env.MEETING_AUDIO_FIXTURE)
-                throw new Error("Live Whisper requires MEETING_WHISPER_ENDPOINT and MEETING_AUDIO_FIXTURE.");
+                {throw new Error("Live Whisper requires MEETING_WHISPER_ENDPOINT and MEETING_AUDIO_FIXTURE.");}
             await createMeeting(page);
             const panel = page.getByRole("region", { name: "Meeting transcription" });
             await panel.getByText("Recording and transcription settings", { exact: true }).click();

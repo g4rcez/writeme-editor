@@ -7,9 +7,9 @@ export type ResearchExcerptSource =
 
 function escapeMarkdown(text: string): string {
     return text
-        .replace(/&/g, "&amp;")
-        .replace(/([\\`*_{}[\]<>()!#|~=$.+:-])/g, "\\$1")
-        .replace(/^[ \t]+/gm, (indent) => indent.replace(/ /g, "&#32;").replace(/\t/g, "&#9;"));
+        .replaceAll('&', "&amp;")
+        .replaceAll(/([\\`*_{}[\]<>()!#|~=$.+:-])/g, String.raw`\$1`)
+        .replaceAll(/^[ \t]+/gm, (indent) => indent.replaceAll(' ', "&#32;").replaceAll('	', "&#9;"));
 }
 
 export function isResearchDestination(note: Note, sourceId: string): boolean {
@@ -17,8 +17,8 @@ export function isResearchDestination(note: Note, sourceId: string): boolean {
 }
 
 export function createResearchExcerpt(text: string, source: ResearchExcerptSource, operationId: string): string {
-    if (!text.trim()) throw new Error("Select text in the source before sending it to a note.");
-    const quote = escapeMarkdown(text.replace(/\r\n?/g, "\n"))
+    if (!text.trim()) {throw new Error("Select text in the source before sending it to a note.");}
+    const quote = escapeMarkdown(text.replaceAll(/\r\n?/g, "\n"))
         .split(/\r?\n/)
         .map((line) => `> ${line}`)
         .join("\n");
@@ -28,17 +28,17 @@ export function createResearchExcerpt(text: string, source: ResearchExcerptSourc
         params.set("pdf", source.fingerprint);
     }
     const href = `/note/${encodeURIComponent(source.note.id)}?${params}`;
-    const title = escapeMarkdown(source.note.title.replace(/\s+/g, " ") || (source.kind === "pdf" ? "PDF" : "Article"));
+    const title = escapeMarkdown(source.note.title.replaceAll(/\s+/g, " ") || (source.kind === "pdf" ? "PDF" : "Article"));
     const attribution = `${title}${source.kind === "pdf" ? `, p. ${source.page}` : ""} · [Open source](${href})`;
     const original =
         source.kind === "article" && /^https?:\/\//i.test(source.note.url ?? "")
-            ? ` · [Original article](<${source.note.url!.replace(/[<>\s]/g, (char) => encodeURIComponent(char))}>)`
+            ? ` · [Original article](<${source.note.url!.replaceAll(/[<>\s]/g, (char) => encodeURIComponent(char))}>)`
             : "";
     return `${quote}\n>\n> — ${attribution}${original}`;
 }
 
 export function appendResearchExcerpt(content: string, excerpt: string, operationId: string): string {
-    if (content.includes(`excerpt=${encodeURIComponent(operationId)}`)) return content;
+    if (content.includes(`excerpt=${encodeURIComponent(operationId)}`)) {return content;}
     const separator = !content || content.endsWith("\n\n") ? "" : content.endsWith("\n") ? "\n" : "\n\n";
     const appended = `${content}${separator}${excerpt}\n`;
     if (!lexer(appended).some((token) => token.type === "blockquote" && token.raw.includes(excerpt))) {
@@ -58,12 +58,12 @@ export async function saveResearchExcerpt(
 ): Promise<Note> {
     const latest = await repository.getOne(destinationId);
     if (!latest || !isResearchDestination(latest, sourceId))
-        throw new Error("That destination note is no longer available. Choose another note.");
+        {throw new Error("That destination note is no longer available. Choose another note.");}
     const content = appendResearchExcerpt(latest.content, excerpt, operationId);
-    if (content === latest.content) return latest;
+    if (content === latest.content) {return latest;}
     const updated = await repository.updateContentIfUnchanged(destinationId, latest, content);
     if (!updated)
-        throw new Error("That note changed while the excerpt was being added. Retry to keep its latest edits.");
+        {throw new Error("That note changed while the excerpt was being added. Retry to keep its latest edits.");}
     return updated;
 }
 
@@ -71,7 +71,7 @@ export function captureResearchSelection(
     source: ResearchExcerptSource,
     selection: Selection | null,
 ): ResearchExcerptSource | null {
-    if (!selection || selection.isCollapsed || !selection.toString().trim()) return null;
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) {return null;}
     const element = (node: Node | null): Element | null =>
         node instanceof Element ? node : (node?.parentElement ?? null);
     const root = (node: Node | null): Element | null =>
@@ -80,8 +80,8 @@ export function captureResearchSelection(
             : (element(node)?.closest(".ProseMirror, .cm-content")?.closest("[data-research-source]") ?? null);
     const start = root(selection.anchorNode);
     const end = root(selection.focusNode);
-    if (!start || start !== end || start.getAttribute("data-research-source") !== source.note.id) return null;
-    if (source.kind === "article") return source;
+    if (!start || start !== end || start.getAttribute("data-research-source") !== source.note.id) {return null;}
+    if (source.kind === "article") {return source;}
     const page = Number(start.getAttribute("data-pdf-page"));
     return Number.isInteger(page) && page > 0 ? { ...source, page } : null;
 }

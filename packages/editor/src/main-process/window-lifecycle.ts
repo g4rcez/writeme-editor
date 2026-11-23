@@ -20,7 +20,7 @@ export function handleWindowClose(event: Event, window: CloseableWindow, isQuitt
 }
 
 export function openQuickNote(window: QuickNoteWindow | null) {
-    if (!window) return;
+    if (!window) {return;}
     window.show();
     window.focus();
     window.webContents.send("quicknote:open");

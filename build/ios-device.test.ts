@@ -22,7 +22,7 @@ const entry = (
     deviceProperties: { name, developerModeStatus: developerMode },
     connectionProperties: { tunnelState: state, pairingState: pairing },
 });
-const listing = (...devices: unknown[]) => ({ result: { devices } });
+const listing = (...devices: Array<unknown>) => ({ result: { devices } });
 
 describe("listPhysicalDevices", () => {
     it("drops simulated devices and reads name, udid and state", () => {

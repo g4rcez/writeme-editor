@@ -5,34 +5,34 @@ import { HASHTAGS_CHANGED_EVENT } from "@/lib/hashtag-events";
 import { repositories } from "@/store/repositories";
 
 export type NoteWithTags = Note & { tagCount: number };
-type TagIndex = ReadonlyMap<string, readonly string[]>;
+type TagIndex = ReadonlyMap<string, ReadonlyArray<string>>;
 type TagState = { workspace: string | null; index: TagIndex; ready: boolean; error: unknown };
 const emptyIndex: TagIndex = new Map();
 
-function indexHashtags(hashtags: Hashtag[]): TagIndex {
-    const index = new Map<string, string[]>();
+function indexHashtags(hashtags: Array<Hashtag>): TagIndex {
+    const index = new Map<string, Array<string>>();
     for (const hashtag of hashtags) {
         const tags = index.get(hashtag.filename) ?? [];
-        if (!tags.includes(hashtag.hashtag)) tags.push(hashtag.hashtag);
+        if (!tags.includes(hashtag.hashtag)) {tags.push(hashtag.hashtag);}
         index.set(hashtag.filename, tags);
     }
     return index;
 }
 
 function sameIndex(left: TagIndex, right: TagIndex): boolean {
-    if (left.size !== right.size) return false;
+    if (left.size !== right.size) {return false;}
     for (const [filename, tags] of left) {
         const next = right.get(filename);
-        if (!next || tags.length !== next.length || tags.some((tag, index) => tag !== next[index])) return false;
+        if (!next || tags.length !== next.length || tags.some((tag, index) => tag !== next[index])) {return false;}
     }
     return true;
 }
 
 function createNoteProjection() {
     const rows = new WeakMap<Note, { index: TagIndex; row: NoteWithTags }>();
-    return (notes: Note[], index: TagIndex): NoteWithTags[] => notes.map((note) => {
+    return (notes: Array<Note>, index: TagIndex): Array<NoteWithTags> => notes.map((note) => {
         const cached = rows.get(note);
-        if (cached?.index === index) return cached.row;
+        if (cached?.index === index) {return cached.row;}
         const tags = [...new Set([...note.tags, ...(index.get(note.filePath || note.title) ?? [])])];
         const row = { ...note, tags, tagCount: tags.length } as NoteWithTags;
         rows.set(note, { index, row });
@@ -40,25 +40,25 @@ function createNoteProjection() {
     });
 }
 
-export function useNotesWithTags(notes: Note[], directory: string | null) {
+export function useNotesWithTags(notes: Array<Note>, directory: string | null) {
     const workspace = directory ?? null;
     const [state, setState] = useState<TagState>({ workspace, index: emptyIndex, ready: false, error: null });
     const request = useRef(0);
     const activeWorkspace = useRef<string | null | undefined>(undefined);
     const projectNotes = useMemo(() => createNoteProjection(), []);
     const refresh = useCallback(async (): Promise<void> => {
-        if (activeWorkspace.current !== workspace) return;
+        if (activeWorkspace.current !== workspace) {return;}
         const version = ++request.current;
         try {
             const index = indexHashtags(await repositories.hashtags.getAll());
-            if (version !== request.current) return;
+            if (version !== request.current) {return;}
             setState((previous) => {
-                if (version !== request.current) return previous;
+                if (version !== request.current) {return previous;}
                 const previousIndex = previous.workspace === workspace ? previous.index : emptyIndex;
                 return { workspace, index: sameIndex(previousIndex, index) ? previousIndex : index, ready: true, error: null };
             });
         } catch (error) {
-            if (version !== request.current) return;
+            if (version !== request.current) {return;}
             console.error("Failed to load note hashtags:", error);
             setState((previous) => version === request.current ? {
                 workspace,

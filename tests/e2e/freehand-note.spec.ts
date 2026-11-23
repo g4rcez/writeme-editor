@@ -11,7 +11,7 @@ async function closeWorkspaceMenu(page: Page): Promise<void> {
         await close.click();
     } else if ((page.viewportSize()?.width ?? 1280) <= 959) {
         const collapse = page.getByRole("button", { name: "Collapse sidebar", exact: true });
-        if (await collapse.isVisible()) await collapse.click();
+        if (await collapse.isVisible()) {await collapse.click();}
     }
 }
 
@@ -35,11 +35,11 @@ test("scrolls both handwritten zoom percentages up and down without scrolling th
     await createHandwrittenNote(page);
     const input = browserName === "webkit" && isMobile ? "dom" : "native";
     if (input === "dom")
-        test.info().annotations.push({
+        {test.info().annotations.push({
             type: "input",
             description:
                 "Playwright mobile WebKit does not support mouse.wheel; dispatch a cancelable wheel event and verify preventDefault instead.",
-        });
+        });}
     await expectCanvasZoomWheel(page, input);
 });
 
@@ -49,9 +49,9 @@ for (const modifier of ["Control", "Meta"] as const) {
         await page.getByRole("button", { name: "Eraser", exact: true }).click();
         await page.getByLabel("Handwriting canvas", { exact: true }).click();
         await expectCanvasZoomShortcuts(page, page.getByRole("button", { name: "Reset zoom" }), modifier, "115%");
-        for (let index = 0; index < 14; index++) await page.keyboard.press(`${modifier}+=`);
+        for (let index = 0; index < 14; index++) {await page.keyboard.press(`${modifier}+=`);}
         await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("300%");
-        for (let index = 0; index < 17; index++) await page.keyboard.press(`${modifier}+-`);
+        for (let index = 0; index < 17; index++) {await page.keyboard.press(`${modifier}+-`);}
         await expect(page.getByRole("button", { name: "Reset zoom" })).toHaveText("50%");
         await expect(page.locator("[data-ink-stroke]")).toHaveCount(0);
     });
@@ -68,7 +68,7 @@ async function draw(page: Page, y = 220): Promise<void> {
         )
         .toBe(true);
     const bounds = await canvas.boundingBox();
-    if (!bounds) throw new Error("Canvas not visible");
+    if (!bounds) {throw new Error("Canvas not visible");}
     await page.mouse.move(bounds.x + 80, bounds.y + y);
     await page.mouse.down();
     await page.mouse.move(bounds.x + 180, bounds.y + y, { steps: 12 });
@@ -77,13 +77,13 @@ async function draw(page: Page, y = 220): Promise<void> {
 
 async function openNotebookOptions(page: Page): Promise<void> {
     const trigger = page.getByRole("button", { name: "Notebook options", exact: true });
-    if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click();
+    if ((await trigger.getAttribute("aria-expanded")) !== "true") {await trigger.click();}
     await expect(page.getByRole("dialog", { name: "Notebook options", exact: true })).toBeVisible();
 }
 
 async function closeOptions(page: Page): Promise<void> {
     const close = page.getByRole("button", { name: "Close options", exact: true });
-    if (await close.isVisible()) await close.click();
+    if (await close.isVisible()) {await close.click();}
 }
 
 async function setPaperStyle(page: Page, style: string): Promise<void> {
@@ -117,7 +117,7 @@ async function expectFloatingCanvas(page: Page): Promise<void> {
             const viewport = await page.locator(".wm-paper-viewport").boundingBox();
             const workspace = await page.locator("#main-scroll-container").boundingBox();
             const canvas = await page.getByLabel("Handwriting canvas", { exact: true }).boundingBox();
-            if (!notebook || !viewport || !workspace || !canvas) return false;
+            if (!notebook || !viewport || !workspace || !canvas) {return false;}
             return (
                 Math.abs(notebook.y - workspace.y) < 1 &&
                 Math.abs(notebook.height - workspace.height) < 1 &&
@@ -137,7 +137,7 @@ async function expectFloatingCanvas(page: Page): Promise<void> {
             const toolbar = await page.getByRole("toolbar", { name: "Writing tools" }).boundingBox();
             const bottom = await page.locator(".wm-notebook-bottom").boundingBox();
             const notebook = await page.getByRole("region", { name: "Handwritten notebook" }).boundingBox();
-            if (!toolbar || !bottom || !notebook) return false;
+            if (!toolbar || !bottom || !notebook) {return false;}
             return (
                 toolbar.y > notebook.y &&
                 toolbar.width <= 360 &&
@@ -158,7 +158,7 @@ async function seedLinkTargets(page: Page): Promise<string> {
         deleted.deletedAt = new Date();
         const foreign = Note.parse({ title: "Other workspace target", content: "", project: "another-workspace" });
         const targets = [target, deleted, foreign];
-        for (const note of targets) await repositories.notes.save(note);
+        for (const note of targets) {await repositories.notes.save(note);}
         return target.id;
     });
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -171,7 +171,7 @@ async function readNotebook(page: Page): Promise<FreehandNotebook> {
         const { repositories } = await import("/packages/editor/src/store/global.store.ts");
         const { parseFreehandNote } = await import("/packages/editor/src/lib/freehand-note.ts");
         const note = await repositories.notes.getOne(location.pathname.split("/").at(-1)!);
-        if (!note) throw new Error("Handwritten note missing");
+        if (!note) {throw new Error("Handwritten note missing");}
         return parseFreehandNote(note.content);
     });
 }
@@ -222,7 +222,7 @@ test.describe("sticky note links", () => {
         const before = (await readNotebook(page)).pages[0]!.links![0]!;
         const handle = page.getByRole("button", { name: "Move linked note: Project plan", exact: true });
         const bounds = await handle.boundingBox();
-        if (!bounds) throw new Error("Sticky move handle missing");
+        if (!bounds) {throw new Error("Sticky move handle missing");}
         await page.mouse.move(bounds.x + 22, bounds.y + 22);
         await page.mouse.down();
         await page.mouse.move(bounds.x + 58, bounds.y + 86, { steps: 8 });
@@ -834,7 +834,7 @@ test("fills the workspace and keeps floating tools stationary while panning", as
     await clickNotebookTool(page, "Zoom in");
     await clickNotebookTool(page, "Move page");
     const viewport = await page.locator(".wm-paper-viewport").boundingBox();
-    if (!viewport) throw new Error("Canvas viewport not visible");
+    if (!viewport) {throw new Error("Canvas viewport not visible");}
     await page.mouse.move(viewport.x + 80, viewport.y + 320);
     await page.mouse.down();
     await page.mouse.move(viewport.x + 80, viewport.y + 220, { steps: 10 });
@@ -854,7 +854,7 @@ test("fills the workspace and keeps floating tools stationary while panning", as
 test("creates and saves handwriting, erases actual strokes, and supports undo/redo and pages", async ({
     cleanPage: page,
 }, testInfo) => {
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await createHandwrittenNote(page);
     const canvas = page.getByLabel("Handwriting canvas", { exact: true });
@@ -905,7 +905,7 @@ test.describe("tablet handwriting", () => {
         await createHandwrittenNote(page);
         const canvas = page.getByLabel("Handwriting canvas", { exact: true });
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Canvas not visible");
+        if (!bounds) {throw new Error("Canvas not visible");}
         const session = await page.context().newCDPSession(page);
         const first = { x: bounds.x + 100, y: bounds.y + 220, id: 1 };
         const second = { x: bounds.x + 200, y: bounds.y + 220, id: 2 };
@@ -945,7 +945,7 @@ test.describe("tablet handwriting", () => {
         await createHandwrittenNote(page);
         const canvas = page.getByLabel("Handwriting canvas", { exact: true });
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Canvas not visible");
+        if (!bounds) {throw new Error("Canvas not visible");}
         const session = await page.context().newCDPSession(page);
         const x = bounds.x + 100;
         const y = bounds.y + 220;
@@ -1007,7 +1007,7 @@ test.describe("tablet handwriting", () => {
         await createHandwrittenNote(page);
         const canvas = page.getByLabel("Handwriting canvas", { exact: true });
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Canvas not visible");
+        if (!bounds) {throw new Error("Canvas not visible");}
         await page.touchscreen.tap(bounds.x + 100, bounds.y + 220);
         await expect(canvas.locator("[data-ink-stroke]")).toHaveCount(0);
         await enableTouchDrawing(page);
@@ -1045,7 +1045,7 @@ test.describe("tablet handwriting", () => {
                 const controls = notebook.locator("button, select");
                 for (const control of await controls.all()) {
                     const bounds = await control.boundingBox();
-                    if (!bounds) throw new Error("Missing canvas control");
+                    if (!bounds) {throw new Error("Missing canvas control");}
                     expect(bounds.height).toBeGreaterThanOrEqual(44);
                     expect(bounds.width).toBeGreaterThanOrEqual(44);
                     expect(bounds.x).toBeGreaterThanOrEqual(0);
@@ -1089,7 +1089,7 @@ for (const [name, payload] of [
     ["unsafe coordinates", JSON.stringify({ strokes: [{ points: [[1e300, 1e300, 0.5]], color: "#000000", size: 4 }] })],
     ["unsupported version", JSON.stringify({ version: 2, paper: "lined", pages: [{ strokes: [] }], strokes: [] })],
 ] as const)
-    test(`keeps ${name} note content intact`, async ({ cleanPage: page }) => {
+    {test(`keeps ${name} note content intact`, async ({ cleanPage: page }) => {
         await createHandwrittenNote(page);
         await page.evaluate(async (content) => {
             const { repositories } = await import("/packages/editor/src/store/global.store.ts");
@@ -1103,10 +1103,10 @@ for (const [name, payload] of [
             return (await repositories.notes.getOne(location.pathname.split("/").at(-1)!))?.content;
         });
         expect(content).toBe(payload);
-    });
+    });}
 
 for (const span of [400, 1e12])
-    test(`opens legacy ink, erases a sparse stroke of length ${span} and preserves surrounding metadata`, async ({
+    {test(`opens legacy ink, erases a sparse stroke of length ${span} and preserves surrounding metadata`, async ({
         cleanPage: page,
     }) => {
         test.setTimeout(120_000);
@@ -1149,7 +1149,7 @@ for (const span of [400, 1e12])
         await page.getByRole("button", { name: "Eraser", exact: true }).click();
         await clickNotebookTool(page, "Hide writing tools");
         const bounds = await canvas.boundingBox();
-        if (!bounds) throw new Error("Canvas not visible");
+        if (!bounds) {throw new Error("Canvas not visible");}
         const scale = bounds.width / 1000;
         await page.mouse.move(bounds.x + 225 * scale, bounds.y + 20 * scale);
         await page.mouse.down();
@@ -1166,4 +1166,4 @@ for (const span of [400, 1e12])
         });
         expect(content).toContain("custom: keep-me");
         expect(content).toContain("Personal metadata");
-    });
+    });}

@@ -7,7 +7,7 @@ export const TagsPane = () => {
     const [{ activeView }, layoutDispatch] = useLayoutStore((s) => ({
         activeView: s.activeView,
     }));
-    const [tags, setTags] = useState<{ tag: string; count: number }[]>([]);
+    const [tags, setTags] = useState<Array<{ tag: string; count: number }>>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -51,7 +51,7 @@ export const TagsPane = () => {
                 ) : (
                     <div className="space-y-0.5">
                         {tags.map(({ tag, count }) => (
-                            <button
+                            <button type="button"
                                 key={tag}
                                 onClick={() => onTagClick(tag)}
                                 className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${

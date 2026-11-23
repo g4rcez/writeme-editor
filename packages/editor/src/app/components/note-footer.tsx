@@ -19,14 +19,14 @@ function getMarkdownCounts(content: string): Counts {
 }
 
 function formatCount(chars: number): string {
-    if (chars < 1_000) return `${chars} chars`;
-    if (chars < 1_000_000) return `${(chars / 1_000).toFixed(1)}K chars`;
+    if (chars < 1000) {return `${chars} chars`;}
+    if (chars < 1_000_000) {return `${(chars / 1000).toFixed(1)}K chars`;}
     return `${(chars / 1_000_000).toFixed(2)}M chars`;
 }
 
 function usageColor(chars: number): string {
-    if (chars >= WARN_THRESHOLD) return "text-danger";
-    if (chars >= WARN_THRESHOLD * 0.5) return "text-warn";
+    if (chars >= WARN_THRESHOLD) {return "text-danger";}
+    if (chars >= WARN_THRESHOLD * 0.5) {return "text-warn";}
     return "text-muted-foreground";
 }
 
@@ -40,19 +40,19 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
     const counts = suppliedCounts ?? editorCounts;
 
     useEffect(() => {
-        if (content !== undefined) return;
+        if (content !== undefined) {return;}
         let cleanup: (() => void) | undefined;
 
         const subscribe = () => {
             const searchEditor = editorSearchGlobalRef.current;
             const editor = editorGlobalRef.current;
             setActiveEditor(editor);
-            if (!searchEditor && !editor) return false;
+            if (!searchEditor && !editor) {return false;}
 
             let timer: ReturnType<typeof setTimeout> | undefined;
             const compute = (): void => {
                 const markdown = searchEditor ? searchEditor.getContent() : editor?.getMarkdown();
-                if (markdown === undefined) return;
+                if (markdown === undefined) {return;}
                 const next = getMarkdownCounts(markdown);
                 setEditorCounts((previous) => previous.chars === next.chars && previous.words === next.words &&
                     previous.lines === next.lines ? previous : next);
@@ -63,7 +63,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
             };
             compute();
             const unsubscribe = searchEditor ? searchEditor.subscribe(schedule) : () => editor?.off("update", schedule);
-            if (editor && !searchEditor) editor.on("update", schedule);
+            if (editor && !searchEditor) {editor.on("update", schedule);}
             cleanup = () => {
                 clearTimeout(timer);
                 unsubscribe();
@@ -78,7 +78,7 @@ export function NoteFooter({ noteId, content }: { noteId: string; content?: stri
         });
         if (!subscribe()) {
             const interval = setInterval(() => {
-                if (subscribe()) clearInterval(interval);
+                if (subscribe()) {clearInterval(interval);}
             }, 50);
             return () => {
                 clearInterval(interval);

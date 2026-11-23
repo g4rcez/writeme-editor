@@ -51,27 +51,27 @@ const CURRENCY_CODES = new Set([
 
 export function currencySymbols(expr: string): string {
     return expr
-        .replace(/NZ\$\s*([\d.,]+)/g, "$1 NZD")
-        .replace(/HK\$\s*([\d.,]+)/g, "$1 HKD")
-        .replace(/S\$\s*([\d.,]+)/g, "$1 SGD")
-        .replace(/A\$\s*([\d.,]+)/g, "$1 AUD")
-        .replace(/C\$\s*([\d.,]+)/g, "$1 CAD")
-        .replace(/R\$\s*([\d.,]+)/g, "$1 BRL")
-        .replace(/\$\s*([\d.,]+)/g, "$1 USD")
-        .replace(/€\s*([\d.,]+)/g, "$1 EUR")
-        .replace(/£\s*([\d.,]+)/g, "$1 GBP")
-        .replace(/¥\s*([\d.,]+)/g, "$1 JPY")
-        .replace(/₩\s*([\d.,]+)/g, "$1 KRW")
-        .replace(/₹\s*([\d.,]+)/g, "$1 INR")
-        .replace(/₽\s*([\d.,]+)/g, "$1 RUB")
-        .replace(/₺\s*([\d.,]+)/g, "$1 TRY")
-        .replace(/฿\s*([\d.,]+)/g, "$1 THB")
-        .replace(/₱\s*([\d.,]+)/g, "$1 PHP")
-        .replace(/₫\s*([\d.,]+)/g, "$1 VND");
+        .replaceAll(/NZ\$\s*([\d.,]+)/g, "$1 NZD")
+        .replaceAll(/HK\$\s*([\d.,]+)/g, "$1 HKD")
+        .replaceAll(/S\$\s*([\d.,]+)/g, "$1 SGD")
+        .replaceAll(/A\$\s*([\d.,]+)/g, "$1 AUD")
+        .replaceAll(/C\$\s*([\d.,]+)/g, "$1 CAD")
+        .replaceAll(/R\$\s*([\d.,]+)/g, "$1 BRL")
+        .replaceAll(/\$\s*([\d.,]+)/g, "$1 USD")
+        .replaceAll(/€\s*([\d.,]+)/g, "$1 EUR")
+        .replaceAll(/£\s*([\d.,]+)/g, "$1 GBP")
+        .replaceAll(/¥\s*([\d.,]+)/g, "$1 JPY")
+        .replaceAll(/₩\s*([\d.,]+)/g, "$1 KRW")
+        .replaceAll(/₹\s*([\d.,]+)/g, "$1 INR")
+        .replaceAll(/₽\s*([\d.,]+)/g, "$1 RUB")
+        .replaceAll(/₺\s*([\d.,]+)/g, "$1 TRY")
+        .replaceAll(/฿\s*([\d.,]+)/g, "$1 THB")
+        .replaceAll(/₱\s*([\d.,]+)/g, "$1 PHP")
+        .replaceAll(/₫\s*([\d.,]+)/g, "$1 VND");
 }
 
 export function normalizeCurrencyDirection(expr: string): string {
-    return expr.replace(/\b(?:in|to)\s+([A-Za-z]{2,4})\b/gi, (_, code) => {
+    return expr.replaceAll(/\b(?:in|to)\s+([A-Za-z]{2,4})\b/gi, (_, code) => {
         const upper = code.toUpperCase();
         return CURRENCY_CODES.has(upper) ? `to ${upper}` : `in ${code}`;
     });
@@ -96,42 +96,42 @@ const LARGE_WORD_MAP: Record<string, number> = {
 export function expressionImprovements(expr: string): string {
     return expr
         .replace(/^\/\/.*/, "")
-        .replace(/\*\*/g, "^")
-        .replace(/(fatorial)/g, "! ")
-        .replace(/([\d., ]+)" /g, "$1inches ")
-        .replace(/([\d., ]+)(C|°C|°c) /g, "$1celsius ")
-        .replace(/([\d., ]+)(F|°F|°f) /g, "$1fahrenheit ")
-        .replace(/([\d., ]+)(K|°K|°k) /g, "$1kelvin ")
-        .replace(
+        .replaceAll('**', "^")
+        .replaceAll(/(fatorial)/g, "! ")
+        .replaceAll(/([\d., ]+)" /g, "$1inches ")
+        .replaceAll(/([\d., ]+)(C|°C|°c) /g, "$1celsius ")
+        .replaceAll(/([\d., ]+)(F|°F|°f) /g, "$1fahrenheit ")
+        .replaceAll(/([\d., ]+)(K|°K|°k) /g, "$1kelvin ")
+        .replaceAll(
             /([\d.,]+)\s*%\s+of\s+([\d.,]+)\s+(?:in|to)\s+([A-Za-z]{2,4})\b/gi,
             (_, pct, amount, code) => `${pct}% * ${amount} ${code.toUpperCase()}`,
         )
-        .replace(/([\d.,]+)\s*%\s+of\s+/g, "$1% * ")
-        .replace(/([\d.,]+) ?percent of /g, "$1% ")
-        .replace(/to (F|°F|°f)/g, "to fahrenheit ")
-        .replace(/to (K|°K|°k)/g, "to kelvin ")
-        .replace(/to (C|°C|°c)/g, "to celsius ");
+        .replaceAll(/([\d.,]+)\s*%\s+of\s+/g, "$1% * ")
+        .replaceAll(/([\d.,]+) ?percent of /g, "$1% ")
+        .replaceAll(/to (F|°F|°f)/g, "to fahrenheit ")
+        .replaceAll(/to (K|°K|°k)/g, "to kelvin ")
+        .replaceAll(/to (C|°C|°c)/g, "to celsius ");
 }
 
 export function bitwiseKeywords(expr: string): string {
     return expr
-        .replace(/\bAND\b/g, "&")
-        .replace(/\bOR\b/g, "|")
-        .replace(/\b(\S+)\s+XOR\s+(\S+)\b/g, "bitXor($1, $2)");
+        .replaceAll(/\bAND\b/g, "&")
+        .replaceAll(/\bOR\b/g, "|")
+        .replaceAll(/\b(\S+)\s+XOR\s+(\S+)\b/g, "bitXor($1, $2)");
 }
 
 export function largeNumberShorthands(expr: string): string {
     return expr
-        .replace(LARGE_SHORT_RE, (_m, num, suffix) => String(Number(num) * (LARGE_SHORT_MAP[suffix] ?? 1)))
-        .replace(LARGE_WORD_RE, (_m, num, word) => String(Number(num) * (LARGE_WORD_MAP[word.toLowerCase()] ?? 1)));
+        .replaceAll(LARGE_SHORT_RE, (_m, num, suffix) => String(Number(num) * (LARGE_SHORT_MAP[suffix] ?? 1)))
+        .replaceAll(LARGE_WORD_RE, (_m, num, word) => String(Number(num) * (LARGE_WORD_MAP[word.toLowerCase()] ?? 1)));
 }
 
 export function prevSubstitution(expr: string, lastBareResult: number): string {
-    return expr.replace(/\bprev\b/g, String(lastBareResult));
+    return expr.replaceAll(/\bprev\b/g, String(lastBareResult));
 }
 
 const ROUNDING_FN_RE = /\b(round|floor|ceil|trunc)\(([^()]+?)\s+(?:in|to)\s+(\w+)\)/gi;
 
 export function roundingUnitConversion(expr: string): string {
-    return expr.replace(ROUNDING_FN_RE, (_, fn, inner, unit) => `${fn}(number(${inner.trim()}, '${unit}'))`);
+    return expr.replaceAll(ROUNDING_FN_RE, (_, fn, inner, unit) => `${fn}(number(${inner.trim()}, '${unit}'))`);
 }

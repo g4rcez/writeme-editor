@@ -12,12 +12,12 @@ export type AICredentials = {
 };
 
 export interface IAIRepository {
-    getConfigs(): Promise<AIConfig[]>;
+    getConfigs(): Promise<Array<AIConfig>>;
     saveConfig(config: AIConfig): Promise<void>;
     deleteConfig(id: string): Promise<void>;
-    getChats(noteId?: string): Promise<AIChat[]>;
+    getChats(noteId?: string): Promise<Array<AIChat>>;
     saveChat(chat: AIChat): Promise<void>;
-    getMessages(chatId: string): Promise<AIMessage[]>;
+    getMessages(chatId: string): Promise<Array<AIMessage>>;
     saveMessage(message: AIMessage): Promise<void>;
     clearMessages(chatId: string): Promise<void>;
     saveCredentials(creds: AICredentials): Promise<void>;

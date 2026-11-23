@@ -25,7 +25,7 @@ export const CreateTemplateDialog = () => {
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!name.trim()) return;
+        if (!name.trim()) {return;}
 
         const newTemplate = Note.new(name, "# " + name + "\n\n{{content}}", NoteType.template);
 

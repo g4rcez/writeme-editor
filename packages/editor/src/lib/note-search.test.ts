@@ -98,10 +98,10 @@ This page describes **deterministic local indexes** for search.`,
 });
 
 describe("note search on very long content", () => {
-    const base = { description: null, tags: [] as string[], url: null, filePath: null };
+    const base = { description: null, tags: [] as Array<string>, url: null, filePath: null };
 
     it("still finds a term that only appears after the fuzzy scoring window", () => {
-        const content = `${"filler text ".repeat(4_000)}needle in the haystack`;
+        const content = `${"filler text ".repeat(4000)}needle in the haystack`;
         const note = { ...base, title: "Long", content };
         expect(filterNotesByQuery([note], "needle")).toEqual([note]);
     });
@@ -115,7 +115,7 @@ describe("note search on very long content", () => {
         const note = { ...base, title: "Long", content: "lorem ipsum dolor sit amet ".repeat(80_000) };
         const started = performance.now();
         filterNotesByQuery([note], "dolor amet");
-        expect(performance.now() - started).toBeLessThan(1_000);
+        expect(performance.now() - started).toBeLessThan(1000);
     });
 
     it("builds the snippet from the start of a long note", () => {

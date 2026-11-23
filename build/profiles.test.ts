@@ -47,7 +47,7 @@ describe("immutable distribution profiles", () => {
     });
     it("rejects invalid profiles and build surfaces", () => {
         for (const name of ["", "ios-homebrew", "macos-google-play", "typo", "__proto__"])
-            expect(() => resolveBuildProfile(name)).toThrow("Unknown Writeme build profile");
+            {expect(() => resolveBuildProfile(name)).toThrow("Unknown Writeme build profile");}
         vi.stubEnv("WRITEME_BUILD_PROFILE", "ios-app-store");
         expect(() => desktopProfile()).toThrow("desktop");
         vi.stubEnv("WRITEME_BUILD_PROFILE", "macos-direct");

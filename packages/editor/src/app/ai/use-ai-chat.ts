@@ -32,7 +32,7 @@ function createSystemMessage(chatId: string, content: string): AIMessage {
   };
 }
 
-function removeEmptyAssistantPlaceholder(messages: AIMessage[], assistantMessageId: string): AIMessage[] {
+function removeEmptyAssistantPlaceholder(messages: Array<AIMessage>, assistantMessageId: string): Array<AIMessage> {
   return messages.filter((message) => message.id !== assistantMessageId || message.content.trim().length > 0);
 }
 
@@ -41,8 +41,8 @@ function notifyChatsChanged(): void {
 }
 
 function createChatTitle(prompt: string): string {
-  const normalized = prompt.replace(/\s+/g, " ").trim();
-  if (!normalized) return "New Chat";
+  const normalized = prompt.replaceAll(/\s+/g, " ").trim();
+  if (!normalized) {return "New Chat";}
   return normalized.length > 48 ? `${normalized.slice(0, 45)}...` : normalized;
 }
 
@@ -63,7 +63,7 @@ function unavailableAttachmentMarker(message: AIMessage): string {
 
 export function useAIChat(noteId?: string, chatScopeId?: string | null, selectedChatId?: string | null) {
   const [chat, setChat] = useState<AIChat | null>(null);
-  const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [messages, setMessages] = useState<Array<AIMessage>>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [config, setConfig] = useState<AIConfig | null>(null);
@@ -93,8 +93,8 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
     attachmentCacheSizeRef.current = 0;
   }, []);
 
-  const cacheAttachmentFiles = useCallback((messageId: string, files: readonly AIFile[]): void => {
-    if (files.length === 0) return;
+  const cacheAttachmentFiles = useCallback((messageId: string, files: ReadonlyArray<AIFile>): void => {
+    if (files.length === 0) {return;}
     const size = files.reduce((total, file) => total + file.data.byteLength, 0);
     const existing = attachmentCacheRef.current.get(messageId);
     if (existing) {
@@ -107,12 +107,12 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
       attachmentCacheRef.current.size > 0
     ) {
       const oldestKey = attachmentCacheRef.current.keys().next().value;
-      if (oldestKey === undefined) break;
+      if (oldestKey === undefined) {break;}
       const oldest = attachmentCacheRef.current.get(oldestKey);
       attachmentCacheRef.current.delete(oldestKey);
       attachmentCacheSizeRef.current -= oldest?.size ?? 0;
     }
-    if (size > AI_ATTACHMENT_LIMITS.maxCachedSize) return;
+    if (size > AI_ATTACHMENT_LIMITS.maxCachedSize) {return;}
     attachmentCacheRef.current.set(messageId, {
       filesById: new Map(files.map((file) => [file.id, file])),
       size,
@@ -125,7 +125,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
     abortControllerRef.current = null;
     cancelledSendTokenRef.current = null;
     sendTokenRef.current = null;
-    if (updateStreamingState) setIsStreaming(false);
+    if (updateStreamingState) {setIsStreaming(false);}
   }, []);
 
   useEffect(() => {
@@ -141,19 +141,19 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
 
     const loadChat = async (): Promise<void> => {
       if (!effectiveChatScope) {
-        if (!isCurrentLoad()) return;
+        if (!isCurrentLoad()) {return;}
         loadedChatRequestKeyRef.current = requestKey;
         setChat(null);
         setMessages([]);
         return;
       }
       const chats = await repositories.ai.getChats(effectiveChatScope);
-      if (!isCurrentLoad()) return;
+      if (!isCurrentLoad()) {return;}
       const selectedChat = selectedChatId ? (chats.find((item) => item.id === selectedChatId) ?? null) : null;
       const lastChat = selectedChat ?? chats[0] ?? null;
       if (lastChat) {
         const loadedMessages = await repositories.ai.getMessages(lastChat.id);
-        if (!isCurrentLoad()) return;
+        if (!isCurrentLoad()) {return;}
         loadedChatRequestKeyRef.current = requestKey;
         setChat(lastChat);
         setMessages(loadedMessages);
@@ -168,9 +168,9 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
         updatedAt: now,
         title: "New Chat",
       };
-      if (!isCurrentLoad()) return;
+      if (!isCurrentLoad()) {return;}
       await repositories.ai.saveChat(newChat);
-      if (!isCurrentLoad()) return;
+      if (!isCurrentLoad()) {return;}
       loadedChatRequestKeyRef.current = requestKey;
       setChat(newChat);
       setMessages([]);
@@ -178,14 +178,14 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
 
     const loadConfig = async (): Promise<void> => {
       const configs = await repositories.ai.getConfigs();
-      if (!isCurrentLoad()) return;
+      if (!isCurrentLoad()) {return;}
       const defaultConfig = configs.find((item) => item.isDefault) || configs[0] || null;
       loadedConfigRequestKeyRef.current = requestKey;
       setConfig(defaultConfig);
     };
 
     void Promise.all([loadChat(), loadConfig()]).finally(() => {
-      if (isCurrentLoad()) setIsLoading(false);
+      if (isCurrentLoad()) {setIsLoading(false);}
     });
 
     return () => {
@@ -202,12 +202,12 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
         context: string;
         selectionSlice?: { from: number; to: number };
       },
-      files?: AIFile[],
+      files?: Array<AIFile>,
       tools?: ToolSet,
       toolChoice?: ToolChoice<ToolSet>,
       workspaceDataGetter?: () => AIWorkspaceData,
     ) => {
-      if (!chat || !config || (!prompt.trim() && (files?.length ?? 0) === 0)) return false;
+      if (!chat || !config || (!prompt.trim() && (files?.length ?? 0) === 0)) {return false;}
       if (
         loadedChatRequestKeyRef.current !== requestKey ||
         loadedConfigRequestKeyRef.current !== requestKey ||
@@ -235,19 +235,19 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
       try {
         const adapterId: string = capturedConfig.adapterId ?? "cli";
         const adapter = adapterRegistry.get(adapterId);
-        if (!adapter || ((files?.length ?? 0) > 0 && !adapter.supportsFiles)) return false;
+        if (!adapter || ((files?.length ?? 0) > 0 && !adapter.supportsFiles)) {return false;}
         const attachmentError = validateAIFileBatch(files ?? [], adapter.fileCapabilities);
-        if (attachmentError) return false;
+        if (attachmentError) {return false;}
 
         let credentials = {};
         try {
           credentials = await authManager.getCredentials(adapterId, adapter);
         } catch {
-          if (adapterId !== "cli") return false;
+          if (adapterId !== "cli") {return false;}
         }
-        if (!isCurrentSend()) return false;
+        if (!isCurrentSend()) {return false;}
 
-        const attachedFiles: AttachedFile[] = (files ?? []).map((file) => ({
+        const attachedFiles: Array<AttachedFile> = (files ?? []).map((file) => ({
           id: file.id,
           name: file.name,
           mimeType: file.mimeType,
@@ -276,10 +276,10 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
         const assistantMessageId = assistantMsg.id;
 
         setMessages((current) => (isCurrentChat() ? [...current, userMsg, assistantMsg] : current));
-        if (!isCurrentSend()) return false;
+        if (!isCurrentSend()) {return false;}
         setIsStreaming(true);
         await repositories.ai.saveMessage(userMsg);
-        if (!isCurrentSend()) return false;
+        if (!isCurrentSend()) {return false;}
         cacheAttachmentFiles(userMsg.id, files ?? []);
 
         const updatedChat: AIChat = {
@@ -291,19 +291,19 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
           updatedAt: now,
         };
         await repositories.ai.saveChat(updatedChat);
-        if (!isCurrentSend()) return false;
+        if (!isCurrentSend()) {return false;}
         setChat(updatedChat);
         notifyChatsChanged();
 
-        const history: AIConversationMessage[] = messages.flatMap((message) => {
-          if (message.role === "system") return [];
+        const history: Array<AIConversationMessage> = messages.flatMap((message) => {
+          if (message.role === "system") {return [];}
           const cachedFiles = attachmentCacheRef.current.get(message.id);
           const filesForTurn = cachedFiles ? Array.from(cachedFiles.filesById.values()) : [];
           const text =
             message.files?.length && filesForTurn.length === 0
               ? [message.content, unavailableAttachmentMarker(message)].filter(Boolean).join("\n\n")
               : message.content;
-          if (!text.trim() && filesForTurn.length === 0) return [];
+          if (!text.trim() && filesForTurn.length === 0) {return [];}
           return [
             {
               role: message.role as "user" | "assistant",
@@ -323,8 +323,8 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
         abortControllerRef.current = { token: sendToken, controller: abortController };
         cancelledSendTokenRef.current = null;
 
-        const systemPromptParts: string[] = [MARKDOWN_CHAT_SYSTEM_PROMPT];
-        if (capturedConfig.systemPrompt) systemPromptParts.push(capturedConfig.systemPrompt);
+        const systemPromptParts: Array<string> = [MARKDOWN_CHAT_SYSTEM_PROMPT];
+        if (capturedConfig.systemPrompt) {systemPromptParts.push(capturedConfig.systemPrompt);}
         if (options.context) {
           systemPromptParts.push(`\n\nContext and constraints:\n\n---\n${options.context}\n---`);
         }
@@ -338,7 +338,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
           Boolean(data && (data.activities.length || data.sources.length || data.proposals.length));
         let renderTimer: number | null = null;
         const scheduleAssistantRender = (): void => {
-          if (renderTimer !== null) return;
+          if (renderTimer !== null) {return;}
           renderTimer = window.setTimeout(() => {
             renderTimer = null;
             const content = assistantContent;
@@ -369,14 +369,14 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
           );
 
           for await (const event of stream) {
-            if (!isCurrentSend()) return false;
+            if (!isCurrentSend()) {return false;}
             if (event.type === "text") {
               assistantContent += event.delta;
               scheduleAssistantRender();
               continue;
             }
             if (event.type === "done") {
-              if (!isCurrentSend()) return false;
+              if (!isCurrentSend()) {return false;}
               setIsStreaming(false);
               if (cancelledSendTokenRef.current === sendToken) {
                 const workspaceData = getCurrentWorkspaceData();
@@ -401,7 +401,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
                     )
                     : current,
                 );
-                if (!isCurrentSend()) return false;
+                if (!isCurrentSend()) {return false;}
                 await repositories.ai.saveMessage(partialAssistant);
                 return isCurrentSend();
               }
@@ -421,14 +421,14 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
                   )
                   : current,
               );
-              if (!isCurrentSend()) return false;
+              if (!isCurrentSend()) {return false;}
               await repositories.ai.saveMessage(assistantToSave);
-              if (!isCurrentSend()) return false;
+              if (!isCurrentSend()) {return false;}
               notifyChatsChanged();
               return true;
             }
 
-            if (!isCurrentSend()) return false;
+            if (!isCurrentSend()) {return false;}
             setIsStreaming(false);
             const workspaceData = getCurrentWorkspaceData();
             const partialAssistant: AIMessage = {
@@ -447,16 +447,16 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
                 ]
                 : current,
             );
-            if (!isCurrentSend()) return false;
+            if (!isCurrentSend()) {return false;}
             if (assistantContent.trim() || hasWorkspaceData(workspaceData)) {
               await repositories.ai.saveMessage(partialAssistant);
-              if (!isCurrentSend()) return false;
+              if (!isCurrentSend()) {return false;}
             }
             await repositories.ai.saveMessage(errorMessage);
             return isCurrentSend();
           }
 
-          if (!isCurrentSend()) return false;
+          if (!isCurrentSend()) {return false;}
           setIsStreaming(false);
           const fallbackMessage: AIMessage = {
             ...assistantMsg,
@@ -469,13 +469,13 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
               ? current.map((message) => (message.id === assistantMessageId ? fallbackMessage : message))
               : current,
           );
-          if (!isCurrentSend()) return false;
+          if (!isCurrentSend()) {return false;}
           await repositories.ai.saveMessage(fallbackMessage);
-          if (!isCurrentSend()) return false;
+          if (!isCurrentSend()) {return false;}
           notifyChatsChanged();
           return true;
         } catch (error: unknown) {
-          if (!isCurrentSend()) return false;
+          if (!isCurrentSend()) {return false;}
           setIsStreaming(false);
           const workspaceData = getCurrentWorkspaceData();
           if (cancelledSendTokenRef.current === sendToken) {
@@ -500,7 +500,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
                 )
                 : current,
             );
-            if (!isCurrentSend()) return false;
+            if (!isCurrentSend()) {return false;}
             await repositories.ai.saveMessage(partialAssistant);
             return isCurrentSend();
           }
@@ -521,27 +521,27 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
               ]
               : current,
           );
-          if (!isCurrentSend()) return false;
+          if (!isCurrentSend()) {return false;}
           if (assistantContent.trim() || hasWorkspaceData(workspaceData)) {
             await repositories.ai.saveMessage(partialAssistant);
-            if (!isCurrentSend()) return false;
+            if (!isCurrentSend()) {return false;}
           }
           await repositories.ai.saveMessage(errorMessage);
           return isCurrentSend();
         } finally {
-          if (renderTimer !== null) window.clearTimeout(renderTimer);
-          if (abortControllerRef.current?.token === sendToken) abortControllerRef.current = null;
-          if (cancelledSendTokenRef.current === sendToken) cancelledSendTokenRef.current = null;
+          if (renderTimer !== null) {window.clearTimeout(renderTimer);}
+          if (abortControllerRef.current?.token === sendToken) {abortControllerRef.current = null;}
+          if (cancelledSendTokenRef.current === sendToken) {cancelledSendTokenRef.current = null;}
         }
       } finally {
-        if (sendTokenRef.current === sendToken) sendTokenRef.current = null;
+        if (sendTokenRef.current === sendToken) {sendTokenRef.current = null;}
       }
     },
     [cacheAttachmentFiles, chat, config, messages, requestKey],
   );
 
   const newChat = useCallback(async (): Promise<AIChat | null> => {
-    if (!effectiveChatScope) return null;
+    if (!effectiveChatScope) {return null;}
     const generation = ++operationGenerationRef.current;
     invalidateActiveSend();
     const capturedRequestKey = requestKey;
@@ -565,7 +565,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
   }, [clearAttachmentCache, effectiveChatScope, invalidateActiveSend, requestKey]);
 
   const renameChat = useCallback(async (title: string): Promise<void> => {
-    if (!chat || loadedChatRequestKeyRef.current !== requestKey) return;
+    if (!chat || loadedChatRequestKeyRef.current !== requestKey) {return;}
     const updatedChat: AIChat = {
       ...chat,
       title: title.trim(),
@@ -573,12 +573,12 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
     };
     await repositories.ai.saveChat(updatedChat);
     notifyChatsChanged();
-    if (activeChatIdRef.current !== updatedChat.id || activeRequestKeyRef.current !== requestKey) return;
+    if (activeChatIdRef.current !== updatedChat.id || activeRequestKeyRef.current !== requestKey) {return;}
     setChat(updatedChat);
   }, [chat, requestKey]);
 
   const clearChat = useCallback(async () => {
-    if (!chat || loadedChatRequestKeyRef.current !== requestKey) return;
+    if (!chat || loadedChatRequestKeyRef.current !== requestKey) {return;}
     const capturedChatId = chat.id;
     const capturedRequestKey = requestKey;
     const generation = ++operationGenerationRef.current;
@@ -598,7 +598,7 @@ export function useAIChat(noteId?: string, chatScopeId?: string | null, selected
 
   const cancel = useCallback(() => {
     const sendToken = sendTokenRef.current;
-    if (!sendToken || !chat || loadedChatRequestKeyRef.current !== requestKey) return;
+    if (!sendToken || !chat || loadedChatRequestKeyRef.current !== requestKey) {return;}
     const activeAbort = abortControllerRef.current;
     if (activeAbort?.token === sendToken) {
       cancelledSendTokenRef.current = sendToken;

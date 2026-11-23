@@ -15,7 +15,7 @@ export type GithubGist = {
     title: string;
     description: string | null;
     url: string;
-    files: GithubGistFile[];
+    files: Array<GithubGistFile>;
     markdown: string;
 };
 
@@ -33,9 +33,9 @@ const MARKDOWN_EXTENSION_PATTERN = /\.(?:md|markdown|mdown|mkd)$/i;
 
 export function parseGistReference(value: string): GistReference | null {
     const input = value.trim();
-    if (!input) return null;
+    if (!input) {return null;}
 
-    let segments: string[];
+    let segments: Array<string>;
     try {
         const url = new URL(input);
         if (url.hostname === "gist.github.com") {
@@ -55,8 +55,8 @@ export function parseGistReference(value: string): GistReference | null {
     }
 
     const [owner, gistId] = segments;
-    if (!owner || !gistId || segments.length !== 2) return null;
-    if (!GITHUB_OWNER_PATTERN.test(owner) || !GIST_ID_PATTERN.test(gistId)) return null;
+    if (!owner || !gistId || segments.length !== 2) {return null;}
+    if (!GITHUB_OWNER_PATTERN.test(owner) || !GIST_ID_PATTERN.test(gistId)) {return null;}
 
     return { owner, gistId };
 }
@@ -99,7 +99,7 @@ export async function fetchGithubGist(
         }),
     );
 
-    if (files.length === 0) throw new Error("This Gist does not contain any files.");
+    if (files.length === 0) {throw new Error("This Gist does not contain any files.");}
 
     const owner = gist.owner || reference.owner;
     const description = gist.description?.trim() || null;
@@ -114,7 +114,7 @@ export async function fetchGithubGist(
     };
 }
 
-export function buildGistMarkdown(files: GithubGistFile[]): string {
+export function buildGistMarkdown(files: Array<GithubGistFile>): string {
     if (files.length === 1 && files[0] && isMarkdownFile(files[0].filename)) {
         return files[0].content;
     }
@@ -133,7 +133,7 @@ function parseGithubGistPayload(payload: unknown): {
     owner: string | null;
     description: string | null;
     url: string;
-    files: GithubGistApiFile[];
+    files: Array<GithubGistApiFile>;
 } {
     if (!isRecord(payload) || !isRecord(payload.files) || typeof payload.html_url !== "string") {
         throw new Error("GitHub returned an invalid Gist response.");
@@ -169,7 +169,7 @@ function parseGithubGistPayload(payload: unknown): {
 async function readGithubError(response: Response): Promise<string> {
     try {
         const payload: unknown = await response.json();
-        if (isRecord(payload) && typeof payload.message === "string") return payload.message;
+        if (isRecord(payload) && typeof payload.message === "string") {return payload.message;}
     } catch {
         // Use the HTTP status text when GitHub does not return JSON.
     }
@@ -184,8 +184,8 @@ function createCodeBlock(content: string, language: string): string {
 
 function getCodeLanguage(file: GithubGistFile): string {
     const extension = file.filename.match(/\.([a-z\d]+)$/i)?.[1];
-    if (extension) return extension.toLowerCase();
-    return file.language?.toLowerCase().replace(/[^a-z\d+#.-]/g, "") ?? "";
+    if (extension) {return extension.toLowerCase();}
+    return file.language?.toLowerCase().replaceAll(/[^a-z\d+#.-]/g, "") ?? "";
 }
 
 function isMarkdownFile(filename: string): boolean {

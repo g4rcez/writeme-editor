@@ -57,12 +57,12 @@ const appNoteUrlExtension = {
             tokenizer(src: string) {
                 const match = src.match(/^\[((?:\\.|[^\]\\])+)\]\(([^)"]+)\s+"writeme-mention:((?:\\.|[^"\\])+)"\)/);
                 if (match) {
-                    const id = (match[3] ?? "").replace(/\\([\\"])/g, "$1");
+                    const id = (match[3] ?? "").replaceAll(/\\([\\"])/g, "$1");
                     const path = match[2] ?? "";
                     return {
                         type: "mention_link",
                         raw: match[0],
-                        label: (match[1] ?? "").replace(/\\([\\[\]*_`~<>])/g, "$1"),
+                        label: (match[1] ?? "").replaceAll(/\\([\\[\]*_`~<>])/g, "$1"),
                         path: id.startsWith("file:") ? decodeMarkdownFilePath(path) : path,
                         id,
                     };
@@ -82,15 +82,15 @@ const appNoteUrlExtension = {
             start(src: string) {
                 const embedIndex = src.indexOf("![[");
                 const linkIndex = src.indexOf("[[");
-                if (embedIndex < 0) return linkIndex;
-                if (linkIndex < 0) return embedIndex;
+                if (embedIndex < 0) {return linkIndex;}
+                if (linkIndex < 0) {return embedIndex;}
                 return Math.min(embedIndex, linkIndex);
             },
             tokenizer(src: string) {
                 const match = src.match(/^!?\[\[[^\]\n]+\]\]/);
                 if (match) {
                     const parsed = parseObsidianLink(match[0]);
-                    if (!parsed) return undefined;
+                    if (!parsed) {return undefined;}
                     return { type: "obsidian_link", ...parsed };
                 }
                 return undefined;
@@ -180,7 +180,7 @@ export class MarkdownParser {
         // HTML formatting between table rows/cells is not document content.
         // Full whitespace parsing would otherwise fit it into synthetic rows/cells.
         node.querySelectorAll("table, thead, tbody, tfoot, tr").forEach((container) => {
-            if (container.closest("pre, code")) return;
+            if (container.closest("pre, code")) {return;}
             Array.from(container.childNodes).forEach((child) => {
                 if (child.nodeType === Node.TEXT_NODE && /^[\t\n\f\r ]*$/.test(child.textContent ?? "")) {
                     container.removeChild(child);
@@ -189,7 +189,7 @@ export class MarkdownParser {
         });
         for (const container of [node, ...node.querySelectorAll("blockquote,ul,ol,li")]) {
             for (const child of [...container.childNodes]) {
-                if (child.nodeType === Node.TEXT_NODE && !child.textContent?.trim()) child.remove();
+                if (child.nodeType === Node.TEXT_NODE && !child.textContent?.trim()) {child.remove();}
             }
         }
         node.querySelectorAll("*").forEach((el) => {
@@ -206,8 +206,7 @@ export class MarkdownParser {
     normalizeBlocks(node: HTMLElement) {
         const blocks = Object.values(this.editor!.schema.nodes).filter((node) => node.isBlock);
         const selector = blocks
-            .map((block) => block.spec.parseDOM?.map((spec) => spec.tag))
-            .flat()
+            .flatMap((block) => block.spec.parseDOM?.map((spec) => spec.tag))
             .filter(Boolean)
             .join(",");
 
@@ -229,12 +228,12 @@ export class MarkdownParser {
             const startSpaces = content.match(/^\s+/)?.[0] ?? "";
             const endSpaces = !nextElementSibling ? (content.match(/\s+$/)?.[0] ?? "") : "";
             if (content.match(/^\n\n/)) {
-                if (endSpaces) firstParagraph.append(document.createTextNode(endSpaces));
+                if (endSpaces) {firstParagraph.append(document.createTextNode(endSpaces));}
                 return;
             }
             unwrapElement(firstParagraph);
-            if (startSpaces) node.insertBefore(document.createTextNode(startSpaces), node.firstChild);
-            if (endSpaces) node.append(document.createTextNode(endSpaces));
+            if (startSpaces) {node.insertBefore(document.createTextNode(startSpaces), node.firstChild);}
+            if (endSpaces) {node.append(document.createTextNode(endSpaces));}
         }
     }
 }

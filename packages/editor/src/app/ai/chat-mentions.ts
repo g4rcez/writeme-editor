@@ -10,11 +10,11 @@ export type WorkspaceMentionFile = {
 };
 
 export function createWorkspaceMentionItems(
-  notes: Pick<Note, "id" | "title" | "filePath">[],
-  files: WorkspaceMentionFile[],
+  notes: Array<Pick<Note, "id" | "title" | "filePath">>,
+  files: Array<WorkspaceMentionFile>,
   workspaceDirectory: string | null,
-): EditorMentionItem[] {
-  const items: EditorMentionItem[] = [];
+): Array<EditorMentionItem> {
+  const items: Array<EditorMentionItem> = [];
   const normalizePath = (path: string): string => path.replaceAll("\\", "/");
   const knownFilePaths = new Set<string>();
   const fileSearchPaths = new Map(
@@ -22,7 +22,7 @@ export function createWorkspaceMentionItems(
   );
 
   for (const note of notes) {
-    if (note.filePath) knownFilePaths.add(normalizePath(note.filePath));
+    if (note.filePath) {knownFilePaths.add(normalizePath(note.filePath));}
     const searchPath = note.filePath
       ? fileSearchPaths.get(normalizePath(note.filePath)) ??
       (workspaceDirectory ? getRelativePath(workspaceDirectory, note.filePath) : normalizePath(note.filePath))
@@ -38,7 +38,7 @@ export function createWorkspaceMentionItems(
   }
 
   for (const file of files) {
-    if (knownFilePaths.has(normalizePath(file.path))) continue;
+    if (knownFilePaths.has(normalizePath(file.path))) {continue;}
     knownFilePaths.add(normalizePath(file.path));
     const relativePath = normalizePath(file.relativePath);
     items.push({

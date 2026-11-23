@@ -11,7 +11,7 @@ class AdapterRegistry {
         return this.adapters.get(id);
     }
 
-    getAll(): AIAdapter[] {
+    getAll(): Array<AIAdapter> {
         return Array.from(this.adapters.values());
     }
 

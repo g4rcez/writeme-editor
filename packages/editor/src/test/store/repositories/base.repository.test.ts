@@ -56,7 +56,7 @@ describe("BaseRepository", () => {
     });
 
     it("should get all items", async () => {
-        const mockItems: MockEntity[] = [
+        const mockItems: Array<MockEntity> = [
             {
                 id: "1",
                 name: "Test",

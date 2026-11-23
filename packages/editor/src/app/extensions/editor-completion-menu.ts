@@ -13,9 +13,9 @@ export type CompletionAdapter = {
     noteId: () => string | undefined;
     target: HTMLElement;
     context: (active?: CompletionContext) => CompletionContext | null;
-    headings: () => CompletionItem[];
-    tags: (context: CompletionContext) => CompletionItem[];
-    words: (context: CompletionContext) => CompletionItem[];
+    headings: () => Array<CompletionItem>;
+    tags: (context: CompletionContext) => Array<CompletionItem>;
+    words: (context: CompletionContext) => Array<CompletionItem>;
     rect: () => DOMRect | null;
     insert: (item: CompletionItem, context: CompletionContext) => void;
 };
@@ -28,8 +28,8 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
 } {
     let context: CompletionContext | null = null;
     let menu: HTMLUListElement | null = null;
-    let candidates: CompletionItem[] = [];
-    let items: CompletionItem[] = [];
+    let candidates: Array<CompletionItem> = [];
+    let items: Array<CompletionItem> = [];
     let selectedIndex = 0;
     let generation = 0;
     let loading = false;
@@ -57,7 +57,7 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
         const item = items[index];
         const current = adapter.context(context ?? undefined);
         if (!item || !current || !context || current.from !== context.from || current.trigger !== context.trigger)
-            return;
+            {return;}
         close();
         adapter.insert(item, completionInsertionContext(item, current));
     };
@@ -65,20 +65,20 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
     const position = (): void => {
         const element = menu;
         const rect = adapter.rect();
-        if (!element || !rect) return;
+        if (!element || !rect) {return;}
         void computePosition({ getBoundingClientRect: () => rect }, element, {
             placement: "bottom-start",
             strategy: "fixed",
             middleware: [flip(), shift({ padding: 8 })],
         }).then(({ x, y }) => {
-            if (element !== menu) return;
+            if (element !== menu) {return;}
             element.style.left = `${x}px`;
             element.style.top = `${y}px`;
         });
     };
 
     const render = (): void => {
-        if (!menu || !context) return;
+        if (!menu || !context) {return;}
         items =
             context.trigger === "word"
                 ? filterWordItems(candidates, context.query)
@@ -139,20 +139,20 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
         if (selected) {
             adapter.target.setAttribute("aria-activedescendant", selected.id);
             selected.scrollIntoView({ block: "nearest" });
-        } else adapter.target.removeAttribute("aria-activedescendant");
+        } else {adapter.target.removeAttribute("aria-activedescendant");}
         position();
     };
 
     const open = (): boolean => {
         const next = adapter.context(context ?? undefined);
-        if (!next) return false;
+        if (!next) {return false;}
         close();
         context = next;
         workspace = completionWorkspaceKey();
         selectedIndex = 0;
         loading = next.trigger !== "word";
         error = false;
-        if (next.trigger === "word") candidates = adapter.words(next);
+        if (next.trigger === "word") {candidates = adapter.words(next);}
         menu = document.createElement("ul");
         menu.id = menuId;
         menu.setAttribute("role", "listbox");
@@ -170,11 +170,11 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
         adapter.target.setAttribute("aria-controls", menuId);
         adapter.target.setAttribute("aria-autocomplete", "list");
         render();
-        if (next.trigger === "word") return true;
+        if (next.trigger === "word") {return true;}
         const requestGeneration = generation;
         void loadWorkspaceCompletions(next.trigger, adapter.noteId())
             .then((results) => {
-                if (generation !== requestGeneration) return;
+                if (generation !== requestGeneration) {return;}
                 if (workspace !== completionWorkspaceKey()) {
                     close();
                     return;
@@ -184,7 +184,7 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
                 render();
             })
             .catch(() => {
-                if (generation !== requestGeneration) return;
+                if (generation !== requestGeneration) {return;}
                 loading = false;
                 error = true;
                 render();
@@ -193,30 +193,30 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
     };
 
     const handleKeyDown = (event: KeyboardEvent): boolean => {
-        if (event.isComposing) return false;
+        if (event.isComposing) {return false;}
         if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && event.code === "Space") {
             if (event.repeat && menu) {
                 event.preventDefault();
                 return true;
             }
             const opened = open();
-            if (opened) event.preventDefault();
+            if (opened) {event.preventDefault();}
             return opened;
         }
-        if (!menu) return false;
-        if (event.key === "Escape") close();
+        if (!menu) {return false;}
+        if (event.key === "Escape") {close();}
         else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
             if (items.length)
-                selectedIndex = (selectedIndex + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length;
+                {selectedIndex = (selectedIndex + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length;}
             render();
-        } else if ((event.key === "Enter" || event.key === "Tab") && items.length) select(selectedIndex);
-        else return false;
+        } else if ((event.key === "Enter" || event.key === "Tab") && items.length) {select(selectedIndex);}
+        else {return false;}
         event.preventDefault();
         return true;
     };
 
     const update = (docChanged: boolean): void => {
-        if (!menu || !context) return;
+        if (!menu || !context) {return;}
         if (workspace !== completionWorkspaceKey()) {
             close();
             return;
@@ -231,13 +231,13 @@ export function createCompletionMenu(adapter: CompletionAdapter): {
             close();
             return;
         }
-        if (next.query !== context.query) selectedIndex = 0;
+        if (next.query !== context.query) {selectedIndex = 0;}
         context = next;
         render();
     };
 
     const onPointerDown = (event: PointerEvent): void => {
-        if (event.target instanceof Node && !menu?.contains(event.target)) close();
+        if (event.target instanceof Node && !menu?.contains(event.target)) {close();}
     };
     const onBlur = (): void => close();
     document.addEventListener("pointerdown", onPointerDown);

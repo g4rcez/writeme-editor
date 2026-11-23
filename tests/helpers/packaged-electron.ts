@@ -23,12 +23,12 @@ export async function launchPackagedNotebook(
         recordVideo: { dir: testInfo.outputPath("packaged-videos"), size: { width: 1280, height: 800 } },
     });
     const page = context.pages()[0] ?? (await context.waitForEvent("page"));
-    const errors: string[] = [];
+    const errors: Array<string> = [];
     page.on("pageerror", (error) => errors.push(error.message));
     async function close(): Promise<void> {
         await context.close();
         const video = page.video();
-        if (!video) throw new Error("Packaged Electron video was not recorded");
+        if (!video) {throw new Error("Packaged Electron video was not recorded");}
         await testInfo.attach("Packaged Electron session", { path: await video.path(), contentType: "video/webm" });
         expect(errors).toEqual([]);
     }

@@ -8,9 +8,9 @@ export class NoteGroupsRepository extends BaseRepository<NoteGroup> implements I
         super(new DexieStorageAdapter(), "noteGroups");
     }
 
-    async getByNoteId(noteId: string): Promise<NoteGroup[]> {
+    async getByNoteId(noteId: string): Promise<Array<NoteGroup>> {
         const members = await db.noteGroupMembers.where("noteId").equals(noteId).toArray();
         const groups = await Promise.all(members.map((m) => this.getOne(m.groupId)));
-        return groups.filter(Boolean) as NoteGroup[];
+        return groups.filter(Boolean) as Array<NoteGroup>;
     }
 }

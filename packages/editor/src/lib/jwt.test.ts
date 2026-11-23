@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { decodeJwtPayload } from "./jwt";
 
 const encodePayload = (payload: string): string =>
-    btoa(payload).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    btoa(payload).replaceAll('+', "-").replaceAll('/', "_").replaceAll(/=+$/g, "");
 
 const createToken = (payload: string): string => `header.${encodePayload(payload)}.signature`;
 

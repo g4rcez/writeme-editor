@@ -97,11 +97,11 @@ for (const filesystem of [false, true]) {
             await page.evaluate(async () => {
                 const notes = await window.electronAPI.db.getAll<Note>("notes");
                 const source = notes.find((note) => !note.metadata?.commentSourceId);
-                if (!source) throw new Error("Source note missing");
+                if (!source) {throw new Error("Source note missing");}
                 const filePath = source.filePath?.replace(/advisor\.md$/, "renamed-advisor.md") ?? null;
                 if (source.filePath && filePath) {
                     const moved = await window.electronAPI.fs.moveFile(source.filePath, filePath);
-                    if (!moved.success) throw new Error(moved.error);
+                    if (!moved.success) {throw new Error(moved.error);}
                 }
                 await window.electronAPI.db.save("notes", {
                     ...source,

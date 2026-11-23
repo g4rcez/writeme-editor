@@ -26,7 +26,7 @@ export type SettingsSection = {
     group: "Writing" | "Templates" | "Assistance" | "Workspace" | null;
 };
 
-const SETTINGS_SECTIONS: SettingsSection[] = [
+const SETTINGS_SECTIONS: Array<SettingsSection> = [
     {
         id: "quick",
         label: "Quick settings",
@@ -133,12 +133,12 @@ export function isSettingsSectionAvailable(
     sectionId: SettingsSectionId,
     platform: SettingsPlatform = getSettingsPlatform(),
 ): boolean {
-    if (sectionId === "ai" && (!FEATURES.ai || platform === "mobile")) return false;
-    if (sectionId === "variables" && !FEATURES.templateScripts) return false;
+    if (sectionId === "ai" && (!FEATURES.ai || platform === "mobile")) {return false;}
+    if (sectionId === "variables" && !FEATURES.templateScripts) {return false;}
     const section = SETTINGS_SECTIONS.find((item) => item.id === sectionId);
     return section?.platform === "all" || section?.platform === platform;
 }
 
-export function getSettingsSections(platform: SettingsPlatform = getSettingsPlatform()): SettingsSection[] {
+export function getSettingsSections(platform: SettingsPlatform = getSettingsPlatform()): Array<SettingsSection> {
     return SETTINGS_SECTIONS.filter((section) => isSettingsSectionAvailable(section.id, platform));
 }

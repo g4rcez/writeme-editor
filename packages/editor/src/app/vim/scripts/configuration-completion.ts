@@ -7,7 +7,7 @@ import {
 import { completionPath } from "@codemirror/lang-javascript";
 import { syntaxTree } from "@codemirror/language";
 
-const members: Readonly<Record<string, readonly Completion[]>> = {
+const members: Readonly<Record<string, ReadonlyArray<Completion>>> = {
     "": [{ label: "vim", type: "variable", detail: "Global Vim configuration API" }],
     vim: [
         { label: "opt", type: "property", detail: "Shared editor options" },
@@ -35,23 +35,23 @@ const members: Readonly<Record<string, readonly Completion[]>> = {
 };
 
 export function vimConfigurationCompletion(context: CompletionContext): CompletionResult | null {
-    if (/Comment/.test(syntaxTree(context.state).resolveInner(context.pos, -1).name)) return null;
+    if (/Comment/.test(syntaxTree(context.state).resolveInner(context.pos, -1).name)) {return null;}
     const before = context.state.doc.sliceString(0, context.pos);
     const mode = /vim\.keymap\.(?:set|del)\(\s*(["'])(\w*)$/.exec(before);
     const initial = /vim\.opt\.initialMode\s*=\s*(["'])(\w*)$/.exec(before);
     const match = mode ?? initial;
     if (match)
-        return {
+        {return {
             from: context.pos - (match[2]?.length ?? 0),
             options: (mode ? ["normal", "insert", "visual"] : ["normal", "insert"]).map((label) => ({
                 label,
                 type: "enum",
             })),
             validFor: /^\w*$/,
-        };
+        };}
     const path = completionPath(context);
-    if (!path) return null;
+    if (!path) {return null;}
     const options = members[path.path.join(".")];
-    if (!options || (!context.explicit && !path.path.length && !path.name)) return null;
+    if (!options || (!context.explicit && !path.path.length && !path.name)) {return null;}
     return { from: context.pos - path.name.length, options, validFor: /^\w*$/ };
 }

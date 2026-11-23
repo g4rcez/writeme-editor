@@ -2,7 +2,7 @@ import pkg from "../../../../../package.json";
 
 type Dep = { name: string; description: string };
 
-const DEPS: Dep[] = [
+const DEPS: Array<Dep> = [
     {
         name: "@base-ui/react",
         description: "Unstyled, accessible UI primitives by MUI",

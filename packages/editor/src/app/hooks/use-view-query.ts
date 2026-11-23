@@ -6,10 +6,10 @@ import { useGlobalStore } from "@/store/global.store";
 import { repositories } from "@/store/repositories";
 
 type QueryResult = {
-    results: Row[];
+    results: Array<Row>;
     error: ParseError | null;
     timing: number;
-    columns: SelectItem[];
+    columns: Array<SelectItem>;
     query: Query | null;
 };
 
@@ -21,7 +21,7 @@ const EMPTY: QueryResult = {
     query: null,
 };
 
-const ENTITY_LOADERS: Record<string, (() => Promise<object[]>) | undefined> = {
+const ENTITY_LOADERS: Record<string, (() => Promise<Array<object>>) | undefined> = {
     hashtags: () => repositories.hashtags.getAll(),
     projects: () => repositories.projects.getAll(),
     tabs: () => repositories.tabs.getAll(),
@@ -32,17 +32,17 @@ const ENTITY_LOADERS: Record<string, (() => Promise<object[]>) | undefined> = {
     views: () => repositories.views.getAll(),
 };
 
-async function loadDataSources(parsed: Query, notes: object[]): Promise<DataSources> {
+async function loadDataSources(parsed: Query, notes: Array<object>): Promise<DataSources> {
     const sources: DataSources = { notes };
     const tables = new Set<string>();
-    if (parsed.from && parsed.from !== "notes") tables.add(parsed.from);
+    if (parsed.from && parsed.from !== "notes") {tables.add(parsed.from);}
     for (const join of parsed.joins) {
-        if (join.table !== "notes") tables.add(join.table);
+        if (join.table !== "notes") {tables.add(join.table);}
     }
     await Promise.all(
         Array.from(tables).map(async (table) => {
             const loader = ENTITY_LOADERS[table];
-            if (loader) sources[table] = await loader();
+            if (loader) {sources[table] = await loader();}
         }),
     );
     return sources;
@@ -55,7 +55,7 @@ export function useViewQuery(queryString: string, debounceMs = 300): QueryResult
     const [result, setResult] = useState<QueryResult>(EMPTY);
     const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-    const run = useCallback(async (qs: string, noteList: object[]) => {
+    const run = useCallback(async (qs: string, noteList: Array<object>) => {
         try {
             const start = performance.now();
             const parsed = parse(qs);
@@ -63,15 +63,15 @@ export function useViewQuery(queryString: string, debounceMs = 300): QueryResult
             const results = executeQuery(parsed, dataSources);
             const timing = Math.round(performance.now() - start);
 
-            const columns: SelectItem[] =
+            const columns: Array<SelectItem> =
                 parsed.select && parsed.select.columns.length > 0 ? parsed.select.columns : [];
 
             setResult({ results, error: null, timing, columns, query: parsed });
-        } catch (e) {
-            if (e instanceof ParseError) {
+        } catch (error) {
+            if (error instanceof ParseError) {
                 setResult({
                     results: [],
-                    error: e,
+                    error,
                     timing: 0,
                     columns: [],
                     query: null,
@@ -86,7 +86,7 @@ export function useViewQuery(queryString: string, debounceMs = 300): QueryResult
             setResult({
                 results: notes.map((n) => {
                     const row: Row = {};
-                    for (const [k, v] of Object.entries(n)) row[`notes.${k}`] = v;
+                    for (const [k, v] of Object.entries(n)) {row[`notes.${k}`] = v;}
                     return row;
                 }),
                 error: null,

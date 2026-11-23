@@ -16,7 +16,7 @@ function registerSubscriptMarkdown(marked: Marked): void {
                 },
                 tokenizer(src: string) {
                     const match = SUBSCRIPT_MARKDOWN_TOKENIZER_REGEX.exec(src);
-                    if (!match) return undefined;
+                    if (!match) {return undefined;}
 
                     return {
                         type: "subscript",

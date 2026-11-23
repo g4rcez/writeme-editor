@@ -182,9 +182,9 @@ describe("CreateNoteDialog", () => {
         ["stat", "Couldn’t check for an existing note."],
         ["write", "Couldn’t save the note in this folder."],
     ])("shows actionable copy and separate technical details for a %s failure", async (operation, message) => {
-        if (operation === "read") mocks.readDir.mockResolvedValue({ error: "Access denied" });
-        if (operation === "stat") mocks.statFile.mockResolvedValue({ success: false, error: "Access denied" });
-        if (operation === "write") mocks.writeFile.mockResolvedValue({ success: false, error: "Access denied" });
+        if (operation === "read") {mocks.readDir.mockResolvedValue({ error: "Access denied" });}
+        if (operation === "stat") {mocks.statFile.mockResolvedValue({ success: false, error: "Access denied" });}
+        if (operation === "write") {mocks.writeFile.mockResolvedValue({ success: false, error: "Access denied" });}
         render(<CreateNoteDialog />);
         fireEvent.input(screen.getByLabelText("Note title"), { target: { value: "Projects/Draft" } });
         fireEvent.click(screen.getByRole("button", { name: "Create note" }));
@@ -243,7 +243,7 @@ describe("CreateNoteDialog", () => {
         expect(mocks.saveNote).not.toHaveBeenCalled();
     });
 
-    it.each(["../Outside", "/../Outside", "//Outside", "C:\\Outside"])("rejects paths outside the workspace: %s", (value) => {
+    it.each(["../Outside", "/../Outside", "//Outside", String.raw`C:\Outside`])("rejects paths outside the workspace: %s", (value) => {
         render(<CreateNoteDialog />);
         fireEvent.input(screen.getByLabelText("Note title"), { target: { value } });
         fireEvent.click(screen.getByRole("button", { name: /Create/ }));

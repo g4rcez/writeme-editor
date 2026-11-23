@@ -34,18 +34,18 @@ export function targetAt(view: EditorView, position: number): BlockTarget | null
     for (let depth = $pos.depth; depth >= 1; depth--) {
         const node = $pos.node(depth);
         if (node.type.name === "listItem" || node.type.name === "taskItem")
-            return { node, pos: $pos.before(depth), depth };
+            {return { node, pos: $pos.before(depth), depth };}
     }
     if ($pos.depth === 0) {
         const node = $pos.nodeAfter;
         return node && blockTypes[node.type.name] ? { node, pos: $pos.pos, depth: 1 } : null;
     }
     const node = $pos.node(1);
-    if (blockTypes[node.type.name]) return { node, pos: $pos.before(1), depth: 1 };
+    if (blockTypes[node.type.name]) {return { node, pos: $pos.before(1), depth: 1 };}
     for (let depth = $pos.depth; depth >= 1; depth--) {
         const nested = $pos.node(depth);
         if (nested.isBlock && blockTypes[nested.type.name])
-            return { node: nested, pos: $pos.before(depth), depth };
+            {return { node: nested, pos: $pos.before(depth), depth };}
     }
     return null;
 }
@@ -56,13 +56,13 @@ export function currentTarget(view: EditorView): BlockTarget | null {
         selected instanceof NodeSelection &&
         (blockTypes[selected.node.type.name] || ["listItem", "taskItem"].includes(selected.node.type.name))
     )
-        return {
+        {return {
             node: selected.node,
             pos: selected.from,
             depth: selected.$from.depth + 1,
-        };
+        };}
     const target = targetAt(view, selected.from);
-    if (!target || selected.to > target.pos + target.node.nodeSize - 1) return null;
+    if (!target || selected.to > target.pos + target.node.nodeSize - 1) {return null;}
     return target;
 }
 
@@ -81,12 +81,12 @@ function synchronizePointerSelection(view: EditorView): void {
         const anchor = view.posAtDOM(selection.anchorNode, selection.anchorOffset);
         const head = view.posAtDOM(selection.focusNode, selection.focusOffset);
         const next = TextSelection.between(view.state.doc.resolve(anchor), view.state.doc.resolve(head));
-        if (!next.eq(view.state.selection)) view.dispatch(view.state.tr.setSelection(next));
+        if (!next.eq(view.state.selection)) {view.dispatch(view.state.tr.setSelection(next));}
     }
 }
 
 function clearCopiedHeadingIds(node: ProseMirrorNode): ProseMirrorNode {
-    if (node.isText) return node;
+    if (node.isText) {return node;}
     const attrs = node.type.name === "heading" ? { ...node.attrs, id: null } : node.attrs;
     const content = node.content.content.map(clearCopiedHeadingIds);
     return node.type.create(attrs, Fragment.fromArray(content), node.marks);
@@ -107,7 +107,7 @@ function validTarget(view: EditorView, target: BlockTarget): boolean {
 }
 
 export function duplicate(view: EditorView, target: BlockTarget): boolean {
-    if (!validTarget(view, target)) return false;
+    if (!validTarget(view, target)) {return false;}
     const copy = clearCopiedHeadingIds(target.node);
     const insertion = target.pos + target.node.nodeSize;
     dispatchAction(view, view.state.tr.insert(insertion, copy), insertion);
@@ -115,19 +115,19 @@ export function duplicate(view: EditorView, target: BlockTarget): boolean {
 }
 
 export function move(view: EditorView, target: BlockTarget, delta: -1 | 1): boolean {
-    if (!validTarget(view, target)) return false;
+    if (!validTarget(view, target)) {return false;}
     const $from = view.state.doc.resolve(target.pos);
     const parentDepth = target.depth - 1;
     const parent = $from.node(parentDepth);
     const index = $from.index(parentDepth);
     const nextIndex = index + delta;
-    if (nextIndex < 0 || nextIndex >= parent.childCount) return false;
+    if (nextIndex < 0 || nextIndex >= parent.childCount) {return false;}
 
     const firstIndex = Math.min(index, nextIndex);
     const first = parent.child(firstIndex);
     const second = parent.child(firstIndex + 1);
     const reordered = Fragment.fromArray([second, first]);
-    if (!parent.canReplace(firstIndex, firstIndex + 2, reordered)) return false;
+    if (!parent.canReplace(firstIndex, firstIndex + 2, reordered)) {return false;}
     const start = delta > 0 ? target.pos : target.pos - first.nodeSize;
     const tr = view.state.tr.replaceWith(start, start + first.nodeSize + second.nodeSize, reordered);
     const newTargetPos = target.pos + (delta > 0 ? second.nodeSize : -first.nodeSize);
@@ -135,10 +135,10 @@ export function move(view: EditorView, target: BlockTarget, delta: -1 | 1): bool
     return true;
 }
 
-export function conversionOptions(view: EditorView, target: BlockTarget): Conversion[] {
+export function conversionOptions(view: EditorView, target: BlockTarget): Array<Conversion> {
     const { node } = target;
     const { schema } = view.state;
-    const options: Conversion[] = [];
+    const options: Array<Conversion> = [];
     const $pos = view.state.doc.resolve(target.pos);
     const parent = $pos.node(target.depth - 1);
     const index = $pos.index(target.depth - 1);
@@ -148,7 +148,7 @@ export function conversionOptions(view: EditorView, target: BlockTarget): Conver
             !replacement.eq(node) &&
             parent.canReplace(index, index + 1, Fragment.from(replacement))
         )
-            options.push({ label, node: replacement });
+            {options.push({ label, node: replacement });}
     };
     const create = (
         type: string,
@@ -171,21 +171,21 @@ export function conversionOptions(view: EditorView, target: BlockTarget): Conver
                 ["Checklist", "taskList", "taskItem"],
             ] as const) {
                 const item = create(itemType, Fragment.from(paragraph));
-                if (item) add(label, create(type, Fragment.from(item)));
+                if (item) {add(label, create(type, Fragment.from(item)));}
             }
         }
         add("Quote", create("blockquote", Fragment.from(node), { literal: true }));
     } else if (node.type.name === "blockquote" && node.childCount === 1) {
         const child = node.firstChild;
-        if (child?.type.name === "paragraph") add("Paragraph", child);
-        if (child?.type.name === "heading") add(`Heading ${String(child.attrs.level)}`, child);
+        if (child?.type.name === "paragraph") {add("Paragraph", child);}
+        if (child?.type.name === "heading") {add(`Heading ${String(child.attrs.level)}`, child);}
     }
     return options;
 }
 
 export function convert(view: EditorView, target: BlockTarget, option: Conversion): boolean {
-    if (!validTarget(view, target)) return false;
-    if (!conversionOptions(view, target).some((candidate) => candidate.node.eq(option.node))) return false;
+    if (!validTarget(view, target)) {return false;}
+    if (!conversionOptions(view, target).some((candidate) => candidate.node.eq(option.node))) {return false;}
     dispatchAction(
         view,
         view.state.tr.replaceWith(target.pos, target.pos + target.node.nodeSize, option.node),
@@ -205,7 +205,7 @@ function button(
     element.textContent = label;
     element.setAttribute("role", "menuitem");
     element.disabled = disabled;
-    if (explanation) element.title = explanation;
+    if (explanation) {element.title = explanation;}
     element.addEventListener("click", action);
     return element;
 }
@@ -227,7 +227,7 @@ function createPlugin(): Plugin {
                     event.code !== "KeyM" ||
                     !openForKeyboard
                 )
-                    return false;
+                    {return false;}
                 event.preventDefault();
                 event.stopPropagation();
                 openForKeyboard();
@@ -236,9 +236,9 @@ function createPlugin(): Plugin {
         },
         view: (view) => {
             const container = view.dom.parentElement;
-            if (!container) return {};
+            if (!container) {return {};}
             const handle = container.querySelector<HTMLElement>(".drag-handle");
-            if (!handle) return {};
+            if (!handle) {return {};}
 
             handle.tabIndex = 0;
             handle.hidden = !view.editable;
@@ -264,29 +264,29 @@ function createPlugin(): Plugin {
 
             const positionHandle = (candidate: BlockTarget): void => {
                 const nodeDOM = view.nodeDOM(candidate.pos);
-                if (!(nodeDOM instanceof HTMLElement)) return;
+                if (!(nodeDOM instanceof HTMLElement)) {return;}
                 const rect = nodeDOM.getBoundingClientRect();
                 handle.style.left = `${Math.max(4, rect.left - handle.offsetWidth)}px`;
                 handle.style.top = `${rect.top}px`;
             };
 
             const close = (restoreFocus: boolean): void => {
-                if (!open) return;
+                if (!open) {return;}
                 open = false;
                 menu.hidden = true;
                 handle.setAttribute("aria-expanded", "false");
                 handle.classList.remove("block-actions-open");
                 if (restoreFocus) {
-                    if (returnToEditor) view.focus();
-                    else handle.focus();
+                    if (returnToEditor) {view.focus();}
+                    else {handle.focus();}
                 }
             };
 
             const show = (candidate: BlockTarget | null, focusMenu: boolean): void => {
-                if (!view.editable) return;
+                if (!view.editable) {return;}
                 candidate = !view.state.selection.empty && !currentTarget(view) ? null : candidate;
                 target = candidate;
-                if (candidate) positionHandle(candidate);
+                if (candidate) {positionHandle(candidate);}
                 returnToEditor = view.hasFocus();
                 const bounds = handle.getBoundingClientRect();
                 menu.replaceChildren();
@@ -302,7 +302,7 @@ function createPlugin(): Plugin {
                             () => {
                                 const block = target;
                                 close(false);
-                                if (block) command(view, block);
+                                if (block) {command(view, block);}
                             },
                             disabled,
                         ),
@@ -340,7 +340,7 @@ function createPlugin(): Plugin {
                                 button(option.label, () => {
                                     const block = target;
                                     close(false);
-                                    if (block) convert(view, block, option);
+                                    if (block) {convert(view, block, option);}
                                 }),
                             );
                         }
@@ -361,12 +361,12 @@ function createPlugin(): Plugin {
                 handle.setAttribute("aria-expanded", "true");
                 menu.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - menu.offsetWidth - 8))}px`;
                 menu.style.top = `${Math.max(8, Math.min(bounds.top, window.innerHeight - menu.offsetHeight - 8))}px`;
-                if (focusMenu) menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+                if (focusMenu) {menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();}
             };
 
             const pointerTarget = (event: MouseEvent | TouchEvent): BlockTarget | null => {
                 const point = "touches" in event ? event.touches[0] : event;
-                if (!point) return null;
+                if (!point) {return null;}
                 const position = view.posAtCoords({
                     left: point.clientX,
                     top: point.clientY,
@@ -381,8 +381,8 @@ function createPlugin(): Plugin {
                     dragged = false;
                     return;
                 }
-                if (open) close(true);
-                else show(target ?? currentTarget(view), true);
+                if (open) {close(true);}
+                else {show(target ?? currentTarget(view), true);}
             };
             const openFromKeyboard = (event: KeyboardEvent): void => {
                 if (event.altKey && event.shiftKey && event.code === "KeyM") {
@@ -399,14 +399,14 @@ function createPlugin(): Plugin {
                 }
             };
             const updateTarget = (event: MouseEvent): void => {
-                if (open || !view.editable) return;
+                if (open || !view.editable) {return;}
                 target = pointerTarget(event);
                 handle.classList.toggle("block-actions-hover", !!target);
-                if (target) positionHandle(target);
+                if (target) {positionHandle(target);}
             };
             const touchTarget = (event: TouchEvent): void => {
                 target = pointerTarget(event);
-                if (!target || open || !view.editable) return;
+                if (!target || open || !view.editable) {return;}
                 positionHandle(target);
                 handle.classList.add("block-actions-touch");
             };
@@ -452,9 +452,9 @@ function createPlugin(): Plugin {
             openForKeyboard = () => show(currentTarget(view), true);
             const onPointerSelection = (): void => synchronizePointerSelection(view);
             const onHandleFocus = (): void => {
-                if (pointerActivation) return;
+                if (pointerActivation) {return;}
                 target = currentTarget(view);
-                if (target) positionHandle(target);
+                if (target) {positionHandle(target);}
             };
             const onDragStart = (): void => {
                 dragged = true;
@@ -465,7 +465,7 @@ function createPlugin(): Plugin {
                 pointerActivation = true;
             };
             const onViewportChange = (event: Event): void => {
-                if (!(event.target instanceof Node) || !menu.contains(event.target)) close(false);
+                if (!(event.target instanceof Node) || !menu.contains(event.target)) {close(false);}
             };
             const onPointerLeave = (): void => handle.classList.remove("block-actions-hover");
 
@@ -491,7 +491,7 @@ function createPlugin(): Plugin {
                         target = null;
                         close(false);
                     }
-                    if (!view.editable) close(false);
+                    if (!view.editable) {close(false);}
                 },
                 destroy: () => {
                     openForKeyboard = null;

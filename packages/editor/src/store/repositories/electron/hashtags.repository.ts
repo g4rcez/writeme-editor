@@ -1,19 +1,19 @@
 import { notifyHashtagsChanged } from "@/lib/hashtag-events";
 import { ElectronStorageAdapter } from "../adapters/electron.adapter";
 import { BaseRepository } from "../base.repository";
-import { type Hashtag, type IHashtagRepository } from "../entities/hashtag";
+import type { Hashtag, IHashtagRepository } from "../entities/hashtag";
 
 export class HashtagsRepository extends BaseRepository<Hashtag> implements IHashtagRepository {
     constructor() {
         super(new ElectronStorageAdapter(), "hashtags");
     }
 
-    async findByHashtag(tag: string): Promise<Hashtag[]> {
+    async findByHashtag(tag: string): Promise<Array<Hashtag>> {
         const all = await this.getAll();
         return all.filter((h) => h.hashtag === tag);
     }
 
-    async sync(filename: string, tags: string[]): Promise<void> {
+    async sync(filename: string, tags: Array<string>): Promise<void> {
         await window.electronAPI.db.hashtags.sync(filename, tags);
         notifyHashtagsChanged();
     }

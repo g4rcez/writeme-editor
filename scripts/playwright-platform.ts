@@ -7,29 +7,29 @@ const root = path.resolve(__dirname, "..");
 
 export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = process.env): PlaywrightTestConfig {
   const suite = env.WRITEME_E2E_SUITE ?? "browser";
-  if (!suites.includes(suite as Suite)) throw new Error(`Unknown suite: ${suite}`);
+  if (!suites.includes(suite as Suite)) {throw new Error(`Unknown suite: ${suite}`);}
   const fastBrowser = suite === "browser" && env.WRITEME_E2E_FAST === "1";
-  const selected: string[] = env.WRITEME_E2E_PROJECTS ? JSON.parse(env.WRITEME_E2E_PROJECTS) : [];
+  const selected: Array<string> = env.WRITEME_E2E_PROJECTS ? JSON.parse(env.WRITEME_E2E_PROJECTS) : [];
   const mobile = platform === "ios" || platform === "android";
   const liveWhisper = env.WRITEME_E2E_LIVE_WHISPER === "1";
   const artifactDirectory = env.PLAYWRIGHT_ARTIFACT_DIR ?? path.join(root, "artifacts/playwright", platform, suite);
   const prebuilt = env.WRITEME_E2E_PREBUILT === "1";
   const port = Number(env.PLAYWRIGHT_PORT ?? (suite === "landing" ? 3100 : suite === "mobile" ? 5188 : 5181));
   const baseURL = env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${port}`;
-  const servers: Exclude<NonNullable<PlaywrightTestConfig["webServer"]>, unknown[]>[] = [];
-  const projects: Project[] = [];
+  const servers: Array<Exclude<NonNullable<PlaywrightTestConfig["webServer"]>, Array<unknown>>> = [];
+  const projects: Array<Project> = [];
   const add = (project: Project): void => {
-    if (matchesProject(project.name ?? "", selected)) projects.push(project);
+    if (matchesProject(project.name ?? "", selected)) {projects.push(project);}
   };
   const deviceProject = (
     name: string,
     deviceName: string,
     testDir: string,
-    testMatch: string[],
+    testMatch: Array<string>,
     url = baseURL,
   ): Project => {
     const device = devices[deviceName];
-    if (!device) throw new Error(`Unknown Playwright device: ${deviceName}`);
+    if (!device) {throw new Error(`Unknown Playwright device: ${deviceName}`);}
     return {
       name,
       testDir: path.join(root, "tests", testDir),
@@ -55,7 +55,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
       },
     };
   };
-  const mobileProjects = (testDir: string, testMatch: string[], tablets: boolean): void => {
+  const mobileProjects = (testDir: string, testMatch: Array<string>, tablets: boolean): void => {
     add(
       deviceProject(
         platform === "ios" ? "ios-phone" : "android-phone",
@@ -65,17 +65,17 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
       ),
     );
     if (tablets)
-      add(
+      {add(
         deviceProject(
           platform === "ios" ? "ipad" : "android-tablet",
           platform === "ios" ? "iPad Pro 11" : "Galaxy Tab S4",
           testDir,
           testMatch,
         ),
-      );
+      );}
   };
   const preview = (command: string, url = baseURL, serverEnv?: Record<string, string>): void => {
-    if (env.PLAYWRIGHT_BASE_URL || projects.length === 0) return;
+    if (env.PLAYWRIGHT_BASE_URL || projects.length === 0) {return;}
     servers.push({ command, url, env: serverEnv, reuseExistingServer: false, timeout: 180_000 });
   };
 
@@ -96,22 +96,22 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
     } else {
       const chromium = deviceProject("chromium", "Desktop Chrome", "e2e", ["**/*.spec.ts"]);
       if (suite === "browser")
-        chromium.testIgnore = [
+        {chromium.testIgnore = [
           "**/*-production.spec.ts",
           // This video walkthrough is operator-run, not a regression scenario.
           ...(env.RECORD_COMPLETION_DEMO === "1" ? [] : ["**/editor-completion-video.spec.ts"]),
-        ];
-      if (suite === "production" && platform === "osx") chromium.testIgnore = ["**/freehand-*.spec.ts"];
+        ];}
+      if (suite === "production" && platform === "osx") {chromium.testIgnore = ["**/freehand-*.spec.ts"];}
       add(chromium);
       if (platform === "osx")
-        add(
+        {add(
           deviceProject(
             "desktop-macos",
             "Desktop Safari",
             "e2e",
             suite === "browser" ? handwriting : ["**/freehand-*.spec.ts"],
           ),
-        );
+        );}
     }
     preview(
       suite === "browser"
@@ -119,13 +119,13 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
         : `${prebuilt ? "" : "npm run browser:build && "}npm exec -- vite preview --host 127.0.0.1 --port ${port} --strictPort`,
     );
   } else if (suite === "mobile") {
-    if (!mobile) throw new Error("The mobile suite requires ios or android.");
+    if (!mobile) {throw new Error("The mobile suite requires ios or android.");}
     mobileProjects("mobile", ["*.spec.ts"], false);
     preview(
       `${prebuilt ? "" : "npm run mobile:build && "}npm exec -- vite preview --config packages/mobile/vite.config.ts --host 127.0.0.1 --port ${port} --strictPort`,
     );
   } else if (suite === "native") {
-    if (mobile) throw new Error("Native means desktop Electron, not mobile emulation.");
+    if (mobile) {throw new Error("Native means desktop Electron, not mobile emulation.");}
     add({
       name: `native-${platform}`,
       testDir: path.join(root, "tests/native"),
@@ -168,9 +168,9 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
               },
             ]
             : [];
-    if (profiles.length === 0) throw new Error("Restricted profile tests exist only for osx, ios and android.");
+    if (profiles.length === 0) {throw new Error("Restricted profile tests exist only for osx, ios and android.");}
     for (const profile of profiles) {
-      if (!matchesProject(profile.name, selected)) continue;
+      if (!matchesProject(profile.name, selected)) {continue;}
       const url = `http://127.0.0.1:${profile.port}`;
       add(deviceProject(profile.name, profile.device, "build-profiles", ["*.spec.ts"], url));
       const outDir = env.WRITEME_E2E_PROFILE_DIR ?? `artifacts/build-profiles/${profile.name}`;
@@ -183,11 +183,11 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
       });
     }
     if (platform === "osx")
-      add({
+      {add({
         name: "native-store",
         testDir: path.join(root, "tests/native"),
         testMatch: "build-profiles.spec.ts",
-      });
+      });}
   } else if (suite === "landing") {
     add(deviceProject("chromium", "Desktop Chrome", "", ["landing-downloads.spec.ts"]));
     preview(
@@ -195,7 +195,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
     );
   } else if (suite === "device") {
     if (platform !== "android")
-      throw new Error("Automated physical pen tests require Android; iPad/Pencil checks are operator-run.");
+      {throw new Error("Automated physical pen tests require Android; iPad/Pencil checks are operator-run.");}
     add({
       name: "physical-android",
       testDir: path.join(root, "tests/device"),
@@ -203,7 +203,7 @@ export function platformConfig(platform: Platform, env: NodeJS.ProcessEnv = proc
       metadata: { physicalDevice: true, runnerPlatform: process.platform },
     });
   }
-  if (projects.length === 0) throw new Error(`No ${platform}/${suite} projects match ${selected.join(", ")}.`);
+  if (projects.length === 0) {throw new Error(`No ${platform}/${suite} projects match ${selected.join(", ")}.`);}
   return defineConfig({
     testDir: path.join(root, "tests"),
     projects,

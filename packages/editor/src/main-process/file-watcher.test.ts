@@ -15,7 +15,7 @@ import { FileWatcher } from "./file-watcher";
 const send = vi.fn();
 const window = { webContents: { send } } as unknown as import("electron").BrowserWindow;
 const dirChanges = () => send.mock.calls.filter(([channel]) => channel === "fs:dir-changed").map(([, payload]) => payload.dirPath);
-const settle = (ms = 1_200) => new Promise((resolve) => setTimeout(resolve, ms));
+const settle = (ms = 1200) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let root: string;
 
@@ -93,7 +93,7 @@ describe("FileWatcher memory bounds", () => {
         vi.useFakeTimers({ toFake: ["Date"] });
         try {
             const records = (FileWatcher as unknown as { lastWrittenByApp: Map<string, number> }).lastWrittenByApp;
-            for (let index = 0; index < 500; index++) FileWatcher.suppressNext(`/notes/${index}.md`);
+            for (let index = 0; index < 500; index++) {FileWatcher.suppressNext(`/notes/${index}.md`);}
             expect(records.size).toBe(500);
 
             vi.setSystemTime(Date.now() + 10_000);

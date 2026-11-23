@@ -7,7 +7,7 @@ import type { FilterRow, FilterGroup } from "@/lib/views/query-builder";
 import type { Note } from "@/store/note";
 import { useGlobalStore } from "@/store/global.store";
 
-const BUILTIN_FIELDS: { value: string; label: string }[] = [
+const BUILTIN_FIELDS: Array<{ value: string; label: string }> = [
     { value: "title", label: "Title" },
     { value: "content", label: "Content" },
     { value: "noteType", label: "Note Type" },
@@ -24,14 +24,14 @@ const BUILTIN_FIELDS: { value: string; label: string }[] = [
 type FieldType = "string" | "number" | "date" | "boolean" | "array";
 
 function getFieldType(field: string): FieldType {
-    if (field === "favorite") return "boolean";
-    if (field === "fileSize") return "number";
-    if (field === "createdAt" || field === "updatedAt") return "date";
-    if (field === "tags") return "array";
+    if (field === "favorite") {return "boolean";}
+    if (field === "fileSize") {return "number";}
+    if (field === "createdAt" || field === "updatedAt") {return "date";}
+    if (field === "tags") {return "array";}
     return "string";
 }
 
-const OPERATORS_BY_TYPE: Record<FieldType, { value: ComparisonOp; label: string }[]> = {
+const OPERATORS_BY_TYPE: Record<FieldType, Array<{ value: ComparisonOp; label: string }>> = {
     string: [
         { value: "=", label: "equals" },
         { value: "!=", label: "not equals" },
@@ -63,7 +63,7 @@ type FilterBuilderProps = {
     onChange: (group: FilterGroup) => void;
 };
 
-function useMetadataFields(notes: Note[]): { value: string; label: string }[] {
+function useMetadataFields(notes: Array<Note>): Array<{ value: string; label: string }> {
     return useMemo(() => {
         const keys = new Set<string>();
         for (const note of notes) {
@@ -134,7 +134,7 @@ export function FilterBuilder({ group, onChange }: FilterBuilderProps) {
                 {group.filters.map((row) => {
                     const fieldType = getFieldType(row.field);
                     const operators = OPERATORS_BY_TYPE[fieldType];
-                    const currentOp = operators.find((o) => o.value === row.operator)
+                    const currentOp = operators.some((o) => o.value === row.operator)
                         ? row.operator
                         : operators[0]!.value;
 

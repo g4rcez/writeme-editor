@@ -18,7 +18,7 @@ function buildFootnoteIndex(doc: ProseMirrorNode): Map<string, FootnoteEntry> {
     const index = new Map<string, FootnoteEntry>();
     doc.descendants((node, position) => {
         const definition = node.type.name === "footnoteDefinition";
-        if (!definition && node.type.name !== "footnoteReference") return;
+        if (!definition && node.type.name !== "footnoteReference") {return;}
         const id = String(node.attrs.id);
         const entry: FootnoteEntry = index.get(id) ?? { definitions: 0, references: 0 };
         if (definition) {
@@ -35,7 +35,7 @@ function buildFootnoteIndex(doc: ProseMirrorNode): Map<string, FootnoteEntry> {
 function scrollToPosition(editor: Editor, position: number): void {
     requestAnimationFrame(() => {
         const container = document.getElementById("main-scroll-container");
-        if (!container || editor.isDestroyed) return;
+        if (!container || editor.isDestroyed) {return;}
         try {
             const coords = editor.view.coordsAtPos(position);
             const rect = container.getBoundingClientRect();
@@ -48,7 +48,7 @@ function scrollToPosition(editor: Editor, position: number): void {
 
 function navigateToDefinition(editor: Editor, id: string, from: number): boolean {
     const target = footnoteIndexKey.getState(editor.state)?.get(id)?.definition;
-    if (!target) return false;
+    if (!target) {return false;}
     const position = target.position + 1;
     if (editor.storage.footnotes.returnPositions.at(-1) !== from) {
         editor.storage.footnotes.returnPositions.push(from);
@@ -61,7 +61,7 @@ function navigateToDefinition(editor: Editor, id: string, from: number): boolean
 
 function returnToReference(editor: Editor): boolean {
     const position = editor.storage.footnotes.returnPositions.pop();
-    if (position === undefined || position > editor.state.doc.content.size) return false;
+    if (position === undefined || position > editor.state.doc.content.size) {return false;}
     editor.view.dispatch(editor.state.tr.setSelection(TextSelection.near(editor.state.doc.resolve(position))));
     const reference = editor.view.nodeDOM(position) as HTMLElement | null;
     reference?.querySelector<HTMLButtonElement>("button")?.focus();
@@ -94,7 +94,7 @@ function FootnoteReferenceView({ node, editor, getPos }: NodeViewProps): React.J
                 ref={trigger}
                 open={preview}
                 onChange={(open) => {
-                    if (!open && document.activeElement === navigation.current) trigger.current?.focus();
+                    if (!open && document.activeElement === navigation.current) {trigger.current?.focus();}
                     setPreview(open);
                 }}
                 title={id}
@@ -103,10 +103,10 @@ function FootnoteReferenceView({ node, editor, getPos }: NodeViewProps): React.J
                 onFocus={() => setPreview(true)}
                 onBlur={(event) => {
                     if (!previewContent.current?.contains(event.relatedTarget as globalThis.Node | null))
-                        setPreview(false);
+                        {setPreview(false);}
                 }}
                 onKeyDown={(event) => {
-                    if (event.key !== "ArrowDown" || definitionText === null) return;
+                    if (event.key !== "ArrowDown" || definitionText === null) {return;}
                     event.preventDefault();
                     setPreview(true);
                     requestAnimationFrame(() => navigation.current?.focus());
@@ -122,7 +122,7 @@ function FootnoteReferenceView({ node, editor, getPos }: NodeViewProps): React.J
                             !event.currentTarget.contains(event.relatedTarget as globalThis.Node | null) &&
                             event.relatedTarget !== trigger.current
                         )
-                            setPreview(false);
+                            {setPreview(false);}
                     }}
                 >
                     <p className="whitespace-pre-wrap">{previewText}</p>
@@ -134,7 +134,7 @@ function FootnoteReferenceView({ node, editor, getPos }: NodeViewProps): React.J
                             onClick={() => {
                                 const position = getPos();
                                 setPreview(false);
-                                if (typeof position === "number") navigateToDefinition(editor, id, position);
+                                if (typeof position === "number") {navigateToDefinition(editor, id, position);}
                             }}
                         >
                             Go to definition
@@ -146,7 +146,7 @@ function FootnoteReferenceView({ node, editor, getPos }: NodeViewProps): React.J
     );
 }
 
-type FootnoteStorage = { returnPositions: number[] };
+type FootnoteStorage = { returnPositions: Array<number> };
 
 declare module "@tiptap/core" {
     interface Storage {
@@ -191,7 +191,7 @@ export const FootnoteReference = Node.create({
         return {
             markdown: {
                 serialize(state: MarkdownSerializerState, node: { attrs: { id: string } }) {
-                    const id = state.inTable ? node.attrs.id.replaceAll("|", "\\|") : node.attrs.id;
+                    const id = state.inTable ? node.attrs.id.replaceAll("|", String.raw`\|`) : node.attrs.id;
                     state.write(`[^${id}]`);
                 },
             },
@@ -242,7 +242,7 @@ export const FootnoteDefinition = Node.create({
                 "min-h-11 px-2 underline focus-visible:outline focus-visible:outline-2 disabled:opacity-50 print:hidden";
             deleteButton.textContent = "Delete footnote";
             deleteButton.onclick = () => {
-                if (editor.commands.deleteFootnote(String(node.attrs.id))) editor.view.focus();
+                if (editor.commands.deleteFootnote(String(node.attrs.id))) {editor.view.focus();}
             };
             const status = document.createElement("output");
             const contentDOM = document.createElement("div");
@@ -269,7 +269,7 @@ export const FootnoteDefinition = Node.create({
                 dom,
                 contentDOM,
                 update(nextNode) {
-                    if (nextNode.type !== node.type) return false;
+                    if (nextNode.type !== node.type) {return false;}
                     node = nextNode;
                     refresh();
                     return true;
@@ -311,7 +311,7 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
         ];
     },
     onTransaction({ transaction }) {
-        if (!transaction.docChanged) return;
+        if (!transaction.docChanged) {return;}
         this.storage.returnPositions = this.storage.returnPositions
             .map((position) => transaction.mapping.mapResult(position))
             .filter(
@@ -331,14 +331,14 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
             insertFootnote:
                 (options) =>
                 ({ state, tr, dispatch }) => {
-                    if (state.selection.$from.parent.type.spec.code) return false;
+                    if (state.selection.$from.parent.type.spec.code) {return false;}
                     const used = tr.docChanged ? buildFootnoteIndex(tr.doc) : footnoteIndexKey.getState(state);
                     let id = options?.id?.trim();
                     if (id) {
-                        if (!/^[^\s[\]\\]+$/u.test(id) || used?.has(id)) return false;
+                        if (!/^[^\s[\]\\]+$/u.test(id) || used?.has(id)) {return false;}
                     } else {
                         let index = 1;
-                        while (used?.has(`fn-${index}`)) index++;
+                        while (used?.has(`fn-${index}`)) {index++;}
                         id = `fn-${index}`;
                     }
                     const { to } = state.selection;
@@ -346,7 +346,7 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
                         const referenceType = state.schema.nodes.footnoteReference;
                         const paragraphType = state.schema.nodes.paragraph;
                         const definitionType = state.schema.nodes.footnoteDefinition;
-                        if (!referenceType || !paragraphType || !definitionType) return false;
+                        if (!referenceType || !paragraphType || !definitionType) {return false;}
                         const reference = referenceType.create({ id });
                         const paragraph = paragraphType.create();
                         const definition = definitionType.create({ id }, paragraph);
@@ -362,7 +362,7 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
             deleteFootnote:
                 (id) =>
                 ({ tr, dispatch }) => {
-                    const matches: { position: number; size: number }[] = [];
+                    const matches: Array<{ position: number; size: number }> = [];
                     tr.doc.descendants((node, position) => {
                         if (
                             (node.type.name === "footnoteReference" || node.type.name === "footnoteDefinition") &&
@@ -371,7 +371,7 @@ export const Footnotes = Extension.create<Record<string, never>, FootnoteStorage
                             matches.push({ position, size: node.nodeSize });
                         }
                     });
-                    if (!matches.length) return false;
+                    if (!matches.length) {return false;}
                     if (dispatch) {
                         for (const { position, size } of matches.reverse()) {
                             tr.delete(position, position + size);

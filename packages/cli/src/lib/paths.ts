@@ -3,7 +3,7 @@ import path from "node:path";
 
 export function getSocketPath(): string {
     if (process.platform === "win32") {
-        return "\\\\.\\pipe\\writeme-cli";
+        return String.raw`\\.\pipe\writeme-cli`;
     }
     if (process.platform === "darwin") {
         return path.join(os.homedir(), "Library", "Application Support", "writeme", "writeme.sock");
@@ -26,7 +26,7 @@ export function getDbPath(): string {
 }
 
 export function getAppBinary(): string {
-    if (process.platform === "win32") return "writeme.exe";
-    if (process.platform === "darwin") return "/Applications/writeme.app/Contents/MacOS/writeme";
+    if (process.platform === "win32") {return "writeme.exe";}
+    if (process.platform === "darwin") {return "/Applications/writeme.app/Contents/MacOS/writeme";}
     return "writeme";
 }

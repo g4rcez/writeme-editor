@@ -2,7 +2,7 @@ import type { Tab } from "@/store/repositories/entities/tab";
 
 export const MAX_RECENTLY_CLOSED_TABS = 3;
 
-const recentlyClosedTabs: Tab[] = [];
+const recentlyClosedTabs: Array<Tab> = [];
 
 export function rememberClosedTab(tab: Tab): void {
     recentlyClosedTabs.unshift({ ...tab });

@@ -102,7 +102,7 @@ test("filters an open menu, replaces the whole token, and closes on cursor movem
     await page.keyboard.press("Enter");
     await page.keyboard.type("See #Alphasuffix");
     await expect(editor).toContainText("See #Alphasuffix");
-    for (let index = 0; index < 6; index++) await page.keyboard.press("ArrowLeft");
+    for (let index = 0; index < 6; index++) {await page.keyboard.press("ArrowLeft");}
     await page.keyboard.press("Control+Space");
     const menu = page.getByRole("listbox", { name: "Heading and tag suggestions" });
     await expect(menu.getByRole("option", { name: /Alpha/ })).toBeVisible();
@@ -146,10 +146,10 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     }) => {
         await newNote(page, `${mode} unsaved tags`);
         if (mode === "Markdown")
-            await page
+            {await page
                 .getByRole("toolbar", { name: "Note tools" })
                 .getByRole("button", { name: mode, exact: true })
-                .click();
+                .click();}
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
@@ -172,25 +172,25 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await newNote(page, "My File.md");
         await newNote(page, `${mode} spaced filename`);
         if (mode === "Markdown")
-            await page
+            {await page
                 .getByRole("toolbar", { name: "Note tools" })
                 .getByRole("button", { name: mode, exact: true })
-                .click();
+                .click();}
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
         });
         await editor.click();
         await page.keyboard.type("See @My File.md then");
-        for (let i = 0; i < 13; i++) await page.keyboard.press("ArrowLeft");
+        for (let i = 0; i < 13; i++) {await page.keyboard.press("ArrowLeft");}
         await page.keyboard.press("Control+Space");
         await expect(
             page.getByRole("listbox").getByRole("option", { name: "My File.md File", exact: true }),
         ).toBeVisible();
         await page.keyboard.press("Tab");
         await expect(editor).not.toContainText("@My");
-        if (mode === "Formatted") await expect(editor).toHaveText("See My File.md then");
-        else await expect(editor).toContainText(/See \[My File\.md\]\(\/note\/[^)]+\) then/);
+        if (mode === "Formatted") {await expect(editor).toHaveText("See My File.md then");}
+        else {await expect(editor).toContainText(/See \[My File\.md\]\(\/note\/[^)]+\) then/);}
     });
 
     test(`preserves earlier tags, punctuation and undo while completing words in ${mode}`, async ({
@@ -198,10 +198,10 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     }) => {
         await newNote(page, `${mode} safe replacement`);
         if (mode === "Markdown")
-            await page
+            {await page
                 .getByRole("toolbar", { name: "Note tools" })
                 .getByRole("button", { name: mode, exact: true })
-                .click();
+                .click();}
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
@@ -209,9 +209,9 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await editor.click();
         await page.keyboard.type("## Work planning");
         await page.keyboard.press("Enter");
-        if (mode === "Markdown") await page.keyboard.press("Enter");
+        if (mode === "Markdown") {await page.keyboard.press("Enter");}
         await page.keyboard.type("Continue #work plaSuffix!");
-        for (let i = 0; i < 7; i++) await page.keyboard.press("ArrowLeft");
+        for (let i = 0; i < 7; i++) {await page.keyboard.press("ArrowLeft");}
         await page.keyboard.press("Control+Space");
         const words = page.getByRole("listbox", { name: "Document word suggestions" });
         await expect(words.getByRole("option", { name: "planning Word", exact: true })).toBeVisible();
@@ -225,10 +225,10 @@ for (const mode of ["Formatted", "Markdown"] as const) {
     test(`filters multiword headings within an explicitly opened session in ${mode}`, async ({ cleanPage: page }) => {
         await newNote(page, `${mode} multiword headings`);
         if (mode === "Markdown")
-            await page
+            {await page
                 .getByRole("toolbar", { name: "Note tools" })
                 .getByRole("button", { name: mode, exact: true })
-                .click();
+                .click();}
         const editor = page.getByRole("textbox", {
             name: mode === "Markdown" ? "Markdown note editor" : "Note editor",
             exact: true,
@@ -236,7 +236,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await editor.click();
         await page.keyboard.type("## Work planning");
         await page.keyboard.press("Enter");
-        if (mode === "Markdown") await page.keyboard.press("Enter");
+        if (mode === "Markdown") {await page.keyboard.press("Enter");}
         await page.keyboard.type("See #Work");
         await page.keyboard.press("Control+Space");
         const menu = page.getByRole("listbox", { name: "Heading and tag suggestions" });
@@ -272,7 +272,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
         await page.keyboard.type("planning planner Planning plant");
         await page.keyboard.press("Enter");
         await page.keyboard.type("Use plaSuffix!");
-        for (let index = 0; index < 7; index++) await page.keyboard.press("ArrowLeft");
+        for (let index = 0; index < 7; index++) {await page.keyboard.press("ArrowLeft");}
         const menu = page.getByRole("listbox", { name: "Document word suggestions" });
         await expect(menu).toBeHidden();
         await page.keyboard.press("Control+Space");
@@ -307,7 +307,7 @@ for (const mode of ["Formatted", "Markdown"] as const) {
             await page.keyboard.type("Styled ");
             await page.keyboard.press("ControlOrMeta+b");
             await page.keyboard.type("plannSuffix");
-            for (let index = 0; index < 6; index++) await page.keyboard.press("ArrowLeft");
+            for (let index = 0; index < 6; index++) {await page.keyboard.press("ArrowLeft");}
             await page.keyboard.press("Control+Space");
             await menu.getByRole("option", { name: "planner Word", exact: true }).click();
             await expect(editor.locator("strong")).toHaveText("planner");
@@ -355,11 +355,11 @@ test("completes nested, Unicode and hex-looking tags once per casing and preserv
     await page.keyboard.press("Control+Space");
     const menu = page.getByRole("listbox", { name: "Heading and tag suggestions" });
     for (const tag of ["project/active", "ação", "abc", "🌱"])
-        await expect(menu.getByRole("option", { name: `#${tag} Tag`, exact: true })).toBeVisible();
+        {await expect(menu.getByRole("option", { name: `#${tag} Tag`, exact: true })).toBeVisible();}
     await expect(menu.getByRole("option", { name: /#work Tag/i })).toHaveCount(1);
     await menu.getByRole("option", { name: "#ação Tag", exact: true }).click();
     await page.keyboard.type(" #Work!");
-    for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowLeft");
+    for (let i = 0; i < 3; i++) {await page.keyboard.press("ArrowLeft");}
     await page.keyboard.press("Control+Space");
     await menu.getByRole("option", { name: /#work Tag/i }).click();
     await expect(editor).toContainText("#ação #Work!");
@@ -452,10 +452,10 @@ test("loads workspace files, retries errors, and distinguishes paths with the ke
                 fs: {
                     readDirRecursive: async (root: string, maxDepth: number, includeAllFiles: boolean) => {
                         if (root !== "/workspace" || maxDepth < 20 || !includeAllFiles)
-                            throw new Error("Incorrect workspace scan");
+                            {throw new Error("Incorrect workspace scan");}
                         attempts += 1;
                         document.body.dataset.completionScanCount = String(attempts);
-                        if (attempts === 1) return { success: false, files: [], error: "Disk unavailable" };
+                        if (attempts === 1) {return { success: false, files: [], error: "Disk unavailable" };}
                         await new Promise((resolve) => window.setTimeout(resolve, 150));
                         return {
                             success: true,
@@ -517,7 +517,7 @@ test("keeps completion within a narrow viewport", async ({ cleanPage: page }) =>
     await editor.click();
     await page.keyboard.type("## Small screen");
     await page.keyboard.press("Enter");
-    for (let index = 0; index < 18; index++) await page.keyboard.press("Enter");
+    for (let index = 0; index < 18; index++) {await page.keyboard.press("Enter");}
     await page.keyboard.type("See #Small");
     await page.keyboard.press("Control+Space");
     const menu = page.getByRole("listbox", { name: "Heading and tag suggestions" });

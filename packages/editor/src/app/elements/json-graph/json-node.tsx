@@ -59,7 +59,7 @@ export const JsonNode = ({ data }: any) => {
                         </span>
                     </div>
                     {(type === "object" || type === "array") && (
-                        <button
+                        <button type="button"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onToggle();

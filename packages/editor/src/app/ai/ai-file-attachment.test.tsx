@@ -36,7 +36,7 @@ function createAdapter(
 }
 
 function Harness({ adapter }: { adapter: AIAdapter }) {
-    const [files, setFiles] = useState<AIFile[]>([]);
+    const [files, setFiles] = useState<Array<AIFile>>([]);
     const controller = useAIFileAttachments({ files, onFilesChange: setFiles, adapter });
     return <AIFileAttachment files={files} controller={controller} />;
 }

@@ -45,7 +45,7 @@ function getFloatingPanelBoundsPath(boundsName: string): string {
 }
 
 function isFloatingPanelBounds(value: unknown): value is FloatingPanelBounds {
-    if (!value || typeof value !== "object") return false;
+    if (!value || typeof value !== "object") {return false;}
     const bounds = value as Partial<Record<keyof FloatingPanelBounds, unknown>>;
     return [bounds.width, bounds.height, bounds.x, bounds.y].every(
         (part) => typeof part === "number" && Number.isFinite(part),
@@ -157,7 +157,7 @@ function createFloatingPanel(
         showFloatingPanel(win, options);
     });
     win.on("always-on-top-changed", (_event, isAlwaysOnTop) => {
-        if (!isAlwaysOnTop) win.setAlwaysOnTop(true, floatingPanelTopLevel);
+        if (!isAlwaysOnTop) {win.setAlwaysOnTop(true, floatingPanelTopLevel);}
     });
     const boundsName = options.boundsName;
     if (options.persistBounds && boundsName) {

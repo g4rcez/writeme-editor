@@ -19,7 +19,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function flushFrames(): void {
     const callbacks = [...frames.values()];
     frames.clear();
-    for (const callback of callbacks) callback(0);
+    for (const callback of callbacks) {callback(0);}
 }
 function setup() {
     const root = document.createElement("div");
@@ -28,7 +28,7 @@ function setup() {
     document.body.append(root);
     const dom = root.querySelector<HTMLElement>(".ProseMirror");
     const cell = root.querySelector("td");
-    if (!dom || !cell) throw new Error("Missing table fixture.");
+    if (!dom || !cell) {throw new Error("Missing table fixture.");}
     const measure = vi.spyOn(cell, "getBoundingClientRect");
     const listeners = new Map<string, (event?: unknown) => void>();
     const editor = {

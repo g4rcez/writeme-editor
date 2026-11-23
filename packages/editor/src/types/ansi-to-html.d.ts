@@ -5,7 +5,7 @@ declare module "ansi-to-html" {
         newline?: boolean;
         escapeXML?: boolean;
         stream?: boolean;
-        colors?: string[] | { [key: string]: string };
+        colors?: Array<string> | { [key: string]: string };
     }
 
     export default class Filter {

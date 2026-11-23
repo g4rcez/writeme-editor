@@ -14,7 +14,7 @@ export class MarkdownSerializer {
     }
 
     serialize(content: Node): string {
-        if (!this.editor.schema || !this.editor.extensionManager) return "";
+        if (!this.editor.schema || !this.editor.extensionManager) {return "";}
 
         const state = new MarkdownSerializerState(this.nodes, this.marks, {
             ...this.editor.storage.markdown.options,
@@ -25,7 +25,7 @@ export class MarkdownSerializer {
     }
 
     get nodes() {
-        if (!this.editor.schema || !this.editor.extensionManager) return {};
+        if (!this.editor.schema || !this.editor.extensionManager) {return {};}
 
         return {
             ...Object.fromEntries(
@@ -40,7 +40,7 @@ export class MarkdownSerializer {
     }
 
     get marks() {
-        if (!this.editor.schema || !this.editor.extensionManager) return {};
+        if (!this.editor.schema || !this.editor.extensionManager) {return {};}
 
         return {
             ...Object.fromEntries(

@@ -9,20 +9,20 @@ export function useAgendaSource(noteId: string | null): void {
         const params = new URLSearchParams(search);
         const taskValue = params.get("task");
         const lineValue = params.get("line");
-        if (!noteId || !taskValue || !/^\d+$/.test(taskValue)) return;
+        if (!noteId || !taskValue || !/^\d+$/.test(taskValue)) {return;}
         const index = Number(taskValue);
         const main = document.getElementById("main-scroll-container");
-        if (!main) return;
+        if (!main) {return;}
         let frame = 0;
         let initializingEditor: Editor | null = null;
         const navigate = (): boolean => {
             const root = document.getElementById(`editor-container-${noteId}`);
             const raw = root?.querySelector<HTMLElement>(".cm-editor");
             const view = raw ? EditorView.findFromDOM(raw) : null;
-            if (root?.getAttribute("aria-busy") === "true") return false;
+            if (root?.getAttribute("aria-busy") === "true") {return false;}
             if (view && lineValue && /^\d+$/.test(lineValue)) {
                 const line = Number(lineValue);
-                if (line < 1 || line > view.state.doc.lines || !view.dom.isConnected) return false;
+                if (line < 1 || line > view.state.doc.lines || !view.dom.isConnected) {return false;}
                 view.focus();
                 view.dispatch({
                     selection: { anchor: view.state.doc.line(line).from },
@@ -31,7 +31,7 @@ export function useAgendaSource(noteId: string | null): void {
                 return true;
             }
             const target = root?.querySelectorAll<HTMLElement>(".ProseMirror li[data-checked]")[index];
-            if (!target || !target.isConnected) return false;
+            if (!target || !target.isConnected) {return false;}
             const editorElement = root?.querySelector<HTMLElement>(".ProseMirror") as
                 | (HTMLElement & { editor?: Editor })
                 | null;
@@ -47,18 +47,18 @@ export function useAgendaSource(noteId: string | null): void {
             let current = 0;
             let position: number | null = null;
             editor.state.doc.descendants((node, pos) => {
-                if (node.type.name === "taskItem" && current++ === index) position = pos + 2;
+                if (node.type.name === "taskItem" && current++ === index) {position = pos + 2;}
             });
-            if (position === null) return false;
+            if (position === null) {return false;}
             editor.commands.focus(position, { scrollIntoView: true });
             target.scrollIntoView({ behavior: "instant", block: "center" });
             return true;
         };
         const schedule = (): void => {
-            if (frame) return;
+            if (frame) {return;}
             frame = requestAnimationFrame(() => {
                 frame = 0;
-                if (navigate()) observer.disconnect();
+                if (navigate()) {observer.disconnect();}
             });
         };
         const observer = new MutationObserver(schedule);

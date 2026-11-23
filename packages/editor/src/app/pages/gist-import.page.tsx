@@ -17,7 +17,7 @@ export default function GistImportPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!owner || !gistId) return;
+        if (!owner || !gistId) {return;}
 
         let active = true;
         const importGist = async (): Promise<void> => {
@@ -25,10 +25,10 @@ export default function GistImportPage() {
             setError(null);
             try {
                 const gist = await fetchGithubGist({ owner, gistId });
-                if (!active) return;
+                if (!active) {return;}
 
                 const existingNotes = await repositories.notes.getAll();
-                if (!active) return;
+                if (!active) {return;}
 
                 const title = getUniqueNoteTitle(gist.title, existingNotes);
                 const note = Note.new(title, gist.markdown, NoteType.note, gist.url, gist.description, null, {
@@ -38,13 +38,13 @@ export default function GistImportPage() {
                     files: gist.files.map((file) => file.filename),
                 });
                 await repositories.notes.save(note);
-                if (!active) return;
+                if (!active) {return;}
 
                 await dispatch.note(note);
                 navigate(`/note/${note.id}`, { replace: true });
-            } catch (cause) {
-                if (!active) return;
-                setError(cause instanceof Error ? cause.message : "Could not import this Gist.");
+            } catch (error_) {
+                if (!active) {return;}
+                setError(error_ instanceof Error ? error_.message : "Could not import this Gist.");
                 setStatus("error");
             }
         };

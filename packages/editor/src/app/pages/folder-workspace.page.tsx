@@ -13,7 +13,7 @@ type FileEntry = { name: string; path: string; relativePath: string };
 export default function FolderWorkspacePage() {
     const [searchParams] = useSearchParams();
     const folderPath = searchParams.get("path") ?? "";
-    const [files, setFiles] = useState<FileEntry[]>([]);
+    const [files, setFiles] = useState<Array<FileEntry>>([]);
     const [loading, setLoading] = useState(true);
     const [, dispatch] = useGlobalStore();
     const navigate = useNavigate();
@@ -33,7 +33,7 @@ export default function FolderWorkspacePage() {
             .finally(() => setLoading(false));
     }, [folderPath]);
 
-    if (!isElectron()) return null;
+    if (!isElectron()) {return null;}
 
     const openFile = async (filePath: string) => {
         try {
@@ -56,8 +56,8 @@ export default function FolderWorkspacePage() {
             }
             await dispatch.selectNoteById(noteId);
             navigate(`/note/${noteId}`);
-        } catch (err) {
-            console.error("Failed to open file from folder workspace:", err);
+        } catch (error) {
+            console.error("Failed to open file from folder workspace:", error);
         }
     };
 

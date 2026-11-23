@@ -10,14 +10,14 @@ export function markdownLineToPlainText(
     { includeWikiSubpath = false }: MarkdownTextOptions = {},
 ): string {
     return markdown
-        .replace(MARKDOWN_LINK_PATTERN, "$1")
-        .replace(
+        .replaceAll(MARKDOWN_LINK_PATTERN, "$1")
+        .replaceAll(
             WIKI_LINK_PATTERN,
             (_match, target: string, subpath?: string, alias?: string) =>
                 alias?.trim() || `${target.trim()}${includeWikiSubpath ? (subpath ?? "") : ""}`,
         )
-        .replace(/`{1,3}/g, "")
-        .replace(/[*_~]/g, "")
-        .replace(/\s+/g, " ")
+        .replaceAll(/`{1,3}/g, "")
+        .replaceAll(/[*_~]/g, "")
+        .replaceAll(/\s+/g, " ")
         .trim();
 }

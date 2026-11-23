@@ -24,7 +24,7 @@ describe("currency/cache", () => {
         // Default settings mock
         vi.mocked(SettingsService.load).mockReturnValue({
             currency: {
-                cacheDuration: 3600000, // 1 hour
+                cacheDuration: 3_600_000, // 1 hour
             },
         } as any);
     });
@@ -49,7 +49,7 @@ describe("currency/cache", () => {
         setCachedRates("USD", mockData);
 
         // Advance time past expiry (1 hour + 1 second)
-        vi.setSystemTime(now + 3600001);
+        vi.setSystemTime(now + 3_600_001);
 
         const cached = getCachedRates("USD");
         expect(cached).toBeNull();

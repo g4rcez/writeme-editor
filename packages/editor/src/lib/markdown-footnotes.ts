@@ -14,7 +14,7 @@ export function configureFootnoteMarkdown(markdown: Marked): void {
                 },
                 tokenizer(source: string) {
                     const match = source.match(/^ {0,3}\[\^([^\s[\]\\]+)\]:[ \t]*([^\n]*)(?:\n|$)/);
-                    if (!match) return undefined;
+                    if (!match) {return undefined;}
                     let raw = match[0];
                     let body = match[2] ?? "";
                     const lines = source.slice(raw.length).split(/(?<=\n)/);
@@ -24,11 +24,11 @@ export function configureFootnoteMarkdown(markdown: Marked): void {
                             blanks += line;
                             continue;
                         }
-                        if (!/^(?: {4}|\t)/.test(line)) break;
+                        if (!/^(?: {4}|\t)/.test(line)) {break;}
                         raw += blanks + line;
                         body +=
                             "\n" +
-                            blanks.replace(/^(?: {4}|\t)/gm, "") +
+                            blanks.replaceAll(/^(?: {4}|\t)/gm, "") +
                             line.replace(/^(?: {4}|\t)/, "").replace(/\n$/, "");
                         blanks = "";
                     }
@@ -54,13 +54,13 @@ export function configureFootnoteMarkdown(markdown: Marked): void {
                 },
                 tokenizer(source: string) {
                     const match = source.match(/^\[\^([^\s[\]\\]+)\]/);
-                    if (!match) return undefined;
+                    if (!match) {return undefined;}
                     const tokenizer = this.lexer.options.tokenizer;
                     if (
                         tokenizer?.link(source)?.type === "link" ||
                         tokenizer?.reflink(source, this.lexer.tokens.links)?.type === "link"
                     )
-                        return undefined;
+                        {return undefined;}
                     return { type: "footnote_reference", raw: match[0], id: match[1] ?? "" };
                 },
                 renderer(token) {

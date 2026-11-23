@@ -326,7 +326,7 @@ describe("Markdown extension", () => {
             content: "Inline $x^2$ math.\n\n$$\n\\int_0^1 x\\,dx\n$$",
         });
 
-        const nodeNames: string[] = [];
+        const nodeNames: Array<string> = [];
         editor.state.doc.descendants((node: { type: { name: string } }) => {
             nodeNames.push(node.type.name);
         });
@@ -351,7 +351,7 @@ describe("Markdown extension", () => {
 
         const codeBlocks: Array<{ language: string; title: string }> = [];
         editor.state.doc.descendants((node) => {
-            if (node.type.name !== "codeBlock") return;
+            if (node.type.name !== "codeBlock") {return;}
             codeBlocks.push({
                 language: String(node.attrs.language),
                 title: String(node.attrs.title),
@@ -492,7 +492,7 @@ describe("Markdown extension", () => {
                             { type: "text", text: " math." },
                         ],
                     },
-                    { type: "blockMath", attrs: { latex: "\\frac{1}{2}" } },
+                    { type: "blockMath", attrs: { latex: String.raw`\frac{1}{2}` } },
                 ],
             },
         });
@@ -533,7 +533,7 @@ describe("Markdown extension", () => {
         expect(editor.commands.insertInlineMath({ latex: "x + 1" })).toBe(true);
         expect(editor.commands.insertBlockMath({ latex: "x = 1" })).toBe(true);
 
-        const nodeNames: string[] = [];
+        const nodeNames: Array<string> = [];
         editor.state.doc.descendants((node: { type: { name: string } }) => {
             nodeNames.push(node.type.name);
         });
@@ -563,7 +563,7 @@ describe("Markdown extension", () => {
                 }
                 return false;
             });
-            if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+            if (!handled) {editor.view.dispatch(editor.state.tr.insertText(text, from, to));}
         }
 
         const spaceEvent = { key: " ", preventDefault: () => undefined } as unknown as KeyboardEvent;
@@ -606,7 +606,7 @@ describe("Markdown extension", () => {
                 }
                 return false;
             });
-            if (!handled) editor.view.dispatch(editor.state.tr.insertText(text, from, to));
+            if (!handled) {editor.view.dispatch(editor.state.tr.insertText(text, from, to));}
         }
 
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -627,11 +627,11 @@ describe("Markdown extension", () => {
             expect(markdown).toContain("continued text.");
 
             editor.commands.setContent(markdown);
-            const references: string[] = [];
-            const definitions: string[] = [];
+            const references: Array<string> = [];
+            const definitions: Array<string> = [];
             editor.state.doc.descendants((node) => {
-                if (node.type.name === "footnoteReference") references.push(String(node.attrs.id));
-                if (node.type.name === "footnoteDefinition") definitions.push(String(node.attrs.id));
+                if (node.type.name === "footnoteReference") {references.push(String(node.attrs.id));}
+                if (node.type.name === "footnoteDefinition") {definitions.push(String(node.attrs.id));}
             });
             expect(references).toEqual(["source", "source"]);
             expect(definitions).toEqual(["source"]);
@@ -652,7 +652,7 @@ describe("Markdown extension", () => {
             expect(editor.getMarkdown()).toContain("[^fn-1]:");
             let definitions = 0;
             editor.state.doc.descendants((node) => {
-                if (node.type.name === "footnoteDefinition") definitions++;
+                if (node.type.name === "footnoteDefinition") {definitions++;}
             });
             expect(definitions).toBe(1);
             editor.commands.insertFootnote();
@@ -667,11 +667,11 @@ describe("Markdown extension", () => {
             content: "Unresolved [^missing] and [^same].\n\n[^same]: First definition.\n\n[^same]: Second definition.",
         });
         try {
-            const references: string[] = [];
-            const definitions: string[] = [];
+            const references: Array<string> = [];
+            const definitions: Array<string> = [];
             editor.state.doc.descendants((node) => {
-                if (node.type.name === "footnoteReference") references.push(String(node.attrs.id));
-                if (node.type.name === "footnoteDefinition") definitions.push(String(node.attrs.id));
+                if (node.type.name === "footnoteReference") {references.push(String(node.attrs.id));}
+                if (node.type.name === "footnoteDefinition") {definitions.push(String(node.attrs.id));}
             });
             expect(references).toEqual(["missing", "same"]);
             expect(definitions).toEqual(["same", "same"]);

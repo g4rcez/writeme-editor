@@ -1,5 +1,5 @@
 export function fishify(path: string, home = ""): string {
-    if (!path) return "";
+    if (!path) {return "";}
 
     const normalized = normalizeSlashes(path);
     const normalizedHome = home ? normalizeSlashes(home).replace(/\/$/, "") : "";
@@ -33,7 +33,7 @@ function normalizeSlashes(path: string): string {
 
     for (const char of path) {
         if (char === "/") {
-            if (!previousWasSlash) result += char;
+            if (!previousWasSlash) {result += char;}
             previousWasSlash = true;
         } else {
             result += char;
@@ -45,7 +45,7 @@ function normalizeSlashes(path: string): string {
 }
 
 function abbreviateDir(dir: string): string {
-    if (dir === "." || dir === "..") return dir;
+    if (dir === "." || dir === "..") {return dir;}
 
     // Fish-like behavior for hidden dirs:
     // ".config" -> ".c"

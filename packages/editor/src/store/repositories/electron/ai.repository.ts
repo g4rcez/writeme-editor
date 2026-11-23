@@ -55,9 +55,9 @@ export type AINoteEditProposal = {
 
 
 export type AIWorkspaceData = {
-    activities: AIWorkspaceActivity[];
-    sources: AIWorkspaceSource[];
-    proposals: AINoteEditProposal[];
+    activities: Array<AIWorkspaceActivity>;
+    sources: Array<AIWorkspaceSource>;
+    proposals: Array<AINoteEditProposal>;
 };
 
 export type AIMessage = {
@@ -68,7 +68,7 @@ export type AIMessage = {
     diffOriginal?: string;
     diffNew?: string;
     selectionSlice?: { from: number; to: number };
-    files?: AttachedFile[];
+    files?: Array<AttachedFile>;
     workspaceData?: AIWorkspaceData;
     createdAt: string;
     updatedAt?: string;
@@ -76,7 +76,7 @@ export type AIMessage = {
 
 
 export class AIRepository {
-    public async getConfigs(): Promise<AIConfig[]> {
+    public async getConfigs(): Promise<Array<AIConfig>> {
         return window.electronAPI.ai.getConfigs();
     }
 
@@ -88,7 +88,7 @@ export class AIRepository {
         return window.electronAPI.ai.deleteConfig(id);
     }
 
-    public async getChats(noteId?: string): Promise<AIChat[]> {
+    public async getChats(noteId?: string): Promise<Array<AIChat>> {
         return window.electronAPI.ai.getChats(noteId);
     }
 
@@ -96,7 +96,7 @@ export class AIRepository {
         return window.electronAPI.ai.saveChat(chat);
     }
 
-    public async getMessages(chatId: string): Promise<AIMessage[]> {
+    public async getMessages(chatId: string): Promise<Array<AIMessage>> {
         return window.electronAPI.ai.getMessages(chatId);
     }
 

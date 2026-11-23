@@ -30,15 +30,15 @@ const DOCUSAURUS_OPEN_RE = /^:::(note|tip|info|warning|danger)\s*$/;
 const DOCUSAURUS_CLOSE_RE = /^:::\s*$/;
 
 export function parseDocusaurusAdmonitions(element: HTMLElement): void {
-    const children = Array.from(element.children) as HTMLElement[];
+    const children = Array.from(element.children) as Array<HTMLElement>;
     for (const child of children) {
-        if (child.parentElement !== element) continue;
-        if (child.tagName !== "P") continue;
+        if (child.parentElement !== element) {continue;}
+        if (child.tagName !== "P") {continue;}
         const text = child.textContent?.trim() ?? "";
         const match = text.match(DOCUSAURUS_OPEN_RE);
-        if (!match) continue;
+        if (!match) {continue;}
         const type = match[1]!;
-        const contentNodes: Element[] = [];
+        const contentNodes: Array<Element> = [];
         let cursor: Element | null = child.nextElementSibling;
         let closingEl: Element | null = null;
         while (cursor) {
@@ -49,11 +49,11 @@ export function parseDocusaurusAdmonitions(element: HTMLElement): void {
             contentNodes.push(cursor);
             cursor = cursor.nextElementSibling;
         }
-        if (!closingEl) continue;
+        if (!closingEl) {continue;}
         const div = document.createElement("div");
         div.setAttribute("data-type", "callout");
         div.setAttribute("data-callout-type", type);
-        for (const n of contentNodes) div.appendChild(n);
+        for (const n of contentNodes) {div.appendChild(n);}
         if (div.childElementCount === 0) {
             div.appendChild(document.createElement("p"));
         }
@@ -155,18 +155,18 @@ export const Callout = Node.create<CalloutOptions>({
                         const parser = ProseMirrorDOMParser.fromSchema(this.editor.schema);
                         const serializer = DOMSerializer.fromSchema(this.editor.schema);
                         element.querySelectorAll("blockquote").forEach((blockquote) => {
-                            if (blockquote.getAttribute("data-literal-quote") === "true") return;
+                            if (blockquote.getAttribute("data-literal-quote") === "true") {return;}
                             const firstP = blockquote.querySelector("p");
-                            if (!firstP) return;
+                            if (!firstP) {return;}
                             const paragraph = parser.parse(firstP).firstChild;
-                            if (!paragraph) return;
+                            if (!paragraph) {return;}
                             let textContent = "";
                             for (const inline of paragraph.content.content) {
-                                if (!inline.isText) break;
+                                if (!inline.isText) {break;}
                                 textContent += inline.text ?? "";
                             }
                             const typeMatch = textContent.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
-                            if (!typeMatch) return;
+                            if (!typeMatch) {return;}
                             const type = typeMatch[1]!.toLowerCase();
                             const prefixLen =
                                 typeMatch[0].length +
@@ -201,34 +201,34 @@ export const Callout = Node.create<CalloutOptions>({
             new Plugin({
                 key: pluginKey,
                 appendTransaction(transactions, _oldState, newState) {
-                    if (!transactions.some((tr) => tr.docChanged)) return null;
-                    if (transactions.some((tr) => tr.getMeta(pluginKey))) return null;
+                    if (!transactions.some((tr) => tr.docChanged)) {return null;}
+                    if (transactions.some((tr) => tr.getMeta(pluginKey))) {return null;}
 
                     type Match = {
                         pos: number;
                         size: number;
                         replacement: ProseMirrorNode;
                     };
-                    const matches: Match[] = [];
+                    const matches: Array<Match> = [];
 
                     newState.doc.descendants((node, pos) => {
-                        if (node.type.name !== "blockquote" || node.attrs.literal) return;
+                        if (node.type.name !== "blockquote" || node.attrs.literal) {return;}
                         const firstChild = node.firstChild;
-                        if (!firstChild || firstChild.type.name !== "paragraph") return;
+                        if (firstChild?.type.name !== "paragraph") {return;}
                         let prefixText = "";
                         for (const inline of firstChild.content.content) {
-                            if (!inline.isText) break;
+                            if (!inline.isText) {break;}
                             prefixText += inline.text ?? "";
                         }
                         const m = prefixText.match(GFM_RE);
-                        if (!m) return;
+                        if (!m) {return;}
                         const calloutNodeType = newState.schema.nodes.callout;
-                        if (!calloutNodeType) return;
+                        if (!calloutNodeType) {return;}
 
                         const prefixLen =
                             m[0]!.length + (prefixText.slice(m[0]!.length).match(/^\s+/)?.[0].length ?? 0);
                         const type = m[1]!.toLowerCase();
-                        const paragraphs: ProseMirrorNode[] = [];
+                        const paragraphs: Array<ProseMirrorNode> = [];
 
                         node.forEach((child, _, i) => {
                             if (i === 0) {
@@ -252,7 +252,7 @@ export const Callout = Node.create<CalloutOptions>({
                         });
                     });
 
-                    if (matches.length === 0) return null;
+                    if (matches.length === 0) {return null;}
 
                     // Track which match (if any) contained the cursor before conversion
                     const { from: selFrom } = newState.selection;

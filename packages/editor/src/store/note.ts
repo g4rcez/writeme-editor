@@ -29,7 +29,7 @@ export class Note implements EntityBase {
         public filePath: string | null,
         public fileSize: number,
         public lastSynced: Date | null,
-        public tags: string[],
+        public tags: Array<string>,
         public createdBy: string,
         public updatedBy: string,
         public noteType: NoteType,
@@ -134,12 +134,12 @@ export class Note implements EntityBase {
 export type NoteDeletionOutcome = { deleted: number; failed: number };
 
 export interface INoteRepository extends Repository<Note> {
-    getRecentNotes: (limit?: number) => Promise<Note[]>;
+    getRecentNotes: (limit?: number) => Promise<Array<Note>>;
     /** Electron filesystem storage only: reloads just the files added or removed since `known` was loaded. */
-    syncWorkspaceDelta?: (known: readonly Note[]) => Promise<Note[] | null>;
+    syncWorkspaceDelta?: (known: ReadonlyArray<Note>) => Promise<Array<Note> | null>;
     getLatestQuicknote: () => Promise<Note | null>;
     getQuicknoteByDate: (date: Date) => Promise<Note | null>;
-    getTemplates: () => Promise<Note[]>;
+    getTemplates: () => Promise<Array<Note>>;
     updateContent: (id: string, content: string) => Promise<void>;
     updateMetadata: (id: string, metadata: Record<string, unknown>) => Promise<void>;
     updateContentIfUnchanged: (
@@ -147,9 +147,9 @@ export interface INoteRepository extends Repository<Note> {
         expected: { title: string; updatedAt: Date; content: string },
         content: string,
     ) => Promise<Note | null>;
-    getHistory: (noteId: string) => Promise<NoteSnapshot[]>;
+    getHistory: (noteId: string) => Promise<Array<NoteSnapshot>>;
     restoreSnapshot: (noteId: string, snapshotId: string) => Promise<Note | null>;
-    getTrashed: () => Promise<Note[]>;
+    getTrashed: () => Promise<Array<Note>>;
     hardDelete: (id: string) => Promise<boolean>;
     restore: (id: string) => Promise<Note | null>;
     emptyTrash: () => Promise<NoteDeletionOutcome>;

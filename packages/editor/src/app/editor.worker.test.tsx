@@ -9,7 +9,7 @@ import type { MarkdownSerializer } from "./extensions/tiptap-markdown/serialize/
 type Request = { text: string; gen: number };
 const mocks = vi.hoisted(() => ({
     createWorker: vi.fn(),
-    notes: [] as Note[],
+    notes: [] as Array<Note>,
     sync: vi.fn(),
     setSaveStatus: vi.fn(),
     readNote: vi.fn(),
@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     configuration: { options: { initialMode: "normal" } },
 }));
 vi.mock("@/lib/markdown-worker", () => ({
-    createMarkdownWorker: mocks.createWorker, LARGE_MARKDOWN_THRESHOLD: 50, WARN_THRESHOLD: 2000, HARD_LIMIT: 10000,
+    createMarkdownWorker: mocks.createWorker, LARGE_MARKDOWN_THRESHOLD: 50, WARN_THRESHOLD: 2000, HARD_LIMIT: 10_000,
 }));
 vi.mock("@/store/global.store", () => ({
     useGlobalStore: (selector: (state: unknown) => unknown) => [selector({ notes: mocks.notes, theme: "dark" }), { syncNoteFromRepository: mocks.sync }],
@@ -64,11 +64,11 @@ class TestWorker extends EventTarget {
         this.send({ type: "chunk", html: `<p>${text}</p>`, chunkIndex: 0, totalChunks: 1 });
     }
     send(data: Record<string, unknown>): void {
-        if (!this.request) throw new Error("Worker has no request.");
+        if (!this.request) {throw new Error("Worker has no request.");}
         this.dispatchEvent(new MessageEvent("message", { data: { ...data, gen: this.request.gen } }));
     }
 }
-const workers: TestWorker[] = [];
+const workers: Array<TestWorker> = [];
 
 async function flush(): Promise<void> {
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
@@ -76,12 +76,12 @@ async function flush(): Promise<void> {
 function note(id: string, content: string): Note {
     return Note.parse({ ...Note.new(id, content), id });
 }
-function view(notes: Note[]) {
+function view(notes: Array<Note>) {
     return <>{notes.map((note) => <Editor key={note.id} id={note.id} note={note} content={note.content} active={false} vimMode={false} />)}</>;
 }
 function worker(index: number): TestWorker {
     const value = workers[index];
-    if (!value) throw new Error(`Missing worker ${index}`);
+    if (!value) {throw new Error(`Missing worker ${index}`);}
     return value;
 }
 
@@ -107,7 +107,7 @@ describe("editor-owned Markdown workers", () => {
         render(view(mocks.notes));
         await flush();
         const editor = editorGlobalRef.current;
-        if (!editor) throw new Error("Missing active editor.");
+        if (!editor) {throw new Error("Missing active editor.");}
         const storage = editor.storage as unknown as { markdown: { serializer: MarkdownSerializer } };
         const serialize = vi.spyOn(storage.markdown.serializer, "serialize");
         act(() => {

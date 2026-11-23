@@ -1,5 +1,5 @@
 import { db } from "../browser/dexie-db";
-import { type StorageAdapter } from "./types";
+import type { StorageAdapter } from "./types";
 
 export class DexieStorageAdapter implements StorageAdapter {
     async count(collection: string): Promise<number> {
@@ -10,7 +10,7 @@ export class DexieStorageAdapter implements StorageAdapter {
         return (await db.table(collection).get(id)) || null;
     }
 
-    async getAll<T>(collection: string, query?: { limit?: number }): Promise<T[]> {
+    async getAll<T>(collection: string, query?: { limit?: number }): Promise<Array<T>> {
         let dexieCollection = db.table(collection).toCollection();
         if (query?.limit) {
             dexieCollection = dexieCollection.limit(query.limit);
@@ -26,7 +26,7 @@ export class DexieStorageAdapter implements StorageAdapter {
     async delete(collection: string, id: string): Promise<boolean> {
         const table = db.table(collection);
         const existing = await table.get(id);
-        if (!existing) return false;
+        if (!existing) {return false;}
         await table.delete(id);
         return true;
     }

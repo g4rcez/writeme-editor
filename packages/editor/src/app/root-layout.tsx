@@ -59,7 +59,7 @@ const waitMap = new Map<string, string>();
 
 function getEditorNoteId(): string | null {
     const editor = editorGlobalRef.current;
-    if (!editor || editor.isDestroyed) return null;
+    if (!editor || editor.isDestroyed) {return null;}
     const storedNote = (editor.storage as { note?: { id?: string } }).note;
     return storedNote?.id ?? null;
 }
@@ -101,7 +101,7 @@ export const RootLayout = () => {
 
     useEffect(() => {
         const protectPendingTabs = (event: BeforeUnloadEvent): void => {
-            if (hasPendingTabPersistence()) event.preventDefault();
+            if (hasPendingTabPersistence()) {event.preventDefault();}
         };
         window.addEventListener("beforeunload", protectPendingTabs);
         return () => window.removeEventListener("beforeunload", protectPendingTabs);
@@ -132,7 +132,7 @@ export const RootLayout = () => {
     );
 
     const createNewAiChat = useCallback(async (): Promise<void> => {
-        if (!supportsAI()) return;
+        if (!supportsAI()) {return;}
         const chat = await createWorkspaceAiChat(state.directory);
         await dispatch.addAiChatTab(chat.id);
         navigate(`/chat?chatId=${encodeURIComponent(chat.id)}`);
@@ -164,7 +164,7 @@ export const RootLayout = () => {
     );
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         return window.electronAPI.onOpenFile(async ({ filePath, wait, requestId }) => {
             try {
                 const existing = await window.electronAPI.db.notes.getByFilePath(filePath);
@@ -189,48 +189,48 @@ export const RootLayout = () => {
                 }
                 await dispatch.selectNoteById(noteId);
                 navigate(`/note/${noteId}`);
-            } catch (err) {
-                console.error("Failed to open file from CLI:", err);
+            } catch (error) {
+                console.error("Failed to open file from CLI:", error);
             }
         });
     }, []);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         return window.electronAPI.onOpenFolder(({ folderPath }) => {
-            if (state.directory === folderPath) return;
+            if (state.directory === folderPath) {return;}
             void (async () => {
                 try {
                     await migrateWebOnlyNotesToDirectory(folderPath);
                     await dispatch.switchWorkspace(folderPath);
-                } catch (err) {
-                    console.error("Failed to open folder from CLI:", err);
+                } catch (error) {
+                    console.error("Failed to open folder from CLI:", error);
                 }
             })();
         });
     }, [dispatch, state.directory]);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         return window.electronAPI.onNavigate((pathname) => {
             navigate(pathname);
         });
     }, [navigate]);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         void window.electronAPI.app.rendererReady(state.directory);
     }, [state.directory]);
 
     useEffect(() => {
-        if (!isElectron() || !state.directory) return;
+        if (!isElectron() || !state.directory) {return;}
 
         // Only what changed is reloaded. A changed file refreshes that one note; added or removed files load just the
         // files that appeared. Re-reading the whole workspace on every event cost one IPC read per note.
         const fileTimers = new Map<string, ReturnType<typeof setTimeout>>();
         let directoryTimer: ReturnType<typeof setTimeout> | null = null;
         const refreshDirectory = () => {
-            if (directoryTimer) clearTimeout(directoryTimer);
+            if (directoryTimer) {clearTimeout(directoryTimer);}
             directoryTimer = setTimeout(() => {
                 directoryTimer = null;
                 const sync = repositories.notes.syncWorkspaceDelta?.bind(repositories.notes);
@@ -239,14 +239,14 @@ export const RootLayout = () => {
                     : repositories.notes.getAll();
                 void load
                     .then((notes) => {
-                        if (notes) dispatch.notes(notes);
+                        if (notes) {dispatch.notes(notes);}
                     })
                     .catch((error) => console.error("Failed to refresh workspace notes:", error));
             }, 400);
         };
         const refreshFile = (filePath: string) => {
             const pending = fileTimers.get(filePath);
-            if (pending) clearTimeout(pending);
+            if (pending) {clearTimeout(pending);}
             fileTimers.set(
                 filePath,
                 setTimeout(() => {
@@ -255,11 +255,11 @@ export const RootLayout = () => {
                     const known = globalState().notes.find(
                         (note) => note.filePath && canonicalImportPath(note.filePath) === key,
                     );
-                    if (!known) return refreshDirectory();
+                    if (!known) {return refreshDirectory();}
                     void repositories.notes
                         .getOne(known.id)
                         .then((fresh) => {
-                            if (!fresh) return refreshDirectory();
+                            if (!fresh) {return refreshDirectory();}
                             // list only: the open note is not replaced underneath an editor that may hold edits
                             dispatch.notes(globalState().notes.map((note) => (note.id === fresh.id ? fresh : note)));
                         })
@@ -268,24 +268,24 @@ export const RootLayout = () => {
             );
         };
         const unsubscribeFileChanges = window.electronAPI.fs.onFileChanged(({ filePath }) => {
-            if (isWorkspaceDocumentFile(filePath)) refreshFile(filePath);
+            if (isWorkspaceDocumentFile(filePath)) {refreshFile(filePath);}
         });
         const unsubscribeDirectoryChanges = window.electronAPI.fs.onDirChanged(refreshDirectory);
 
         return () => {
             unsubscribeFileChanges();
             unsubscribeDirectoryChanges();
-            if (directoryTimer) clearTimeout(directoryTimer);
-            for (const timer of fileTimers.values()) clearTimeout(timer);
+            if (directoryTimer) {clearTimeout(directoryTimer);}
+            for (const timer of fileTimers.values()) {clearTimeout(timer);}
         };
     }, [dispatch, state.directory]);
 
     useEffect(() => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         const prevTabs = prevTabsRef.current;
-        const removedTabs = prevTabs.filter((pt) => !state.tabs.find((ct) => ct.id === pt.id));
+        const removedTabs = prevTabs.filter((pt) => !state.tabs.some((ct) => ct.id === pt.id));
         for (const tab of removedTabs) {
-            if (isAiChatTab(tab) || isTerminalTab(tab)) continue;
+            if (isAiChatTab(tab) || isTerminalTab(tab)) {continue;}
             const requestId = waitMap.get(tab.noteId);
             if (requestId) {
                 void window.electronAPI.app.notifyFileClosed(requestId).catch((error: unknown) => {
@@ -302,7 +302,7 @@ export const RootLayout = () => {
             restoreTabOnStartup.current = false;
             return;
         }
-        if (!restoreTabOnStartup.current || state.activeTabId === null) return;
+        if (!restoreTabOnStartup.current || state.activeTabId === null) {return;}
         const activeTab = state.tabs.find(
             (tab) =>
                 tab.id === state.activeTabId ||
@@ -315,7 +315,7 @@ export const RootLayout = () => {
     }, [location.pathname, navigate, state.activeTabId, state.tabs]);
 
     useEffect(() => {
-        if (!location.pathname.startsWith("/settings")) return;
+        if (!location.pathname.startsWith("/settings")) {return;}
 
         layoutDispatch.setActivity("settings");
         if (window.matchMedia("(min-width: 768px)").matches) {
@@ -332,9 +332,9 @@ export const RootLayout = () => {
                 activeTabId: state.activeTabId,
                 direction,
             });
-            if (!nextTarget) return;
+            if (!nextTarget) {return;}
             const nextTab = findTabByTarget(state.tabs, nextTarget);
-            if (!nextTab) return;
+            if (!nextTab) {return;}
             navigateToTabRoute(nextTab);
         },
         [location.pathname, location.search, navigateToTabRoute, state.activeTabId, state.tabs],
@@ -346,10 +346,10 @@ export const RootLayout = () => {
                 tabs: state.tabs,
                 index: shortcut.type === "last" ? "last" : shortcut.index,
             });
-            if (!nextTarget) return;
+            if (!nextTarget) {return;}
 
             const nextTab = findTabByTarget(state.tabs, nextTarget);
-            if (!nextTab) return;
+            if (!nextTab) {return;}
 
             navigateToTabRoute(nextTab);
         },
@@ -358,14 +358,14 @@ export const RootLayout = () => {
 
     const closeCurrentTabOrHide = useCallback(async (): Promise<void> => {
         if (state.tabs.length === 0) {
-            if (isElectron()) await window.electronAPI.app.hideToTray();
+            if (isElectron()) {await window.electronAPI.app.hideToTray();}
             return;
         }
 
         const currentTarget = getCurrentRouteTabTarget(location.pathname, location.search);
         const currentTab =
             findTabByTarget(state.tabs, currentTarget) ?? state.tabs.find((tab) => tab.id === state.activeTabId);
-        if (!currentTab) return;
+        if (!currentTab) {return;}
 
         const closeTab = async (): Promise<void> => {
             const nextTab = getPreviousTabAfterClose(state.tabs, currentTab.id);
@@ -404,9 +404,9 @@ export const RootLayout = () => {
     ]);
 
     useEffect(() => {
-        if (!state.note || !location.pathname.startsWith("/note/")) return;
+        if (!state.note || !location.pathname.startsWith("/note/")) {return;}
         const handleKeyDown = (event: KeyboardEvent): void => {
-            if (event.key !== "Enter" && event.key !== " ") return;
+            if (event.key !== "Enter" && event.key !== " ") {return;}
         };
         document.addEventListener("keydown", handleKeyDown, { capture: true });
         return () => {
@@ -428,12 +428,12 @@ export const RootLayout = () => {
                 {
                     hotkey: "Ctrl+Tab",
                     options: { stopPropagation: true },
-                    callback: () => void cycleEditorTab("forward"),
+                    callback: () =>  cycleEditorTab("forward"),
                 },
                 {
                     hotkey: "Ctrl+Shift+Tab",
                     options: { stopPropagation: true },
-                    callback: () => void cycleEditorTab("backward"),
+                    callback: () =>  cycleEditorTab("backward"),
                 },
                 {
                     hotkey: "Mod+W",
@@ -456,7 +456,7 @@ export const RootLayout = () => {
                     hotkey: "Mod+P",
                     options: { preventDefault: false },
                     callback: (event) => {
-                        if (isMobile() || !state.note || !location.pathname.startsWith("/note/")) return;
+                        if (isMobile() || !state.note || !location.pathname.startsWith("/note/")) {return;}
                         event.preventDefault();
                         printDocument({ title: state.note.title });
                     },
@@ -468,7 +468,7 @@ export const RootLayout = () => {
                 {
                     hotkey: "Mod+F",
                     callback: (event) => {
-                        if (!editorSearchGlobalRef.current) return;
+                        if (!editorSearchGlobalRef.current) {return;}
                         event.preventDefault();
                         uiDispatch.toggleFindReplace();
                     },
@@ -481,9 +481,9 @@ export const RootLayout = () => {
 
             const handleBeforeUnload = (): void => {
                 const editor = editorGlobalRef.current;
-                if (!state.note || !editor || editor.isDestroyed) return;
-                if (!location.pathname.startsWith("/note/")) return;
-                if (getEditorNoteId() !== state.note.id) return;
+                if (!state.note || !editor || editor.isDestroyed) {return;}
+                if (!location.pathname.startsWith("/note/")) {return;}
+                if (getEditorNoteId() !== state.note.id) {return;}
             };
             window.addEventListener("beforeunload", handleBeforeUnload);
             return () => {
@@ -505,7 +505,7 @@ export const RootLayout = () => {
     );
 
     useEffect(() => {
-        if (!isFloatingPanel) return;
+        if (!isFloatingPanel) {return;}
         document.documentElement.style.background = "transparent";
         document.body.style.background = "transparent";
     }, [isFloatingPanel]);

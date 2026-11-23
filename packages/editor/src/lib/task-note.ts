@@ -9,6 +9,6 @@ export function buildTaskNoteContent(): string {
     return "---\ntype: task\nview: kanban\n---\n\n## Backlog\n\n## Todo\n\n## In Progress\n\n## Done\n";
 }
 
-export function taskNoteExtensions(): AnyExtension[] {
+export function taskNoteExtensions(): Array<AnyExtension> {
     return [StarterKit, TaskList, TaskItem.configure({ nested: true }), Subscript, Frontmatter, Markdown];
 }

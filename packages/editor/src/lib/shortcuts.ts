@@ -32,21 +32,21 @@ type ShortcutValue = {
 const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
     const shortcutMap = new Map<string, ShortcutValue>();
     const incrementUserAction = (e: KeyboardEvent, options: Partial<ShortcutOptions>) => {
-        if (!e.key) return;
+        if (!e.key) {return;}
         const key = e.key.toLowerCase().replace("mod", mod);
         let keys = [];
-        if (options.multiPlatform && (e.ctrlKey || e.metaKey)) keys.push(Key.Control);
-        else if (e.ctrlKey) keys.push(Key.Control);
-        else if (e.metaKey) keys.push(Key.Command);
-        if (e.shiftKey) keys.push(Key.Shift);
-        if (e.altKey) keys.push(Key.Alt);
-        if (key === Key.Space) keys.push("space");
-        if (key === Key.Enter) keys.push(Key.Enter);
-        if (key) keys.push(key);
+        if (options.multiPlatform && (e.ctrlKey || e.metaKey)) {keys.push(Key.Control);}
+        else if (e.ctrlKey) {keys.push(Key.Control);}
+        else if (e.metaKey) {keys.push(Key.Command);}
+        if (e.shiftKey) {keys.push(Key.Shift);}
+        if (e.altKey) {keys.push(Key.Alt);}
+        if (key === Key.Space) {keys.push("space");}
+        if (key === Key.Enter) {keys.push(Key.Enter);}
+        if (key) {keys.push(key);}
         keys = keys.map((key) => key.trim()).filter(Boolean);
         const concatKeys = keys.join("+");
         const eventFound = shortcutMap.get(concatKeys);
-        if (eventFound && options.prevent) e.preventDefault();
+        if (eventFound && options.prevent) {e.preventDefault();}
         return concatKeys;
     };
 
@@ -64,7 +64,7 @@ const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
         signal: undefined,
     };
     const add = (
-        shortcut: string | string[],
+        shortcut: string | Array<string>,
         handler: (ev: KeyboardEvent) => any,
         options: Partial<ShortcutOptions> = defaultOptions,
         nativeOptions: BrowserOptions = defaultNativeOptions,
@@ -94,7 +94,7 @@ const shortcutKeys = (element: HTMLElement | Window, mod = "Meta") => {
     };
     const remove = (shortcut: string): void => {
         const x = shortcutMap.get(shortcut);
-        if (x === undefined) return;
+        if (x === undefined) {return;}
         return element.removeEventListener(x.options.eventType!, x!.target);
     };
     const list = () => Array.from(shortcutMap).map(([key, info]) => ({ key, info }));

@@ -48,7 +48,7 @@ describe("editor tab movement", () => {
         expect(result.current.state!.panes.find((pane) => pane.id === first.id)?.noteIds).toEqual([notes[0]!.id]);
         const layout = result.current.state!.layout;
         expect(layout?.type).toBe("split");
-        if (layout?.type !== "split") throw new Error("Expected a split layout");
+        if (layout?.type !== "split") {throw new Error("Expected a split layout");}
         expect(layout.children[0]).toMatchObject({ type: "split", orientation: "vertical" });
     });
 

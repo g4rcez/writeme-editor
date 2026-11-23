@@ -14,7 +14,7 @@ const getSystemAccentColor = (): string | null => {
 };
 
 const emitSystemAccentColor = (color = getSystemAccentColor()): void => {
-    if (!color) return;
+    if (!color) {return;}
     BrowserWindow.getAllWindows().forEach((win) => {
         win.webContents.send("app:system-accent-color-changed", color);
     });
@@ -23,7 +23,7 @@ const emitSystemAccentColor = (color = getSystemAccentColor()): void => {
 let isSystemAccentListenerRegistered = false;
 
 const registerSystemAccentListener = (): void => {
-    if (isSystemAccentListenerRegistered) return;
+    if (isSystemAccentListenerRegistered) {return;}
     isSystemAccentListenerRegistered = true;
 
     systemPreferences.on("accent-color-changed", (_, color) => {
@@ -53,7 +53,7 @@ export const appIpcHandler = (
     });
     ipcMain.handle("app:renderer-ready", (event, workspacePath: string | null = null) => {
         setLaunchWorkspacePath(workspacePath);
-        if (FEATURES.cli) markCliRendererReady(event.sender, workspacePath);
+        if (FEATURES.cli) {markCliRendererReady(event.sender, workspacePath);}
         return true;
     });
     ipcMain.handle(
@@ -61,7 +61,7 @@ export const appIpcHandler = (
         (_, filePath: unknown) => FEATURES.cli && typeof filePath === "string" && isCliEditorFilePath(filePath),
     );
     if (FEATURES.cli)
-        ipcMain.handle("app:install-cli", async () => {
+        {ipcMain.handle("app:install-cli", async () => {
             try {
                 const result = await installBundledCli({ appPath: app.getAppPath() });
                 return { success: true, ...result };
@@ -69,14 +69,14 @@ export const appIpcHandler = (
                 const message = error instanceof Error ? error.message : String(error);
                 return { success: false, error: message };
             }
-        });
+        });}
     ipcMain.handle("app:chdir", (_, dir: string) => {
         try {
             process.chdir(dir);
             return { success: true };
-        } catch (e: any) {
-            console.error(`Failed to change directory to ${dir}:`, e);
-            return { success: false, error: e.message };
+        } catch (error: any) {
+            console.error(`Failed to change directory to ${dir}:`, error);
+            return { success: false, error: error.message };
         }
     });
 };

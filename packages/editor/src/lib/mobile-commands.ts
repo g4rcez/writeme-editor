@@ -21,15 +21,15 @@ const DESKTOP_COMMANDS = new Set([
     "Share content",
 ]);
 
-export function availableCommands(commands: CommandItemTypes[]): CommandItemTypes[] {
-    return commands.flatMap((command): CommandItemTypes[] => {
+export function availableCommands(commands: Array<CommandItemTypes>): Array<CommandItemTypes> {
+    return commands.flatMap((command): Array<CommandItemTypes> => {
         if (command.type === "group") {
             const items = availableCommands(command.items);
             return items.length ? [{ ...command, items }] : [];
         }
-        if (typeof command.title !== "string") return [command];
+        if (typeof command.title !== "string") {return [command];}
         const feature = COMMAND_FEATURES[command.title];
-        if (feature && !FEATURES[feature]) return [];
+        if (feature && !FEATURES[feature]) {return [];}
         return isMobile() && DESKTOP_COMMANDS.has(command.title) ? [] : [command];
     });
 }

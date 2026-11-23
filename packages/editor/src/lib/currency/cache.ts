@@ -108,7 +108,7 @@ function clearOldCacheEntries(): void {
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
     try {
-        const keysToRemove: string[] = [];
+        const keysToRemove: Array<string> = [];
 
         // Find all old currency cache keys
         for (let i = 0; i < localStorage.length; i++) {
@@ -134,7 +134,6 @@ function clearOldCacheEntries(): void {
             localStorage.removeItem(key);
         });
 
-        console.log(`Cleared ${keysToRemove.length} old currency cache entries`);
     } catch (error) {
         console.error("Error clearing old cache entries:", error);
     }

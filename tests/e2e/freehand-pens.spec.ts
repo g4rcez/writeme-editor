@@ -11,8 +11,8 @@ test.describe("production pen tools", { tag: ["@production", "@production-only"]
 
     async function openPenTools(page: Page): Promise<void> {
         const pen = page.getByRole("button", { name: "Pen", exact: true });
-        if ((await pen.getAttribute("aria-pressed")) !== "true") await pen.click();
-        if ((await pen.getAttribute("aria-expanded")) !== "true") await pen.click();
+        if ((await pen.getAttribute("aria-pressed")) !== "true") {await pen.click();}
+        if ((await pen.getAttribute("aria-expanded")) !== "true") {await pen.click();}
         await expect(page.getByRole("dialog", { name: "Pen tools", exact: true })).toBeVisible();
     }
 
@@ -136,12 +136,12 @@ test.describe("production pen tools", { tag: ["@production", "@production-only"]
         await writeNotebook(page);
         const canvas = page.getByLabel("Handwriting canvas", { exact: true });
         const session = await context.newCDPSession(page);
-        const widths: Record<string, number[]> = {};
+        const widths: Record<string, Array<number>> = {};
         try {
             for (const [index, pen] of pens.entries()) {
                 await selectPen(page, pen.label);
                 const bounds = await canvas.boundingBox();
-                if (!bounds) throw new Error("Canvas is not visible");
+                if (!bounds) {throw new Error("Canvas is not visible");}
                 widths[pen.style] = [];
                 for (const force of [0.1, 0.9]) {
                     const position = {
@@ -158,13 +158,13 @@ test.describe("production pen tools", { tag: ["@production", "@production-only"]
                         force,
                     });
                     for (let step = 1; step <= 12; step++)
-                        await session.send("Input.dispatchMouseEvent", {
+                        {await session.send("Input.dispatchMouseEvent", {
                             ...position,
                             x: position.x + step * 8,
                             type: "mouseMoved",
                             buttons: 1,
                             force,
-                        });
+                        });}
                     await session.send("Input.dispatchMouseEvent", {
                         ...position,
                         x: position.x + 96,

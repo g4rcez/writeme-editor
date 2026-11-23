@@ -59,7 +59,7 @@ describe("global Vim init.ts", () => {
             applyCodeMirrorVimConfiguration(configuration);
             formatted.storage.neovim.feedKeys("Q");
             const cm = getCM(raw);
-            if (!cm) throw new Error("CodeMirror Vim editor was not initialized");
+            if (!cm) {throw new Error("CodeMirror Vim editor was not initialized");}
             Vim.handleKey(cm, "Q", "user");
             expect(formatted.getText()).toBe("two");
             expect(raw.state.doc.toString()).toBe("two");

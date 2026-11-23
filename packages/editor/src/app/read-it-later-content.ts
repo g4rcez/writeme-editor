@@ -18,7 +18,7 @@ export function readItLaterHtmlToMarkdown(html: string, theme: EditorTheme): str
             throw new Error("The Markdown serializer is not available.");
         }
         const getMarkdown = storage.getMarkdown;
-        if (typeof getMarkdown !== "function") throw new Error("The Markdown serializer is not available.");
+        if (typeof getMarkdown !== "function") {throw new Error("The Markdown serializer is not available.");}
         return getMarkdown.call(storage);
     } finally {
         editor.destroy();

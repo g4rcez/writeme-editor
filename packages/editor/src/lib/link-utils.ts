@@ -7,7 +7,7 @@
  */
 export function isValidUrl(text: string): boolean {
     // Must start with http:// or https:// and have a hostname with a dot
-    if (!/^https?:\/\//i.test(text)) return false;
+    if (!/^https?:\/\//i.test(text)) {return false;}
 
     try {
         const url = new URL(text);
@@ -66,7 +66,7 @@ export function linkify(text: string): string {
     const combinedRegex =
         /(!?\[.*?\]\(.*?\))|(<(?:https?:\/\/[^\s>]+|(?:\.\.?\/|\/)[^\s>]+)>)|(https?:\/\/[^\s<>]+)|((?<![\w.~-])(?:\.\.?\/|\/)[^\s<>]*(\.md|\/)?)/gi;
 
-    return text.replace(combinedRegex, (match, markdownLink) => {
+    return text.replaceAll(combinedRegex, (match, markdownLink) => {
         // If it matched an existing markdown link, return it as is
         if (markdownLink) {
             return match;
@@ -88,10 +88,10 @@ export function linkify(text: string): string {
                 (last === ")" && countChar(target, ")") > countChar(target, "(")) ||
                 (last === "]" && countChar(target, "]") > countChar(target, "[")) ||
                 (last === "}" && countChar(target, "}") > countChar(target, "{"));
-            if (!isTrailing) break;
+            if (!isTrailing) {break;}
             // Only strip if what's left is a valid URL or path
             const potentialUrl = target.slice(0, -1);
-            if (!isValidUrl(potentialUrl) && !isRelativeLink(potentialUrl)) break;
+            if (!isValidUrl(potentialUrl) && !isRelativeLink(potentialUrl)) {break;}
             target = potentialUrl;
             suffix = last + suffix;
         }

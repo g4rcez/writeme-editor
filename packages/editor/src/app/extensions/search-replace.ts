@@ -25,7 +25,7 @@ const pluginKey = new PluginKey<DecorationSet>("searchReplace");
 
 function scrollToPos(view: EditorView, pos: number): void {
     const container = document.getElementById("main-scroll-container");
-    if (!container) return;
+    if (!container) {return;}
     try {
         const coords = view.coordsAtPos(pos);
         const containerRect = container.getBoundingClientRect();
@@ -41,7 +41,7 @@ function findMatches(
     searchTerm: string,
     caseSensitive: boolean,
 ): Array<{ from: number; to: number }> {
-    if (!searchTerm) return [];
+    if (!searchTerm) {return [];}
     const results: Array<{ from: number; to: number }> = [];
     const flags = caseSensitive ? "g" : "gi";
     let regex: RegExp;
@@ -51,7 +51,7 @@ function findMatches(
         return [];
     }
     doc.descendants((node, pos) => {
-        if (!node.isText || !node.text) return;
+        if (!node.isText || !node.text) {return;}
         let match: RegExpExecArray | null;
         regex.lastIndex = 0;
         while ((match = regex.exec(node.text)) !== null) {
@@ -71,7 +71,7 @@ function buildDecorations(
     searchResultClass: string,
     searchResultCurrentClass: string,
 ): DecorationSet {
-    if (results.length === 0) return DecorationSet.empty;
+    if (results.length === 0) {return DecorationSet.empty;}
     const decorations = results.map((result, i) =>
         Decoration.inline(result.from, result.to, {
             class: i === resultIndex ? `${searchResultClass} ${searchResultCurrentClass}` : searchResultClass,
@@ -168,7 +168,7 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
                 () =>
                 ({ editor }) => {
                     const s = srStorage(editor);
-                    if (s.results.length === 0) return false;
+                    if (s.results.length === 0) {return false;}
                     s.resultIndex = (s.resultIndex + 1) % s.results.length;
                     editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
                     const current = s.results[s.resultIndex];
@@ -185,7 +185,7 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
                 () =>
                 ({ editor }) => {
                     const s = srStorage(editor);
-                    if (s.results.length === 0) return false;
+                    if (s.results.length === 0) {return false;}
                     s.resultIndex = (s.resultIndex - 1 + s.results.length) % s.results.length;
                     editor.view.dispatch(editor.state.tr.setMeta(pluginKey, { forceUpdate: true }));
                     const current = s.results[s.resultIndex];
@@ -202,9 +202,9 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
                 (replaceTerm: string) =>
                 ({ editor }) => {
                     const s = srStorage(editor);
-                    if (s.results.length === 0) return false;
+                    if (s.results.length === 0) {return false;}
                     const current = s.results[s.resultIndex];
-                    if (!current) return false;
+                    if (!current) {return false;}
                     const tr = editor.state.tr.replaceWith(
                         current.from,
                         current.to,
@@ -220,7 +220,7 @@ export const SearchAndReplace = Extension.create<SearchReplaceOptions, SearchRep
                 (replaceTerm: string) =>
                 ({ editor }) => {
                     const s = srStorage(editor);
-                    if (!s.searchTerm) return false;
+                    if (!s.searchTerm) {return false;}
                     const results = findMatches(editor.state.doc, s.searchTerm, s.caseSensitive);
                     let tr = editor.state.tr;
                     for (let i = results.length - 1; i >= 0; i--) {

@@ -2,15 +2,15 @@
 import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { handlers } = vi.hoisted(() => ({ handlers: new Map<string, (...args: any[]) => Promise<any>>() }));
+const { handlers } = vi.hoisted(() => ({ handlers: new Map<string, (...args: Array<any>) => Promise<any>>() }));
 
 vi.mock("electron", () => ({
-    ipcMain: { handle: vi.fn((channel: string, handler: (...args: any[]) => Promise<any>) => void handlers.set(channel, handler)) },
+    ipcMain: { handle: vi.fn((channel: string, handler: (...args: Array<any>) => Promise<any>) => void handlers.set(channel, handler)) },
 }));
 
 import { executionIpcHandler } from "./execution.ipc";
 
-const run = (command: string, args: string[], sender: EventEmitter = new EventEmitter(), code = "") =>
+const run = (command: string, args: Array<string>, sender: EventEmitter = new EventEmitter(), code = "") =>
     handlers.get("execution:run")!({ sender }, command, args, code);
 
 beforeEach(() => {

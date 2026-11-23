@@ -130,7 +130,7 @@ describe("completion data", () => {
         const item = { id: "file", label: "My File.md", path: "docs/My File.md", kind: "file" as const };
         const context = findCompletionContext("See @My", " File.md then", 7);
         expect(context).not.toBeNull();
-        if (!context) return;
+        if (!context) {return;}
         expect(completionInsertionContext(item, context).to).toBe(15);
         expect(completionInsertionContext(item, { ...context, textAfter: " ordinary prose" }).to).toBe(context.to);
         expect(completionMarkdown({ ...item, path: "docs/A#1?.md" })).toContain("docs/A%231%3F.md");
@@ -138,7 +138,7 @@ describe("completion data", () => {
 
     it("recognizes Unicode and nested tags and does not confuse URLs, escapes or numbers with tags", () => {
         expect(
-            extractCompletionTags("#project/active #ação #abc #🌱 #123 #y1984 https://host/#fragment \\#escaped"),
+            extractCompletionTags(String.raw`#project/active #ação #abc #🌱 #123 #y1984 https://host/#fragment \#escaped`),
         ).toEqual(["project/active", "ação", "abc", "🌱", "y1984"]);
     });
 
@@ -174,7 +174,7 @@ describe("completion data", () => {
         mocks.state.mockReturnValue({ directory: null, notes: [note], note });
         expect(await loadWorkspaceCompletions("#", note.id)).toEqual([]);
         const context = findCompletionContext("Use #unsa", "", 9);
-        if (!context) throw new Error("Missing completion context");
+        if (!context) {throw new Error("Missing completion context");}
         expect(withoutActiveTag(createTagItems(["unsa", "unsaved-topic"]), context).map((item) => item.label)).toEqual([
             "unsaved-topic",
         ]);
@@ -212,7 +212,7 @@ describe("completion data", () => {
 
     it("escapes labels and paths for Markdown insertion", () => {
         expect(completionMarkdown({ id: "file", label: "A [file].md", path: "docs/A (file).md", kind: "file" })).toBe(
-            "[A \\[file\\].md](docs/A%20%28file%29.md)",
+            String.raw`[A \[file\].md](docs/A%20%28file%29.md)`,
         );
     });
 });

@@ -35,7 +35,7 @@ const VideoView = (props: any) => {
     const isError = error || imgError;
 
     const handleOpenPreview = () => {
-        if (!displaySrc) return;
+        if (!displaySrc) {return;}
         uiDispatch.openMediaPreview([{ src: displaySrc, type: "video", title }]);
     };
 

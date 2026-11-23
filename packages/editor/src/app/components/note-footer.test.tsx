@@ -38,7 +38,7 @@ describe("editor footer counts", () => {
         expect(mocks.getMarkdown).toHaveBeenCalledTimes(1);
         mocks.getMarkdown.mockReturnValue("Latest content here");
         act(() => {
-            for (let index = 0; index < 20; index++) for (const listener of mocks.listeners) listener();
+            for (let index = 0; index < 20; index++) {for (const listener of mocks.listeners) {listener();}}
         });
         expect(mocks.getMarkdown).toHaveBeenCalledTimes(1);
         expect(mocks.editorRef.current?.getMarkdown()).toBe("Latest content here");
@@ -50,7 +50,7 @@ describe("editor footer counts", () => {
 
     it("cancels a pending count on unmount", () => {
         const { unmount } = render(<NoteFooter noteId="note" />);
-        act(() => { for (const listener of mocks.listeners) listener(); });
+        act(() => { for (const listener of mocks.listeners) {listener();} });
         unmount();
         act(() => vi.advanceTimersByTime(150));
         expect(mocks.getMarkdown).toHaveBeenCalledTimes(1);
@@ -59,7 +59,7 @@ describe("editor footer counts", () => {
 
     it("cancels the old editor's count when the active editor changes", () => {
         render(<NoteFooter noteId="note" />);
-        act(() => { for (const listener of mocks.listeners) listener(); });
+        act(() => { for (const listener of mocks.listeners) {listener();} });
         mocks.editorRef.current = null;
         act(() => { mocks.changed?.(); });
         act(() => vi.advanceTimersByTime(150));

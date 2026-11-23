@@ -57,8 +57,8 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     let parseError: string | null = null;
     try {
         transcript = parseMeetingTranscript(note.metadata.meetingTranscript);
-    } catch (reason) {
-        parseError = messageOf(reason);
+    } catch (error_) {
+        parseError = messageOf(error_);
     }
 
     async function persist(next: MeetingTranscript): Promise<void> {
@@ -68,14 +68,14 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
             ...noteRef.current.metadata,
             meetingTranscript: serializeMeetingTranscript(next),
         });
-        if (!mounted.current) return;
+        if (!mounted.current) {return;}
         setUnsavedTranscript(null);
         setAudio([]);
         setNotice("Transcript saved");
     }
 
     async function transcribe(recordings: AudioRecording): Promise<void> {
-        if (parseError) throw new Error(parseError);
+        if (parseError) {throw new Error(parseError);}
         setPhase("transcribing");
         const pending = new AbortController();
         controller.current = pending;
@@ -89,12 +89,12 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                     signal: pending.signal,
                 }),
             ),
-        ).catch((reason: unknown) => {
+        ).catch((error_: unknown) => {
             pending.abort();
-            throw reason;
+            throw error_;
         });
         pending.signal.throwIfAborted();
-        if (!mounted.current) return;
+        if (!mounted.current) {return;}
         const current = parseMeetingTranscript(noteRef.current.metadata.meetingTranscript);
         const offset = current.segments.length
             ? current.segments.reduce((end, segment) => Math.max(end, segment.end), 0) + 1
@@ -103,7 +103,7 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
             .flat()
             .map((segment) => ({ ...segment, start: segment.start + offset, end: segment.end + offset }));
         if (segments.length === 0)
-            throw new Error("No speech was detected. You can download the recording or try another model.");
+            {throw new Error("No speech was detected. You can download the recording or try another model.");}
         await persist({ segments: [...current.segments, ...segments].sort((a, b) => a.start - b.start) });
     }
 
@@ -115,31 +115,31 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
             }
             const credentials = await repositories.ai.loadCredentials("openai");
             if (!credentials?.apiKey)
-                throw new Error(
+                {throw new Error(
                     "No OpenAI API key is saved. Enter a transcription API key below; ChatGPT sign-in cannot transcribe audio.",
-                );
+                );}
             key = credentials.apiKey;
         }
         if (new URL(settings.endpoint).origin === "https://api.openai.com" && !key)
-            throw new Error("An OpenAI API key is required for this transcription endpoint.");
+            {throw new Error("An OpenAI API key is required for this transcription endpoint.");}
         return key;
     }
 
     async function stop(): Promise<void> {
         const active = recorder.current;
-        if (!active) return;
+        if (!active) {return;}
         recorder.current = null;
         setError(null);
         setPhase("stopping");
         try {
             const recordings = await active.stop();
-            if (!mounted.current) return;
+            if (!mounted.current) {return;}
             setAudio(recordings);
             await transcribe(recordings);
-        } catch (reason) {
-            if (mounted.current) setError(messageOf(reason));
+        } catch (error_) {
+            if (mounted.current) {setError(messageOf(error_));}
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
@@ -151,7 +151,7 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
         try {
             new URL(settings.endpoint);
             if (!settings.model.trim() || !settings.localSpeaker.trim())
-                throw new Error("Enter a model and your name.");
+                {throw new Error("Enter a model and your name.");}
             await SettingsService.save({ meetingTranscription: settings });
             await resolveKey();
             const active = await startMeetingRecording({
@@ -167,9 +167,9 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
             }
             recorder.current = active;
             setPhase("recording");
-        } catch (reason) {
+        } catch (error_) {
             if (mounted.current) {
-                setError(messageOf(reason));
+                setError(messageOf(error_));
                 setPhase("idle");
             }
         }
@@ -178,12 +178,12 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     async function retry(): Promise<void> {
         setError(null);
         try {
-            if (unsavedTranscript) await persist(unsavedTranscript);
-            else await transcribe(audio);
-        } catch (reason) {
-            if (mounted.current) setError(messageOf(reason));
+            if (unsavedTranscript) {await persist(unsavedTranscript);}
+            else {await transcribe(audio);}
+        } catch (error_) {
+            if (mounted.current) {setError(messageOf(error_));}
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
@@ -193,27 +193,27 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
         setPhase("saving");
         try {
             const next = { ...settings, model: settings.model.trim(), localSpeaker: settings.localSpeaker.trim() };
-            if (!next.model || !next.localSpeaker) throw new Error("Enter a model and your name.");
+            if (!next.model || !next.localSpeaker) {throw new Error("Enter a model and your name.");}
             await SettingsService.save({ meetingTranscription: next });
             if (mounted.current) {
                 setSettings(next);
                 setNotice("Transcription settings saved");
             }
-        } catch (reason) {
-            if (mounted.current) setError(messageOf(reason));
+        } catch (error_) {
+            if (mounted.current) {setError(messageOf(error_));}
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
     async function dismissSetup(): Promise<void> {
         setSetupOpen(false);
-        if (onboardingStatus !== "pending") return;
+        if (onboardingStatus !== "pending") {return;}
         try {
             await SettingsService.save({ meetingOnboardingStatus: "skipped" });
-            if (mounted.current) setOnboardingStatus("skipped");
-        } catch (reason) {
-            if (mounted.current) setError(messageOf(reason));
+            if (mounted.current) {setOnboardingStatus("skipped");}
+        } catch (error_) {
+            if (mounted.current) {setError(messageOf(error_));}
         }
     }
 
@@ -224,7 +224,7 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     ): Promise<void> {
         await SettingsService.save({ meetingTranscription: next });
         await SettingsService.save({ meetingOnboardingStatus: "completed" });
-        if (!mounted.current) return;
+        if (!mounted.current) {return;}
         setSettings(next);
         setApiKey(key);
         setUseOpenAIKey(savedKey);
@@ -237,22 +237,22 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     async function importTranscript(): Promise<void> {
         setError(null);
         try {
-            if (parseError) throw new Error(parseError);
+            if (parseError) {throw new Error(parseError);}
             const imported = importMeetingTranscript(importText, platform);
-            if (!imported.segments.length) throw new Error("No transcript entries were found.");
+            if (!imported.segments.length) {throw new Error("No transcript entries were found.");}
             const current = parseMeetingTranscript(noteRef.current.metadata.meetingTranscript);
             await persist({ segments: [...current.segments, ...imported.segments].sort((a, b) => a.start - b.start) });
             setImportText("");
-        } catch (reason) {
-            setError(messageOf(reason));
+        } catch (error_) {
+            setError(messageOf(error_));
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
     async function renameSpeaker(speakerKey: string, oldName: string, newName: string): Promise<void> {
         const trimmed = newName.trim();
-        if (trimmed === oldName) return;
+        if (trimmed === oldName) {return;}
         setError(null);
         try {
             const current = parseMeetingTranscript(noteRef.current.metadata.meetingTranscript);
@@ -261,10 +261,10 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                     meetingSpeakerKey(segment) === speakerKey ? { ...segment, speaker: trimmed } : segment,
                 ),
             });
-        } catch (reason) {
-            setError(messageOf(reason));
+        } catch (error_) {
+            setError(messageOf(error_));
         } finally {
-            if (mounted.current) setPhase("idle");
+            if (mounted.current) {setPhase("idle");}
         }
     }
 
@@ -293,7 +293,7 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
     }, []);
 
     useEffect(() => {
-        if (!busy && audio.length === 0 && !unsavedTranscript) return;
+        if (!busy && audio.length === 0 && !unsavedTranscript) {return;}
         const beforeUnload = (event: BeforeUnloadEvent): void => {
             event.preventDefault();
         };
@@ -477,7 +477,7 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                         onChange={(event) => {
                             const value = event.target.value;
                             if (value === "google-meet" || value === "zoom" || value === "teams" || value === "other")
-                                setPlatform(value);
+                                {setPlatform(value);}
                         }}
                         options={[
                             { label: "Google Meet", value: "google-meet" },
@@ -496,14 +496,14 @@ export function MeetingNotePanel({ note }: { note: Note }): React.JSX.Element {
                             onChange={async (event) => {
                                 const file = event.target.files?.[0];
                                 event.target.value = "";
-                                if (!file) return;
+                                if (!file) {return;}
                                 try {
                                     if (file.size > 5_000_000)
-                                        throw new Error("Transcript files must be smaller than 5 MB.");
+                                        {throw new Error("Transcript files must be smaller than 5 MB.");}
                                     const text = await file.text();
-                                    if (mounted.current) setImportText(text);
-                                } catch (reason) {
-                                    if (mounted.current) setError(messageOf(reason));
+                                    if (mounted.current) {setImportText(text);}
+                                } catch (error_) {
+                                    if (mounted.current) {setError(messageOf(error_));}
                                 }
                             }}
                         />

@@ -227,7 +227,7 @@ describe("getStatus", () => {
         });
         const result = await getStatus(DIR, deps);
         expect(result.kind).toBe("ok");
-        if (result.kind !== "ok") return;
+        if (result.kind !== "ok") {return;}
         expect(result.branch).toBe("main");
         expect(result.upstream).toBe("origin/main");
         expect(result.counts.modified).toBe(2);

@@ -15,7 +15,7 @@ type ReadonlyShortcut = {
     description: string;
 };
 
-const APP_SHORTCUT_REFERENCE: ReadonlyShortcut[] = [
+const APP_SHORTCUT_REFERENCE: Array<ReadonlyShortcut> = [
     {
         bind: "mod+s",
         title: "Save current note",
@@ -98,7 +98,7 @@ const WRITEME_SHORTCUT_DESCRIPTIONS: Record<string, string> = {
     "Zoom out": "Decrease the interface scale.",
 };
 
-function getReadonlyShortcuts(shortcuts: Shortcut[]): ReadonlyShortcut[] {
+function getReadonlyShortcuts(shortcuts: Array<Shortcut>): Array<ReadonlyShortcut> {
     const seen = new Set<string>();
     const appShortcuts = shortcuts
         .filter((shortcut) => shortcut.type === Type.Shortcut)
@@ -112,7 +112,7 @@ function getReadonlyShortcuts(shortcuts: Shortcut[]): ReadonlyShortcut[] {
     return [...APP_SHORTCUT_REFERENCE, ...appShortcuts]
         .filter((shortcut) => {
             const key = `${shortcut.bind}:${shortcut.title}`;
-            if (seen.has(key)) return false;
+            if (seen.has(key)) {return false;}
             seen.add(key);
             return true;
         })
@@ -125,13 +125,13 @@ function displayShortcut(bind: string): string {
         .split("+")
         .map((part) => {
             const key = part.toLocaleLowerCase();
-            if (key === "mod") return isMac ? "⌘" : "Ctrl";
-            if (key === "control" || key === "ctrl") return "Ctrl";
-            if (key === "shift") return isMac ? "⇧" : "Shift";
-            if (key === "alt") return isMac ? "⌥" : "Alt";
-            if (key === "escape") return isMac ? "Esc" : "Escape";
-            if (key === "tab") return "Tab";
-            if (part.length === 1) return part.toLocaleUpperCase();
+            if (key === "mod") {return isMac ? "⌘" : "Ctrl";}
+            if (key === "control" || key === "ctrl") {return "Ctrl";}
+            if (key === "shift") {return isMac ? "⇧" : "Shift";}
+            if (key === "alt") {return isMac ? "⌥" : "Alt";}
+            if (key === "escape") {return isMac ? "Esc" : "Escape";}
+            if (key === "tab") {return "Tab";}
+            if (part.length === 1) {return part.toLocaleUpperCase();}
             return part;
         })
         .join(isMac ? "" : "+");
@@ -153,7 +153,7 @@ function ReadonlyShortcutRow({ shortcut }: { shortcut: ReadonlyShortcut }) {
     );
 }
 
-function ReadonlyShortcutList({ shortcuts }: { shortcuts: ReadonlyShortcut[] }) {
+function ReadonlyShortcutList({ shortcuts }: { shortcuts: Array<ReadonlyShortcut> }) {
     return (
         <section className="mt-8" aria-labelledby="available-shortcuts-heading">
             <div className="mb-2 max-w-2xl">
@@ -180,7 +180,7 @@ export default function SettingsShortcutsPage() {
     const [saving, setSaving] = useState(false);
 
     const onSave = async () => {
-        if (!settings) return;
+        if (!settings) {return;}
         setSaving(true);
         try {
             await saveSettingsPatch({
@@ -202,11 +202,11 @@ export default function SettingsShortcutsPage() {
     };
 
     if (!settings)
-        return (
+        {return (
             <p role="status" className="text-sm text-muted-foreground">
                 Loading settings...
             </p>
-        );
+        );}
 
     return (
         <SettingsPageShell

@@ -8,7 +8,7 @@ describe("visual numeric filters", () => {
         "serializes %s in the supported decimal grammar",
         (value) => {
             const group = astToFilterGroup(parse("WHERE fileSize = 0").where);
-            if (!group) throw new Error("Expected editable numeric filter");
+            if (!group) {throw new Error("Expected editable numeric filter");}
             group.filters[0]!.value = value;
             const query = filterGroupToQueryString(group, { orderBy: { field: "title", dir: "DESC" }, limit: 1 });
             const parsed = parse(query);
@@ -25,7 +25,7 @@ describe("visual numeric filters", () => {
 
     it.each(["1e", "-", "Infinity", "NaN"])("rejects numeric intermediate %s until corrected or removed", (value) => {
         const group = astToFilterGroup(parse("WHERE fileSize >= 10").where);
-        if (!group) throw new Error("Expected editable numeric filter");
+        if (!group) {throw new Error("Expected editable numeric filter");}
         group.filters[0]!.value = value;
         expect(() => filterGroupToQueryString(group)).toThrow("Enter a finite number");
         group.filters[0]!.value = "1000";

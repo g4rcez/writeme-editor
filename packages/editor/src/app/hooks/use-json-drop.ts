@@ -32,8 +32,8 @@ export const useJsonDrop = () => {
                         globalDispatch.note(note);
                         navigate(`/note/${note.id}`);
                     }
-                } catch (err) {
-                    console.error("Failed to parse dropped JSON:", err);
+                } catch (error) {
+                    console.error("Failed to parse dropped JSON:", error);
                 }
             }
         },

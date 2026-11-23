@@ -104,7 +104,6 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         if (mode === "filesystem") {
             let filePath = existing.filePath;
             if (!filePath && (existing as any).content) {
-                console.log("Lazy migration for note:", item.title);
                 filePath = generateNotePath(settings.directory!, item.title);
                 const uniquePath = await getUniqueFilePath(filePath, async (path) => {
                     const result = await window.electronAPI.fs.statFile(path);
@@ -159,8 +158,8 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     override async getOne(id: EntityBase["id"]): Promise<Note | null> {
         const metadata = await this.adapter.get<Note>(this.collection, id);
-        if (!metadata) return null;
-        if ((metadata as any).deletedAt != null) return null;
+        if (!metadata) {return null;}
+        if ((metadata as any).deletedAt != null) {return null;}
         const settings = SettingsService.load();
         const mode = getStorageMode(settings.directory);
         if (mode === "filesystem" && metadata.filePath) {
@@ -184,7 +183,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     /** Reads one workspace file and keeps its SQLite metadata row in sync. Returns null when it cannot be loaded. */
     private async loadWorkspaceFile(file: WorkspaceFile, metadata: Note | undefined): Promise<[string, Note] | null> {
-        if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) return null;
+        if (metadata?.deletedAt !== null && metadata?.deletedAt !== undefined) {return null;}
 
         let readResult: Awaited<ReturnType<typeof window.electronAPI.fs.readFile>>;
         try {
@@ -192,7 +191,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         } catch {
             return null;
         }
-        if (!readResult.success || typeof readResult.content !== "string") return null;
+        if (!readResult.success || typeof readResult.content !== "string") {return null;}
 
         const fileModified = new Date(readResult.lastModified ?? Date.now());
         const lastModified = Number.isNaN(fileModified.getTime()) ? new Date() : fileModified;
@@ -245,7 +244,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         }
     }
 
-    private async readWorkspaceNotes(directory: string, existing: readonly Note[]): Promise<WorkspaceNotesResult> {
+    private async readWorkspaceNotes(directory: string, existing: ReadonlyArray<Note>): Promise<WorkspaceNotesResult> {
         let directoryResult: Awaited<ReturnType<typeof window.electronAPI.fs.readDirRecursive>>;
         try {
             directoryResult = await window.electronAPI.fs.readDirRecursive(directory);
@@ -265,7 +264,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         for (const note of existing) {
             if (note.filePath) {
                 const key = canonicalImportPath(note.filePath);
-                if (!existingByPath.has(key)) existingByPath.set(key, note);
+                if (!existingByPath.has(key)) {existingByPath.set(key, note);}
             }
         }
 
@@ -287,8 +286,8 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         };
     }
 
-    private async loadWorkspaceNotes(directory: string, existing: readonly Note[]): Promise<WorkspaceNotesResult> {
-        if (this.filesystemLoadPromise) return this.filesystemLoadPromise;
+    private async loadWorkspaceNotes(directory: string, existing: ReadonlyArray<Note>): Promise<WorkspaceNotesResult> {
+        if (this.filesystemLoadPromise) {return this.filesystemLoadPromise;}
 
         const loadPromise = this.readWorkspaceNotes(directory, existing);
         this.filesystemLoadPromise = loadPromise;
@@ -305,7 +304,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
      * With `limit`, returns the most recently updated notes without scanning the workspace: the ordering comes from the
      * SQLite metadata (a SQL `LIMIT`), and only those few files are read. Templates are not included in that mode.
      */
-    override async getAll(query?: { limit?: number }): Promise<Note[]> {
+    override async getAll(query?: { limit?: number }): Promise<Array<Note>> {
         if (query?.limit) {
             const recent = await this.getRecentNotes(query.limit);
             const hydrated = await mapConcurrent(recent, 8, (note) => this.getOne(note.id));
@@ -341,11 +340,11 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         const hydratedPaths = new Set<string>();
         const notes = filtered.map((metadata) => {
             const hydrated = metadata.filePath ? workspaceNotes.get(canonicalImportPath(metadata.filePath)) : undefined;
-            if (hydrated && metadata.filePath) hydratedPaths.add(canonicalImportPath(metadata.filePath));
+            if (hydrated && metadata.filePath) {hydratedPaths.add(canonicalImportPath(metadata.filePath));}
             return hydrated ?? Note.parse({ ...metadata, content: metadata.content || "" });
         });
         for (const [filePath, note] of workspaceNotes) {
-            if (!hydratedPaths.has(canonicalImportPath(filePath))) notes.push(note);
+            if (!hydratedPaths.has(canonicalImportPath(filePath))) {notes.push(note);}
         }
 
         return notes.toSorted((a, b) => +b.updatedAt - +a.updatedAt);
@@ -355,10 +354,10 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
      * Brings an already loaded notes list up to date after files were added or removed, reading only the files that
      * are new. Returns null when the workspace cannot be listed (callers keep what they have).
      */
-    async syncWorkspaceDelta(known: readonly Note[]): Promise<Note[] | null> {
+    async syncWorkspaceDelta(known: ReadonlyArray<Note>): Promise<Array<Note> | null> {
         const settings = SettingsService.load();
         const directory = getStorageMode(settings.directory) === "filesystem" ? settings.directory : null;
-        if (!directory) return null;
+        if (!directory) {return null;}
         let listing: Awaited<ReturnType<typeof window.electronAPI.fs.readDirRecursive>>;
         try {
             listing = await window.electronAPI.fs.readDirRecursive(directory);
@@ -366,21 +365,21 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             console.error("Failed to list workspace notes:", error);
             return null;
         }
-        if (!listing.success) return null;
+        if (!listing.success) {return null;}
 
         const files = listing.files.filter((file: WorkspaceFile) => isWorkspaceDocumentFile(file.path));
         const onDisk = new Set(files.map((file: WorkspaceFile) => canonicalImportPath(file.path)));
         const loaded = new Set<string>();
         for (const note of known) {
-            if (note.filePath && isWorkspaceDocumentFile(note.filePath)) loaded.add(canonicalImportPath(note.filePath));
+            if (note.filePath && isWorkspaceDocumentFile(note.filePath)) {loaded.add(canonicalImportPath(note.filePath));}
         }
         const added = files.filter((file: WorkspaceFile) => !loaded.has(canonicalImportPath(file.path)));
 
-        let addedNotes: Note[] = [];
+        let addedNotes: Array<Note> = [];
         if (added.length > 0) {
             const rows = new Map<string, Note>();
             for (const row of await this.adapter.getAll<Note>(this.collection)) {
-                if (row.filePath) rows.set(canonicalImportPath(row.filePath), row);
+                if (row.filePath) {rows.set(canonicalImportPath(row.filePath), row);}
             }
             const results = await mapConcurrent(added, WORKSPACE_READ_CONCURRENCY, (file) =>
                 this.loadWorkspaceFile(file, rows.get(canonicalImportPath(file.path))),
@@ -395,7 +394,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return [...kept, ...addedNotes].toSorted((a, b) => +b.updatedAt - +a.updatedAt);
     }
 
-    async getRecentNotes(limit?: number): Promise<Note[]> {
+    async getRecentNotes(limit?: number): Promise<Array<Note>> {
         const ipcLimit = Number.isFinite(limit) ? Math.min(10_000, Math.max(1, Math.trunc(limit!))) : 10_000;
         const settings = SettingsService.load();
         const mode = getStorageMode(settings.directory);
@@ -412,7 +411,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     async getLatestQuicknote(): Promise<Note | null> {
         const metadata = await window.electronAPI.db.notes.getLatestQuicknote();
-        if (!metadata) return null;
+        if (!metadata) {return null;}
 
         const settings = SettingsService.load();
         const mode = getStorageMode(settings.directory);
@@ -431,7 +430,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         // metadata is enough to find the day's note (the SQL list is already limited to this workspace and to notes
         // that are not deleted); only the match itself is read from disk, instead of every file in the workspace
         const metadata = findDailyQuickNote(await this.getRecentNotes(), date);
-        if (!metadata) return null;
+        if (!metadata) {return null;}
         const note = await this.getOne(metadata.id);
         if (!note) {
             throw new Error("The existing daily quick note could not be read. It was not changed.");
@@ -439,7 +438,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return note;
     }
 
-    async getTemplates(): Promise<Note[]> {
+    async getTemplates(): Promise<Array<Note>> {
         const metadataList = await window.electronAPI.db.notes.getTemplates();
         const notes = metadataList.map((metadata: any) => Note.parse(metadata));
         const settings = SettingsService.load();
@@ -539,13 +538,13 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             await window.electronAPI.db.notes.restore(id);
         }
         const note = await this.getOne(id);
-        if (note) return note;
+        if (note) {return note;}
         const refreshed: any = await this.adapter.get(this.collection, id);
-        if (!refreshed || refreshed.deletedAt != null) return null;
+        if (!refreshed || refreshed.deletedAt != null) {return null;}
         return Note.parse({ ...refreshed, content: "" });
     }
 
-    async getTrashed(): Promise<Note[]> {
+    async getTrashed(): Promise<Array<Note>> {
         const rows = await window.electronAPI.db.notes.getTrashed();
         return rows.map((r: any) => Note.parse({ ...r, content: "" }));
     }
@@ -571,7 +570,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
         return outcome;
     }
 
-    async getHistory(noteId: string): Promise<NoteSnapshot[]> {
+    async getHistory(noteId: string): Promise<Array<NoteSnapshot>> {
         const snapshots = await window.electronAPI.db.notes.getHistory(noteId);
         return snapshots
             .map((snapshot: any) => ({
@@ -585,7 +584,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
 
     async restoreSnapshot(noteId: string, snapshotId: string): Promise<Note | null> {
         const snapshot = (await this.getHistory(noteId)).find((item) => item.id === snapshotId);
-        if (!snapshot) return null;
+        if (!snapshot) {return null;}
         await this.updateContent(noteId, snapshot.content);
         return this.getOne(noteId);
     }
@@ -665,7 +664,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 content,
             );
             if (!writeResult.success) {
-                if (writeResult.stale) return null;
+                if (writeResult.stale) {return null;}
                 throw new Error(`Failed to conditionally update file: ${writeResult.error ?? "Unknown error"}`);
             }
             const lastSynced = writeResult.lastModified ? new Date(writeResult.lastModified) : updatedAt;
@@ -679,7 +678,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
             };
             Reflect.deleteProperty(metadata, "content");
             await this.adapter.save(this.collection, metadata);
-            if (expected.content !== content) await this.saveSnapshot(id, content, updatedAt);
+            if (expected.content !== content) {await this.saveSnapshot(id, content, updatedAt);}
             return Note.parse({
                 ...existing,
                 content,
@@ -697,7 +696,7 @@ export class NotesRepository extends BaseRepository<Note> implements INoteReposi
                 content,
             );
             if (!writeResult.success) {
-                if (writeResult.stale) return null;
+                if (writeResult.stale) {return null;}
                 throw new Error(`Failed to conditionally update external editor file: ${writeResult.error}`);
             }
 

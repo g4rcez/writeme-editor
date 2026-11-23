@@ -43,7 +43,7 @@ export const Sidebar = memo(function Sidebar() {
         const stopResizing = () => setIsResizing(false);
         window.addEventListener("mousemove", resize, opts);
         window.addEventListener("mouseup", stopResizing, opts);
-        return () => void controller.abort();
+        return () =>  controller.abort();
     }, [resize]);
 
     useEffect(() => {
@@ -54,7 +54,7 @@ export const Sidebar = memo(function Sidebar() {
 
     const compact = useIsCompact();
     useEffect(() => {
-        if (compact) uiDispatch.setSidebarOpen(false);
+        if (compact) {uiDispatch.setSidebarOpen(false);}
     }, [compact, uiDispatch]);
 
     useEscapeLayer(EscapeLevel.sidebar, !collapsed, () => uiDispatch.setSidebarOpen(false));

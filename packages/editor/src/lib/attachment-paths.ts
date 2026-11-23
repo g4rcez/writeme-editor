@@ -3,7 +3,7 @@ const EXTERNAL_SRC_PATTERN = /^(?:[a-z][a-z0-9+.-]*:|#)/i;
 const DEFAULT_ATTACHMENT_DIR = "attachments";
 
 function slugifyAttachmentScope(value: string): string {
-    const slug = value.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+    const slug = value.replaceAll(/[^a-z0-9]/gi, "_").toLowerCase();
     return slug || "untitled";
 }
 
@@ -27,7 +27,7 @@ export function resolveLocalAssetCandidates({
     src: string;
     projectDir: string;
     noteFilePath?: string | null;
-}): string[] {
+}): Array<string> {
     const cleanSrc = src.trim();
     if (!cleanSrc || isExternalAssetSrc(cleanSrc)) {
         return [];
@@ -52,7 +52,7 @@ export function resolveLocalAssetCandidates({
     );
 }
 
-function getCandidateRoots(src: string, projectDir: string, noteDir: string | null): string[] {
+function getCandidateRoots(src: string, projectDir: string, noteDir: string | null): Array<string> {
     if (src.startsWith("/")) {
         return [projectDir];
     }
@@ -70,13 +70,13 @@ function stripQueryAndHash(path: string): string {
 
 function normalizeAbsolutePath(path: string): string {
     const prefix = path.startsWith("/") ? "/" : "";
-    return `${prefix}${normalizePath(path)}`.replace(/\/+/g, "/");
+    return `${prefix}${normalizePath(path)}`.replaceAll(/\/+/g, "/");
 }
 
 function normalizePath(path: string): string {
-    const parts: string[] = [];
+    const parts: Array<string> = [];
     path.split("/").forEach((part) => {
-        if (!part || part === ".") return;
+        if (!part || part === ".") {return;}
         if (part === "..") {
             parts.pop();
             return;
@@ -92,7 +92,7 @@ function isPathWithinRoot(path: string, root: string): boolean {
 }
 
 function dirname(path: string): string {
-    const normalized = path.replace(/\/+/g, "/");
+    const normalized = path.replaceAll(/\/+/g, "/");
     const index = normalized.lastIndexOf("/");
     return index >= 0 ? normalized.slice(0, index) : ".";
 }

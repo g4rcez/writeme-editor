@@ -34,7 +34,7 @@ export const AIDrawer = () => {
     const { note, aiDrawer, aiContext } = state;
     const { messages, isStreaming, isLoading, send, cancel, config, newChat, clearChat } = useAIChat(note?.id);
     const [input, setInput] = useState("");
-    const [pendingFiles, setPendingFiles] = useState<AIFile[]>([]);
+    const [pendingFiles, setPendingFiles] = useState<Array<AIFile>>([]);
     const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
     const parentRef = useRef<HTMLDivElement>(null);
     const adapter = config ? adapterRegistry.get(config.adapterId ?? "cli") : undefined;
@@ -80,7 +80,7 @@ export const AIDrawer = () => {
     }, [isStreaming]);
 
     const onSend = async (): Promise<void> => {
-        if ((!input.trim() && pendingFiles.length === 0) || isStreaming || attachmentController.isPreparing) return;
+        if ((!input.trim() && pendingFiles.length === 0) || isStreaming || attachmentController.isPreparing) {return;}
         const editor = editorGlobalRef.current;
         const selection = editor
             ? editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, " ")
@@ -99,20 +99,20 @@ export const AIDrawer = () => {
 
     const handlePaste = (event: ClipboardEvent<HTMLDivElement>): void => {
         const pastedFiles = getClipboardFiles(event.clipboardData);
-        if (pastedFiles.length === 0) return;
+        if (pastedFiles.length === 0) {return;}
         event.preventDefault();
-        if (attachmentsEnabled) attachmentController.addFiles(pastedFiles);
+        if (attachmentsEnabled) {attachmentController.addFiles(pastedFiles);}
     };
 
     const handleDragOver = (event: DragEvent<HTMLDivElement>): void => {
-        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+        if (event.dataTransfer.types.includes("Files")) {event.preventDefault();}
     };
 
     const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
         const droppedFiles = Array.from(event.dataTransfer.files);
-        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) return;
+        if (!event.dataTransfer.types.includes("Files") && droppedFiles.length === 0) {return;}
         event.preventDefault();
-        if (attachmentsEnabled && droppedFiles.length > 0) attachmentController.addFiles(droppedFiles);
+        if (attachmentsEnabled && droppedFiles.length > 0) {attachmentController.addFiles(droppedFiles);}
     };
 
     const modelLabel = config
@@ -195,7 +195,7 @@ export const AIDrawer = () => {
                         >
                             {virtualizer.getVirtualItems().map((virtualRow) => {
                                 const msg = messages[virtualRow.index];
-                                if (!msg) return null;
+                                if (!msg) {return null;}
                                 const isUser = msg.role === "user";
                                 const isSystem = msg.role === "system";
                                 const showAssistantLoading =

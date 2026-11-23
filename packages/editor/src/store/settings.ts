@@ -25,20 +25,20 @@ export class SettingsService {
     }
 
     static async init(): Promise<void> {
-        if (SettingsService.initialized) return;
+        if (SettingsService.initialized) {return;}
         try {
             const settings = await SettingsService.repo.getAll();
             const settingsMap: Record<string, any> = {};
             settings.forEach((s) => {
                 try {
                     settingsMap[s.name] = JSON.parse(s.value);
-                } catch (e) {
-                    console.warn(`Failed to parse setting ${s.name}:`, e);
+                } catch (error) {
+                    console.warn(`Failed to parse setting ${s.name}:`, error);
                     settingsMap[s.name] = s.value; // Fallback
                 }
             });
-            if (settingsMap.editorMode === "rich") settingsMap.editorMode = "formatted";
-            if (settingsMap.editorMode === "raw") settingsMap.editorMode = "markdown";
+            if (settingsMap.editorMode === "rich") {settingsMap.editorMode = "formatted";}
+            if (settingsMap.editorMode === "raw") {settingsMap.editorMode = "markdown";}
             SettingsService.cache = SettingsSchema.parse(settingsMap);
             SettingsService.initialized = true;
             window.dispatchEvent(new Event("writeme-settings-changed"));

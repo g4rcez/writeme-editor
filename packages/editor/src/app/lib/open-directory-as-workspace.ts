@@ -26,10 +26,9 @@ export async function migrateWebOnlyNotesToDirectory(directoryPath: string): Pro
                 };
                 // @ts-expect-error Existing repository update accepts persisted note data.
                 await repositories.notes.update(note.id, updatedNote);
-                console.log(`Migrated note "${note.title}" to ${uniquePath}`);
             }
-        } catch (err) {
-            console.error("Failed to migrate note:", noteData.title, err);
+        } catch (error) {
+            console.error("Failed to migrate note:", noteData.title, error);
         }
     }
 }

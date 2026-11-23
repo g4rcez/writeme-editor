@@ -19,8 +19,8 @@ export default function SharePage() {
             repositories.notes.save(Note.new("Shared Note", decoded)).then((note) => {
                 navigate(`/note/${note.id}`);
             });
-        } catch (e) {
-            console.error("Failed to decode/save shared note", e);
+        } catch (error_) {
+            console.error("Failed to decode/save shared note", error_);
             setError(true);
         }
     }, [searchParams, navigate]);

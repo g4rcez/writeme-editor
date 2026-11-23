@@ -10,7 +10,7 @@ for (const [runtime, flags] of [
     ["deno", ["run", "--node-modules-dir=manual", "-A"]],
 ]) {
     test(`${runtime}: math, dates, and mathjs extension exports`, () => {
-        const result = spawnSync(runtime, [...flags, file], { encoding: "utf8", timeout: 30000 });
+        const result = spawnSync(runtime, [...flags, file], { encoding: "utf8", timeout: 30_000 });
         assert.ifError(result.error);
         assert.equal(result.status, 0, result.stderr);
         assert.equal(result.stdout.trim(), "math runtime passed");

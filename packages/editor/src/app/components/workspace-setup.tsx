@@ -23,7 +23,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
     const [isSelecting, setIsSelecting] = useState(false);
 
     const handleChooseDirectory = async () => {
-        if (!isElectron()) return;
+        if (!isElectron()) {return;}
         setIsSelecting(true);
         try {
             const dir = await window.electronAPI.fs.chooseDirectory();
@@ -38,7 +38,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
     };
 
     const handleSaveWithSync = async () => {
-        if (!directory) return;
+        if (!directory) {return;}
         await SettingsService.save({
             defaultAuthor: author || "user",
         });
@@ -99,7 +99,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
                                     className="flex-1 py-2 px-3 text-sm bg-muted/50 rounded border border-border"
                                 />
                                 {directory && (
-                                    <button
+                                    <button type="button"
                                         onClick={handleClearSync}
                                         className="p-2 text-foreground/60 hover:text-foreground rounded border border-border hover:bg-muted/50 transition-colors"
                                         title="Clear folder sync"
@@ -107,7 +107,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
                                         <XIcon className="w-4 h-4" />
                                     </button>
                                 )}
-                                <button
+                                <button type="button"
                                     onClick={handleChooseDirectory}
                                     disabled={isSelecting}
                                     className="py-2 px-4 text-sm font-medium text-button-primary-text bg-button-primary-bg rounded transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
@@ -140,7 +140,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
                     {isElectron() && directory && (
-                        <button
+                        <button type="button"
                             onClick={handleSaveWithSync}
                             className="flex-1 py-2.5 px-4 font-medium text-button-success-text bg-button-success-bg rounded transition-colors hover:bg-success-hover"
                         >
@@ -150,7 +150,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
                             </span>
                         </button>
                     )}
-                    <button
+                    <button type="button"
                         onClick={handleUseLocalOnly}
                         className={`${directory ? "" : "flex-1"} py-2.5 px-4 font-medium rounded transition-colors border border-border hover:bg-muted/50`}
                     >
@@ -159,7 +159,7 @@ export const StorageConfigDialog = ({ open, onOpenChange }: StorageConfigDialogP
                             {settings.directory ? "Switch to Local Only" : "Keep Local Only"}
                         </span>
                     </button>
-                    <button
+                    <button type="button"
                         onClick={() => onOpenChange(false)}
                         className="py-2.5 px-4 text-foreground/70 rounded transition-colors hover:bg-muted/50"
                     >

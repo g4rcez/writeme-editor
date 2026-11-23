@@ -22,7 +22,7 @@ const AGGREGATE_FNS = new Set<string>(["COUNT", "SUM", "AVG", "MIN", "MAX"]);
 import { tokenize } from "./tokenizer";
 
 class Parser {
-    private tokens: Token[];
+    private tokens: Array<Token>;
     private pos = 0;
 
     constructor(input: string) {
@@ -35,7 +35,7 @@ class Parser {
 
     private advance(): Token {
         const t = this.tokens[this.pos]!;
-        if (t.type !== TokenType.EOF) this.pos++;
+        if (t.type !== TokenType.EOF) {this.pos++;}
         return t;
     }
 
@@ -99,7 +99,7 @@ class Parser {
         if (this.check(TokenType.Group)) {
             this.advance(); // consume GROUP
             this.expect(TokenType.By);
-            const cols: ColumnRef[] = [this.parseColumnRef()];
+            const cols: Array<ColumnRef> = [this.parseColumnRef()];
             while (this.check(TokenType.Comma)) {
                 this.advance();
                 cols.push(this.parseColumnRef());
@@ -114,7 +114,7 @@ class Parser {
         if (this.check(TokenType.Limit)) {
             this.advance(); // consume LIMIT
             const num = this.expect(TokenType.Number);
-            query.limit = parseFloat(num.value);
+            query.limit = Number.parseFloat(num.value);
         }
 
         if (!this.check(TokenType.EOF)) {
@@ -131,7 +131,7 @@ class Parser {
             this.advance();
             return { type: "Select", columns: [] };
         }
-        const columns: SelectItem[] = [this.parseSelectItem()];
+        const columns: Array<SelectItem> = [this.parseSelectItem()];
         while (this.check(TokenType.Comma)) {
             this.advance();
             columns.push(this.parseSelectItem());
@@ -309,7 +309,7 @@ class Parser {
                 return { type: "String", value: t.value };
             case TokenType.Number:
                 this.advance();
-                return { type: "Number", value: parseFloat(t.value) };
+                return { type: "Number", value: Number.parseFloat(t.value) };
             case TokenType.True:
                 this.advance();
                 return { type: "Boolean", value: true };
@@ -341,8 +341,8 @@ export function parse(input: string): Query {
     }
     try {
         return new Parser(trimmed).parse();
-    } catch (e) {
-        if (e instanceof ParseError) throw e;
-        throw new ParseError((e as Error).message, 0);
+    } catch (error) {
+        if (error instanceof ParseError) {throw error;}
+        throw new ParseError((error as Error).message, 0);
     }
 }

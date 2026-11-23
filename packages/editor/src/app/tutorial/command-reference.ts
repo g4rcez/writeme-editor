@@ -23,7 +23,7 @@ const keyboard = (trigger: string, description: string, context = "App"): Comman
     context,
 });
 
-const APP_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
+const APP_KEYBOARD_SHORTCUTS: Array<CommandReferenceItem> = [
     keyboard("Mod+Shift+P", "Open the command palette."),
     keyboard("Mod+K", "Open the command palette.", "Floating editor"),
     keyboard("Mod+K", "Open or close note search.", "Note search"),
@@ -47,13 +47,13 @@ const APP_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("Mod+/", "Show keyboard click hints for visible controls."),
 ];
 
-const DESKTOP_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
+const DESKTOP_KEYBOARD_SHORTCUTS: Array<CommandReferenceItem> = [
     keyboard("Mod+O", "Open a file or folder from disk.", "Desktop app"),
     keyboard("Mod+Shift+E", "Open the workspace file browser.", "Desktop app"),
     keyboard("Mod+Shift+Q", "Quit Writeme.", "Desktop app"),
 ];
 
-const EDITOR_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
+const EDITOR_KEYBOARD_SHORTCUTS: Array<CommandReferenceItem> = [
     keyboard("Mod+B", "Toggle bold text.", "Formatted editor"),
     keyboard("Mod+I", "Toggle italic text.", "Formatted editor"),
     keyboard("Mod+U", "Toggle underlined text.", "Formatted editor"),
@@ -91,7 +91,7 @@ const EDITOR_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("Mod+Enter", "Commit and push the current Git changes.", "Git sync dialog"),
 ];
 
-const CONTEXTUAL_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
+const CONTEXTUAL_KEYBOARD_SHORTCUTS: Array<CommandReferenceItem> = [
     keyboard("ArrowUp / ArrowDown", "Move through note, file, and recent-item search results.", "Search lists"),
     keyboard("Enter", "Open the selected note, file, or recent item.", "Search lists"),
     keyboard("ArrowUp / ArrowDown", "Move through slash-command and note-link suggestions.", "Editor suggestions"),
@@ -123,7 +123,7 @@ const CONTEXTUAL_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("Enter", "Activate the matching hinted control.", "Keyboard click hints"),
 ];
 
-const TEXT_INPUT_COMMANDS: CommandReferenceItem[] = [
+const TEXT_INPUT_COMMANDS: Array<CommandReferenceItem> = [
     {
         trigger: "# through ######, then Space",
         description: "Create heading levels 1 through 6.",
@@ -246,7 +246,7 @@ const TEXT_INPUT_COMMANDS: CommandReferenceItem[] = [
     },
 ];
 
-const FLOWCHART_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
+const FLOWCHART_KEYBOARD_SHORTCUTS: Array<CommandReferenceItem> = [
     keyboard("+", "Zoom in.", "Flowchart preview"),
     keyboard("-", "Zoom out.", "Flowchart preview"),
     keyboard("0", "Reset zoom and pan.", "Flowchart preview"),
@@ -254,7 +254,7 @@ const FLOWCHART_KEYBOARD_SHORTCUTS: CommandReferenceItem[] = [
     keyboard("?", "Show or hide flowchart keyboard help.", "Flowchart preview"),
 ];
 
-export function getCommandReference({ isDesktopApp, settings }: CommandReferenceOptions): CommandReferenceItem[] {
+export function getCommandReference({ isDesktopApp, settings }: CommandReferenceOptions): Array<CommandReferenceItem> {
     const tabShortcuts = [
         keyboard(isDesktopApp ? "Mod+1–8" : "Mod+Shift+1–8", "Switch directly to one of the first eight open tabs."),
         keyboard(isDesktopApp ? "Mod+9" : "Mod+Shift+9", "Switch directly to the last open tab."),

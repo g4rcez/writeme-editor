@@ -7,9 +7,9 @@ import { isTerminalTab } from "@/lib/tab-target";
 import { TerminalPanel } from "./terminal-panel";
 
 type TerminalWorkspaceProps = {
-    tabs: Tab[];
-    terminalSessions: TerminalSession[];
-    restoredTerminalSessionIds: string[];
+    tabs: Array<Tab>;
+    terminalSessions: Array<TerminalSession>;
+    restoredTerminalSessionIds: Array<string>;
     activeSessionId: string | null;
     directory: string | null;
     dispatch: GlobalDispatchers;

@@ -10,7 +10,7 @@ function render(source: string): HTMLDivElement {
     return element;
 }
 
-function cells(element: HTMLElement): string[][] {
+function cells(element: HTMLElement): Array<Array<string>> {
     return Array.from(element.querySelectorAll("tr"), (row) =>
         Array.from(row.querySelectorAll("th, td"), (cell) => cell.textContent ?? ""),
     );

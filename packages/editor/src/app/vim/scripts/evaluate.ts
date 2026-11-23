@@ -12,9 +12,9 @@ import { VimConfigurationError } from "../configuration-error";
 
 export function evaluateVimConfiguration(source: string): VimConfiguration {
     requireFeature("vimScripts");
-    if (source.length > 50_000) throw new VimConfigurationError("init.ts must be smaller than 50,000 characters.");
+    if (source.length > 50_000) {throw new VimConfigurationError("init.ts must be smaller than 50,000 characters.");}
     const configuration = defaultVimConfiguration();
-    let mappings: VimMapping[] = [];
+    let mappings: Array<VimMapping> = [];
     const api: VimConfigApi = {
         opt: configuration.options,
         keymap: {
@@ -24,7 +24,7 @@ export function evaluateVimConfiguration(source: string): VimConfiguration {
                     mappings = mappings.filter((current) => current.mode !== mode || current.lhs !== lhs);
                     mappings.push(mapping);
                     if (mappings.length > 500)
-                        throw new VimConfigurationError("init.ts supports at most 500 mappings.");
+                        {throw new VimConfigurationError("init.ts supports at most 500 mappings.");}
                 }
             },
             del: (modes, lhs) => {
@@ -41,9 +41,9 @@ export function evaluateVimConfiguration(source: string): VimConfiguration {
     });
     if (exports.default !== undefined) {
         if (typeof exports.default !== "function")
-            throw new VimConfigurationError("The default export must be a synchronous configuration function.");
+            {throw new VimConfigurationError("The default export must be a synchronous configuration function.");}
         const result: unknown = exports.default(api);
-        if (result instanceof Promise) throw new VimConfigurationError("init.ts configuration must be synchronous.");
+        if (result instanceof Promise) {throw new VimConfigurationError("init.ts configuration must be synchronous.");}
     }
     return VimConfigurationSchema.parse({ options: configuration.options, mappings });
 }

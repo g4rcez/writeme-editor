@@ -9,8 +9,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { WritingEditorAdapter, WritingSnapshot, WritingSuggestion } from "./types";
 import { createMarkdownWritingAssistant, extractMarkdownWritingSegments } from "./markdown-adapter";
 
-const views: EditorView[] = [];
-const adapters: WritingEditorAdapter[] = [];
+const views: Array<EditorView> = [];
+const adapters: Array<WritingEditorAdapter> = [];
 
 function createMarkdownEditor(source: string, readonly = false): { view: EditorView; adapter: WritingEditorAdapter } {
     const assistant = createMarkdownWritingAssistant();
@@ -37,7 +37,7 @@ function createSuggestion(
     id: string,
 ): WritingSuggestion {
     const segment = snapshot.segments[segmentIndex];
-    if (!segment) throw new Error("Expected an eligible prose segment.");
+    if (!segment) {throw new Error("Expected an eligible prose segment.");}
     return {
         id,
         segmentId: segment.id,
@@ -168,24 +168,24 @@ describe("raw Markdown writing review adapter", () => {
         adapter.show([createSuggestion(snapshot, 0, 4, 6, "go", "goes!", "raw-issue-1")], snapshot);
 
         const decoration = view.contentDOM.querySelector('[data-writing-suggestion-id="raw-issue-1"]');
-        if (!decoration) throw new Error("Expected an inline CodeMirror suggestion decoration.");
+        if (!decoration) {throw new Error("Expected an inline CodeMirror suggestion decoration.");}
         fireEvent.click(decoration);
         expect(adapter.getActiveSuggestionId()).toBe("raw-issue-1");
 
         expect(adapter.accept("raw-issue-1")).toBe(true);
-        expect(view.state.doc.toString()).toBe("**She goes\\!.**!");
+        expect(view.state.doc.toString()).toBe(String.raw`**She goes\!.**!`);
         const parsed = unified().use(remarkParse).parse(view.state.doc.toString()) as Root;
         const paragraph = parsed.children[0];
-        if (!paragraph || paragraph.type !== "paragraph") throw new Error("Expected a Markdown paragraph.");
+        if (paragraph?.type !== "paragraph") {throw new Error("Expected a Markdown paragraph.");}
         const strong = paragraph.children[0];
-        if (!strong || strong.type !== "strong") throw new Error("Expected bold prose.");
+        if (strong?.type !== "strong") {throw new Error("Expected bold prose.");}
         const text = strong.children[0];
-        if (!text || text.type !== "text") throw new Error("Expected literal text inside bold prose.");
+        if (text?.type !== "text") {throw new Error("Expected literal text inside bold prose.");}
         expect(text.value).toBe("She goes!.");
 
         view.dispatch({ changes: { from: view.state.doc.length, insert: "?" } });
         expect(undo(view)).toBe(true);
-        expect(view.state.doc.toString()).toBe("**She goes\\!.**!");
+        expect(view.state.doc.toString()).toBe(String.raw`**She goes\!.**!`);
         expect(undo(view)).toBe(true);
         expect(view.state.doc.toString()).toBe(source + "!");
         expect(undo(view)).toBe(true);
@@ -209,7 +209,7 @@ describe("raw Markdown writing review adapter", () => {
         let snapshot = adapter.snapshot("note");
         adapter.show([createSuggestion(snapshot, 0, 4, 6, "go", "goes", "raw-issue-3")], snapshot);
         const segment = snapshot.segments[0];
-        if (!segment) throw new Error("Expected an eligible prose segment.");
+        if (!segment) {throw new Error("Expected an eligible prose segment.");}
 
         view.dispatch({ changes: { from: segment.from + 4, insert: "x" } });
         expect(adapter.getSuggestions()).toEqual([]);
@@ -218,7 +218,7 @@ describe("raw Markdown writing review adapter", () => {
         snapshot = adapter.snapshot("note");
         adapter.show([createSuggestion(snapshot, 0, 0, 3, "She", "They", "raw-issue-4")], snapshot);
         const boundary = snapshot.segments[0];
-        if (!boundary) throw new Error("Expected an eligible prose segment.");
+        if (!boundary) {throw new Error("Expected an eligible prose segment.");}
         const beforeDismiss = view.state.doc.toString();
         const revision = snapshot.revision;
         adapter.dismiss("raw-issue-4");

@@ -5,8 +5,8 @@
  * This script creates basic PWA icons and assets
  */
 
-import { writeFileSync } from "fs";
-import { resolve } from "path";
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 // Create a simple SVG icon template
 const createIcon = (size, color = "#2563eb") => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">

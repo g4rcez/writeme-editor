@@ -33,8 +33,8 @@ export default function SettingsBackupPage(): JSX.Element {
                                     `writeme-backup-${new Date().toISOString().slice(0, 10)}.json`,
                                     await createMobileBackup(),
                                 );
-                            } catch (reason) {
-                                setError(reason instanceof Error ? reason.message : "Could not export the backup.");
+                            } catch (error_) {
+                                setError(error_ instanceof Error ? error_.message : "Could not export the backup.");
                             } finally {
                                 setBusy(false);
                             }
@@ -54,15 +54,15 @@ export default function SettingsBackupPage(): JSX.Element {
                         onChange={async (event) => {
                             const file = event.currentTarget.files?.[0];
                             event.currentTarget.value = "";
-                            if (!file) return;
+                            if (!file) {return;}
                             setBusy(true);
                             setError(null);
                             setRestored(false);
                             try {
                                 await restoreMobileBackup(file);
                                 setRestored(true);
-                            } catch (reason) {
-                                setError(reason instanceof Error ? reason.message : "Could not restore the backup.");
+                            } catch (error_) {
+                                setError(error_ instanceof Error ? error_.message : "Could not restore the backup.");
                             } finally {
                                 setBusy(false);
                             }

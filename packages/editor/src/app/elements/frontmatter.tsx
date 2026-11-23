@@ -30,12 +30,12 @@ const FrontmatterView = (props: any) => {
             const parsed = YAML.parse(content) || {};
             setError(null);
             const note = getEditorNote(editor);
-            if (!note) return;
+            if (!note) {return;}
             if (parsed.title && typeof parsed.title === "string" && parsed.title !== note.title) {
                 globalDispatch.syncNoteState({ ...note, title: parsed.title } as any);
             }
             if (parsed.tags) {
-                let newTags: string[] = [];
+                let newTags: Array<string> = [];
                 if (Array.isArray(parsed.tags)) {
                     newTags = parsed.tags.map((t: any) => String(t).trim()).filter((t: string) => t.length > 0);
                 } else if (typeof parsed.tags === "string") {
@@ -55,8 +55,8 @@ const FrontmatterView = (props: any) => {
             if (currentMetadataStr !== newMetadataStr) {
                 globalDispatch.syncNoteState({ ...note, metadata: parsed } as any);
             }
-        } catch (e: any) {
-            setError(e.message);
+        } catch (error_: any) {
+            setError(error_.message);
         }
     }, [content, editor.storage.note]);
 
@@ -203,8 +203,8 @@ export const Frontmatter = Node.create({
                                     start(src: string) {
                                         return src.startsWith("---") ? 0 : undefined;
                                     },
-                                    tokenizer(src: string, tokens: any[]) {
-                                        if (tokens.some((t: any) => t.type !== "space")) return undefined;
+                                    tokenizer(src: string, tokens: Array<any>) {
+                                        if (tokens.some((t: any) => t.type !== "space")) {return undefined;}
                                         const match = src.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
                                         if (match) {
                                             return {
@@ -256,7 +256,7 @@ export const Frontmatter = Node.create({
         return {
             "Mod-Alt-f": () => {
                 const frontMatterBlock = document.getElementById(FRONTMATTER_ID);
-                if (!frontMatterBlock) addFrontmatterToEditor(this.editor);
+                if (!frontMatterBlock) {addFrontmatterToEditor(this.editor);}
                 const button = document.getElementById(FRONTMATTER_BUTTON_ID);
                 if (button) {
                     button?.click();

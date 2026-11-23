@@ -26,10 +26,10 @@ export function PdfMediaSlide({ src, title }: PdfMediaSlideProps): JSX.Element {
         setError(null);
         void loading.promise.then(
             (pdf) => {
-                if (!cancelled) setDocument(pdf);
+                if (!cancelled) {setDocument(pdf);}
             },
-            (reason: unknown) => {
-                if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not open this PDF");
+            (error_: unknown) => {
+                if (!cancelled) {setError(error_ instanceof Error ? error_.message : "Could not open this PDF");}
             },
         );
         return () => {
@@ -39,11 +39,11 @@ export function PdfMediaSlide({ src, title }: PdfMediaSlideProps): JSX.Element {
     }, [src]);
 
     useEffect(() => {
-        if (!document) return;
+        if (!document) {return;}
         let cancelled = false;
         setPageRatio(null);
         void document.getPage(pageNumber).then((page) => {
-            if (cancelled) return;
+            if (cancelled) {return;}
             const viewport = page.getViewport({ scale: 1 });
             setPageRatio(viewport.width / viewport.height);
         });
@@ -99,7 +99,7 @@ export function PdfMediaSlide({ src, title }: PdfMediaSlideProps): JSX.Element {
             Could not render this PDF: {error}
         </p>
     ) : !document ? (
-        <output className="block p-6 text-center" role="status">
+        <output className="block p-6 text-center" >
             Opening PDF…
         </output>
     ) : pageRatio ? (
@@ -107,7 +107,7 @@ export function PdfMediaSlide({ src, title }: PdfMediaSlideProps): JSX.Element {
             <PdfPage document={document} pageNumber={pageNumber} />
         </div>
     ) : (
-        <output className="block p-6 text-center" role="status">
+        <output className="block p-6 text-center" >
             Loading PDF page…
         </output>
     );

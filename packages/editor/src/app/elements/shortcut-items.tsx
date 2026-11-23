@@ -30,7 +30,7 @@ export const useWritemeShortcuts = () => {
     const [state, dispatch] = useGlobalStore();
     const navigate = useNavigate();
     return useMemo(
-        (): Shortcut[] =>
+        (): Array<Shortcut> =>
             [
                 {
                     bind: "mod+shift+m",
@@ -60,11 +60,11 @@ export const useWritemeShortcuts = () => {
                     type: Type.Shortcut,
                     action: async () => {
                         const tab = takeRecentlyClosedTab();
-                        if (!tab) return;
+                        if (!tab) {return;}
 
-                        if (isAiChatTab(tab)) await dispatch.addAiChatTab(tab.noteId);
-                        else if (isTerminalTab(tab)) await dispatch.addTerminalTab(tab.noteId);
-                        else await dispatch.selectNoteById(tab.noteId);
+                        if (isAiChatTab(tab)) {await dispatch.addAiChatTab(tab.noteId);}
+                        else if (isTerminalTab(tab)) {await dispatch.addTerminalTab(tab.noteId);}
+                        else {await dispatch.selectNoteById(tab.noteId);}
 
                         navigate(getRouteForTab(tab));
                     },
@@ -93,7 +93,7 @@ export const useWritemeShortcuts = () => {
                     type: Type.Shortcut,
                     action: async () => {
                         const result = await window.electronAPI.fs.openFileOrDirectory();
-                        if (!result) return;
+                        if (!result) {return;}
                         if (result.isDirectory) {
                             await migrateWebOnlyNotesToDirectory(result.path);
                             await dispatch.switchWorkspace(result.path);
@@ -113,8 +113,8 @@ export const useWritemeShortcuts = () => {
                                         dispatch.notes(await repositories.notes.getAll());
                                         dispatch.setNote(note);
                                         navigate(`/note/${note.id}`);
-                                    } catch (e) {
-                                        console.error("Invalid JSON file:", e);
+                                    } catch (error) {
+                                        console.error("Invalid JSON file:", error);
                                     }
                                     return;
                                 }
@@ -145,7 +145,7 @@ export const useShortcuts = () => {
     const commands = useWritemeShortcuts();
     useEffect(() => {
         commands.forEach((x) => {
-            if (x.hidden) return;
+            if (x.hidden) {return;}
             shortcuts.add(x.bind, x.action);
         });
         return () => {
@@ -160,13 +160,13 @@ function usesCommandKey(): boolean {
 
 const getShortcutKeyLabel = (key: string): string => {
     const normalizedKey = key.toLocaleLowerCase();
-    if (normalizedKey === "mod" || normalizedKey === "commandorcontrol") return usesCommandKey() ? "⌘" : "Ctrl";
-    if (normalizedKey === "control" || normalizedKey === "ctrl") return "Ctrl";
-    if (normalizedKey === "shift") return "Shift";
-    if (normalizedKey === "alt") return "Alt";
-    if (normalizedKey === "enter") return "Enter";
-    if (normalizedKey === "escape") return "Esc";
-    if (key.length === 1) return key.toLocaleUpperCase();
+    if (normalizedKey === "mod" || normalizedKey === "commandorcontrol") {return usesCommandKey() ? "⌘" : "Ctrl";}
+    if (normalizedKey === "control" || normalizedKey === "ctrl") {return "Ctrl";}
+    if (normalizedKey === "shift") {return "Shift";}
+    if (normalizedKey === "alt") {return "Alt";}
+    if (normalizedKey === "enter") {return "Enter";}
+    if (normalizedKey === "escape") {return "Esc";}
+    if (key.length === 1) {return key.toLocaleUpperCase();}
     return key;
 };
 

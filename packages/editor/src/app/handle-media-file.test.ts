@@ -29,7 +29,7 @@ const handleMediaFile = async (currentEditor: any, file: File, pos: number | nul
             const projectDir = state.directory;
             const noteTitle = state.note?.title || "untitled";
             if (projectDir) {
-                const sanitizedTitle = noteTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+                const sanitizedTitle = noteTitle.replaceAll(/[^a-z0-9]/gi, "_").toLowerCase();
                 const targetDir = `${projectDir}/assets/${sanitizedTitle}`;
                 try {
                     await window.electronAPI.fs.mkdir(targetDir);
@@ -43,8 +43,8 @@ const handleMediaFile = async (currentEditor: any, file: File, pos: number | nul
                     if (result.success) {
                         src = `assets/${sanitizedTitle}/${filename}`;
                     }
-                } catch (e) {
-                    console.error("Failed to save media to filesystem", e);
+                } catch (error) {
+                    console.error("Failed to save media to filesystem", error);
                 }
             }
         }

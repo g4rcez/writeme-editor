@@ -18,7 +18,7 @@ describe("note history", () => {
     });
 
     it("retains snapshots beyond the former history limit", () => {
-        let history: NoteSnapshot[] = [];
+        let history: Array<NoteSnapshot> = [];
         for (let index = 0; index < 75; index += 1) {
             history = appendNoteSnapshot(history, "note-1", `content-${index}`, new Date(Date.UTC(2026, 0, index + 1)));
         }

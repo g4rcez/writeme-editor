@@ -20,7 +20,7 @@ vi.mock("./motion-editor-tab", () => ({
 
 function setup() {
     const notes = [Note.new("First note", "First"), Note.new("Second note", "Second")];
-    const tabs: Tab[] = notes.map((note, order) => ({
+    const tabs: Array<Tab> = notes.map((note, order) => ({
         id: `tab-${order}`,
         noteId: note.id,
         type: "tab",
@@ -50,7 +50,7 @@ describe("tab save-status subscriptions", () => {
 
     it("rerenders only the tab whose status changes", () => {
         const [first] = setup();
-        if (!first) throw new Error("Missing first tab fixture.");
+        if (!first) {throw new Error("Missing first tab fixture.");}
         act(() => uiDispatch.setEditorSaveStatus("unsaved", first.id));
         expect(renderTab.mock.calls.map(([title]) => title)).toEqual(["First note"]);
         expect(screen.getByRole("button", { name: "Close First note (unsaved changes)" })).toBeVisible();

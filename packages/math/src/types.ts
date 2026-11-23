@@ -29,6 +29,6 @@ export type EvaluatedLine =
 
 export type BlockScope = {
     vars: Record<string, unknown>;
-    labeledResults: number[];
+    labeledResults: Array<number>;
     lastBareResult: number;
 };

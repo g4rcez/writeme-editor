@@ -10,11 +10,11 @@ import { runScenarios, type ScenarioResult } from "../tests/helpers/memory-scena
  * Each `--build` is a directory that contains `writeme.app` (macOS) or `resources` (Windows/Linux).
  */
 const args = process.argv.slice(2);
-const values = (flag: string): string[] =>
+const values = (flag: string): Array<string> =>
     args.flatMap((arg, index) => (arg === flag && args[index + 1] ? [args[index + 1]!] : []));
-const builds: Build[] = values("--build").map((entry) => {
+const builds: Array<Build> = values("--build").map((entry) => {
     const [label, root] = entry.split("=");
-    if (!label || !root) throw new Error(`--build expects label=path, got "${entry}"`);
+    if (!label || !root) {throw new Error(`--build expects label=path, got "${entry}"`);}
     return { label, root: path.resolve(root) };
 });
 const runs = Number(values("--runs")[0] ?? 1);
@@ -24,9 +24,9 @@ const workspace: WorkspaceOptions = {
     notes: Number(values("--notes")[0] ?? DEFAULT_WORKSPACE.notes),
     dotFiles: Number(values("--dot-files")[0] ?? DEFAULT_WORKSPACE.dotFiles),
 };
-if (builds.length === 0) throw new Error("Pass at least one --build label=path");
+if (builds.length === 0) {throw new Error("Pass at least one --build label=path");}
 
-const results: ScenarioResult[] = [];
+const results: Array<ScenarioResult> = [];
 // alternate builds on every run so slow drift (thermal, background load) hits both equally
 for (let run = 1; run <= runs; run++) {
     for (const build of builds) {
@@ -40,4 +40,4 @@ const json = JSON.stringify({ measuredAt: new Date().toISOString(), runs, result
 if (out) {
     await mkdir(path.dirname(path.resolve(out)), { recursive: true });
     await writeFile(out, json);
-} else console.log(json);
+} else {console.log(json);}
