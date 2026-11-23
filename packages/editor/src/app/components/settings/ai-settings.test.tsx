@@ -283,7 +283,7 @@ describe("AISettings OpenAI models", () => {
         expect(screen.getByRole("button", { name: "Retrying..." })).toHaveFocus();
         await waitFor(() => expect(modelSelect).toHaveValue("gpt-5"));
         expect(modelSelect).toBeEnabled();
-        expect(modelSelect).toHaveFocus();
+        await waitFor(() => expect(modelSelect).toHaveFocus());
         expect(saveButton).toBeEnabled();
         expect(mocks.listOpenAIModels).toHaveBeenCalledTimes(2);
     });
