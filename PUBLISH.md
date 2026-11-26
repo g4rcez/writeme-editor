@@ -6,123 +6,132 @@ This document covers the one-time setup required before the first release and th
 
 ## Prerequisites
 
-- Access to the `g4rcez/writeme-editor` repository settings (to add secrets)
-- A GitHub account that can create repositories
-- Optional for signed macOS releases: Apple Developer Program membership ($99/year)
-- Optional for signed macOS releases: a Developer ID Application certificate and `.p12` export
+- A GitHub account that can create repositories, with `gh` logged in (it also pushes to the tap)
+- For macOS releases: a Mac with Apple silicon, Bun, and a paid Apple Developer Program membership
 
 ---
 
-## One-Time Setup
+## Homebrew
 
-### 1. Create the Homebrew tap repository
+Writeme is in the tap [g4rcez/homebrew-tap](https://github.com/g4rcez/homebrew-tap), with `wm`:
 
-Create a new **public** GitHub repository named exactly `homebrew-writeme` under your account:
-https://github.com/new → name: `homebrew-writeme` → Public → Create
+| Command | Installs |
+|---|---|
+| `brew install --cask g4rcez/tap/writeme` | The app, and its `writeme` and `math-cli` commands in Homebrew's `bin` |
+| `brew install g4rcez/tap/writeme-cli` | Only the `writeme` command |
 
-### 2. Add placeholder tap files
+Install one of the two: both put `writeme` in Homebrew's `bin`. Each release writes `Casks/writeme.rb` and
+`Formula/writeme-cli.rb` of the tap from `scripts/homebrew/`: change them there, not in the tap.
 
-In the new `homebrew-writeme` repo, create the following two files. The CI will overwrite the SHA256 and version values on first release.
+## macOS releases and signing
 
-**`Casks/writeme.rb`**
+The macOS files are signed with a Developer ID and notarized on the Mac that holds the certificate, not in CI. CI holds no
+Apple secret. It builds the other platforms; the macOS files and the Homebrew tap come from `scripts/release-macos.sh`.
 
-```ruby
-cask "writeme" do
-  version "1.0.0"
+### Set up a release Mac
 
-  on_arm do
-    url "https://github.com/g4rcez/writeme-editor/releases/download/v#{version}/writeme-#{version}-arm64.dmg"
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  end
+Do these once.
 
-  on_intel do
-    url "https://github.com/g4rcez/writeme-editor/releases/download/v#{version}/writeme-#{version}-x64.dmg"
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  end
+1. Make a **Developer ID Application** certificate (only the Account Holder can): Xcode > Settings > Accounts, select the team,
+   Manage Certificates, `+`, Developer ID Application. `security find-identity -v -p codesigning` must then list it. An
+   "Apple Development" certificate does not work for a release.
+2. The Team ID, the 10 characters in parentheses at the end of the certificate name, is pinned in `scripts/signing-team-id`.
+3. Make an app-specific password at [account.apple.com](https://account.apple.com) (Sign-In and Security), then save the
+   notarization credentials in your keychain. The command asks for the password:
 
-  name "Writeme"
-  desc "Markdown note-taking application"
-  homepage "https://writeme.dev"
+   ```sh
+   xcrun notarytool store-credentials writeme-notary --apple-id "<your Apple ID>" --team-id "<Team ID>"
+   ```
 
-  app "writeme.app"
+   Each app has its own profile, so do not reuse the one of another app. Give each profile its own app-specific password
+   too: revoking it then stops the releases of that app only. `NOTARY_PROFILE` picks another profile.
 
-  zap trash: [
-    "~/Library/Application Support/writeme",
-    "~/Library/Preferences/dev.writeme.app.plist",
-    "~/Library/Logs/writeme",
-    "~/Library/Caches/dev.writeme.app",
-  ]
-end
+4. Install the release agent:
+
+   ```sh
+   scripts/install-release-agent.sh
+   ```
+
+To release from another Mac, export the certificate with its private key from Keychain Access (a `.p12`), import it there, and
+run step 3 again. Keep that `.p12` and its password somewhere safe, and never commit them.
+
+### Release
+
+Releases need no action. Merging a pull request creates the version tag (`auto-release.yml`). Every 10 minutes, the launchd
+agent `dev.writeme.release-agent` on the release Mac looks at the newest tag. When the GitHub release of that tag has no macOS
+files, it checks out the tag in its own clone (`~/Library/Application Support/writeme-release/repo`), runs `npm ci` and
+`scripts/release-macos.sh` with the tag. A notification says when the release is out or when it failed. The log of each release is
+`~/Library/Logs/writeme-release/<tag>.log`.
+
+- It runs only while you are logged in and the Mac is awake; a tag made meanwhile is released at the next check.
+- It runs only code of a version tag on origin, never of a pull request, and it tries a tag at most 3 times. To try again,
+  delete `~/Library/Application Support/writeme-release/tags/<tag>.attempts`.
+- Tags that do not contain `scripts/release-macos.sh` are skipped.
+- Without the `writeme-notary` profile, it waits and shows a reminder once a day.
+- Run `scripts/install-release-agent.sh` again after the agent scripts change, and `--remove` to stop it.
+
+To release by hand instead:
+
+```sh
+git fetch --tags && git switch --detach vX.Y.Z
+npm ci
+scripts/release-macos.sh vX.Y.Z
 ```
 
-**`Formula/writeme.rb`**
+The script:
 
-```ruby
-class Writeme < Formula
-  desc "Writeme CLI — open notes and query Writeme from the command line"
-  homepage "https://writeme.dev"
-  version "1.0.0"
-  license "MIT"
+1. checks the certificate, the notarization credentials, `gh`, that the tree is clean, that the newest tag is checked out and
+   that its release has no macOS files yet;
+2. builds `writeme.app` with the version of the tag, signed with the hardened runtime and a secure timestamp, and has Apple
+   notarize it;
+3. starts the packaged app and checks that it saves a note;
+4. signs and notarizes the DMG and the standalone CLI, waiting up to 2 hours for Apple (`NOTARY_TIMEOUT=4h` waits longer);
+5. runs `scripts/verify-macos-release.sh`, before anything is published;
+6. attaches the DMG, the ZIP and the CLI to the GitHub release, creating it if CI has not;
+7. downloads them again, and only when they are the verified files updates the cask and the formula of
+   `g4rcez/homebrew-tap`.
 
-  on_arm do
-    url "https://github.com/g4rcez/writeme-editor/releases/download/v#{version}/writeme-darwin-arm64"
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  end
+`--no-publish` stops after step 5, works from any commit and leaves the files in `release-artifacts/macos`.
 
-  on_intel do
-    url "https://github.com/g4rcez/writeme-editor/releases/download/v#{version}/writeme-darwin-x64"
-    sha256 "0000000000000000000000000000000000000000000000000000000000000000"
-  end
+### What a release asserts
 
-  def install
-    bin.install Dir["writeme-darwin-*"].first => "writeme"
-  end
+`scripts/verify-macos-release.sh <dir> <version>` fails, and so does the release, unless:
 
-  test do
-    output = shell_output("#{bin}/writeme query 2>&1", 1)
-    assert_match "Usage:", output
-  end
-end
-```
+- `writeme.app`, in the DMG and in the ZIP, has exactly the designated requirement of `scripts/designated-requirement`;
+- the signatures are intact, Gatekeeper sees a notarized Developer ID app and DMG, and the tickets are stapled to them;
+- the CLI is signed by the pinned team, notarized, and runs under the hardened runtime;
+- the files contain no home folder, user name or computer name of the release Mac.
 
-Commit both files directly on `main` in `homebrew-writeme`.
+A Developer ID signature is public: every copy of the app carries the name on the certificate (for an individual membership,
+your legal name), the country and the Team ID.
 
-### 3. Generate a GitHub Personal Access Token (PAT)
+### Permissions across releases
 
-Go to https://github.com/settings/tokens → Generate new token (classic)
+macOS keeps the privacy permissions and the keychain access of an app by its designated requirement, which for a Developer ID
+signature names the bundle id and the Team ID. It stays the same through releases and certificate renewals. A new team or
+bundle id makes every user grant the permissions again: change the pins only when you mean that.
 
-- Note: `writeme tap bump`
-- Expiration: 1 year (set a calendar reminder to rotate) — or No expiration for unattended automation
-- Scopes: check **`repo`** (full repository access)
+### Signing of local builds
 
-Copy the token value.
+`npm run make` and `npm run package:app` sign with the certificate that `scripts/signing-identity.sh` picks:
 
-### 4. Add `TAP_GITHUB_TOKEN` secret to `writeme-editor`
+1. the Developer ID Application certificate of the pinned team;
+2. without it, the first "Apple Development" certificate (not for a release);
+3. without any, an ad-hoc signature.
 
-Go to https://github.com/g4rcez/writeme-editor/settings/secrets/actions → New repository secret
+`APPLE_SIGNING_IDENTITY` overrides the choice (`-` asks for an ad-hoc signature). A local build has no secure timestamp, is
+not notarized and works without the network. The first time `codesign` uses the key, macOS asks for access: choose
+**Always Allow**.
 
-- Name: `TAP_GITHUB_TOKEN`
-- Value: the PAT from step 3
+### Hardened runtime
 
-### 5. Optional: add Apple signing secrets to `writeme-editor`
+| File | Entitlements |
+|---|---|
+| `writeme.app` | `build/entitlements.mac.plist`: JIT, microphone (meeting notes), Apple events (commands run in the app) |
+| Electron helpers | The defaults of `@electron/osx-sign` |
+| Writeme CLI | `build/entitlements.cli.plist`: what Bun needs to run JavaScript |
 
-The release workflow supports both unsigned and signed macOS artifacts.
-
-If you do not have an Apple Developer certificate, leave these secrets unset. CI will publish `writeme-<version>-arm64-unsigned.dmg` and append manual install instructions to the GitHub release notes.
-
-If you want signed and notarized macOS releases, add each of these at https://github.com/g4rcez/writeme-editor/settings/secrets/actions:
-
-- `APPLE_ID` — Your Apple ID email (e.g. `you@icloud.com`)
-- `APPLE_APP_SPECIFIC_PASSWORD` — App-specific password from https://appleid.apple.com → Sign-In and Security → App-Specific Passwords
-- `APPLE_TEAM_ID` — Your 10-character Apple Developer Team ID (visible at https://developer.apple.com/account)
-- `CSC_LINK` — Base64-encoded Developer ID Application `.p12` certificate: `base64 -i Developer_ID_Application.p12 | pbcopy`
-- `CSC_KEY_PASSWORD` — The password you set when exporting the `.p12`
-
-The macOS release job fails only when some Apple signing secrets are set and others are missing. This prevents accidentally publishing a broken partially configured release.
-
-Optional: set `APPLE_SIGNING_IDENTITY` to the exact Developer ID Application identity if the imported keychain contains more than one valid signing identity.
-
-Desktop releases are automated: merging a pull request into `main` creates a semver tag from the root app version and starts `.github/workflows/release.yml`. Do not create desktop version tags manually; `scripts/tag.sh` is for date-based development tags.
+A new use of a protected resource (camera, location) needs its entitlement there and its usage text in `forge.config.ts`.
 
 ---
 
@@ -144,42 +153,17 @@ pnpm release patch --dry-run
 
 The script leaves the updated package manifests and lockfiles in the working tree; commit those version changes through the normal pull-request workflow. If a publication fails, some earlier packages may already be live. The error lists the unpublished packages to retry; do not rerun the bump command for that release.
 
-The `writeme.dev` npm organization must be available in the active npm login. After publishing packages, desktop installers, GitHub release assets, and the Homebrew tap are still produced by the merge-triggered release workflow.
+The `writeme.dev` npm organization must be available in the active npm login. After publishing packages, the Windows and Linux installers are still produced by the merge-triggered release workflow, and the macOS files and the Homebrew tap by `scripts/release-macos.sh`.
 
 ---
 
-## Verifying the Install (after first release)
+## Verifying the Install (after a release)
 
 ```bash
-brew tap g4rcez/writeme
+brew install --cask g4rcez/tap/writeme
+spctl --assess --type execute --verbose /Applications/writeme.app   # source=Notarized Developer ID
+writeme --help
 
-# Install desktop app
-brew install --cask writeme
-
-# Install CLI
-brew install g4rcez/writeme/writeme
-writeme query
-# → prints: Usage: writeme query <notes|tags|settings|projects> [options]
-
-# Audit (checks for common cask/formula issues)
-brew audit --cask g4rcez/writeme/writeme
-brew audit --formula g4rcez/writeme/writeme
+brew audit --cask g4rcez/tap/writeme
+brew audit --formula g4rcez/tap/writeme-cli
 ```
-
-If you install the unsigned DMG directly from GitHub instead of Homebrew, drag `writeme.app` to `/Applications`, then run:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/writeme.app
-open /Applications/writeme.app
-```
-
-The tap bump script adds `no_quarantine true` to the cask when the release artifact is unsigned.
-
----
-
-## Rotating the TAP_GITHUB_TOKEN
-
-When the PAT expires:
-
-1. Generate a new PAT at https://github.com/settings/tokens
-2. Update the `TAP_GITHUB_TOKEN` secret in `writeme-editor` repository settings

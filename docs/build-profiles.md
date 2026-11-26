@@ -64,7 +64,7 @@ npm run build:profile -- ios-app-store sync
 npm run build:profile -- android-google-play sync
 ```
 
-`package` builds the desktop application. MAS packaging requires `APPLE_MAS_SIGNING_IDENTITY` and `APPLE_MAS_PROVISIONING_PROFILE`, uses Electron's `mas` target and sandbox entitlements, excludes CLI/PTY runtime files and omits GitHub publishers. It rejects ordinary `darwin` packaging and direct-installer makers for store profiles. Direct and Homebrew packages retain the existing signing/notarization behavior.
+`package` builds the desktop application. MAS packaging requires `APPLE_MAS_SIGNING_IDENTITY` and `APPLE_MAS_PROVISIONING_PROFILE`, uses Electron's `mas` target and sandbox entitlements, excludes CLI/PTY runtime files and omits GitHub publishers. It rejects ordinary `darwin` packaging and direct-installer makers for store profiles. Direct and Homebrew packages follow [macOS releases and signing](../PUBLISH.md#macos-releases-and-signing).
 
 `sync` rebuilds the shared mobile asset directory for the selected OS, then checks the generated manifest before copying assets into that native project. Sync fails on an OS, channel, or capability mismatch, avoiding accidental reuse of a different profile's assets. `ios:sync` and `android:sync` select their respective store profiles explicitly. `ios:build` still produces a simulator build, and `android:build` still produces a debug APK; neither uploads to a store. Use Xcode archiving and a signed Android release App Bundle for submission.
 
