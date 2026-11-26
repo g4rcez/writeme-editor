@@ -28,34 +28,31 @@ Recorded by the [Playwright demo test](tests/e2e/readme-demo.spec.ts).
 
 ### macOS — Homebrew
 
-```bash
-brew tap g4rcez/writeme
-```
-
-**Desktop app:**
+**Desktop app and CLI:**
 
 ```bash
-brew install --cask writeme
+brew install --cask g4rcez/tap/writeme
 ```
 
-**CLI:**
+**CLI only:**
 
 ```bash
-brew install g4rcez/writeme/writeme
+brew install g4rcez/tap/writeme-cli
 ```
+
+The app is signed with a Developer ID and notarized by Apple, so it opens without any extra step. It needs a Mac with Apple
+silicon and macOS 13 or later.
 
 ### Desktop downloads
 
-Download the **v1.1.0** desktop release for your platform:
+Download the desktop app for your platform from the [latest release](https://github.com/g4rcez/writeme-editor/releases/latest):
 
-| Platform                      | Package            | Download                                                                                                       |
-| ----------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
-| macOS (Apple Silicon / ARM64) | Unsigned `.dmg`    | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-arm64-unsigned.dmg) |
-| Windows (x64)                 | Installer (`.exe`) | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-setup.exe)          |
-| Linux (Debian/Ubuntu, x64)    | `.deb`             | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-amd64.deb)          |
-| Linux (Fedora/RHEL, x64)      | `.rpm`             | [Download](https://github.com/g4rcez/writeme-editor/releases/download/v1.1.0/writeme-1.1.0-x86_64.rpm)         |
-
-The v1.1.0 macOS download targets Apple Silicon only and is unsigned. See the [release notes](https://github.com/g4rcez/writeme-editor/releases/tag/v1.1.0) for first-launch steps.
+| Platform                      | File                                                  |
+| ----------------------------- | ----------------------------------------------------- |
+| macOS (Apple silicon)         | `writeme-<version>-arm64.dmg`, signed and notarized   |
+| Windows (x64)                 | `writeme-<version>-setup.exe`                         |
+| Linux (Debian/Ubuntu, x64)    | `writeme-<version>-amd64.deb`                         |
+| Linux (Fedora/RHEL, x64)      | `writeme-<version>-x86_64.rpm`                        |
 
 ### Writeme CLI
 
@@ -129,25 +126,19 @@ npm run make
 
 #### Installing the DMG locally (macOS)
 
-The build is ad-hoc signed, which satisfies Apple Silicon's code-signing requirement but is not notarized. macOS will quarantine the downloaded file and block the first launch. Clear the quarantine flag before opening:
+With a Developer ID Application certificate of the pinned team in your keychain, the build is signed with it. Without one
+it is ad-hoc signed, which satisfies Apple Silicon's code-signing requirement. Neither is notarized, which only matters for
+a copy that was downloaded: clear its quarantine flag before the first launch.
 
 ```bash
-# Build
 npm run make -- --platform=darwin
 
-# Clear quarantine from the DMG before mounting
 xattr -dr com.apple.quarantine out/make/writeme.dmg
 ```
 
-Open the DMG, drag **writeme** to `/Applications`, then clear quarantine from the installed app:
+Open the DMG and drag **writeme** to `/Applications`.
 
-```bash
-xattr -cr /Applications/writeme.app
-```
-
-The app will open normally from that point on.
-
-> **Distributing to other machines** requires a paid Apple Developer ID certificate and notarization. Set `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID` in your environment before running `npm run make` and the build will sign and notarize automatically.
+> **Distributing to other machines** needs a notarized build. See [macOS releases and signing](PUBLISH.md#macos-releases-and-signing).
 
 ### Web / PWA
 

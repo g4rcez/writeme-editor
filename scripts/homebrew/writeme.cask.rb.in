@@ -1,0 +1,28 @@
+# Installs the notarized Writeme app and its CLI: brew install --cask g4rcez/tap/writeme
+# The formula writeme-cli installs the same CLI alone: install one of the two, both put bin/writeme.
+# scripts/release-macos.sh of g4rcez/writeme-editor writes this file from scripts/homebrew/writeme.cask.rb.in.
+cask "writeme" do
+  version "@VERSION@"
+  sha256 "@DMG_SHA256@"
+
+  url "https://github.com/g4rcez/writeme-editor/releases/download/v#{version}/writeme-#{version}-arm64.dmg"
+  name "Writeme"
+  desc "Markdown note-taking application"
+  homepage "https://writeme.dev/"
+
+  depends_on arch: :arm64
+  depends_on macos: :ventura
+
+  app "writeme.app"
+  # The CLI inside the app, signed and notarized with it, so the two always have the same version.
+  binary "#{appdir}/writeme.app/Contents/Resources/app.asar.unpacked/packages/cli/dist/writeme"
+  binary "#{appdir}/writeme.app/Contents/Resources/app.asar.unpacked/packages/cli/dist/math-cli"
+
+  zap trash: [
+    "~/Library/Application Support/writeme",
+    "~/Library/Caches/dev.writeme.app",
+    "~/Library/Logs/writeme",
+    "~/Library/Preferences/dev.writeme.app.plist",
+    "~/Library/Saved Application State/dev.writeme.app.savedState",
+  ]
+end

@@ -11,41 +11,15 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { resolveMacSigning } from "./build/macos-signing.ts";
+import { cleanNativeModules } from "./build/native-modules.ts";
 import { assertCompiledProfiles, assertPackagePlatform, runtimePathsForProfile } from "./build/packaging.ts";
 import { desktopProfile, isStoreProfile } from "./build/profiles.mts";
 
 const buildProfile = desktopProfile();
 const storeBuild = isStoreProfile(buildProfile);
 
-const appleId = process.env.APPLE_ID;
-const appleIdPassword = process.env.APPLE_APP_SPECIFIC_PASSWORD;
-const appleTeamId = process.env.APPLE_TEAM_ID;
-const appleSigningIdentity = process.env.APPLE_SIGNING_IDENTITY;
-const hasAppleNotarizeCredentials = Boolean(appleId && appleIdPassword && appleTeamId);
-const osxNotarize = hasAppleNotarizeCredentials
-    ? {
-          appleId: appleId as string,
-          appleIdPassword: appleIdPassword as string,
-          teamId: appleTeamId as string,
-      }
-    : undefined;
-const osxSign = hasAppleNotarizeCredentials
-    ? {
-          ...(appleSigningIdentity ? { identity: appleSigningIdentity } : {}),
-          continueOnError: false,
-      }
-    : {
-          identity: "-",
-          identityValidation: false,
-          preAutoEntitlements: false,
-          continueOnError: false,
-          optionsForFile: (): { entitlements: Array<string>; hardenedRuntime: boolean; timestamp: string } => ({
-              entitlements: [],
-              // Ad-hoc signatures have no team ID for library validation.
-              hardenedRuntime: false,
-              timestamp: "none",
-          }),
-      };
+const directSigning = storeBuild ? undefined : resolveMacSigning();
 
 const runtimePaths = runtimePathsForProfile(buildProfile);
 
@@ -62,12 +36,14 @@ async function copyRuntimePaths(buildPath: string): Promise<void> {
 // node-pty starts shells through the `spawn-helper` executable. AutoUnpackNativesPlugin only unpacks `*.node`, and an
 // executable cannot run from inside app.asar, so every terminal spawn failed with `posix_spawnp failed`.
 const asarUnpack = [
-    ...(buildProfile.features.cli ? ["packages/cli/dist/**"] : []),
+    ...(buildProfile.features.cli ? ["**/packages/cli/dist/**"] : []),
     ...(buildProfile.features.terminal ? ["**/node_modules/node-pty/**/spawn-helper"] : []),
 ];
 
 async function makeSpawnHelpersExecutable(buildPath: string): Promise<void> {
-    if (process.platform === "win32") {return;}
+    if (process.platform === "win32") {
+        return;
+    }
     const root = path.join(buildPath, "node_modules/node-pty");
     const entries = await fs.readdir(root, { recursive: true, withFileTypes: true }).catch(() => []);
     await Promise.all(
@@ -79,7 +55,9 @@ async function makeSpawnHelpersExecutable(buildPath: string): Promise<void> {
 
 const config: ForgeConfig = {
     packagerConfig: {
-        asar: asarUnpack.length ? { unpack: asarUnpack.length === 1 ? asarUnpack[0]! : `{${asarUnpack.join(",")}}` } : true,
+        asar: asarUnpack.length
+            ? { unpack: asarUnpack.length === 1 ? asarUnpack[0]! : `{${asarUnpack.join(",")}}` }
+            : true,
         name: "writeme",
         executableName: "writeme",
         appBundleId: "dev.writeme.app",
@@ -92,11 +70,18 @@ const config: ForgeConfig = {
                           "Writeme captures meeting audio to transcribe it into your notes.",
                   }
                 : {}),
+            ...(buildProfile.features.terminal || buildProfile.features.codeExecution
+                ? {
+                      NSAppleEventsUsageDescription:
+                          "Commands that you run in Writeme use Apple events to control other applications.",
+                  }
+                : {}),
             NSDocumentsFolderUsageDescription:
                 "Writeme needs access to the Documents folder to open and save your notes.",
         },
-        osxSign: storeBuild
-            ? {
+        osxSign: directSigning
+            ? directSigning.osxSign
+            : {
                   identity: process.env.APPLE_MAS_SIGNING_IDENTITY,
                   provisioningProfile: process.env.APPLE_MAS_PROVISIONING_PROFILE,
                   optionsForFile: (filePath: string) => ({
@@ -108,9 +93,8 @@ const config: ForgeConfig = {
                       ),
                       hardenedRuntime: false,
                   }),
-              }
-            : osxSign,
-        ...(!storeBuild && osxNotarize ? { osxNotarize } : {}),
+              },
+        ...(directSigning?.osxNotarize ? { osxNotarize: directSigning.osxNotarize } : {}),
     },
     rebuildConfig: {},
     hooks: {
@@ -125,18 +109,28 @@ const config: ForgeConfig = {
                 );
             }
         },
+        packageAfterPrune: async (_config, buildPath, _electronVersion, platform) => {
+            if (platform === "darwin") {
+                await cleanNativeModules(buildPath);
+            }
+        },
         preMake: async () => {
-            if (storeBuild)
-                {throw new Error("Store profiles require store packaging; direct installer makers are disabled.");}
+            if (storeBuild) {
+                throw new Error("Store profiles require store packaging; direct installer makers are disabled.");
+            }
         },
         packageAfterCopy: async (_config, buildPath) => {
             await assertCompiledProfiles(buildProfile, buildPath);
-            if (!buildProfile.features.cli)
-                {await fs.rm(path.join(buildPath, "packages/cli"), { recursive: true, force: true });}
-            if (!buildProfile.features.terminal)
-                {await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });}
+            if (!buildProfile.features.cli) {
+                await fs.rm(path.join(buildPath, "packages/cli"), { recursive: true, force: true });
+            }
+            if (!buildProfile.features.terminal) {
+                await fs.rm(path.join(buildPath, "node_modules/node-pty"), { recursive: true, force: true });
+            }
             await copyRuntimePaths(buildPath);
-            if (buildProfile.features.terminal) {await makeSpawnHelpersExecutable(buildPath);}
+            if (buildProfile.features.terminal) {
+                await makeSpawnHelpersExecutable(buildPath);
+            }
             await fs.writeFile(path.join(buildPath, "writeme-build.json"), JSON.stringify(buildProfile, null, 2));
         },
     },

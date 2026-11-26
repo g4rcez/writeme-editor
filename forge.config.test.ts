@@ -29,16 +29,24 @@ describe("Forge configuration", () => {
                         assert.equal(config.packagerConfig.icon, "./public/icon");
                         assert.match(config.packagerConfig.extendInfo.NSMicrophoneUsageDescription, /microphone/);
                         assert.match(config.packagerConfig.extendInfo.NSAudioCaptureUsageDescription, /meeting audio/);
+                        assert.match(config.packagerConfig.extendInfo.NSAppleEventsUsageDescription, /Apple events/);
                         if (process.argv[2] === "notarized") {
-                            assert.deepEqual(config.packagerConfig.osxSign, {
+                            const { optionsForFile, ...signing } = config.packagerConfig.osxSign;
+                            assert.deepEqual(signing, {
                                 identity: "Developer ID Application: Signing Fixture",
+                                preAutoEntitlements: false,
                                 continueOnError: false,
                             });
-                            assert.deepEqual(config.packagerConfig.osxNotarize, {
-                                appleId: "fixture@example.invalid",
-                                appleIdPassword: "fixture-password",
-                                teamId: "FIXTURETEAM",
-                            });
+                            const app = optionsForFile("/out/writeme.app");
+                            assert.equal(app.hardenedRuntime, true);
+                            assert.equal("timestamp" in app, false);
+                            assert.match(app.entitlements, /entitlements[.]mac[.]plist$/);
+                            assert.deepEqual(optionsForFile("/out/writeme.app/Contents/MacOS/writeme"), app);
+                            const cli = "/out/writeme.app/Contents/Resources/app.asar.unpacked/packages/cli/dist/writeme";
+                            assert.match(optionsForFile(cli).entitlements, /entitlements[.]cli[.]plist$/);
+                            const helper = "/out/writeme.app/Contents/Frameworks/writeme Helper (GPU).app";
+                            assert.deepEqual(optionsForFile(helper), { hardenedRuntime: true });
+                            assert.deepEqual(config.packagerConfig.osxNotarize, { keychainProfile: "fixture-profile" });
                         } else {
                             const { optionsForFile, ...signing } = config.packagerConfig.osxSign;
                             assert.deepEqual(signing, {
@@ -112,10 +120,9 @@ describe("Forge configuration", () => {
                     timeout: 10_000,
                     env: {
                         ...process.env,
-                        APPLE_ID: notarization ? "fixture@example.invalid" : "",
-                        APPLE_APP_SPECIFIC_PASSWORD: notarization ? "fixture-password" : "",
-                        APPLE_TEAM_ID: notarization ? "FIXTURETEAM" : "",
-                        APPLE_SIGNING_IDENTITY: notarization ? "Developer ID Application: Signing Fixture" : "",
+                        // "-" keeps this test independent of the certificates in the keychain of this machine.
+                        APPLE_SIGNING_IDENTITY: notarization ? "Developer ID Application: Signing Fixture" : "-",
+                        WRITEME_NOTARY_PROFILE: notarization ? "fixture-profile" : "",
                     },
                 },
             );
